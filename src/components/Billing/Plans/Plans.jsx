@@ -10,6 +10,8 @@ import fire from '../../../conf/fire';
 import HomepageNavbar from '../../Dashboard2/elements/HomepageNavbar';
 import HomepageFooter from '../../Dashboard2/elements/HomepageFooter';
 import HomepagePricing from '../../Dashboard2/elements/HomepagePricing';
+import './Plans.scss';
+import '../../CustomPage/CustomPage.scss';
 
 const stripePromise = (conf.stripe_publishable_key && conf.stripe_publishable_key.trim())
     ? loadStripe(conf.stripe_publishable_key.trim())
@@ -32,6 +34,10 @@ const PRO_UNLOCKED_FEATURES = [
 ];
 
 const PlansPage = (props) => {
+    // Check path to distinguish public /billing/plans vs dashboard /dashboard/plans
+    const isEmbeddedInDashboard = typeof window !== 'undefined' && window.location.pathname.startsWith('/dashboard');
+
+    // Dashboard View State
     const [step, setStep] = useState(1); // 1 = Cart & Plan Selection, 2 = Native Checkout
     const [selectedDuration, setSelectedDuration] = useState('12'); // '1', '6', '12' months
     const [couponInput, setCouponInput] = useState('');
@@ -39,6 +45,10 @@ const PlansPage = (props) => {
     const [couponError, setCouponError] = useState('');
     const [userCurrentMembership, setUserCurrentMembership] = useState('Free Basic Tier');
     const [userEmail, setUserEmail] = useState('');
+
+    // Classic Public View State (for /billing/plans)
+    const [publicStep, setPublicStep] = useState(0);
+    const [publicSelectedPlan, setPublicSelectedPlan] = useState('monthly');
 
     const [subscriptionConfig, setSubscriptionConfig] = useState({
         monthlyPrice: 199,
@@ -54,8 +64,6 @@ const PlansPage = (props) => {
         sandboxMode: false,
         isLoading: true
     });
-
-    const isEmbeddedInDashboard = typeof window !== 'undefined' && window.location.pathname.startsWith('/dashboard');
 
     useEffect(() => {
         const currentUser = fire.auth().currentUser;
@@ -89,7 +97,17 @@ const PlansPage = (props) => {
         });
     }, []);
 
-    // Pricing calculations
+    // Classic Public View Handlers
+    const handlePublicNextStep = (plan) => {
+        setPublicSelectedPlan(plan);
+        setPublicStep(1);
+    };
+
+    const handlePublicPreviousStep = () => {
+        setPublicStep(0);
+    };
+
+    // Pricing calculations for Dashboard View
     const getBaseMonthlyRate = () => {
         if (selectedDuration === '1') return subscriptionConfig.monthlyPrice;
         if (selectedDuration === '6') return Math.round(subscriptionConfig.quartarlyPrice / 6 * 10) / 10;
@@ -156,37 +174,77 @@ const PlansPage = (props) => {
         'disable-funding': 'credit,card',
     };
 
+    // IF ACCESSED AS PUBLIC PAGE (/billing/plans) -> RENDER THE CLASSIC ORIGINAL PUBLIC VIEW
+    if (!isEmbeddedInDashboard) {
+        return (
+            <PayPalScriptProvider options={paypalOptions} deferLoading={false}>
+                <Elements stripe={stripePromise}>
+                    <div className="custom-page">
+                        <HomepageNavbar user={props.user} />
+                        <div className="custom-page__content w-full">
+                            <div className="custom-page__Plans w-full">
+                                {publicStep === 0 && (
+                                    <HomepagePricing nextStep={handlePublicNextStep} />
+                                )}
+                                {publicStep === 1 && (
+                                    <ElementsConsumer>
+                                        {({ stripe, elements }) => (
+                                            <Checkout
+                                                currency={subscriptionConfig.symbol}
+                                                currencyCode={currencyCode}
+                                                onlyPP={subscriptionConfig.onlyPP}
+                                                stripeEnabled={subscriptionConfig.stripeEnabled}
+                                                paypalEnabled={subscriptionConfig.paypalEnabled}
+                                                razorpayEnabled={subscriptionConfig.razorpayEnabled}
+                                                sandboxMode={subscriptionConfig.sandboxMode}
+                                                previousStep={handlePublicPreviousStep}
+                                                stripe={stripe}
+                                                elements={elements}
+                                                monthly={subscriptionConfig.monthlyPrice}
+                                                quartarly={subscriptionConfig.quartarlyPrice}
+                                                yearly={subscriptionConfig.yearlyPrice}
+                                                selectedPlan={publicSelectedPlan}
+                                            />
+                                        )}
+                                    </ElementsConsumer>
+                                )}
+                            </div>
+                        </div>
+                        <HomepageFooter />
+                    </div>
+                </Elements>
+            </PayPalScriptProvider>
+        );
+    }
+
+    // IF ACCESSED FROM DASHBOARD (/dashboard/plans) -> RENDER THE RICH CANDIDATE DASHBOARD PAGE
     return (
         <PayPalScriptProvider options={paypalOptions} deferLoading={false}>
             <Elements stripe={stripePromise}>
-                <div className={isEmbeddedInDashboard ? "p-4 sm:p-8 space-y-6 max-w-7xl mx-auto" : "custom-page"}>
+                <div className="p-4 sm:p-8 space-y-6 max-w-7xl mx-auto">
                     
-                    {!isEmbeddedInDashboard && <HomepageNavbar user={props.user} />}
-
                     {/* Dashboard Header Bar */}
-                    {isEmbeddedInDashboard && (
-                        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 font-extrabold text-xl shrink-0">
-                                    <FaCrown className="w-6 h-6 text-amber-500" />
-                                </div>
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <h1 className="text-xl font-extrabold text-slate-900">PRO Membership &amp; Subscription Plans</h1>
-                                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase">
-                                            Active Tier: {userCurrentMembership}
-                                        </span>
-                                    </div>
-                                    <p className="text-xs text-slate-500 mt-0.5">Upgrade your account to unlock unlimited AI resumes, cover letters, and priority export tools.</p>
-                                </div>
+                    <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 font-extrabold text-xl shrink-0">
+                                <FaCrown className="w-6 h-6 text-amber-500" />
                             </div>
-
-                            <a href="/dashboard/settings" className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all flex items-center gap-2 self-start md:self-auto shrink-0">
-                                <FaArrowLeft className="w-3 h-3" />
-                                <span>Back to Account Settings</span>
-                            </a>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <h1 className="text-xl font-extrabold text-slate-900">PRO Membership &amp; Subscription Plans</h1>
+                                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase">
+                                        Active Tier: {userCurrentMembership}
+                                    </span>
+                                </div>
+                                <p className="text-xs text-slate-500 mt-0.5">Upgrade your account to unlock unlimited AI resumes, cover letters, and priority export tools.</p>
+                            </div>
                         </div>
-                    )}
+
+                        <a href="/dashboard/settings" className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all flex items-center gap-2 self-start md:self-auto shrink-0">
+                            <FaArrowLeft className="w-3 h-3" />
+                            <span>Back to Account Settings</span>
+                        </a>
+                    </div>
 
                     {/* STEP 1: CART PAGE & UPGRADE COMPARISON */}
                     {step === 1 && (
@@ -504,8 +562,6 @@ const PlansPage = (props) => {
                             </div>
                         </div>
                     )}
-
-                    {!isEmbeddedInDashboard && <HomepageFooter />}
                 </div>
             </Elements>
         </PayPalScriptProvider>
