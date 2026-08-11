@@ -1,14 +1,13 @@
 import React, { useState, useMemo } from 'react';
-import { FaPlus, FaTrash, FaArrowUp, FaCheckCircle, FaExclamationCircle, FaMagic, FaUndo, FaChevronUp, FaChevronDown } from 'react-icons/fa';
+import { FaPlus, FaTrash, FaArrowUp, FaCheckCircle, FaExclamationCircle, FaMagic, FaUndo, FaGripVertical } from 'react-icons/fa';
 import { generateUserAiContent } from '../../services/aiService';
 
 /**
- * 10/10 World-Class BulletPointsEditor
- * Renders bullet points as clean, full-width card boxes matching 10/10 UX specs:
+ * 10/10 World-Class BulletPointsEditor with Intuitive Drag & Drop Reordering
  * - Generous vertical scrollable/editable area for text on mobile
- * - Single-line horizontal bottom toolbar for all icons & actions (Quality Badge, Undo, AI Enhance, Counter, Move Up/Down, Delete)
+ * - Single-line horizontal bottom toolbar for all icons & actions (Quality Badge, Undo, AI Enhance, Counter, Delete)
  * - Batch "AI Enhance All Bullets" button for instant 1-click optimization of all bullet points
- * - Touch-friendly Move Up / Move Down buttons for quick position swapping
+ * - Native Drag & Drop handle (FaGripVertical) for smooth bullet position reordering
  */
 const BulletPointsEditor = ({
     value = '',
@@ -19,6 +18,7 @@ const BulletPointsEditor = ({
 }) => {
     const [enhancingIndex, setEnhancingIndex] = useState(null);
     const [isEnhancingAll, setIsEnhancingAll] = useState(false);
+    const [draggedIdx, setDraggedIdx] = useState(null);
     const [historyMap, setHistoryMap] = useState({}); // Stores previous text for undo
 
     // Parse value string into array of bullet strings
@@ -72,22 +72,25 @@ const BulletPointsEditor = ({
         emitChanges(updated);
     };
 
-    const handleMoveUp = (index) => {
-        if (index <= 0) return;
+    // Drag and Drop Handlers
+    const handleDragStart = (e, index) => {
+        setDraggedIdx(index);
+        e.dataTransfer.effectAllowed = 'move';
+    };
+
+    const handleDragOver = (e, index) => {
+        e.preventDefault();
+        if (draggedIdx === null || draggedIdx === index) return;
         const updated = [...bullets];
-        const temp = updated[index];
-        updated[index] = updated[index - 1];
-        updated[index - 1] = temp;
+        const item = updated[draggedIdx];
+        updated.splice(draggedIdx, 1);
+        updated.splice(index, 0, item);
+        setDraggedIdx(index);
         emitChanges(updated);
     };
 
-    const handleMoveDown = (index) => {
-        if (index >= bullets.length - 1) return;
-        const updated = [...bullets];
-        const temp = updated[index];
-        updated[index] = updated[index + 1];
-        updated[index + 1] = temp;
-        emitChanges(updated);
+    const handleDragEnd = () => {
+        setDraggedIdx(null);
     };
 
     const handleEnhanceSingleBullet = async (index) => {
@@ -216,31 +219,27 @@ const BulletPointsEditor = ({
                 const isOverLimit = charCount > maxLength;
                 const isEnhancing = enhancingIndex === index;
                 const canUndo = historyMap[index] !== undefined && historyMap[index] !== bulletText;
+                const isDragging = draggedIdx === index;
 
                 return (
-                    <div key={index} className="w-full">
+                    <div
+                        key={index}
+                        draggable={!disabled && !isEnhancing && !isEnhancingAll}
+                        onDragStart={(e) => handleDragStart(e, index)}
+                        onDragOver={(e) => handleDragOver(e, index)}
+                        onDragEnd={handleDragEnd}
+                        className={`w-full transition-all duration-150 ${isDragging ? 'opacity-40 scale-[0.99]' : 'opacity-100'}`}>
+                        
                         {/* Bullet Card Box */}
                         <div className="w-full bg-white border border-slate-200/90 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-100 rounded-xl p-3 shadow-2xs transition-all relative">
-                            {/* Top Bar: Reorder Buttons, Counter & Delete Button */}
-                            <div className="flex items-center justify-between mb-1">
-                                {/* Position Shift / Reorder Buttons */}
-                                <div className="flex items-center gap-1">
-                                    <button
-                                        type="button"
-                                        onClick={() => handleMoveUp(index)}
-                                        disabled={disabled || index === 0 || isEnhancing || isEnhancingAll}
-                                        className="p-1 text-slate-300 hover:text-indigo-600 hover:bg-slate-50 disabled:opacity-30 disabled:hover:text-slate-300 rounded transition-colors"
-                                        title="Move bullet up">
-                                        <FaChevronUp className="w-2.5 h-2.5" />
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleMoveDown(index)}
-                                        disabled={disabled || index === bullets.length - 1 || isEnhancing || isEnhancingAll}
-                                        className="p-1 text-slate-300 hover:text-indigo-600 hover:bg-slate-50 disabled:opacity-30 disabled:hover:text-slate-300 rounded transition-colors"
-                                        title="Move bullet down">
-                                        <FaChevronDown className="w-2.5 h-2.5" />
-                                    </button>
+                            {/* Top Bar: Drag Gripper Handle (Left), Counter & Delete Button (Right) */}
+                            <div className="flex items-center justify-between mb-1.5">
+                                {/* Left: Drag Gripper Handle */}
+                                <div
+                                    className="flex items-center gap-1.5 text-slate-400 hover:text-indigo-600 cursor-grab active:cursor-grabbing transition-colors select-none"
+                                    title="Click and drag to reorder bullet points">
+                                    <FaGripVertical className="w-3.5 h-3.5 text-slate-300 hover:text-indigo-500" />
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Bullet #{index + 1}</span>
                                 </div>
 
                                 {/* Right: Counter & Delete */}

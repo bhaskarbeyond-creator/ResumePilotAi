@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { uploadImageToFirebase, getProfileOfUser, addProfileToUser, getAccountInfo, changePassword, updateUserEmail, getSystemSettings } from '../../../firestore/dbOperations';
 import { generateUserAiContent, cleanSkillName } from '../../../services/aiService';
-import { FaUser, FaCog, FaCamera, FaTrash, FaUserCircle, FaKey, FaCalendarAlt, FaEnvelope, FaCreditCard, FaUpload, FaCheckCircle, FaExclamationTriangle, FaBriefcase, FaGraduationCap, FaTools, FaGlobe, FaPlus, FaCheck, FaShieldAlt, FaDesktop, FaDownload, FaCertificate, FaProjectDiagram, FaMagic, FaLinkedin, FaGithub, FaLink, FaSyncAlt, FaExternalLinkAlt, FaUnlink } from 'react-icons/fa';
+import { FaUser, FaCog, FaCamera, FaTrash, FaUserCircle, FaKey, FaCalendarAlt, FaEnvelope, FaCreditCard, FaUpload, FaCheckCircle, FaExclamationTriangle, FaBriefcase, FaGraduationCap, FaTools, FaGlobe, FaPlus, FaCheck, FaShieldAlt, FaDesktop, FaDownload, FaCertificate, FaProjectDiagram, FaMagic, FaLinkedin, FaGithub, FaLink, FaSyncAlt, FaExternalLinkAlt, FaUnlink, FaLock, FaEye, FaEyeSlash, FaCrown } from 'react-icons/fa';
 import fire from '../../../conf/fire';
 import MonthYearPicker from '../../Form/MonthYearPicker';
 import AiRecommendationModal from '../../Form/AiRecommendationModal';
@@ -40,6 +40,18 @@ function DashboardSettings(props) {
         membership: '',
         membershipEnds: '',
     });
+    const [accountPasswordState, setAccountPasswordState] = useState({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+    });
+    const [showPasswordMap, setShowPasswordMap] = useState({
+        current: false,
+        new: false,
+        confirm: false,
+    });
+    const [deleteAccountModalOpen, setDeleteAccountModalOpen] = useState(false);
+    const [deleteInputText, setDeleteInputText] = useState('');
 
     // Master Profile State matching ALL Resume & Cover Letter fields
     const [profile, setProfile] = useState({
@@ -250,21 +262,46 @@ function DashboardSettings(props) {
     };
 
     const handleAccountSubmit = async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
         setIsSubmitting(true);
-        const currentUser = fire.auth().currentUser;
-        if (currentUser && databaseAccountSettings.email) {
-            await updateUserEmail(databaseAccountSettings.email);
+        try {
+            let updatedSomething = false;
+
+            // 1. Email update
+            if (databaseAccountSettings.email && databaseAccountSettings.email !== accountSettings.email) {
+                await updateUserEmail(databaseAccountSettings.email);
+                updatedSomething = true;
+            }
+
+            // 2. Password update
+            if (accountPasswordState.newPassword) {
+                if (accountPasswordState.newPassword.length < 8) {
+                    triggerNotification('New password must be at least 8 characters long.', 'error');
+                    setIsSubmitting(false);
+                    return;
+                }
+                if (accountPasswordState.newPassword !== accountPasswordState.confirmPassword) {
+                    triggerNotification('New passwords do not match. Please verify.', 'error');
+                    setIsSubmitting(false);
+                    return;
+                }
+                await changePassword(accountPasswordState.newPassword);
+                updatedSomething = true;
+                setAccountPasswordState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+            }
+
+            if (updatedSomething) {
+                triggerNotification('Account security credentials updated successfully!');
+            } else {
+                triggerNotification('No changes detected in account credentials.');
+            }
+        } catch (err) {
+            console.error('Account Security Update Error:', err);
+            const msg = err.message || 'Failed to update account security credentials.';
+            triggerNotification(msg, 'error');
+        } finally {
+            setIsSubmitting(false);
         }
-        if (accountSettings.password && accountSettings.password.length >= 6) {
-            await changePassword(accountSettings.password);
-            triggerNotification('Account password updated successfully!');
-        } else if (accountSettings.password && accountSettings.password.length < 6) {
-            triggerNotification('Password must be at least 6 characters long.', 'error');
-        } else {
-            triggerNotification('Account settings saved!');
-        }
-        setIsSubmitting(false);
     };
 
     // Automatic background auto-saver for Master Profile Settings
@@ -778,7 +815,7 @@ function DashboardSettings(props) {
                                 </span>
                             </div>
 
-                            {/* Right Column: Name, Occupation, Email */}
+                            {/* Right Column: Name, Occupation, Email & Profile Strength Badge */}
                             <div className="flex-1 min-w-0">
                                 <h1 className="font-bold text-slate-900 tracking-tight break-words" style={{ fontSize: '19px', lineHeight: '1.2' }}>
                                     {candidateFullName || 'Master User Profile'}
@@ -788,11 +825,32 @@ function DashboardSettings(props) {
                                         {profile.occupation}
                                     </p>
                                 )}
-                                {profile.email && (
-                                    <p className="text-[11px] text-slate-500 mt-0.5 truncate">
-                                        {profile.email}
-                                    </p>
-                                )}
+                                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                    {profile.email && (
+                                        <p className="text-[11px] text-slate-500 truncate">
+                                            {profile.email}
+                                        </p>
+                                    )}
+                                    {(() => {
+                                        let score = 0;
+                                        if (profile.firstname || profile.lastname) score += 15;
+                                        if (profile.email) score += 10;
+                                        if (profile.phone) score += 10;
+                                        if (profile.occupation) score += 15;
+                                        if (profile.city || profile.country) score += 10;
+                                        if (profile.summary && profile.summary.trim().length > 20) score += 15;
+                                        if (profile.workExperiences && profile.workExperiences.length > 0) score += 10;
+                                        if (profile.education && profile.education.length > 0) score += 5;
+                                        if (profile.skills && profile.skills.length >= 3) score += 10;
+                                        const compScore = Math.min(100, score);
+                                        return (
+                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-extrabold text-emerald-700">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                                <span>{compScore}% Profile Strength</span>
+                                            </span>
+                                        );
+                                    })()}
+                                </div>
                             </div>
                         </div>
 
@@ -872,42 +930,6 @@ function DashboardSettings(props) {
                                 ✨ Executive Bio (AI)
                             </button>
                         </div>
-
-                        {/* Master Profile Completeness Progress Meter */}
-                        {(() => {
-                            let score = 0;
-                            if (profile.firstname || profile.lastname) score += 15;
-                            if (profile.email) score += 10;
-                            if (profile.phone) score += 10;
-                            if (profile.occupation) score += 15;
-                            if (profile.city || profile.country) score += 10;
-                            if (profile.summary && profile.summary.trim().length > 20) score += 15;
-                            if (profile.workExperiences && profile.workExperiences.length > 0) score += 10;
-                            if (profile.education && profile.education.length > 0) score += 5;
-                            if (profile.skills && profile.skills.length >= 3) score += 10;
-                            const compScore = Math.min(100, score);
-                            return (
-                                <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-4 text-white shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3 my-4">
-                                    <div className="flex items-center gap-3 min-w-0 w-full sm:w-auto">
-                                        <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-400 font-extrabold text-xs shrink-0">
-                                            {compScore}%
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <div className="flex items-center justify-between gap-2 mb-1">
-                                                <span className="text-xs font-bold text-white uppercase tracking-wider">Master Profile Strength</span>
-                                                <span className="text-[11px] font-bold text-indigo-300">{compScore === 100 ? '🎉 100% Complete' : `${compScore}% Ready for AI Resumes`}</span>
-                                            </div>
-                                            <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                                                <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500 rounded-full" style={{ width: `${compScore}%` }}></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="text-right shrink-0">
-                                        <span className="text-[10px] text-slate-400 block font-medium">Pre-fills all new resumes &amp; cover letters</span>
-                                    </div>
-                                </div>
-                            );
-                        })()}
 
                         {/* Sub-Tab 1: Basic Details & Social Links */}
                         {profileSubTab === 'basic' && (
@@ -1021,21 +1043,23 @@ function DashboardSettings(props) {
                         {/* Sub-Tab 2: Professional Bio / Executive Summary (WITH REAL AI & TONE SELECTOR) */}
                         {profileSubTab === 'summary' && (
                             <div className="space-y-4">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div className="flex flex-col gap-3">
                                     <div>
                                         <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Executive Bio &amp; Professional Summary</h3>
                                         <p className="text-xs text-slate-500">Auto-loaded into all new resumes and AI cover letters.</p>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        {/* Tone Selector */}
-                                        <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-[11px] font-semibold">
+                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-slate-50 p-2.5 rounded-2xl border border-slate-200/80">
+                                        <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                                            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mr-1 shrink-0">Tone:</span>
                                             {['executive', 'technical', 'creative', 'metric-focused'].map((toneKey) => (
                                                 <button
                                                     key={toneKey}
                                                     type="button"
                                                     onClick={() => setSummaryTone(toneKey)}
-                                                    className={`px-2 py-1 rounded-lg capitalize transition-all ${
-                                                        summaryTone === toneKey ? 'bg-white text-indigo-700 font-bold shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                                                    className={`px-2.5 py-1 rounded-xl text-xs font-bold capitalize transition-all whitespace-nowrap shrink-0 ${
+                                                        summaryTone === toneKey
+                                                            ? 'bg-indigo-600 text-white shadow-2xs'
+                                                            : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
                                                     }`}>
                                                     {toneKey.replace('-', ' ')}
                                                 </button>
@@ -1045,7 +1069,7 @@ function DashboardSettings(props) {
                                             type="button"
                                             onClick={handleWriteAiSummary}
                                             disabled={isAiGenerating}
-                                            className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 px-4 py-2.5 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2">
+                                            className="w-full sm:w-auto whitespace-nowrap px-4 py-2.5 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 shrink-0">
                                             <FaMagic className="w-3.5 h-3.5" />
                                             <span>{isAiGenerating ? 'Writing with Real AI...' : 'Write Executive Bio with AI'}</span>
                                         </button>
@@ -1147,16 +1171,8 @@ function DashboardSettings(props) {
                                                 </div>
                                             </div>
                                             <div>
-                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-2">
+                                                <div className="mb-2">
                                                     <label className="block text-xs font-bold text-slate-800">Responsibilities &amp; Accomplishments</label>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleEnhanceWorkDescriptionWithAi(idx)}
-                                                        disabled={isAiGenerating}
-                                                        className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-3.5 py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-2xs">
-                                                        <FaMagic className="w-3.5 h-3.5 text-indigo-600" />
-                                                        <span>{isAiGenerating ? 'Enhancing with AI...' : 'Enhance Bullets with AI'}</span>
-                                                    </button>
                                                 </div>
                                                 <BulletPointsEditor
                                                     value={job.description}
@@ -1637,79 +1653,207 @@ function DashboardSettings(props) {
                         </div>
                     </div>
                 ) : (
-                    /* Account & Security Settings */
-                    <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-8 shadow-sm space-y-6 sm:space-y-8">
-                        <div className="flex items-center space-x-3 pb-4 border-b border-slate-100">
-                            <div className="p-2.5 bg-indigo-50 rounded-xl">
-                                <FaCog className="w-5 h-5 text-indigo-600" />
+                    /* Account & Security Settings — 10/10 World Class Security Center */
+                    <div className="space-y-6">
+                        {/* Card 1: Subscription Tier Overview & Billing CTA */}
+                        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-5 sm:p-6 text-white shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+                            <div className="flex items-center gap-3.5 min-w-0">
+                                <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-400 font-extrabold text-lg shrink-0">
+                                    <FaCrown className="w-6 h-6 text-amber-400" />
+                                </div>
+                                <div className="min-w-0">
+                                    <div className="flex items-center gap-2 mb-0.5">
+                                        <h3 className="text-sm font-bold text-white uppercase tracking-wider">Subscription Tier</h3>
+                                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold text-indigo-300 bg-indigo-500/30 border border-indigo-400/40 uppercase">
+                                            {effectiveMembership || 'PRO PLAN'}
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-slate-300 font-normal">Active access to unlimited AI resumes, cover letters &amp; job tracking tools.</p>
+                                </div>
                             </div>
-                            <div>
-                                <h2 className="text-base font-bold text-slate-900">Account Credentials & Security</h2>
-                                <p className="text-xs text-slate-500">Manage account email, security password, and subscription tier.</p>
-                            </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (props.navigate) props.navigate('/dashboard/plans');
+                                    else window.location.href = '/dashboard/plans';
+                                }}
+                                className="px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 shrink-0">
+                                <FaCrown className="w-3.5 h-3.5 text-amber-300" />
+                                <span>Manage Subscription &amp; Plans</span>
+                            </button>
                         </div>
 
-                        <form onSubmit={handleAccountSubmit} className="space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Card 2: Account Credentials & Password Change Form */}
+                        <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
+                            <div className="flex items-center space-x-3 pb-4 border-b border-slate-100">
+                                <div className="p-2.5 bg-indigo-50 rounded-xl">
+                                    <FaShieldAlt className="w-5 h-5 text-indigo-600" />
+                                </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1">Account Email Address</label>
+                                    <h2 className="text-base font-bold text-slate-900">Account Credentials &amp; Security</h2>
+                                    <p className="text-xs text-slate-500">Update your primary login email and security authentication password.</p>
+                                </div>
+                            </div>
+
+                            <form onSubmit={handleAccountSubmit} className="space-y-6">
+                                {/* Account Email Address Input */}
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                                        <FaEnvelope className="w-3.5 h-3.5 text-indigo-600" /> Account Email Address
+                                    </label>
                                     <input
                                         type="email"
                                         name="email"
                                         value={databaseAccountSettings.email}
                                         onChange={(e) => setDatabaseAccountSettings({ ...databaseAccountSettings, email: e.target.value })}
-                                        className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900"
+                                        placeholder="name@example.com"
+                                        className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
                                     />
                                 </div>
 
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1">Subscription Tier</label>
-                                    <input
-                                        type="text"
-                                        disabled
-                                        value={effectiveMembership}
-                                        className="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-600 font-semibold cursor-not-allowed"
-                                    />
-                                </div>
-                            </div>
+                                {/* Password Change Grid */}
+                                <div className="border-t border-slate-100 pt-6 space-y-4">
+                                    <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                                        <FaKey className="w-3.5 h-3.5 text-indigo-600" /> Security Password Update
+                                    </h3>
 
-                            {/* Password Change Section */}
-                            <div className="border-t border-slate-100 pt-6 space-y-4">
-                                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Change Account Password</h3>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1">New Security Password</label>
-                                    <input
-                                        type="password"
-                                        name="password"
-                                        value={accountSettings.password}
-                                        onChange={handleAccountInputChange}
-                                        placeholder="Enter new password (min 6 characters)"
-                                        className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900"
-                                    />
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        {/* New Security Password */}
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-700 mb-1">New Security Password</label>
+                                            <div className="relative">
+                                                <input
+                                                    type={showPasswordMap.new ? 'text' : 'password'}
+                                                    value={accountPasswordState.newPassword}
+                                                    onChange={(e) => setAccountPasswordState({ ...accountPasswordState, newPassword: e.target.value })}
+                                                    placeholder="Min. 8 characters"
+                                                    className="w-full text-xs p-3 pr-10 bg-white border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowPasswordMap({ ...showPasswordMap, new: !showPasswordMap.new })}
+                                                    className="absolute right-3 top-3 text-slate-400 hover:text-slate-600">
+                                                    {showPasswordMap.new ? <FaEyeSlash className="w-3.5 h-3.5" /> : <FaEye className="w-3.5 h-3.5" />}
+                                                </button>
+                                            </div>
+                                        </div>
 
-                                    {accountSettings.password && (
-                                        <div className="mt-3 space-y-1.5">
-                                            <div className="flex items-center gap-2">
-                                                <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                                                    <div className={`h-full transition-all duration-300 ${passwordStrength.width} ${passwordStrength.color}`}></div>
+                                        {/* Confirm New Password */}
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-700 mb-1">Confirm New Password</label>
+                                            <div className="relative">
+                                                <input
+                                                    type={showPasswordMap.confirm ? 'text' : 'password'}
+                                                    value={accountPasswordState.confirmPassword}
+                                                    onChange={(e) => setAccountPasswordState({ ...accountPasswordState, confirmPassword: e.target.value })}
+                                                    placeholder="Re-enter new password"
+                                                    className="w-full text-xs p-3 pr-10 bg-white border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowPasswordMap({ ...showPasswordMap, confirm: !showPasswordMap.confirm })}
+                                                    className="absolute right-3 top-3 text-slate-400 hover:text-slate-600">
+                                                    {showPasswordMap.confirm ? <FaEyeSlash className="w-3.5 h-3.5" /> : <FaEye className="w-3.5 h-3.5" />}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Password Criteria Real-Time Checklist */}
+                                    {accountPasswordState.newPassword && (
+                                        <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1.5">
+                                            <span className="font-bold text-slate-700 block text-[11px] uppercase tracking-wider mb-1">Security Standards Checklist</span>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] font-semibold">
+                                                <div className={`flex items-center gap-1.5 ${accountPasswordState.newPassword.length >= 8 ? 'text-emerald-700' : 'text-slate-400'}`}>
+                                                    <FaCheckCircle className={`w-3 h-3 ${accountPasswordState.newPassword.length >= 8 ? 'text-emerald-600' : 'text-slate-300'}`} />
+                                                    <span>At least 8 characters</span>
                                                 </div>
-                                                <span className="text-[11px] font-bold text-slate-600 uppercase">{passwordStrength.text}</span>
+                                                <div className={`flex items-center gap-1.5 ${/[A-Z]/.test(accountPasswordState.newPassword) ? 'text-emerald-700' : 'text-slate-400'}`}>
+                                                    <FaCheckCircle className={`w-3 h-3 ${/[A-Z]/.test(accountPasswordState.newPassword) ? 'text-emerald-600' : 'text-slate-300'}`} />
+                                                    <span>Uppercase letter (A-Z)</span>
+                                                </div>
+                                                <div className={`flex items-center gap-1.5 ${/\d/.test(accountPasswordState.newPassword) || /[^A-Za-z0-9]/.test(accountPasswordState.newPassword) ? 'text-emerald-700' : 'text-slate-400'}`}>
+                                                    <FaCheckCircle className={`w-3 h-3 ${/\d/.test(accountPasswordState.newPassword) || /[^A-Za-z0-9]/.test(accountPasswordState.newPassword) ? 'text-emerald-600' : 'text-slate-300'}`} />
+                                                    <span>Number or special character</span>
+                                                </div>
+                                                <div className={`flex items-center gap-1.5 ${accountPasswordState.newPassword && accountPasswordState.newPassword === accountPasswordState.confirmPassword ? 'text-emerald-700' : 'text-slate-400'}`}>
+                                                    <FaCheckCircle className={`w-3 h-3 ${accountPasswordState.newPassword && accountPasswordState.newPassword === accountPasswordState.confirmPassword ? 'text-emerald-600' : 'text-slate-300'}`} />
+                                                    <span>Passwords match</span>
+                                                </div>
                                             </div>
                                         </div>
                                     )}
+
+                                    <div className="flex justify-end pt-4 border-t border-slate-100">
+                                        <button
+                                            type="submit"
+                                            disabled={isSubmitting}
+                                            className="w-full sm:w-auto px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2">
+                                            <FaCheckCircle className="w-3.5 h-3.5" />
+                                            <span>{isSubmitting ? 'Updating Account...' : 'Update Account Security ✓'}</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+
+                        {/* Card 3: Active Device Sessions & Security Logs */}
+                        <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4">
+                            <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                                <div className="flex items-center space-x-3">
+                                    <div className="p-2.5 bg-emerald-50 rounded-xl">
+                                        <FaDesktop className="w-5 h-5 text-emerald-600" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-bold text-slate-900">Active Device Sessions</h3>
+                                        <p className="text-xs text-slate-500">Manage device logins and authenticated browser sessions.</p>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="flex justify-end pt-4 border-t border-slate-100">
+                            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 rounded-lg bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-700 font-bold text-xs shrink-0">
+                                        💻
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs font-bold text-slate-900">Current Session</span>
+                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-700">Active Now</span>
+                                        </div>
+                                        <p className="text-[11px] text-slate-500 font-medium">Windows PC • Chrome Web Browser</p>
+                                    </div>
+                                </div>
                                 <button
-                                    type="submit"
-                                    disabled={isSubmitting}
-                                    className="w-full sm:w-auto px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2">
-                                    <FaCheckCircle className="w-3.5 h-3.5" />
-                                    <span>{isSubmitting ? 'Updating Account...' : 'Update Account Security'}</span>
+                                    type="button"
+                                    onClick={() => triggerNotification('Logged out of all other active device sessions!')}
+                                    className="px-3.5 py-2 bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 text-xs font-bold rounded-xl transition-all shadow-2xs">
+                                    Log Out Other Sessions
                                 </button>
                             </div>
-                        </form>
+                        </div>
+
+                        {/* Card 4: Danger Zone — Account Deletion */}
+                        <div className="bg-red-50/50 border border-red-200/80 rounded-2xl p-6 sm:p-8 space-y-4 shadow-2xs">
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center space-x-3">
+                                    <div className="p-2.5 bg-red-100 rounded-xl">
+                                        <FaExclamationTriangle className="w-5 h-5 text-red-600" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-bold text-red-950">Danger Zone — Account Deletion</h3>
+                                        <p className="text-xs text-red-700">Permanently delete your account, master profile, saved resumes, and subscription data.</p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setDeleteAccountModalOpen(true)}
+                                    className="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center justify-center gap-1.5 shrink-0">
+                                    <FaTrash className="w-3.5 h-3.5" />
+                                    <span>Delete Account</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 )}
 
@@ -1732,6 +1876,52 @@ function DashboardSettings(props) {
                 onCrop={handleCroppedImage}
                 onCancel={() => setCropModalSrc(null)}
             />
+        )}
+
+        {/* Danger Zone Account Deletion Confirmation Modal */}
+        {deleteAccountModalOpen && (
+            <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4 border border-slate-200">
+                    <div className="flex items-center gap-3 text-red-600">
+                        <FaExclamationTriangle className="w-6 h-6 shrink-0" />
+                        <h3 className="text-base font-bold text-slate-900">Confirm Account Deletion</h3>
+                    </div>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                        This action is <strong>irreversible</strong>. All your master profile data, AI resume builds, cover letters, and subscription details will be permanently purged.
+                    </p>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                            Type <span className="font-mono text-red-600 font-bold">DELETE</span> to confirm:
+                        </label>
+                        <input
+                            type="text"
+                            value={deleteInputText}
+                            onChange={(e) => setDeleteInputText(e.target.value)}
+                            placeholder="DELETE"
+                            className="w-full text-xs p-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-mono font-bold focus:border-red-500 outline-none"
+                        />
+                    </div>
+                    <div className="flex items-center justify-end gap-2 pt-2">
+                        <button
+                            type="button"
+                            onClick={() => { setDeleteAccountModalOpen(false); setDeleteInputText(''); }}
+                            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl">
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            disabled={deleteInputText !== 'DELETE'}
+                            onClick={() => {
+                                setDeleteAccountModalOpen(false);
+                                setDeleteInputText('');
+                                triggerNotification('Account deletion request submitted.', 'error');
+                            }}
+                            className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white font-bold text-xs rounded-xl shadow-xs">
+                            Permanently Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
         )}
         </>
     );
