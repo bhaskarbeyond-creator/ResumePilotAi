@@ -17,6 +17,8 @@ function DashboardSettings(props) {
     const [selectedSettings, setSelectedSettings] = useState('Profile');
     const [profileSubTab, setProfileSubTab] = useState('basic');
     const SUB_TAB_ORDER = ['basic', 'experience', 'education', 'skills', 'certifications', 'projects', 'languages', 'summary'];
+    const [summaryTone, setSummaryTone] = useState('executive');
+    const [skillFilter, setSkillFilter] = useState('all');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isAiGenerating, setIsAiGenerating] = useState(false);
     const [toastState, setToastState] = useState(null);
@@ -399,7 +401,8 @@ function DashboardSettings(props) {
                 certifications: certsDetails,
                 projects: projectsDetails,
                 achievement: expDetails ? expDetails.substring(0, 150) : '',
-                summaryType: 'executive',
+                summaryType: summaryTone,
+                tone: summaryTone
             });
             if (data && data.summary) {
                 setProfile((prev) => ({ ...prev, summary: data.summary }));
@@ -870,6 +873,42 @@ function DashboardSettings(props) {
                             </button>
                         </div>
 
+                        {/* Master Profile Completeness Progress Meter */}
+                        {(() => {
+                            let score = 0;
+                            if (profile.firstname || profile.lastname) score += 15;
+                            if (profile.email) score += 10;
+                            if (profile.phone) score += 10;
+                            if (profile.occupation) score += 15;
+                            if (profile.city || profile.country) score += 10;
+                            if (profile.summary && profile.summary.trim().length > 20) score += 15;
+                            if (profile.workExperiences && profile.workExperiences.length > 0) score += 10;
+                            if (profile.education && profile.education.length > 0) score += 5;
+                            if (profile.skills && profile.skills.length >= 3) score += 10;
+                            const compScore = Math.min(100, score);
+                            return (
+                                <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-4 text-white shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3 my-4">
+                                    <div className="flex items-center gap-3 min-w-0 w-full sm:w-auto">
+                                        <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-400 font-extrabold text-xs shrink-0">
+                                            {compScore}%
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center justify-between gap-2 mb-1">
+                                                <span className="text-xs font-bold text-white uppercase tracking-wider">Master Profile Strength</span>
+                                                <span className="text-[11px] font-bold text-indigo-300">{compScore === 100 ? '🎉 100% Complete' : `${compScore}% Ready for AI Resumes`}</span>
+                                            </div>
+                                            <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                                                <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500 rounded-full" style={{ width: `${compScore}%` }}></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                        <span className="text-[10px] text-slate-400 block font-medium">Pre-fills all new resumes &amp; cover letters</span>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
                         {/* Sub-Tab 1: Basic Details & Social Links */}
                         {profileSubTab === 'basic' && (
                             <div className="space-y-6">
@@ -954,11 +993,15 @@ function DashboardSettings(props) {
                                         <input type="text" name="postalCode" value={profile.postalCode} onChange={handleInputChange} placeholder="Postal Code" className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900" />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-700 mb-1">LinkedIn Profile URL</label>
+                                        <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                                            <FaLinkedin className="w-3.5 h-3.5 text-blue-600" /> LinkedIn Profile URL
+                                        </label>
                                         <input type="url" name="linkedinUrl" value={profile.linkedinUrl} onChange={handleInputChange} placeholder="https://linkedin.com/in/username" className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900" />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-700 mb-1">GitHub / Portfolio URL</label>
+                                        <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                                            <FaGithub className="w-3.5 h-3.5 text-slate-800" /> GitHub / Portfolio URL
+                                        </label>
                                         <input type="url" name="githubUrl" value={profile.githubUrl} onChange={handleInputChange} placeholder="https://github.com/username" className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900" />
                                     </div>
                                     <div>
@@ -966,41 +1009,49 @@ function DashboardSettings(props) {
                                         <input type="text" name="country" value={profile.country} onChange={handleInputChange} placeholder="Country (e.g. India)" className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900" spellCheck="false" />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-700 mb-1">Website / Portfolio URL</label>
+                                        <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                                            <FaGlobe className="w-3.5 h-3.5 text-indigo-600" /> Personal Website / Portfolio URL
+                                        </label>
                                         <input type="url" name="websiteUrl" value={profile.websiteUrl} onChange={handleInputChange} placeholder="https://yourwebsite.com" className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900" />
                                     </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* Sub-Tab 2: Professional Bio / Executive Summary (WITH REAL AI) */}
+                        {/* Sub-Tab 2: Professional Bio / Executive Summary (WITH REAL AI & TONE SELECTOR) */}
                         {profileSubTab === 'summary' && (
                             <div className="space-y-4">
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                     <div>
-                                        <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Executive Bio & Professional Summary</h3>
+                                        <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Executive Bio &amp; Professional Summary</h3>
                                         <p className="text-xs text-slate-500">Auto-loaded into all new resumes and AI cover letters.</p>
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={handleWriteAiSummary}
-                                        disabled={isAiGenerating}
-                                        className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 px-4 py-2.5 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2">
-                                        <FaMagic className="w-3.5 h-3.5" />
-                                        <span>{isAiGenerating ? 'Writing with Real AI...' : 'Write Executive Bio with AI'}</span>
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        {/* Tone Selector */}
+                                        <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-[11px] font-semibold">
+                                            {['executive', 'technical', 'creative', 'metric-focused'].map((toneKey) => (
+                                                <button
+                                                    key={toneKey}
+                                                    type="button"
+                                                    onClick={() => setSummaryTone(toneKey)}
+                                                    className={`px-2 py-1 rounded-lg capitalize transition-all ${
+                                                        summaryTone === toneKey ? 'bg-white text-indigo-700 font-bold shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                                                    }`}>
+                                                    {toneKey.replace('-', ' ')}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={handleWriteAiSummary}
+                                            disabled={isAiGenerating}
+                                            className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 px-4 py-2.5 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2">
+                                            <FaMagic className="w-3.5 h-3.5" />
+                                            <span>{isAiGenerating ? 'Writing with Real AI...' : 'Write Executive Bio with AI'}</span>
+                                        </button>
+                                    </div>
                                 </div>
-                                 <textarea name="summary" value={profile.summary} onChange={handleInputChange} spellCheck="true" placeholder="Write or click 'Write Executive Bio with AI' to generate..." className="w-full h-52 text-xs p-4 bg-white border border-slate-300 rounded-xl font-sans leading-relaxed text-slate-900 focus:border-indigo-600 focus:outline-hidden" />
-                                 <div className="pt-2">
-                                     <button
-                                         type="button"
-                                         onClick={handleWriteAiSummary}
-                                         disabled={isAiGenerating}
-                                         className="w-full py-3 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2">
-                                         <FaMagic className="w-3.5 h-3.5" />
-                                         <span>{isAiGenerating ? 'Writing with Real AI...' : 'Write Executive Bio with AI'}</span>
-                                     </button>
-                                 </div>
+                                <textarea name="summary" value={profile.summary} onChange={handleInputChange} spellCheck="true" placeholder="Write or select a tone above and click 'Write Executive Bio with AI' to generate..." className="w-full h-52 text-xs p-4 bg-white border border-slate-300 rounded-xl font-sans leading-relaxed text-slate-900 focus:border-indigo-600 focus:outline-hidden" />
                             </div>
                         )}
 
@@ -1195,15 +1246,21 @@ function DashboardSettings(props) {
                                                         name={`edu_city_${idx}`}
                                                         value={edu.city || ''}
                                                         onChange={(e) => updateEducation(idx, 'city', e.target.value)}
-                                                        placeholder="e.g. Bangalore, India"
+                                                        placeholder="e.g. Cambridge, MA"
                                                         suggestionType="city"
                                                         inputClassName="w-full text-xs p-2.5 pr-8 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
                                                         labelClassName="block text-[11px] font-bold text-slate-700 mb-1"
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Description / Achievements</label>
-                                                    <textarea value={edu.description || ''} onChange={(e) => updateEducation(idx, 'description', e.target.value)} placeholder="Notable achievements, GPA, thesis..." className="w-full h-16 text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 outline-none resize-none" spellCheck="true" />
+                                                    <label className="block text-[11px] font-bold text-slate-700 mb-1">GPA / Academic Honors (Optional)</label>
+                                                    <input
+                                                        type="text"
+                                                        value={edu.grade || edu.gpa || ''}
+                                                        onChange={(e) => updateEducation(idx, 'grade', e.target.value)}
+                                                        placeholder="e.g. 3.9/4.0 GPA, Summa Cum Laude"
+                                                        className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 font-semibold focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                                                    />
                                                 </div>
                                             </div>
                                         </div>
@@ -1347,36 +1404,37 @@ function DashboardSettings(props) {
                                     </div>
                                 ) : (
                                     profile.certifications.map((cert, idx) => (
-                                        <div key={cert.id || idx} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between gap-4">
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1">
-                                                <AutocompleteInputField
-                                                    hideLabel
-                                                    name={`cert_title_${idx}`}
-                                                    value={cert.title}
-                                                    onChange={(e) => updateCertification(idx, 'title', e.target.value)}
-                                                    placeholder="Certification Title (e.g. AWS Solutions Architect)"
-                                                    suggestionType="certification"
-                                                    inputClassName="w-full text-xs p-2.5 pr-8 bg-white border border-slate-300 rounded-lg font-semibold text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
-                                                />
-                                                <AutocompleteInputField
-                                                    hideLabel
-                                                    name={`cert_issuer_${idx}`}
-                                                    value={cert.issuer}
-                                                    onChange={(e) => updateCertification(idx, 'issuer', e.target.value)}
-                                                    placeholder="Issuing Organization (e.g. Amazon Web Services)"
-                                                    suggestionType="certificationIssuer"
-                                                    inputClassName="w-full text-xs p-2.5 pr-8 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
-                                                />
-                                                <input type="text" value={cert.date} onChange={(e) => updateCertification(idx, 'date', e.target.value)} placeholder="Date Issued (e.g. 2024)" className="text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none" spellCheck="false" />
-                                            </div>
-                                            <button
-                                                type="button"
-                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeCertification(idx); }}
-                                                className="w-8 h-8 flex items-center justify-center bg-white hover:bg-red-50 text-slate-400 hover:text-red-600 border border-slate-200 hover:border-red-200 rounded-xl transition-all cursor-pointer flex-shrink-0"
-                                                title="Delete certification">
-                                                <FaTrash className="w-3.5 h-3.5" />
-                                            </button>
-                                        </div>
+                                         <div key={cert.id || idx} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                                             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 flex-1">
+                                                 <AutocompleteInputField
+                                                     hideLabel
+                                                     name={`cert_title_${idx}`}
+                                                     value={cert.title}
+                                                     onChange={(e) => updateCertification(idx, 'title', e.target.value)}
+                                                     placeholder="Certification Title (e.g. AWS Solutions Architect)"
+                                                     suggestionType="certification"
+                                                     inputClassName="w-full text-xs p-2.5 pr-8 bg-white border border-slate-300 rounded-lg font-semibold text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                                                 />
+                                                 <AutocompleteInputField
+                                                     hideLabel
+                                                     name={`cert_issuer_${idx}`}
+                                                     value={cert.issuer}
+                                                     onChange={(e) => updateCertification(idx, 'issuer', e.target.value)}
+                                                     placeholder="Issuing Organization (e.g. Amazon Web Services)"
+                                                     suggestionType="certificationIssuer"
+                                                     inputClassName="w-full text-xs p-2.5 pr-8 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                                                 />
+                                                 <input type="text" value={cert.date} onChange={(e) => updateCertification(idx, 'date', e.target.value)} placeholder="Date Issued (e.g. 2024)" className="text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none" spellCheck="false" />
+                                                 <input type="url" value={cert.url || cert.link || ''} onChange={(e) => updateCertification(idx, 'url', e.target.value)} placeholder="Credential Link (URL)" className="text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none" />
+                                             </div>
+                                             <button
+                                                 type="button"
+                                                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeCertification(idx); }}
+                                                 className="w-8 h-8 flex items-center justify-center bg-white hover:bg-red-50 text-slate-400 hover:text-red-600 border border-slate-200 hover:border-red-200 rounded-xl transition-all cursor-pointer flex-shrink-0 self-end sm:self-auto"
+                                                 title="Delete certification">
+                                                 <FaTrash className="w-3.5 h-3.5" />
+                                             </button>
+                                         </div>
                                     ))
                                 )}
 

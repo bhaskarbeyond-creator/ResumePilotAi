@@ -1,13 +1,14 @@
 import React, { useState, useMemo } from 'react';
-import { FaPlus, FaTrash, FaArrowUp, FaCheckCircle, FaExclamationCircle, FaMagic, FaUndo } from 'react-icons/fa';
+import { FaPlus, FaTrash, FaArrowUp, FaCheckCircle, FaExclamationCircle, FaMagic, FaUndo, FaChevronUp, FaChevronDown } from 'react-icons/fa';
 import { generateUserAiContent } from '../../services/aiService';
 
 /**
- * BulletPointsEditor
+ * 10/10 World-Class BulletPointsEditor
  * Renders bullet points as clean, full-width card boxes matching 10/10 UX specs:
  * - Generous vertical scrollable/editable area for text on mobile
- * - Single-line horizontal bottom toolbar for all icons & actions (Quality Badge, Undo, AI Enhance, Counter, Delete)
- * - Undo feature to revert AI enhancements or text edits
+ * - Single-line horizontal bottom toolbar for all icons & actions (Quality Badge, Undo, AI Enhance, Counter, Move Up/Down, Delete)
+ * - Batch "AI Enhance All Bullets" button for instant 1-click optimization of all bullet points
+ * - Touch-friendly Move Up / Move Down buttons for quick position swapping
  */
 const BulletPointsEditor = ({
     value = '',
@@ -17,6 +18,7 @@ const BulletPointsEditor = ({
     disabled = false
 }) => {
     const [enhancingIndex, setEnhancingIndex] = useState(null);
+    const [isEnhancingAll, setIsEnhancingAll] = useState(false);
     const [historyMap, setHistoryMap] = useState({}); // Stores previous text for undo
 
     // Parse value string into array of bullet strings
@@ -70,9 +72,27 @@ const BulletPointsEditor = ({
         emitChanges(updated);
     };
 
+    const handleMoveUp = (index) => {
+        if (index <= 0) return;
+        const updated = [...bullets];
+        const temp = updated[index];
+        updated[index] = updated[index - 1];
+        updated[index - 1] = temp;
+        emitChanges(updated);
+    };
+
+    const handleMoveDown = (index) => {
+        if (index >= bullets.length - 1) return;
+        const updated = [...bullets];
+        const temp = updated[index];
+        updated[index] = updated[index + 1];
+        updated[index + 1] = temp;
+        emitChanges(updated);
+    };
+
     const handleEnhanceSingleBullet = async (index) => {
         const currentText = bullets[index];
-        if (!currentText || !currentText.trim() || enhancingIndex !== null) return;
+        if (!currentText || !currentText.trim() || enhancingIndex !== null || isEnhancingAll) return;
 
         // Record history before enhancement
         setHistoryMap((prev) => ({ ...prev, [index]: currentText }));
@@ -88,6 +108,38 @@ const BulletPointsEditor = ({
         } finally {
             setEnhancingIndex(null);
         }
+    };
+
+    const handleEnhanceAll = async () => {
+        if (isEnhancingAll || enhancingIndex !== null) return;
+        const validIndices = bullets
+            .map((b, i) => (b && b.trim() ? i : null))
+            .filter((i) => i !== null);
+        if (validIndices.length === 0) return;
+
+        setIsEnhancingAll(true);
+        // Snapshot current history
+        const newHistory = { ...historyMap };
+        bullets.forEach((b, i) => {
+            if (b && b.trim()) newHistory[i] = b;
+        });
+        setHistoryMap(newHistory);
+
+        const currentBullets = [...bullets];
+        for (const idx of validIndices) {
+            setEnhancingIndex(idx);
+            try {
+                const res = await generateUserAiContent('enhance-single-bullet', { bullet: currentBullets[idx] });
+                if (res && res.enhancedBullet) {
+                    currentBullets[idx] = res.enhancedBullet;
+                }
+            } catch (err) {
+                console.error(`Failed to enhance bullet ${idx}:`, err);
+            }
+        }
+        emitChanges(currentBullets);
+        setEnhancingIndex(null);
+        setIsEnhancingAll(false);
     };
 
     const handleUndo = (index) => {
@@ -135,8 +187,29 @@ const BulletPointsEditor = ({
         };
     };
 
+    const hasMultipleValidBullets = bullets.filter(b => b && b.trim()).length >= 2;
+
     return (
         <div className="space-y-3">
+            {/* Top Toolbar: Batch AI Enhance All Bullets */}
+            {hasMultipleValidBullets && (
+                <div className="flex items-center justify-end mb-1">
+                    <button
+                        type="button"
+                        onClick={handleEnhanceAll}
+                        disabled={disabled || isEnhancingAll || enhancingIndex !== null}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-all border shadow-2xs ${
+                            isEnhancingAll
+                                ? 'bg-indigo-600 text-white border-indigo-600 animate-pulse'
+                                : 'bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 text-indigo-700 border-indigo-200/90'
+                        }`}
+                        title="Enhance all bullet points with AI in 1-click">
+                        <FaMagic className={`w-3 h-3 ${isEnhancingAll ? 'animate-spin text-white' : 'text-indigo-600'}`} />
+                        <span>{isEnhancingAll ? 'Enhancing All Bullets...' : '✨ Enhance All Bullets'}</span>
+                    </button>
+                </div>
+            )}
+
             {bullets.map((bulletText, index) => {
                 const quality = getBulletQuality(bulletText);
                 const charCount = bulletText.length;
@@ -148,26 +221,49 @@ const BulletPointsEditor = ({
                     <div key={index} className="w-full">
                         {/* Bullet Card Box */}
                         <div className="w-full bg-white border border-slate-200/90 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-100 rounded-xl p-3 shadow-2xs transition-all relative">
-                            {/* Top Bar: Character Counter & Delete Button (Top Right) */}
-                            <div className="flex items-center justify-end gap-2.5 mb-1 text-right">
-                                <span className={`text-[10px] sm:text-[11px] font-medium ${isOverLimit ? 'text-red-500 font-bold' : 'text-slate-400'}`}>
-                                    {charCount}/{maxLength}
-                                </span>
-                                <button
-                                    type="button"
-                                    onClick={() => handleDeleteBullet(index)}
-                                    disabled={disabled || isEnhancing}
-                                    className="text-slate-300 hover:text-red-600 transition-colors p-0.5 rounded-md"
-                                    title="Delete bullet point">
-                                    <FaTrash className="w-3 h-3" />
-                                </button>
+                            {/* Top Bar: Reorder Buttons, Counter & Delete Button */}
+                            <div className="flex items-center justify-between mb-1">
+                                {/* Position Shift / Reorder Buttons */}
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleMoveUp(index)}
+                                        disabled={disabled || index === 0 || isEnhancing || isEnhancingAll}
+                                        className="p-1 text-slate-300 hover:text-indigo-600 hover:bg-slate-50 disabled:opacity-30 disabled:hover:text-slate-300 rounded transition-colors"
+                                        title="Move bullet up">
+                                        <FaChevronUp className="w-2.5 h-2.5" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleMoveDown(index)}
+                                        disabled={disabled || index === bullets.length - 1 || isEnhancing || isEnhancingAll}
+                                        className="p-1 text-slate-300 hover:text-indigo-600 hover:bg-slate-50 disabled:opacity-30 disabled:hover:text-slate-300 rounded transition-colors"
+                                        title="Move bullet down">
+                                        <FaChevronDown className="w-2.5 h-2.5" />
+                                    </button>
+                                </div>
+
+                                {/* Right: Counter & Delete */}
+                                <div className="flex items-center gap-2.5">
+                                    <span className={`text-[10px] sm:text-[11px] font-medium ${isOverLimit ? 'text-red-500 font-bold' : 'text-slate-400'}`}>
+                                        {charCount}/{maxLength}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleDeleteBullet(index)}
+                                        disabled={disabled || isEnhancing || isEnhancingAll}
+                                        className="text-slate-300 hover:text-red-600 transition-colors p-0.5 rounded-md"
+                                        title="Delete bullet point">
+                                        <FaTrash className="w-3 h-3" />
+                                    </button>
+                                </div>
                             </div>
 
                             {/* Textarea — spacious vertical area */}
                             <textarea
                                 value={bulletText}
                                 onChange={(e) => handleBulletChange(index, e.target.value)}
-                                disabled={disabled || isEnhancing}
+                                disabled={disabled || isEnhancing || isEnhancingAll}
                                 rows={3}
                                 placeholder={placeholder}
                                 className="w-full text-xs text-slate-800 bg-transparent border-0 outline-none p-0 min-h-[65px] font-normal leading-relaxed resize-y"
@@ -188,7 +284,7 @@ const BulletPointsEditor = ({
                                         <button
                                             type="button"
                                             onClick={() => handleUndo(index)}
-                                            disabled={disabled || isEnhancing}
+                                            disabled={disabled || isEnhancing || isEnhancingAll}
                                             className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200/90 rounded-lg transition-all shadow-2xs whitespace-nowrap"
                                             title="Undo AI enhancement or edit">
                                             <FaUndo className="w-2.5 h-2.5 text-amber-600" />
@@ -200,7 +296,7 @@ const BulletPointsEditor = ({
                                     <button
                                         type="button"
                                         onClick={() => handleEnhanceSingleBullet(index)}
-                                        disabled={disabled || isEnhancing || !bulletText.trim()}
+                                        disabled={disabled || isEnhancing || isEnhancingAll || !bulletText.trim()}
                                         className={`inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all border shadow-2xs whitespace-nowrap ${
                                             isEnhancing
                                                 ? 'bg-indigo-100 text-indigo-700 border-indigo-300 animate-pulse'
@@ -223,7 +319,7 @@ const BulletPointsEditor = ({
             <button
                 type="button"
                 onClick={handleAddBullet}
-                disabled={disabled}
+                disabled={disabled || isEnhancingAll}
                 className="w-full py-2.5 bg-indigo-50/60 hover:bg-indigo-100/80 text-indigo-700 border border-dashed border-indigo-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-2xs mt-2">
                 <FaPlus className="w-3 h-3" /> Add Bullet Point
             </button>
