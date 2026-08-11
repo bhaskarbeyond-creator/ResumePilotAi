@@ -77,36 +77,75 @@ const PlansPage = (props) => {
                     setCandidateName(currentUser.displayName);
                 }
 
-                // Query Firestore user doc for exact dynamic tier & expiry
+                // Query Firestore users/{uid} document for exact membership, name, expiry
                 getUserMembership(currentUser.uid).then((data) => {
                     if (data) {
-                        const rawTier = data.membership || data.profile?.membership || 'Basic';
-                        const isPremium = rawTier.toLowerCase().includes('premium') || rawTier.toLowerCase().includes('pro');
-                        const activeTierText = isPremium ? `${rawTier.toUpperCase()} PRO TIER` : 'FREE BASIC TIER';
-                        setUserCurrentMembership(activeTierText);
-
-                        if (data.firstname || data.lastname) {
-                            setCandidateName(`${data.firstname || ''} ${data.lastname || ''}`.trim());
+                        // Pull candidate name from Firestore doc (same fields as auth.js addUser)
+                        const firstName = data.firstname || data.profile?.firstname || '';
+                        const lastName = data.lastname || data.profile?.lastname || '';
+                        if (firstName || lastName) {
+                            setCandidateName(`${firstName} ${lastName}`.trim());
+                        }
+                        // Pull email from Firestore if available
+                        if (data.email) {
+                            setUserEmail(data.email);
                         }
 
-                        if (data.membershipEnds) {
+                        // Resolve membership tier (same logic as DashboardMain authListener)
+                        const rawMembership = data.membership || data.profile?.membership || 'Basic';
+                        let resolvedTier = rawMembership;
+
+                        // Check if membership has expired
+                        let isExpired = false;
+                        const membershipEndsRaw = data.membershipEnds || data.profile?.membershipEnds;
+                        if (membershipEndsRaw) {
                             try {
-                                const expiryDate = data.membershipEnds.toDate ? data.membershipEnds.toDate() : new Date(data.membershipEnds);
+                                const expiryDate = membershipEndsRaw.toDate
+                                    ? membershipEndsRaw.toDate()
+                                    : new Date(membershipEndsRaw);
                                 if (!isNaN(expiryDate.getTime())) {
-                                    setMembershipExpiry(expiryDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }));
+                                    isExpired = expiryDate < new Date();
+                                    if (!isExpired) {
+                                        setMembershipExpiry(
+                                            expiryDate.toLocaleDateString('en-US', {
+                                                month: 'short',
+                                                day: 'numeric',
+                                                year: 'numeric',
+                                            })
+                                        );
+                                    }
                                 }
                             } catch (err) {
-                                console.error('Error parsing expiry date:', err);
+                                console.error('Error parsing membershipEnds:', err);
                             }
                         }
+
+                        // Determine final display tier
+                        const isPremium =
+                            rawMembership === 'Premium' ||
+                            rawMembership.toLowerCase().includes('premium') ||
+                            rawMembership.toLowerCase().includes('pro');
+
+                        if (isPremium && !isExpired) {
+                            resolvedTier = 'Premium Pro';
+                        } else if (isPremium && isExpired) {
+                            resolvedTier = 'Premium (Expired)';
+                        } else {
+                            resolvedTier = 'Free Basic';
+                        }
+
+                        setUserCurrentMembership(resolvedTier);
                     } else {
-                        setUserCurrentMembership('FREE BASIC TIER');
+                        setUserCurrentMembership('Free Basic');
                     }
-                }).catch(() => {
-                    setUserCurrentMembership('FREE BASIC TIER');
+                }).catch((err) => {
+                    console.error('Error fetching user membership:', err);
+                    setUserCurrentMembership('Free Basic');
                 });
             } else {
-                setUserCurrentMembership('GUEST / VISITOR');
+                setUserCurrentMembership('Guest');
+                setUserEmail('');
+                setCandidateName('');
             }
         });
 
@@ -270,8 +309,10 @@ const PlansPage = (props) => {
                                 <div className="flex items-center gap-2">
                                     <h1 className="text-xl font-extrabold text-slate-900">PRO Membership &amp; Subscription Plans</h1>
                                     <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border uppercase ${
-                                        userCurrentMembership.includes('PRO')
-                                            ? 'bg-amber-50 text-amber-800 border-amber-300'
+                                        userCurrentMembership.includes('Premium')
+                                            ? (userCurrentMembership.includes('Expired')
+                                                ? 'bg-red-50 text-red-700 border-red-300'
+                                                : 'bg-amber-50 text-amber-800 border-amber-300')
                                             : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                     }`}>
                                         Active Tier: {userCurrentMembership}
