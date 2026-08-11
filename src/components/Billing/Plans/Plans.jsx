@@ -196,31 +196,31 @@ class Billing extends Component {
             'disable-funding': 'credit,card',
         };
 
+        const isEmbeddedInDashboard = typeof window !== 'undefined' && window.location.pathname.startsWith('/dashboard');
+
         return (
             <PayPalScriptProvider options={paypalOptions} deferLoading={false}>
                 <Elements stripe={this.stripePromise}>
-                    <div className="custom-page">
-                        {/* Navbar */}
-                        {/* {this.renderNavbar()} */}
-
-                        <HomepageNavbar user={this.props.user} />
+                    <div className={isEmbeddedInDashboard ? "p-4 sm:p-8 space-y-6" : "custom-page"}>
+                        {/* Render Navbar only if outside dashboard */}
+                        {!isEmbeddedInDashboard && <HomepageNavbar user={this.props.user} />}
 
                         {/* Page Content */}
                         <div className="custom-page__content w-full">
+                            {isEmbeddedInDashboard && (
+                                <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+                                    <div>
+                                        <h1 className="text-xl font-bold text-slate-900">Subscription &amp; Billing Plans</h1>
+                                        <p className="text-xs text-slate-500 mt-1">Upgrade your tier for unlimited AI resume builds, cover letters &amp; job tracking tools.</p>
+                                    </div>
+                                    <a href="/dashboard/settings" className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all self-start sm:self-auto">
+                                        ← Back to Settings
+                                    </a>
+                                </div>
+                            )}
+
                             <div className="custom-page__Plans w-full">
-                                 {this.props.user && (
-                                     <div className="max-w-4xl mx-auto my-4 p-4 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
-                                         <div>
-                                             <h4 className="text-sm font-bold text-slate-900">Manage Active Subscription</h4>
-                                             <p className="text-xs text-slate-500">View payment history, download invoices, or cancel auto-renewal.</p>
-                                         </div>
-                                         <button onClick={() => this.setState({ portalMsg: 'Redirecting securely to Stripe Customer Portal...' })} className="px-4 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors">
-                                             {this.state.portalMsg || 'Manage Subscription Portal'}
-                                         </button>
-                                     </div>
-                                 )}
                                 {this.state.step == 0 && (
-                                    // <PlansTable currency={this.state.currency} monthly={this.state.monthly} quartarly={this.state.quartarly} yearly={this.state.yearly} nextStep={this.nextStep} />
                                     <HomepagePricing nextStep={this.nextStep} />
                                 )}
                                 {this.state.step == 1 && (
@@ -243,8 +243,8 @@ class Billing extends Component {
                                 )}
                             </div>
                         </div>
-                        {/* Page Footer */}
-                        <HomepageFooter />
+                        {/* Page Footer only if outside dashboard */}
+                        {!isEmbeddedInDashboard && <HomepageFooter />}
                     </div>
                 </Elements>
             </PayPalScriptProvider>

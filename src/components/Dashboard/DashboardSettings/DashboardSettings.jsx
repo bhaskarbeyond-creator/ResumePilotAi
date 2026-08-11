@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { uploadImageToFirebase, getProfileOfUser, addProfileToUser, getAccountInfo, changePassword, updateUserEmail, getSystemSettings } from '../../../firestore/dbOperations';
+import { uploadImageToFirebase, getProfileOfUser, addProfileToUser, getAccountInfo, changePassword, updateUserEmail, getSystemSettings, getUserTransactions } from '../../../firestore/dbOperations';
 import { generateUserAiContent, cleanSkillName } from '../../../services/aiService';
 import { FaUser, FaCog, FaCamera, FaTrash, FaUserCircle, FaKey, FaCalendarAlt, FaEnvelope, FaCreditCard, FaUpload, FaCheckCircle, FaExclamationTriangle, FaBriefcase, FaGraduationCap, FaTools, FaGlobe, FaPlus, FaCheck, FaShieldAlt, FaDesktop, FaDownload, FaCertificate, FaProjectDiagram, FaMagic, FaLinkedin, FaGithub, FaLink, FaSyncAlt, FaExternalLinkAlt, FaUnlink, FaLock, FaEye, FaEyeSlash, FaCrown } from 'react-icons/fa';
 import fire from '../../../conf/fire';
@@ -52,6 +52,7 @@ function DashboardSettings(props) {
     });
     const [deleteAccountModalOpen, setDeleteAccountModalOpen] = useState(false);
     const [deleteInputText, setDeleteInputText] = useState('');
+    const [userTransactions, setUserTransactions] = useState([]);
 
     // Master Profile State matching ALL Resume & Cover Letter fields
     const [profile, setProfile] = useState({
@@ -196,17 +197,101 @@ function DashboardSettings(props) {
     };
 
     const getAccountInfoFront = async () => {
-        const currentUser = fire.auth().currentUser;
-        if (currentUser) {
-            const accountInfo = await getAccountInfo(currentUser.uid);
-            if (accountInfo) {
-                setDatabaseAccountSettings({
-                    email: accountInfo.email || currentUser.email || '',
-                    membership: accountInfo.membership || 'Free Active Tier',
-                    membershipEnds: accountInfo.membershipEnds || null,
-                });
+        const fetchUserAccountData = async () => {
+            const currentUser = fire.auth().currentUser;
+            if (currentUser) {
+                try {
+                    const accInfo = await getAccountInfo(currentUser.uid);
+                    if (accInfo) {
+                        setDatabaseAccountSettings({
+                            email: accInfo.email || currentUser.email || '',
+                            membership: accInfo.membership || 'Pro Tier',
+                            membershipEnds: accInfo.membershipEnds || '',
+                        });
+                    }
+                    const txns = await getUserTransactions(currentUser.uid);
+                    setUserTransactions(txns);
+                } catch (err) {
+                    console.error('Error loading user account info:', err);
+                }
             }
-        }
+        };
+        fetchUserAccountData();
+    };
+
+    const handleDownloadInvoice = (txn) => {
+        const printWindow = window.open('', '_blank');
+        const invoiceHtml = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Receipt Invoice - ${txn.transactionId}</title>
+                <style>
+                    body { font-family: 'Helvetica Neue', Arial, sans-serif; margin: 40px; color: #1e293b; line-height: 1.5; }
+                    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #6366f1; padding-bottom: 20px; margin-bottom: 30px; }
+                    .title { font-size: 24px; font-weight: bold; color: #4338ca; }
+                    .badge { background: #e0e7ff; color: #4338ca; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: bold; }
+                    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+                    .label { font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; margin-bottom: 4px; }
+                    .value { font-size: 14px; font-weight: 600; color: #0f172a; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                    th { text-align: left; padding: 12px; background: #f8fafc; border-bottom: 2px solid #e2e8f0; font-size: 11px; text-transform: uppercase; color: #475569; }
+                    td { padding: 12px; border-bottom: 1px solid #e2e8f0; font-size: 13px; }
+                    .total-row { font-weight: bold; font-size: 16px; color: #4338ca; }
+                    .footer { margin-top: 50px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 20px; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <div>
+                        <div class="title">AI RESUME BUILDER</div>
+                        <div style="font-size: 12px; color: #64748b;">Official Payment Receipt</div>
+                    </div>
+                    <div class="badge">${txn.status || 'PAID'}</div>
+                </div>
+                <div class="grid">
+                    <div>
+                        <div class="label">Billed To</div>
+                        <div class="value">${profile.firstname || 'Valued User'} ${profile.lastname || ''}</div>
+                        <div style="font-size: 12px; color: #64748b;">${profile.email || databaseAccountSettings.email || ''}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div class="label">Invoice Reference</div>
+                        <div class="value">${txn.transactionId}</div>
+                        <div style="font-size: 12px; color: #64748b;">Date: ${txn.date ? new Date(txn.date).toLocaleDateString() : new Date().toLocaleDateString()}</div>
+                    </div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th>Payment Method</th>
+                            <th style="text-align: right;">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="font-weight: bold;">${txn.planType || 'Pro Membership Plan'}</td>
+                            <td>${txn.paimentType || 'Card / PayPal'}</td>
+                            <td style="text-align: right; font-weight: bold;">$${txn.price || '19.99'} ${txn.currency || 'USD'}</td>
+                        </tr>
+                        <tr class="total-row">
+                            <td colspan="2" style="text-align: right; padding-top: 20px;">Total Paid:</td>
+                            <td style="text-align: right; padding-top: 20px;">$${txn.price || '19.99'} ${txn.currency || 'USD'}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="footer">
+                    Thank you for subscribing to AI Resume Builder. For support, visit airesume.projectdemo.guru
+                </div>
+                <script>
+                    window.onload = function() { window.print(); };
+                </script>
+            </body>
+            </html>
+        `;
+        printWindow.document.write(invoiceHtml);
+        printWindow.document.close();
     };
 
     useEffect(() => {
@@ -1671,16 +1756,12 @@ function DashboardSettings(props) {
                                     <p className="text-xs text-slate-300 font-normal">Active access to unlimited AI resumes, cover letters &amp; job tracking tools.</p>
                                 </div>
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    if (props.navigate) props.navigate('/dashboard/plans');
-                                    else window.location.href = '/dashboard/plans';
-                                }}
+                            <a
+                                href="/billing/plans"
                                 className="px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 shrink-0">
                                 <FaCrown className="w-3.5 h-3.5 text-amber-300" />
                                 <span>Manage Subscription &amp; Plans</span>
-                            </button>
+                            </a>
                         </div>
 
                         {/* Card 2: Account Credentials & Password Change Form */}
@@ -1797,7 +1878,68 @@ function DashboardSettings(props) {
                             </form>
                         </div>
 
-                        {/* Card 3: Active Device Sessions & Security Logs */}
+                        {/* Card 3: Billing History & Invoice Statements */}
+                        <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4">
+                            <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                                <div className="flex items-center space-x-3">
+                                    <div className="p-2.5 bg-indigo-50 rounded-xl">
+                                        <FaCreditCard className="w-5 h-5 text-indigo-600" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-bold text-slate-900">Billing History &amp; Invoice Statements</h3>
+                                        <p className="text-xs text-slate-500">View past payment records, transaction IDs, and print PDF receipts.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {userTransactions.length === 0 ? (
+                                <div className="p-6 text-center bg-slate-50 border border-dashed border-slate-200 rounded-xl space-y-1">
+                                    <p className="text-xs font-semibold text-slate-700">No payment transactions recorded yet</p>
+                                    <p className="text-[11px] text-slate-500">Your subscription history and invoices will automatically appear here.</p>
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left text-xs">
+                                        <thead>
+                                            <tr className="border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                                                <th className="pb-2">Transaction ID</th>
+                                                <th className="pb-2">Date</th>
+                                                <th className="pb-2">Plan</th>
+                                                <th className="pb-2">Amount</th>
+                                                <th className="pb-2">Status</th>
+                                                <th className="pb-2 text-right">Invoice</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {userTransactions.map((txn, idx) => (
+                                                <tr key={txn.id || idx} className="hover:bg-slate-50/80 transition-colors">
+                                                    <td className="py-3 font-mono text-[11px] font-bold text-slate-700">{txn.transactionId || `TXN_${idx + 1001}`}</td>
+                                                    <td className="py-3 text-slate-600 font-medium">{txn.date ? new Date(txn.date).toLocaleDateString() : 'Recent'}</td>
+                                                    <td className="py-3 font-bold text-slate-900 capitalize">{txn.planType || 'Pro Plan'}</td>
+                                                    <td className="py-3 font-extrabold text-slate-900">${txn.price || '19.99'} {txn.currency || 'USD'}</td>
+                                                    <td className="py-3">
+                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 border border-emerald-200 text-emerald-700">
+                                                            <FaCheckCircle className="w-2.5 h-2.5 text-emerald-500" />
+                                                            <span>{txn.status || 'Completed'}</span>
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3 text-right">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleDownloadInvoice(txn)}
+                                                            className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-all shadow-2xs">
+                                                            <FaDownload className="w-2.5 h-2.5" /> PDF Receipt
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Card 4: Active Device Sessions & Security Logs */}
                         <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4">
                             <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
                                 <div className="flex items-center space-x-3">

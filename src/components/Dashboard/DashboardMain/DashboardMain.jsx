@@ -30,6 +30,7 @@ const EmployerDashboard = lazy(() => import('../EmployerDashboard/EmployerDashbo
 const CompaniesManagement = lazy(() => import('../EmployerDashboard/CompaniesManagement'));
 const DashboardMessages = lazy(() => import('../DashboardMessages/DashboardMessages'));
 const CoverLetter = lazy(() => import('../../CoverLetter/CoverLetter'));
+const Billing = lazy(() => import('../../Billing/Plans/Plans'));
 class DashboardMain extends Component {
     constructor(props) {
         super(props);
@@ -361,6 +362,7 @@ class DashboardMain extends Component {
                                 <Route path="my-employments" element={<EmployerDashboard showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
                                 <Route path="my-companies" element={<CompaniesManagement showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} />} />
                                 <Route path="job-matching" element={<DashboardJobMatching showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} />} />
+                                <Route path="plans" element={<Billing user={this.state.user} showToast={this.showToast} />} />
                             </Routes>
                         </Suspense>
                     </div>

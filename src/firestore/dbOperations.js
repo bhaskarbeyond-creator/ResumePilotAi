@@ -251,6 +251,19 @@ export async function addSbs(type, paimentType, currentDate, price, uid) {
         created_at: firebase.firestore.Timestamp.now(),
     });
 
+    // Save transaction record for Admin & User Billing History
+    const txnId = `TXN_${Date.now()}_${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+    db.collection('transactions').add({
+        transactionId: txnId,
+        userId: uid,
+        planType: type || 'pro',
+        paimentType: paimentType || 'Card',
+        price: parseFloat(price) || 19.99,
+        currency: 'USD',
+        status: 'Completed',
+        created_at: firebase.firestore.Timestamp.now(),
+    });
+
     db.collection('users').doc(uid).update({
         membership: 'Premium',
         membershipEnds: sbsEnd,
@@ -269,6 +282,51 @@ export async function addSbs(type, paimentType, currentDate, price, uid) {
             .set({
                 amount: parseInt(price),
             });
+    }
+}
+
+// Fetch user payment transactions for Dashboard Billing History
+export async function getUserTransactions(uid) {
+    if (!uid) return [];
+    try {
+        const db = fire.firestore();
+        const snapshot = await db.collection('transactions').where('userId', '==', uid).get();
+        if (!snapshot.empty) {
+            return snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    transactionId: data.transactionId || `TXN_${doc.id.substring(0, 8).toUpperCase()}`,
+                    planType: data.planType || 'Pro Subscription',
+                    paimentType: data.paimentType || 'Card',
+                    price: data.price || 19.99,
+                    currency: data.currency || 'USD',
+                    status: data.status || 'Completed',
+                    date: data.created_at ? new Date(data.created_at.seconds * 1000).toISOString() : new Date().toISOString()
+                };
+            });
+        }
+        // Fallback to subscriptions collection
+        const subSnapshot = await db.collection('subscriptions').where('userId', '==', uid).get();
+        if (!subSnapshot.empty) {
+            return subSnapshot.docs.map((doc, idx) => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    transactionId: `TXN_${doc.id.substring(0, 8).toUpperCase()}`,
+                    planType: data.type || 'Pro Subscription',
+                    paimentType: data.paimentType || 'Card / PayPal',
+                    price: 19.99,
+                    currency: 'USD',
+                    status: 'Completed',
+                    date: data.created_at ? new Date(data.created_at.seconds * 1000).toISOString() : new Date().toISOString()
+                };
+            });
+        }
+        return [];
+    } catch (err) {
+        console.error('Error fetching user transactions:', err);
+        return [];
     }
 }
 // Check Sbs Date
