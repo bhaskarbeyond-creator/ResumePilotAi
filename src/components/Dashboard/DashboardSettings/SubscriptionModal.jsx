@@ -1,30 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaCrown, FaCheck, FaShieldAlt, FaLock, FaCreditCard, FaPaypal, FaRupeeSign, FaTag, FaPercent, FaArrowRight, FaUserCheck, FaGift, FaCheckCircle, FaExclamationTriangle, FaClock } from 'react-icons/fa';
+import { FaTimes, FaCrown, FaCheck, FaShieldAlt, FaLock, FaCreditCard, FaPaypal, FaRupeeSign, FaTag, FaPercent, FaArrowRight, FaUserCheck, FaGift, FaCheckCircle, FaExclamationTriangle, FaClock, FaSparkles, FaRocket, FaCheckSquare, FaStar } from 'react-icons/fa';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, ElementsConsumer } from '@stripe/react-stripe-js';
 import { PayPalScriptProvider } from '@paypal/react-paypal-js';
 import conf from '../../../conf/configuration';
 import Checkout from '../../Billing/Plans/Checkout';
-import { getSubscriptionStatus } from '../../../firestore/dbOperations';
+import { getSubscriptionStatus, getAccountInfo } from '../../../firestore/dbOperations';
 
 const stripePromise = (conf.stripe_publishable_key && conf.stripe_publishable_key.trim())
     ? loadStripe(conf.stripe_publishable_key.trim())
     : Promise.resolve(null);
 
 const DEFAULT_COUPONS = {
-    'SAVE20': { discount: 20, description: '20% Special Discount Applied!' },
-    'WELCOME50': { discount: 50, description: '50% Welcome Bonus Savings!' },
-    'HOSTINGER10': { discount: 10, description: '10% Hostinger Partner Coupon Applied!' },
-    'PROMO30': { discount: 30, description: '30% Career Accelerator Discount Applied!' },
+    'SAVE20': { discount: 20, description: '20% Special Career Savings Applied!' },
+    'WELCOME50': { discount: 50, description: '50% Welcome VIP Upgrade Discount!' },
+    'SPECIAL10': { discount: 10, description: '10% Partner Special Discount Applied!' },
+    'PROMO30': { discount: 30, description: '30% Professional Accelerator Discount!' },
 };
 
+const PRO_UNLOCKED_FEATURES = [
+    'Unlimited AI Resume Builds & Downloads',
+    'Executive Bio & Summary AI Synthesizer',
+    'Cover Letter AI Builder & Job Tailoring',
+    'ATS Smart Keyword Optimization Engine',
+    '1-Click PDF, Word DocX & Public Portfolio Links',
+    'Priority Cloud Sync & 24/7 VIP Support'
+];
+
 const SubscriptionModal = ({ isOpen, onClose, user }) => {
-    const [step, setStep] = useState(1); // 1 = Hostinger Cart Page, 2 = Hostinger Checkout Page
+    const [step, setStep] = useState(1); // 1 = Cart & Plan Selection, 2 = Native Checkout
     const [selectedDuration, setSelectedDuration] = useState('12'); // '1', '6', '12' months
-    const [selectedPlanType, setSelectedPlanType] = useState('pro'); // 'pro', 'executive'
     const [couponInput, setCouponInput] = useState('');
     const [appliedCoupon, setAppliedCoupon] = useState(null);
     const [couponError, setCouponError] = useState('');
+    const [userCurrentMembership, setUserCurrentMembership] = useState('Free Basic Tier');
 
     const [subscriptionConfig, setSubscriptionConfig] = useState({
         monthlyPrice: 199,
@@ -47,6 +56,17 @@ const SubscriptionModal = ({ isOpen, onClose, user }) => {
             setCouponInput('');
             setAppliedCoupon(null);
             setCouponError('');
+
+            // Fetch current user account membership tier
+            if (user && user.uid) {
+                getAccountInfo(user.uid).then((info) => {
+                    if (info && info.membership) {
+                        setUserCurrentMembership(info.membership);
+                    }
+                });
+            }
+
+            // Fetch global pricing settings
             getSubscriptionStatus().then((data) => {
                 if (data) {
                     const currSymbol = (data.currency === 'INR' || data.currency === '₹') ? '₹' : '$';
@@ -67,7 +87,7 @@ const SubscriptionModal = ({ isOpen, onClose, user }) => {
                 }
             });
         }
-    }, [isOpen]);
+    }, [isOpen, user]);
 
     if (!isOpen) return null;
 
@@ -105,20 +125,21 @@ const SubscriptionModal = ({ isOpen, onClose, user }) => {
         return Math.max(1, subtotal - discount);
     };
 
-    const handleApplyCoupon = (e) => {
+    const handleApplyCoupon = (e, explicitCode = null) => {
         if (e) e.preventDefault();
         setCouponError('');
-        const code = couponInput.trim().toUpperCase();
+        const code = (explicitCode || couponInput).trim().toUpperCase();
         if (!code) {
-            setCouponError('Please enter a valid coupon code.');
+            setCouponError('Please enter or select a valid coupon code.');
             return;
         }
 
         if (DEFAULT_COUPONS[code]) {
             setAppliedCoupon({ code, ...DEFAULT_COUPONS[code] });
+            setCouponInput(code);
             setCouponError('');
         } else {
-            setCouponError('Invalid coupon code. Try SAVE20, WELCOME50, or HOSTINGER10.');
+            setCouponError(`Invalid coupon code "${code}". Try SAVE20, WELCOME50, or PROMO30.`);
         }
     };
 
@@ -138,25 +159,31 @@ const SubscriptionModal = ({ isOpen, onClose, user }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center p-2 sm:p-5 overflow-y-auto animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-xl flex items-center justify-center p-2 sm:p-5 overflow-y-auto animate-in fade-in duration-300">
             <div className="bg-slate-900 rounded-3xl max-w-5xl w-full max-h-[94vh] flex flex-col shadow-2xl border border-indigo-500/30 overflow-hidden relative my-auto text-white">
                 
-                {/* Hostinger Inspired Premium Header */}
-                <div className="px-6 py-4 bg-gradient-to-r from-[#17153b] via-[#2e1065] to-[#0f172a] flex items-center justify-between shrink-0 border-b border-indigo-500/20">
+                {/* Executive Enterprise Header */}
+                <div className="px-6 py-4.5 bg-gradient-to-r from-[#0f172a] via-[#1e1b4b] to-[#0f172a] flex items-center justify-between shrink-0 border-b border-indigo-500/20">
                     <div className="flex items-center gap-3.5">
                         <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500/30 to-purple-600/30 border border-indigo-400/40 flex items-center justify-center text-amber-400 font-extrabold shadow-md shrink-0">
                             <FaCrown className="w-6 h-6 text-amber-400 animate-pulse" />
                         </div>
                         <div>
                             <div className="flex items-center gap-2">
-                                <h3 className="text-base font-extrabold tracking-tight text-white">PRO Candidate Subscription</h3>
+                                <h3 className="text-base font-extrabold tracking-tight text-white">PRO Candidate Subscription &amp; Upgrades</h3>
                                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 uppercase tracking-wider">
-                                    Hostinger Grade
+                                    Enterprise Grade
                                 </span>
                             </div>
-                            <div className="flex items-center gap-2 text-[11px] text-indigo-200/80 mt-0.5">
-                                <FaUserCheck className="w-3 h-3 text-emerald-400" />
-                                <span>Logged in as: <strong className="text-white">{user?.email || 'Valued Candidate'}</strong></span>
+                            <div className="flex items-center gap-3 text-[11px] text-indigo-200/80 mt-0.5">
+                                <span className="flex items-center gap-1">
+                                    <FaUserCheck className="w-3 h-3 text-emerald-400" />
+                                    <span>Account: <strong className="text-white">{user?.email || 'Valued Candidate'}</strong></span>
+                                </span>
+                                <span className="text-slate-500">•</span>
+                                <span className="flex items-center gap-1 text-amber-300 font-semibold">
+                                    <span>Current Plan: <strong>{userCurrentMembership}</strong></span>
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -169,15 +196,15 @@ const SubscriptionModal = ({ isOpen, onClose, user }) => {
                     </button>
                 </div>
 
-                {/* Hostinger Stepper Progress Header */}
-                <div className="bg-slate-950/80 border-b border-slate-800 px-6 py-3 flex items-center justify-between text-xs font-bold shrink-0">
+                {/* Enterprise Stepper Progress Bar */}
+                <div className="bg-slate-950/90 border-b border-slate-800 px-6 py-3 flex items-center justify-between text-xs font-bold shrink-0">
                     <div className="flex items-center gap-4 sm:gap-8">
                         <button
                             type="button"
                             onClick={() => setStep(1)}
                             className={`flex items-center gap-2 transition-colors ${step === 1 ? 'text-indigo-400 font-extrabold' : 'text-slate-400 hover:text-slate-200'}`}>
                             <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] ${step === 1 ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400'}`}>1</span>
-                            <span>Cart &amp; Period Selection</span>
+                            <span>Cart &amp; Duration Selection</span>
                         </button>
                         <span className="text-slate-700">/</span>
                         <button
@@ -185,7 +212,7 @@ const SubscriptionModal = ({ isOpen, onClose, user }) => {
                             onClick={() => setStep(2)}
                             className={`flex items-center gap-2 transition-colors ${step === 2 ? 'text-indigo-400 font-extrabold' : 'text-slate-500 hover:text-slate-300'}`}>
                             <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] ${step === 2 ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-500'}`}>2</span>
-                            <span>Checkout &amp; Payment ({subscriptionConfig.onlyPP ? 'PayPal' : 'Cards / PayPal / UPI'})</span>
+                            <span>Checkout &amp; Instant Activation ({subscriptionConfig.onlyPP ? 'PayPal' : 'Cards / PayPal / UPI'})</span>
                         </button>
                     </div>
 
@@ -201,23 +228,53 @@ const SubscriptionModal = ({ isOpen, onClose, user }) => {
                         <Elements stripe={stripePromise}>
                             <div className="w-full">
                                 
-                                {/* STEP 1: HOSTINGER-STYLE CART PAGE */}
+                                {/* STEP 1: CART PAGE & UPGRADE COMPARISON */}
                                 {step === 1 && (
                                     <div className="space-y-8 max-w-4xl mx-auto">
                                         
+                                        {/* Current Plan vs PRO Upgrade Hero Comparison Card */}
+                                        <div className="bg-gradient-to-r from-indigo-950/80 via-slate-800/90 to-purple-950/80 rounded-2xl p-5 border border-indigo-500/30 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-6 shadow-lg">
+                                            <div className="space-y-1.5 min-w-0">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-800 text-slate-300 border border-slate-700 uppercase">
+                                                        Active Tier: {userCurrentMembership}
+                                                    </span>
+                                                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase">
+                                                        UPGRADE AVAILABLE
+                                                    </span>
+                                                </div>
+                                                <h3 className="text-lg font-extrabold text-white tracking-tight">
+                                                    Upgrade from {userCurrentMembership} to <strong className="text-amber-400">PRO Candidate Tier</strong>
+                                                </h3>
+                                                <p className="text-xs text-slate-300">
+                                                    Unlock full AI power, unlimited exports, ATS optimization, and VIP candidate support.
+                                                </p>
+                                            </div>
+
+                                            {/* Feature Badges Grid */}
+                                            <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-200 shrink-0">
+                                                {PRO_UNLOCKED_FEATURES.slice(0, 4).map((feat, i) => (
+                                                    <div key={i} className="flex items-center gap-1.5 bg-slate-900/60 px-3 py-1.5 rounded-xl border border-slate-700/60">
+                                                        <FaCheckCircle className="w-3 h-3 text-emerald-400 shrink-0" />
+                                                        <span className="truncate">{feat}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
                                         {/* Headline Banner */}
                                         <div className="text-center max-w-2xl mx-auto space-y-2">
                                             <span className="px-3.5 py-1 text-xs font-extrabold text-indigo-300 bg-indigo-500/20 border border-indigo-400/30 rounded-full inline-flex items-center gap-1.5 shadow-xs">
                                                 <FaCrown className="w-3.5 h-3.5 text-amber-400" />
-                                                Choose Period &amp; Unlock Maximum Savings
+                                                Choose Subscription Duration &amp; Maximize Savings
                                             </span>
-                                            <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Select your subscription billing cycle</h2>
+                                            <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Select your billing cycle</h2>
                                             <p className="text-xs sm:text-sm text-slate-400">
-                                                Longer terms grant massive discount savings plus instant access to all AI resume &amp; cover letter tools.
+                                                Longer billing terms grant deeper discount savings plus 3 extra months free on annual plans.
                                             </p>
                                         </div>
 
-                                        {/* Hostinger Period Cards Grid */}
+                                        {/* Enterprise Duration Cards Grid */}
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
                                             
                                             {/* Card 1: 1 Month */}
@@ -237,7 +294,7 @@ const SubscriptionModal = ({ isOpen, onClose, user }) => {
                                                         <span className="text-3xl font-extrabold text-white">{subscriptionConfig.symbol}{subscriptionConfig.monthlyPrice}</span>
                                                         <span className="text-xs text-slate-400"> / month</span>
                                                     </div>
-                                                    <p className="text-xs text-slate-400">Flexible monthly billing. Cancel anytime with 1 click.</p>
+                                                    <p className="text-xs text-slate-400">Flexible monthly plan. Cancel anytime with 1 click.</p>
                                                 </div>
 
                                                 <div className="mt-6 pt-4 border-t border-slate-700/60 flex items-center justify-between">
@@ -321,18 +378,18 @@ const SubscriptionModal = ({ isOpen, onClose, user }) => {
                                             </div>
                                         </div>
 
-                                        {/* Hostinger Order Summary & Coupon Card */}
+                                        {/* Order Summary & 1-Click Coupon Code Box */}
                                         <div className="bg-slate-800/80 rounded-2xl p-6 border border-slate-700/80 space-y-6">
                                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-700">
                                                 <div>
                                                     <h3 className="text-sm font-extrabold uppercase tracking-wider text-white flex items-center gap-2">
-                                                        <FaTag className="text-indigo-400" /> Apply Coupon Discount (Hostinger Style)
+                                                        <FaTag className="text-indigo-400" /> Apply Promo Coupon Discount
                                                     </h3>
-                                                    <p className="text-xs text-slate-400 mt-0.5">Use active promo codes like <strong>SAVE20</strong>, <strong>WELCOME50</strong>, or <strong>HOSTINGER10</strong></p>
+                                                    <p className="text-xs text-slate-400 mt-0.5">Click a quick coupon pill below or enter your promo code manually</p>
                                                 </div>
 
                                                 {/* Coupon Form */}
-                                                <form onSubmit={handleApplyCoupon} className="flex items-center gap-2 shrink-0">
+                                                <form onSubmit={(e) => handleApplyCoupon(e)} className="flex items-center gap-2 shrink-0">
                                                     <div className="relative">
                                                         <input
                                                             type="text"
@@ -350,7 +407,26 @@ const SubscriptionModal = ({ isOpen, onClose, user }) => {
                                                 </form>
                                             </div>
 
-                                            {/* Coupon Status & Applied Badges */}
+                                            {/* 1-Click Quick Coupon Pills */}
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <span className="text-xs text-slate-400 font-semibold mr-1">Quick Apply Coupons:</span>
+                                                {Object.keys(DEFAULT_COUPONS).map((code) => (
+                                                    <button
+                                                        key={code}
+                                                        type="button"
+                                                        onClick={(e) => handleApplyCoupon(e, code)}
+                                                        className={`px-3 py-1 rounded-xl text-xs font-mono font-bold border transition-all flex items-center gap-1 cursor-pointer ${
+                                                            appliedCoupon?.code === code
+                                                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500'
+                                                                : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-indigo-500 hover:text-white'
+                                                        }`}>
+                                                        <FaTag className="w-2.5 h-2.5 text-indigo-400" />
+                                                        <span>{code} (-{DEFAULT_COUPONS[code].discount}%)</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            {/* Coupon Error Notice */}
                                             {couponError && (
                                                 <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs flex items-center gap-2">
                                                     <FaExclamationTriangle className="w-3.5 h-3.5 shrink-0" />
@@ -358,6 +434,7 @@ const SubscriptionModal = ({ isOpen, onClose, user }) => {
                                                 </div>
                                             )}
 
+                                            {/* Coupon Applied Badge */}
                                             {appliedCoupon && (
                                                 <div className="p-3.5 bg-emerald-500/15 border border-emerald-500/40 rounded-xl text-emerald-300 text-xs flex items-center justify-between">
                                                     <div className="flex items-center gap-2">
@@ -408,7 +485,7 @@ const SubscriptionModal = ({ isOpen, onClose, user }) => {
                                             </div>
                                         </div>
 
-                                        {/* Action Button: Proceed to Hostinger Checkout */}
+                                        {/* Action Button: Proceed to Checkout */}
                                         <div className="flex items-center justify-between pt-2">
                                             <button
                                                 type="button"
@@ -421,14 +498,14 @@ const SubscriptionModal = ({ isOpen, onClose, user }) => {
                                                 type="button"
                                                 onClick={() => setStep(2)}
                                                 className="px-8 py-3.5 bg-gradient-to-r from-indigo-500 via-purple-600 to-indigo-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs font-extrabold uppercase tracking-wider rounded-2xl shadow-xl shadow-indigo-500/25 flex items-center gap-2 cursor-pointer transition-all hover:scale-[1.02]">
-                                                <span>Proceed to Checkout</span>
+                                                <span>Proceed to Secure Checkout</span>
                                                 <FaArrowRight className="w-3.5 h-3.5" />
                                             </button>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* STEP 2: HOSTINGER-STYLE CHECKOUT PAGE */}
+                                {/* STEP 2: NATIVE ENTERPRISE CHECKOUT PAGE */}
                                 {step === 2 && (
                                     <div className="space-y-6 max-w-4xl mx-auto">
                                         
@@ -441,7 +518,7 @@ const SubscriptionModal = ({ isOpen, onClose, user }) => {
                                                 ← Edit Cart &amp; Duration
                                             </button>
                                             <div className="text-right">
-                                                <span className="text-xs text-slate-400">Hostinger Cart Total:</span>
+                                                <span className="text-xs text-slate-400">Order Summary Total:</span>
                                                 <div className="text-sm font-extrabold text-amber-400 uppercase tracking-wider">
                                                     {selectedDuration} Months • {subscriptionConfig.symbol}{getFinalTotal()} {subscriptionConfig.currency}
                                                     {appliedCoupon && <span className="ml-2 px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded text-[10px] border border-emerald-500/40 font-bold">{appliedCoupon.code}</span>}
