@@ -1758,13 +1758,12 @@ function DashboardSettings(props) {
                                     <p className="text-xs text-slate-300 font-normal">Active access to unlimited AI resumes, cover letters &amp; job tracking tools.</p>
                                 </div>
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => setIsSubscriptionModalOpen(true)}
+                            <a
+                                href="/dashboard/plans"
                                 className="px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer">
                                 <FaCrown className="w-3.5 h-3.5 text-amber-300" />
                                 <span>Manage Subscription &amp; Plans</span>
-                            </button>
+                            </a>
                         </div>
 
                         {/* Card 2: Account Credentials & Password Change Form */}
