@@ -6,6 +6,7 @@ import { FaUser, FaCog, FaCamera, FaTrash, FaUserCircle, FaKey, FaCalendarAlt, F
 import fire from '../../../conf/fire';
 import MonthYearPicker from '../../Form/MonthYearPicker';
 import AiRecommendationModal from '../../Form/AiRecommendationModal';
+import BulletPointsEditor from '../../Form/BulletPointsEditor';
 import AutocompleteInputField from '../../BuildResume/steps/components/AutocompleteInputField';
 import ImageCropModal from './ImageCropModal';
 import { inferCountryFromCity } from '../../../utils/locationHelper';
@@ -14,7 +15,8 @@ function DashboardSettings(props) {
     const { t } = useTranslation('common');
     // State management
     const [selectedSettings, setSelectedSettings] = useState('Profile');
-    const [profileSubTab, setProfileSubTab] = useState('basic'); // 'basic' | 'summary' | 'experience' | 'education' | 'skills' | 'certifications' | 'projects'
+    const [profileSubTab, setProfileSubTab] = useState('basic');
+    const SUB_TAB_ORDER = ['basic', 'experience', 'education', 'skills', 'certifications', 'projects', 'languages', 'summary'];
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isAiGenerating, setIsAiGenerating] = useState(false);
     const [toastState, setToastState] = useState(null);
@@ -227,13 +229,22 @@ function DashboardSettings(props) {
         setIsSubmitting(true);
         const currentUser = fire.auth().currentUser;
         if (currentUser) {
-            // Dual-save postalcode (lowercase) as alias so CV templates that read values.postalcode work correctly
             const profileToSave = { ...profile, postalcode: profile.postalCode || '', website: profile.websiteUrl || '' };
             await addProfileToUser(currentUser.uid, profileToSave);
             window.dispatchEvent(new CustomEvent('profileUpdated', { detail: profileToSave }));
             triggerNotification('Master User Profile saved securely! Ready for 1-click Resume & Cover Letter creation.');
         }
         setIsSubmitting(false);
+    };
+
+    const handleSaveAndNext = async () => {
+        await handleSubmit();
+        const currentIdx = SUB_TAB_ORDER.indexOf(profileSubTab);
+        const nextTab = SUB_TAB_ORDER[currentIdx + 1];
+        if (nextTab) {
+            setProfileSubTab(nextTab);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
     };
 
     const handleAccountSubmit = async (e) => {
@@ -458,7 +469,7 @@ function DashboardSettings(props) {
                 if (unadded.length > 0) {
                     setAiModalState({
                         isOpen: true,
-                        title: `Review AI Recommended Skills for ${profile.occupation || 'your profile'}`,
+                        title: 'Review AI Recommended Skills',
                         type: 'skills',
                         items: unadded.map(s => {
                             const raw = typeof s === 'string' ? s : s.name;
@@ -728,58 +739,83 @@ function DashboardSettings(props) {
 
     const passwordStrength = getPasswordStrength(accountSettings.password);
     const candidateFullName = `${profile.firstname} ${profile.lastname}`.trim() || profile.name;
+    const effectiveMembership = (databaseAccountSettings.membership && databaseAccountSettings.membership !== 'Basic' ? databaseAccountSettings.membership : null) || (profile?.membership && profile.membership !== 'Basic' ? profile.membership : null) || 'Pro Tier';
 
     return (
         <>
-        <div className="min-h-screen bg-slate-50 text-slate-900 pb-12 font-sans">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 pb-8 sm:pb-12">
 
-                {/* Hero Master Profile Overview Card */}
-                <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm relative overflow-hidden">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                        <div className="flex items-center gap-5">
-                            <div className="relative">
-                                <div className="w-20 h-20 rounded-full overflow-hidden bg-slate-100 border-4 border-white shadow-md ring-2 ring-indigo-500/20">
-                                    {profile.selectedImage ? (
-                                        <img src={profile.selectedImage} alt="Avatar" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold text-2xl">
-                                            {candidateFullName ? candidateFullName.charAt(0).toUpperCase() : 'U'}
-                                        </div>
-                                    )}
+                {/* Hero Master Profile Overview Card — 10/10 Modern Design */}
+                <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-6 shadow-xs relative overflow-hidden">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        {/* Left Avatar & Right Details Container */}
+                        <div className="flex items-center gap-4 min-w-0">
+                            {/* Left Column: Avatar Image + Badge Underneath */}
+                            <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+                                <div className="relative">
+                                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-50 to-purple-50 border-2 border-indigo-100 shadow-xs flex items-center justify-center">
+                                        {profile.selectedImage ? (
+                                            <img src={profile.selectedImage} alt="Avatar" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-600 to-purple-600 text-white font-extrabold text-xl">
+                                                {candidateFullName ? candidateFullName.charAt(0).toUpperCase() : 'U'}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center shadow-2xs" title="Verified User">
+                                        <FaCheck className="w-2.5 h-2.5 text-white" />
+                                    </div>
                                 </div>
-                                <div className="absolute bottom-0 right-0 w-6 h-6 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center shadow-xs">
-                                    <FaCheck className="w-3 h-3 text-white" />
-                                </div>
+
+                                {/* Membership Badge — directly UNDER avatar image */}
+                                <span className="px-2 py-0.5 text-[10px] font-extrabold text-indigo-700 bg-indigo-50 border border-indigo-200/80 rounded-full flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    {effectiveMembership}
+                                </span>
                             </div>
 
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">{candidateFullName || 'Master User Profile'}</h1>
-                                    <span className="px-2.5 py-0.5 text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-full">
-                                        {databaseAccountSettings.membership || 'Pro Tier'}
-                                    </span>
-                                </div>
-                                <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                                    {profile.occupation ? `${profile.occupation} • ` : ''}{profile.email || 'Master User Profile'}
-                                </p>
+                            {/* Right Column: Name, Occupation, Email */}
+                            <div className="flex-1 min-w-0">
+                                <h1 className="font-bold text-slate-900 tracking-tight break-words" style={{ fontSize: '19px', lineHeight: '1.2' }}>
+                                    {candidateFullName || 'Master User Profile'}
+                                </h1>
+                                {profile.occupation && (
+                                    <p className="text-xs font-semibold text-indigo-600 mt-0.5 truncate">
+                                        {profile.occupation}
+                                    </p>
+                                )}
+                                {profile.email && (
+                                    <p className="text-[11px] text-slate-500 mt-0.5 truncate">
+                                        {profile.email}
+                                    </p>
+                                )}
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        {/* Segmented Control Switcher */}
+                        <div className="bg-slate-100 p-1 sm:p-1.5 rounded-2xl flex items-center gap-1 self-stretch md:self-center flex-shrink-0">
                             <button
+                                type="button"
                                 onClick={() => setSelectedSettings('Profile')}
-                                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                                    selectedSettings === 'Profile' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                className={`flex-1 md:flex-initial px-2.5 sm:px-4 py-2 text-[11px] sm:text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
+                                    selectedSettings === 'Profile'
+                                        ? 'bg-white text-indigo-600 shadow-xs border border-slate-200/60'
+                                        : 'text-slate-600 hover:text-slate-900'
                                 }`}>
-                                Master Profile Sync
+                                <FaUser className="w-3 h-3 flex-shrink-0" />
+                                <span>Master Profile</span>
                             </button>
                             <button
+                                type="button"
                                 onClick={() => setSelectedSettings('Account')}
-                                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                                    selectedSettings === 'Account' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                className={`flex-1 md:flex-initial px-2.5 sm:px-4 py-2 text-[11px] sm:text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
+                                    selectedSettings === 'Account'
+                                        ? 'bg-white text-indigo-600 shadow-xs border border-slate-200/60'
+                                        : 'text-slate-600 hover:text-slate-900'
                                 }`}>
-                                Account & Security
+                                <FaCog className="w-3 h-3 flex-shrink-0" />
+                                <span>Account &amp; Security</span>
                             </button>
                         </div>
                     </div>
@@ -802,30 +838,34 @@ function DashboardSettings(props) {
                 {selectedSettings === 'Profile' ? (
                     <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
 
-                        {/* Profile Sub-Section Tabs */}
-                        <div className="flex items-center gap-2 border-b border-slate-200 pb-3 overflow-x-auto text-xs font-semibold">
-                            <button onClick={() => setProfileSubTab('basic')} className={`px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'basic' ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
-                                👤 Basic & Contact
+                        {/* Profile Sub-Section Tabs — horizontally scrollable on mobile */}
+                        <div
+                            className="flex items-center gap-2 border-b border-slate-200 pb-3 text-xs font-semibold"
+                            style={{ overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
+                        >
+                            <style>{`.settings-tabs-scroll::-webkit-scrollbar { display: none; }`}</style>
+                            <button onClick={() => setProfileSubTab('basic')} className={`flex-shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'basic' ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                                👤 Basic &amp; Contact
                             </button>
-                            <button onClick={() => setProfileSubTab('experience')} className={`px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'experience' ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                            <button onClick={() => setProfileSubTab('experience')} className={`flex-shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'experience' ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
                                 💼 Work History ({profile.workExperiences.length})
                             </button>
-                            <button onClick={() => setProfileSubTab('education')} className={`px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'education' ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                            <button onClick={() => setProfileSubTab('education')} className={`flex-shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'education' ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
                                 🎓 Education ({profile.education.length})
                             </button>
-                            <button onClick={() => setProfileSubTab('skills')} className={`px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'skills' ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                            <button onClick={() => setProfileSubTab('skills')} className={`flex-shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'skills' ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
                                 🛠️ Skills ({profile.skills.length})
                             </button>
-                            <button onClick={() => setProfileSubTab('certifications')} className={`px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'certifications' ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                            <button onClick={() => setProfileSubTab('certifications')} className={`flex-shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'certifications' ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
                                 📜 Certifications ({profile.certifications.length})
                             </button>
-                            <button onClick={() => setProfileSubTab('projects')} className={`px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'projects' ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                            <button onClick={() => setProfileSubTab('projects')} className={`flex-shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'projects' ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
                                 🚀 Projects ({profile.projects.length})
                             </button>
-                            <button onClick={() => setProfileSubTab('languages')} className={`px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'languages' ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                            <button onClick={() => setProfileSubTab('languages')} className={`flex-shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'languages' ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
                                 🌐 Languages ({profile.languages.length})
                             </button>
-                            <button onClick={() => setProfileSubTab('summary')} className={`px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'summary' ? 'bg-indigo-600 text-white font-bold' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200'}`}>
+                            <button onClick={() => setProfileSubTab('summary')} className={`flex-shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'summary' ? 'bg-indigo-600 text-white font-bold' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200'}`}>
                                 ✨ Executive Bio (AI)
                             </button>
                         </div>
@@ -936,7 +976,7 @@ function DashboardSettings(props) {
                         {/* Sub-Tab 2: Professional Bio / Executive Summary (WITH REAL AI) */}
                         {profileSubTab === 'summary' && (
                             <div className="space-y-4">
-                                <div className="flex items-center justify-between">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                     <div>
                                         <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Executive Bio & Professional Summary</h3>
                                         <p className="text-xs text-slate-500">Auto-loaded into all new resumes and AI cover letters.</p>
@@ -945,24 +985,34 @@ function DashboardSettings(props) {
                                         type="button"
                                         onClick={handleWriteAiSummary}
                                         disabled={isAiGenerating}
-                                        className="px-4 py-2 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-2">
+                                        className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 px-4 py-2.5 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2">
                                         <FaMagic className="w-3.5 h-3.5" />
-                                        <span>{isAiGenerating ? 'Writing with Real AI...' : '⚡ ✨ Write Executive Bio with AI'}</span>
+                                        <span>{isAiGenerating ? 'Writing with Real AI...' : 'Write Executive Bio with AI'}</span>
                                     </button>
                                 </div>
                                  <textarea name="summary" value={profile.summary} onChange={handleInputChange} spellCheck="true" placeholder="Write or click 'Write Executive Bio with AI' to generate..." className="w-full h-52 text-xs p-4 bg-white border border-slate-300 rounded-xl font-sans leading-relaxed text-slate-900 focus:border-indigo-600 focus:outline-hidden" />
+                                 <div className="pt-2">
+                                     <button
+                                         type="button"
+                                         onClick={handleWriteAiSummary}
+                                         disabled={isAiGenerating}
+                                         className="w-full py-3 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2">
+                                         <FaMagic className="w-3.5 h-3.5" />
+                                         <span>{isAiGenerating ? 'Writing with Real AI...' : 'Write Executive Bio with AI'}</span>
+                                     </button>
+                                 </div>
                             </div>
                         )}
 
                         {/* Sub-Tab 3: Work History Array (WITH REAL AI) */}
                         {profileSubTab === 'experience' && (
                             <div className="space-y-6">
-                                <div className="flex items-center justify-between">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                     <div>
                                         <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Work History & Past Positions</h3>
                                         <p className="text-xs text-slate-500">Add past employment details to pre-populate all future resumes automatically.</p>
                                     </div>
-                                    <button type="button" onClick={addWorkExperience} className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs">
+                                    <button type="button" onClick={addWorkExperience} className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs">
                                         <FaPlus className="w-3 h-3" /> Add Position
                                     </button>
                                 </div>
@@ -974,13 +1024,17 @@ function DashboardSettings(props) {
                                     </div>
                                 ) : (
                                     profile.workExperiences.map((job, idx) => (
-                                        <div key={job.id || idx} className="p-5 bg-slate-50 border border-slate-200 rounded-2xl space-y-4 relative">
-                                            <button type="button" onClick={() => removeWorkExperience(idx)} className="absolute top-4 right-4 text-slate-400 hover:text-red-600 transition-colors">
+                                        <div key={job.id || idx} className="p-5 bg-slate-50 border border-slate-200/90 rounded-2xl space-y-4 relative">
+                                            <button
+                                                type="button"
+                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeWorkExperience(idx); }}
+                                                className="absolute top-4 right-4 z-20 text-slate-400 hover:text-red-600 transition-colors p-1.5 rounded-lg hover:bg-red-50 cursor-pointer"
+                                                title="Delete position">
                                                 <FaTrash className="w-3.5 h-3.5" />
                                             </button>
-                                            {/* Row 1: Primary Details */}
+                                            {/* Row 1: Primary Details — smart column padding: pr-8 sm:pr-0 on top input, sm:pr-8 on right input */}
                                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                                <div>
+                                                <div className="pr-8 sm:pr-0">
                                                     <AutocompleteInputField
                                                         label="Job Title"
                                                         name="jobTitle"
@@ -1004,7 +1058,7 @@ function DashboardSettings(props) {
                                                         labelClassName="block text-[11px] font-bold text-slate-700 mb-1"
                                                     />
                                                 </div>
-                                                <div>
+                                                <div className="sm:pr-8">
                                                     <AutocompleteInputField
                                                         label="City / Location"
                                                         name="city"
@@ -1042,21 +1096,33 @@ function DashboardSettings(props) {
                                                 </div>
                                             </div>
                                             <div>
-                                                <div className="flex items-center justify-between mb-1">
-                                                    <label className="block text-[11px] font-bold text-slate-700">Responsibilities / Accomplishment Bullets</label>
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-2">
+                                                    <label className="block text-xs font-bold text-slate-800">Responsibilities &amp; Accomplishments</label>
                                                     <button
                                                         type="button"
                                                         onClick={() => handleEnhanceWorkDescriptionWithAi(idx)}
                                                         disabled={isAiGenerating}
-                                                        className="text-[11px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2.5 py-1 rounded-lg transition-all flex items-center gap-1">
-                                                        <FaMagic className="w-3 h-3 text-indigo-600" />
-                                                        <span>{isAiGenerating ? 'Enhancing...' : '⚡ Enhance Bullets with AI'}</span>
+                                                        className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-3.5 py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-2xs">
+                                                        <FaMagic className="w-3.5 h-3.5 text-indigo-600" />
+                                                        <span>{isAiGenerating ? 'Enhancing with AI...' : 'Enhance Bullets with AI'}</span>
                                                     </button>
                                                 </div>
-                                                <textarea value={job.description} onChange={(e) => updateWorkExperience(idx, 'description', e.target.value)} spellCheck="true" placeholder="• Led development of core features..." className="w-full h-24 text-xs p-2.5 bg-white border border-slate-300 rounded-lg" />
+                                                <BulletPointsEditor
+                                                    value={job.description}
+                                                    onChange={(val) => updateWorkExperience(idx, 'description', val)}
+                                                    placeholder="e.g. Implemented new technologies, resulting in a 30% decrease in system downtime..."
+                                                />
                                             </div>
                                         </div>
                                     ))
+                                )}
+
+                                {profile.workExperiences.length > 0 && (
+                                    <div className="pt-2">
+                                        <button type="button" onClick={addWorkExperience} className="w-full py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-2xs">
+                                            <FaPlus className="w-3.5 h-3.5" /> Add Position
+                                        </button>
+                                    </div>
                                 )}
                             </div>
                         )}
@@ -1064,12 +1130,12 @@ function DashboardSettings(props) {
                         {/* Sub-Tab 4: Education Array */}
                         {profileSubTab === 'education' && (
                             <div className="space-y-6">
-                                <div className="flex items-center justify-between">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                     <div>
                                         <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Education & Academic Degrees</h3>
                                         <p className="text-xs text-slate-500">Save degrees to automatically populate education sections in resumes.</p>
                                     </div>
-                                    <button type="button" onClick={addEducation} className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs">
+                                    <button type="button" onClick={addEducation} className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs">
                                         <FaPlus className="w-3 h-3" /> Add Degree
                                     </button>
                                 </div>
@@ -1081,12 +1147,16 @@ function DashboardSettings(props) {
                                     </div>
                                 ) : (
                                     profile.education.map((edu, idx) => (
-                                        <div key={edu.id || idx} className="p-5 bg-slate-50 border border-slate-200 rounded-2xl space-y-4 relative">
-                                            <button type="button" onClick={() => removeEducation(idx)} className="absolute top-4 right-4 text-slate-400 hover:text-red-600 transition-colors">
+                                        <div key={edu.id || idx} className="p-5 bg-slate-50 border border-slate-200/90 rounded-2xl space-y-4 relative">
+                                            <button
+                                                type="button"
+                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeEducation(idx); }}
+                                                className="absolute top-4 right-4 z-20 text-slate-400 hover:text-red-600 transition-colors p-1.5 rounded-lg hover:bg-red-50 cursor-pointer"
+                                                title="Delete education degree">
                                                 <FaTrash className="w-3.5 h-3.5" />
                                             </button>
                                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                                <div>
+                                                <div className="pr-8 sm:pr-0">
                                                     <AutocompleteInputField
                                                         label="Degree / Qualification"
                                                         name="degree"
@@ -1110,7 +1180,7 @@ function DashboardSettings(props) {
                                                         labelClassName="block text-[11px] font-bold text-slate-700 mb-1"
                                                     />
                                                 </div>
-                                                <div>
+                                                <div className="sm:pr-8">
                                                     <MonthYearPicker
                                                         label="Graduation Date / Period"
                                                         value={edu.startDate || edu.endDate || ''}
@@ -1139,6 +1209,14 @@ function DashboardSettings(props) {
                                         </div>
                                     ))
                                 )}
+
+                                {profile.education.length > 0 && (
+                                    <div className="pt-2">
+                                        <button type="button" onClick={addEducation} className="w-full py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-2xs">
+                                            <FaPlus className="w-3.5 h-3.5" /> Add Degree
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         )}
 
@@ -1150,19 +1228,19 @@ function DashboardSettings(props) {
                                         <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Skills & Technical Competencies</h3>
                                         <p className="text-xs text-slate-500">Save core technical skills for auto-filling skills lists.</p>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={handleRecommendAiSkills}
-                                            disabled={isAiGenerating}
-                                            className="px-3.5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm">
-                                            <FaMagic className={`w-3.5 h-3.5 ${isAiGenerating ? 'animate-spin' : ''}`} />
-                                            <span>✨ Auto-Recommend Top Skills (AI)</span>
-                                        </button>
-                                        <button type="button" onClick={addSkill} className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs">
-                                            <FaPlus className="w-3 h-3" /> Add Skill
-                                        </button>
-                                    </div>
+                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                                    <button
+                                        type="button"
+                                        onClick={handleRecommendAiSkills}
+                                        disabled={isAiGenerating}
+                                        className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 px-3.5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm">
+                                        <FaMagic className={`w-3.5 h-3.5 ${isAiGenerating ? 'animate-spin' : ''}`} />
+                                        <span>Auto-Recommend Skills (AI)</span>
+                                    </button>
+                                    <button type="button" onClick={addSkill} className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs">
+                                        <FaPlus className="w-3 h-3" /> Add Skill
+                                    </button>
+                                </div>
                                 </div>
 
                                 {profile.skills.length === 0 ? (
@@ -1175,7 +1253,7 @@ function DashboardSettings(props) {
                                                 disabled={isAiGenerating}
                                                 className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
                                                 <FaMagic className={`w-3.5 h-3.5 ${isAiGenerating ? 'animate-spin' : ''}`} />
-                                                <span>✨ Auto-Recommend Top Skills (AI)</span>
+                                                <span>Auto-Recommend Top Skills (AI)</span>
                                             </button>
                                             <button type="button" onClick={addSkill} className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl text-xs font-bold">
                                                 Add Manually
@@ -1197,11 +1275,31 @@ function DashboardSettings(props) {
                                                         inputClassName="w-full text-xs p-2 pr-7 bg-white border border-slate-300 rounded-lg font-semibold text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
                                                     />
                                                 </div>
-                                                <button type="button" onClick={() => removeSkill(idx)} className="text-slate-400 hover:text-red-600 transition-colors p-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeSkill(idx); }}
+                                                    className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg border border-transparent hover:border-red-200 transition-colors cursor-pointer flex-shrink-0"
+                                                    title="Delete skill">
                                                     <FaTrash className="w-3 h-3" />
                                                 </button>
                                             </div>
                                         ))}
+                                    </div>
+                                )}
+
+                                {profile.skills.length > 0 && (
+                                    <div className="pt-2 flex flex-col sm:flex-row gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={handleRecommendAiSkills}
+                                            disabled={isAiGenerating}
+                                            className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs">
+                                            <FaMagic className={`w-3.5 h-3.5 ${isAiGenerating ? 'animate-spin' : ''}`} />
+                                            <span>Auto-Recommend Skills (AI)</span>
+                                        </button>
+                                        <button type="button" onClick={addSkill} className="flex-1 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs">
+                                            <FaPlus className="w-3.5 h-3.5" /> Add Skill
+                                        </button>
                                     </div>
                                 )}
                             </div>
@@ -1215,16 +1313,16 @@ function DashboardSettings(props) {
                                         <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Professional Certifications & Credentials</h3>
                                         <p className="text-xs text-slate-500">Add AWS, PMP, Scrum Master, or professional licenses.</p>
                                     </div>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                                         <button
                                             type="button"
                                             onClick={handleRecommendAiCertifications}
                                             disabled={isAiGenerating}
-                                            className="px-3.5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm">
+                                            className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 px-3.5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm">
                                             <FaMagic className={`w-3.5 h-3.5 ${isAiGenerating ? 'animate-spin' : ''}`} />
-                                            <span>✨ Recommend Industry Certifications (AI)</span>
+                                            <span>Recommend Certifications (AI)</span>
                                         </button>
-                                        <button type="button" onClick={addCertification} className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs">
+                                        <button type="button" onClick={addCertification} className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs">
                                             <FaPlus className="w-3 h-3" /> Add Certification
                                         </button>
                                     </div>
@@ -1240,7 +1338,7 @@ function DashboardSettings(props) {
                                                 disabled={isAiGenerating}
                                                 className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
                                                 <FaMagic className={`w-3.5 h-3.5 ${isAiGenerating ? 'animate-spin' : ''}`} />
-                                                <span>✨ Recommend Industry Certifications (AI)</span>
+                                                <span>Recommend Industry Certifications (AI)</span>
                                             </button>
                                             <button type="button" onClick={addCertification} className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl text-xs font-bold">
                                                 Add Manually
@@ -1271,11 +1369,31 @@ function DashboardSettings(props) {
                                                 />
                                                 <input type="text" value={cert.date} onChange={(e) => updateCertification(idx, 'date', e.target.value)} placeholder="Date Issued (e.g. 2024)" className="text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none" spellCheck="false" />
                                             </div>
-                                            <button type="button" onClick={() => removeCertification(idx)} className="text-slate-400 hover:text-red-600 transition-colors p-2">
+                                            <button
+                                                type="button"
+                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeCertification(idx); }}
+                                                className="w-8 h-8 flex items-center justify-center bg-white hover:bg-red-50 text-slate-400 hover:text-red-600 border border-slate-200 hover:border-red-200 rounded-xl transition-all cursor-pointer flex-shrink-0"
+                                                title="Delete certification">
                                                 <FaTrash className="w-3.5 h-3.5" />
                                             </button>
                                         </div>
                                     ))
+                                )}
+
+                                {profile.certifications.length > 0 && (
+                                    <div className="pt-2 flex flex-col sm:flex-row gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={handleRecommendAiCertifications}
+                                            disabled={isAiGenerating}
+                                            className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs">
+                                            <FaMagic className={`w-3.5 h-3.5 ${isAiGenerating ? 'animate-spin' : ''}`} />
+                                            <span>Recommend Certifications (AI)</span>
+                                        </button>
+                                        <button type="button" onClick={addCertification} className="flex-1 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs">
+                                            <FaPlus className="w-3.5 h-3.5" /> Add Certification
+                                        </button>
+                                    </div>
                                 )}
                             </div>
                         )}
@@ -1288,7 +1406,7 @@ function DashboardSettings(props) {
                                         <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Languages & Proficiency</h3>
                                         <p className="text-xs text-slate-500">Add languages you speak and your level of proficiency.</p>
                                     </div>
-                                    <button type="button" onClick={addLanguage} className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs">
+                                    <button type="button" onClick={addLanguage} className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs">
                                         <FaPlus className="w-3 h-3" /> Add Language
                                     </button>
                                 </div>
@@ -1339,11 +1457,23 @@ function DashboardSettings(props) {
                                                         ))}
                                                     </select>
                                                 </div>
-                                                <button type="button" onClick={() => removeLanguage(idx)} className="text-slate-400 hover:text-red-600 transition-colors p-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeLanguage(idx); }}
+                                                    className="w-8 h-8 flex items-center justify-center bg-white hover:bg-red-50 text-slate-400 hover:text-red-600 border border-slate-200 hover:border-red-200 rounded-xl transition-all cursor-pointer flex-shrink-0"
+                                                    title="Delete language">
                                                     <FaTrash className="w-3.5 h-3.5" />
                                                 </button>
                                             </div>
                                         ))}
+                                    </div>
+                                )}
+
+                                {profile.languages.length > 0 && (
+                                    <div className="pt-2">
+                                        <button type="button" onClick={addLanguage} className="w-full py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-2xs">
+                                            <FaPlus className="w-3.5 h-3.5" /> Add Language
+                                        </button>
                                     </div>
                                 )}
                             </div>
@@ -1352,12 +1482,12 @@ function DashboardSettings(props) {
                         {/* Sub-Tab 7: Personal Projects */}
                         {profileSubTab === 'projects' && (
                             <div className="space-y-6">
-                                <div className="flex items-center justify-between">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                     <div>
                                         <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Portfolio & Personal Projects</h3>
                                         <p className="text-xs text-slate-500">Add key open-source or commercial projects.</p>
                                     </div>
-                                    <button type="button" onClick={addProject} className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs">
+                                    <button type="button" onClick={addProject} className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs">
                                         <FaPlus className="w-3 h-3" /> Add Project
                                     </button>
                                 </div>
@@ -1370,35 +1500,87 @@ function DashboardSettings(props) {
                                 ) : (
                                     profile.projects.map((proj, idx) => (
                                         <div key={proj.id || idx} className="p-5 bg-slate-50 border border-slate-200 rounded-2xl space-y-3 relative">
-                                            <button type="button" onClick={() => removeProject(idx)} className="absolute top-4 right-4 text-slate-400 hover:text-red-600 transition-colors">
+                                            <button
+                                                type="button"
+                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeProject(idx); }}
+                                                className="absolute top-3.5 right-3.5 z-20 w-8 h-8 bg-white hover:bg-red-50 text-slate-400 hover:text-red-600 border border-slate-200 hover:border-red-200 rounded-xl shadow-2xs flex items-center justify-center transition-all cursor-pointer"
+                                                title="Delete project">
                                                 <FaTrash className="w-3.5 h-3.5" />
                                             </button>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                <input type="text" value={proj.title} onChange={(e) => updateProject(idx, 'title', e.target.value)} placeholder="Project Title" className="text-xs p-2.5 bg-white border border-slate-300 rounded-lg font-semibold" />
-                                                <input type="url" value={proj.link} onChange={(e) => updateProject(idx, 'link', e.target.value)} placeholder="Live Demo / Repository URL" className="text-xs p-2.5 bg-white border border-slate-300 rounded-lg" />
+                                                <div className="pr-8 sm:pr-0">
+                                                    <input type="text" value={proj.title} onChange={(e) => updateProject(idx, 'title', e.target.value)} placeholder="Project Title" className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg font-semibold" />
+                                                </div>
+                                                <div className="sm:pr-8">
+                                                    <input type="url" value={proj.link} onChange={(e) => updateProject(idx, 'link', e.target.value)} placeholder="Live Demo / Repository URL" className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg" />
+                                                </div>
                                             </div>
                                             <textarea value={proj.description} onChange={(e) => updateProject(idx, 'description', e.target.value)} placeholder="Short project summary or key tech stack used..." className="w-full h-16 text-xs p-2.5 bg-white border border-slate-300 rounded-lg" />
                                         </div>
                                     ))
                                 )}
+
+                                {profile.projects.length > 0 && (
+                                    <div className="pt-2">
+                                        <button type="button" onClick={addProject} className="w-full py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-2xs">
+                                            <FaPlus className="w-3.5 h-3.5" /> Add Project
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         )}
 
-                        {/* Save Master Profile Button */}
-                        <div className="flex justify-end pt-6 border-t border-slate-100">
-                            <button
-                                type="button"
-                                onClick={handleSubmit}
-                                disabled={isSubmitting}
-                                className="px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2">
-                                <FaCheckCircle className="w-4 h-4" />
-                                <span>{isSubmitting ? 'Saving Master Profile...' : 'Save Master Profile'}</span>
-                            </button>
+                        {/* Save Master Profile Button — Save + Save & Next */}
+                        <div className="pt-6 border-t border-slate-100">
+                            {/* Mobile progress indicator */}
+                            <div className="flex items-center justify-between mb-4 sm:hidden">
+                                <span className="text-xs text-slate-500 font-medium">
+                                    Step {SUB_TAB_ORDER.indexOf(profileSubTab) + 1} of {SUB_TAB_ORDER.length}
+                                </span>
+                                <div className="flex gap-1">
+                                    {SUB_TAB_ORDER.map((tab, i) => (
+                                        <button
+                                            key={tab}
+                                            onClick={() => setProfileSubTab(tab)}
+                                            className={`w-2 h-2 rounded-full transition-all ${
+                                                tab === profileSubTab ? 'bg-indigo-600 w-5' : 'bg-slate-300'
+                                            }`}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row sm:justify-end items-stretch gap-3">
+                                {/* Save & Next — visible on mobile, hidden on last tab */}
+                                {SUB_TAB_ORDER.indexOf(profileSubTab) < SUB_TAB_ORDER.length - 1 && (
+                                    <button
+                                        type="button"
+                                        onClick={handleSaveAndNext}
+                                        disabled={isSubmitting}
+                                        className="order-1 sm:order-2 px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-2">
+                                        <FaCheckCircle className="w-4 h-4" />
+                                        <span>{isSubmitting ? 'Saving...' : `Save & Next → ${SUB_TAB_ORDER[SUB_TAB_ORDER.indexOf(profileSubTab) + 1].charAt(0).toUpperCase() + SUB_TAB_ORDER[SUB_TAB_ORDER.indexOf(profileSubTab) + 1].slice(1)}`}</span>
+                                    </button>
+                                )}
+                                {/* Save only — visible always, secondary on mobile */}
+                                <button
+                                    type="button"
+                                    onClick={handleSubmit}
+                                    disabled={isSubmitting}
+                                    className={`order-2 sm:order-1 px-6 py-3.5 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 ${
+                                        SUB_TAB_ORDER.indexOf(profileSubTab) === SUB_TAB_ORDER.length - 1
+                                            ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm'
+                                            : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                                    }`}>
+                                    <FaCheckCircle className="w-3.5 h-3.5" />
+                                    <span>{isSubmitting ? 'Saving...' : SUB_TAB_ORDER.indexOf(profileSubTab) === SUB_TAB_ORDER.length - 1 ? 'Save Master Profile ✓' : 'Save'}</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 ) : (
                     /* Account & Security Settings */
-                    <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-8">
+                    <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-8 shadow-sm space-y-6 sm:space-y-8">
                         <div className="flex items-center space-x-3 pb-4 border-b border-slate-100">
                             <div className="p-2.5 bg-indigo-50 rounded-xl">
                                 <FaCog className="w-5 h-5 text-indigo-600" />
@@ -1427,7 +1609,7 @@ function DashboardSettings(props) {
                                     <input
                                         type="text"
                                         disabled
-                                        value={databaseAccountSettings.membership || 'Free Active Tier'}
+                                        value={effectiveMembership}
                                         className="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-600 font-semibold cursor-not-allowed"
                                     />
                                 </div>
@@ -1464,7 +1646,7 @@ function DashboardSettings(props) {
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2">
+                                    className="w-full sm:w-auto px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2">
                                     <FaCheckCircle className="w-3.5 h-3.5" />
                                     <span>{isSubmitting ? 'Updating Account...' : 'Update Account Security'}</span>
                                 </button>

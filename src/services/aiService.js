@@ -211,6 +211,22 @@ RULES:
   ]
 }
 Language: ${language}. SessionID: ${uniqueSeed}`;
+    } else if (endpointName === 'enhance-single-bullet') {
+        const rawBullet = payload.bullet || payload.text || '';
+        prompt = `You are an Elite Executive Resume Editor & Senior ATS Specialist.
+Rewrite and elevate the following single bullet point into a high-impact, professional resume achievement:
+
+ORIGINAL BULLET:
+"${rawBullet}"
+
+CRITICAL RULES:
+1. Start directly with a strong past-tense action verb (e.g. Implemented, Reduced, Built, Automated, Designed, Engineered, Optimized, Delivered, Scaled, Cut).
+2. Write in a 100% natural, direct human professional voice. DO NOT use robotic AI filler words ("thereby", "spearheaded", "leveraged").
+3. DO NOT insert bracketed placeholders like "[insert percentage]" or "[X%]". Use complete factual statements.
+4. Keep it punchy and concise (15-25 words max).
+5. Return ONLY valid JSON format:
+{ "enhancedBullet": "The polished single bullet text here." }
+Language: ${language}. SessionID: ${uniqueSeed}`;
     } else if (endpointName === 'autocomplete') {
         const type = payload.type || 'jobTitle';
         const query = payload.query || '';
@@ -239,10 +255,44 @@ SessionID: ${uniqueSeed}`;
         if (!raw) return null;
         let cleaned = raw.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
         try { return JSON.parse(cleaned); } catch (_) { }
+
         const firstBrace = cleaned.indexOf('{');
-        const lastBrace = cleaned.lastIndexOf('}');
-        if (firstBrace !== -1 && lastBrace > firstBrace) {
-            try { return JSON.parse(cleaned.substring(firstBrace, lastBrace + 1)); } catch (_) { }
+        if (firstBrace !== -1) {
+            // Match exact closing brace for first JSON object
+            let depth = 0;
+            let inString = false;
+            let isEscaped = false;
+            for (let i = firstBrace; i < cleaned.length; i++) {
+                const char = cleaned[i];
+                if (isEscaped) {
+                    isEscaped = false;
+                    continue;
+                }
+                if (char === '\\') {
+                    isEscaped = true;
+                    continue;
+                }
+                if (char === '"') {
+                    inString = !inString;
+                    continue;
+                }
+                if (!inString) {
+                    if (char === '{') depth++;
+                    else if (char === '}') {
+                        depth--;
+                        if (depth === 0) {
+                            const jsonCandidate = cleaned.substring(firstBrace, i + 1);
+                            try { return JSON.parse(jsonCandidate); } catch (_) { }
+                            break;
+                        }
+                    }
+                }
+            }
+
+            const lastBrace = cleaned.lastIndexOf('}');
+            if (lastBrace > firstBrace) {
+                try { return JSON.parse(cleaned.substring(firstBrace, lastBrace + 1)); } catch (_) { }
+            }
         }
         return null;
     }
@@ -256,7 +306,11 @@ SessionID: ${uniqueSeed}`;
         const sanitizeBulletText = (text) => {
             if (!text || typeof text !== 'string') return text;
             let cleaned = text;
-            
+
+            // Strip any raw trailing JSON or AI explanation headers if leaked into output
+            cleaned = cleaned.replace(/\{\s*"enhancedBullet"\s*:\s*"([^"]+)"\s*\}[\s\S]*/gi, '$1');
+            cleaned = cleaned.replace(/\s*(?:MODIFIED BULLET|MODIFICATIONS|REASONING|EXPLANATION|NOTE|CHANGES MADE):[\s\S]*/gi, '');
+
             // Scrub "Spearheaded"
             cleaned = cleaned.replace(/^Spearheaded\b/g, 'Led');
             cleaned = cleaned.replace(/^spearheaded\b/g, 'led');
@@ -264,7 +318,7 @@ SessionID: ${uniqueSeed}`;
             cleaned = cleaned.replace(/\bSpearheaded\b/g, 'Led');
             cleaned = cleaned.replace(/\bspearhead\b/g, 'lead');
             cleaned = cleaned.replace(/\bSpearhead\b/g, 'Lead');
-            
+
             // Scrub "Leveraged"
             cleaned = cleaned.replace(/^Leveraged\b/g, 'Used');
             cleaned = cleaned.replace(/^leveraged\b/g, 'used');
@@ -272,13 +326,13 @@ SessionID: ${uniqueSeed}`;
             cleaned = cleaned.replace(/\bLeveraged\b/g, 'Used');
             cleaned = cleaned.replace(/\bleverage\b/g, 'use');
             cleaned = cleaned.replace(/\bLeverage\b/g, 'Use');
-            
+
             // Scrub "Utilized" / "Utilised"
             cleaned = cleaned.replace(/^Utilized\b/g, 'Used');
             cleaned = cleaned.replace(/^utilized\b/g, 'used');
             cleaned = cleaned.replace(/\butilized\b/g, 'used');
             cleaned = cleaned.replace(/\bUtilized\b/g, 'Used');
-            
+
             cleaned = cleaned.replace(/^Utilised\b/g, 'Used');
             cleaned = cleaned.replace(/^utilised\b/g, 'used');
             cleaned = cleaned.replace(/\butilised\b/g, 'used');
@@ -358,12 +412,17 @@ SessionID: ${uniqueSeed}`;
                     return { certifications: cleanedCerts };
                 }
             }
+            if (endpointName === 'enhance-single-bullet') {
+                const text = parsed.enhancedBullet || parsed.suggestion || parsed.bullet || (Array.isArray(parsed.suggestions) ? parsed.suggestions[0] : null);
+                if (text) return { enhancedBullet: sanitizeBulletText(text) };
+            }
             if (endpointName === 'generate-work-description' || endpointName === 'generate-education-description') {
                 const items = parsed.suggestions || parsed.highlights || parsed.bullets || parsed.items || parsed.workDescriptions;
                 if (items) {
                     return { suggestions: normalizeToStrings(items) };
                 }
             }
+            if (parsed.enhancedBullet) return { enhancedBullet: sanitizeBulletText(parsed.enhancedBullet) };
             if (parsed.certifications) return { certifications: parsed.certifications };
             if (parsed.suggestions) return { suggestions: normalizeToStrings(parsed.suggestions) };
             if (parsed.summary) return { summary: sanitizeBulletText(typeof parsed.summary === 'object' ? Object.values(parsed.summary).join(' ') : String(parsed.summary).trim()) };
@@ -374,6 +433,10 @@ SessionID: ${uniqueSeed}`;
         const lines = rawContent.split('\n')
             .map((l) => sanitizeBulletText(l.replace(/^[•\-\*\d\.\s]+/, '').trim()))
             .filter((l) => l.length > 5);
+
+        if (endpointName === 'enhance-single-bullet') {
+            return { enhancedBullet: sanitizeBulletText(rawContent.replace(/^```[a-z]*\s*/i, '').replace(/```$/i, '').trim()) };
+        }
 
         if (endpointName === 'generate-summary') {
             return { summary: sanitizeBulletText(rawContent.replace(/^```[a-z]*\s*/i, '').replace(/```$/i, '').trim()) };

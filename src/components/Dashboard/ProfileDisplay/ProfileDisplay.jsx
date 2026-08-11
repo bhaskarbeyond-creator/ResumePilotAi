@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FiGrid, FiSettings, FiFileText, FiBarChart, FiMousePointer, FiDownload, FiSearch, FiChevronLeft, FiChevronRight, FiSun, FiMoon, FiSidebar, FiX, FiUser, FiShield, FiLogOut, FiBell } from 'react-icons/fi';
+import { FiGrid, FiSettings, FiFileText, FiBarChart, FiMousePointer, FiDownload, FiSearch, FiChevronLeft, FiChevronRight, FiSun, FiMoon, FiSidebar, FiX, FiUser, FiShield, FiLogOut, FiBell, FiMenu, FiMessageSquare } from 'react-icons/fi';
 import { GoSidebarCollapse, GoSidebarExpand } from 'react-icons/go';
 import { FaRegComments, FaBriefcase, FaBuilding } from 'react-icons/fa';
 import { FaListCheck } from 'react-icons/fa6';
@@ -91,6 +91,14 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
         window.addEventListener('systemSettingsUpdated', loadModules);
         return () => window.removeEventListener('systemSettingsUpdated', loadModules);
     }, []);
+
+    const closeMobileSidebar = () => {
+        if (window.innerWidth < 1024 && !sidebarCollapsed) {
+            // On mobile, collapse = hidden
+            if (onSidebarToggle) onSidebarToggle(true);
+            document.body.classList.remove('mobile-sidebar-open');
+        }
+    };
 
     const toggleSidebar = () => {
         const newCollapsed = !sidebarCollapsed;
@@ -221,48 +229,6 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
                     width: calc(100% - 60px) !important;
                 }
 
-                @media only screen and (max-width: 1023px) {
-                    .mobile-sidebar-enter {
-                        transform: translateX(-100%);
-                        opacity: 0;
-                    }
-
-                    .mobile-sidebar-enter-active {
-                        transform: translateX(0);
-                        opacity: 1;
-                        transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease-out;
-                    }
-
-                    .mobile-sidebar-exit {
-                        transform: translateX(0);
-                        opacity: 1;
-                    }
-
-                    .mobile-sidebar-exit-active {
-                        transform: translateX(-100%);
-                        opacity: 0;
-                        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease-in;
-                    }
-
-                    .mobile-sidebar-touch {
-                        will-change: transform;
-                        -webkit-transform: translateZ(0);
-                        transform: translateZ(0);
-                    }
-
-                    .mobile-sidebar {
-                        transform: translateX(-100%);
-                        transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-                        will-change: transform;
-                        -webkit-transform: translateZ(0);
-                        transform: translateZ(0);
-                    }
-
-                    .mobile-sidebar.open {
-                        transform: translateX(0);
-                    }
-                }
-
                 @media only screen and (max-width: 1050px) {
                     .dashboardContentWrapper,
                     .dashboardGrid {
@@ -277,17 +243,31 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
                     }
                 }
 
-                @media only screen and (max-width: 768px) {
+                @media only screen and (max-width: 1023px) {
+                    /* Content shifts down for mobile top bar + up for bottom nav */
                     .dashboardContentWrapper,
                     .dashboardGrid {
                         margin-left: 0 !important;
                         width: 100% !important;
+                        padding-top: 56px !important;
+                        padding-bottom: 68px !important;
                     }
 
                     .dashboardContentWrapper.sidebar-collapsed,
                     .dashboardGrid.sidebar-collapsed {
                         margin-left: 0 !important;
                         width: 100% !important;
+                    }
+
+                    /* Sidebar becomes an overlay drawer */
+                    body.mobile-sidebar-open {
+                        overflow: hidden;
+                    }
+
+                    .mobile-overlay {
+                        backdrop-filter: blur(4px);
+                        -webkit-backdrop-filter: blur(4px);
+                        background: rgba(15, 23, 42, 0.35);
                     }
                 }
 
@@ -329,14 +309,50 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
                 }
             `}</style>
 
+            {/* ── MOBILE TOP BAR ────────────────────────────────────────────── */}
+            <div className="fixed top-0 left-0 right-0 h-14 bg-white border-b border-gray-100 z-[60] lg:hidden flex items-center justify-between px-4 shadow-sm">
+                {/* Hamburger */}
+                <button
+                    onClick={toggleSidebar}
+                    className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-gray-100 active:bg-gray-200 transition-colors"
+                    aria-label="Open menu"
+                >
+                    {!sidebarCollapsed ? (
+                        <FiX className="w-5 h-5 text-gray-700" />
+                    ) : (
+                        <FiMenu className="w-5 h-5 text-gray-700" />
+                    )}
+                </button>
+
+                {/* Logo centred */}
+                <Link to="/dashboard" className="absolute left-1/2 -translate-x-1/2">
+                    <img src={logo} alt="Logo" className="h-7 w-auto" />
+                </Link>
+
+                {/* Right actions: Bell */}
+                <div className="flex items-center gap-1">
+                    <button
+                        onClick={() => setShowNotifications(!showNotifications)}
+                        className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-gray-100 active:bg-gray-200 transition-colors relative"
+                        aria-label="Notifications"
+                    >
+                        <FiBell className="w-5 h-5 text-gray-700" />
+                        {unreadNotificationCount > 0 && (
+                            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-indigo-600 rounded-full"></span>
+                        )}
+                    </button>
+                </div>
+            </div>
+
+            {/* Mobile backdrop */}
             <div
-                className={`fixed inset-0 bg-black mobile-overlay z-40 lg:hidden transition-all duration-300 ease-in-out ${!sidebarCollapsed ? 'opacity-25' : 'opacity-0 pointer-events-none'}`}
+                className={`fixed inset-0 bg-black mobile-overlay z-40 lg:hidden transition-opacity duration-300 ease-in-out ${!sidebarCollapsed ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
                 onClick={toggleSidebar}
             />
 
             <div
                 className={`fixed left-0 top-0 h-screen bg-white border-r border-gray-100 z-50 flex flex-col transition-all duration-300 ease-in-out ${
-                    sidebarCollapsed ? 'w-[60px] min-w-[60px]' : 'w-[240px]'
+                    sidebarCollapsed ? 'lg:w-[60px] lg:min-w-[60px] w-[280px]' : 'w-[280px] lg:w-[240px]'
                 }
                 lg:flex lg:shadow-none
                 ${sidebarCollapsed ? 'max-lg:-translate-x-full' : 'max-lg:translate-x-0 shadow-2xl lg:shadow-none'}
@@ -435,7 +451,7 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
                     )}
 
                     <div className="px-2">
-                        <Link to="/dashboard">
+                        <Link to="/dashboard" onClick={closeMobileSidebar}>
                             <div
                                 className={`flex items-center text-sm transition-all duration-200 rounded-lg mb-1 ${
                                     location.pathname === '/dashboard' ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
@@ -447,7 +463,7 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
 
                         {/* Show Admin Panel only for admin users */}
                         {isAdmin && (
-                            <Link to="/adm">
+                            <Link to="/adm" onClick={closeMobileSidebar}>
                                 <div
                                     className={`flex items-center text-sm transition-all duration-200 rounded-lg mb-1 ${
                                         location.pathname.startsWith('/adm') ? 'bg-red-100 text-red-900 font-medium' : 'text-red-600 hover:bg-red-50 hover:text-red-800'
@@ -458,7 +474,7 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
                             </Link>
                         )}
 
-                        <Link to="/dashboard/interview">
+                        <Link to="/dashboard/interview" onClick={closeMobileSidebar}>
                             <div
                                 className={`flex items-center text-sm transition-all duration-200 rounded-lg mb-1 ${
                                     location.pathname === '/dashboard/interview' ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
@@ -468,7 +484,7 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
                             </div>
                         </Link>
 
-                        <Link to="/dashboard/cover-letters">
+                        <Link to="/dashboard/cover-letters" onClick={closeMobileSidebar}>
                             <div
                                 className={`flex items-center text-sm transition-all duration-200 rounded-lg mb-1 ${
                                     location.pathname === '/dashboard/cover-letters' ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
@@ -479,7 +495,7 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
                         </Link>
 
                         {modulesConfig.enablePortfolioModule && (
-                            <Link to="/dashboard/portfolios">
+                            <Link to="/dashboard/portfolios" onClick={closeMobileSidebar}>
                                 <div
                                     className={`flex items-center text-sm transition-all duration-200 rounded-lg mb-1 ${
                                         location.pathname === '/dashboard/portfolios' ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
@@ -491,7 +507,7 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
                         )}
 
                         {modulesConfig.enableJobScraperModule && (
-                            <Link to="/dashboard/applied-jobs">
+                            <Link to="/dashboard/applied-jobs" onClick={closeMobileSidebar}>
                                 <div
                                     className={`flex items-center text-sm transition-all duration-200 rounded-lg mb-1 ${
                                         location.pathname === '/dashboard/applied-jobs' ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
@@ -503,7 +519,7 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
                         )}
 
                         {/* Messages */}
-                        <Link to="/dashboard/messages">
+                        <Link to="/dashboard/messages" onClick={closeMobileSidebar}>
                             <div
                                 className={`flex items-center text-sm transition-all duration-200 rounded-lg mb-1 ${
                                     location.pathname === '/dashboard/messages' ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
@@ -522,7 +538,7 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
 
                         {/* Show My Employments only for employers */}
                         {isEmployer && modulesConfig.enableJobScraperModule && (
-                            <Link to="/dashboard/my-employments">
+                            <Link to="/dashboard/my-employments" onClick={closeMobileSidebar}>
                                 <div
                                     className={`flex items-center text-sm transition-all duration-200 rounded-lg mb-1 ${
                                         location.pathname === '/dashboard/my-employments' ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
@@ -535,7 +551,7 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
 
                         {/* Show My Companies only for employers */}
                         {isEmployer && (
-                            <Link to="/dashboard/my-companies">
+                            <Link to="/dashboard/my-companies" onClick={closeMobileSidebar}>
                                 <div
                                     className={`flex items-center text-sm transition-all duration-200 rounded-lg mb-1 ${
                                         location.pathname === '/dashboard/my-companies' ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
@@ -546,7 +562,7 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
                             </Link>
                         )}
 
-                        <Link to="/dashboard/settings">
+                        <Link to="/dashboard/settings" onClick={closeMobileSidebar}>
                             <div
                                 className={`flex items-center text-sm transition-all duration-200 rounded-lg mb-1 ${
                                     location.pathname === '/dashboard/settings' ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
@@ -597,6 +613,71 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
                         </div>
                     </div>
                 </div>
+            </div>
+
+            {/* ── MOBILE BOTTOM NAV BAR ─────────────────────────────────────── */}
+            <div className="fixed bottom-0 left-0 right-0 h-[68px] bg-white border-t border-gray-100 z-[60] lg:hidden flex items-stretch shadow-lg">
+                <Link
+                    to="/dashboard"
+                    className={`flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors ${
+                        location.pathname === '/dashboard' ? 'text-indigo-600' : 'text-gray-500'
+                    }`}
+                >
+                    <FiGrid className="w-5 h-5 mb-0.5" />
+                    <span>Home</span>
+                </Link>
+
+                <Link
+                    to="/dashboard/cover-letters"
+                    className={`flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors ${
+                        location.pathname === '/dashboard/cover-letters' ? 'text-indigo-600' : 'text-gray-500'
+                    }`}
+                >
+                    <FiFileText className="w-5 h-5 mb-0.5" />
+                    <span>Resumes</span>
+                </Link>
+
+                <Link
+                    to="/dashboard/settings"
+                    className={`flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors ${
+                        location.pathname === '/dashboard/settings' ? 'text-indigo-600' : 'text-gray-500'
+                    }`}
+                >
+                    <FiSettings className="w-5 h-5 mb-0.5" />
+                    <span>Profile</span>
+                </Link>
+
+                <Link
+                    to="/dashboard/messages"
+                    className={`flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors relative ${
+                        location.pathname === '/dashboard/messages' ? 'text-indigo-600' : 'text-gray-500'
+                    }`}
+                >
+                    <div className="relative">
+                        <FiMessageSquare className="w-5 h-5" />
+                        {unreadCount > 0 && (
+                            <span className="absolute -top-1 -right-1.5 w-4 h-4 bg-indigo-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                                {unreadCount > 9 ? '9+' : unreadCount}
+                            </span>
+                        )}
+                    </div>
+                    <span className="mt-0.5">Messages</span>
+                </Link>
+
+                <button
+                    onClick={toggleSidebar}
+                    className={`flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors relative ${
+                        !sidebarCollapsed ? 'text-indigo-600' : 'text-gray-500'
+                    }`}
+                >
+                    <div className="relative">
+                        <FiMenu className="w-5 h-5" />
+                        {unreadNotificationCount > 0 && (
+                            <span className="absolute -top-1 -right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
+                        )}
+                    </div>
+                    <span>More</span>
+                </button>
             </div>
 
             {/* Notification Panel */}

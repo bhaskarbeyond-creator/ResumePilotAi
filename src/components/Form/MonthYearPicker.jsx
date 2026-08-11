@@ -86,16 +86,39 @@ export function MonthYearPicker({ label, value, onChange, disabled, showPresentC
 
     return (
         <div className="space-y-1.5 font-sans">
-            {label && <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">{label}</label>}
+            {/* Header row: Label + Integrated "I currently work here" toggle */}
+            <div className="flex items-center justify-between gap-2">
+                {label && <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">{label}</label>}
+                {showPresentCheck && (
+                    <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
+                        <input
+                            type="checkbox"
+                            disabled={disabled}
+                            checked={Boolean(isCurrent)}
+                            onChange={(e) => {
+                                const checked = e.target.checked;
+                                if (onCurrentChange) onCurrentChange(checked);
+                                if (checked) onChange('Present');
+                                else onChange('');
+                            }}
+                            className="w-3.5 h-3.5 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer accent-indigo-600"
+                        />
+                        <span className={`text-[11px] font-bold transition-colors ${isCurrent ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}>
+                            I currently work here
+                        </span>
+                    </label>
+                )}
+            </div>
             
-            <div className={`relative flex items-center bg-white border rounded-xl shadow-xs transition-all ${
+            {/* Sleek Input Control Container */}
+            <div className={`relative flex items-center bg-white border rounded-xl shadow-2xs transition-all ${
                 isCurrent 
-                    ? 'border-indigo-200 bg-indigo-50/40 text-indigo-900 ring-2 ring-indigo-500/10' 
+                    ? 'border-indigo-300 bg-indigo-50/50 text-indigo-900 ring-2 ring-indigo-500/10' 
                     : 'border-slate-300 hover:border-indigo-400 focus-within:border-indigo-600 focus-within:ring-2 focus-within:ring-indigo-500/20'
             }`}>
                 {/* Calendar Icon Button */}
                 <div className="relative flex items-center justify-center pl-3 pr-2 py-2.5 text-slate-400 hover:text-indigo-600 cursor-pointer transition-colors" title="Click to open interactive calendar picker">
-                    <FaCalendarAlt className="w-3.5 h-3.5 text-indigo-500" />
+                    <FaCalendarAlt className={`w-3.5 h-3.5 ${isCurrent ? 'text-indigo-600' : 'text-slate-400'}`} />
                     {!isCurrent && (
                         <input
                             type="month"
@@ -108,12 +131,14 @@ export function MonthYearPicker({ label, value, onChange, disabled, showPresentC
                 </div>
 
                 {isCurrent ? (
-                    <div className="flex-1 py-2.5 px-3 text-xs font-bold text-indigo-700 flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
+                    <div className="flex-1 py-2 px-3 text-xs font-semibold text-indigo-700 flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 font-bold">
                             <FaCheck className="w-3 h-3 text-indigo-600" />
-                            <span>Currently Active Position</span>
+                            <span>Present (Active Position)</span>
                         </div>
-                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 uppercase">Present</span>
+                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 uppercase tracking-wider">
+                            Active
+                        </span>
                     </div>
                 ) : (
                     <div className="flex-1 flex items-center pr-1">
@@ -151,28 +176,6 @@ export function MonthYearPicker({ label, value, onChange, disabled, showPresentC
                     </div>
                 )}
             </div>
-
-            {/* Currently Work Here Checkbox Toggle */}
-            {showPresentCheck && (
-                <label className={`inline-flex items-center gap-2 mt-1 px-2.5 py-1 rounded-lg border text-xs font-medium cursor-pointer transition-all ${
-                    isCurrent
-                        ? 'bg-indigo-50 border-indigo-200 text-indigo-700 font-bold'
-                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                }`}>
-                    <input
-                        type="checkbox"
-                        checked={Boolean(isCurrent)}
-                        onChange={(e) => {
-                            const checked = e.target.checked;
-                            if (onCurrentChange) onCurrentChange(checked);
-                            if (checked) onChange('Present');
-                            else onChange('');
-                        }}
-                        className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer accent-indigo-600"
-                    />
-                    <span>I currently work here</span>
-                </label>
-            )}
         </div>
     );
 }

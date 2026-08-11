@@ -35,5 +35,14 @@ h5 {
 h6 {
     font-size: 0.67em;
     margin: 2.33em 0;
-    font-weight: 400;
+    font-weight: 500;
+}
+
+/* Utility to hide scrollbars */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }

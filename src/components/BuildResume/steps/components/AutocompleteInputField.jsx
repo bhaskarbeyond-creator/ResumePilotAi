@@ -21,6 +21,7 @@ const AutocompleteInputField = ({
     labelClassName = '',
     hideLabel = false
 }) => {
+    const { t } = useTranslation('common');
     const safeValue = (value && typeof value === 'object') ? (value.name || value.title || value.value || '') : (value || '');
     const [suggestions, setSuggestions] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -190,7 +191,7 @@ const AutocompleteInputField = ({
             {showDropdown && suggestions.length > 0 && (
                 <div className="absolute z-50 w-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto py-1 animate-in fade-in slide-in-from-top-1 duration-150">
                     <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-50">
-                        {t('Autocomplete.suggestionsTitle', 'Suggested by AI')}
+                        {typeof t === 'function' ? t('Autocomplete.suggestionsTitle', 'Suggested by AI') : 'Suggested by AI'}
                     </div>
                     <ul>
                         {suggestions.map((option, idx) => (

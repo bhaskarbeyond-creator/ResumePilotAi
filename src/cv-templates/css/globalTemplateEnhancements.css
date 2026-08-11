@@ -146,24 +146,25 @@ h1, h2, h3, h4, h5, h6,
   -webkit-column-break-after: avoid !important;
 }
 
-/* 2. Enhanced Headings & Typography Hierarchy */
-h1, h2, h3, h4 {
+/* 2. Enhanced Headings & Typography Hierarchy (Scoped strictly to CV & Resume preview templates) */
+[class*="-board"] h1, [class*="-board"] h2, [class*="-board"] h3, [class*="-board"] h4,
+.cv-template h1, .cv-template h2, .cv-template h3, .cv-template h4,
+.resume-preview h1, .resume-preview h2, .resume-preview h3, .resume-preview h4 {
   font-weight: 700 !important;
   letter-spacing: -0.02em !important;
-  color: #0f172a;
 }
 
-h1 {
+[class*="-board"] h1, .cv-template h1, .resume-preview h1 {
   font-size: 32px !important;
   line-height: 1.15 !important;
 }
 
-h2 {
+[class*="-board"] h2, .cv-template h2, .resume-preview h2 {
   font-size: 22px !important;
   line-height: 1.25 !important;
 }
 
-h3 {
+[class*="-board"] h3, .cv-template h3, .resume-preview h3 {
   font-size: 16px !important;
   line-height: 1.35 !important;
 }

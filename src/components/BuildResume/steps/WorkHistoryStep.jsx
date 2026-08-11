@@ -6,6 +6,7 @@ import InputField from './components/InputField';
 import AutocompleteInputField from './components/AutocompleteInputField';
 import RichTextEditor from './components/RichTextEditor';
 import MonthYearPicker from '../../Form/MonthYearPicker';
+import BulletPointsEditor from '../../Form/BulletPointsEditor';
 
 const WorkHistoryStep = ({ resumeData, updateResumeData }) => {
     const { t } = useTranslation('common');
@@ -308,20 +309,11 @@ const WorkHistoryStep = ({ resumeData, updateResumeData }) => {
                                         })()}
                                     </div>
                                     <div className="relative">
-                                        <RichTextEditor
+                                        <BulletPointsEditor
                                             value={employment.description}
                                             onChange={(value) => updateEmployment(employment.id, 'description', value)}
-                                            rows={4}
                                             placeholder={t('WorkHistoryStep.fields.description.placeholder')}
-                                            className={employment.description && employment.description.trim() !== '' ? 'border-green-300 bg-green-50' : ''}
                                         />
-                                        {employment.description && employment.description.trim() !== '' && (
-                                            <div className="absolute top-3 right-3 flex items-center pointer-events-none">
-                                                <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                </svg>
-                                            </div>
-                                        )}
                                     </div>
                                 </div>
                             </div>
