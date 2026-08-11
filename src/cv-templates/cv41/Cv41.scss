@@ -1,0 +1,430 @@
+@use '../../components/variables' as *;
+
+.cv41-board {
+    width: 21cm;
+    min-height: 29.7cm;
+    font-family: $font;
+    background-color: #fff;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+    color: #333;
+    display: flex;
+    flex-direction: column;
+
+    // Variables
+    $primary-color: #7a243a; // Burgundy
+    $primary-light: #9e3e55; // Lighter Burgundy
+    $primary-dark: #5e1c2c; // Darker Burgundy
+    $secondary-color: #c0c0c0; // Silver
+    $secondary-dark: #a0a0a0; // Darker Silver
+    $accent-color: #f5e6ea; // Very Light Pink
+    $text-dark: #333333;
+    $text-medium: #555555;
+    $text-light: #777777;
+    $background-light: #f9f9f9;
+    $border-color: #e5e5e5;
+    $shadow-color: rgba(0, 0, 0, 0.08);
+
+    // Header
+    .cv41-header {
+        display: flex;
+        flex-direction: column;
+        background: linear-gradient(135deg, $primary-color, $primary-dark);
+        padding: 30px 40px;
+        color: white;
+        position: relative;
+        box-shadow: 0 3px 10px $shadow-color;
+
+        .profile-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            position: relative;
+
+            &:after {
+                content: '';
+                position: absolute;
+                left: 0;
+                bottom: 0;
+                width: 100%;
+                height: 1px;
+                background-color: rgba(255, 255, 255, 0.2);
+            }
+
+            .photo-wrapper {
+                margin-right: 25px;
+                position: relative;
+
+                .profile-photo,
+                .photo-placeholder {
+                    width: 100px;
+                    height: 100px;
+                    border-radius: 50%;
+                    border: 3px solid rgba(255, 255, 255, 0.3);
+                    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+                    overflow: hidden;
+                }
+
+                .profile-photo {
+                    object-fit: cover;
+                }
+
+                .photo-placeholder {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    background-color: rgba(255, 255, 255, 0.1);
+
+                    .placeholder-icon {
+                        font-size: 40px;
+                        color: rgba(255, 255, 255, 0.4);
+                    }
+                }
+            }
+
+            .name-block {
+                flex: 1;
+
+                .name {
+                    font-size: 30px;
+                    font-weight: 700;
+                    margin: 0 0 5px;
+                    letter-spacing: 0.5px;
+                    text-transform: uppercase;
+                }
+
+                .profession {
+                    font-size: 16px;
+                    font-weight: 400;
+                    margin: 0;
+                    color: $secondary-color;
+                    letter-spacing: 0.5px;
+                }
+            }
+        }
+
+        .contact-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px 25px;
+
+            .contact-item {
+                display: flex;
+                align-items: center;
+                font-size: 13px;
+
+                .contact-icon {
+                    color: $secondary-color;
+                    font-size: 12px;
+                    margin-right: 8px;
+                }
+
+                span {
+                    opacity: 0.9;
+                }
+            }
+        }
+    }
+
+    // Main Content
+    .cv41-main {
+        display: flex;
+        flex: 1;
+
+        .left-panel {
+            flex: 1.5;
+            background-color: white;
+            padding: 0;
+
+            .panel-content {
+                padding: 35px 40px;
+            }
+        }
+
+        .right-panel {
+            flex: 1;
+            background-color: $background-light;
+            position: relative;
+
+            &:before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 1px;
+                height: 100%;
+                background: linear-gradient(to bottom, $border-color, rgba($border-color, 0.5));
+            }
+
+            .panel-content {
+                padding: 35px 30px;
+            }
+        }
+    }
+
+    // Sections
+    .section {
+        margin-bottom: 30px;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            position: relative;
+
+            &:after {
+                content: '';
+                position: absolute;
+                left: 0;
+                bottom: -10px;
+                width: 40px;
+                height: 2px;
+                background-color: $primary-color;
+            }
+
+            .section-icon {
+                color: $primary-color;
+                font-size: 16px;
+                margin-right: 10px;
+            }
+
+            .section-title {
+                font-size: 18px;
+                font-weight: 600;
+                text-transform: uppercase;
+                color: $primary-color;
+                margin: 0;
+                letter-spacing: 1px;
+            }
+        }
+
+        .section-body {
+            padding-top: 10px;
+        }
+    }
+
+    // Profile Text
+    .profile-text {
+        font-size: 14px;
+        line-height: 1.6;
+        color: $text-medium;
+        margin: 0;
+        padding: 0 0 0 10px;
+        position: relative;
+        border-left: 2px solid $primary-light;
+        opacity: 0.9;
+    }
+
+    // Experience and Education Items
+    .experience-list,
+    .education-list {
+        display: flex;
+        flex-direction: column;
+        gap: 25px;
+
+        .experience-item,
+        .education-item {
+            position: relative;
+            padding-bottom: 25px;
+
+            &:last-child {
+                padding-bottom: 0;
+                border-bottom: none;
+
+                &:after {
+                    display: none;
+                }
+            }
+
+            &:after {
+                content: '';
+                position: absolute;
+                left: 0;
+                bottom: 0;
+                width: 100%;
+                height: 1px;
+                background: linear-gradient(to right, $border-color, rgba($border-color, 0.2));
+            }
+
+            .item-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                margin-bottom: 10px;
+
+                .header-main {
+                    flex: 1;
+
+                    .item-title {
+                        font-size: 16px;
+                        font-weight: 600;
+                        margin: 0 0 5px;
+                        color: $text-dark;
+                    }
+
+                    .item-company {
+                        font-size: 14px;
+                        font-weight: 500;
+                        color: $primary-color;
+                    }
+                }
+
+                .header-time {
+                    .time-badge {
+                        display: flex;
+                        align-items: center;
+                        padding: 4px 10px;
+                        background-color: $accent-color;
+                        border-radius: 3px;
+                        box-shadow: 0 1px 3px $shadow-color;
+                        font-size: 12px;
+                        color: $primary-color;
+                        white-space: nowrap;
+
+                        .time-icon {
+                            font-size: 10px;
+                            margin-right: 5px;
+                        }
+                    }
+                }
+            }
+
+            .item-content {
+                .item-description {
+                    font-size: 13.5px;
+                    line-height: 1.5;
+                    color: $text-medium;
+                    margin: 0;
+                    padding-right: 20px;
+                    white-space: pre-wrap;
+                }
+            }
+        }
+    }
+
+    // Skills
+    .skills-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+
+        .skill-item {
+            .skill-info {
+                .skill-name {
+                    display: block;
+                    font-size: 14px;
+                    font-weight: 500;
+                    color: $text-dark;
+                    margin-bottom: 7px;
+                }
+
+                .skill-level {
+                    .skill-dashes {
+                        display: flex;
+                        gap: 4px;
+
+                        .skill-dash {
+                            height: 4px;
+                            flex: 1;
+                            border-radius: 2px;
+
+                            &.active {
+                                background-color: $primary-color;
+                            }
+
+                            &.inactive {
+                                background-color: $secondary-dark;
+                                opacity: 0.3;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Languages
+    .languages-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+
+        .language-item {
+            .language-name {
+                font-size: 14px;
+                font-weight: 500;
+                color: $text-dark;
+                margin-bottom: 5px;
+            }
+
+            .language-stars {
+                display: flex;
+                gap: 5px;
+
+                .star-icon {
+                    font-size: 12px;
+
+                    &.filled {
+                        color: $primary-color;
+                    }
+
+                    &.half {
+                        color: $primary-color;
+                    }
+
+                    &.empty {
+                        color: $secondary-dark;
+                        opacity: 0.3;
+                    }
+                }
+            }
+        }
+    }
+}
+
+@media print {
+    body {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .cv41-board {
+        box-shadow: none;
+    }
+}
+
+.cv41-board {
+    .profile-text,
+    .item-description {
+        strong,
+        b {
+            font-weight: bold;
+        }
+
+        em,
+        i {
+            font-style: italic;
+        }
+
+        u {
+            text-decoration: underline;
+        }
+
+        ul,
+        ol {
+            padding-left: 20px;
+            margin-top: 5px;
+            margin-bottom: 5px;
+        }
+
+        li {
+            margin-bottom: 2px;
+        }
+    }
+}

@@ -1,0 +1,21 @@
+@use "../../variables" as *;
+@use 'sass:color';
+.instalationSuccess{
+    height: 90%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-family: $font;
+    .iconWrapper{
+        width:200px;
+        height:200px
+    }
+    .successMessage{
+        font-size: 22px;
+        width: 80%;
+        text-align: center;
+        margin: 40px;
+    }
+}

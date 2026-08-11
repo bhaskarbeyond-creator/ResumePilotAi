@@ -1,0 +1,256 @@
+.isSaving {
+    background-color: rgb(143, 143, 143) !important;
+}
+.board {
+    height: 100vh ;
+    .ad-mobile {
+        display: none;
+    }
+    .board-heading {
+        display: flex;
+        width: 100%;
+        justify-content: center;
+    }
+    .cv {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        .pagination {
+            list-style-type: none;
+            padding: 0;
+            justify-content: center;
+            .navigationImage {
+                width: 20px;
+                height: 20px;
+                vertical-align: middle;
+            }
+            .navigationImagePrevious {
+                width: 20px;
+                height: 20px;
+                vertical-align: middle;
+                transform: rotate(180deg);
+            }
+            li {
+                display: inline;
+                padding: 0px 5px;
+                cursor: pointer;
+            }
+        }
+        .ads {
+            text-align: center;
+        }
+        border-radius: 6px;
+        .cvAction {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+            button {
+                margin-right: 10px;
+            }
+            .selectTemplateLink {
+                cursor: pointer;
+                display: inline;
+                font-size: 16px;
+                img {
+                    width: 19px;
+                    vertical-align: middle;
+                }
+            }
+        }
+    }
+    button {
+        cursor: pointer;
+        align-self: center;
+        font-size: 22px;
+    }
+}
+
+#Resume {
+    background-color: white;
+    width: 470px;
+    height: 700px;
+    margin: auto;
+    overflow: hidden;
+    border: 0px solid black;
+    position: relative;
+    overflow-y: scroll;
+    padding-right: 17px; /* Increase/decrease this value for cross-browser compatibility */
+    box-sizing: content-box; /* So the width will be 100% + 17px */
+    border-radius: 15px;
+    .cv-board,
+    #resumen {
+        transform-origin: top;
+        transform: scale(0.625);
+
+        position: relative;
+        left: -155px;
+    }
+}
+#Resume::-webkit-scrollbar {
+    width: 0; /* Remove scrollbar space */
+    background: transparent; /* Optional: just make scrollbar invisible */
+}
+
+// Mobile-only responsive fixes - only applies to small screens
+@media only screen and (max-width: 768px) {
+    .relative.z-10 {
+        padding: 0.5rem;
+    }
+    
+    // Reduce overall container height for mobile
+    .min-h-\[calc\(90vh\)\] {
+        min-height: calc(100vh - 100px) !important;
+    }
+    
+    .max-h-\[calc\(90vh\)\] {
+        max-height: calc(100vh - 100px) !important;
+    }
+    
+    // Scale down the main container on mobile
+    .max-w-lg {
+        max-width: 95vw;
+    }
+    
+    // Make resume preview fit mobile screens with much smaller dimensions
+    #Resume {
+        width: min(280px, 85vw) !important;
+        height: min(420px, 60vh) !important;
+        margin: 0 auto;
+        
+        .cv-board,
+        #resumen {
+            transform: scale(0.4) !important;
+            left: -90px !important;
+        }
+    }
+    
+    .w-\[470px\] {
+        width: min(280px, 85vw) !important;
+    }
+    
+    .h-\[700px\] {
+        height: min(420px, 60vh) !important;
+    }
+    
+    // Scale down the canvas content more aggressively
+    .scale-\[0\.625\] {
+        transform: scale(0.4) !important;
+    }
+    
+    .-left-\[90px\] {
+        left: -50px !important;
+    }
+    
+    // Make action buttons wrap better on mobile
+    .max-w-4xl {
+        padding: 0 0.5rem;
+    }
+    
+    // Adjust button sizes for mobile
+    .inline-flex.items-center.gap-2 {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+        
+        span {
+            font-size: 0.8rem;
+        }
+    }
+    
+    // Make color panel fit mobile
+    .fixed.top-20.right-6 {
+        right: 0.5rem;
+        left: 0.5rem;
+        width: auto;
+        max-width: none;
+        top: 3rem;
+    }
+    
+    // Reduce margins and padding for mobile
+    .mb-8 {
+        margin-bottom: 1rem !important;
+    }
+    
+    .p-4 {
+        padding: 0.75rem !important;
+    }
+}
+
+@media only screen and (max-width: 517px) {
+    // Specific fix for screens narrower than 517px to prevent clipping
+    .relative.z-10 {
+        padding: 0.25rem;
+    }
+    
+    #Resume {
+        width: min(200px, 75vw) !important;
+        height: min(300px, 45vh) !important;
+        
+        .cv-board,
+        #resumen {
+            transform: scale(0.3) !important;
+            left: -60px !important;
+        }
+    }
+    
+    .w-\[470px\] {
+        width: min(200px, 75vw) !important;
+    }
+    
+    .h-\[700px\] {
+        height: min(300px, 45vh) !important;
+    }
+    
+    .scale-\[0\.625\] {
+        transform: scale(0.3) !important;
+    }
+    
+    .-left-\[90px\] {
+        left: -30px !important;
+    }
+    
+    // Stack buttons vertically on very small screens
+    .flex.items-center.justify-center.gap-3.flex-wrap {
+        flex-direction: column;
+        gap: 0.5rem;
+        
+        > * {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+    
+    .inline-flex.items-center.gap-2 {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.7rem;
+        
+        span {
+            font-size: 0.7rem;
+        }
+    }
+    
+    // Further reduce margins on very small screens
+    .mb-8 {
+        margin-bottom: 0.5rem !important;
+    }
+    
+    // Make sure container doesn't exceed screen width
+    .max-w-lg {
+        max-width: 95vw !important;
+    }
+    
+    // Ensure the entire content fits
+    .px-4 {
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+    }
+}
+
+@media only screen and (max-width: 480px) {
+    // Keep existing styles for 480px and below but make them less aggressive since 517px handles the narrow screens
+    .relative.z-10 {
+        padding: 0.25rem;
+    }
+}

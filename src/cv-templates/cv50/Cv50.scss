@@ -1,0 +1,557 @@
+@use '../../components/variables' as *;
+
+.cv50-board {
+    width: 21cm;
+    min-height: 29.7cm;
+    font-family: $font;
+    background-color: #ffffff;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+
+    // Color Variables
+    $primary: #475569; // Slate blue
+    $primary-light: #64748b;
+    $primary-dark: #334155;
+    $accent: #34d399; // Mint green
+    $accent-light: #6ee7b7;
+    $accent-dark: #10b981;
+    $text-dark: #1e293b;
+    $text-medium: #475569;
+    $text-light: #94a3b8;
+    $text-ultra-light: #e2e8f0;
+    $white: #ffffff;
+    $surface: #f8fafc;
+    $surface-dark: #f1f5f9;
+    $border: #e2e8f0;
+    $gradient-primary: linear-gradient(135deg, $primary 0%, $primary-dark 100%);
+    $gradient-accent: linear-gradient(135deg, $accent 0%, $accent-dark 100%);
+
+    // Header Section
+    .cv50-header {
+        background: $white;
+        padding: 40px 35px 30px;
+        border-bottom: 1px solid $border;
+        position: relative;
+
+        &::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            height: 100%;
+            width: 40%;
+            background: linear-gradient(135deg, rgba($accent, 0.05) 0%, rgba($primary, 0.05) 100%);
+            clip-path: polygon(100% 0, 0 0, 100% 100%);
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .profile-section {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+
+            .photo-container {
+                width: 120px;
+                height: 120px;
+                border-radius: 8px;
+                overflow: hidden;
+                margin-right: 30px;
+                position: relative;
+                border: 3px solid $white;
+                box-shadow: 0 5px 15px rgba($primary, 0.1);
+                background-color: $surface;
+                flex-shrink: 0;
+
+                &::after {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    box-shadow: inset 0 0 0 3px rgba($accent, 0.3);
+                    border-radius: 5px;
+                    pointer-events: none;
+                }
+
+                .profile-photo {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                }
+
+                .photo-placeholder {
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: $text-light;
+                    font-size: 40px;
+                }
+            }
+
+            .name-title {
+                flex: 1;
+
+                .name {
+                    font-size: 32px;
+                    font-weight: 700;
+                    color: $primary-dark;
+                    margin: 0 0 5px;
+                    letter-spacing: 0.5px;
+                    text-transform: uppercase;
+                    position: relative;
+
+                    &::after {
+                        content: '';
+                        position: absolute;
+                        bottom: -10px;
+                        left: 0;
+                        width: 50px;
+                        height: 3px;
+                        background: $gradient-accent;
+                        border-radius: 2px;
+                    }
+                }
+
+                .profession {
+                    font-size: 16px;
+                    font-weight: 500;
+                    color: $text-medium;
+                    margin: 18px 0 0;
+                }
+            }
+        }
+
+        .contact-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px 25px;
+            margin-top: 20px;
+
+            .contact-item {
+                display: flex;
+                align-items: center;
+
+                .contact-icon {
+                    width: 34px;
+                    height: 34px;
+                    border-radius: 7px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin-right: 12px;
+                    color: $white;
+                    background: $gradient-primary;
+                    font-size: 14px;
+                    flex-shrink: 0;
+                }
+
+                .contact-text {
+                    font-size: 14px;
+                    color: $text-medium;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+            }
+        }
+    }
+
+    // Main Content
+    .cv50-main {
+        flex: 1;
+        padding: 35px;
+        background-color: $white;
+
+        .main-content {
+            display: flex;
+            gap: 35px;
+            height: 100%;
+
+            .left-column {
+                flex: 3;
+            }
+
+            .right-column {
+                flex: 2;
+            }
+
+            // Section Styling
+            .section {
+                background-color: $surface;
+                border-radius: 10px;
+                box-shadow: 0 2px 8px rgba($primary, 0.05);
+                margin-bottom: 30px;
+                overflow: hidden;
+
+                .section-header {
+                    display: flex;
+                    align-items: center;
+                    padding: 15px 20px;
+                    background-color: $surface-dark;
+                    border-bottom: 1px solid $border;
+
+                    .section-icon-container {
+                        width: 36px;
+                        height: 36px;
+                        border-radius: 8px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        background: $gradient-primary;
+                        color: $white;
+                        margin-right: 15px;
+                        flex-shrink: 0;
+                    }
+
+                    .section-title {
+                        font-size: 18px;
+                        font-weight: 600;
+                        color: $primary;
+                        margin: 0;
+                        letter-spacing: 0.5px;
+                    }
+                }
+
+                .section-content {
+                    padding: 20px;
+                }
+            }
+
+            // Summary Section
+            .summary-section {
+                .summary-container {
+                    background-color: $white;
+                    border-radius: 8px;
+                    padding: 20px;
+                    border-left: 3px solid $accent;
+
+                    .summary-text {
+                        font-size: 14px;
+                        line-height: 1.6;
+                        color: $text-medium;
+                        margin: 0;
+                    }
+                }
+            }
+
+            // Skills Section
+            .skills-section {
+                .skills-container {
+                    .skill-category {
+                        margin-bottom: 20px;
+
+                        &:last-child {
+                            margin-bottom: 0;
+                        }
+
+                        .category-title {
+                            font-size: 16px;
+                            font-weight: 600;
+                            color: $primary;
+                            margin: 0 0 12px;
+                            padding-left: 10px;
+                            border-left: 3px solid $accent;
+                        }
+
+                        .skill-grid {
+                            display: flex;
+                            flex-direction: column;
+                            gap: 12px;
+
+                            .skill-item {
+                                background-color: $white;
+                                border-radius: 6px;
+                                padding: 12px 15px;
+                                box-shadow: 0 2px 4px rgba($primary, 0.05);
+
+                                .skill-info {
+                                    display: flex;
+                                    justify-content: space-between;
+                                    margin-bottom: 8px;
+
+                                    .skill-name {
+                                        font-size: 14px;
+                                        font-weight: 500;
+                                        color: $text-dark;
+                                    }
+
+                                    .skill-level-text {
+                                        font-size: 12px;
+                                        color: $accent-dark;
+                                        text-transform: capitalize;
+                                    }
+                                }
+
+                                .skill-bar-container {
+                                    height: 6px;
+                                    background-color: $text-ultra-light;
+                                    border-radius: 3px;
+                                    overflow: hidden;
+
+                                    .skill-bar {
+                                        height: 100%;
+                                        background: $gradient-accent;
+                                        border-radius: 3px;
+                                        transition: width 0.5s ease;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Languages Section
+            .languages-section {
+                .languages-container {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 15px;
+
+                    .language-item {
+                        background-color: $white;
+                        border-radius: 6px;
+                        padding: 15px;
+                        box-shadow: 0 2px 4px rgba($primary, 0.05);
+
+                        .language-header {
+                            display: flex;
+                            justify-content: space-between;
+                            margin-bottom: 10px;
+
+                            .language-name {
+                                font-size: 15px;
+                                font-weight: 500;
+                                color: $text-dark;
+                                margin: 0;
+                            }
+
+                            .language-level {
+                                font-size: 12px;
+                                color: $accent-dark;
+                            }
+                        }
+
+                        .language-proficiency {
+                            display: flex;
+                            gap: 6px;
+
+                            .language-dot {
+                                width: 12px;
+                                height: 12px;
+                                border-radius: 50%;
+                                background-color: $text-ultra-light;
+                                position: relative;
+
+                                &.filled {
+                                    background: $gradient-primary;
+
+                                    &::after {
+                                        content: '';
+                                        position: absolute;
+                                        top: -2px;
+                                        left: -2px;
+                                        right: -2px;
+                                        bottom: -2px;
+                                        border-radius: 50%;
+                                        background-color: transparent;
+                                        border: 1px solid rgba($primary, 0.3);
+                                        opacity: 0.5;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Timeline Sections (Experience & Education)
+            .timeline-container {
+                position: relative;
+
+                .timeline-item {
+                    display: flex;
+                    margin-bottom: 25px;
+                    position: relative;
+
+                    &:last-child {
+                        margin-bottom: 0;
+                    }
+
+                    &:not(:last-child)::before {
+                        content: '';
+                        position: absolute;
+                        top: 38px;
+                        left: 18px;
+                        bottom: -25px;
+                        width: 2px;
+                        background-color: $border;
+                        z-index: 0;
+                    }
+
+                    .timeline-marker {
+                        width: 36px;
+                        height: 36px;
+                        border-radius: 50%;
+                        background: $white;
+                        border: 2px solid $accent;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        margin-right: 20px;
+                        flex-shrink: 0;
+                        position: relative;
+                        z-index: 1;
+                        box-shadow: 0 2px 5px rgba($primary, 0.1);
+
+                        .marker-icon {
+                            color: $accent;
+                            font-size: 16px;
+                        }
+                    }
+
+                    .timeline-content {
+                        flex: 1;
+                        background-color: $white;
+                        border-radius: 8px;
+                        padding: 16px;
+                        box-shadow: 0 2px 4px rgba($primary, 0.05);
+
+                        .timeline-header {
+                            display: flex;
+                            justify-content: space-between;
+                            flex-wrap: wrap;
+                            margin-bottom: 10px;
+                            gap: 10px;
+
+                            .timeline-title {
+                                font-size: 16px;
+                                font-weight: 600;
+                                color: $primary-dark;
+                                margin: 0;
+                            }
+
+                            .timeline-period {
+                                display: flex;
+                                align-items: center;
+                                background-color: $surface-dark;
+                                padding: 5px 10px;
+                                border-radius: 4px;
+
+                                .period-icon {
+                                    color: $accent;
+                                    margin-right: 6px;
+                                    font-size: 12px;
+                                }
+
+                                .period-text {
+                                    font-size: 12px;
+                                    color: $text-medium;
+                                    white-space: nowrap;
+                                }
+                            }
+                        }
+
+                        .timeline-employer {
+                            display: flex;
+                            align-items: center;
+                            margin-bottom: 12px;
+
+                            .employer-icon {
+                                color: $accent;
+                                margin-right: 8px;
+                                font-size: 14px;
+                            }
+
+                            .employer-name {
+                                font-size: 14px;
+                                color: $text-medium;
+                                font-weight: 500;
+                            }
+                        }
+
+                        .timeline-description {
+                            font-size: 13px;
+                            line-height: 1.6;
+                            color: $text-light;
+                            margin: 0;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+.cv50-board {
+    .summary-text,
+    .timeline-description {
+        strong,
+        b {
+            font-weight: bold;
+        }
+
+        em,
+        i {
+            font-style: italic;
+        }
+
+        u {
+            text-decoration: underline;
+        }
+
+        ul,
+        ol {
+            padding-left: 20px;
+            margin-top: 5px;
+            margin-bottom: 5px;
+        }
+
+        li {
+            margin-bottom: 2px;
+        }
+    }
+}
+
+@media print {
+    body {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .cv50-board {
+        box-shadow: none;
+
+        .cv50-header .profile-section .photo-container {
+            box-shadow: none !important;
+        }
+
+        .cv50-main .main-content .section {
+            box-shadow: none !important;
+            page-break-inside: avoid;
+        }
+
+        .cv50-main .main-content .timeline-item .timeline-content {
+            box-shadow: none !important;
+        }
+
+        .skills-section .skills-container .skill-category .skill-grid .skill-item {
+            box-shadow: none !important;
+        }
+
+        .languages-section .languages-container .language-item {
+            box-shadow: none !important;
+        }
+    }
+}

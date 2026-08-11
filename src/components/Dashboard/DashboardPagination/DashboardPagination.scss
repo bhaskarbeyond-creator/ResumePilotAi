@@ -1,0 +1,36 @@
+.dashboard_pagination{
+    margin-top: auto;
+    background: #fff;
+    width: fit-content;
+    padding: 0px 0px;
+    border-radius: 10px;
+    display: flex;
+      margin: 20px auto;
+      margin-top: auto;
+      
+    ul{
+        list-style-type: none;
+        display: flex;
+        gap: 40px;
+        color: #A5ACD0;
+        font-size: 1.2em;
+        li{
+
+            padding: 10px 20px;
+            // hover effect  background
+            cursor: pointer;
+            border-radius: 10px;
+            transition: background-color 0.15s ease-in-out;
+            // active
+            &.active{
+                background-color: #3F51B5;
+                color: #fff;
+                font-weight: 600;
+            }
+            // hover
+            &:hover{
+               
+            }
+        }
+    }
+}

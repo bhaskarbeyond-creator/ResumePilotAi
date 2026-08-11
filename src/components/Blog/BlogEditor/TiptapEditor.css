@@ -1,0 +1,251 @@
+/* Tiptap Editor Styles */
+.ProseMirror {
+  outline: none;
+  padding: 0;
+  margin: 0;
+  min-height: 500px;
+  font-size: 16px;
+  line-height: 1.7;
+  color: #374151;
+}
+
+.ProseMirror p {
+  margin: 1em 0;
+}
+
+.ProseMirror h1 {
+  font-size: 2em;
+  font-weight: bold;
+  margin: 1.5em 0 0.5em 0;
+  line-height: 1.2;
+  color: #111827;
+}
+
+.ProseMirror h2 {
+  font-size: 1.5em;
+  font-weight: bold;
+  margin: 1.3em 0 0.5em 0;
+  line-height: 1.3;
+  color: #111827;
+}
+
+.ProseMirror h3 {
+  font-size: 1.25em;
+  font-weight: bold;
+  margin: 1.2em 0 0.5em 0;
+  line-height: 1.4;
+  color: #111827;
+}
+
+.ProseMirror ul, .ProseMirror ol {
+  margin: 1em 0;
+  padding-left: 1.5em;
+}
+
+.ProseMirror ul li {
+  list-style-type: disc;
+  margin: 0.25em 0;
+}
+
+.ProseMirror ol li {
+  list-style-type: decimal;
+  margin: 0.25em 0;
+}
+
+.ProseMirror blockquote {
+  border-left: 4px solid #3b82f6;
+  padding-left: 1em;
+  margin: 1.5em 0;
+  font-style: italic;
+  color: #6b7280;
+  background-color: #f8fafc;
+  padding: 1em;
+  border-radius: 0.375rem;
+}
+
+.ProseMirror code {
+  background-color: #f1f5f9;
+  color: #dc2626;
+  padding: 0.125em 0.25em;
+  border-radius: 0.25rem;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.875em;
+}
+
+.ProseMirror pre {
+  background-color: #1f2937;
+  color: #f9fafb;
+  padding: 1em;
+  border-radius: 0.5rem;
+  margin: 1.5em 0;
+  overflow-x: auto;
+}
+
+.ProseMirror pre code {
+  background-color: transparent;
+  color: #f9fafb;
+  padding: 0;
+  border-radius: 0;
+  font-size: 0.875em;
+}
+
+.ProseMirror strong {
+  font-weight: bold;
+}
+
+.ProseMirror em {
+  font-style: italic;
+}
+
+.ProseMirror a {
+  color: #3b82f6;
+  text-decoration: underline;
+}
+
+.ProseMirror a:hover {
+  color: #1d4ed8;
+}
+
+/* Focus styles */
+.ProseMirror:focus {
+  outline: none;
+}
+
+/* Placeholder styles when editor is empty */
+.ProseMirror.is-empty:before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+  pointer-events: none;
+  height: 0;
+}
+
+/* Selection styles */
+.ProseMirror ::selection {
+  background-color: #dbeafe;
+}
+
+/* Table styles */
+.ProseMirror table {
+  border-collapse: collapse;
+  margin: 1.5em 0;
+  table-layout: fixed;
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.ProseMirror table td,
+.ProseMirror table th {
+  border: 1px solid #e5e7eb;
+  box-sizing: border-box;
+  min-width: 1em;
+  padding: 0.75em 1em;
+  position: relative;
+  vertical-align: top;
+}
+
+.ProseMirror table th {
+  background-color: #f9fafb;
+  font-weight: bold;
+  text-align: left;
+}
+
+.ProseMirror table .selectedCell:after {
+  background: rgba(59, 130, 246, 0.1);
+  content: "";
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+}
+
+.ProseMirror table .column-resize-handle {
+  background-color: #3b82f6;
+  bottom: -2px;
+  position: absolute;
+  right: -2px;
+  top: 0;
+  width: 4px;
+  pointer-events: none;
+}
+
+/* Image styles */
+.ProseMirror img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  margin: 1.5em 0;
+}
+
+.ProseMirror img.ProseMirror-selectednode {
+  outline: 3px solid #3b82f6;
+}
+
+/* Link styles */
+.ProseMirror a {
+  color: #3b82f6;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: rgba(59, 130, 246, 0.4);
+  text-underline-offset: 2px;
+  transition: all 0.2s ease;
+}
+
+.ProseMirror a:hover {
+  color: #1d4ed8;
+  text-decoration-color: #1d4ed8;
+}
+
+/* Highlight styles */
+.ProseMirror mark {
+  background-color: #fef08a;
+  padding: 0 0.125em;
+  border-radius: 0.125rem;
+}
+
+/* Text alignment */
+.ProseMirror[style*="text-align: center"] {
+  text-align: center;
+}
+
+.ProseMirror[style*="text-align: right"] {
+  text-align: right;
+}
+
+.ProseMirror[style*="text-align: justify"] {
+  text-align: justify;
+}
+
+/* Underline styles */
+.ProseMirror u {
+  text-decoration: underline;
+  text-decoration-color: currentColor;
+  text-underline-offset: 2px;
+}
+
+/* Better spacing for nested elements */
+.ProseMirror li p {
+  margin: 0.5em 0;
+}
+
+.ProseMirror li:first-child p:first-child {
+  margin-top: 0;
+}
+
+.ProseMirror li:last-child p:last-child {
+  margin-bottom: 0;
+}
+
+/* Placeholder styling */
+.ProseMirror.is-empty:first-child::before {
+  color: #9ca3af;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}

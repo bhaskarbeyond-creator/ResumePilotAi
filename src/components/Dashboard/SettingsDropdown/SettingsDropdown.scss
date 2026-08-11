@@ -1,0 +1,30 @@
+// Create a dropdown with Joi ui style
+.settings-dropdown {
+    position: relative;
+    display: inline-block;
+
+    select {
+        border: 2px solid #f1f1f1;
+        border-radius: 5px;
+        padding: 10px 10px;
+        font-size: 0.9em;
+        width: 100%;
+        &:hover {
+            background-color: #f1f1f1;
+        }
+
+        // joy ui border on focus
+        &:focus {
+            outline: none;
+            border: 2px solid #5168e6;
+            border-radius: 5px;
+        }
+
+        option {
+        // Give options flat styling
+            background-color: white;
+            border: none;
+             
+        }
+    }
+}

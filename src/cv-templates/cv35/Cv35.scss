@@ -1,0 +1,393 @@
+@use '../../components/variables' as *;
+@use 'sass:color';
+
+.cv35-board {
+    width: 21cm;
+    min-height: 29.7cm;
+    font-family: $font;
+    background-color: #fff;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+    color: #333;
+
+    // Variables
+    $primary-color: #02a4a6; // Turquoise
+    $secondary-color: #ff7e47; // Orange
+    $text-dark: #2c3e50;
+    $text-medium: #5d6d7e;
+    $text-light: #7f8c8d;
+    $background-light: #f7f9fc;
+    $border-light: #e5e8ed;
+
+    // Header
+    .cv35-header {
+        background: linear-gradient(135deg, $primary-color, color.adjust($primary-color, $lightness: -15%));
+        color: white;
+        padding: 30px 40px 20px;
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+
+            .name-section {
+                .fullname {
+                    font-size: 34px;
+                    font-weight: 600;
+                    margin: 0 0 5px;
+                    letter-spacing: 0.5px;
+                    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+                }
+
+                .job-title {
+                    font-size: 16px;
+                    font-weight: 400;
+                    margin: 0;
+                    opacity: 0.9;
+                }
+            }
+
+            .photo-container {
+                width: 110px;
+                height: 110px;
+                border-radius: 50%;
+                overflow: hidden;
+                border: 4px solid rgba(255, 255, 255, 0.3);
+                background-color: rgba(255, 255, 255, 0.2);
+
+                .profile-photo {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                }
+
+                .photo-placeholder {
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+
+                    .placeholder-icon {
+                        font-size: 42px;
+                        color: rgba(255, 255, 255, 0.6);
+                    }
+                }
+            }
+        }
+
+        .contact-info {
+            display: flex;
+            flex-wrap: wrap;
+            margin-left: -10px;
+            margin-right: -10px;
+
+            .contact-item {
+                display: flex;
+                align-items: center;
+                margin-bottom: 10px;
+                padding: 0 10px;
+                width: calc(50% - 20px);
+
+                .contact-icon {
+                    margin-right: 10px;
+                    font-size: 14px;
+                    opacity: 0.9;
+                }
+
+                span {
+                    font-size: 13px;
+                    font-weight: 300;
+                }
+            }
+        }
+    }
+
+    // Main content
+    .cv35-main {
+        display: flex;
+        min-height: calc(29.7cm - 180px);
+
+        .left-column {
+            flex: 2;
+            padding: 30px;
+            border-right: 1px solid $border-light;
+        }
+
+        .right-column {
+            flex: 1;
+            padding: 30px;
+            background-color: $background-light;
+        }
+
+        // Section styling
+        section {
+            margin-bottom: 30px;
+
+            &:last-child {
+                margin-bottom: 0;
+            }
+
+            .section-header {
+                display: flex;
+                align-items: center;
+                margin-bottom: 20px;
+                position: relative;
+
+                &:after {
+                    content: '';
+                    position: absolute;
+                    left: 0;
+                    bottom: -8px;
+                    width: 30px;
+                    height: 3px;
+                    background-color: $secondary-color;
+                }
+
+                .section-icon {
+                    color: $secondary-color;
+                    font-size: 18px;
+                    margin-right: 12px;
+                }
+
+                .section-title {
+                    color: $text-dark;
+                    font-size: 18px;
+                    font-weight: 600;
+                    margin: 0;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                }
+            }
+
+            .section-content {
+                margin-top: 10px;
+            }
+        }
+
+        // Summary section
+        .summary-section {
+            .summary-text {
+                font-size: 14px;
+                line-height: 1.6;
+                color: $text-medium;
+                margin: 0;
+                white-space: pre-wrap;
+            }
+        }
+
+        // Experience & Education sections
+        .experience-item,
+        .education-item {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid $border-light;
+
+            &:last-child {
+                margin-bottom: 0;
+                padding-bottom: 0;
+                border-bottom: none;
+            }
+
+            .experience-header,
+            .education-header {
+                display: flex;
+                justify-content: space-between;
+                flex-wrap: wrap;
+                margin-bottom: 10px;
+
+                .experience-title-box,
+                .education-title-box {
+                    flex: 1;
+                    min-width: 200px;
+                    margin-right: 15px;
+                    margin-bottom: 5px;
+
+                    .experience-title,
+                    .education-title {
+                        color: $text-dark;
+                        font-size: 16px;
+                        font-weight: 600;
+                        margin: 0 0 3px;
+                    }
+
+                    .experience-company,
+                    .education-school {
+                        display: flex;
+                        align-items: center;
+                        color: $primary-color;
+                        font-size: 14px;
+
+                        .company-icon,
+                        .school-icon {
+                            font-size: 12px;
+                            margin-right: 6px;
+                        }
+                    }
+                }
+
+                .experience-period,
+                .education-period {
+                    display: flex;
+                    align-items: center;
+                    color: $text-light;
+                    font-size: 13px;
+
+                    .calendar-icon {
+                        margin-right: 5px;
+                        font-size: 12px;
+                    }
+                }
+            }
+
+            .experience-description,
+            .education-description {
+                p {
+                    font-size: 13px;
+                    line-height: 1.5;
+                    color: $text-medium;
+                    margin: 0;
+                    white-space: pre-wrap;
+                }
+            }
+        }
+
+        // Skills section
+        .skills-content {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+
+            .skill-item {
+                .skill-header {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-bottom: 5px;
+
+                    .skill-name {
+                        font-size: 14px;
+                        font-weight: 500;
+                        color: $text-dark;
+                    }
+
+                    .skill-percentage {
+                        font-size: 12px;
+                        color: $secondary-color;
+                        font-weight: 500;
+                    }
+                }
+
+                .skill-bar {
+                    height: 5px;
+                    background-color: rgba(0, 0, 0, 0.05);
+                    border-radius: 3px;
+                    overflow: hidden;
+
+                    .skill-progress {
+                        height: 100%;
+                        background: linear-gradient(to right, $primary-color, $secondary-color);
+                        border-radius: 3px;
+                    }
+                }
+            }
+        }
+
+        // Languages section
+        .languages-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+
+            .language-item {
+                .language-name {
+                    font-size: 14px;
+                    font-weight: 500;
+                    color: $text-dark;
+                    margin-bottom: 5px;
+                }
+
+                .language-level {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+
+                    .stars {
+                        display: flex;
+                        gap: 3px;
+
+                        .star-filled {
+                            color: $secondary-color;
+                            font-size: 14px;
+                        }
+
+                        .star-empty {
+                            color: #d5d8dc;
+                            font-size: 14px;
+                        }
+                    }
+
+                    .level-text {
+                        font-size: 12px;
+                        color: $text-light;
+                    }
+                }
+            }
+        }
+    }
+}
+
+@media print {
+    body {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .cv35-board {
+        box-shadow: none;
+    }
+}
+
+/* Rich Text Support for CV35 */
+.cv35-board {
+    p {
+        strong,
+        b {
+            font-weight: bold;
+        }
+        em,
+        i {
+            font-style: italic;
+        }
+        u {
+            text-decoration: underline;
+        }
+        ul,
+        ol {
+            margin: 6px 0;
+            padding-left: 1em;
+        }
+        li {
+            display: list-item;
+            margin: 0.1em 0;
+            padding-left: 0.2em;
+        }
+        ul {
+            list-style-type: disc;
+        }
+        ol {
+            list-style-type: decimal;
+        }
+        ul ul {
+            list-style-type: circle;
+            margin: 1px 0;
+            padding-left: 0.8em;
+        }
+        ol ol {
+            list-style-type: lower-alpha;
+            margin: 1px 0;
+            padding-left: 0.8em;
+        }
+    }
+}

@@ -1,0 +1,209 @@
+@use '../../components/variables' as *;
+.cv11-board {
+    width: 21cm;
+    height: fit-content !important;
+    font-family: $font;
+    // cv-content
+    .cv11-content {
+        margin-top: 50px;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        font-size: 14px;
+        box-sizing: border-box;
+        padding: 0px 40px;
+        .cv11-content-head {
+            height: 80px;
+            width: 100%;
+
+            h2 {
+                font-weight: 700 !important;
+                margin: 0px;
+                font-size: 25px;
+            }
+            h3 {
+                margin: 0px;
+            }
+        }
+
+        .cv11-content-body {
+            display: grid;
+            grid-template-columns: 1fr;
+            .cv11-sectionTitle {
+                border-bottom: 3px solid black;
+                margin-top: 20px;
+                h2 {
+                    margin: 10px 0px;
+                }
+            }
+
+            .cv11-content-left {
+                padding-right: 10px;
+                box-sizing: border-box;
+                .cv11-summary {
+                    font-size: 11px;
+                }
+                .cv11-jobItem {
+                    .cv11-jobDesc {
+                        font-size: 11px;
+                    }
+                    .cv11-jobTitle {
+                        font-weight: 600;
+
+                        span {
+                            color: #078dff;
+                        }
+                        p {
+                            margin: 0px;
+                            margin-top: 10px;
+                        }
+                        .cv11-jobtime {
+                            font-size: 10px;
+                            margin: 0px;
+                            color: rgb(122, 122, 122);
+                        }
+                    }
+                }
+            }
+            .cv11-content-right {
+                box-sizing: border-box;
+                .cv11-infoSection {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr 1fr;
+
+                    .cv11-infoItem {
+                        margin-top: 10px;
+                        display: grid;
+                        grid-template-columns: 1fr 3fr;
+                        border-bottom: 1px dotted rgb(201, 201, 201);
+                        padding-bottom: 10px;
+                        .cv11-infoSectionLeft {
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            img {
+                                width: 20px;
+                            }
+                        }
+                        .cv11-infoSectionRight {
+                            display: flex;
+                            align-items: center;
+                            font-size: 11px;
+                        }
+                    }
+                }
+
+                .cv11-languages {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    font-weight: 600;
+                    margin-top: 0px;
+                    .cv11-Level {
+                        color: rgb(65, 64, 64);
+                        display: flex;
+                        justify-content: flex-end;
+                    }
+                }
+                .cv11-skills {
+                    display: flex;
+                    flex-wrap: wrap;
+
+                    .cv11-skill {
+                        padding: 5px 5px;
+                        border: 1px solid grey;
+                        border-radius: 5px;
+                        font-size: 11px;
+                        margin-left: 5px;
+                        margin-top: 5px;
+                    }
+                }
+            }
+        }
+    }
+}
+
+/* Rich Text Support for CV11 */
+.cv11-board {
+    // Styling for summary section
+    .cv11-summary {
+        strong,
+        b {
+            font-weight: bold;
+        }
+        em,
+        i {
+            font-style: italic;
+        }
+        u {
+            text-decoration: underline;
+        }
+        ul,
+        ol {
+            margin: 6px 0;
+            padding-left: 1em;
+        }
+        li {
+            display: list-item;
+            margin: 0.1em 0;
+            padding-left: 0.2em;
+        }
+        ul {
+            list-style-type: disc;
+        }
+        ol {
+            list-style-type: decimal;
+        }
+        ul ul {
+            list-style-type: circle;
+            margin: 1px 0;
+            padding-left: 0.8em;
+        }
+        ol ol {
+            list-style-type: lower-alpha;
+            margin: 1px 0;
+            padding-left: 0.8em;
+        }
+    }
+
+    // Styling for job/education descriptions
+    .cv11-jobDesc p {
+        strong,
+        b {
+            font-weight: bold;
+        }
+        em,
+        i {
+            font-style: italic;
+        }
+        u {
+            text-decoration: underline;
+        }
+        ul,
+        ol {
+            margin: 6px 0;
+            padding-left: 1em;
+        }
+        li {
+            display: list-item;
+            margin: 0.1em 0;
+            padding-left: 0.2em;
+        }
+        ul {
+            list-style-type: disc;
+        }
+        ol {
+            list-style-type: decimal;
+        }
+        ul ul {
+            list-style-type: circle;
+            margin: 1px 0;
+            padding-left: 0.8em;
+        }
+        ol ol {
+            list-style-type: lower-alpha;
+            margin: 1px 0;
+            padding-left: 0.8em;
+        }
+    }
+}

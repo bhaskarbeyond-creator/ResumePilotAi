@@ -1,0 +1,49 @@
+@use '../../variables' as *;
+@use 'sass:color';
+.simpleInput {
+    display: flex;
+    flex-direction: column;
+    .inputTitle {
+        margin: 5px 0px;
+        color: #98a1b3;
+        font-size: 0.9em;
+        font-family: $font;
+    }
+    input {
+        font-family: $font;
+        background-color: #f9f6fe;
+        // transparent border
+        border: 1px solid transparent;
+        border-radius: 3px;
+        padding: 10px 10px;
+        height: 28px;
+        font-size: 15px;
+        transition: all 0.2s ease-in-out;
+    }
+    // when the input is not focused
+
+    input:not(:focus) {
+        background-color: #f1f0f3c6;
+    }
+    input:focus {
+        outline-width: 0;
+        border: 1px solid $btn-default;
+    }
+
+    input:focus ~ .border {
+        width: 99% !important;
+        display: initial;
+        opacity: 1;
+    }
+
+    // .border{
+    //      opacity: 0;
+    //     width: 0%;
+
+    //     border: 1px solid transparent ;
+    //     background-color: $btn-default;
+    //     transition: all 0.3s ease-in-out;
+    //     border-bottom-left-radius: 5px;
+    //     border-bottom-right-radius: 5px;
+    // }
+}

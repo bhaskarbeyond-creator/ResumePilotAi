@@ -1,0 +1,660 @@
+import React, { Component } from 'react';
+import { getAllUsers, getUserById, setUserAdminStatus, makeUserAdminByEmail, deleteUserByAdmin, updateUserSubscription, toggleUserSuspension } from '../../../firestore/dbOperations';
+import fire from '../../../conf/fire';
+import { Navigate } from 'react-router-dom';
+import { FaUsers, FaSearch, FaCrown, FaUser, FaEnvelope, FaCheck, FaShieldAlt, FaUserPlus, FaSpinner, FaTimes, FaTrashAlt, FaEdit, FaBan, FaCheckCircle, FaLock } from 'react-icons/fa';
+
+class UsersManager extends Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            showUsers: false,
+            rows: null,
+            isRedirectToUser: false,
+            enteredUser: '',
+            newAdminEmail: '',
+            isAddingAdmin: false,
+            statusMessage: null,
+            userToDelete: null, // confirmation modal target
+            isDeleting: false,
+            /// Selected User data for edit redirect
+            selectedId: null,
+            selectedEmail: null,
+            selectedSubscription: null,
+            selectedSubscriptionEnd: null,
+            selectedIsA: false,
+            selectedSuspended: false,
+        };
+        this.createData = this.createData.bind(this);
+        this.showTable = this.showTable.bind(this);
+        this.redirectToUser = this.redirectToUser.bind(this);
+        this.findUserById = this.findUserById.bind(this);
+        this.handleInput = this.handleInput.bind(this);
+        this.handleToggleAdmin = this.handleToggleAdmin.bind(this);
+        this.handleAddAdminByEmail = this.handleAddAdminByEmail.bind(this);
+        this.handleTogglePlan = this.handleTogglePlan.bind(this);
+        this.handleToggleSuspension = this.handleToggleSuspension.bind(this);
+        this.handleConfirmDelete = this.handleConfirmDelete.bind(this);
+        this.isSelfAccount = this.isSelfAccount.bind(this);
+    }
+
+    exportUsersToCsv() {
+        if (!this.state.rows || this.state.rows.length === 0) {
+            alert('No user data available for export.');
+            return;
+        }
+        let csv = 'User ID,Email,Membership Plan,Is Admin,Suspended\n';
+        this.state.rows.forEach(r => {
+            csv += `"${r.id}","${r.email}","${r.subscription}",${r.isA},${r.suspended}\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'admin-users-report.csv'; a.click();
+    }
+
+    isSelfAccount(userId, email) {
+        const currentAuthUser = fire.auth().currentUser;
+        if (!currentAuthUser) return false;
+        return (userId && userId === currentAuthUser.uid) || (email && email.toLowerCase().trim() === currentAuthUser.email?.toLowerCase().trim());
+    }
+
+    createData(id, email, subscription, isA, suspended, rawElement) {
+        return { id, email, subscription, isA, suspended: Boolean(suspended), rawElement };
+    }
+
+    // Load users from Firestore
+    showTable() {
+        getAllUsers().then((value) => {
+            if (!value) return;
+            var Rows = [];
+            value.forEach((element) => {
+                Rows.push(
+                    this.createData(
+                        element.userId,
+                        element.email !== undefined ? element.email : 'Not Provided',
+                        element.membership !== undefined ? element.membership : 'Basic',
+                        Boolean(element.isA),
+                        Boolean(element.suspended),
+                        element
+                    )
+                );
+            });
+            this.setState({ rows: Rows, showUsers: true });
+        }).catch(err => {
+            console.error('Error fetching users:', err);
+        });
+    }
+
+    // Redirect to user edit page
+    redirectToUser(id, email, subscription, subscriptionEnd, isA, suspended) {
+        this.setState({
+            isRedirectToUser: true,
+            selectedId: id,
+            selectedEmail: email,
+            selectedSubscription: subscription,
+            selectedSubscriptionEnd: subscriptionEnd,
+            selectedIsA: isA,
+            selectedSuspended: suspended,
+        });
+    }
+
+    /// Find user by email or ID
+    findUserById() {
+        if (!this.state.enteredUser || !this.state.enteredUser.trim()) {
+            this.showTable();
+            return;
+        }
+        getUserById(this.state.enteredUser.trim()).then((element) => {
+            if (element === false || !element) {
+                this.setState({
+                    statusMessage: { type: 'error', text: `User "${this.state.enteredUser}" not found. Please verify the email address!` }
+                });
+            } else {
+                var Rows = [
+                    this.createData(
+                        element.userId,
+                        element.email !== undefined ? element.email : 'Not Provided',
+                        element.membership || 'Basic',
+                        Boolean(element.isA),
+                        Boolean(element.suspended),
+                        element
+                    )
+                ];
+                this.setState({ showUsers: true, rows: Rows });
+            }
+        });
+    }
+
+    handleInput(inputName, value) {
+        this.setState({ [inputName]: value });
+    }
+
+    async handleToggleAdmin(userId, email, currentIsA) {
+        const newIsA = !currentIsA;
+        if (!newIsA && this.isSelfAccount(userId, email)) {
+            this.setState({
+                statusMessage: { type: 'error', text: 'You cannot revoke your own Admin status to ensure one admin remains active.' }
+            });
+            setTimeout(() => this.setState({ statusMessage: null }), 4000);
+            return;
+        }
+        try {
+            const res = await setUserAdminStatus(userId, newIsA);
+            if (res.success) {
+                this.setState({
+                    statusMessage: { type: 'success', text: `Successfully ${newIsA ? 'granted' : 'revoked'} Admin access!` }
+                });
+                this.showTable();
+            } else {
+                this.setState({ statusMessage: { type: 'error', text: res.error } });
+            }
+        } catch (err) {
+            this.setState({ statusMessage: { type: 'error', text: err.message } });
+        } finally {
+            setTimeout(() => this.setState({ statusMessage: null }), 4000);
+        }
+    }
+
+    async handleToggleSuspension(userId, email, currentSuspended) {
+        const newSuspended = !currentSuspended;
+        if (newSuspended && this.isSelfAccount(userId, email)) {
+            this.setState({
+                statusMessage: { type: 'error', text: 'Self admin account cannot be suspended to ensure at least one active administrator.' }
+            });
+            setTimeout(() => this.setState({ statusMessage: null }), 4000);
+            return;
+        }
+        try {
+            const res = await toggleUserSuspension(userId, newSuspended);
+            if (res.success) {
+                this.setState({
+                    statusMessage: { type: 'success', text: res.message }
+                });
+                this.showTable();
+            } else {
+                this.setState({ statusMessage: { type: 'error', text: res.error } });
+            }
+        } catch (err) {
+            this.setState({ statusMessage: { type: 'error', text: err.message } });
+        } finally {
+            setTimeout(() => this.setState({ statusMessage: null }), 4000);
+        }
+    }
+
+    async handleTogglePlan(userId, currentPlan) {
+        const newPlan = currentPlan === 'Premium' ? 'Basic' : 'Premium';
+        try {
+            const res = await updateUserSubscription(userId, newPlan);
+            if (res.success) {
+                this.setState({
+                    statusMessage: { type: 'success', text: res.message }
+                });
+                this.showTable();
+            } else {
+                this.setState({ statusMessage: { type: 'error', text: res.error } });
+            }
+        } catch (err) {
+            this.setState({ statusMessage: { type: 'error', text: err.message } });
+        } finally {
+            setTimeout(() => this.setState({ statusMessage: null }), 4000);
+        }
+    }
+
+    async handleAddAdminByEmail(e) {
+        e.preventDefault();
+        if (!this.state.newAdminEmail || !this.state.newAdminEmail.trim()) return;
+        this.setState({ isAddingAdmin: true, statusMessage: null });
+        try {
+            const res = await makeUserAdminByEmail(this.state.newAdminEmail.trim());
+            if (res.success) {
+                this.setState({
+                    statusMessage: { type: 'success', text: res.message },
+                    newAdminEmail: ''
+                });
+                this.showTable();
+            } else {
+                this.setState({ statusMessage: { type: 'error', text: res.error } });
+            }
+        } catch (err) {
+            this.setState({ statusMessage: { type: 'error', text: err.message } });
+        } finally {
+            this.setState({ isAddingAdmin: false });
+            setTimeout(() => this.setState({ statusMessage: null }), 5000);
+        }
+    }
+
+    async handleConfirmDelete() {
+        if (!this.state.userToDelete) return;
+        if (this.isSelfAccount(this.state.userToDelete.id, this.state.userToDelete.email)) {
+            this.setState({
+                statusMessage: { type: 'error', text: 'You cannot delete your own active admin account.' },
+                userToDelete: null
+            });
+            setTimeout(() => this.setState({ statusMessage: null }), 4000);
+            return;
+        }
+        this.setState({ isDeleting: true });
+        try {
+            const res = await deleteUserByAdmin(this.state.userToDelete.id);
+            if (res.success) {
+                this.setState({
+                    statusMessage: { type: 'success', text: `User ${this.state.userToDelete.email} deleted successfully.` },
+                    userToDelete: null
+                });
+                this.showTable();
+            } else {
+                this.setState({ statusMessage: { type: 'error', text: res.error }, userToDelete: null });
+            }
+        } catch (err) {
+            this.setState({ statusMessage: { type: 'error', text: err.message }, userToDelete: null });
+        } finally {
+            this.setState({ isDeleting: false });
+            setTimeout(() => this.setState({ statusMessage: null }), 4000);
+        }
+    }
+
+    componentDidMount() {
+        this.showTable();
+    }
+
+    render() {
+        return (
+            <div className="min-h-screen bg-slate-50 p-4 sm:p-6">
+                {this.state.isRedirectToUser && (
+                    <Navigate
+                        to="/adm/user/ss"
+                        state={{
+                            userId: this.state.selectedId,
+                            email: this.state.selectedEmail,
+                            membership: this.state.selectedSubscription,
+                            membershipEnd: this.state.selectedSubscriptionEnd,
+                            isA: this.state.selectedIsA,
+                            suspended: this.state.selectedSuspended,
+                        }}
+                        replace
+                    />
+                )}
+
+                {/* Delete Confirmation Modal */}
+                {this.state.userToDelete && (
+                    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in duration-200">
+                            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600 mb-4 mx-auto">
+                                <FaTrashAlt className="w-6 h-6" />
+                            </div>
+                            <h3 className="text-lg font-bold text-slate-900 text-center mb-2">Delete User Account</h3>
+                            <p className="text-sm text-slate-500 text-center mb-6">
+                                Are you sure you want to permanently delete account <strong className="text-slate-800">{this.state.userToDelete.email}</strong>? This action cannot be undone.
+                            </p>
+                            <div className="flex items-center space-x-3">
+                                <button
+                                    type="button"
+                                    onClick={() => this.setState({ userToDelete: null })}
+                                    className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-lg transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={this.handleConfirmDelete}
+                                    disabled={this.state.isDeleting}
+                                    className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center space-x-2"
+                                >
+                                    {this.state.isDeleting ? <FaSpinner className="w-4 h-4 animate-spin" /> : <FaTrashAlt className="w-4 h-4" />}
+                                    <span>Delete Account</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Header Section */}
+                <div className="bg-white border border-slate-200 rounded-lg p-6 mb-6">
+                    <div className="flex items-center justify-between space-x-3 mb-4">
+                        <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                                <FaUsers className="w-5 h-5 text-blue-600" />
+                            </div>
+                            <div>
+                                <h1 className="text-2xl font-bold text-slate-900">Users & Admin Manager</h1>
+                                <p className="text-sm text-slate-500">Manage user accounts, roles, subscription plans, suspension, and permissions</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => this.exportUsersToCsv()}
+                            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors">
+                            Export CSV Report
+                        </button>
+                    </div>
+
+                    {/* Quick Stats */}
+                    <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
+                        <div className="bg-slate-50 rounded-lg p-4">
+                            <div className="flex items-center space-x-2">
+                                <FaUser className="w-4 h-4 text-slate-600" />
+                                <span className="text-sm text-slate-600">Total Users</span>
+                            </div>
+                            <p className="text-lg font-semibold text-slate-900">{this.state.rows ? this.state.rows.length : '—'}</p>
+                        </div>
+                        <div className="bg-slate-50 rounded-lg p-4">
+                            <div className="flex items-center space-x-2">
+                                <FaShieldAlt className="w-4 h-4 text-red-600" />
+                                <span className="text-sm text-slate-600">Administrators</span>
+                            </div>
+                            <p className="text-lg font-semibold text-slate-900">
+                                {this.state.rows ? this.state.rows.filter(row => row.isA).length : '—'}
+                            </p>
+                        </div>
+                        <div className="bg-slate-50 rounded-lg p-4">
+                            <div className="flex items-center space-x-2">
+                                <FaCrown className="w-4 h-4 text-amber-500" />
+                                <span className="text-sm text-slate-600">Premium Users</span>
+                            </div>
+                            <p className="text-lg font-semibold text-slate-900">
+                                {this.state.rows ? this.state.rows.filter(row => row.subscription === 'Premium').length : '—'}
+                            </p>
+                        </div>
+                        <div className="bg-slate-50 rounded-lg p-4">
+                            <div className="flex items-center space-x-2">
+                                <FaBan className="w-4 h-4 text-rose-600" />
+                                <span className="text-sm text-slate-600">Suspended Users</span>
+                            </div>
+                            <p className="text-lg font-semibold text-rose-700">
+                                {this.state.rows ? this.state.rows.filter(row => row.suspended).length : '—'}
+                            </p>
+                        </div>
+                        <div className="bg-slate-50 rounded-lg p-4">
+                            <div className="flex items-center space-x-2">
+                                <FaCheck className="w-4 h-4 text-emerald-500" />
+                                <span className="text-sm text-slate-600">Status</span>
+                            </div>
+                            <p className="text-lg font-semibold text-slate-900">
+                                {this.state.showUsers ? 'Loaded' : 'Ready'}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Status Message */}
+                {this.state.statusMessage && (
+                    <div className={`p-4 rounded-lg flex items-center justify-between text-sm mb-6 ${
+                        this.state.statusMessage.type === 'success' ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-red-50 border border-red-200 text-red-800'
+                    }`}>
+                        <div className="flex items-center space-x-2">
+                            {this.state.statusMessage.type === 'success' ? <FaCheck className="text-emerald-600" /> : <FaTimes className="text-red-600" />}
+                            <span>{this.state.statusMessage.text}</span>
+                        </div>
+                    </div>
+                )}
+
+                {/* Grant New Admin Section */}
+                <div className="bg-white border border-red-200 rounded-lg p-6 mb-6">
+                    <div className="flex items-center space-x-3 mb-4">
+                        <div className="w-8 h-8 bg-red-50 rounded-lg flex items-center justify-center">
+                            <FaUserPlus className="w-4 h-4 text-red-600" />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-semibold text-slate-900">Grant Admin Privileges</h3>
+                            <p className="text-sm text-slate-500">Enter a user's email address to assign them Administrator access</p>
+                        </div>
+                    </div>
+
+                    <form onSubmit={this.handleAddAdminByEmail} className="flex flex-col sm:flex-row gap-3">
+                        <div className="flex-1 relative">
+                            <FaEnvelope className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            <input
+                                type="email"
+                                value={this.state.newAdminEmail}
+                                onChange={(e) => this.handleInput('newAdminEmail', e.target.value)}
+                                placeholder="Enter user email (e.g. bhaskar.beyond@gmail.com)"
+                                className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+                                required
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            disabled={this.state.isAddingAdmin}
+                            className="flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200 shadow-sm"
+                        >
+                            {this.state.isAddingAdmin ? <FaSpinner className="w-4 h-4 animate-spin" /> : <FaShieldAlt className="w-4 h-4" />}
+                            <span>Make Admin</span>
+                        </button>
+                    </form>
+                </div>
+
+                {/* Search Section */}
+                <div className="bg-white border border-slate-200 rounded-lg p-6 mb-6">
+                    <div className="flex items-center space-x-3 mb-4">
+                        <div className="w-8 h-8 bg-slate-50 rounded-lg flex items-center justify-center">
+                            <FaSearch className="w-4 h-4 text-slate-600" />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-semibold text-slate-900">Find User</h3>
+                            <p className="text-sm text-slate-500">Search for a specific user by email or user ID</p>
+                        </div>
+                    </div>
+                    
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <div className="flex-1 relative">
+                            <FaEnvelope className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            <input
+                                type="email"
+                                value={this.state.enteredUser}
+                                onChange={(event) => this.handleInput('enteredUser', event.target.value)}
+                                placeholder="Enter user email or ID"
+                                className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                            />
+                        </div>
+                        <button
+                            onClick={() => this.findUserById()}
+                            className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200">
+                            <FaSearch className="w-4 h-4" />
+                            <span>Search User</span>
+                        </button>
+                    </div>
+                </div>
+
+                {/* Users Table Section */}
+                <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+                    <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                        <div>
+                            <h3 className="text-lg font-semibold text-slate-900">Registered Users</h3>
+                            <p className="text-sm text-slate-500">Perform user edits, plan upgrades, account suspension/activation, or account deletion</p>
+                        </div>
+                        <button
+                            onClick={() => this.showTable()}
+                            className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors flex items-center space-x-1"
+                        >
+                            <FaUsers className="w-4 h-4" />
+                            <span>Refresh Users</span>
+                        </button>
+                    </div>
+
+                    {!this.state.showUsers ? (
+                        <div className="text-center py-12">
+                            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <FaUsers className="w-8 h-8 text-slate-400" />
+                            </div>
+                            <h4 className="text-lg font-medium text-slate-900 mb-2">Load User Data</h4>
+                            <p className="text-sm text-slate-500 mb-6">Click the button below to fetch and display all users</p>
+                            <button
+                                onClick={() => this.showTable()}
+                                className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200 mx-auto">
+                                <FaUsers className="w-4 h-4" />
+                                <span>Load All Users</span>
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full">
+                                <thead className="bg-slate-50">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">User ID</th>
+                                        <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Email</th>
+                                        <th className="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                                        <th className="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Role</th>
+                                        <th className="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Subscription</th>
+                                        <th className="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-slate-200">
+                                    {this.state.rows?.map((row, index) => {
+                                        const isSelf = this.isSelfAccount(row.id, row.email);
+                                        return (
+                                            <tr key={row.id || index} className={`hover:bg-slate-50 transition-colors duration-150 ${row.suspended ? 'bg-rose-50/30' : ''}`}>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="flex items-center">
+                                                        <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center mr-3">
+                                                            <FaUser className="w-3 h-3 text-slate-600" />
+                                                        </div>
+                                                        <div className="text-sm font-medium text-slate-900 font-mono">
+                                                            {row.id ? (row.id.length > 12 ? row.id.slice(0, 10) + '...' : row.id) : '—'}
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm text-slate-900 font-medium flex items-center space-x-2">
+                                                        <span>{row.email}</span>
+                                                        {isSelf && (
+                                                            <span className="px-2 py-0.5 text-[10px] bg-blue-100 text-blue-700 font-semibold rounded-md border border-blue-200">
+                                                                (You)
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                                                        row.suspended ? 'bg-rose-100 text-rose-800 border border-rose-200' : 'bg-emerald-100 text-emerald-800'
+                                                    }`}>
+                                                        {row.suspended ? <FaBan className="w-3 h-3 mr-1 text-rose-600" /> : <FaCheck className="w-3 h-3 mr-1 text-emerald-600" />}
+                                                        {row.suspended ? 'Suspended' : 'Active'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                                                        row.isA ? 'bg-red-100 text-red-800' : 'bg-slate-100 text-slate-700'
+                                                    }`}>
+                                                        {row.isA ? <FaShieldAlt className="w-3 h-3 mr-1 text-red-600" /> : <FaUser className="w-3 h-3 mr-1 text-slate-500" />}
+                                                        {row.isA ? 'Admin' : 'User'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                                                        row.subscription === 'Premium'
+                                                            ? 'bg-amber-100 text-amber-800'
+                                                            : 'bg-blue-100 text-blue-800'
+                                                    }`}>
+                                                        {row.subscription === 'Premium' && <FaCrown className="w-3 h-3 mr-1" />}
+                                                        {row.subscription}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                    <div className="flex items-center justify-center space-x-2">
+                                                        {/* Toggle Suspension Action (Protected for Self) */}
+                                                        {isSelf ? (
+                                                            <span
+                                                                className="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-slate-100 text-slate-400 cursor-not-allowed flex items-center space-x-1 border border-slate-200"
+                                                                title="Self admin account cannot be suspended"
+                                                            >
+                                                                <FaLock className="w-3 h-3 text-slate-400" />
+                                                                <span>Suspend</span>
+                                                            </span>
+                                                        ) : (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => this.handleToggleSuspension(row.id, row.email, row.suspended)}
+                                                                className={`px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center space-x-1 ${
+                                                                    row.suspended ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200' : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'
+                                                                }`}
+                                                                title={row.suspended ? "Reactivate user account" : "Suspend user account temporarily"}
+                                                            >
+                                                                {row.suspended ? <FaCheckCircle className="w-3 h-3 text-emerald-600" /> : <FaBan className="w-3 h-3 text-rose-600" />}
+                                                                <span>{row.suspended ? 'Activate' : 'Suspend'}</span>
+                                                            </button>
+                                                        )}
+
+                                                        {/* Toggle Admin Role Action (Protected for Self) */}
+                                                        {isSelf ? (
+                                                            <span
+                                                                className="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-slate-100 text-slate-400 cursor-not-allowed flex items-center space-x-1 border border-slate-200"
+                                                                title="Self admin privileges cannot be revoked"
+                                                            >
+                                                                <FaLock className="w-3 h-3 text-slate-400" />
+                                                                <span>Revoke Admin</span>
+                                                            </span>
+                                                        ) : (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => this.handleToggleAdmin(row.id, row.email, row.isA)}
+                                                                className={`px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center space-x-1 ${
+                                                                    row.isA ? 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                                                }`}
+                                                                title={row.isA ? "Revoke Admin Status" : "Grant Admin Status"}
+                                                            >
+                                                                <FaShieldAlt className="w-3 h-3" />
+                                                                <span>{row.isA ? 'Revoke Admin' : 'Make Admin'}</span>
+                                                            </button>
+                                                        )}
+
+                                                        {/* Toggle Plan Action */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => this.handleTogglePlan(row.id, row.subscription)}
+                                                            className={`px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center space-x-1 ${
+                                                                row.subscription === 'Premium'
+                                                                    ? 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'
+                                                                    : 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200'
+                                                            }`}
+                                                            title={row.subscription === 'Premium' ? 'Downgrade to Basic' : 'Upgrade to Premium'}
+                                                        >
+                                                            <FaCrown className="w-3 h-3" />
+                                                            <span>{row.subscription === 'Premium' ? 'Set Basic' : 'Set Premium'}</span>
+                                                        </button>
+
+                                                        {/* Edit Action */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => this.redirectToUser(row.id, row.email, row.subscription, row.rawElement?.membershipsEnds, row.isA, row.suspended)}
+                                                            className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg transition-colors flex items-center space-x-1"
+                                                            title="Edit full user details"
+                                                        >
+                                                            <FaEdit className="w-3 h-3 text-slate-600" />
+                                                            <span>Edit</span>
+                                                        </button>
+
+                                                        {/* Delete Action (Protected for Self) */}
+                                                        {isSelf ? (
+                                                            <span
+                                                                className="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-slate-100 text-slate-400 cursor-not-allowed flex items-center space-x-1 border border-slate-200"
+                                                                title="Self admin account cannot be deleted"
+                                                            >
+                                                                <FaLock className="w-3 h-3 text-slate-400" />
+                                                                <span>Delete</span>
+                                                            </span>
+                                                        ) : (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => this.setState({ userToDelete: row })}
+                                                                className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-medium rounded-lg transition-colors flex items-center space-x-1 border border-red-200"
+                                                                title="Delete user account"
+                                                            >
+                                                                <FaTrashAlt className="w-3 h-3 text-red-600" />
+                                                                <span>Delete</span>
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+}
+
+export default UsersManager;

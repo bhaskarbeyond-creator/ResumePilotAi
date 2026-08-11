@@ -1,0 +1,262 @@
+// Enterprise-level card styling with modern UI patterns
+.dashboard-resume-card {
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    margin: 16px 4px;
+    box-sizing: border-box;
+    background-color: #fff;
+    padding: 20px;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .dashboard-resume-card-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+
+        .dashboard-resume-card-head-left {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            .dashboard-resume-card-head-left-avatar {
+                background-color: #426ae0;
+                width: 56px;
+                height: 56px;
+                border-radius: 16px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                transition: all 0.2s ease;
+
+                .dashboard-resume-card-head-left-avatar-icon {
+                    width: 32px;
+                    height: 32px;
+                    color: rgba(255, 255, 255, 0.9);
+                }
+            }
+        }
+
+        .dashboard-resume-card-head-center {
+            display: flex;
+            align-items: flex-start;
+            flex: 1;
+            flex-direction: column;
+            gap: 8px;
+
+            .dashboard-resume-card-head-center-title {
+                font-size: 0.95rem;
+                font-weight: 600;
+                color: #1a1a1a;
+                letter-spacing: -0.01em;
+                line-height: 1.4;
+            }
+
+            .dashboard-resume-card-head-center-skills {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px;
+
+                .dashboard-resume-card-head-center-skills-item {
+                    background-color: rgba(66, 106, 224, 0.08);
+                    color: #426ae0;
+                    text-decoration: none;
+                    padding: 4px 12px;
+                    border-radius: 6px;
+                    font-size: 0.75rem;
+                    font-weight: 500;
+                    letter-spacing: -0.01em;
+                    transition: all 0.15s ease;
+
+                    &:hover {
+                        background-color: rgba(66, 106, 224, 0.12);
+                    }
+                }
+            }
+        }
+
+        .dashboard-resume-card-head-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            .dashboard-resume-card-head-right-bookmark {
+                background-color: rgba(0, 0, 0, 0.03);
+                padding: 8px;
+                border-radius: 8px;
+                transition: all 0.2s ease;
+                cursor: pointer;
+                position: relative;
+
+                &:hover {
+                    background-color: rgba(0, 0, 0, 0.06);
+                    .dashboard-resume-card-head-right-bookmark-icon {
+                        fill: #1a1a1a;
+                    }
+                }
+
+                &.remove:hover {
+                    background-color: rgba(244, 67, 54, 0.1);
+                    .dashboard-resume-card-head-right-bookmark-icon {
+                        fill: #f44336;
+                    }
+                }
+
+                &.active {
+                    background-color: #f7c04c;
+                    .dashboard-resume-card-head-right-bookmark-icon {
+                        fill: #fff;
+                    }
+                }
+
+                .dashboard-resume-card-head-right-bookmark-icon {
+                    width: 18px;
+                    height: 18px;
+                    fill: rgba(0, 0, 0, 0.6);
+                    transition: all 0.2s ease;
+                }
+
+                .dashboard-share-modal {
+                    background-color: #fff;
+                    position: absolute;
+                    width: 360px;
+                    right: 0;
+                    top: 120%;
+                    border-radius: 12px;
+                    border: 1px solid rgba(0, 0, 0, 0.08);
+                    padding: 16px;
+                    z-index: 10000;
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+
+                    .dashboard-share-modal-head {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-bottom: 12px;
+
+                        .dashboard-share-modal-head-title {
+                            font-weight: 600;
+                            font-size: 0.9rem;
+                            color: #1a1a1a;
+                        }
+
+                        .dashboard-share-modal-head-close {
+                            .dashboard-share-modal-head-close-icon {
+                                padding: 4px;
+                                width: 20px;
+                                height: 20px;
+                                cursor: pointer;
+                                border-radius: 50%;
+                                transition: all 0.2s ease;
+                                color: rgba(0, 0, 0, 0.6);
+
+                                &:hover {
+                                    background-color: rgba(0, 0, 0, 0.06);
+                                    color: #1a1a1a;
+                                }
+                            }
+                        }
+                    }
+
+                    .dashboard-share-tabs {
+                        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+                        margin-bottom: 16px;
+
+                        .dashboard-share-tabs-item.active {
+                            border-bottom: 2px solid #1a1a1a;
+                            font-weight: 500;
+                            display: inline-flex;
+                            height: 36px;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 0.85rem;
+                            color: #1a1a1a;
+                        }
+                    }
+
+                    .dashboard-share-body {
+                        .dashboard-share-body-title {
+                            font-weight: 400;
+                            font-size: 0.8rem;
+                            color: rgba(0, 0, 0, 0.6);
+                            margin-bottom: 8px;
+                        }
+
+                        .dashboard-share-body-input {
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            height: 36px;
+
+                            input {
+                                flex: 1;
+                                border: 1px solid rgba(0, 0, 0, 0.12);
+                                border-radius: 6px;
+                                height: 100%;
+                                font-size: 0.8rem;
+                                outline: none;
+                                color: rgba(0, 0, 0, 0.8);
+                                font-weight: 500;
+                                padding: 0 12px;
+                                box-sizing: border-box;
+                                transition: all 0.2s ease;
+
+                                &:focus {
+                                    border-color: #426ae0;
+                                    box-shadow: 0 0 0 2px rgba(66, 106, 224, 0.1);
+                                }
+                            }
+
+                            .dashboard-share-copy {
+                                background-color: #1a1a1a;
+                                color: #fff;
+                                height: 100%;
+                                padding: 0 16px;
+                                border-radius: 6px;
+                                display: flex;
+                                justify-content: center;
+                                align-items: center;
+                                font-size: 0.8rem;
+                                font-weight: 500;
+                                cursor: pointer;
+                                transition: all 0.2s ease;
+
+                                &:hover {
+                                    background-color: #000;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    .dashboard-resume-card-body {
+        .dashboard-resume-card-body-description {
+            padding: 12px 0;
+            font-size: 0.8rem;
+            line-height: 1.5;
+            color: rgba(0, 0, 0, 0.6);
+        }
+    }
+
+    .dashboard-resume-card-footer {
+        display: flex;
+        justify-content: flex-end;
+        border-top: 1px solid rgba(0, 0, 0, 0.06);
+        margin-top: 12px;
+        padding-top: 12px;
+
+        .dashboard-resume-card-footer-date {
+            font-size: 0.75rem;
+            color: rgba(0, 0, 0, 0.5);
+            font-weight: 500;
+        }
+    }
+}

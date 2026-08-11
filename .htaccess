@@ -1,0 +1,28 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Proxy /api requests to Node.js backend on port 8080
+  RewriteCond %{REQUEST_URI} ^/api/ [NC]
+  RewriteRule ^api/(.*)$ http://localhost:8080/api/$1 [P,L]
+
+  # Serve built assets from dist/ directly
+  RewriteCond %{REQUEST_URI} ^/assets/ [NC]
+  RewriteRule ^assets/(.*)$ dist/assets/$1 [L]
+
+  # Serve static files from dist/ (favicon, manifest, etc.)
+  RewriteCond %{DOCUMENT_ROOT}/dist/%{REQUEST_FILENAME} -f
+  RewriteRule ^(.*)$ dist/$1 [L]
+
+  # SPA Routing — all other routes serve dist/index.html
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^ dist/index.html [L]
+
+</IfModule>
+
+# Ensure correct MIME types for JS modules
+<IfModule mod_mime.c>
+  AddType application/javascript .js .mjs
+  AddType text/css .css
+</IfModule>

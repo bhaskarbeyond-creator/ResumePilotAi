@@ -1,0 +1,693 @@
+@use '../../components/variables' as *;
+
+.cv51-board {
+    width: 21cm;
+    min-height: 29.7cm;
+    font-family: Arial, sans-serif;
+    background-color: #ffffff;
+    color: #000000;
+    box-sizing: border-box;
+    position: relative;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    word-break: break-word;
+    font-size: 11pt;
+    line-height: 1.3;
+    margin: 0 auto;
+
+    .cv51-content {
+        padding: 15mm 20mm 25mm 20mm;
+        min-height: calc(29.7cm - 50mm);
+        position: relative;
+
+        @media print {
+            padding: 20mm 15mm 20mm 15mm;
+            min-height: calc(29.7cm - 40mm);
+        }
+    }
+
+    // Header Section - Europass style
+    .cv51-header {
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        margin-bottom: 25px;
+
+        .cv51-logo-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+
+            .cv51-europass-logo {
+                height: auto;
+                width: 120px;
+            }
+
+            .cv51-curriculum-vitae {
+                font-size: 14pt;
+                font-weight: normal;
+                color: #0fa0ce;
+                margin: 0;
+            }
+        }
+    }
+
+    // Two-column Section Layout - Europass style
+    .cv51-section {
+        display: flex;
+        margin-bottom: 20px;
+        position: relative;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+
+    .cv51-main-section {
+        margin-bottom: 25px;
+
+        .cv51-section-header {
+            display: flex;
+            margin-bottom: 15px;
+        }
+
+        .cv51-section-content {
+            display: flex;
+        }
+    }
+
+    .cv51-section-left {
+        width: 160px;
+        flex-shrink: 0;
+        margin-right: 25px;
+    }
+
+    .cv51-section-right {
+        flex: 1;
+    }
+
+    .cv51-section-title {
+        margin: 0;
+        font-size: 9pt;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        color: #114395;
+        line-height: 1.2;
+        position: relative;
+        white-space: nowrap;
+        word-wrap: break-word;
+        hyphens: auto;
+        font-weight: normal ;
+    }
+
+    // Blue line separator with square at the end - Europass style
+    .cv51-blue-line-with-square {
+        position: relative;
+        height: 1px !important;
+        background-color: #0fa0ce;
+        width: 100%;
+        margin-top: 8px;
+
+        &::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: -8px;
+            width: 8px;
+            height: 8px;
+            background-color: #0fa0ce;
+            border-radius: 0;
+        }
+    }
+
+    // Content styling for right column sections
+    .cv51-name-display {
+        margin-bottom: 15px;
+
+        .cv51-name-large {
+            font-size: 12pt;
+            color: black;
+            margin: 0;
+        }
+    }
+
+    .cv51-contact-info {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin-bottom: 12px;
+    }
+
+    .cv51-contact-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        font-size: 10pt;
+        line-height: 1.4;
+    }
+
+    .cv51-contact-icon {
+        font-size: 12pt;
+        width: 16px;
+        height: 16px;
+        text-align: left;
+        flex-shrink: 0;
+        color: #0fa0ce;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 1px;
+    }
+
+    .cv51-personal-details {
+        font-size: 10pt;
+        line-height: 1.4;
+        margin-top: 8px;
+
+        span {
+            span {
+                color: #0fa0ce;
+            }
+            color: #333333;
+        }
+    }
+
+    // Experience and Education Items with dates in left column
+    .cv51-experience-section,
+    .cv51-education-section {
+        display: flex;
+        margin-bottom: 15px;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+
+        .cv51-date-range {
+            font-size: 10pt;
+            color: #114395;
+            line-height: 1.3;
+        }
+
+        .cv51-job-title,
+        .cv51-degree {
+            font-size: 11pt;
+            color: #114395;
+            margin-bottom: 2px;
+            line-height: 1.3;
+        }
+
+        .cv51-employer,
+        .cv51-school {
+            font-size: 10pt;
+            color: #333333;
+            margin-bottom: 6px;
+            line-height: 1.3;
+        }
+
+        .cv51-description {
+            font-size: 10pt;
+            color: #333333;
+            line-height: 1.4;
+            margin-bottom: 6px;
+
+            p {
+                margin: 0 0 6px 0;
+
+                &:last-child {
+                    margin-bottom: 0;
+                }
+            }
+
+            ul {
+                list-style-type: disc;
+                margin: 4px 0;
+                padding-left: 16px;
+
+                li {
+                    margin-bottom: 2px;
+                }
+            }
+        }
+
+        .cv51-sector {
+            font-size: 10pt;
+            color: #333333;
+            line-height: 1.3;
+
+            .cv51-sector-label {
+                color: #0fa0ce;
+                font-weight: normal;
+            }
+        }
+    }
+
+    // Skills and Languages
+    .cv51-subsection {
+        margin-bottom: 15px;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+
+        .cv51-subsection-title {
+            font-size: 10pt;
+            font-weight: bold;
+            color: #333333;
+            margin: 0 0 6px 0;
+        }
+    }
+
+    // Mother tongues display
+    .cv51-mother-tongues {
+        font-size: 10pt;
+        color: #333333;
+        line-height: 1.4;
+    }
+
+    // Other languages in left column
+    .cv51-other-languages-left {
+        margin-top: 15px;
+
+        .cv51-other-languages-title {
+            font-size: 10pt;
+            color: #114395;
+            margin-bottom: 8px;
+
+            @media screen and (max-width: $mobile) {
+                font-size: 9pt;
+            }
+        }
+
+        .cv51-other-languages-subtitle {
+            font-size: 10pt;
+            color: #114395;
+            margin-bottom: 8px;
+            margin-top: 15px; // Add space between Mother Tongue and Other Languages titles
+
+            @media screen and (max-width: $mobile) {
+                font-size: 9pt;
+            }
+        }
+
+        .cv51-language-names {
+            margin-top: 45px; // Reduced offset to compensate for the additional title
+            text-align: right; // Right-align the language names within the left column
+            padding-right: 10px; // Add some space from the right edge of left column
+
+            .cv51-language-name-item {
+                height: 50px; // Increased height to account for both proficiency and certification rows
+                display: flex;
+                align-items: center;
+                justify-content: flex-end; // Push language names to the right side
+                border-bottom: 1px solid transparent; // Keep spacing consistent with table rows
+                //transform: translateY(3px);
+
+                &:last-child {
+                    border-bottom: none;
+                }
+
+                .cv51-language-name {
+                    font-size: 10pt;
+
+                    @media screen and (max-width: $mobile) {
+                        font-size: 9pt;
+                    }
+                }
+            }
+        }
+    }
+
+    // Europass language table
+    .cv51-languages-table {
+        margin-top: 10px;
+        border: 1px solid #cccccc;
+        font-size: 9pt;
+
+        @media screen and (max-width: $mobile) {
+            font-size: 8pt;
+            overflow-x: auto;
+        }
+
+        .cv51-table-header {
+            display: flex;
+            background-color: #f5f5f5;
+            border-bottom: 1px solid #cccccc;
+            font-weight: bold;
+            text-align: center;
+
+            .cv51-understanding-col,
+            .cv51-speaking-col {
+                flex: 1;
+                border-right: 1px solid #cccccc;
+                display: flex;
+                flex-direction: column;
+
+                .cv51-understanding-header,
+                .cv51-speaking-header {
+                    padding: 4px;
+                    border-bottom: 1px solid #cccccc;
+                    font-size: 8pt;
+                    font-weight: bold;
+
+                    @media screen and (max-width: $mobile) {
+                        font-size: 7pt;
+                        padding: 3px;
+                    }
+                }
+
+                .cv51-understanding-subheaders,
+                .cv51-speaking-subheaders {
+                    display: flex;
+
+                    .cv51-subheader {
+                        flex: 1;
+                        padding: 4px 2px;
+                        border-right: 1px solid #cccccc;
+                        font-size: 7pt;
+                        font-weight: normal;
+
+                        &:last-child {
+                            border-right: none;
+                        }
+
+                        @media screen and (max-width: $mobile) {
+                            font-size: 6pt;
+                            padding: 3px 1px;
+                        }
+                    }
+                }
+            }
+
+            .cv51-writing-col {
+                width: 80px;
+                padding: 8px 4px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 8pt;
+
+                @media screen and (max-width: $mobile) {
+                    width: 60px;
+                    padding: 6px 2px;
+                    font-size: 7pt;
+                }
+            }
+        }
+
+        .cv51-language-entry {
+            border-bottom: 1px solid #cccccc;
+
+            &:last-of-type {
+                border-bottom: none;
+            }
+        }
+
+        .cv51-language-row {
+            display: flex;
+
+            .cv51-understanding-cells,
+            .cv51-speaking-cells {
+                flex: 1;
+                display: flex;
+                border-right: 1px solid #cccccc;
+
+                .cv51-level-cell {
+                    flex: 1;
+                    padding: 6px 4px;
+                    text-align: center;
+                    border-right: 1px solid #cccccc;
+                    font-weight: bold;
+                    color: #0066cc;
+
+                    &:last-child {
+                        border-right: none;
+                    }
+
+                    @media screen and (max-width: $mobile) {
+                        padding: 4px 2px;
+                        font-size: 8pt;
+                    }
+                }
+            }
+
+            .cv51-writing-cell {
+                width: 80px;
+                padding: 6px 4px;
+                text-align: center;
+                font-weight: bold;
+                color: #0066cc;
+
+                @media screen and (max-width: $mobile) {
+                    width: 60px;
+                    padding: 4px 2px;
+                    font-size: 8pt;
+                }
+            }
+        }
+
+        .cv51-certification-row {
+            background-color: #f9f9f9;
+            padding: 4px 8px;
+            border-top: 1px solid #e0e0e0;
+
+            .cv51-certification-text {
+                font-size: 8pt;
+                color: #666666;
+                font-style: italic;
+                text-align: center;
+                @media screen and (max-width: $mobile) {
+                    font-size: 7pt;
+                }
+            }
+        }
+
+        .cv51-cefr-reference {
+            padding: 8px;
+            background-color: #f9f9f9;
+            border-top: 1px solid #cccccc;
+            font-size: 7pt;
+            color: #666666;
+            line-height: 1.3;
+
+            @media screen and (max-width: $mobile) {
+                padding: 6px;
+                font-size: 6pt;
+            }
+
+            .cv51-cefr-text {
+                font-weight: normal;
+            }
+
+            .cv51-cefr-link {
+                color: #0066cc;
+                text-decoration: underline;
+            }
+        }
+    }
+
+    .cv51-skills-list {
+        font-size: 10pt;
+        color: #333333;
+        line-height: 1.4;
+
+        @media screen and (max-width: $mobile) {
+            font-size: 9pt;
+        }
+    }
+
+    .cv51-skill-item {
+        display: inline;
+
+        .cv51-skill-name {
+            color: #333333;
+        }
+
+        &:after {
+            content: ', ';
+        }
+
+        &:last-child:after {
+            content: '';
+        }
+    }
+
+    // Additional Information
+    .cv51-additional-info {
+        font-size: 10pt;
+        line-height: 1.4;
+        color: #333333;
+
+        @media screen and (max-width: $mobile) {
+            font-size: 9pt;
+        }
+    }
+
+    // Footer
+    .cv51-footer {
+        position: absolute;
+        bottom: 20mm;
+        left: 20mm;
+        right: 20mm;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 8pt;
+        color: #0066cc;
+        border-top: 1px solid #e0e0e0;
+        padding-top: 6px;
+
+        @media print {
+            bottom: 15mm;
+            left: 15mm;
+            right: 15mm;
+            font-size: 7pt;
+        }
+
+        @media screen and (max-width: $mobile) {
+            position: relative;
+            bottom: auto;
+            left: auto;
+            right: auto;
+            margin-top: 25px;
+            font-size: 7pt;
+            flex-direction: column;
+            gap: 4px;
+            text-align: center;
+        }
+
+        .cv51-page-number {
+            font-weight: bold;
+        }
+    }
+}
+
+// Print styles for A4 optimization
+@media print {
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: white !important;
+    }
+
+    .cv51-board {
+        box-shadow: none;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        max-width: none !important;
+        min-height: auto !important;
+        height: auto !important;
+        page-break-after: auto;
+        background: white !important;
+
+        .cv51-content {
+            padding: 12mm 15mm 15mm 15mm !important;
+            min-height: auto !important;
+            height: auto !important;
+        }
+
+        // Remove problematic page-break-inside rules
+        .cv51-section {
+            margin-bottom: 15px !important;
+            page-break-inside: auto;
+        }
+
+        .cv51-main-section {
+            margin-bottom: 20px !important;
+            page-break-inside: auto;
+            
+            &:last-child {
+                margin-bottom: 10mm !important;
+            }
+        }
+
+        // Allow natural breaking for experience and education items
+        .cv51-experience-section,
+        .cv51-education-section {
+            margin-bottom: 12px !important;
+            page-break-inside: auto;
+            
+            &:last-child {
+                margin-bottom: 0 !important;
+            }
+        }
+
+        .cv51-header {
+            margin-bottom: 18px !important;
+        }
+
+        // Fix footer positioning for print
+        .cv51-footer {
+            position: static !important;
+            margin-top: 15mm !important;
+            padding-top: 8px !important;
+            bottom: auto !important;
+            left: auto !important;
+            right: auto !important;
+            border-top: 1px solid #e0e0e0 !important;
+        }
+
+        // Ensure consistent spacing for language table
+        .cv51-languages-table {
+            margin-top: 8px !important;
+            margin-bottom: 10px !important;
+        }
+
+        // Reduce excessive spacing in skills section
+        .cv51-subsection {
+            margin-bottom: 10px !important;
+            
+            &:last-child {
+                margin-bottom: 0 !important;
+            }
+        }
+    }
+}
+
+// Rich Text Support for CV51
+.cv51-board {
+    .cv51-description,
+    .cv51-additional-info {
+        strong,
+        b {
+            font-weight: bold;
+        }
+        em,
+        i {
+            font-style: italic;
+        }
+        u {
+            text-decoration: underline;
+        }
+        ul,
+        ol {
+            margin: 4px 0;
+            padding-left: 0.8em;
+        }
+        li {
+            display: list-item;
+            margin: 0.05em 0;
+            padding-left: 0.1em;
+        }
+        ul {
+            list-style-type: disc;
+        }
+        ol {
+            list-style-type: decimal;
+        }
+        ul ul {
+            list-style-type: circle;
+            margin: 1px 0;
+            padding-left: 0.6em;
+        }
+        ol ol {
+            list-style-type: lower-alpha;
+            margin: 1px 0;
+            padding-left: 0.6em;
+        }
+    }
+}

@@ -1,0 +1,39 @@
+@use '../variables' as *;
+@use 'sass:color';
+.toast {
+    position: absolute;
+  transform: translateY(40px);
+  top: 40px;
+   right: 20px;
+    z-index: 1000;
+    width: 400px;
+    height: 70px;
+    background-color:white;
+    border-radius: 3px;
+    display: flex;
+    .iconAnimation{
+        height: 100%;
+        width: 80px;
+        padding:10px;
+        display: flex;
+        box-sizing: border-box;
+        align-items: center;
+    }
+    .toastDetails{
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        font-family: $font;
+        color: black;
+        .toastTitle{
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .toastMessage{
+            font-size: 13px;
+        }
+    }
+}
+.success {
+    border-left: 3px solid #2ecc71;
+}

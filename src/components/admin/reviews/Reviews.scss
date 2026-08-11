@@ -1,0 +1,24 @@
+.settings_reviews {
+    .settings__input {
+        margin: 10px 0px;
+    }
+    .review {
+        border: 1px solid gray;
+        padding: 20px;
+        box-sizing: border-box;
+        border-radius: 8px;
+        .review__image {
+            img {
+                width: 80px;
+                height: 80px;
+                border-radius: 50%;
+            }
+        }
+        .review__content {
+            a{
+                cursor: pointer;
+                font-weight: 600;
+            }
+        }
+    }
+}

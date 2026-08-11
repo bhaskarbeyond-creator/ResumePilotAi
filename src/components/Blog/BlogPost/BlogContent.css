@@ -1,0 +1,317 @@
+/* Blog Content Styling for HTML Content */
+
+.blog-content {
+    line-height: 1.75;
+    color: #334155; /* slate-700 */
+}
+
+/* Typography */
+.blog-content h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #0f172a; /* slate-900 */
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    line-height: 1.25;
+}
+
+.blog-content h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0f172a; /* slate-900 */
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.25;
+}
+
+.blog-content h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #0f172a; /* slate-900 */
+    margin-top: 1.25rem;
+    margin-bottom: 0.5rem;
+    line-height: 1.25;
+}
+
+.blog-content h4 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #0f172a; /* slate-900 */
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    line-height: 1.25;
+}
+
+.blog-content h5 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #0f172a; /* slate-900 */
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    line-height: 1.25;
+}
+
+.blog-content h6 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #0f172a; /* slate-900 */
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    line-height: 1.25;
+}
+
+/* Paragraphs */
+.blog-content p {
+    margin-bottom: 1rem;
+    color: #334155; /* slate-700 */
+    line-height: 1.75;
+}
+
+/* Links */
+.blog-content a {
+    color: #2563eb; /* blue-600 */
+    text-decoration: underline;
+    transition: color 0.2s ease;
+}
+
+.blog-content a:hover {
+    color: #1d4ed8; /* blue-700 */
+}
+
+/* Lists */
+.blog-content ul,
+.blog-content ol {
+    margin-bottom: 1rem;
+    margin-left: 1.5rem;
+    color: #334155; /* slate-700 */
+}
+
+.blog-content ul li {
+    list-style-type: disc;
+    margin-bottom: 0.5rem;
+    line-height: 1.75;
+}
+
+.blog-content ol li {
+    list-style-type: decimal;
+    margin-bottom: 0.5rem;
+    line-height: 1.75;
+}
+
+.blog-content ul ul,
+.blog-content ol ol {
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Blockquotes */
+.blog-content blockquote {
+    border-left: 4px solid #3b82f6; /* blue-500 */
+    padding-left: 1rem;
+    margin: 1.5rem 0;
+    font-style: italic;
+    color: #64748b; /* slate-500 */
+    background-color: #f8fafc; /* slate-50 */
+    padding: 0.5rem 0 0.5rem 1rem;
+    border-radius: 0 0.375rem 0.375rem 0;
+}
+
+/* Code */
+.blog-content code {
+    background-color: #f1f5f9; /* slate-100 */
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    color: #1e293b; /* slate-800 */
+}
+
+.blog-content pre {
+    background-color: #0f172a; /* slate-900 */
+    color: #f1f5f9; /* slate-100 */
+    padding: 1rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+    margin: 1.5rem 0;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.blog-content pre code {
+    background-color: transparent;
+    padding: 0;
+    color: inherit;
+    font-size: inherit;
+}
+
+/* Images */
+.blog-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    margin: 1rem 0;
+}
+
+/* Tables */
+.blog-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.875rem;
+}
+
+.blog-content table th,
+.blog-content table td {
+    border: 1px solid #e2e8f0; /* slate-200 */
+    padding: 0.75rem;
+    text-align: left;
+}
+
+.blog-content table th {
+    background-color: #f8fafc; /* slate-50 */
+    font-weight: 600;
+    color: #1e293b; /* slate-800 */
+}
+
+.blog-content table tbody tr:nth-child(even) {
+    background-color: #f8fafc; /* slate-50 */
+}
+
+/* Strong/Bold */
+.blog-content strong,
+.blog-content b {
+    font-weight: 700;
+    color: #0f172a; /* slate-900 */
+}
+
+/* Emphasis/Italic */
+.blog-content em,
+.blog-content i {
+    font-style: italic;
+}
+
+/* Underline */
+.blog-content u {
+    text-decoration: underline;
+}
+
+/* Mark/Highlight */
+.blog-content mark {
+    background-color: #fef08a; /* yellow-200 */
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+    color: #713f12; /* yellow-900 */
+}
+
+/* Text alignment from Tiptap */
+.blog-content [style*="text-align: center"] {
+    text-align: center;
+}
+
+.blog-content [style*="text-align: right"] {
+    text-align: right;
+}
+
+.blog-content [style*="text-align: justify"] {
+    text-align: justify;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .blog-content h1 {
+        font-size: 1.75rem;
+    }
+    
+    .blog-content h2 {
+        font-size: 1.25rem;
+    }
+    
+    .blog-content h3 {
+        font-size: 1.125rem;
+    }
+    
+    .blog-content table {
+        font-size: 0.75rem;
+    }
+    
+    .blog-content table th,
+    .blog-content table td {
+        padding: 0.5rem;
+    }
+    
+    .blog-content pre {
+        padding: 0.75rem;
+        font-size: 0.75rem;
+    }
+}
+
+/* Additional spacing for better readability */
+.blog-content > *:first-child {
+    margin-top: 0;
+}
+
+.blog-content > *:last-child {
+    margin-bottom: 0;
+}
+
+/* Ensure Tiptap generated content displays correctly */
+.blog-content .ProseMirror {
+    outline: none;
+}
+
+/* Handle Tiptap specific classes */
+.blog-content .has-focus {
+    outline: none;
+}
+
+/* Ensure proper spacing for Tiptap paragraphs */
+.blog-content p:empty::before {
+    content: '';
+    display: inline-block;
+}
+
+/* Style for Tiptap table elements */
+.blog-content .tableWrapper {
+    overflow-x: auto;
+    margin: 1.5rem 0;
+}
+
+.blog-content .resize-cursor {
+    cursor: col-resize;
+}
+
+/* Highlight styles from Tiptap */
+.blog-content .hljs {
+    background-color: #0f172a;
+    color: #f1f5f9;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+}
+
+/* Legacy content compatibility */
+.markdown-content {
+    line-height: 1.75;
+    color: #334155;
+}
+
+/* Print styles */
+@media print {
+    .blog-content {
+        font-size: 12pt;
+        line-height: 1.5;
+    }
+    
+    .blog-content h1,
+    .blog-content h2,
+    .blog-content h3 {
+        page-break-after: avoid;
+    }
+    
+    .blog-content img {
+        max-width: 100% !important;
+        height: auto !important;
+    }
+}

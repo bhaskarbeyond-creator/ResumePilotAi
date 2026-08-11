@@ -1,0 +1,73 @@
+/* Simple Progress Bar - Clean and Minimal */
+.compact-progress-bar {
+  margin-bottom: 20px;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.progress-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.progress-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.progress-track {
+  width: 100%;
+  height: 4px;
+  background: #e5e5e5;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.progress-status {
+  font-size: 12px;
+  color: #666;
+  text-align: left;
+  margin-top: 4px;
+}
+
+/* Legacy Compatibility */
+.progressWrapper {
+  width: 100%;
+}
+
+.progressWrapper .progressStatus {
+  font-size: 14px;
+}
+
+.progressWrapper .progressStatus .progressPercentage {
+  color: red;
+  margin-left: 13px;
+}
+
+.progressWrapper .progressPath {
+  margin-top: 10px;
+  background-color: #F2F5FA;
+  height: 4px;
+  width: 100%;
+  border-radius: 15px;
+}
+
+.progressWrapper .progressPath .progressFill {
+  background-color: red;
+  height: 4px;
+  border-radius: 15px;
+  transition: width 300ms ease;
+}

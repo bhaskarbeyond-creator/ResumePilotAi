@@ -1,0 +1,411 @@
+@use '../../components/variables' as *;
+
+.cv21-container {
+    width: 21cm;
+    min-height: 29.7cm;
+    background-color: #ffffff;
+    font-family: $font;
+    color: #2d2d2d;
+    word-break: break-word;
+
+    // Header section
+    .cv21-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 40px 50px;
+        background-color: #f6f9fc;
+        position: relative;
+
+        &:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #ff6b6b 0%, #5352ed 100%);
+        }
+
+        .cv21-name-occupation {
+            .cv21-name {
+                font-size: 32px;
+                font-weight: 700;
+                margin: 0 0 5px;
+                color: #333;
+                letter-spacing: 0.5px;
+            }
+
+            .cv21-occupation {
+                font-size: 18px;
+                font-weight: 400;
+                margin: 0;
+                color: #5352ed;
+            }
+        }
+
+        .cv21-photo-container {
+            width: 120px;
+            height: 120px;
+            border-radius: 4px;
+            overflow: hidden;
+            border: 3px solid white;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+
+            .cv21-photo {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+        }
+    }
+
+    // Body section
+    .cv21-body {
+        display: flex;
+
+        // Main content column
+        .cv21-main-column {
+            flex: 2;
+            padding: 35px 40px;
+            border-right: 1px solid #eaeaea;
+
+            // Section styling
+            .cv21-section-header {
+                display: flex;
+                align-items: center;
+                margin-bottom: 20px;
+
+                .cv21-section-icon {
+                    color: #5352ed;
+                    font-size: 22px;
+                    margin-right: 10px;
+                }
+
+                .cv21-section-title {
+                    font-size: 18px;
+                    text-transform: uppercase;
+                    font-weight: 600;
+                    color: #333;
+                    margin: 0;
+                    letter-spacing: 1px;
+                    position: relative;
+
+                    &:after {
+                        content: '';
+                        position: absolute;
+                        bottom: -5px;
+                        left: 0;
+                        width: 100%;
+                        height: 2px;
+                        background-color: #eaeaea;
+                    }
+                }
+            }
+
+            // Summary section
+            .cv21-summary-section {
+                margin-bottom: 30px;
+
+                .cv21-summary-content {
+                    p {
+                        font-size: 15px;
+                        line-height: 1.6;
+                        color: #444;
+                        margin: 0;
+                    }
+                }
+            }
+
+            // Experience section
+            .cv21-experience-section {
+                margin-bottom: 30px;
+
+                .cv21-experience-content {
+                    .cv21-experience-item {
+                        margin-bottom: 22px;
+                        padding-bottom: 22px;
+                        border-bottom: 1px dashed #eaeaea;
+
+                        &:last-child {
+                            border-bottom: none;
+                            margin-bottom: 0;
+                            padding-bottom: 0;
+                        }
+
+                        .cv21-experience-header {
+                            display: flex;
+                            justify-content: space-between;
+                            margin-bottom: 12px;
+                            flex-wrap: wrap;
+
+                            .cv21-title-company {
+                                max-width: 70%;
+
+                                .cv21-title {
+                                    font-size: 17px;
+                                    font-weight: 600;
+                                    margin: 0 0 5px;
+                                    color: #333;
+                                }
+
+                                .cv21-company {
+                                    font-size: 15px;
+                                    margin: 0;
+                                    color: #5352ed;
+                                    font-weight: 500;
+                                }
+                            }
+
+                            .cv21-date {
+                                background-color: #f6f9fc;
+                                padding: 4px 12px;
+                                border-radius: 3px;
+                                color: #555;
+                                font-size: 13px;
+                                display: flex;
+                                align-items: center;
+                                align-self: flex-start;
+                                white-space: nowrap;
+                            }
+                        }
+
+                        .cv21-description {
+                            font-size: 14px;
+                            line-height: 1.5;
+                            color: #555;
+                            margin: 0;
+                        }
+                    }
+                }
+            }
+
+            // Education section
+            .cv21-education-section {
+                .cv21-education-content {
+                    .cv21-education-item {
+                        margin-bottom: 22px;
+                        padding-bottom: 22px;
+                        border-bottom: 1px dashed #eaeaea;
+
+                        &:last-child {
+                            border-bottom: none;
+                            margin-bottom: 0;
+                            padding-bottom: 0;
+                        }
+
+                        .cv21-education-header {
+                            display: flex;
+                            justify-content: space-between;
+                            margin-bottom: 12px;
+                            flex-wrap: wrap;
+
+                            .cv21-degree-school {
+                                max-width: 70%;
+
+                                .cv21-degree {
+                                    font-size: 17px;
+                                    font-weight: 600;
+                                    margin: 0 0 5px;
+                                    color: #333;
+                                }
+
+                                .cv21-school {
+                                    font-size: 15px;
+                                    margin: 0;
+                                    color: #5352ed;
+                                    font-weight: 500;
+                                }
+                            }
+
+                            .cv21-date {
+                                background-color: #f6f9fc;
+                                padding: 4px 12px;
+                                border-radius: 3px;
+                                color: #555;
+                                font-size: 13px;
+                                display: flex;
+                                align-items: center;
+                                align-self: flex-start;
+                                white-space: nowrap;
+                            }
+                        }
+
+                        .cv21-description {
+                            font-size: 14px;
+                            line-height: 1.5;
+                            color: #555;
+                            margin: 0;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Sidebar
+        .cv21-sidebar {
+            flex: 1;
+            background-color: #fafafa;
+            padding: 35px 30px;
+
+            .cv21-section-header {
+                margin-bottom: 20px;
+
+                .cv21-section-title {
+                    font-size: 16px;
+                    text-transform: uppercase;
+                    font-weight: 600;
+                    color: #333;
+                    margin: 0;
+                    letter-spacing: 1px;
+                    position: relative;
+                    padding-bottom: 8px;
+
+                    &:after {
+                        content: '';
+                        position: absolute;
+                        bottom: 0;
+                        left: 0;
+                        width: 40px;
+                        height: 2px;
+                        background-color: #ff6b6b;
+                    }
+                }
+            }
+
+            // Contact section
+            .cv21-contact-section {
+                margin-bottom: 30px;
+
+                .cv21-contact-content {
+                    .cv21-contact-item {
+                        display: flex;
+                        align-items: flex-start;
+                        margin-bottom: 12px;
+
+                        .cv21-contact-icon {
+                            color: #5352ed;
+                            font-size: 14px;
+                            margin-right: 12px;
+                            margin-top: 3px;
+                            flex-shrink: 0;
+                        }
+
+                        span {
+                            font-size: 14px;
+                            line-height: 1.5;
+                            color: #444;
+                        }
+                    }
+                }
+            }
+
+            // Skills section
+            .cv21-skills-section {
+                margin-bottom: 30px;
+
+                .cv21-skills-content {
+                    .cv21-skill-item {
+                        margin-bottom: 15px;
+
+                        .cv21-skill-name {
+                            font-size: 14px;
+                            font-weight: 500;
+                            margin-bottom: 5px;
+                            color: #444;
+                        }
+
+                        .cv21-skill-bar-container {
+                            background-color: #e9ecef;
+                            height: 6px;
+                            border-radius: 3px;
+                            overflow: hidden;
+
+                            .cv21-skill-bar {
+                                height: 100%;
+                                background: linear-gradient(90deg, #5352ed, #7b78ff);
+                                border-radius: 3px;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Languages section
+            .cv21-languages-section {
+                .cv21-languages-content {
+                    .cv21-language-item {
+                        display: flex;
+                        justify-content: space-between;
+                        margin-bottom: 12px;
+                        padding-bottom: 12px;
+                        border-bottom: 1px dashed #eaeaea;
+
+                        &:last-child {
+                            border-bottom: none;
+                            margin-bottom: 0;
+                            padding-bottom: 0;
+                        }
+
+                        .cv21-language-name {
+                            font-weight: 500;
+                            font-size: 14px;
+                            color: #444;
+                        }
+
+                        .cv21-language-level {
+                            font-size: 13px;
+                            color: #555;
+                            background-color: #f0f0f0;
+                            padding: 2px 10px;
+                            border-radius: 3px;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/* Rich Text Support for CV21 */
+.cv21-container {
+    p {
+        strong,
+        b {
+            font-weight: bold;
+        }
+        em,
+        i {
+            font-style: italic;
+        }
+        u {
+            text-decoration: underline;
+        }
+        ul,
+        ol {
+            margin: 6px 0;
+            padding-left: 1em;
+        }
+        li {
+            display: list-item;
+            margin: 0.1em 0;
+            padding-left: 0.2em;
+        }
+        ul {
+            list-style-type: disc;
+        }
+        ol {
+            list-style-type: decimal;
+        }
+        ul ul {
+            list-style-type: circle;
+            margin: 1px 0;
+            padding-left: 0.8em;
+        }
+        ol ol {
+            list-style-type: lower-alpha;
+            margin: 1px 0;
+            padding-left: 0.8em;
+        }
+    }
+}

@@ -1,0 +1,2562 @@
+{
+  "intro": {
+    "titleLeft": "Ditt CV i tre",
+    "titleSpan": "enkla",
+    "titleRight": "steg",
+    "step1": "Välj en mall från vår kollektion.",
+    "step2": "Bygg ditt CV med vår lättanvända CV-byggare.",
+    "step3": "Ladda ner ditt CV.",
+    "login": "Logga in",
+    "selectTemplate": "Välj mall",
+    "rightReserved": "Alla rättigheter reserverade"
+  },
+  "selectionAction": {
+    "titleLeft": "Välj en",
+    "titleSpan": "mall",
+    "titleRight": "från listan.",
+    "templates": "Mallar",
+    "account": "Mitt konto",
+    "admin": "Admin"
+  },
+  "form": {
+    "untitled": "Namnlös",
+    "profileCompleteness": "Profilkomplettering",
+    "personalDetails": "Personliga uppgifter",
+    "firstName": "Förnamn",
+    "lastName": "Efternamn",
+    "email": "E-post",
+    "phone": "Telefon",
+    "photo": "Foto",
+    "occupation": "Yrke",
+    "country": "Land",
+    "nationality": "Nationalitet",
+    "city": "Stad",
+    "address": "Adress",
+    "postalcode": "Postnummer",
+    "dateOfBirth": "Födelsedatum",
+    "drivingLicense": "Körkort",
+    "profesionalSummary": "Professionell sammanfattning",
+    "profesionalSummarySubtitle": "Snabb sammanfattning om din totala erfarenhet.",
+    "employmentHistory": "Anställningshistorik",
+    "employmentHistorySubtitle": "Inkludera dina senaste 10 år av relevant erfarenhet och datum i detta avsnitt. Lista din senaste position först.",
+    "jobTitle": "Jobbtitel",
+    "employer": "Arbetsgivare",
+    "begin": "Början",
+    "end": "Slut",
+    "description": "Beskrivning",
+    "education": "Utbildning",
+    "educationSubtitle": "Inkludera dina senaste 10 år av utbildningshistoria och datum i detta avsnitt. Lista din senaste position först.",
+    "school": "Skola",
+    "degree": "Grad",
+    "courseDescription": "Kursbeskrivning",
+    "languages": "Språk",
+    "laguagesSubtitle": "Vänligen ange de språk du kan arbeta med.",
+    "language": "Språk",
+    "level": "Nivå",
+    "skills": "Färdigheter",
+    "skillsSubtitle": "Vänligen ange dina färdigheter och ge varje en bedömning.",
+    "skillName": "Färdighetsnamn",
+    "rating": "Betyg",
+    "addSkill": "Lägg till färdighet",
+    "addLanguage": "Lägg till språk",
+    "addJob": "Lägg till jobb",
+    "addEducation": "Lägg till utbildning",
+    "showDetails": "Visa ytterligare detaljer",
+    "hideDetails": "Dölj ytterligare detaljer",
+    "previous": "Föregående",
+    "next": "Nästa",
+    "selectTemplate": "Välj mall",
+    "save": "Spara",
+    "download": "Ladda ner"
+  },
+  "login": {
+    "login": "Logga in",
+    "email": "E-post",
+    "googleLogin": "Logga in med ",
+    "facebookLogin": "Logga in med",
+    "or": "Eller",
+    "password": "Lösenord",
+    "passwordRepeat": "Upprepa lösenord",
+    "dontHaveAcc": "Har du inget konto? ",
+    "signup": "Registrera dig",
+    "passwordLost": "Glömt ditt lösenord? ",
+    "recoverPassword": "Återställ lösenord",
+    "register": "Registrera",
+    "alreadyHaveAccount": "Har du redan ett konto?",
+    "passwordRecovery": "Återställning av lösenord",
+    "recoverMyPassword": "Återställ mitt lösenord"
+  },
+  "dashboard": {
+    "homepage": "Hemsida",
+    "dashboard": "Kontrollpanel",
+    "coverLetter": "Personligt brev",
+    "dashBoard": "Kontrollpanel",
+    "goToResume": "Gå till CV",
+    "remove": "Ta bort",
+    "addNew": "Lägg till ny",
+    "addResume": "Lägg till CV",
+    "accountSettings": "Kontoinställningar",
+    "logout": "Logga ut",
+    "settings": "Inställningar",
+    "personalInfo": "PERSONLIG INFO",
+    "firstname": "Förnamn",
+    "lastname": "Efternamn",
+    "changePassword": "BYT LÖSENORD",
+    "newPassword": "Nytt lösenord",
+    "save": "Spara",
+    "commingSoon": "Kommer snart",
+    "adsManager": "Annonshanterare",
+    "currentAds": "Nuvarande annonser",
+    "name": "Namn",
+    "date": "Datum",
+    "bannerLink": "Bannerlänk",
+    "bannerName": "Bannernamn",
+    "destinationLink": "Destinationslänk",
+    "add": "Lägg till",
+    "noAdsFound": "Inga annonser hittades!",
+    "pages": "Sidor",
+    "currentPages": "Nuvarande sidor",
+    "addPages": "Lägg till sidor",
+    "pageName": "Sidnamn",
+    "addPage": "Lägg till sida"
+  },
+  "resume": {
+    "personalSummary": "Personlig sammanfattning",
+    "employmentHistory": "Anställningshistorik",
+    "educationHistory": "Utbildningshistorik",
+    "info": "Info",
+    "address": "Adress",
+    "phone": "Telefon",
+    "email": "E-post",
+    "languages": "Språk",
+    "skills": "Färdigheter"
+  },
+  "Language": {
+    "elemntary": "Grundläggande",
+    "Intermediate": "Medel",
+    "Advanced": "Avancerad",
+    "Proficient": "Flytande"
+  },
+  "dashNew": {
+    "noDocumentFound": "Inga dokument hittades!",
+    "noDocumentFoundSub": "Du kan börja med att skapa ett nytt CV eller personligt brev",
+    "personalDetails": "Personliga uppgifter",
+    "name": "Namn",
+    "email": "E-post",
+    "phone": "Telefon",
+    "address": "Adress",
+    "city": "Stad",
+    "country": "Land",
+    "postalcode": "Postnummer",
+    "skills": "Färdigheter",
+    "searchDocuments": "Sök dokument",
+    "resume": "CV",
+    "coverLetter": "Personligt brev",
+    "clearAll": "Rensa allt",
+    "filter": "Filter",
+    "noSkillsAdded": "Inga färdigheter tillagda",
+    "shareDocument": "Dela detta dokument",
+    "link": "Länk",
+    "linkDesc": "Du kan använda denna delbara länk för att låta vem som helst se detta dokument",
+    "copy": "Kopiera",
+    "copied": "Kopierat",
+    "quickAccess": "Snabbåtkomst",
+    "quickAccessDesc": "I detta avsnitt hittar du alla åtgärder du kan utföra på dina dokument och ditt konto.",
+    "createDocument": "Skapa dokument",
+    "favourites": "Favoriter",
+    "settings": "Inställningar",
+    "statistics": "Statistik",
+    "statisticsDesc": "Här kan du se din statistik, hur många dokument du har genererat, hur många nedladdningar du har",
+    "documentsGenerated": "Dokument genererade",
+    "downloads": "Nedladdningar",
+    "favouitesDesc": "Detta är en lista över dina favoritdokument, du kan ta bort dem härifrån.",
+    "noFavouritesFound": "Du har inga favoriter än!",
+    "fullName": "Fullständigt namn",
+    "type": "Typ",
+    "summary": "Sammanfattning",
+    "close": "Stäng",
+    "profil": "Profil",
+    "account": "Konto",
+    "upload": "Ladda upp",
+    "remove": "Ta bort",
+    "fullNameDesc": "Vi använder det när vi bygger CV",
+    "emailDesc": "För att autentisera till applikationen",
+    "description": "Beskrivning",
+    "descriptionDesc": "Din kontotyp",
+    "changePassword": "Byt lösenord",
+    "newPassword": "Nytt lösenord",
+    "sbsend": "Prenumerationen avslutas",
+    "sbsendDesc": "Datumet då din prenumeration avslutas",
+    "profileUpdated": "Profil uppdaterad",
+    "profileUpdatedDesc": "Profilen uppdaterad",
+    "passChanged": "Lösenord ändrat",
+    "passChangedDesc": "Lösenordet ändrat",
+    "passError": "Lösenordet är för kort",
+    "passErrorDesc": "Lösenordet måste vara minst 6 tecken långt",
+    "profile": "Profil"
+  },
+  "static": {
+    "plansHeader": "Enkla, transparenta priser",
+    "plansDesc": "För att ladda ner ditt CV, registrera dig enkelt för ett Premium-medlemskap. Välj det plan som passar dig bäst.",
+    "month": "Månad",
+    "premiumMonth": "Premium månadsvis",
+    "premiumYear": "Premium 6 månader",
+    "premiumHalfYear": "Premium årligen",
+    "unlimitedPDF": "Obegränsade PDF-nedladdningar",
+    "unlimitedResumes": "Obegränsade CV:n",
+    "nonRecuring": "Engångsbetalning.",
+    "upgradeAndDownload": "Uppgradera och ladda ner",
+    "payment1": "Få ditt drömjobb",
+    "payment2": "Betalning via en betrodd betaltjänst",
+    "payment3": "SSL-säker / 256-bitars SSL-säker utcheckning",
+    "payment4": "7 dagars pengarna tillbaka-garanti",
+    "payment5": "Hur kan jag avbryta?",
+    "payment6": "Du kan enkelt avbryta din prenumeration genom att helt enkelt kontakta vår support via e-post eller telefon, eller genom att använda vår kontaktsida.",
+    "payment7": "Accepterade betalningsmetoder",
+    "payment8": "Totalt att betala idag:",
+    "payment9": "Var är du lokaliserad?",
+    "payment10": "Vänligen ange ditt land och postnummer nedan. Vi samlar in denna information för att bekämpa bedrägerier och garantera säkerheten för din betalning.",
+    "payment11": "Land",
+    "payment12": "Postnummer",
+    "payment13": "Betala med kort",
+    "payment14": "återvänd",
+    "payment15": "Korthållare",
+    "payment16": "Adress",
+    "nav1": "Gå till appen",
+    "nav2": "Kontakta oss",
+    "footer1": "Socialt",
+    "footer2": "Kontakta oss",
+    "footer3": "Integritetspolicy",
+    "footer4": "Följ oss i sociala medier för att få exklusiva resurser direkt i ditt flöde",
+    "footer5": "Om",
+    "footer6": "Copyright © 2021-2022 Alla rättigheter reserverade.",
+    "footer7": "Innehåll",
+    "footer8": "Hemsida"
+  },
+  "navbar": {
+    "home": "Hemsida",
+    "featuresNav": "Funktioner",
+    "resumeBuilderFeatures": "CV-byggare Funktioner",
+    "featureTagline": "Allt du behöver för det perfekta CV:t",
+    "userCount": "50K+ användare",
+    "exploreFeatures": "Utforska alla funktioner",
+    "freeToTry": "Gratis att prova",
+    "startBuilding": "Börja bygga",
+    "pricing": "Priser",
+    "contact": "Kontakt",
+    "signOut": "Logga ut",
+    "dashboard": "Kontrollpanel",
+    "signIn": "Logga in",
+    "getStarted": "Kom igång",
+    "viewAllFeatures": "Visa alla funktioner",
+    "popular": "Populärt",
+    "features": {
+      "atsOptimization": {
+        "title": "ATS-optimering",
+        "description": "Slå automatiserade screeningsystem",
+        "badge": "Smart"
+      },
+      "aiBuilder": {
+        "title": "AI Content Builder",
+        "description": "AI-driven CV-skrivning",
+        "badge": "AI"
+      },
+      "templates": {
+        "title": "Professionella mallar",
+        "description": "Moderna, branschspecifika design"
+      },
+      "export": {
+        "title": "Export i flera format",
+        "description": "PDF, DOCX och fler format"
+      },
+      "security": {
+        "title": "Sekretess och säkerhet",
+        "description": "Datasäkerhet på banknivå",
+        "badge": "Säker"
+      },
+      "analytics": {
+        "title": "Karriäranalys",
+        "description": "Spåra din ansökningsframgång",
+        "badge": "Pro"
+      }
+    },
+    "resources": {
+      "learn": "Lär dig",
+      "documentation": {
+        "title": "Dokumentation",
+        "description": "Kompletta guider och API-referenser"
+      },
+      "videoTutorials": {
+        "title": "Videoguider",
+        "description": "Lär dig med steg-för-steg videor"
+      },
+      "designCourse": {
+        "title": "Designkurs",
+        "description": "Bemästra grunderna i logotypdesign",
+        "badge": "Gratis"
+      },
+      "community": "Community",
+      "communityForum": {
+        "title": "Community Forum",
+        "description": "Anslut dig till andra designers"
+      },
+      "blog": {
+        "title": "Blogg",
+        "description": "Senaste designtrender och tips"
+      },
+      "support": "Support",
+      "helpCenter": {
+        "title": "Hjälpcenter",
+        "description": "Hitta svar på vanliga frågor"
+      },
+      "faq": {
+        "title": "FAQ",
+        "description": "Vanliga frågor"
+      },
+      "contactUs": {
+        "title": "Kontakta oss",
+        "description": "Ta kontakt med vårt team"
+      }
+    },
+    "blog": "Blogg"
+  },
+  "homepageText": {
+    "text1": "Skilj dig från mängden med vår online CV-byggare",
+    "text2": "Vår CV-byggare är det perfekta verktyget för att hjälpa dig skapa ett professionellt, polerat CV på bara några minuter. Med vår intuitiva design och enkla steg-för-steg process kan du enkelt bygga ett CV som sticker ut från konkurrenterna. Oavsett om du är nyutexaminerad eller en erfaren professionell har vår webbapplikation allt du behöver för att ta din karriär till nästa nivå",
+    "text3": "CV",
+    "text4": "Personligt brev",
+    "text5": "Recensioner",
+    "text6": "Välj vad du vill skapa.",
+    "text7": "Recensioner",
+    "text8": "Stärk ditt CV med våra avancerade funktioner",
+    "text9": "Vår CV-byggare erbjuder en mängd olika funktioner för att hjälpa användare att skapa ett professionellt och effektivt CV. Dessa inkluderar förskrivna frasförslag, delbar länk, PDF-export, anpassningsbara mallar, autospara, stavningskontroll, spårningsändringar, samarbete och resurser för personligt varumärke. Alla dessa funktioner gör det enkelt och effektivt att skapa ett professionellt CV."
+  },
+  "HomepageHero": {
+    "typingEffect": {
+      "sentence1": "Bygg professionella CV:n med AI",
+      "sentence2": "Välj bland 50+ expertmallar",
+      "sentence3": "Få intelligent skrivhjälp",
+      "sentence4": "Förhandsgranska ändringar i realtid",
+      "sentence5": "Lyckas med intervjuer med AI-förberedelseverktyg"
+    },
+    "badge": "AI-driven CV-byggare",
+    "description": "Skapa fantastiska, ATS-vänliga CV:n och personliga brev med AI-assistans. Välj bland professionella mallar, få feedback i realtid och landa ditt drömjobb snabbare.",
+    "createResume": "Skapa CV",
+    "createCoverLetter": "Skapa personligt brev",
+    "stats": {
+      "users": "5 000+ nöjda användare",
+      "rating": "4.9/5"
+    },
+    "features": {
+      "freeToStart": "Gratis att starta",
+      "noCreditCard": "Ingen kreditkort"
+    },
+    "quick": "Snabb",
+    "quickDesc": "Välj mall och skriv",
+    "guided": "Guidad",
+    "guidedDesc": "Steg för steg med AI",
+    "portfolio": "Portfolio",
+    "portfolioDesc": "Drag & drop hemsidesbyggare"
+  },
+  "HomepageTrustedBy": {
+    "badge": "KOMPATIBEL MED LEDANDE PLATTFORMAR",
+    "title": "Fungerar Sömlöst Med Branschverktyg",
+    "description": "Vår AI-drivna CV-byggare integrerar med populära plattformar och verktyg som används av yrkesverksamma över hela världen.",
+    "trustIndicators": {
+      "platforms": "Kompatibel med 30+ stora plattformar",
+      "countries": "Används i 120+ länder",
+      "technology": "Branschledande teknologi"
+    }
+  },
+  "HomepageSteps": {
+    "badge": "BEVISADE RESULTAT • TRUSTED BY 50K+ PROFESSIONALS",
+    "title": {
+      "part1": "Förvandla",
+      "part2": "Din Karriär",
+      "part3": "Resa"
+    },
+    "description": "Gå med tusentals yrkesverksamma som har accelererat sina karriärer med vår AI-drivna CV-byggare. Bli uppmärksammad, få intervjuer och säkra ditt drömjobb snabbare än någonsin tidigare.",
+    "benefits": [
+      {
+        "title": "Land Fler Jobbintervjuer",
+        "description": "Våra ATS-optimerade mallar och AI-drivna innehållsförslag hjälper ditt CV att ta sig förbi automatiserade screening-system och in i händerna på anställningschefer.",
+        "detail": "Gå med tusentals yrkesverksamma som har ökat sin intervju-frekvens med 3x med vårt bevisade system."
+      },
+      {
+        "title": "Stå Ut Från Konkurrensen",
+        "description": "Med professionella design och övertygande innehållsrekommendationer, visa upp ditt unika värdeerbjudande och bli uppmärksammad snabbare av rekryterare.",
+        "detail": "Vår smarta formatering och nyckelordsoptimering säkerställer att ditt CV fångar uppmärksamhet på sekunder."
+      },
+      {
+        "title": "Bygg Förtroende I Din Jobbjakt",
+        "description": "Presentera ditt bästa professionella jag med ett polerat, felfritt CV som speglar din sanna potential och professionella prestationer.",
+        "detail": "Känn dig trygg i vetskapen om att dina ansökningsmaterial är professionellt utformade och följer branschstandarder."
+      }
+    ],
+    "stats": [
+      {
+        "number": "50K+",
+        "label": "Nöjda användare"
+      },
+      {
+        "number": "98.7%",
+        "label": "Framgångsfrekvens"
+      },
+      {
+        "number": "50+",
+        "label": "Mallar"
+      },
+      {
+        "number": "24 timmar",
+        "label": "Genomsnittlig tid"
+      }
+    ],
+    "badges": {
+      "aiPowered": {
+        "title": "AI-driven",
+        "subtitle": "Smart CV-byggare"
+      },
+      "atsOptimized": {
+        "title": "✓",
+        "subtitle": "ATS-optimerad"
+      }
+    },
+    "cta": {
+      "title": "Redo att landa ditt drömjobb?",
+      "description": "Gå med över 50 000 yrkesverksamma som har förvandlat sina karriärer. Börja bygga ditt vinnande CV idag.",
+      "button": "Starta din framgångssaga",
+      "noCredit": "✨ Inget kreditkort krävs • Gratis mallar ingår"
+    }
+  },
+  "HomepageReviews": {
+    "badge": "KUNDRECENSIONER",
+    "title": {
+      "part1": "Vad Våra ",
+      "part2": "Användare",
+      "part3": " Säger"
+    },
+    "description": "Gå med tusentals nöjda arbetssökande som har landat sina drömjobb med vår AI-drivna CV-byggare.",
+    "navigation": {
+      "previous": "Föregående",
+      "next": "Nästa",
+      "slideLabel": "Gå till bild {{number}}",
+      "pauseAutoplay": "Pausa autospel",
+      "startAutoplay": "Starta autospel"
+    },
+    "review": {
+      "category": "Teknik",
+      "verifiedBadge": "Verifierad användare",
+      "avatarAlt": "{{name}}s profilbild",
+      "dateFormat": "MM/DD/YYYY"
+    }
+  },
+  "HomepagePricing": {
+    "badge": "PRISPLANER",
+    "header": "Välj Den Perfekta Planen För Dina Behov",
+    "description": "Få obegränsad tillgång till professionella mallar och avancerade funktioner med våra flexibla prisalternativ.",
+    "plans": {
+      "monthly": {
+        "title": "Premium Månadsvis",
+        "description": "Betala {{currency}}{{price}} för 1 månad",
+        "perMonth": "månad"
+      },
+      "halfYear": {
+        "title": "Premium Halvårsvis",
+        "description": "Betala {{currency}}{{price}} för 6 månader",
+        "perMonth": "månad",
+        "mostPopular": "🔥 Mest Populär"
+      },
+      "yearly": {
+        "title": "Premium Årligen",
+        "description": "{{currency}}{{price}} för 1 år",
+        "perMonth": "månad"
+      }
+    },
+    "features": {
+      "unlimitedPDF": "Obegränsade PDF-nedladdningar",
+      "unlimitedResumes": "Obegränsade CV:n",
+      "nonRecurring": "Engångsbetalning"
+    },
+    "upgradeButton": "Uppgradera och Ladda Ner Nu",
+    "upgradeButtonStar": "Uppgradera och Ladda Ner Nu ⭐"
+  },
+  "Homepagefaqs": {
+    "badge": "KUNSKAPSBANK",
+    "header": "Hitta ditt svar direkt",
+    "subtitle": "Allt du behöver veta om att skapa professionella CV:n med AI",
+    "quickStats": {
+      "resumesCreated": "Skapade CV:n",
+      "avgBuildTime": "Genomsnittlig CV-byggtid",
+      "satisfaction": "Kundnöjdhet",
+      "support": "Support tillgänglig"
+    },
+    "search": {
+      "placeholder": "Sök efter svar...",
+      "categories": "Kategorier"
+    },
+    "categoryNames": {
+      "allQuestions": "Alla frågor",
+      "gettingStarted": "Komma igång",
+      "features": "Funktioner",
+      "billing": "Fakturering",
+      "technical": "Tekniskt"
+    },
+    "popularBadge": "Populärt",
+    "helpfulQuestion": "Var detta till hjälp?",
+    "noResults": {
+      "title": "Inga resultat hittades",
+      "message": "Försök att justera dina söktermer eller kategorifilter"
+    },
+    "contactSupport": {
+      "title": "Behöver du fortfarande hjälp?",
+      "description": "Vårt supportteam finns här dygnet runt för att hjälpa dig att lyckas",
+      "contactButton": "Kontakta support",
+      "docsButton": "Bläddra bland dokument"
+    },
+    "cta": {
+      "badge": "Redo att skapa ditt CV?",
+      "title": "Förvandla din karriär med AI-drivna CV:n",
+      "description": "Gå med tusentals yrkesverksamma som har skapat fantastiska CV:n på några sekunder. Börja din karriärresa idag med vår intelligenta designplattform.",
+      "button": "Börja skapa gratis",
+      "freeCredits": "3 gratis krediter • Inget kreditkort krävs",
+      "support": "Support dygnet runt",
+      "secure": "Säker och privat",
+      "instant": "Omedelbara resultat"
+    },
+    "trustIndicators": {
+      "secure": "Säker och privat",
+      "instant": "Omedelbara resultat",
+      "support": "Support dygnet runt"
+    },
+    "q1": {
+      "question": "Hur kommer jag igång med AI-CV-skapande?",
+      "answer": "Skapa ett gratiskonto, fyll i dina uppgifter och se vår AI skapa snygga CV:n på några sekunder."
+    },
+    "q2": {
+      "question": "Hur snabbt skapas CV:t?",
+      "answer": "Vår AI skapar flera CV-varianter på under 5 minuter!"
+    },
+    "q3": {
+      "question": "Vad ingår i gratisplanen?",
+      "answer": "Nya användare får gratiskrediter för att ladda ner CV:n i PDF- och Word-format."
+    },
+    "q4": {
+      "question": "Kan jag anpassa det skapade CV:t?",
+      "answer": "Ja! Du kan enkelt ändra stilar, färger och layouter."
+    },
+    "q5": {
+      "question": "Vilka filformat erbjuder ni?",
+      "answer": "Alla CV:n finns tillgängliga i högkvalitativa PDF- och Word-format."
+    },
+    "q6": {
+      "question": "Hur fungerar kreditsystemet?",
+      "answer": "Varje skapande förbrukar 1 kredit. Krediter gå aldrig ut."
+    }
+  },
+  "HomepageFooter": {
+    "headings": {
+      "aboutUs": "Om oss",
+      "quickLinks": "Snabblänkar",
+      "stayUpdated": "Håll dig uppdaterad",
+      "securePayments": "Säkra betalningar"
+    },
+    "aboutText": "Vi hjälper arbetssökande att skapa professionella CV:n på några minuter. Vår mission är att möjliggöra för individer att landa sina drömjobb med högkvalitativa, AI-skapade ansökningshandlingar.",
+    "links": {
+      "pricing": "Priser",
+      "contact": "Kontakt"
+    },
+    "newsletter": {
+      "description": "Prenumerera på vårt nyhetsbrev för de senaste karriärstipsen, CV-råden och funktionsuppdateringarna.",
+      "placeholder": "Ange din e-postadress",
+      "buttonText": "Prenumerera",
+      "privacyNote": "Vi respekterar din integritet"
+    },
+    "paymentMethods": {
+      "visa": "visa",
+      "mastercard": "mastercard",
+      "paypal": "paypal",
+      "applepay": "applepay",
+      "googlepay": "googlepay",
+      "discover": "discover"
+    },
+    "legal": {
+      "privacyPolicy": "Integritetspolicy",
+      "termsOfService": "Användarvillkor",
+      "cookiePolicy": "Cookie-policy",
+      "allRightsReserved": "Alla rättigheter reserverade."
+    }
+  },
+  "ActionSelection": {
+    "templateHeading": "Välj din perfekta",
+    "templateHeadingSpan": "mall",
+    "templateDescription": "Välj bland våra professionellt utformade mallar för att skapa ett CV som sticker ut",
+    "coverLetterHeading": "Välj ditt",
+    "coverLetterHeadingSpan": "personliga brev",
+    "coverLetterDescription": "Välj en mall för personligt brev som kompletterar ditt CV",
+    "search": {
+      "searchTemplates": "Sök mallar...",
+      "searchCoverLetters": "Sök personliga brev...",
+      "noTemplatesFound": "Inga mallar hittades",
+      "noTemplatesFoundDescription": "Försök justera dina sökkriterier eller bläddra bland olika kategorier",
+      "clearFilters": "Rensa filter",
+      "resultsInfo": "mallar • Visar",
+      "resultsCount": "resultat",
+      "selectedTemplate": "vald"
+    },
+    "categories": {
+      "all": "Alla",
+      "modern": "Modern",
+      "professional": "Professionell",
+      "creative": "Kreativ",
+      "simple": "Enkel",
+      "standard": "Standard"
+    },
+    "sortBy": {
+      "label": "Sortera efter",
+      "popular": "Popularitet",
+      "name": "Namn",
+      "newest": "Nyaste"
+    },
+    "viewMode": {
+      "grid": "Rutnätsvy",
+      "list": "Listvy"
+    },
+    "templateCards": {
+      "popular": "Populär",
+      "select": "Välj",
+      "selectTemplate": "Välj mall",
+      "popularity": "% populär",
+      "templateDescriptions": {
+        "professionalClassic": "Rent och traditionellt design perfekt för företagsmiljöer",
+        "modernCreative": "Samtida layout med kreativa element",
+        "simpleElegant": "Minimalistisk design med fokus på innehållsklarhet",
+        "creativeBold": "Konstnärlig mall för kreativa yrkesverksamma",
+        "executivePro": "Sofistikerad design för seniora positioner",
+        "techModern": "Modern mall perfekt för teknikbranschen",
+        "designerSpecial": "Unik layout för designproffs",
+        "cleanSimple": "Enkelt och professionellt",
+        "corporateElite": "Premium företagsmall",
+        "startupReady": "Dynamisk mall för startup-kultur",
+        "creativePro": "Professionell kreativ mall",
+        "minimalPro": "Ren minimalistisk professionell design",
+        "businessClassic": "Traditionell affärsmall",
+        "modernEdge": "Banbrytande modern design",
+        "artistPortfolio": "Perfekt för kreativa portfolior",
+        "standardProfessional": "Klassiskt format för personligt brev",
+        "modernAppeal": "Modern design för personligt brev",
+        "businessStandard": "Traditionellt affärsformat",
+        "creativeModern": "Modernt kreativt personligt brev"
+      }
+    },
+    "preview": {
+      "useTemplate": "Använd mallen",
+      "cancel": "Avbryt"
+    },
+    "pagination": {
+      "prev": "Föregående",
+      "next": "Nästa"
+    },
+    "loading": {
+      "processingTemplate": "Bearbetar mall",
+      "settingUp": "Ställer in din valda mall..."
+    }
+  },
+  "ProfileDisplay": {
+    "appName": "Nolito",
+    "search": "Sök",
+    "navigation": "NAVIGATION",
+    "menu": {
+      "dashboard": "Kontrollpanel",
+      "interviews": "Intervjuer",
+      "settings": "Inställningar"
+    }
+  },
+  "DashboardHomepage": {
+    "greeting": "Hej! 👋",
+    "completeSteps": "Slutför dessa steg för att landa din nästa roll",
+    "stepsCompletion": "av slutfört",
+    "showButton": "Visa",
+    "tabs": {
+      "resumes": "CV:n",
+      "coverLetters": "Personliga brev"
+    },
+    "actions": {
+      "createNew": "Skapa ny",
+      "editResume": "Redigera CV",
+      "shareResume": "Dela CV",
+      "delete": "Ta bort",
+      "createNewDocument": "Skapa nytt dokument"
+    },
+    "promotion": {
+      "title": "Är du redo att ge din jobbjakt en skjuts och få mer uppmärksamhet?",
+      "description": "Välj ditt CV så skickar vi det till hundratals rekryterare inom ditt område med bara några klick",
+      "startNow": "Starta nu"
+    },
+    "card": {
+      "created": "Skapat",
+      "untitledResume": "Namnlös CV",
+      "aiJobMatching": "AI Jobbmatchning",
+      "new": "NY",
+      "newResumeTitle": "Nytt CV",
+      "newResumeDescription": "Skapa ett skräddarsytt CV för varje jobbansökan. Dubbla dina chanser att bli anställd!"
+    },
+    "emptyState": {
+      "noDocumentsFound": "Inga dokument tillgängliga",
+      "emptyLibrary": "Ditt dokumentbibliotek är för närvarande tomt.",
+      "createFirstDoc": "Skapa ditt första CV eller personliga brev för att komma igång."
+    },
+    "pagination": {
+      "page": "Sida",
+      "of": "av"
+    },
+    "confirmDelete": "Är du säker på att du vill radera detta CV? Den här åtgärden kan inte ångras."
+  },
+  "DashboardSettings": {
+    "pageTitle": "Inställningar",
+    "pageDescription": "Hantera dina konto- och profilinställningar",
+    "tabs": {
+      "profile": "Profil",
+      "account": "Konto"
+    },
+    "profile": {
+      "title": "Profil",
+      "description": "Uppdatera dina personliga uppgifter och profilbild",
+      "uploadPicture": "Ladda upp profilbild",
+      "dragOrUpload": "Dra och släpp en bild eller klicka för att ladda upp",
+      "uploadButton": "Ladda upp",
+      "removeButton": "Ta bort",
+      "fullName": "Fullständigt namn",
+      "fullNameDesc": "Ditt namn så som det visas på ditt konto",
+      "phone": "Telefonnummer",
+      "address": "Adress",
+      "city": "Stad",
+      "postalCode": "Postnummer",
+      "country": "Land",
+      "placeholders": {
+        "fullName": "Ange ditt fullständiga namn",
+        "phone": "Ange ditt telefonnummer",
+        "address": "Ange din adress",
+        "city": "Ange din stad",
+        "postalCode": "Ange ditt postnummer",
+        "country": "Ange ditt land"
+      },
+      "saving": "Sparar...",
+      "saveChanges": "Spara ändringar"
+    },
+    "account": {
+      "title": "Konto",
+      "description": "Hantera kontosäkerhet och prenumeration",
+      "email": "E-postadress",
+      "emailDesc": "Din e-postadress kan inte ändras",
+      "subscription": "Prenumeration",
+      "subscriptionDesc": "Din nuvarande prenumerationsplan",
+      "subscriptionEnd": "Prenumerationen avslutas",
+      "subscriptionEndDesc": "Datum då din prenumeration förnyas",
+      "noActiveSubscription": "Ingen aktiv prenumeration",
+      "changePassword": "Byt lösenord",
+      "newPassword": "Nytt lösenord",
+      "passwordStrength": {
+        "weak": "Svagt",
+        "fair": "Medel",
+        "good": "Bra",
+        "strong": "Starkt"
+      },
+      "passwordRequirement": "Lösenordet måste vara minst 6 tecken långt"
+    }
+  },
+  "contact": {
+    "title": "Ta kontakt",
+    "subtitle": "Har du en fråga eller behöver du hjälp? Skicka ett meddelande till oss så återkommer vi så snart som möjligt!",
+    "form": {
+      "fullName": "Fullständigt namn *",
+      "fullNamePlaceholder": "Ange ditt fullständiga namn",
+      "email": "E-postadress *",
+      "emailPlaceholder": "Ange din e-postadress",
+      "message": "Meddelande *",
+      "messagePlaceholder": "Berätta om din förfrågan...",
+      "sendButton": "Skicka meddelande",
+      "sendingButton": "Skickar meddelande..."
+    },
+    "quickResponse": {
+      "title": "Snabbt svar",
+      "text": "Vi svarar vanligtvis inom 24 timmar"
+    },
+    "success": {
+      "title": "Meddelandet skickades!",
+      "text": "Tack för att du tog kontakt. Vi återkommer till dig inom kort.",
+      "button": "Skicka ett annat meddelande"
+    },
+    "error": {
+      "general": "Något gick fel. Försök igen."
+    }
+  },
+  "billing": {
+    "title": "Prenumerationsplaner",
+    "subtitle": "Välj den plan som passar dig bäst",
+    "navbar": {
+      "home": "Hemsida",
+      "contact": "Kontakt"
+    },
+    "plans": {
+      "monthly": "Månadsvis",
+      "quarterly": "Kvartalsvis",
+      "yearly": "Årligen",
+      "selectPlan": "Välj plan",
+      "perMonth": "/månad",
+      "perQuarter": "/kvartal",
+      "perYear": "/år",
+      "mostPopular": "Mest populär",
+      "bestValue": "Bästa värde",
+      "unlimitedPDF": "Obegränsade PDF-nedladdningar",
+      "unlimitedResumes": "Obegränsade CV-mallar",
+      "nonRecurring": "Engångsbetalning, inte återkommande"
+    },
+    "checkout": {
+      "title": "Slutför ditt köp",
+      "subtitle": "Ange dina betalningsuppgifter för att prenumerera",
+      "securePayment": "Säker betalning",
+      "feature1": "Omedelbar tillgång till alla premiumfunktioner",
+      "feature2": "Inga dolda avgifter eller extra kostnader",
+      "feature3": "Avbryt när som helst via ditt konto",
+      "faqTitle": "Vanliga frågor",
+      "faqContent": "Din prenumeration aktiveras omedelbart efter betalning. Du kan hantera din prenumeration via din kontopanel.",
+      "totalPrice": "Totalt pris",
+      "locationTitle": "Faktureringsadress",
+      "locationDescription": "Vänligen ange dina faktureringsuppgifter",
+      "backToPlans": "Tillbaka till planer",
+      "cardDetails": "Kortuppgifter",
+      "cardholderName": "Kortinnehavarens namn",
+      "cardNumber": "Kortnummer",
+      "expiryDate": "Utgångsdatum",
+      "cvv": "CVV",
+      "payNow": "Betala nu",
+      "processing": "Bearbetar betalning...",
+      "subscriptionDetails": "Prenumerationsinformation",
+      "plan": "Plan",
+      "price": "Pris",
+      "billingFrequency": "Faktureringsfrekvens",
+      "paymentMethods": {
+        "title": "Välj betalningsmetod",
+        "subtitle": "Välj ditt föredragna betalningsalternativ",
+        "creditCard": "Kreditkort",
+        "paypal": "PayPal"
+      },
+      "cardForm": {
+        "title": "Betalningsinformation",
+        "subtitle": "Ange din kortinformation säkert",
+        "cardholderName": "Kortinnehavarens namn",
+        "address": "Faktureringsadress",
+        "country": "Land",
+        "postalCode": "Postnummer"
+      },
+      "success": {
+        "title": "Betalning lyckades!",
+        "subtitle": "Din prenumeration har aktiverats",
+        "message": "Tack för ditt köp. Du har nu full tillgång till alla premiumfunktioner.",
+        "button": "Fortsätt till kontrollpanelen"
+      },
+      "or": "ELLER"
+    },
+    "success": {
+      "title": "Betalning lyckades!",
+      "subtitle": "Din prenumeration har aktiverats",
+      "viewAccount": "Visa konto",
+      "returnHome": "Återgå till hemsidan"
+    },
+    "error": {
+      "payment": "Betalning misslyckades. Försök igen.",
+      "login": "Vänligen logga in för att slutföra betalningen.",
+      "general": "Något gick fel. Försök igen."
+    }
+  },
+  "DashboardInterviews": {
+    "configurationScreen": {
+      "title": "Konfigurera din intervju",
+      "subtitle": "Anpassa din intervjuupplevelse genom att ange ditt yrke och dina preferenser",
+      "occupationLabel": "Ditt yrke",
+      "occupationPlaceholder": "Exempel: Mjukvaruutvecklare, Lärare, Sjuksköterska, Bonde, Kock...",
+      "occupationHint": "Var specifik om din roll för mer anpassade frågor",
+      "questionCountLabel": "Antal Frågor",
+      "questionsText": "frågor",
+      "estimatedTime": "Beräknad tid:",
+      "minutesPerQuestion": "minuter per fråga",
+      "interviewDetails": "Intervjuinformation",
+      "type": "Typ:",
+      "questions": "Frågor:",
+      "timeLimit": "Tidsgräns:",
+      "passingScore": "Godkänd poäng:",
+      "errorGenerating": "Fel vid generering av intervju:",
+      "tryAgainError": "Försök igen eller prova ett annat yrke.",
+      "generatingQuestions": "Genererar {{count}} personliga intervjufrågor...",
+      "generatingHint": "Detta kan ta några sekunder. Vi utformar frågor som är specifika för ditt yrke.",
+      "back": "Tillbaka",
+      "startAssessment": "Starta Bedömning",
+      "generatingInterview": "Genererar Intervju..."
+    },
+    "selectionScreen": {
+      "title": "Intervju Bedömning",
+      "subtitle": "Välj din bedömningstyp och slutför intervjuprocessen",
+      "technicalTitle": "Teknisk Bedömning",
+      "technicalDepartment": "Teknikavdelning",
+      "technicalDescription": "Utvärdera tekniska färdigheter, programmeringsspråk, ramverk, metoder och problemlösningsförmåga som är specifik för din roll.",
+      "behavioralTitle": "Beteendebedömning",
+      "behavioralDepartment": "Personalavdelning",
+      "behavioralDescription": "Bedöm ledaregenskaper, kommunikationsförmåga, teamarbetsförmåga och hur du hanterar arbetssituationer.",
+      "focusAreas": "Fokusområden:",
+      "technicalSkills": "Tekniska Färdigheter",
+      "problemSolving": "Problemlösning",
+      "bestPractices": "Bästa Praxis",
+      "toolsTechnologies": "Verktyg & Teknologier",
+      "leadership": "Ledarskap",
+      "communication": "Kommunikation",
+      "teamwork": "Teamarbete",
+      "assessmentGuidelines": "Bedömningsriktlinjer",
+      "bestPracticesTitle": "✅ Bästa Praxis",
+      "thingsToAvoid": "❌ Att Undvika",
+      "guideline1": "• Läs varje fråga noggrant innan du svarar",
+      "guideline2": "• Använd flaggfunktionen för att markera frågor för granskning",
+      "guideline3": "• Hantera din tid effektivt",
+      "guideline4": "• Utnyttja pausfunktionen vid behov",
+      "avoid1": "• Stressa inte igenom frågorna",
+      "avoid2": "• Lämna inga frågor obesvarade",
+      "avoid3": "• Byt inte mellan applikationer",
+      "avoid4": "• Övertänk inte dina svar",
+      "continueToConfiguration": "Fortsätt till Konfiguration",
+      "configurationHint": "Konfigurera ditt yrke och dina intervjupreferenser"
+    },
+    "resultsScreen": {
+      "title": "Bedömning Slutförd!",
+      "noDataAvailable": "Ingen intervjuinformation tillgänglig",
+      "technicalInterview": "Teknisk",
+      "behavioralInterview": "Beteendemässig",
+      "questionsText": "Frågor",
+      "overallPerformance": "Övergripande Prestanda",
+      "passedAssessment": "✅ Bedömning Godkänd",
+      "failedAssessment": "❌ Godkänd poäng (70%) ej uppnådd",
+      "correctAnswers": "Rätta Svar",
+      "incorrectAnswers": "Felaktiga Svar"
+    },
+    "performanceLevels": {
+      "exceptional": "Exceptionell",
+      "excellent": "Utmärkt",
+      "good": "Bra",
+      "satisfactory": "Tillfredsställande",
+      "needsImprovement": "Behöver Förbättras"
+    },
+    "metricsScreen": {
+      "timeAnalysis": "Tidsanalys",
+      "totalTime": "Total Tid",
+      "avgPerQuestion": "Genomsnitt per Fråga",
+      "fastest": "Snabbast",
+      "slowest": "Långsammast",
+      "activitySummary": "Aktivitet Sammanfattning",
+      "questionsAnswered": "Besvarade Frågor",
+      "questionsFlagged": "Markerade Frågor",
+      "completionRate": "Slutförandegrad",
+      "performanceByCategory": "Prestanda per Kategori",
+      "retakeAssessment": "Gör om Bedömning",
+      "reviewAnswers": "Granska Svar",
+      "downloadReport": "Ladda Ner Rapport",
+      "backToDashboard": "Tillbaka till Instrumentpanelen",
+      "answerReview": "Svarsgranskning",
+      "question": "Fråga",
+      "difficulty": {
+        "easy": "Lätt",
+        "intermediate": "Medel",
+        "hard": "Svår"
+      },
+      "correct": "✓ Rätt",
+      "yourAnswer": "✗ Ditt Svar",
+      "explanation": "Förklaring",
+      "timeSpent": "Tid spenderad:"
+    },
+    "interviewScreen": {
+      "loadingData": "Laddar intervjuinformation...",
+      "professionalEvaluation": "Professionell Bedömning",
+      "timeRemaining": "Återstående Tid",
+      "resume": "Återuppta",
+      "pause": "Paus",
+      "questionProgress": "Fråga {current} av {total}",
+      "complete": "% Klar",
+      "interviewPaused": "Intervju Pausad",
+      "pauseMessage": "Klicka på Återuppta för att fortsätta din bedömning",
+      "flag": "Flagga",
+      "flagged": "Markerad",
+      "previous": "Föregående",
+      "nextQuestion": "Nästa Fråga",
+      "finishAssessment": "Avsluta Bedömning"
+    },
+    "confirmationModal": {
+      "title": "Avsluta Bedömning?",
+      "message": "Är du säker på att du vill skicka in din bedömning? Du kommer inte att kunna ändra dina svar.",
+      "questionsAnswered": "Besvarade Frågor:",
+      "questionsFlagged": "Markerade Frågor:",
+      "timeUsed": "Använd Tid:",
+      "unansweredWarning": "⚠️ Du har {count} obesvarade frågor",
+      "continueInterview": "Fortsätt Intervju",
+      "submitNow": "Skicka Nu"
+    },
+    "common": {
+      "toggleSidebar": "Växla sidofält",
+      "min": "min"
+    }
+  },
+  "BuildResume": {
+    "steps": {
+      "personalInfo": "Personliga Uppgifter",
+      "workHistory": "Arbetshistorik",
+      "education": "Utbildning",
+      "skills": "Färdigheter",
+      "summary": "Sammanfattning"
+    },
+    "navigation": {
+      "previous": "Föregående",
+      "next": "Nästa",
+      "preview": "Förhandsgranska",
+      "download": "Ladda Ner",
+      "downloading": "Laddar ner...",
+      "complete": "Klar",
+      "current": "Nuvarande",
+      "nextStep": "Nästa: {{stepName}}"
+    },
+    "progress": {
+      "progress": "Framsteg",
+      "completed": "slutförd",
+      "of": "av",
+      "step": "Steg {{current}}/{{total}}",
+      "completeness": "Fullständighet"
+    },
+    "sidebar": {
+      "helpSupport": "Hjälp & Support",
+      "privacyPolicy": "Sekretesspolicy",
+      "copyright": "© 2025 Bold Limited. Alla rättigheter förbehållna."
+    },
+    "preview": {
+      "livePreview": "Live Förhandsgranskning",
+      "autoUpdating": "Automatisk uppdatering",
+      "clickToView": "Klicka för att visa i full storlek",
+      "changeTemplate": "Ändra Mall",
+      "viewFullSize": "Visa Full Storlek",
+      "trustedBy": "Betrott av över 50K proffs",
+      "joinSuccess": "Gå med i framgångshistorierna",
+      "resumePdf": "CV.pdf"
+    },
+    "templates": {
+      "professionalClassic": "Professionell Klassisk",
+      "modernCreative": "Modern Kreativ",
+      "creativeBold": "Kreativ Djärv",
+      "executivePro": "Professionell Executive",
+      "techModern": "Teknisk Modern",
+      "simpleElegant": "Enkel Elegant",
+      "designerSpecial": "Speciell Designer",
+      "cleanSimple": "Ren Enkel",
+      "corporateElite": "Företags Elite",
+      "startupReady": "Redo för Startups",
+      "creativePro": "Kreativ Professionell",
+      "minimalPro": "Minimal Professionell",
+      "businessClassic": "Affärs Klassisk",
+      "modernEdge": "Modern Kant",
+      "artistPortfolio": "Konstnärs Portfolio",
+      "techInnovation": "Teknisk Innovation",
+      "executiveSuite": "Executive Svit",
+      "creativeShowcase": "Kreativ Showcase",
+      "cleanProfessional": "Ren Professionell",
+      "futureForward": "Framåtblickande Modern",
+      "professional21": "Professionell 21",
+      "professional22": "Professionell 22",
+      "professional23": "Professionell 23",
+      "professional24": "Professionell 24",
+      "professional25": "Professionell 25",
+      "professional26": "Professionell 26",
+      "professional27": "Professionell 27",
+      "professional28": "Professionell 28",
+      "professional29": "Professionell 29",
+      "professional30": "Professionell 30",
+      "professional31": "Professionell 31",
+      "professional32": "Professionell 32",
+      "professional33": "Professionell 33",
+      "professional34": "Professionell 34",
+      "professional35": "Professionell 35",
+      "professional36": "Professionell 36",
+      "professional37": "Professionell 37",
+      "professional38": "Professionell 38",
+      "professional39": "Professionell 39",
+      "professional40": "Professionell 40",
+      "professional41": "Professionell 41",
+      "professional42": "Professionell 42",
+      "professional43": "Professionell 43",
+      "professional44": "Professionell 44",
+      "professional45": "Professionell 45",
+      "professional46": "Professionell 46",
+      "professional47": "Professionell 47",
+      "professional48": "Professionell 48",
+      "professional49": "Professionell 49",
+      "professional50": "Professionell 50"
+    },
+    "errors": {
+      "downloadFailed": "Nedladdning misslyckades. Försök igen.",
+      "templateError": "Mallfel",
+      "usingDefault": "Använder standardmall"
+    },
+    "analytics": {
+      "templateChanged": "Mall ändrad till: {{templateName}} ({{templateId}})"
+    }
+  },
+  "HeadingStep": {
+    "title": "Personlig och Kontaktinformation",
+    "subtitle": "Berätta om dig själv så att arbetsgivare enkelt kan nå dig. Alla obligatoriska fält måste fyllas i för att fortsätta.",
+    "progress": {
+      "label": "Framsteg: {{completed}}/{{total}} obligatoriska fält",
+      "percentage": "{{percentage}}%"
+    },
+    "sections": {
+      "personalInfo": {
+        "title": "Personlig Information",
+        "badge": "{{completed}}/3 Klart"
+      },
+      "contactInfo": {
+        "title": "Kontaktinformation",
+        "badge": "{{completed}}/2 Klart"
+      },
+      "locationInfo": {
+        "title": "Platsinformation",
+        "badge": "Valfritt",
+        "badgeWithCount": "{{completed}}/4 Valfritt"
+      }
+    },
+    "fields": {
+      "profilePhoto": {
+        "label": "Profilbild",
+        "hint": "Rekommenderat: Fyrkantig bild, max 5 MB"
+      },
+      "firstName": {
+        "label": "Förnamn",
+        "placeholder": "Ange ditt förnamn"
+      },
+      "lastName": {
+        "label": "Efternamn",
+        "placeholder": "Ange ditt efternamn"
+      },
+      "jobTitle": {
+        "label": "Titel / Yrke",
+        "placeholder": "ex. Mjukvaruutvecklare, Marknadschef, Dataanalytiker",
+        "hint": "Detta kommer att visas framträdande på ditt CV"
+      },
+      "email": {
+        "label": "E-postadress",
+        "placeholder": "din.email@exempel.se",
+        "hint": "Använd en professionell e-postadress"
+      },
+      "phone": {
+        "label": "Telefonnummer",
+        "placeholder": "+46 70 123 4567",
+        "hint": "Inkludera landskod om tillämpligt"
+      },
+      "address": {
+        "label": "Adress",
+        "placeholder": "Gata (valfritt)",
+        "hint": "Fullständig adress är valfri, stad och land räcker oftast"
+      },
+      "city": {
+        "label": "Stad",
+        "placeholder": "Stad"
+      },
+      "postalCode": {
+        "label": "Postnummer",
+        "placeholder": "Postnummer"
+      },
+      "country": {
+        "label": "Land",
+        "placeholder": "Land"
+      }
+    },
+    "tips": {
+      "contactInfo": {
+        "title": "Tips för Kontaktinformation",
+        "description": "Använd en professionell e-postadress och se till att ditt telefonnummer är uppdaterat. Det är så arbetsgivare kommer att nå dig."
+      },
+      "locationInfo": {
+        "title": "Platsinformation",
+        "description": "Att lägga till plats hjälper arbetsgivare att förstå din tillgänglighet för lokala positioner och dina preferenser för distansarbete."
+      }
+    },
+    "completion": {
+      "title": "Sektion Klar!",
+      "description": "Utmärkt! All nödvändig information har lämnats. Du kan nu fortsätta till nästa avsnitt eller fortsätta lägga till valfria detaljer."
+    },
+    "errors": {
+      "required": "{{field}} är obligatoriskt",
+      "invalidEmail": "Ange en giltig e-postadress",
+      "invalidPhone": "Ange ett giltigt telefonnummer"
+    }
+  },
+  "WorkHistoryStep": {
+    "title": "Berätta om din arbetserfarenhet",
+    "subtitle": "Börja med din senaste position och arbeta bakåt. Inkludera dina senaste 10 års relevanta erfarenhet.",
+    "requiredNote": "* Anger ett obligatoriskt fält",
+    "defaultValues": {
+      "untitledPosition": "Oanmäld Position",
+      "noCompany": "Inget företag angivet",
+      "present": "Nuvarande"
+    },
+    "fields": {
+      "jobTitle": {
+        "label": "Befattning",
+        "placeholder": "Mjukvaruutvecklare"
+      },
+      "company": {
+        "label": "Företag",
+        "placeholder": "Google Inc."
+      },
+      "startDate": {
+        "label": "Startdatum",
+        "placeholder": "Januari 2020"
+      },
+      "endDate": {
+        "label": "Slutdatum",
+        "placeholder": "December 2023"
+      },
+      "currentWork": {
+        "label": "Jag arbetar här för närvarande"
+      },
+      "description": {
+        "label": "Befattningsbeskrivning",
+        "placeholder": "Beskriv dina viktigaste ansvarsområden och prestationer i detalj. Vilken inverkan hade du? Vilka färdigheter använde du?"
+      }
+    },
+    "actions": {
+      "addPosition": "Lägg till Ytterligare en Position",
+      "collapse": "Fäll ihop",
+      "expand": "Expandera",
+      "remove": "Ta bort denna position"
+    },
+    "ai": {
+      "suggestions": "✨ AI Förslag",
+      "tooltip": "Generera AI-förslag",
+      "tooltipDisabled": "Fyll först i Befattning och Företag"
+    }
+  },
+  "EducationStep": {
+    "title": "Berätta om din utbildning",
+    "subtitle": "Inkludera din utbildningsbakgrund. Börja med din senaste utbildning.",
+    "requiredNote": "* Anger ett obligatoriskt fält",
+    "defaultValues": {
+      "school": "Skolnamn",
+      "degree": "Ingen examen specificerad",
+      "present": "Nuvarande"
+    },
+    "fields": {
+      "school": {
+        "label": "Skola",
+        "placeholder": "University of California"
+      },
+      "degree": {
+        "label": "Examen",
+        "placeholder": "Kandidatexamen i Naturvetenskap"
+      },
+      "startDate": {
+        "label": "Startdatum",
+        "placeholder": "September 2018"
+      },
+      "endDate": {
+        "label": "Slutdatum",
+        "placeholder": "Maj 2022"
+      },
+      "currentStudy": {
+        "label": "Jag studerar här för närvarande"
+      },
+      "description": {
+        "label": "Utbildningsbeskrivning",
+        "placeholder": "Relevanta kurser, prestationer, utmärkelser, GPA, forskningsprojekt, examensarbeten, etc..."
+      }
+    },
+    "actions": {
+      "addEducation": "Lägg till Ytterligare en Utbildning",
+      "collapse": "Fäll ihop",
+      "expand": "Expandera",
+      "remove": "Ta bort denna utbildning"
+    },
+    "ai": {
+      "suggestions": "✨ AI Förslag",
+      "tooltip": "Generera AI-förslag",
+      "tooltipDisabled": "Fyll först i Skola och Examen"
+    }
+  },
+  "SkillsStep": {
+    "title": "Vilka färdigheter vill du lyfta fram?",
+    "subtitle": "Välj de färdigheter som är mest relevanta för jobbet du söker. Inkludera både tekniska och mjuka färdigheter.",
+    "requiredNote": "* Lägg till minst 3 färdigheter för bästa resultat",
+    "defaultValues": {
+      "skillName": "Färdighetsnamn",
+      "clickToAdd": "Klicka för att lägga till färdighetsdetaljer"
+    },
+    "fields": {
+      "skillName": {
+        "label": "Färdighetsnamn",
+        "placeholder": "ex: JavaScript, Ledarskap, Projektledning"
+      },
+      "proficiencyLevel": {
+        "label": "Färdighetsnivå"
+      }
+    },
+    "skillLevels": {
+      "beginner": "Nybörjare",
+      "intermediate": "Medel",
+      "advanced": "Avancerad",
+      "expert": "Expert"
+    },
+    "actions": {
+      "addSkill": "Lägg till Ytterligare en Färdighet",
+      "collapse": "Fäll ihop",
+      "expand": "Expandera",
+      "remove": "Ta bort denna färdighet"
+    },
+    "ai": {
+      "suggestions": "✨ AI Förslag",
+      "generating": "Genererar..."
+    },
+    "quickAdd": {
+      "title": "Snabb Läggning av Färdigheter",
+      "subtitle": "Klicka för att omedelbart lägga till populära färdigheter"
+    },
+    "popularSkills": [
+      "JavaScript",
+      "Python",
+      "React",
+      "Node.js",
+      "SQL",
+      "Git",
+      "Kommunikation",
+      "Ledarskap",
+      "Problemlösning",
+      "Teamwork",
+      "Projektledning",
+      "Dataanalys"
+    ]
+  },
+  "SummaryStep": {
+    "title": "Skriv en professionell sammanfattning",
+    "subtitle": "Din professionella sammanfattning är ett kort uttalande som lyfter fram dina viktigaste kvalifikationer och karriärmål.",
+    "professionalSummary": {
+      "title": "Professionell Sammanfattning",
+      "description": "Visa upp din bakgrund och dina karriärmål"
+    },
+    "progress": {
+      "tooShort": "För kort - lägg till mer detaljer",
+      "gettingThere": "På god väg - lägg till mer innehåll",
+      "goodLength": "Bra längd - överväg att lägga till mer",
+      "greatLength": "Utmärkt längd - väl detaljerad",
+      "excellent": "Utmärkt - omfattande sammanfattning"
+    },
+    "characterCount": "{{current}}/{{max}} tecken",
+    "content": {
+      "label": "Sammanfattningsinnehåll",
+      "placeholder": "Skriv en övertygande sammanfattning som visar din professionella bakgrund, dina nyckelfärdigheter och dina karriärmål. Framhäv ditt unika värdeerbjudande och vad som skiljer dig från mängden..."
+    },
+    "ai": {
+      "generate": "✨ Generera med AI",
+      "generating": "Genererar...",
+      "tooltip": "Generera en AI-förbättrad sammanfattning"
+    },
+    "errors": {
+      "noOccupation": "Vänligen fyll i ditt yrke i steget Personlig Information först för att generera en AI-sammanfattning.",
+      "generationFailed": "Kunde inte generera AI-sammanfattning. Försök igen."
+    }
+  },
+  "EducationSuggestionModal": {
+    "title": "AI Utbildningsförslag",
+    "subtitle": "Generera professionella beskrivningar baserade på dina utbildningsdetaljer",
+    "educationDetails": {
+      "title": "Utbildningsdetaljer",
+      "school": "Skola:",
+      "degree": "Examen:",
+      "duration": "Varaktighet:",
+      "notSpecified": "Ej specificerat",
+      "present": "Nuvarande"
+    },
+    "generateButton": {
+      "generate": "Generera AI Beskrivningar",
+      "generating": "Genererar AI-förslag..."
+    },
+    "requirements": {
+      "fillFields": "Fyll först i fälten Skola och Examen"
+    },
+    "suggestions": {
+      "title": "Föreslagna Beskrivningar:",
+      "suggestionLabel": "Förslag {{number}}",
+      "useThis": "Använd Detta"
+    },
+    "instructions": {
+      "title": "Klicka på \"Generera AI Beskrivningar\" för att få personliga förslag för din utbildningsbakgrund."
+    },
+    "actions": {
+      "close": "Stäng"
+    },
+    "errors": {
+      "requiredFields": "Skola och examen krävs för att generera förslag",
+      "failed": "Kunde inte generera förslag. Försök igen."
+    }
+  },
+  "InputField": {
+    "required": "Detta fält är obligatoriskt",
+    "accessibility": {
+      "required": "Detta fält är obligatoriskt"
+    }
+  },
+  "PhotoUpload": {
+    "actions": {
+      "addPhoto": "Lägg till Foto",
+      "dropPhotoHere": "Släpp foto här",
+      "clickOrDrag": "Klicka eller Dra",
+      "changePhoto": "Ändra Foto",
+      "removePhoto": "Ta Bort Foto",
+      "processing": "Bearbetar..."
+    },
+    "hints": {
+      "recommended": "Rekommenderat: Fyrkantig bild, max 5 MB"
+    },
+    "errors": {
+      "sizeLimit": "Bilden överskrider 5 MB-gränsen",
+      "processingError": "Fel vid bildbehandling",
+      "readingError": "Fel vid läsning av fil"
+    }
+  },
+  "ProgressCard": {
+    "accessibility": {
+      "progressBar": "Framsteg: {{value}} av {{maxValue}}"
+    }
+  },
+  "SectionCard": {
+    "accessibility": {
+      "section": "Sektion: {{title}}"
+    }
+  },
+  "WorkHistorySuggestionModal": {
+    "title": "AI Beskrivningsförslag",
+    "subtitle": "Generera professionella beskrivningar baserat på dina arbetsdetaljer",
+    "positionDetails": {
+      "title": "Befattningsdetaljer",
+      "jobTitle": "Befattning:",
+      "company": "Företag:",
+      "duration": "Varaktighet:",
+      "notSpecified": "Ej specificerat",
+      "present": "Nuvarande"
+    },
+    "generateButton": {
+      "generate": "Generera AI Beskrivningar",
+      "generating": "Genererar AI-förslag..."
+    },
+    "requirements": {
+      "fillFields": "Fyll först i fälten Befattning och Företag"
+    },
+    "suggestions": {
+      "title": "Föreslagna Beskrivningar:",
+      "suggestionLabel": "Förslag {{number}}",
+      "useThis": "Använd Detta"
+    },
+    "instructions": {
+      "title": "Klicka på \"Generera AI Beskrivningar\" för att få personliga förslag för din arbetserfarenhet."
+    },
+    "actions": {
+      "close": "Stäng"
+    },
+    "errors": {
+      "requiredFields": "Befattning och Företag krävs för att generera förslag",
+      "failed": "Kunde inte generera förslag. Försök igen."
+    }
+  },
+  "PreviewModal": {
+    "title": "CV Förhandsgranskning",
+    "subtitle": "{{templateName}} - Professionell vy av ditt CV",
+    "actions": {
+      "downloadPdf": "Ladda Ner PDF",
+      "generatingPdf": "Genererar PDF...",
+      "close": "Stäng förhandsgranskning"
+    },
+    "keyboard": {
+      "escToClose": "för att stänga"
+    },
+    "errors": {
+      "noTemplate": "Ingen mallkomponent angiven",
+      "templateError": "Mall Förhandsgranskningsfel",
+      "tryDifferent": "Prova en annan mall"
+    }
+  },
+  "TemplateSelectionModal": {
+    "header": {
+      "title": "Välj Mall",
+      "subtitle": "Välj en professionell mall för ditt CV",
+      "closeLabel": "Stäng mallval"
+    },
+    "search": {
+      "placeholder": "Sök efter mallar...",
+      "resultsFound": "{{count}} mallar hittade",
+      "noResults": {
+        "title": "Inga mallar hittade",
+        "message": "Försök att justera dina sök- eller filterkriterier",
+        "clearFilters": "Rensa Filter"
+      }
+    },
+    "categories": {
+      "all": "Alla",
+      "professional": "Professionell",
+      "modern": "Modern",
+      "creative": "Kreativ",
+      "simple": "Enkel"
+    },
+    "sorting": {
+      "popular": "Mest Populära",
+      "name": "Namn A-Z"
+    },
+    "viewMode": {
+      "grid": "Rutnätvy",
+      "list": "Listvy"
+    },
+    "templateCard": {
+      "badges": {
+        "popular": "Populär",
+        "current": "Nuvarande"
+      },
+      "actions": {
+        "favorite": "Lägg till i favoriter",
+        "unfavorite": "Ta bort från favoriter",
+        "preview": "Förhandsgranska Mall",
+        "select": "Välj Mall",
+        "currentTemplate": "Nuvarande Mall"
+      },
+      "popularity": "{{percentage}}% popularitet"
+    },
+    "templateNames": {
+      "professionalClassic": "Professionell Klassisk",
+      "modernCreative": "Modern Kreativ",
+      "creativeBold": "Kreativ Djärv",
+      "executivePro": "Professionell Executive",
+      "techModern": "Teknisk Modern",
+      "simpleElegant": "Enkel Elegant",
+      "designerSpecial": "Speciell Designer",
+      "cleanSimple": "Ren Enkel",
+      "corporateElite": "Företags Elite",
+      "startupReady": "Redo för Startups",
+      "creativePro": "Kreativ Professionell",
+      "minimalPro": "Minimal Professionell",
+      "businessClassic": "Affärs Klassisk",
+      "modernEdge": "Modern Kant",
+      "artistPortfolio": "Konstnärs Portfolio",
+      "techInnovation": "Teknisk Innovation",
+      "executiveSuite": "Executive Svit",
+      "creativeShowcase": "Kreativ Showcase",
+      "cleanProfessional": "Ren Professionell",
+      "futureForward": "Framåtblickande Modern",
+      "professional21": "Professionell 21",
+      "professional22": "Professionell 22",
+      "professional23": "Professionell 23",
+      "professional24": "Professionell 24",
+      "professional25": "Professionell 25",
+      "professional26": "Professionell 26",
+      "professional27": "Professionell 27",
+      "professional28": "Professionell 28",
+      "professional29": "Professionell 29",
+      "professional30": "Professionell 30",
+      "professional31": "Professionell 31",
+      "professional32": "Professionell 32",
+      "professional33": "Professionell 33",
+      "professional34": "Professionell 34",
+      "professional35": "Professionell 35",
+      "professional36": "Professionell 36",
+      "professional37": "Professionell 37",
+      "professional38": "Professionell 38",
+      "professional39": "Professionell 39",
+      "professional40": "Professionell 40",
+      "professional41": "Professionell 41",
+      "professional42": "Professionell 42",
+      "professional43": "Professionell 43",
+      "professional44": "Professionell 44",
+      "professional45": "Professionell 45",
+      "professional46": "Professionell 46",
+      "professional47": "Professionell 47",
+      "professional48": "Professionell 48",
+      "professional49": "Professionell 49",
+      "professional50": "Professionell 50"
+    },
+    "templateDescriptions": {
+      "professionalClassic": "Ren och traditionell design, perfekt för företagsmiljöer",
+      "modernCreative": "Samtida layout med kreativa element",
+      "creativeBold": "Artistisk mall för kreativa proffs",
+      "executivePro": "Sofistikerad design för ledande befattningar",
+      "techModern": "Modern mall, perfekt för teknikbranschen",
+      "simpleElegant": "Minimalistisk design som fokuserar på innehållsklarhet",
+      "designerSpecial": "Unik layout för designproffs",
+      "cleanSimple": "Rakt på sak och professionellt",
+      "corporateElite": "Premium företagsmall",
+      "startupReady": "Dynamisk mall för startup-kultur",
+      "creativePro": "Professionell kreativ mall",
+      "minimalPro": "Ren minimalistisk professionell design",
+      "businessClassic": "Klassisk affärsmall",
+      "modernEdge": "Modern banbrytande design",
+      "artistPortfolio": "Perfekt för kreativa portfolior",
+      "techInnovation": "Innovativ design för tekniska proffs",
+      "executiveSuite": "Premium executive-mall",
+      "creativeShowcase": "Visa upp ditt kreativa arbete",
+      "cleanProfessional": "Ren professionell framtoning",
+      "futureForward": "Framåtblickande modern design",
+      "professional21": "Professionell mall design",
+      "professional22": "Professionell mall design",
+      "professional23": "Professionell mall design",
+      "professional24": "Professionell mall design",
+      "professional25": "Professionell mall design",
+      "professional26": "Professionell mall design",
+      "professional27": "Professionell mall design",
+      "professional28": "Professionell mall design",
+      "professional29": "Professionell mall design",
+      "professional30": "Professionell mall design",
+      "professional31": "Professionell mall design",
+      "professional32": "Professionell mall design",
+      "professional33": "Professionell mall design",
+      "professional34": "Professionell mall design",
+      "professional35": "Professionell mall design",
+      "professional36": "Professionell mall design",
+      "professional37": "Professionell mall design",
+      "professional38": "Professionell mall design",
+      "professional39": "Professionell mall design",
+      "professional40": "Professionell mall design",
+      "professional41": "Professionell mall design",
+      "professional42": "Professionell mall design",
+      "professional43": "Professionell mall design",
+      "professional44": "Professionell mall design",
+      "professional45": "Professionell mall design",
+      "professional46": "Professionell mall design",
+      "professional47": "Professionell mall design",
+      "professional48": "Professionell mall design",
+      "professional49": "Professionell mall design",
+      "professional50": "Professionell mall design"
+    },
+    "pagination": {
+      "previous": "Föregående",
+      "next": "Nästa"
+    },
+    "preview": {
+      "title": "Mall Förhandsgranskning",
+      "popularity": "{{percentage}}% popularitet",
+      "actions": {
+        "cancel": "Avbryt",
+        "useTemplate": "Använd Mall"
+      }
+    },
+    "keyboard": {
+      "escToClose": "för att stänga"
+    },
+    "selectedTemplate": "\"{{templateId}}\" vald"
+  },
+  "missing1": {
+    "quickBuilder": {
+      "title": "Snabb",
+      "badge": "REKOMMENDERAD"
+    },
+    "stepByStep": {
+      "title": "Guidad",
+      "badge": "NY"
+    },
+    "portfolioBuilder": {
+      "title": "Portfölj",
+      "badge": "NY"
+    }
+  },
+  "DashboardPortfolios": {
+    "title": "Mina Portfolios",
+    "subtitle": "Hantera och visa upp din portföljsamling",
+    "createPortfolio": "Skapa Portfölj",
+    "searchPlaceholder": "Sök efter portfolior...",
+    "themes": {
+      "allThemes": "Alla Teman",
+      "default": "Standard",
+      "darkTheme": "Mörkt Tema",
+      "minimal": "Minimalistisk",
+      "creative": "Kreativ",
+      "professional": "Professionell"
+    },
+    "status": {
+      "published": "Publicerad",
+      "draft": "Utkast"
+    },
+    "actions": {
+      "view": "Visa",
+      "edit": "Redigera",
+      "delete": "Ta Bort",
+      "viewPreview": "Visa Förhandsgranskning"
+    },
+    "stats": {
+      "views": "Visningar",
+      "updated": "Uppdaterad"
+    },
+    "table": {
+      "portfolio": "Portfölj",
+      "theme": "Tema",
+      "views": "Visningar",
+      "updated": "Uppdaterad",
+      "actions": "Åtgärder"
+    },
+    "tooltips": {
+      "viewPortfolio": "Visa Portfölj",
+      "editPortfolio": "Redigera Portfölj",
+      "deletePortfolio": "Ta Bort Portfölj"
+    },
+    "search": {
+      "portfolioFound": "portfolio hittat",
+      "portfoliosFound": "portfolior hittade"
+    },
+    "emptyState": {
+      "title": "Inga portfolior hittades",
+      "noSearchResults": "Försök att justera dina sök- eller filterkriterier.",
+      "noPortfolios": "Skapa ditt första portfölj för att komma igång!",
+      "createFirstPortfolio": "Skapa Ditt Första Portfölj"
+    },
+    "deleteConfirmation": "Är du säker på att du vill ta bort detta portfölj? Denna åtgärd kan inte ångras.",
+    "messages": {
+      "loadError": "Kunde inte ladda portfolior",
+      "deleteSuccess": "Portfölj borttaget",
+      "deleteError": "Kunde inte ta bort portföljet"
+    }
+  },
+  "JobsUpdate": {
+    "JobsLandingHero": {
+      "typingEffect": {
+        "sentence1": "Hitta ditt drömjobb idag",
+        "sentence2": "Få kontakt med topparbetsgivare",
+        "sentence3": "Främja din karriärresa",
+        "sentence4": "Upptäck distansmöjligheter",
+        "sentence5": "Gå med i ledande företag"
+      },
+      "badge": "Jobbportal",
+      "description": "Upptäck tusentals jobbmöjligheter från toppföretag. Oavsett om du letar efter distansarbete, karriärutveckling eller ditt första jobb, kopplar vi samman talangfulla yrkesverksamma med deras perfekta matchning.",
+      "searchPlaceholder": "Jobbtitel, nyckelord eller företag",
+      "locationPlaceholder": "Stad, stat eller distans",
+      "searchButton": "Sök jobb",
+      "browseJobs": "Bläddra bland jobb",
+      "hotBadge": "HET",
+      "postJob": "Annonsera ett jobb",
+      "employerBadge": "ARBETSGIVARE",
+      "careerResources": "Karriärtips",
+      "browse": "Bläddra",
+      "browseDesc": "Utforska alla möjligheter",
+      "post": "Annonsera",
+      "postDesc": "Anställ topptalanger",
+      "resources": "Resurser",
+      "resourcesDesc": "Karriärvägledning & tips",
+      "stats": {
+        "jobs": "10 000+ aktiva jobb",
+        "rating": "4.8/5 betyg"
+      },
+      "features": {
+        "freeToApply": "Gratis att ansöka",
+        "verifiedEmployers": "Verifierade arbetsgivare"
+      }
+    },
+    "LandingJobTopCompanies": {
+      "badge": "Topparbetsgivare",
+      "title": "Gå med i ledande företag",
+      "description": "Upptäck möjligheter hos världsledande företag som aktivt anställer. Från startups till Fortune 500, hitta din perfekta matchning.",
+      "featured": "Utvalda",
+      "viewAll": "Visa alla företag",
+      "stats": {
+        "companies": "Partnerföretag",
+        "jobs": "Aktiva jobb",
+        "hires": "Framgångsrika anställningar"
+      }
+    },
+    "LandingJobsProcess": {
+      "badge": "Så fungerar det",
+      "title": "Få ditt drömjobb i",
+      "titleHighlight": "4 enkla steg",
+      "description": "Vår strömlinjeformade process gör jobbsökandet enkelt. Från upptäckt till anställning guidar vi dig varje steg på vägen för att säkerställa att du hittar den perfekta möjligheten.",
+      "featuresTitle": "Varför välja vår plattform?",
+      "featuresDescription": "Vi tillhandahåller toppmoderna verktyg och funktioner för att göra din jobbsökning mer effektiv och ändamålsenlig.",
+      "steps": {
+        "0": {
+          "title": "Sök och upptäck",
+          "description": "Bläddra bland tusentals jobbmöjligheter från toppföretag. Använd våra avancerade filter för att hitta den perfekta matchningen för dina färdigheter och preferenser."
+        },
+        "1": {
+          "title": "Skapa profil",
+          "description": "Bygg din professionella profil med vår CV-byggare. Visa upp dina färdigheter, erfarenheter och prestationer för att sticka ut från mängden."
+        },
+        "2": {
+          "title": "Ansök direkt",
+          "description": "Ansök till flera jobb med ett klick. Vårt smarta ansökningssystem anpassar automatiskt din profil till varje position."
+        },
+        "3": {
+          "title": "Bli anställd",
+          "description": "Få kontakt med rekryterande chefer, schemalägg intervjuer och få ditt drömjobb. Vi stöder dig under hela processen."
+        }
+      },
+      "features": {
+        "0": {
+          "title": "AI-driven matchning",
+          "description": "Vår intelligenta algoritm matchar dig med relevanta möjligheter"
+        },
+        "1": {
+          "title": "CV-optimering",
+          "description": "Optimera ditt CV automatiskt för varje ansökan"
+        },
+        "2": {
+          "title": "Verifierade företag",
+          "description": "Alla arbetsgivare är verifierade för äkthet och kvalitet"
+        }
+      },
+      "cta": {
+        "title": "Redo att påbörja din resa?",
+        "description": "Gå med tusentals yrkesverksamma som har hittat sina drömjobb via vår plattform. Din nästa möjlighet är bara ett klick bort.",
+        "searchButton": "Börja jobbsökning",
+        "profileButton": "Skapa profil"
+      }
+    },
+    "LandingJobsFeatured": {
+      "badge": "Utvalda jobb",
+      "title": "Upptäck din nästa",
+      "titleHighlight": "Drömmöjlighet",
+      "description": "Utforska handplockade möjligheter från toppföretag. Dessa utvalda positioner erbjuder exceptionell karriärutveckling, konkurrenskraftig ersättning och fantastiska arbetsmiljöer.",
+      "statsTitle": "Gå med tusentals framgångsrika yrkesverksamma",
+      "statsDescription": "Vår plattform har hjälpt otaliga yrkesverksamma att hitta sina drömjobb hos toppföretag världen över.",
+      "stats": {
+        "jobs": "Utvalda jobb",
+        "success": "Framgångsfrekvens",
+        "companies": "Toppföretag"
+      },
+      "JobCard": {
+        "skills": {
+          "moreSkills": "+{0} fler"
+        },
+        "badges": {
+          "featured": "⭐ Utvald",
+          "urgent": "🔥 Brådskande",
+          "remote": "🌍 Distans"
+        },
+        "buttons": {
+          "applyNow": "Ansök nu"
+        }
+      },
+      "viewAll": "Visa alla jobb"
+    },
+    "MainJobListings": {
+      "jobSingular": "jobb",
+      "jobPlural": "jobb",
+      "found": "hittades",
+      "page": "Sida",
+      "of": "av",
+      "sort": "Sortera",
+      "sortNewest": "Nyaste",
+      "sortSalaryDesc": "Lön ↓",
+      "sortSalaryAsc": "Lön ↑",
+      "sortCompany": "Företag",
+      "sortRelevance": "Relevans",
+      "noJobsFound": "Inga jobb hittades",
+      "tryAdjusting": "Försök justera dina sökkriterier eller filter för att upptäcka fler möjligheter.",
+      "clearAllFilters": "Rensa alla filter",
+      "previous": "Föregående",
+      "next": "Nästa"
+    },
+    "JobSearchBar": {
+      "heading": "Hitta din nästa möjlighet",
+      "subheading": "Upptäck jobb från toppföretag världen över",
+      "favorites": "Favoriter",
+      "postJob": "Annonsera jobb",
+      "filters": "Filter",
+      "searchPlaceholder": "Sök jobb, företag, nyckelord...",
+      "locationPlaceholder": "Plats (stad, stat, land)",
+      "searchButton": "Sök"
+    },
+    "JobFilters": {
+      "title": "Filter",
+      "clearAll": "Rensa alla",
+      "jobTypeTitle": "Jobbtyp",
+      "experienceLevelTitle": "Erfarenhetsnivå",
+      "workModeTitle": "Arbetsläge",
+      "salaryRangeTitle": "Löneintervall",
+      "jobType": {
+        "fullTime": "Heltid",
+        "partTime": "Deltid",
+        "contract": "Kontrakt",
+        "freelance": "Frilans"
+      },
+      "experienceLevel": {
+        "entryLevel": "Nybörjarnivå",
+        "junior": "Junior",
+        "midLevel": "Mellannivå",
+        "senior": "Senior",
+        "seniorLevel": "Senior nivå",
+        "executive": "Verkställande/Direktör"
+      },
+      "salaryRange": {
+        "range1": "40 000 $ - 60 000 $",
+        "range2": "60 000 $ - 80 000 $",
+        "range3": "80 000 $ - 120 000 $",
+        "range4": "120 000 $+ "
+      },
+      "workMode": {
+        "remote": "Distans",
+        "onSite": "På plats",
+        "hybrid": "Hybrid"
+      }
+    },
+    "JobDetailsModal": {
+      "tabs": {
+        "overview": "Översikt",
+        "company": "Företag",
+        "details": "Detaljer"
+      },
+      "jobDescription": "Jobbbeskrivning",
+      "responsibilities": "Ansvar",
+      "requirements": "Krav",
+      "benefits": "Förmåner",
+      "companyInfo": "Företagsinformation",
+      "location": "Plats",
+      "postedOn": "Publicerad den",
+      "deadline": "Deadline",
+      "apply": "Ansök nu",
+      "share": "Dela",
+      "save": "Spara",
+      "saved": "Sparad",
+      "viewsPrefix": "👀",
+      "applicantsPrefix": "👥",
+      "viewsText": "visningar senaste 24h",
+      "applicantsText": "sökande",
+      "noDescription": "Ingen jobb beskrivning tillhandahållen.",
+      "noResponsibilities": "Inga specifika ansvarsområden listade.",
+      "noRequirements": "Inga specifika krav listade.",
+      "noBenefits": "Ingen information om förmåner tillgänglig.",
+      "urgencyPriority": "Prioritet",
+      "fastTrack": "Snabbspår",
+      "qualifications": "Krav",
+      "qualifications.default": "Krav kommer att diskuteras under intervjuprocessen.",
+      "jobDetails": {
+        "title": "Jobbdetaljer",
+        "jobType": "Jobbtyp",
+        "workMode": "Arbetsläge",
+        "experienceLevel": "Erfarenhetsnivå",
+        "location": "Plats",
+        "salary": "Lön",
+        "salaryRange": "Löneintervall",
+        "competitive": "Konkurrenskraftig",
+        "applicationDeadline": "Ansökningsdeadline",
+        "postedDate": "Publiceringsdatum",
+        "notSpecified": "Ej specificerat"
+      },
+      "jobDescription.default": "Gå med i {{company}} som {{title}}. Vi söker en talangfull yrkesverksam för att gå med i vårt team.",
+      "aboutCompany": {
+        "title": "Om företaget",
+        "defaultDescription": "Läs mer om {{company}} under intervjuprocessen. Företagsdetaljer och kulturinformation kommer att delas med kvalificerade kandidater."
+      },
+      "actions": {
+        "applyNow": "Ansök nu",
+        "save": "Spara",
+        "share": "Dela",
+        "contact": "Kontakta",
+        "expand": "Expandera",
+        "collapse": "Fäll ihop"
+      },
+      "stats": {
+        "viewsToday": "visningar idag",
+        "applications": "ansökningar",
+        "deadline": "Deadline"
+      },
+      "defaultBenefits": {
+        "healthInsurance": {
+          "title": "Sjukförsäkring",
+          "description": "Detaljer om sjukförsäkring ska diskuteras"
+        },
+        "timeOff": {
+          "title": "Ledig tid",
+          "description": "Semester och personlig tid"
+        },
+        "equipment": {
+          "title": "Utrustning",
+          "description": "Arbetsutrustning tillhandahålls"
+        },
+        "workMode": {
+          "title": "Arbetsläge",
+          "description": "Ska diskuteras"
+        }
+      },
+      "noCompanyInfo": "Ingen företagsinformation tillgänglig.",
+      "companyStats": {
+        "locationTBD": "Plats fastställs senare"
+      },
+      "applicationProcess": {
+        "applicationReview": "Ansökningsgranskning",
+        "initialInterview": "Inledande intervju",
+        "technicalAssessment": "Teknisk bedömning",
+        "finalInterview": "Slutintervju",
+        "duration": {
+          "days2to3": "2-3 dagar",
+          "days3to5": "3-5 dagar",
+          "week1to2": "1-2 veckor",
+          "mins30to45": "30-45 min",
+          "hours1to2": "1-2 timmar",
+          "mins45to60": "45-60 min"
+        },
+        "status": {
+          "pending": "väntande",
+          "completed": "slutförd",
+          "current": "aktuell",
+          "upcoming": "kommande"
+        }
+      }
+    },
+    "CreateJobModal": {
+      "title": "Skapa ny jobbannons",
+      "requiredFields": "Alla fält markerade med * är obligatoriska",
+      "cancel": "Avbryt",
+      "submitting": "Skickar...",
+      "submitApplication": "Skicka ansökan",
+      "creatingJob": "Skapar jobb...",
+      "createJobPosting": "Skapa jobbannons",
+      "loadingCompanies": "Laddar företag...",
+      "selectCompany": "Välj ett företag",
+      "noCompanies": "Du har inga godkända företag. Skapa ett först.",
+      "noCompaniesDescription": "Du måste lägga till och få godkännande för minst ett företag innan du kan publicera jobb. Använd knappen \"Lägg till företag\" i din instrumentpanel.",
+      "sections": {
+        "jobInformation": "Jobbinformation",
+        "location": "Plats & typ",
+        "compensation": "Ersättning & deadline",
+        "jobDescription": "Jobbbeskrivning",
+        "requirements": "Krav & förmåner"
+      },
+      "fields": {
+        "jobTitle": "Jobbtitel",
+        "company": "Företag",
+        "jobType": "Jobbtyp",
+        "workMode": "Arbetsläge",
+        "location": "Plats",
+        "country": "Land",
+        "experience": "Erfarenhetsnivå",
+        "minSalary": "Min. lön",
+        "maxSalary": "Max. lön",
+        "deadline": "Ansökningsdeadline",
+        "jobDescription": "Jobbbeskrivning",
+        "requirements": "Krav",
+        "benefits": "Förmåner"
+      },
+      "placeholders": {
+        "jobTitle": "t.ex. Senior Produktchef",
+        "location": "Börja skriva stad, stat, land...",
+        "jobDescription": "Beskriv rollen, ansvarsområdena och vad som gör den här positionen spännande...",
+        "requirement": "t.ex. 2+ års erfarenhet av mjukvaruutveckling",
+        "benefit": "t.ex. Sjukförsäkring, 401(k) matchning"
+      },
+      "actions": {
+        "addRequirement": "Lägg till krav",
+        "addBenefit": "Lägg till förmån"
+      },
+      "jobTypes": {
+        "fullTime": "Heltid",
+        "partTime": "Deltid",
+        "contract": "Kontrakt",
+        "freelance": "Frilans",
+        "internship": "Praktik",
+        "temporary": "Tillfällig"
+      },
+      "workModes": {
+        "onSite": "På plats",
+        "remote": "Distans",
+        "hybrid": "Hybrid"
+      },
+      "experienceLevels": {
+        "entryLevel": "Nybörjarnivå",
+        "junior": "Junior",
+        "midLevel": "Mellannivå",
+        "senior": "Senior",
+        "executive": "Verkställande"
+      }
+    },
+    "FavoritesModal": {
+      "title": "Favoritjobb",
+      "job": "jobb",
+      "jobs": "jobb",
+      "saved": "sparade",
+      "removeFromFavorites": "Ta bort från favoriter",
+      "viewDetails": "Visa detaljer",
+      "yourSavedJobs": "Dina sparade jobb",
+      "browseJobs": "Bläddra bland jobb",
+      "cleanUpMissingJobs": "Rensa bort saknade jobb",
+      "missingJobsWarning": {
+        "title": "{0} sparade jobb är inte längre tillgängliga",
+        "description": "Vissa jobb i dina favoriter kan ha tagits bort eller är inte längre aktiva."
+      },
+      "noSavedJobs": "Inga sparade jobb",
+      "noSavedJobsMessage": "Du har inte sparat några jobb ännu. Klicka på bokmärkesikonen på ett jobb för att spara det för senare."
+    },
+    "AppliedJobs": {
+      "title": "Ansökta jobb",
+      "subtitle": "Spåra dina jobbansökningar och deras aktuella status",
+      "loading": "Laddar dina ansökningar...",
+      "loginRequired": {
+        "title": "Vänligen logga in",
+        "message": "Du måste vara inloggad för att se dina jobbansökningar."
+      },
+      "stats": {
+        "totalApplied": "Totalt ansökta",
+        "pending": "Väntande",
+        "interviews": "Intervjuer",
+        "successRate": "Framgångsfrekvens"
+      },
+      "search": {
+        "placeholder": "Sök jobb, företag eller platser..."
+      },
+      "filters": {
+        "allStatus": "Alla statusar",
+        "underReview": "Under granskning",
+        "interview": "Intervju",
+        "accepted": "Accepterad",
+        "rejected": "Avvisad"
+      },
+      "sort": {
+        "byDate": "Sortera efter datum",
+        "byCompany": "Sortera efter företag",
+        "byStatus": "Sortera efter status"
+      },
+      "noApplications": {
+        "title": "Inga ansökningar hittades",
+        "filterMessage": "Försök justera dina sökkriterier eller filter.",
+        "emptyMessage": "Du har inte ansökt till några jobb ännu. Börja utforska möjligheter!"
+      },
+      "actions": {
+        "browseJobs": "Bläddra bland jobb",
+        "moreDetails": "Fler detaljer",
+        "lessDetails": "Mindre detaljer"
+      },
+      "jobInfo": {
+        "applied": "Ansökt",
+        "status": "Status"
+      },
+      "jobDetails": {
+        "jobDescription": "Jobbbeskrivning",
+        "requirements": "Krav",
+        "noRequirements": "Inga specifika krav listade",
+        "applicationStatus": "Ansökningsstatus",
+        "status": "Status",
+        "appliedOn": "Ansökt den",
+        "title": "Jobbdetaljer",
+        "type": "Typ",
+        "mode": "Läge",
+        "salary": "Lön"
+      }
+    },
+    "DashboardMessages": {
+      "search": {
+        "placeholder": "Sök"
+      },
+      "header": {
+        "title": "Meddelanden"
+      },
+      "noMessages": {
+        "title": "Inga meddelanden ännu",
+        "message": "Arbetsgivare kommer att kontakta dig här om de är intresserade av din profil"
+      },
+      "status": {
+        "active": "Aktiv nu"
+      },
+      "loading": {
+        "inProgress": "Laddar...",
+        "loadMore": "Ladda äldre meddelanden",
+        "noMore": "Inga fler meddelanden",
+        "messages": "Laddar meddelanden..."
+      },
+      "errors": {
+        "loadFailed": "Kunde inte ladda meddelanden",
+        "sendFailed": "Kunde inte skicka meddelandet. Försök igen.",
+        "loadingError": "Fel vid laddning av meddelanden: {{message}}",
+        "permission": "Åtkomst nekad eller nätverksfel",
+        "connection": "Kontrollera dina Firebase säkerhetsregler och nätverksanslutning."
+      },
+      "emptyState": {
+        "title": "Inga meddelanden i denna konversation",
+        "description": "Detta är början på din konversation med {{name}}.",
+        "hint": "Meddelanden kommer att visas här"
+      },
+      "input": {
+        "placeholder": "Skriv ett meddelande...",
+        "sendButton": "Skicka"
+      },
+      "welcome": {
+        "title": "Välkommen till Meddelanden",
+        "description": "Välj en konversation från sidofältet för att börja chatta med dina kontakter.",
+        "hint": "Välj en konversation för att börja skicka meddelanden"
+      },
+      "conversation": {
+        "noMessages": "Inga meddelanden ännu"
+      },
+      "time": {
+        "now": "Nu",
+        "minutes": "{{count}} min sedan",
+        "hours": "{{count}} timmar sedan"
+      },
+      "user": {
+        "unknown": "Okänd användare"
+      }
+    },
+    "JobApplicationsModal": {
+      "header": {
+        "title": "Ansökningar för",
+        "totalApplications": "totala ansökningar"
+      },
+      "search": {
+        "placeholder": "Sök efter namn, e-post eller färdigheter..."
+      },
+      "filters": {
+        "allStatus": "Alla statusar",
+        "pending": "Väntande",
+        "interview": "Intervju",
+        "accepted": "Accepterad",
+        "rejected": "Avvisad"
+      },
+      "status": {
+        "pending": "Väntande",
+        "interview": "Intervju",
+        "accepted": "Accepterad",
+        "rejected": "Avvisad"
+      },
+      "emptyState": {
+        "title": "Inga ansökningar hittades",
+        "noApplications": "Ingen har ansökt till det här jobbet ännu.",
+        "noResults": "Inga ansökningar matchar dina nuvarande filter."
+      },
+      "coverLetter": {
+        "none": "Inget personligt brev tillhandahållet"
+      },
+      "applicantInfo": {
+        "experience": "erfarenhet",
+        "resumeAttached": "CV bifogat",
+        "more": "mer"
+      },
+      "buttons": {
+        "accept": "Acceptera",
+        "reject": "Avvisa",
+        "downloadResume": "Ladda ner CV",
+        "sendEmail": "Skicka e-post",
+        "showResume": "Visa CV"
+      }
+    },
+    "EmployerDashboard": {
+      "loading": "Laddar dina jobbannonser...",
+      "header": {
+        "title": "Jobbannonser",
+        "subtitle": "Hantera dina jobbannonser och granska ansökningar"
+      },
+      "buttons": {
+        "addCompany": "Lägg till företag",
+        "company": "Företag",
+        "postNewJob": "Publicera nytt jobb",
+        "newJob": "Nytt jobb",
+        "postFirstJob": "Publicera ditt första jobb",
+        "applications": "Ansökningar",
+        "editJob": "Redigera jobb",
+        "pause": "Pausa",
+        "activate": "Aktivera",
+        "delete": "Radera"
+      },
+      "stats": {
+        "totalJobs": "Totalt antal jobb",
+        "active": "Aktiva",
+        "applications": "Ansökningar",
+        "views": "Visningar"
+      },
+      "search": {
+        "placeholder": "Sök jobb efter titel, plats..."
+      },
+      "filters": {
+        "allStatus": "Alla statusar",
+        "active": "Aktiva",
+        "pending": "Väntar på godkännande",
+        "paused": "Pausade",
+        "closed": "Stängda",
+        "draft": "Utkast"
+      },
+      "sort": {
+        "byDate": "Sortera efter datum",
+        "byApplications": "Ansökningar",
+        "byViews": "Visningar",
+        "byTitle": "Titel"
+      },
+      "emptyState": {
+        "title": "Inga jobbannonser hittades",
+        "noJobs": "Du har inte publicerat några jobb ännu. Skapa din första jobbannons för att komma igång!",
+        "noResults": "Inga jobb matchar dina nuvarande filter. Försök justera dina sökkriterier."
+      },
+      "jobDetails": {
+        "description": "Jobbbeskrivning",
+        "requirements": "Krav",
+        "moreRequirements": "+{{count}} fler"
+      },
+      "jobInfo": {
+        "applications": "ansökningar",
+        "views": "visningar",
+        "deadline": "Deadline:"
+      },
+      "AddCompanyModal": {
+        "header": {
+          "title": "Lägg till företag",
+          "subtitle": "Lägg till dina företagsdetaljer för granskning och godkännande"
+        },
+        "info": {
+          "title": "Företagsgranskningsprocess",
+          "description": "Alla företagspresentationer granskas av vårt team för att säkerställa kvalitet och äkthet. Du kommer att meddelas när ditt företag är godkänt och kan användas för jobbannonser."
+        },
+        "form": {
+          "companyName": "Företagsnamn *",
+          "website": "Webbplats",
+          "companyLogo": "Företagslogotyp (valfritt)",
+          "industry": "Bransch *",
+          "companySize": "Företagsstorlek *",
+          "location": "Plats *",
+          "address": "Adress",
+          "phone": "Telefon",
+          "email": "E-post",
+          "description": "Företagsbeskrivning",
+          "companyNamePlaceholder": "Ange företagsnamn"
+        },
+        "validation": {
+          "nameRequired": "Företagsnamn krävs",
+          "industryRequired": "Bransch krävs",
+          "sizeRequired": "Företagsstorlek krävs",
+          "locationRequired": "Plats krävs",
+          "invalidWebsite": "Ange en giltig webbplats-URL",
+          "invalidImage": "Ange en giltig bild-URL",
+          "invalidEmail": "Ange en giltig e-postadress"
+        },
+        "industries": {
+          "technology": "Teknik",
+          "healthcare": "Hälsovård",
+          "finance": "Finans",
+          "education": "Utbildning",
+          "retail": "Detaljhandel",
+          "manufacturing": "Tillverkning",
+          "consulting": "Konsulttjänster",
+          "marketing": "Marknadsföring",
+          "realEstate": "Fastigheter",
+          "hospitality": "Hotell och restaurang",
+          "transportation": "Transport",
+          "energy": "Energi",
+          "media": "Media",
+          "government": "Regering",
+          "nonprofit": "Ideell organisation",
+          "other": "Övrigt"
+        },
+        "companySizes": {
+          "size1to10": "1-10 anställda",
+          "size11to50": "11-50 anställda",
+          "size51to200": "51-200 anställda",
+          "size201to500": "201-500 anställda",
+          "size501to1000": "501-1000 anställda",
+          "size1000plus": "1000+ anställda"
+        },
+        "placeholders": {
+          "selectIndustry": "Välj bransch",
+          "selectCompanySize": "Välj företagsstorlek"
+        },
+        "messages": {
+          "validationError": "Valideringsfel",
+          "fixErrors": "Vänligen korrigera felen i formuläret",
+          "error": "Fel",
+          "mustBeLoggedIn": "Du måste vara inloggad för att lägga till ett företag",
+          "success": "Framgång",
+          "companyAdded": "Företaget har lagts till! Det kommer att granskas av vårt team.",
+          "failedToAdd": "Kunde inte lägga till företag",
+          "unexpectedError": "Ett oväntat fel uppstod"
+        },
+        "buttons": {
+          "cancel": "Avbryt",
+          "addCompany": "Lägg till företag",
+          "addingCompany": "Lägger till företag..."
+        }
+      },
+      "CompaniesManagement": {
+        "loading": {
+          "companies": "Laddar dina företag..."
+        },
+        "header": {
+          "title": "Mina företag",
+          "subtitle": "Hantera dina företag och spåra deras godkännandestatus"
+        },
+        "buttons": {
+          "addCompany": "Lägg till företag",
+          "add": "Lägg till"
+        },
+        "infoBanner": {
+          "title": "Företagsgodkännandeprocess",
+          "message": "Alla företag måste godkännas innan de kan användas för jobbannonser. Endast godkända företag kommer att visas i ditt jobbannonsformulär."
+        },
+        "stats": {
+          "totalCompanies": "Totalt antal företag",
+          "approved": "Godkända",
+          "pending": "Väntande",
+          "rejected": "Avvisade"
+        },
+        "search": {
+          "placeholder": "Sök företag efter namn, bransch, plats..."
+        },
+        "filters": {
+          "allStatus": "Alla statusar",
+          "pending": "Väntande",
+          "approved": "Godkända",
+          "rejected": "Avvisade"
+        },
+        "emptyState": {
+          "title": "Inga företag hittades",
+          "noCompanies": "Du har inte lagt till några företag ännu. Lägg till ditt första företag för att komma igång!",
+          "noMatches": "Inga företag matchar dina nuvarande filter. Försök justera dina sökkriterier.",
+          "addFirstCompany": "Lägg till ditt första företag"
+        },
+        "companyDetails": {
+          "description": "Företagsbeskrivning",
+          "visitWebsite": "Besök webbplats"
+        },
+        "actions": {
+          "editCompany": "Redigera företag",
+          "delete": "Radera"
+        }
+      },
+      "JobCard": {
+        "badges": {
+          "featured": "⭐ Utvald",
+          "urgent": "🔥 Brådskande",
+          "remote": "🌍 Distans"
+        },
+        "jobDetails": {
+          "location": "Plats",
+          "type": "Jobbtyp",
+          "salary": "Lön",
+          "postedTime": "Publicerad tid"
+        },
+        "skills": {
+          "moreSkills": "+{0} fler"
+        },
+        "buttons": {
+          "applyNow": "Ansök nu"
+        }
+      }
+    },
+    "JobCard2": {
+      "alerts": {
+        "signInRequired": "Vänligen logga in för att ansöka om jobb."
+      },
+      "applicationStatus": {
+        "loading": "Laddar...",
+        "applyNow": "Ansök nu",
+        "pending": "Ansökan väntar",
+        "interview": "Intervju schemalagd",
+        "accepted": "Ansökan accepterad",
+        "rejected": "Ansökan avvisad"
+      },
+      "jobInfo": {
+        "locationTBD": "Plats fastställs senare",
+        "applicants": "{{applicants}} sökande",
+        "requirements": "Krav",
+        "posted": "Publicerad {{postedDate}}"
+      },
+      "buttons": {
+        "viewDetails": "Visa detaljer"
+      }
+    },
+    "JobApplicationModal": {
+      "title": "Ansök till {{jobTitle}}",
+      "subtitle": "Fyll i formuläret nedan för att ansöka till den här tjänsten",
+      "personalInfo": {
+        "heading": "Personlig information",
+        "fullName": "Fullständigt namn",
+        "email": "E-postadress",
+        "phone": "Telefonnummer",
+        "linkedin": "LinkedIn-profilens URL",
+        "github": "GitHub/Portfölj-URL",
+        "website": "Personlig webbplats"
+      },
+      "resume": {
+        "heading": "CV",
+        "selectResume": "Välj CV",
+        "browseResumes": "Bläddra bland CV:n",
+        "uploadNew": "Ladda upp nytt CV",
+        "preview": "Förhandsgranska CV",
+        "noResumes": "Inga CV:n hittades",
+        "createResume": "Skapa ett CV först",
+        "loading": "Laddar CV:n...",
+        "error": "Fel vid laddning av CV:n",
+        "selectThis": "Välj detta CV",
+        "createdAt": "Skapad {{date}}"
+      },
+      "coverLetter": {
+        "heading": "Personligt brev",
+        "placeholder": "Skriv ett kort personligt brev som förklarar varför du passar bra för den här rollen...",
+        "loadTemplate": "Ladda mall",
+        "templates": {
+          "standard": "Standard",
+          "professional": "Professionell",
+          "creative": "Kreativ",
+          "technical": "Teknisk",
+          "career": "Karriärbyte"
+        }
+      },
+      "buttons": {
+        "back": "Tillbaka",
+        "submit": "Skicka ansökan",
+        "submitting": "Skickar...",
+        "cancel": "Avbryt",
+        "close": "Stäng",
+        "viewMyApplications": "Visa mina ansökningar",
+        "browseMore": "Bläddra bland fler jobb"
+      },
+      "success": {
+        "title": "Ansökan skickad!",
+        "message": "Din ansökan har skickats framgångsrikt. Vi återkommer snart."
+      },
+      "error": {
+        "title": "Ansökan misslyckades",
+        "message": "Det uppstod ett problem när du skickade din ansökan. Försök igen.",
+        "requiredFields": "Vänligen fyll i alla obligatoriska fält"
+      },
+      "pagination": {
+        "prev": "Föregående",
+        "next": "Nästa",
+        "page": "Sida {{current}} av {{total}}"
+      }
+    },
+    "ProfileDisplay2": {
+      "search": "Sök",
+      "navigation": "NAVIGERING",
+      "menu": {
+        "dashboard": "Instrumentpanel",
+        "interviews": "Intervjuer",
+        "portfolios": "Portföljer",
+        "settings": "Inställningar",
+        "appliedJobs": "Ansökta jobb",
+        "messages": "Meddelanden",
+        "myJobs": "Mina jobb",
+        "myCompanies": "Mina företag"
+      }
+    },
+    "DashboardHomepageFix1": {
+      "subtitle": "Hantera dina CV:n och personliga brev"
+    }
+  },
+  "blog": {
+    "title": "Blogg",
+    "description": "Senaste karriärtipsen och trenderna",
+    "knowledgeHub": "Kunskapshub",
+    "blogTitle": "Insikter & Resurser",
+    "blogDescription": "Expertinsikter, branschtrender och praktiska guider som hjälper dig att lyckas",
+    "searchPlaceholder": "Sök artiklar, guider och insikter...",
+    "search": "Sök",
+    "allArticles": "Alla artiklar",
+    "allCategories": "Alla kategorier",
+    "noArticlesFound": "Inga artiklar hittades",
+    "adjustSearch": "Försök att justera dina sökord eller kategorifilter.",
+    "loadMore": "Ladda fler artiklar",
+    "articleLabel": "Artikel",
+    "minRead": "min läsning",
+    "recently": "Nyligen",
+    "articleNotFound": "Artikeln hittades inte",
+    "backToArticles": "Tillbaka till artiklar",
+    "backToBlog": "Tillbaka till bloggen",
+    "shareArticle": "Dela artikel",
+    "relatedArticles": "Relaterade artiklar",
+    "views": "visningar",
+    "tags": "Taggar"
+  }
+}

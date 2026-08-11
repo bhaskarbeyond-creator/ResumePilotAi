@@ -1,0 +1,201 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+  
+     function isAuthenticated(){
+       return request.auth != null;
+     }  
+     
+     function isA(){
+       return isAuthenticated() && 
+              exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isA == true;
+     }
+ 
+     // Users Collection - Fixed to prevent circular dependency
+     match /users/{userId} {
+       allow read: if isAuthenticated();
+       allow create: if isAuthenticated();
+       allow update: if isAuthenticated() && (request.auth.uid == userId || isA());
+       allow delete: if isA();
+     }
+     
+     match /users/{userId}/{resumes=**} {
+       allow read, update, delete: if isAuthenticated() && request.auth.uid == userId;
+       allow create: if isAuthenticated();
+     }
+     
+     match /users/{userId}/{covers=**} {
+       allow read, update, delete: if isAuthenticated() && request.auth.uid == userId;
+       allow create: if isAuthenticated();
+     }
+     
+     // User favorites subcollection
+     match /users/{userId}/favourites/{favouriteId} {
+       allow read, write: if isAuthenticated() && request.auth.uid == userId;
+     }
+
+    // Employer Applications Collection
+    match /employerApplications/{applicationId} {
+      allow create: if isAuthenticated() && request.auth.uid == applicationId &&
+                       request.resource.data.userId == request.auth.uid;
+      allow read: if isAuthenticated() && request.auth.uid == applicationId;
+      allow read, update: if isA();
+      allow update: if false;
+      allow delete: if isA();
+    }
+
+    // Companies Collection
+    match /companies/{companyId} {
+      // Only authenticated employers can create companies
+      allow create: if isAuthenticated() && 
+                       request.resource.data.employerId == request.auth.uid &&
+                       exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isEmployer == true;
+      
+      // Company owners can read and update their own companies
+      allow read, update: if isAuthenticated() && 
+                             resource.data.employerId == request.auth.uid;
+      
+      // Admins can read, update, and delete any company
+      allow read, update, delete: if isA();
+      
+      // Public read access for approved companies (for job listings)
+      allow read: if resource.data.status == 'approved';
+    }
+
+     // Jobs Collection - Allow public read access, authenticated write access
+     match /jobs/{jobId} {
+       allow read: if true; // Anyone can view jobs
+       allow write: if isAuthenticated(); // Only authenticated users can create/update jobs
+     }
+
+     // Job Applications Collection
+     match /jobApplications/{applicationId} {
+       allow read, write: if isAuthenticated();
+     }
+     
+     // Portfolio rules for user's portfolio subcollection
+     match /users/{userId}/portfolios/{portfolioId} {
+       allow read, write, update, delete: if isAuthenticated() && request.auth.uid == userId;
+       allow create: if isAuthenticated() && request.auth.uid == userId;
+     }
+     
+     // Main portfolios collection rules
+     match /portfolios/{portfolioId} {
+       allow read: if resource.data.isPublished == true || 
+                      (isAuthenticated() && request.auth.uid == resource.data.userId);
+       allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
+       allow update, delete: if isAuthenticated() && request.auth.uid == resource.data.userId;
+     }
+  
+     // UPDATED: Allow read/write access to initialization data
+     match /data/id {
+       allow read: if true; // Public read for initialization check
+       allow write: if true; // TEMPORARY: Allow all writes for testing initialization
+       // TODO: Change back to: allow write: if isA(); after admin setup is complete
+     }
+     
+     // UPDATED: Allow public read access to website metadata
+     match /data/meta {
+       allow read: if true; // Public read for website metadata
+       allow write: if isA();
+     }
+     
+     // UPDATED: Allow public read access to platform configuration settings
+     match /data/system_settings {
+       allow read: if true; 
+       allow write: if isA();
+     }
+     
+     // UPDATED: Allow public read access to subscription data
+     match /data/subscriptions {
+       allow read: if true; // Public read for pricing information
+       allow write: if isA();
+     }
+     
+     // UPDATED: Allow public read access to pages
+     match /pages/{pageId} {
+       allow read: if true; // Public read for static pages
+       allow write: if isA();
+     }
+     
+     match /ads/{ads} {
+       allow read: if true; // Already public
+       allow write: if isA();
+     }
+     
+     match /pb/{pb} {
+       allow read, write;
+     }
+     
+     match /pbc/{pbc} {
+       allow read, write;
+     }
+     
+    match /data/stats {
+      allow write: if true; // TEMPORARY: Allow all writes for testing initialization
+      allow read: if isA();
+      // TODO: Change back to: allow write: if isA(); after admin setup is complete
+    }
+    
+    match /data/frontendstats {
+      allow read: if true; // Public read for frontend stats
+      allow write: if isA();
+    }
+     
+     match /data/details {
+       allow read: if true; // Public read for website details
+       allow write: if isA();
+     }
+     
+     match /subscriptions/{subscriptions} {
+       allow write;
+       allow read: if isA();
+     }
+     
+     match /categories/{categories} {
+       allow read: if true; // Public read for categories
+       allow write, delete, update: if isA();
+     }
+     
+     match /reviews/{reviews} {
+       allow read: if true; // Public read for reviews
+       allow write, delete, update: if isA();
+     }
+     
+     match /trustedBy/{trustedBy} {
+       allow read: if true; // Public read for trusted by section
+       allow write, delete, update: if isA();
+     }
+     
+     match /data/earnings {
+       allow read, write;
+     }
+     
+     match /contact/{contacts} {
+       allow read: if isA();
+       allow write: if true; // Public write for contact forms
+     }
+     
+     match /data/social {
+       allow read: if true; // Public read for social links
+       allow write: if isA();
+     }
+     
+    // Notifications Collection
+    match /notifications/{userId} {
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+      
+      match /userNotifications/{notificationId} {
+        allow read: if isAuthenticated() && request.auth.uid == userId;
+        allow write: if isAuthenticated() && request.auth.uid == userId;
+        // Allow employers to create notifications for candidates (for job application updates)
+        allow create: if isAuthenticated() && 
+                         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isEmployer == true;
+      }
+    }
+  }
+}

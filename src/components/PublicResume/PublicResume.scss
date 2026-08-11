@@ -1,0 +1,125 @@
+@use '../variables' as *;
+
+.public-resume {
+    height: 100%;
+    font-family: $font;
+
+    .head {
+        position: fixed;
+        display: flex;
+        width: 100%;
+        flex-flow: row nowrap;
+        -webkit-box-align: center;
+        align-items: center;
+        -webkit-box-pack: justify;
+        justify-content: space-between;
+        height: 64px;
+        padding: 0px 32px;
+        background-color: rgb(15, 20, 30);
+        color: rgb(255, 255, 255);
+        z-index: 20000;
+
+        .head-left {
+            display: flex;
+            justify-content: center;
+            .home-icon {
+                width: 20px;
+                height: 20px;
+            }
+          a {
+                font-size: 1, 2em;
+                font-weight: 500;
+                margin-left: 8px;
+                cursor: pointer;
+                line-height: 24px;
+            text-decoration: none;
+            color: white;
+            // visited keep same
+            &:visited {
+                color: white;
+            }
+        }
+
+        }
+        .head-middle {
+            .plus-icon {
+                width: 20px;
+                height: 20px;
+                cursor: pointer;
+                padding: 5px;
+                border-radius: 50%;
+
+                transition: all 0.3s ease-in-out;
+
+                // on hover circle background effect  opacity 0.1
+                &:hover {
+                    background-color: rgba(255, 255, 255, 0.1);
+                }
+            }
+
+            .minus-icon {
+                width: 20px;
+                height: 20px;
+                cursor: pointer;
+                padding: 5px;
+                border-radius: 50%;
+                transition: all 0.3s ease-in-out;
+                // on hover circle background effect  opacity 0.1
+                &:hover {
+                    background-color: rgba(255, 255, 255, 0.1);
+                }
+            }
+            .letter-case {
+                width: 25px;
+                height: 25px;
+                cursor: pointer;
+                margin: 0px 10px;
+            }
+        }
+        .head-right {
+            padding-right: 50px;
+            .download-btn {
+                padding: 8px 20px;
+                font-weight: 500;
+                font-size: 1.1em;
+                color: #fff0ff;
+                border-radius: 8px;
+                background-color: #426ae0;
+                text-decoration: none;
+                cursor: pointer;
+            }
+        }
+    }
+    .body {
+        min-height: 100%;
+        width: 100%;
+        background-color: rgb(73, 81, 99);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 60px 0px;
+        overflow-x: hidden;
+        overflow-y: scroll;
+        // hide scrollbar
+        padding-top: 180px;
+
+        &::-webkit-scrollbar {
+            display: none;
+        }
+
+        .resume {
+            width: fit;
+            height: 1050px;
+            overflow-y: scroll;
+            // hide scrollbar
+            &::-webkit-scrollbar {
+                display: none;
+            }
+            // scale 1.2
+            transform: scale(1.02);
+            background-color: white;
+            border-radius: 10px;
+            transition: all 0.2s ease-in-out;
+        }
+    }
+}

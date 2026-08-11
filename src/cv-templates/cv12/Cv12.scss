@@ -1,0 +1,204 @@
+@use '../../components/variables' as *;
+.cv12-board {
+    width: 21cm;
+    height: fit-content !important;
+    font-family: $font;
+    word-break: break-word;
+    // cv-content
+    .cv12-content {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        font-size: 14px;
+        box-sizing: border-box;
+        padding: 0px 0px;
+
+        .cv12-header {
+            background-color: #0d3a71;
+            color: white;
+            padding: 20px 40px;
+            h1 {
+                font-size: 3em;
+                font-weight: 600;
+                margin: 0px;
+            }
+            p {
+                margin: 0px;
+                font-size: 1.5em;
+            }
+        }
+        .cv12-content-body {
+            padding: 0px 0px 0px 20px;
+            display: flex;
+            .cv12-left {
+                width: 70%;
+                .cv12-summary {
+                    font-size: 0.8em;
+                }
+
+                /// employments
+                .cv12-employments {
+                    .cv12-employment-item {
+                        display: flex;
+                        margin-bottom: 20px;
+                        .cv12-employment-item-left {
+                            width: 15%;
+                            font-size: 0.7em;
+                            p {
+                                margin: 10px 0px;
+                            }
+                        }
+                        .cv12-employment-item-right {
+                            width: 80%;
+                            h3 {
+                                font-size: 1em;
+                                margin: 10px 0px;
+                            }
+                            p {
+                                font-size: 0.8em;
+                                margin: 0px;
+                                margin-top: 5px;
+                            }
+                        }
+                    }
+                }
+            }
+
+            .cv12-right {
+                box-sizing: border-box;
+                width: 30%;
+                flex-grow: 1;
+                background-color: rgb(236, 236, 236);
+                padding: 20px;
+                .cv12-info {
+                    margin-bottom: 20px;
+                    color: #5e5e5e;
+                    .cv12-info-title {
+                        font-weight: 600;
+                        margin-bottom: 4px;
+                    }
+                    .cv12-info-content {
+                        font-size: 0.9em;
+                        margin: 0px;
+                    }
+                }
+                .cv12-skills {
+                    .cv12-skill-item {
+                        font-size: 0.9em;
+                        margin: 0px;
+                        color: #5e5e5e;
+                    }
+                }
+                .cv12-languages {
+                    .cv12-languages-item {
+                        margin: 10px 0px;
+                        font-size: 0.9em;
+                        display: flex;
+                        justify-content: space-between;
+                        color: #5e5e5e;
+                        p {
+                            margin: 0px;
+                        }
+                        p:nth-child(2) {
+                            font-weight: 600;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+.cv12-section-title {
+    border-bottom: 1px solid rgb(213, 213, 213);
+    h2 {
+        color: #0d3a71;
+        margin: 0px 0px 10px 0px;
+    }
+}
+
+/* Rich Text Support for CV12 */
+.cv12-board {
+    // Styling for summary section
+    .cv12-summary p {
+        strong,
+        b {
+            font-weight: bold;
+        }
+        em,
+        i {
+            font-style: italic;
+        }
+        u {
+            text-decoration: underline;
+        }
+        ul,
+        ol {
+            margin: 6px 0;
+            padding-left: 1em;
+        }
+        li {
+            display: list-item;
+            margin: 0.1em 0;
+            padding-left: 0.2em;
+        }
+        ul {
+            list-style-type: disc;
+        }
+        ol {
+            list-style-type: decimal;
+        }
+        ul ul {
+            list-style-type: circle;
+            margin: 1px 0;
+            padding-left: 0.8em;
+        }
+        ol ol {
+            list-style-type: lower-alpha;
+            margin: 1px 0;
+            padding-left: 0.8em;
+        }
+    }
+
+    // Styling for job/education descriptions
+    .cv12-employment-item-right p {
+        strong,
+        b {
+            font-weight: bold;
+        }
+        em,
+        i {
+            font-style: italic;
+        }
+        u {
+            text-decoration: underline;
+        }
+        ul,
+        ol {
+            margin: 6px 0;
+            padding-left: 1em;
+        }
+        li {
+            display: list-item;
+            margin: 0.1em 0;
+            padding-left: 0.2em;
+        }
+        ul {
+            list-style-type: disc;
+        }
+        ol {
+            list-style-type: decimal;
+        }
+        ul ul {
+            list-style-type: circle;
+            margin: 1px 0;
+            padding-left: 0.8em;
+        }
+        ol ol {
+            list-style-type: lower-alpha;
+            margin: 1px 0;
+            padding-left: 0.8em;
+        }
+    }
+}

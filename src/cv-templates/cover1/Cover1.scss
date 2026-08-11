@@ -1,0 +1,38 @@
+.cover1-content{
+    margin-top: 50px;
+    width: 90%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+    // reset font to default
+    font-family: 'Roboto', sans-serif;
+    
+    
+    .cover1-address{
+     margin: 10px 0;   
+    }
+    .cover1-email{
+        margin: 10px 0;
+    }
+
+    .cover1-paragraph{
+        margin: 10px 0;
+    }
+    .cover1-separatorLine{
+        width: 100%;
+        height: 1px;
+        background-color: #000;
+        margin: 10px 0;
+    }
+
+    .cover1-head{
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        line-height: 10px;
+        align-items: center;
+
+    }
+    
+}

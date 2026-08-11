@@ -1,0 +1,425 @@
+@use "../../variables" as *;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@use 'sass:color';
+
+// Theme colors from project
+$primary-blue: #4a6cf7;
+$secondary-blue: #6c7ee1;
+$success-green: #34c759;
+$warning-orange: #ff9500;
+$danger-red: #ff3b30;
+$dark-text: #333333;
+$medium-text: #666666;
+$light-text: #999999;
+
+// Additional colors
+$bg-light: #f9fafb;
+$bg-white: #ffffff;
+$border-light: #e5e7eb;
+$hover-light: #f3f4f6;
+
+.settings-dashboard {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  color: $dark-text;
+  
+  // Toast container styling
+  .toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+  }
+  
+  // Header section
+  .settings-header {
+    margin-bottom: 32px;
+    
+    .settings-header-content {
+      h1 {
+        font-size: 28px;
+        font-weight: 700;
+        color: $dark-text;
+        margin-bottom: 8px;
+        position: relative;
+        display: inline-block;
+        
+        &:after {
+          content: '';
+          position: absolute;
+          bottom: -10px;
+          left: 0;
+          width: 40px;
+          height: 3px;
+          background-color: $primary-blue;
+          border-radius: 2px;
+        }
+      }
+      
+      p {
+        color: $medium-text;
+        font-size: 16px;
+        margin-top: 16px;
+        line-height: 1.5;
+      }
+    }
+  }
+
+  // Main container with sidebar and content
+  .settings-container {
+    display: flex;
+    gap: 30px;
+    
+    @media (max-width: 768px) {
+      flex-direction: column;
+    }
+    
+    // Sidebar styling
+    .settings-sidebar {
+      flex: 0 0 280px;
+      
+      @media (max-width: 768px) {
+        flex: auto;
+        width: 100%;
+      }
+      
+      // Profile card in sidebar
+      .profile-card {
+        background-color: $bg-white;
+        border-radius: 12px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        margin-bottom: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        
+        .profile-avatar {
+          width: 50px;
+          height: 50px;
+          border-radius: 50%;
+          background-color: $primary-blue;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          margin-right: 16px;
+          
+          span {
+            color: white;
+            font-weight: 600;
+            font-size: 18px;
+          }
+        }
+        
+        .profile-info {
+          h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0 0 6px 0;
+          }
+          
+          .membership-badge {
+            display: inline-block;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 4px 8px;
+            border-radius: 12px;
+            background-color: #f3f4f6;
+            color: $medium-text;
+            
+            &.premium {
+              background-color: rgba($primary-blue, 0.1);
+              color: $primary-blue;
+            }
+          }
+        }
+      }
+      
+      // Navigation in sidebar
+      .settings-nav {
+        background-color: $bg-white;
+        border-radius: 12px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        
+        .nav-item {
+          display: flex;
+          align-items: center;
+          padding: 16px 20px;
+          border: none;
+          background: none;
+          text-align: left;
+          cursor: pointer;
+          color: $medium-text;
+          font-weight: 500;
+          border-bottom: 1px solid $border-light;
+          transition: all 0.2s ease;
+          
+          &:last-child {
+            border-bottom: none;
+          }
+          
+          .nav-icon {
+            margin-right: 12px;
+            font-size: 16px;
+          }
+          
+          &:hover {
+            background-color: $hover-light;
+            color: $dark-text;
+          }
+          
+          &.active {
+            background-color: rgba($primary-blue, 0.05);
+            color: $primary-blue;
+            font-weight: 600;
+            
+            .nav-icon {
+              color: $primary-blue;
+            }
+          }
+        }
+      }
+    }
+    
+    // Main content area
+    .settings-content {
+      flex: 1;
+      
+      // Panel styling for each tab
+      .settings-panel {
+        background-color: $bg-white;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        
+        // Panel header
+        .panel-header {
+          padding: 24px;
+          border-bottom: 1px solid $border-light;
+          
+          h2 {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+            display: flex;
+            align-items: center;
+            
+            .panel-icon {
+              color: $primary-blue;
+              margin-right: 10px;
+              font-size: 18px;
+            }
+          }
+          
+          p {
+            color: $medium-text;
+            font-size: 14px;
+            margin: 0;
+          }
+        }
+        
+        // Panel content
+        .panel-content {
+          padding: 24px;
+          
+          // Form styling
+          form {
+            .input-grid {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 20px;
+              margin-bottom: 24px;
+              
+              @media (max-width: 768px) {
+                grid-template-columns: 1fr;
+              }
+            }
+            
+            .form-actions {
+              display: flex;
+              justify-content: flex-end;
+              margin-top: 24px;
+              
+              .btn-save {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background-color: $primary-blue;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 10px 20px;
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                
+                .btn-icon {
+                  margin-right: 8px;
+                  font-size: 14px;
+                }
+                
+                &:hover {
+                  background-color: color.adjust($primary-blue, $lightness: -5%);
+                  transform: translateY(-1px);
+                  box-shadow: 0 4px 6px rgba($primary-blue, 0.2);
+                }
+                
+                &:focus {
+                  outline: none;
+                  box-shadow: 0 0 0 3px rgba($primary-blue, 0.3);
+                }
+              }
+            }
+          }
+          
+          // Plan card styling
+          .plan-card {
+            display: flex;
+            background-color: $bg-light;
+            border-radius: 12px;
+            padding: 24px;
+            
+            @media (max-width: 768px) {
+              flex-direction: column;
+            }
+            
+            .plan-icon {
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              background-color: rgba($primary-blue, 0.1);
+              border-radius: 12px;
+              padding: 16px;
+              margin-right: 24px;
+              height: 80px;
+              width: 80px;
+              
+              @media (max-width: 768px) {
+                margin-bottom: 20px;
+                margin-right: 0;
+                align-self: flex-start;
+              }
+              
+              img {
+                width: 48px;
+                height: 48px;
+              }
+            }
+            
+            .plan-details {
+              flex: 1;
+              
+              .plan-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 16px;
+                
+                @media (max-width: 768px) {
+                  flex-direction: column;
+                  align-items: flex-start;
+                }
+                
+                h3 {
+                  font-size: 18px;
+                  font-weight: 600;
+                  margin: 0;
+                  display: flex;
+                  align-items: center;
+                  
+                  &.premium-plan {
+                    color: $primary-blue;
+                  }
+                  
+                  .check-icon {
+                    color: $success-green;
+                    margin-left: 8px;
+                  }
+                }
+                
+                .plan-status {
+                  display: inline-block;
+                  background-color: rgba($success-green, 0.1);
+                  color: $success-green;
+                  font-size: 12px;
+                  font-weight: 500;
+                  padding: 4px 10px;
+                  border-radius: 12px;
+                  
+                  @media (max-width: 768px) {
+                    margin-top: 8px;
+                  }
+                }
+              }
+              
+              .plan-description {
+                color: $medium-text;
+                font-size: 14px;
+                line-height: 1.6;
+                margin-bottom: 20px;
+              }
+              
+              .plan-features {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+                margin-bottom: 24px;
+                
+                @media (max-width: 768px) {
+                  grid-template-columns: 1fr;
+                }
+                
+                .feature-item {
+                  display: flex;
+                  align-items: center;
+                  
+                  .feature-icon {
+                    color: $success-green;
+                    margin-right: 8px;
+                    font-size: 14px;
+                  }
+                  
+                  span {
+                    font-size: 14px;
+                  }
+                }
+              }
+              
+              .plan-actions {
+                .btn-upgrade {
+                  display: inline-flex;
+                  align-items: center;
+                  background-color: $primary-blue;
+                  color: white;
+                  text-decoration: none;
+                  padding: 10px 20px;
+                  border-radius: 8px;
+                  font-size: 14px;
+                  font-weight: 500;
+                  transition: all 0.2s ease;
+                  
+                  .arrow-icon {
+                    margin-left: 8px;
+                    font-size: 12px;
+                  }
+                  
+                  &:hover {
+                    background-color: color.adjust($primary-blue, $lightness: -5%);
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 6px rgba($primary-blue, 0.2);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

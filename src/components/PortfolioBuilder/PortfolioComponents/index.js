@@ -1,0 +1,87 @@
+// Category Components (Main exports)
+export { default as NavbarCategory } from './NavbarCategory';
+export { default as HeroCategory } from './HeroCategory';
+export { default as AboutCategory } from './AboutCategory';
+export { default as SkillsCategory } from './SkillsCategory';
+export { default as ExperienceCategory } from './ExperienceCategory';
+export { default as EducationCategory } from './EducationCategory';
+export { default as ProjectsCategory } from './ProjectsCategory';
+export { default as ServicesCategory } from './ServicesCategory';
+export { default as TestimonialsCategory } from './TestimonialsCategory';
+export { default as ResumeCategory } from './ResumeCategory';
+export { default as AwardsCategory } from './AwardsCategory';
+export { default as ContactCategory } from './ContactCategory';
+export { default as FooterCategory } from './FooterCategory';
+
+// Layout Components
+export { default as GridLayoutCategory } from './GridLayout';
+export { default as GridItemCategory } from './GridItem';
+export { default as FlexLayoutCategory } from './FlexLayout';
+export { default as FlexItemCategory } from './FlexItem';
+export { default as LayoutCategory } from './LayoutCategory';
+
+// Individual Templates (for advanced users)
+export { default as Navbar1 } from './Navbar1';
+export { default as Navbar2 } from './Navbar2';
+export { default as Hero1 } from './Hero1';
+export { default as Hero2 } from './Hero2';
+export { default as Hero3 } from './Hero3';
+export { default as Hero4 } from './Hero4';
+export { default as Hero5 } from './Hero5';
+export { default as Hero6 } from './Hero6';
+export { default as Hero7 } from './Hero7';
+export { default as About1 } from './About1';
+export { default as About2 } from './About2';
+export { default as About3 } from './About3';
+export { default as About4 } from './About4';
+export { default as About5 } from './About5';
+export { default as About6 } from './About6';
+export { default as Skills1 } from './Skills1';
+export { default as Skills2 } from './Skills2';
+export { default as Skills3 } from './Skills3';
+export { default as Skills4 } from './Skills4';
+export { default as Skills5 } from './Skills5';
+export { default as Skills6 } from './Skills6';
+export { default as Experience1 } from './Experience1';
+export { default as Experience2 } from './Experience2';
+export { default as Experience3 } from './Experience3';
+export { default as Experience4 } from './Experience4';
+export { default as Experience5 } from './Experience5';
+export { default as Experience6 } from './Experience6';
+export { default as Education1 } from './Education1';
+export { default as Education2 } from './Education2';
+export { default as Projects1 } from './Projects1';
+export { default as Projects2 } from './Projects2';
+export { default as Projects3 } from './Projects3';
+export { default as Projects4 } from './Projects4';
+export { default as Services1 } from './Services1';
+export { default as Services2 } from './Services2';
+export { default as Testimonials1 } from './Testimonials1';
+export { default as Testimonials2 } from './Testimonials2';
+export { default as Resume1 } from './Resume1';
+export { default as Resume2 } from './Resume2';
+export { default as Awards1 } from './Awards1';
+export { default as Awards2 } from './Awards2';
+export { default as Contact1 } from './Contact1';
+export { default as Contact2 } from './Contact2';
+export { default as Contact3 } from './Contact3';
+export { default as Contact4 } from './Contact4';
+export { default as Footer1 } from './Footer1';
+export { default as Footer2 } from './Footer2';
+export { default as Footer3 } from './Footer3';
+export { default as Footer4 } from './Footer4';
+
+// Backward compatibility aliases
+export { default as Navbar } from './NavbarCategory';
+export { default as Hero } from './HeroCategory';
+export { default as About } from './AboutCategory';
+export { default as Skills } from './SkillsCategory';
+export { default as Experience } from './ExperienceCategory';
+export { default as Education } from './EducationCategory';
+export { default as Projects } from './ProjectsCategory';
+export { default as Services } from './ServicesCategory';
+export { default as Testimonials } from './TestimonialsCategory';
+export { default as Resume } from './ResumeCategory';
+export { default as Awards } from './AwardsCategory';
+export { default as Contact } from './ContactCategory';
+export { default as Footer } from './FooterCategory';

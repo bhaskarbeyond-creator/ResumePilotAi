@@ -1,0 +1,53 @@
+.cover4-content{
+    margin-top: 50px;
+    width: 90%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+    // reset font to default
+    font-family: 'Roboto', sans-serif;
+    
+    
+    .cover4-head{
+        padding: 0px 13px;
+        h1{
+            color: #0C2B76;
+        }
+        .cover4-job{
+            color: #F49342;
+            font-size: 1.2em;
+            margin: 0px;
+        }
+        .cover4-contactInfo{
+            display: flex;
+            .cover4-contactInfo-item{
+                display: flex;
+                align-items: center;
+                margin-right: 20px;
+                .cover4-icon{
+                    margin-right: 10px;
+                }
+            }
+        }
+
+
+    }
+    .cover4-body{
+        display:flex;
+        padding: 0px 13px;
+        box-sizing: border-box;
+        flex-direction: column;
+        .cover4-body-left{
+            width: 70%;
+        }
+        .cover4-body-right{
+ 
+            padding-right: 20px;
+            width: 30%;
+        }
+
+
+        
+    }
+}

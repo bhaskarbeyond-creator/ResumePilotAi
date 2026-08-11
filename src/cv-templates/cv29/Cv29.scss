@@ -1,0 +1,439 @@
+@use '../../components/variables' as *;
+
+.cv29-board {
+    width: 21cm;
+    min-height: 29.7cm;
+    font-family: $font;
+    background-color: #fff;
+    color: #444;
+    box-sizing: border-box;
+
+    .cv29-content {
+        width: 100%;
+        height: 100%;
+        position: relative;
+
+        // Header styles
+        .cv29-header {
+            position: relative;
+            padding: 40px 40px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            overflow: hidden;
+
+            .accent-bg {
+                position: absolute;
+                top: 0;
+                right: 0;
+                height: 100%;
+                width: 35%;
+                background: linear-gradient(135deg, #7b4397 0%, #9159bd 100%);
+                clip-path: polygon(0 0, 100% 0, 100% 100%, 20% 100%);
+                z-index: 0;
+            }
+
+            .name-title-container {
+                z-index: 1;
+                padding-right: 20px;
+
+                .name {
+                    font-size: 34px;
+                    font-weight: 700;
+                    color: #333;
+                    margin: 0;
+                    letter-spacing: 0.5px;
+                    line-height: 1.2;
+                }
+
+                .occupation {
+                    font-size: 18px;
+                    font-weight: 500;
+                    color: #7b4397;
+                    margin: 5px 0 0;
+                }
+            }
+
+            .photo-container {
+                width: 130px;
+                height: 130px;
+                border-radius: 50%;
+                overflow: hidden;
+                border: 3px solid white;
+                box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+                z-index: 1;
+                background-color: #f5f5f5;
+                flex-shrink: 0;
+
+                .profile-photo {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                }
+
+                .photo-placeholder {
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+
+                    .placeholder-icon {
+                        font-size: 50px;
+                        color: #ccc;
+                    }
+                }
+            }
+        }
+
+        // Body styles
+        .cv29-body {
+            display: flex;
+            padding: 0;
+
+            // Main column (left)
+            .main-column {
+                flex: 3;
+                padding: 15px 30px 30px 40px;
+
+                // Section styles
+                .section-title {
+                    color: #7b4397;
+                    font-size: 20px;
+                    font-weight: 600;
+                    margin: 0 0 15px;
+                    padding-bottom: 8px;
+                    border-bottom: 2px solid #f0f0f0;
+                    position: relative;
+
+                    &::after {
+                        content: '';
+                        position: absolute;
+                        bottom: -2px;
+                        left: 0;
+                        width: 50px;
+                        height: 2px;
+                        background-color: #5ee7df;
+                    }
+                }
+
+                // Summary section
+                .summary-section {
+                    margin-bottom: 25px;
+
+                    .summary-text {
+                        font-size: 15px;
+                        line-height: 1.6;
+                        color: #555;
+                        margin: 0;
+                        white-space: pre-wrap;
+                    }
+                }
+
+                // Experience & Education sections
+                .experience-section,
+                .education-section {
+                    margin-bottom: 25px;
+
+                    .timeline {
+                        position: relative;
+
+                        &::before {
+                            content: '';
+                            position: absolute;
+                            top: 0;
+                            bottom: 0;
+                            left: 15px;
+                            width: 2px;
+                            background: linear-gradient(to bottom, #7b4397 0%, #5ee7df 100%);
+                            z-index: 0;
+                        }
+
+                        .timeline-item {
+                            position: relative;
+                            padding-left: 45px;
+                            margin-bottom: 25px;
+
+                            &:last-child {
+                                margin-bottom: 0;
+                            }
+
+                            .timeline-marker {
+                                position: absolute;
+                                top: 5px;
+                                left: 6px;
+                                width: 20px;
+                                height: 20px;
+                                border-radius: 50%;
+                                background-color: white;
+                                border: 2px solid #7b4397;
+                                z-index: 1;
+
+                                &::before {
+                                    content: '';
+                                    position: absolute;
+                                    top: 50%;
+                                    left: 50%;
+                                    transform: translate(-50%, -50%);
+                                    width: 8px;
+                                    height: 8px;
+                                    border-radius: 50%;
+                                    background-color: #5ee7df;
+                                }
+                            }
+
+                            .timeline-content {
+                                background-color: #f9f9f9;
+                                border-radius: 5px;
+                                padding: 15px;
+                                box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+                                position: relative;
+
+                                &::before {
+                                    content: '';
+                                    position: absolute;
+                                    top: 12px;
+                                    left: -10px;
+                                    width: 0;
+                                    height: 0;
+                                    border-top: 10px solid transparent;
+                                    border-bottom: 10px solid transparent;
+                                    border-right: 10px solid #f9f9f9;
+                                }
+
+                                .timeline-date {
+                                    display: flex;
+                                    align-items: center;
+                                    font-size: 13px;
+                                    color: #7b4397;
+                                    margin-bottom: 8px;
+
+                                    .date-icon {
+                                        margin-right: 5px;
+                                        font-size: 12px;
+                                    }
+                                }
+
+                                .timeline-title {
+                                    font-size: 17px;
+                                    font-weight: 600;
+                                    color: #333;
+                                    margin: 0 0 5px;
+                                }
+
+                                .timeline-company {
+                                    font-size: 15px;
+                                    font-weight: 500;
+                                    color: #666;
+                                    margin: 0 0 8px;
+                                }
+
+                                .timeline-description {
+                                    font-size: 14px;
+                                    line-height: 1.5;
+                                    color: #666;
+                                    margin: 0;
+                                    white-space: pre-wrap;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Side column (right)
+            .side-column {
+                flex: 1.2;
+                background-color: #f5f7fa;
+                padding: 30px 25px;
+                position: relative;
+
+                &::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 5px;
+                    background: linear-gradient(to right, #7b4397, #5ee7df);
+                }
+
+                .side-section-title {
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: #7b4397;
+                    margin: 0 0 15px;
+                    display: flex;
+                    align-items: center;
+
+                    .section-icon {
+                        margin-right: 8px;
+                        color: #5ee7df;
+                    }
+                }
+
+                // Contact section
+                .contact-section {
+                    margin-bottom: 25px;
+
+                    .contact-list {
+                        .contact-item {
+                            display: flex;
+                            align-items: flex-start;
+                            margin-bottom: 12px;
+
+                            .contact-icon {
+                                color: #7b4397;
+                                font-size: 15px;
+                                margin-right: 10px;
+                                margin-top: 3px;
+                                flex-shrink: 0;
+                            }
+
+                            span {
+                                font-size: 14px;
+                                line-height: 1.4;
+                                color: #555;
+                            }
+                        }
+                    }
+                }
+
+                // Skills section
+                .skills-section {
+                    margin-bottom: 25px;
+
+                    .skills-list {
+                        .skill-item {
+                            margin-bottom: 12px;
+
+                            .skill-name {
+                                font-size: 14px;
+                                font-weight: 500;
+                                color: #444;
+                                margin-bottom: 5px;
+                            }
+
+                            .skill-bar-container {
+                                .skill-bar {
+                                    height: 5px;
+                                    background-color: #e0e0e0;
+                                    border-radius: 3px;
+                                    overflow: hidden;
+
+                                    .skill-progress {
+                                        height: 100%;
+                                        background: linear-gradient(to right, #7b4397, #5ee7df);
+                                        border-radius: 3px;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Languages section
+                .languages-section {
+                    .languages-list {
+                        .language-item {
+                            margin-bottom: 15px;
+
+                            .language-info {
+                                display: flex;
+                                justify-content: space-between;
+                                margin-bottom: 5px;
+
+                                .language-name {
+                                    font-size: 14px;
+                                    font-weight: 500;
+                                    color: #444;
+                                }
+                            }
+
+                            .language-level-wrapper {
+                                .language-level {
+                                    position: relative;
+
+                                    .language-bar {
+                                        height: 5px;
+                                        background-color: #e0e0e0;
+                                        border-radius: 3px;
+                                        overflow: hidden;
+
+                                        .language-progress {
+                                            height: 100%;
+                                            background: linear-gradient(to right, #5ee7df, #7b4397);
+                                            border-radius: 3px;
+                                        }
+                                    }
+
+                                    .level-text {
+                                        position: absolute;
+                                        top: 8px;
+                                        right: 0;
+                                        font-size: 12px;
+                                        color: #888;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/* Rich Text Support for CV29 */
+.cv29-board {
+    p {
+        strong,
+        b {
+            font-weight: bold;
+        }
+        em,
+        i {
+            font-style: italic;
+        }
+        u {
+            text-decoration: underline;
+        }
+        ul,
+        ol {
+            margin: 6px 0;
+            padding-left: 1em;
+        }
+        li {
+            display: list-item;
+            margin: 0.1em 0;
+            padding-left: 0.2em;
+        }
+        ul {
+            list-style-type: disc;
+        }
+        ol {
+            list-style-type: decimal;
+        }
+        ul ul {
+            list-style-type: circle;
+            margin: 1px 0;
+            padding-left: 0.8em;
+        }
+        ol ol {
+            list-style-type: lower-alpha;
+            margin: 1px 0;
+            padding-left: 0.8em;
+        }
+    }
+}
+
+@media print {
+    body {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .cv29-board {
+        box-shadow: none;
+    }
+}

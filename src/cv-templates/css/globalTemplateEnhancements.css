@@ -1,0 +1,276 @@
+/* ==========================================================================
+   Global Resume Template 10/10 Design System & Formatting Enhancements
+   ========================================================================== */
+
+/* 1. Base A4 Document Container Safeguards (Centered A4 Board) */
+#resumen, 
+.cv-board,
+[class*="-board"] {
+  width: 210mm !important;
+  min-height: 297mm !important;
+  box-sizing: border-box !important;
+  margin: 0 auto !important; /* Perfect Center Alignment in all Viewports */
+  background-color: #ffffff;
+  color: #1e293b;
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Ensure all inner content wrappers span 100% full width without right-side whitespace gaps */
+.cv-content,
+[class*="-content"],
+.sectionTitle,
+.rightSection,
+.cv__body,
+.bodyRight {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* MANDATORY JUSTIFIED PARAGRAPHS FOR PROFESSIONAL RESUME STANDARDS */
+p,
+.summaryContent,
+.employment__body,
+[class*="-description"],
+[class*="-summary"],
+[class*="-bodySection"] p {
+  text-align: justify !important;
+  text-justify: inter-word !important;
+}
+
+/* Universal Mandatory Page Break Protection for All Templates (Screen & Print) */
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+
+@media print {
+  html, body {
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  #resumen, 
+  .cv-board,
+  [class*="-board"] {
+    width: 210mm !important;
+    margin: 0 auto !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  .cv-bodySection,
+  .cv-section,
+  .cv-sectionRightExperience,
+  .skills-grid,
+  .languages-grid,
+  .skill-card-item,
+  .language-card-item,
+  .timeline-item,
+  .cv-jobItem,
+  .experience-item,
+  .education-item,
+  section,
+  .section,
+  [class*="bodySection"],
+  [class*="body-section"],
+  [class*="-bodySection"],
+  [class*="-section"],
+  [class*="Section"],
+  [class*="-jobItem"],
+  [class*="-employment"],
+  [class*="-education"],
+  [class*="-skill"],
+  [class*="-language"],
+  [class*="grid"],
+  [class*="Grid"],
+  [class*="item"],
+  [class*="Item"],
+  [class*="-card"] {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    -webkit-column-break-inside: avoid !important;
+  }
+}
+
+.cv-bodySection,
+.cv-section,
+.cv-sectionRightExperience,
+.skills-grid,
+.languages-grid,
+.skill-card-item,
+.language-card-item,
+.timeline-item,
+.cv-jobItem,
+.experience-item,
+.education-item,
+section,
+.section,
+[class*="bodySection"],
+[class*="body-section"],
+[class*="-bodySection"],
+[class*="-section"],
+[class*="Section"],
+[class*="-jobItem"],
+[class*="-employment"],
+[class*="-education"],
+[class*="-skill"],
+[class*="-language"],
+[class*="grid"],
+[class*="Grid"],
+[class*="item"],
+[class*="Item"],
+[class*="-card"] {
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+  -webkit-column-break-inside: avoid !important;
+  break-inside: avoid-page !important;
+}
+
+/* Prevent orphan headers from appearing alone at the bottom of pages */
+h1, h2, h3, h4, h5, h6,
+.cv-sectionLeft,
+.sectionTitle,
+.section-title-accent,
+[class*="-sectionLeft"],
+[class*="-title"],
+[class*="-head"] {
+  break-after: avoid !important;
+  page-break-after: avoid !important;
+  -webkit-column-break-after: avoid !important;
+}
+
+/* 2. Enhanced Headings & Typography Hierarchy */
+h1, h2, h3, h4 {
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+  color: #0f172a;
+}
+
+h1 {
+  font-size: 32px !important;
+  line-height: 1.15 !important;
+}
+
+h2 {
+  font-size: 22px !important;
+  line-height: 1.25 !important;
+}
+
+h3 {
+  font-size: 16px !important;
+  line-height: 1.35 !important;
+}
+
+/* 3. Sleek Skill Progress Pills & Badges */
+.skill-bar-wrapper,
+[class*="-ratingWrapper"],
+[class*="-skillBox"],
+[class*="-skills-item-bar"] {
+  height: 8px !important;
+  border-radius: 9999px !important;
+  background-color: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  overflow: hidden !important;
+  margin-top: 6px !important;
+}
+
+.skill-bar-fill,
+[class*="-rating"],
+[class*="-skillRating"],
+[class*="-skills-item-bar-inner"] {
+  height: 100% !important;
+  border-radius: 9999px !important;
+  background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%) !important;
+  transition: width 0.4s ease-in-out !important;
+}
+
+/* Alternative Tag Badge Skills */
+.skill-tag-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 6px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  margin: 3px;
+}
+
+/* 4. Elegant Timeline Styles for Employment & Education */
+.timeline-container {
+  position: relative;
+  padding-left: 20px;
+  border-left: 2px solid #e2e8f0;
+  margin-left: 8px;
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -26px;
+  top: 6px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #2563eb;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 2px #3b82f6;
+}
+
+/* 5. Contact Info Badges & Icons */
+.contact-item-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #475569;
+  margin-bottom: 8px;
+}
+
+.contact-icon-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+/* 6. Section Header Accents (Full 100% Width) */
+.section-title-accent {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100% !important;
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #0f172a;
+  padding-bottom: 6px;
+  border-bottom: 2px solid #2563eb;
+  margin-bottom: 16px;
+}
+
+/* 7. Subtle Avatar Shadow & Ring */
+.avatar-ring {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12), 0 0 0 3px #ffffff, 0 0 0 5px #2563eb;
+}

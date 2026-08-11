@@ -1,0 +1,60 @@
+/* Reset some Vite defaults that conflict with the app */
+:root {
+    font-family: 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+    font-size: 16px; /* Restored to standard 16px */
+
+    /* Remove Vite's dark theme defaults */
+    color-scheme: light;
+    color: #213547;
+    background-color: #ffffff;
+
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Reset body styles to not conflict with app */
+body {
+    margin: 0;
+    min-width: 320px;
+    min-height: 100vh;
+    /* Remove Vite's flex centering which breaks the app layout */
+    display: block;
+    place-items: unset;
+    font-size: 16px; /* Standard font size */
+}
+
+#root {
+    /* Ensure root takes full height for the app */
+    min-height: 100vh;
+    font-size: 16px; /* Standard font size */
+}
+
+/* Keep some useful link styles */
+a {
+    font-weight: 500;
+    color: #4a6cf7;
+    text-decoration: inherit;
+}
+a:hover {
+    color: #6c7ee1;
+}
+
+/* Basic button styles that don't conflict */
+button {
+    border-radius: 8px;
+    border: 1px solid transparent;
+    padding: 0.6em 1.2em;
+    font-size: 1em;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color 0.25s;
+}
+button:focus,
+button:focus-visible {
+    outline: 4px auto -webkit-focus-ring-color;
+}

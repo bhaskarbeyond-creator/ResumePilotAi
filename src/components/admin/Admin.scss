@@ -1,0 +1,83 @@
+@use "../variables" as *;
+@use 'sass:color';
+.admin {
+    display: flex;
+    // Right
+    height: 100%;
+    background-color: #e1e6ec62;
+    
+    // Left sidebar
+    .admin__left {
+        position: fixed;
+        height: 100%;
+        z-index: 50;
+        transition: width 0.3s ease;
+    }
+    
+    .admin__right {
+        // Navbar
+        height: 100%;
+        width: 100%;
+        overflow-y: scroll;
+        padding-left: 280px; // Default padding to accommodate expanded sidebar
+        transition: padding-left 0.3s ease;
+        
+        &.admin__right--sidebar-collapsed {
+            padding-left: 70px; // Reduced padding when sidebar is collapsed
+        }
+        .admin__navbar {
+            width: 100%;
+            height: 80px;
+            display: flex;
+            justify-content: space-between;
+            font-family: $font;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            background-color: #e1e6ec62;
+            z-index: 10;
+            .admin__navbar-left {
+                padding: 20px;
+                span {
+                    font-size: 22px;
+                    font-weight: 500;
+                }
+            }
+            .admin__navbar-right {
+                padding: 20px;
+            }
+            .admin__mobileToggle {
+                display: none;
+            }
+            
+            @media (max-width: 1050px) {
+                .admin__mobileToggle {
+                    display: block;
+                    cursor: pointer;
+                    padding: 8px 16px;
+                    background-color: #f3f0f0;
+                    border-radius: 20px;
+                    font-weight: 600;
+                }
+            }
+            .admin__navbar-user {
+                width: 200px;
+                height: 50px;
+                background-color: rgb(243, 240, 240);
+                border-radius: 20px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                cursor: pointer;
+                img {
+                    width: 40px;
+                }
+                span {
+                    font-size: 14px !important;
+                    font-weight: 600;
+                    margin-left: 10px;
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,375 @@
+@use '../../components/variables' as *;
+
+.cv16-container {
+    width: 21cm;
+    font-family: $font;
+    word-break: break-word;
+    background-color: #ffffff;
+    min-height: 29.7cm;
+    color: #333;
+
+    // Header section with profile and contact info
+    .cv16-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 30px 40px;
+        background: linear-gradient(135deg, #3a6073 0%, #16222a 100%);
+        color: white;
+
+        .cv16-profile {
+            display: flex;
+            align-items: center;
+
+            .cv16-profile-photo {
+                width: 120px;
+                height: 120px;
+                border-radius: 50%;
+                border: 3px solid #fff;
+                overflow: hidden;
+                margin-right: 25px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+
+                img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                }
+
+                .cv16-placeholder {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    width: 100%;
+                    height: 100%;
+                    background-color: rgba(255, 255, 255, 0.2);
+                    font-size: 16px;
+                }
+            }
+
+            .cv16-profile-info {
+                h1 {
+                    margin: 0 0 5px 0;
+                    font-size: 32px;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                }
+
+                h2 {
+                    margin: 0;
+                    font-size: 18px;
+                    font-weight: 400;
+                    color: #e5e5e5;
+                }
+            }
+        }
+
+        .cv16-contact {
+            .cv16-contact-item {
+                display: flex;
+                align-items: center;
+                margin-bottom: 10px;
+
+                .cv16-icon {
+                    margin-right: 10px;
+                    font-size: 16px;
+                    color: #4ecdc4;
+                }
+
+                span {
+                    font-size: 14px;
+                }
+            }
+        }
+    }
+
+    // Main content section
+    .cv16-main {
+        display: flex;
+        width: 100%;
+
+        .cv16-column {
+            padding: 25px;
+
+            &.cv16-left-column {
+                flex: 2;
+                border-right: 1px dashed #ddd;
+            }
+
+            &.cv16-right-column {
+                flex: 1;
+                background-color: #f9f9f9;
+            }
+        }
+
+        // Common section styling
+        .cv16-section {
+            margin-bottom: 30px;
+
+            .cv16-section-title {
+                display: flex;
+                align-items: center;
+                margin-bottom: 20px;
+                border-bottom: 2px solid #3a6073;
+                padding-bottom: 8px;
+                position: relative;
+
+                .cv16-section-icon {
+                    margin-right: 10px;
+                    font-size: 18px;
+                    color: #3a6073;
+                }
+
+                h3 {
+                    margin: 0;
+                    font-size: 18px;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                    color: #3a6073;
+                }
+            }
+        }
+
+        // Experience items styling
+        .cv16-experience {
+            .cv16-experience-item {
+                margin-bottom: 25px;
+                position: relative;
+                padding-left: 15px;
+                border-left: 2px solid #e9e9e9;
+
+                &:hover {
+                    border-left: 2px solid #4ecdc4;
+                }
+
+                .cv16-experience-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 8px;
+
+                    h3 {
+                        margin: 0;
+                        font-size: 16px;
+                        font-weight: 600;
+                        color: #2c3e50;
+                    }
+
+                    .cv16-experience-timeline {
+                        min-width: 110px;
+                        text-align: center;
+
+                        span {
+                            font-size: 13px;
+                            background-color: #3a6073;
+                            color: white;
+                            padding: 3px 8px;
+                            border-radius: 3px;
+                            white-space: nowrap;
+                        }
+                    }
+                }
+
+                h4 {
+                    margin: 0 0 8px 0;
+                    font-size: 15px;
+                    font-weight: 500;
+                    color: #4ecdc4;
+                }
+
+                p {
+                    margin: 0;
+                    font-size: 14px;
+                    line-height: 1.5;
+                    color: #555;
+                }
+            }
+        }
+
+        // Education items styling
+        .cv16-education {
+            .cv16-education-item {
+                margin-bottom: 25px;
+                position: relative;
+                padding-left: 15px;
+                border-left: 2px solid #e9e9e9;
+
+                &:hover {
+                    border-left: 2px solid #4ecdc4;
+                }
+
+                .cv16-education-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 8px;
+
+                    h3 {
+                        margin: 0;
+                        font-size: 16px;
+                        font-weight: 600;
+                        color: #2c3e50;
+                        max-width: 65%;
+                    }
+
+                    .cv16-education-timeline {
+                        min-width: 110px;
+                        text-align: center;
+
+                        span {
+                            font-size: 13px;
+                            background-color: #3a6073;
+                            color: white;
+                            padding: 3px 8px;
+                            border-radius: 3px;
+                            white-space: nowrap;
+                        }
+                    }
+                }
+
+                h4 {
+                    margin: 0 0 8px 0;
+                    font-size: 15px;
+                    font-weight: 500;
+                    color: #4ecdc4;
+                }
+
+                p {
+                    margin: 0;
+                    font-size: 14px;
+                    line-height: 1.5;
+                    color: #555;
+                }
+            }
+        }
+
+        // Skills styling
+        .cv16-skills {
+            .cv16-skill-item {
+                margin-bottom: 15px;
+
+                .cv16-skill-name {
+                    font-size: 14px;
+                    margin-bottom: 5px;
+                    display: flex;
+                    justify-content: space-between;
+                    font-weight: 500;
+                }
+
+                .cv16-skill-bar {
+                    height: 8px;
+                    background-color: #e9e9e9;
+                    border-radius: 4px;
+                    overflow: hidden;
+                    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) inset;
+
+                    .cv16-skill-progress {
+                        height: 100%;
+                        background: linear-gradient(90deg, #3a6073 0%, #4ecdc4 100%);
+                        border-radius: 4px;
+                        transition: width 0.5s ease;
+                    }
+                }
+            }
+        }
+
+        // Languages styling
+        .cv16-languages {
+            .cv16-language-item {
+                display: flex;
+                justify-content: space-between;
+                padding: 10px 0;
+                border-bottom: 1px solid #eee;
+
+                &:last-child {
+                    border-bottom: none;
+                }
+
+                .cv16-language-name {
+                    font-size: 14px;
+                    color: #333;
+                    font-weight: 500;
+                }
+
+                .cv16-language-level {
+                    font-size: 13px;
+                    text-transform: uppercase;
+                    font-weight: 600;
+                    color: #4ecdc4;
+                    padding: 2px 8px;
+                    background-color: rgba(78, 205, 196, 0.1);
+                    border-radius: 3px;
+                }
+            }
+        }
+
+        // Summary styling
+        .cv16-summary {
+            p {
+                font-size: 14px;
+                line-height: 1.6;
+                color: #555;
+                background-color: rgba(58, 96, 115, 0.03);
+                padding: 15px;
+                border-radius: 5px;
+                position: relative;
+
+                &:before {
+                    content: '';
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    height: 100%;
+                    width: 3px;
+                    background-color: #4ecdc4;
+                    border-radius: 3px 0 0 3px;
+                }
+            }
+        }
+    }
+}
+
+/* Rich Text Support for CV16 */
+.cv16-container {
+    p {
+        strong,
+        b {
+            font-weight: bold;
+        }
+        em,
+        i {
+            font-style: italic;
+        }
+        u {
+            text-decoration: underline;
+        }
+        ul,
+        ol {
+            margin: 6px 0;
+            padding-left: 1em;
+        }
+        li {
+            display: list-item;
+            margin: 0.1em 0;
+            padding-left: 0.2em;
+        }
+        ul {
+            list-style-type: disc;
+        }
+        ol {
+            list-style-type: decimal;
+        }
+        ul ul {
+            list-style-type: circle;
+            margin: 1px 0;
+            padding-left: 0.8em;
+        }
+        ol ol {
+            list-style-type: lower-alpha;
+            margin: 1px 0;
+            padding-left: 0.8em;
+        }
+    }
+}

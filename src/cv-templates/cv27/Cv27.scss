@@ -1,0 +1,434 @@
+@use '../../components/variables' as *;
+
+.cv27-board {
+    width: 21cm;
+    min-height: 29.7cm;
+    font-family: $font;
+    background-color: #fff;
+    color: #333;
+
+    .cv27-content {
+        width: 100%;
+        height: 100%;
+
+        // Header Section
+        .cv27-header {
+            background: linear-gradient(135deg, #3a1c71 0%, #4c2885 100%);
+            color: #fff;
+            padding: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            .header-content {
+                flex: 1;
+
+                .person-name {
+                    font-size: 38px;
+                    font-weight: 700;
+                    margin: 0;
+                    background: linear-gradient(90deg, #fff 0%, #ffd952 100%);
+                    background-clip: text;
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    text-shadow: 0px 0px 1px rgba(255, 255, 255, 0.1);
+                    letter-spacing: 1px;
+                }
+
+                .person-title {
+                    font-size: 18px;
+                    font-weight: 400;
+                    margin: 10px 0 0;
+                    color: rgba(255, 255, 255, 0.85);
+                }
+            }
+
+            .header-photo {
+                .photo-container {
+                    width: 150px;
+                    height: 150px;
+                    border-radius: 10px;
+                    overflow: hidden;
+                    border: 4px solid rgba(255, 255, 255, 0.3);
+                    background-color: rgba(255, 255, 255, 0.1);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+
+                    .photo {
+                        width: 100%;
+                        height: 100%;
+                        object-fit: cover;
+                    }
+
+                    .photo-placeholder {
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        width: 100%;
+                        height: 100%;
+
+                        .placeholder-icon {
+                            font-size: 50px;
+                            color: rgba(255, 255, 255, 0.4);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Body Section
+        .cv27-body {
+            display: flex;
+            background-color: #fff;
+
+            // Sidebar
+            .cv27-sidebar {
+                width: 220px;
+                background-color: #f7f7fa;
+                padding: 40px 20px;
+                border-right: 1px solid #eaeaea;
+
+                .section {
+                    margin-bottom: 35px;
+
+                    .section-title {
+                        color: #3a1c71;
+                        font-size: 18px;
+                        font-weight: 600;
+                        margin: 0 0 20px;
+                        padding-bottom: 10px;
+                        border-bottom: 2px solid #eaeaea;
+                        position: relative;
+
+                        &:after {
+                            content: '';
+                            position: absolute;
+                            left: 0;
+                            bottom: -2px;
+                            width: 50px;
+                            height: 2px;
+                            background-color: #ffd952;
+                        }
+
+                        &.with-icon {
+                            display: flex;
+                            align-items: center;
+
+                            .section-icon {
+                                margin-right: 8px;
+                                color: #ffd952;
+                            }
+                        }
+                    }
+
+                    // Contact List
+                    .contact-list {
+                        .contact-item {
+                            display: flex;
+                            align-items: flex-start;
+                            margin-bottom: 12px;
+
+                            .contact-icon {
+                                color: #3a1c71;
+                                font-size: 14px;
+                                margin-right: 8px;
+                                margin-top: 3px;
+                            }
+
+                            span {
+                                font-size: 13px;
+                                line-height: 1.4;
+                                color: #555;
+
+                                &.address-item {
+                                    line-height: 1.3;
+                                }
+                            }
+                        }
+                    }
+
+                    // Skills List
+                    .skills-list {
+                        .skill-item {
+                            margin-bottom: 15px;
+
+                            .skill-info {
+                                margin-bottom: 5px;
+
+                                .skill-name {
+                                    font-size: 14px;
+                                    font-weight: 500;
+                                    color: #444;
+                                }
+                            }
+
+                            .skill-progress-container {
+                                .skill-progress {
+                                    height: 6px;
+                                    background-color: #e0e0e0;
+                                    border-radius: 3px;
+                                    overflow: hidden;
+
+                                    .skill-progress-bar {
+                                        height: 100%;
+                                        background: linear-gradient(90deg, #3a1c71 0%, #673cb7 100%);
+                                        border-radius: 3px;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Languages List
+                    .languages-list {
+                        .language-item {
+                            margin-bottom: 15px;
+
+                            .language-name {
+                                font-size: 14px;
+                                font-weight: 500;
+                                color: #444;
+                                margin-bottom: 5px;
+                            }
+
+                            .language-progress-container {
+                                display: flex;
+                                align-items: center;
+                                flex-direction: column;
+
+                                .language-level-text {
+                                    font-size: 12px;
+                                    color: #777;
+                                    margin-bottom: 5px;
+                                    align-self: flex-start;
+                                }
+
+                                .language-progress {
+                                    width: 100%;
+                                    height: 6px;
+                                    background-color: #e0e0e0;
+                                    border-radius: 3px;
+                                    overflow: hidden;
+
+                                    .language-progress-bar {
+                                        height: 100%;
+                                        background: linear-gradient(90deg, #ffd952 0%, #ffc107 100%);
+                                        border-radius: 3px;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Main Content
+            .cv27-main {
+                flex: 1;
+                padding: 40px;
+
+                .section {
+                    margin-bottom: 35px;
+
+                    .section-title {
+                        color: #3a1c71;
+                        font-size: 22px;
+                        font-weight: 600;
+                        margin: 0 0 20px;
+                        padding-bottom: 10px;
+                        border-bottom: 2px solid #eaeaea;
+                        position: relative;
+
+                        &:after {
+                            content: '';
+                            position: absolute;
+                            left: 0;
+                            bottom: -2px;
+                            width: 70px;
+                            height: 2px;
+                            background-color: #ffd952;
+                        }
+
+                        &.with-icon {
+                            display: flex;
+                            align-items: center;
+
+                            .section-icon {
+                                margin-right: 10px;
+                                color: #ffd952;
+                            }
+                        }
+                    }
+
+                    // Summary Section
+                    &.summary-section {
+                        margin-bottom: 30px;
+
+                        .summary-content {
+                            p {
+                                font-size: 15px;
+                                line-height: 1.6;
+                                color: #555;
+                                margin: 0;
+                                padding: 0 0 5px 0;
+                                border-left: 3px solid #ffd952;
+                                padding-left: 15px;
+                                white-space: pre-wrap;
+                                background-color: #fafafa;
+                                padding: 15px;
+                                border-radius: 0 5px 5px 0;
+                            }
+                        }
+                    }
+
+                    // Timeline (Work & Education)
+                    .timeline {
+                        position: relative;
+
+                        &:before {
+                            content: '';
+                            position: absolute;
+                            left: 10px;
+                            top: 5px;
+                            bottom: 0;
+                            width: 2px;
+                            background-color: #e0e0e0;
+                        }
+
+                        .timeline-item {
+                            position: relative;
+                            padding-left: 35px;
+                            margin-bottom: 30px;
+
+                            .timeline-marker {
+                                position: absolute;
+                                left: 0;
+                                top: 5px;
+                                width: 22px;
+                                height: 22px;
+                                border-radius: 50%;
+                                background-color: #fff;
+                                border: 2px solid #3a1c71;
+                                z-index: 1;
+
+                                &:before {
+                                    content: '';
+                                    position: absolute;
+                                    left: 5px;
+                                    top: 5px;
+                                    width: 8px;
+                                    height: 8px;
+                                    border-radius: 50%;
+                                    background-color: #ffd952;
+                                }
+                            }
+
+                            .timeline-content {
+                                background-color: #fafafa;
+                                border-radius: 5px;
+                                padding: 20px;
+                                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+                                .timeline-heading {
+                                    margin-bottom: 12px;
+
+                                    .timeline-title {
+                                        font-size: 17px;
+                                        font-weight: 600;
+                                        color: #3a1c71;
+                                        margin: 0 0 5px;
+                                    }
+
+                                    .timeline-subtitle {
+                                        display: flex;
+                                        justify-content: space-between;
+                                        flex-wrap: wrap;
+
+                                        .company {
+                                            font-size: 15px;
+                                            font-weight: 500;
+                                            color: #555;
+                                        }
+
+                                        .timeline-period {
+                                            font-size: 13px;
+                                            color: #777;
+                                            background-color: rgba(58, 28, 113, 0.05);
+                                            padding: 2px 8px;
+                                            border-radius: 3px;
+                                        }
+                                    }
+                                }
+
+                                .timeline-body {
+                                    p {
+                                        font-size: 14px;
+                                        line-height: 1.5;
+                                        color: #666;
+                                        margin: 0;
+                                        white-space: pre-wrap;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/* Rich Text Support for CV27 */
+.cv27-board {
+    p {
+        strong,
+        b {
+            font-weight: bold;
+        }
+        em,
+        i {
+            font-style: italic;
+        }
+        u {
+            text-decoration: underline;
+        }
+        ul,
+        ol {
+            margin: 6px 0;
+            padding-left: 1em;
+        }
+        li {
+            display: list-item;
+            margin: 0.1em 0;
+            padding-left: 0.2em;
+        }
+        ul {
+            list-style-type: disc;
+        }
+        ol {
+            list-style-type: decimal;
+        }
+        ul ul {
+            list-style-type: circle;
+            margin: 1px 0;
+            padding-left: 0.8em;
+        }
+        ol ol {
+            list-style-type: lower-alpha;
+            margin: 1px 0;
+            padding-left: 0.8em;
+        }
+    }
+}
+
+@media print {
+    body {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .cv27-board {
+        box-shadow: none;
+    }
+}

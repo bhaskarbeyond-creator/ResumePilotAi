@@ -1,0 +1,131 @@
+.dashboard-toast {
+    width: 350px;
+    height: 90px;
+    top: 50px;
+    color: #ffffff;
+    border-radius: 10px;
+    font-weight: bold;
+    position: fixed;
+    padding: 10px 10px;
+    box-sizing: border-box;
+    right: 40px;
+    z-index: 10000;
+    background-color: #ffffff;
+    // small shadow for the toast with big blur
+    box-shadow: 0px 0px 10px 0px rgba(206, 206, 206, 0.75);
+    
+    display: flex;
+
+    justify-content: center;
+    align-items: center;
+    .dashboard-toast-icon {
+        width: 20%;
+        display: flex;
+
+        .dashboard-toast-bar {
+            height: 50px;
+            width: 4px;
+            border-radius: 20px;
+            background-color: black;
+
+        }
+
+        .dashboard-toast-circle {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: black;
+            margin: auto;
+            margin-left: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            .dashboard-toast-symbol{
+                width: 20px;
+                height: 20px;
+                fill: white;
+            }
+
+        }
+    }
+
+    .dashboard-toast-content {
+        width: 80%;
+
+        color: #2E3037;
+        .dashboard-toast-content-title {
+            font-size: 1em;
+        }
+
+        .dashboard-toast-content-message {
+            font-size: 0.8em;
+            font-weight: 300;
+            color: #8E8F92;
+        }
+    }
+}
+
+
+
+
+
+
+
+.toast-success {
+  
+    .dashboard-toast-bar {
+        background-color: #21A478 !important;
+    }
+    
+    .dashboard-toast-circle {
+    
+        background-color: #21A478 !important;
+ 
+        .dashboard-toast-symbol{
+            width: 20px;
+            height: 20px;
+            fill: white;
+        }
+
+    }
+}
+
+
+.toast-error {
+  
+    .dashboard-toast-bar {
+        background-color: #e74c3c !important;
+    }
+    
+    .dashboard-toast-circle {
+    
+        background-color: #e74c3c !important;
+ 
+        .dashboard-toast-symbol{
+            width: 20px;
+            height: 20px;
+            fill: white;
+        }
+
+    }
+}
+
+.toast-warning {
+  
+    .dashboard-toast-bar {
+        background-color: #f1c40f !important;
+    }
+    
+    .dashboard-toast-circle {
+    
+        background-color: #f1c40f !important;
+ 
+        .dashboard-toast-symbol{
+            width: 20px;
+            height: 20px;
+            fill: white;
+        }
+
+    }
+    
+}

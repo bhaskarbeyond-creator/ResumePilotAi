@@ -1,0 +1,448 @@
+@use '../../components/variables' as *;
+@use 'sass:color';
+
+.cv18-container {
+    width: 21cm;
+    min-height: 29.7cm;
+    font-family: $font;
+    word-break: break-word;
+    background-color: #ffffff;
+    position: relative;
+    color: #2d3748;
+
+    --primary: #2c7a7b;
+    --primary-light: #e6fffa;
+    --accent: #f6ad55;
+    --dark: #2d3748;
+    --light: #f7fafc;
+    --gray: #a0aec0;
+    --border: #e2e8f0;
+
+    * {
+        box-sizing: border-box;
+    }
+
+    // Accent bar on the left side of the resume
+    .cv18-accent-bar {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 8px;
+        height: 100%;
+        background: linear-gradient(to bottom, var(--primary) 0%, var(--accent) 100%);
+    }
+
+    // Header section with name, title, and photo
+    .cv18-header {
+        padding: 25px 25px 25px 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--border);
+
+        .cv18-header-left {
+            .cv18-name {
+                font-size: 28px;
+                font-weight: 700;
+                margin: 0 0 3px 0;
+                color: var(--primary);
+                letter-spacing: -0.3px;
+            }
+
+            .cv18-occupation {
+                font-size: 15px;
+                color: var(--gray);
+                font-weight: 400;
+                margin: 0;
+            }
+        }
+
+        .cv18-header-right {
+            .cv18-photo {
+                width: 85px;
+                height: 85px;
+                border-radius: 6px;
+                object-fit: cover;
+                border: 2px solid var(--primary-light);
+            }
+
+            .cv18-photo-placeholder {
+                width: 85px;
+                height: 85px;
+                border-radius: 6px;
+                background-color: var(--primary-light);
+                color: var(--primary);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 28px;
+            }
+        }
+    }
+
+    // Two-column layout
+    .cv18-two-column {
+        display: flex;
+        min-height: calc(29.7cm - 135px); // Accounting for header height
+
+        // Main content (left column)
+        .cv18-main-column {
+            flex: 2;
+            padding: 22px 22px 22px 30px;
+
+            .cv18-section {
+                margin-bottom: 22px;
+
+                &:last-child {
+                    margin-bottom: 0;
+                }
+
+                .cv18-section-header {
+                    display: flex;
+                    align-items: center;
+                    margin-bottom: 15px;
+
+                    .cv18-section-icon {
+                        color: var(--primary);
+                        margin-right: 8px;
+                        font-size: 16px;
+                    }
+
+                    .cv18-section-title {
+                        font-size: 16px;
+                        font-weight: 600;
+                        color: var(--primary);
+                        margin: 0;
+                        text-transform: uppercase;
+                        letter-spacing: 0.8px;
+                    }
+                }
+
+                // Summary section
+                .cv18-summary {
+                    p {
+                        margin: 0;
+                        line-height: 1.5;
+                        color: var(--dark);
+                        font-size: 13px;
+                    }
+                }
+
+                // Experience items
+                .cv18-experience {
+                    .cv18-experience-item {
+                        position: relative;
+                        margin-bottom: 20px;
+                        padding-bottom: 20px;
+                        border-bottom: 1px dashed var(--border);
+
+                        &:last-child {
+                            margin-bottom: 0;
+                            padding-bottom: 0;
+                            border-bottom: none;
+                        }
+
+                        .cv18-experience-header {
+                            display: flex;
+                            margin-bottom: 10px;
+
+                            .cv18-time-period {
+                                min-width: 100px;
+                                padding: 4px 8px;
+                                background-color: var(--primary-light);
+                                border-radius: 3px;
+                                color: var(--primary);
+                                font-weight: 500;
+                                font-size: 12px;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                margin-right: 12px;
+                                white-space: nowrap;
+
+                                .cv18-separator {
+                                    margin: 0 4px;
+                                }
+                            }
+
+                            .cv18-experience-title {
+                                h3 {
+                                    font-size: 15px;
+                                    font-weight: 600;
+                                    margin: 0 0 3px 0;
+                                    color: var(--dark);
+                                }
+
+                                h4 {
+                                    font-size: 13px;
+                                    font-weight: 500;
+                                    margin: 0;
+                                    color: var(--gray);
+                                }
+                            }
+                        }
+
+                        .cv18-experience-content {
+                            p {
+                                margin: 0;
+                                line-height: 1.5;
+                                font-size: 13px;
+                                color: var(--dark);
+                            }
+                        }
+                    }
+                }
+
+                // Education items - similar styling to experience
+                .cv18-education {
+                    .cv18-education-item {
+                        position: relative;
+                        margin-bottom: 20px;
+                        padding-bottom: 20px;
+                        border-bottom: 1px dashed var(--border);
+
+                        &:last-child {
+                            margin-bottom: 0;
+                            padding-bottom: 0;
+                            border-bottom: none;
+                        }
+
+                        .cv18-education-header {
+                            display: flex;
+                            margin-bottom: 10px;
+
+                            .cv18-time-period {
+                                min-width: 100px;
+                                padding: 4px 8px;
+                                background-color: var(--primary-light);
+                                border-radius: 3px;
+                                color: var(--primary);
+                                font-weight: 500;
+                                font-size: 12px;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                margin-right: 12px;
+                                white-space: nowrap;
+
+                                .cv18-separator {
+                                    margin: 0 4px;
+                                }
+                            }
+
+                            .cv18-education-title {
+                                h3 {
+                                    font-size: 15px;
+                                    font-weight: 600;
+                                    margin: 0 0 3px 0;
+                                    color: var(--dark);
+                                }
+
+                                h4 {
+                                    font-size: 13px;
+                                    font-weight: 500;
+                                    margin: 0;
+                                    color: var(--gray);
+                                }
+                            }
+                        }
+
+                        .cv18-education-content {
+                            p {
+                                margin: 0;
+                                line-height: 1.5;
+                                font-size: 13px;
+                                color: var(--dark);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Side column (right)
+        .cv18-side-column {
+            flex: 1;
+            background-color: var(--light);
+            padding: 22px;
+            border-left: 1px solid var(--border);
+
+            // Contact info
+            .cv18-contact-info {
+                background-color: white;
+                padding: 15px;
+                border-radius: 6px;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+                margin-bottom: 22px;
+
+                .cv18-contact-item {
+                    display: flex;
+                    align-items: flex-start;
+                    margin-bottom: 10px;
+
+                    &:last-child {
+                        margin-bottom: 0;
+                    }
+
+                    .cv18-contact-icon {
+                        margin-right: 8px;
+                        color: var(--primary);
+                        min-width: 14px;
+                        margin-top: 3px;
+                        font-size: 13px;
+                    }
+
+                    .cv18-contact-text {
+                        font-size: 13px;
+                        color: var(--dark);
+                        line-height: 1.4;
+                    }
+                }
+            }
+
+            .cv18-side-section {
+                margin-bottom: 22px;
+
+                &:last-child {
+                    margin-bottom: 0;
+                }
+
+                .cv18-section-header {
+                    display: flex;
+                    align-items: center;
+                    margin-bottom: 12px;
+
+                    .cv18-section-icon {
+                        color: var(--primary);
+                        margin-right: 8px;
+                        font-size: 14px;
+                    }
+
+                    .cv18-section-title {
+                        font-size: 14px;
+                        font-weight: 600;
+                        color: var(--primary);
+                        margin: 0;
+                        text-transform: uppercase;
+                        letter-spacing: 0.8px;
+                    }
+                }
+
+                // Skills
+                .cv18-skills {
+                    .cv18-skill-item {
+                        margin-bottom: 12px;
+
+                        &:last-child {
+                            margin-bottom: 0;
+                        }
+
+                        .cv18-skill-info {
+                            display: flex;
+                            justify-content: space-between;
+                            margin-bottom: 4px;
+
+                            .cv18-skill-name {
+                                font-size: 13px;
+                                color: var(--dark);
+                            }
+
+                            .cv18-skill-level {
+                                font-size: 12px;
+                                color: var(--primary);
+                                font-weight: 500;
+                            }
+                        }
+
+                        .cv18-skill-bar {
+                            height: 5px;
+                            background-color: #e2e8f0;
+                            border-radius: 3px;
+                            overflow: hidden;
+
+                            .cv18-skill-progress {
+                                height: 100%;
+                                background: linear-gradient(to right, var(--primary) 0%, var(--accent) 100%);
+                                border-radius: 3px;
+                            }
+                        }
+                    }
+                }
+
+                // Languages
+                .cv18-languages {
+                    .cv18-language-item {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding: 6px 0;
+                        border-bottom: 1px solid var(--border);
+
+                        &:last-child {
+                            border-bottom: none;
+                        }
+
+                        .cv18-language-name {
+                            font-size: 13px;
+                            color: var(--dark);
+                        }
+
+                        .cv18-language-level-badge {
+                            font-size: 11px;
+                            padding: 2px 7px;
+                            background-color: var(--primary-light);
+                            color: var(--primary);
+                            border-radius: 10px;
+                            font-weight: 500;
+                            letter-spacing: 0.5px;
+                            text-transform: uppercase;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/* Rich Text Support for CV18 */
+.cv18-container {
+    p {
+        strong,
+        b {
+            font-weight: bold;
+        }
+        em,
+        i {
+            font-style: italic;
+        }
+        u {
+            text-decoration: underline;
+        }
+        ul,
+        ol {
+            margin: 6px 0;
+            padding-left: 1em;
+        }
+        li {
+            display: list-item;
+            margin: 0.1em 0;
+            padding-left: 0.2em;
+        }
+        ul {
+            list-style-type: disc;
+        }
+        ol {
+            list-style-type: decimal;
+        }
+        ul ul {
+            list-style-type: circle;
+            margin: 1px 0;
+            padding-left: 0.8em;
+        }
+        ol ol {
+            list-style-type: lower-alpha;
+            margin: 1px 0;
+            padding-left: 0.8em;
+        }
+    }
+}

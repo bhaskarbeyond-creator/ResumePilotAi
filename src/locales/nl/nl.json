@@ -1,0 +1,2562 @@
+{
+  "intro": {
+    "titleLeft": "Je cv in drie",
+    "titleSpan": "eenvoudige",
+    "titleRight": "stappen",
+    "step1": "Kies een sjabloon uit onze collectie.",
+    "step2": "Bouw je cv met onze eenvoudig te gebruiken cv-maker.",
+    "step3": "Download je cv.",
+    "login": "Inloggen",
+    "selectTemplate": "Sjabloon Selecteren",
+    "rightReserved": "Alle Rechten Voorbehouden"
+  },
+  "selectionAction": {
+    "titleLeft": "Selecteer een",
+    "titleSpan": "sjabloon",
+    "titleRight": "uit de lijst.",
+    "templates": "Sjablonen",
+    "account": "Mijn Account",
+    "admin": "Admin"
+  },
+  "form": {
+    "untitled": "Zonder titel",
+    "profileCompleteness": "Profiel Volledigheid",
+    "personalDetails": "Persoonlijke Gegevens",
+    "firstName": "Voornaam",
+    "lastName": "Achternaam",
+    "email": "E-mail",
+    "phone": "Telefoon",
+    "photo": "Foto",
+    "occupation": "Beroep",
+    "country": "Land",
+    "nationality": "Nationaliteit",
+    "city": "Stad",
+    "address": "Adres",
+    "postalcode": "Postcode",
+    "dateOfBirth": "Geboortedatum",
+    "drivingLicense": "Rijbewijs",
+    "profesionalSummary": "Professionele Samenvatting",
+    "profesionalSummarySubtitle": "Korte samenvatting over je algehele ervaring.",
+    "employmentHistory": "Werkervaring",
+    "employmentHistorySubtitle": "Voeg hier je laatste 10 jaar relevante werkervaring en data toe. Vermeld je meest recente functie eerst.",
+    "jobTitle": "Functietitel",
+    "employer": "Werkgever",
+    "begin": "Start",
+    "end": "Einde",
+    "description": "Beschrijving",
+    "education": "Opleiding",
+    "educationSubtitle": "Voeg hier je laatste 10 jaar opleidingsgeschiedenis en data toe. Vermeld je meest recente positie eerst.",
+    "school": "School",
+    "degree": "Diploma",
+    "courseDescription": "Cursus Beschrijving",
+    "languages": "Talen",
+    "laguagesSubtitle": "Vul de talen in waarin je kunt werken.",
+    "language": "Taal",
+    "level": "Niveau",
+    "skills": "Vaardigheden",
+    "skillsSubtitle": "Voer je vaardigheden in en geef elk een beoordeling.",
+    "skillName": "Vaardigheidsnaam",
+    "rating": "Beoordeling",
+    "addSkill": "Vaardigheid Toevoegen",
+    "addLanguage": "Taal Toevoegen",
+    "addJob": "Baan Toevoegen",
+    "addEducation": "Opleiding Toevoegen",
+    "showDetails": "Toon extra details",
+    "hideDetails": "Verberg extra details",
+    "previous": "Vorige",
+    "next": "Volgende",
+    "selectTemplate": "Sjabloon Selecteren",
+    "save": "Opslaan",
+    "download": "Downloaden"
+  },
+  "login": {
+    "login": "Inloggen",
+    "email": "E-mail",
+    "googleLogin": "Inloggen met ",
+    "facebookLogin": "Inloggen met",
+    "or": "Of",
+    "password": "Wachtwoord",
+    "passwordRepeat": "Wachtwoord Herhalen",
+    "dontHaveAcc": "Heb je nog geen account? ",
+    "signup": "Aanmelden",
+    "passwordLost": "Wachtwoord vergeten? ",
+    "recoverPassword": "Wachtwoord Herstellen",
+    "register": "Registreren",
+    "alreadyHaveAccount": "Heb je al een account?",
+    "passwordRecovery": "Wachtwoord Herstel",
+    "recoverMyPassword": "Mijn Wachtwoord Herstellen"
+  },
+  "dashboard": {
+    "homepage": "Homepage",
+    "dashboard": "Dashboard",
+    "coverLetter": "Motivatiebrief",
+    "dashBoard": "Dashboard",
+    "goToResume": "Ga Naar Cv",
+    "remove": "Verwijderen",
+    "addNew": "Nieuw Toevoegen",
+    "addResume": "Cv Toevoegen",
+    "accountSettings": "Account Instellingen",
+    "logout": "Uitloggen",
+    "settings": "Instellingen",
+    "personalInfo": "PERSOONLIJKE INFORMATIE",
+    "firstname": "Voornaam",
+    "lastname": "Achternaam",
+    "changePassword": "WACHTWOORD WIJZIGEN",
+    "newPassword": "Nieuw Wachtwoord",
+    "save": "Opslaan",
+    "commingSoon": "Binnenkort beschikbaar",
+    "adsManager": "Advertentiebeheer",
+    "currentAds": "Huidige Advertenties",
+    "name": "Naam",
+    "date": "Datum",
+    "bannerLink": "Banner Link",
+    "bannerName": "Banner Naam",
+    "destinationLink": "Bestemmingslink",
+    "add": "Toevoegen",
+    "noAdsFound": "Geen advertenties gevonden!",
+    "pages": "Pagina's",
+    "currentPages": "Huidige Pagina's",
+    "addPages": "Pagina's Toevoegen",
+    "pageName": "Pagina Naam",
+    "addPage": "Pagina Toevoegen"
+  },
+  "resume": {
+    "personalSummary": "Persoonlijke Samenvatting",
+    "employmentHistory": "Werkervaring",
+    "educationHistory": "Opleiding Geschiedenis",
+    "info": "Info",
+    "address": "Adres",
+    "phone": "Telefoon",
+    "email": "E-mail",
+    "languages": "Talen",
+    "skills": "Vaardigheden"
+  },
+  "Language": {
+    "elemntary": "Beginner",
+    "Intermediate": "Gemiddeld",
+    "Advanced": "Gevorderd",
+    "Proficient": "Bekwaam"
+  },
+  "dashNew": {
+    "noDocumentFound": "Geen document gevonden!",
+    "noDocumentFoundSub": "Je kunt beginnen door een nieuw cv of een nieuwe motivatiebrief te maken",
+    "personalDetails": "Persoonlijke Gegevens",
+    "name": "Naam",
+    "email": "E-mail",
+    "phone": "Telefoon",
+    "address": "Adres",
+    "city": "Stad",
+    "country": "Land",
+    "postalcode": "Postcode",
+    "skills": "Vaardigheden",
+    "searchDocuments": "Documenten Zoeken",
+    "resume": "Cv",
+    "coverLetter": "Motivatiebrief",
+    "clearAll": "Alles Wissen",
+    "filter": "Filteren",
+    "noSkillsAdded": "Geen vaardigheden toegevoegd",
+    "shareDocument": "Deel dit document",
+    "link": "Link",
+    "linkDesc": "Je kunt deze deelbare link gebruiken om iedereen dit document te laten bekijken",
+    "copy": "Kopiëren",
+    "copied": "Gekopieerd",
+    "quickAccess": "Snelle Toegang",
+    "quickAccessDesc": "In deze sectie vind je alle acties die je kunt uitvoeren op je documenten en je account.",
+    "createDocument": "Document Maken",
+    "favourites": "Favorieten",
+    "settings": "Instellingen",
+    "statistics": "Statistieken",
+    "statisticsDesc": "Hier zie je je statistieken, hoeveel documenten je hebt gegenereerd, hoeveel downloads je hebt",
+    "documentsGenerated": "Gegenereerde Documenten",
+    "downloads": "Downloads",
+    "favouitesDesc": "Dit is een lijst met je favoriete documenten, je kunt ze hier verwijderen.",
+    "noFavouritesFound": "Je hebt nog geen favorieten!",
+    "fullName": "Volledige Naam",
+    "type": "Type",
+    "summary": "Samenvatting",
+    "close": "Sluiten",
+    "profil": "Profiel",
+    "account": "Account",
+    "upload": "Uploaden",
+    "remove": "Verwijderen",
+    "fullNameDesc": "We gebruiken het bij het maken van het cv",
+    "emailDesc": "Om in te loggen bij de applicatie",
+    "description": "Beschrijving",
+    "descriptionDesc": "Je accounttype",
+    "changePassword": "Wachtwoord Wijzigen",
+    "newPassword": "Nieuw Wachtwoord",
+    "sbsend": "Abonnement Eindigt",
+    "sbsendDesc": "De datum waarop je abonnement eindigt",
+    "profileUpdated": "Profiel bijgewerkt",
+    "profileUpdatedDesc": "Profiel succesvol bijgewerkt",
+    "passChanged": "Wachtwoord gewijzigd",
+    "passChangedDesc": "Wachtwoord succesvol gewijzigd",
+    "passError": "Wachtwoord te kort",
+    "passErrorDesc": "Wachtwoord moet minimaal 6 tekens lang zijn",
+    "profile": "Profiel"
+  },
+  "static": {
+    "plansHeader": "Eenvoudige, transparante prijzen",
+    "plansDesc": "Om je cv te downloaden, meld je je eenvoudig aan voor een Premium lidmaatschap. Kies het plan dat het beste bij jou past.",
+    "month": "Maand",
+    "premiumMonth": "Premium Maandelijks",
+    "premiumYear": "Premium 6 Maanden",
+    "premiumHalfYear": "Premium Jaarlijks",
+    "unlimitedPDF": "Onbeperkt PDF Downloads",
+    "unlimitedResumes": "Onbeperkt Cv's",
+    "nonRecuring": "Niet-terugkerende betaling.",
+    "upgradeAndDownload": "Upgraden en Downloaden",
+    "payment1": "Krijg je droombaan",
+    "payment2": "Betaling via een vertrouwde betalingsdienst",
+    "payment3": "SSL Beveiligd / 256-bit SSL beveiligde checkout",
+    "payment4": "7 dagen geld-terug-garantie",
+    "payment5": "Hoe kan ik annuleren?",
+    "payment6": "Je kunt je abonnement eenvoudig opzeggen door contact op te nemen met onze klantenservice via e-mail of telefoon, of via onze contactpagina.",
+    "payment7": "Geaccepteerde Betaalmethoden",
+    "payment8": "Totaal vandaag verschuldigd:",
+    "payment9": "Waar ben je gevestigd?",
+    "payment10": "Vul hieronder je land en postcode in. We verzamelen deze informatie om fraude te bestrijden en de veiligheid van je betaling te garanderen.",
+    "payment11": "Land",
+    "payment12": "Postcode",
+    "payment13": "Betalen met kaart",
+    "payment14": "terug",
+    "payment15": "Kaarthouder",
+    "payment16": "Adres",
+    "nav1": "Ga naar App",
+    "nav2": "Contacteer Ons",
+    "footer1": "Sociaal",
+    "footer2": "Contacteer Ons",
+    "footer3": "Privacybeleid",
+    "footer4": "Volg ons op sociale media voor exclusieve bronnen direct in je feed",
+    "footer5": "Over",
+    "footer6": "Copyright © 2021-2022 Alle rechten voorbehouden.",
+    "footer7": "Inhoud",
+    "footer8": "Home"
+  },
+  "navbar": {
+    "home": "Home",
+    "featuresNav": "Functies",
+    "resumeBuilderFeatures": "Cv Maker Functies",
+    "featureTagline": "Alles wat je nodig hebt voor het perfecte cv",
+    "userCount": "50K+ gebruikers",
+    "exploreFeatures": "Ontdek Alle Functies",
+    "freeToTry": "Gratis te proberen",
+    "startBuilding": "Begin met bouwen",
+    "pricing": "Prijzen",
+    "contact": "Contact",
+    "signOut": "Uitloggen",
+    "dashboard": "Dashboard",
+    "signIn": "Inloggen",
+    "getStarted": "Beginnen",
+    "viewAllFeatures": "Bekijk alle functies",
+    "popular": "Populair",
+    "features": {
+      "atsOptimization": {
+        "title": "ATS Optimalisatie",
+        "description": "Versla geautomatiseerde screeningsystemen",
+        "badge": "Slim"
+      },
+      "aiBuilder": {
+        "title": "AI Content Maker",
+        "description": "AI-gestuurd cv schrijven",
+        "badge": "AI"
+      },
+      "templates": {
+        "title": "Professionele Sjablonen",
+        "description": "Moderne, sector-specifieke ontwerpen"
+      },
+      "export": {
+        "title": "Multi-formaat Exporteren",
+        "description": "PDF, DOCX en meer formaten"
+      },
+      "security": {
+        "title": "Privacy en Beveiliging",
+        "description": "Gegevensbescherming op bankniveau",
+        "badge": "Veilig"
+      },
+      "analytics": {
+        "title": "Carrière Analyse",
+        "description": "Volg je sollicitatiesucces",
+        "badge": "Pro"
+      }
+    },
+    "resources": {
+      "learn": "Leren",
+      "documentation": {
+        "title": "Documentatie",
+        "description": "Complete handleidingen en API-referenties"
+      },
+      "videoTutorials": {
+        "title": "Video Tutorials",
+        "description": "Leer met stap-voor-stap video's"
+      },
+      "designCourse": {
+        "title": "Design Cursus",
+        "description": "Beheers de grondbeginselen van logo-ontwerp",
+        "badge": "Gratis"
+      },
+      "community": "Community",
+      "communityForum": {
+        "title": "Community Forum",
+        "description": "Kom in contact met andere ontwerpers"
+      },
+      "blog": {
+        "title": "Blog",
+        "description": "Laatste designtrends en tips"
+      },
+      "support": "Ondersteuning",
+      "helpCenter": {
+        "title": "Helpcentrum",
+        "description": "Vind antwoorden op veelgestelde vragen"
+      },
+      "faq": {
+        "title": "FAQ",
+        "description": "Veelgestelde vragen"
+      },
+      "contactUs": {
+        "title": "Contacteer Ons",
+        "description": "Neem contact op met ons team"
+      }
+    },
+    "blog": "Blog"
+  },
+  "homepageText": {
+    "text1": "Onderscheid Je van de Massa met Onze Online Cv Maker",
+    "text2": "Onze cv maker is de perfecte tool om je te helpen in slechts enkele minuten een professioneel, gepolijst cv te maken. Met ons intuïtieve ontwerp en eenvoudige stap-voor-stap proces kun je gemakkelijk een cv bouwen dat zich onderscheidt van de concurrentie. Of je nu net bent afgestudeerd of een ervaren professional bent, onze webapplicatie heeft alles wat je nodig hebt om je carrière naar een hoger niveau te tillen.",
+    "text3": "Cv",
+    "text4": "Motivatiebrief",
+    "text5": "Beoordelingen",
+    "text6": "Selecteer wat je wilt maken.",
+    "text7": "Beoordelingen",
+    "text8": "Versterk Je Cv met Onze Geavanceerde Functies",
+    "text9": "Onze cv maker biedt een verscheidenheid aan functies om gebruikers te helpen bij het maken van een professioneel en effectief cv. Dit omvat suggesties voor voorbedrukte zinnen, deelbare link, PDF-export, aanpasbare sjablonen, automatisch opslaan, spellingscontrole, bijhouden van wijzigingen, samenwerking en bronnen voor personal branding. Al deze functies maken het creëren van een professioneel cv eenvoudig en efficiënt."
+  },
+  "HomepageHero": {
+    "typingEffect": {
+      "sentence1": "Maak professionele cv's met AI",
+      "sentence2": "Kies uit meer dan 50 deskundige sjablonen",
+      "sentence3": "Krijg intelligente schrijfhulp",
+      "sentence4": "Bekijk wijzigingen in realtime",
+      "sentence5": "Uitblinken in sollicitatiegesprekken met AI-voorbereidingstools"
+    },
+    "badge": "AI-gestuurde Cv Maker",
+    "description": "Maak verbluffende, ATS-vriendelijke cv's en motivatiebrieven met AI-assistentie. Kies uit professionele sjablonen, krijg realtime feedback en land je droombaan sneller.",
+    "createResume": "Cv Maken",
+    "createCoverLetter": "Motivatiebrief Maken",
+    "stats": {
+      "users": "5.000+ tevreden gebruikers",
+      "rating": "4.9/5"
+    },
+    "features": {
+      "freeToStart": "Gratis om te beginnen",
+      "noCreditCard": "Geen creditcard nodig"
+    },
+    "quick": "Snel",
+    "quickDesc": "Kies sjabloon en schrijf",
+    "guided": "Stap-voor-stap",
+    "guidedDesc": "Stap-voor-stap met AI",
+    "portfolio": "Portfolio",
+    "portfolioDesc": "Drag & drop website builder"
+  },
+  "HomepageTrustedBy": {
+    "badge": "COMPATIBEL MET LEIDENDE PLATFORMS",
+    "title": "Werkt Naadloos Samen Met Branchedige Tools",
+    "description": "Onze AI-gestuurde cv maker integreert met populaire platforms en tools die wereldwijd door professionals worden gebruikt.",
+    "trustIndicators": {
+      "platforms": "Compatibel met meer dan 30 grote platforms",
+      "countries": "Gebruikt in meer dan 120 landen",
+      "technology": "Branchedige technologie"
+    }
+  },
+  "HomepageSteps": {
+    "badge": "BEWEZEN RESULTATEN • VERTROUWD DOOR 50K+ PROFESSIONALS",
+    "title": {
+      "part1": "Transformeer",
+      "part2": "Je Carrière",
+      "part3": "Reis"
+    },
+    "description": "Sluit je aan bij duizenden professionals die hun carrière hebben versneld met onze AI-gestuurde cv maker. Word opgemerkt, krijg sollicitatiegesprekken en verzeker je droombaan sneller dan ooit tevoren.",
+    "benefits": [
+      {
+        "title": "Krijg Meer Sollicitatiegesprekken",
+        "description": "Onze ATS-geoptimaliseerde sjablonen en AI-gestuurde inhoudssuggesties helpen je cv langs geautomatiseerde screeningsystemen te komen en in handen te komen van wervingsmanagers.",
+        "detail": "Sluit je aan bij duizenden professionals die hun interviewpercentage met 3x hebben verhoogd met ons bewezen systeem."
+      },
+      {
+        "title": "Onderscheid Je Van De Concurrentie",
+        "description": "Met professionele ontwerpen en overtuigende inhoudsaanbevelingen toon je je unieke waardepropositie en word je sneller opgemerkt door recruiters.",
+        "detail": "Onze slimme opmaak en trefwoordoptimalisatie zorgen ervoor dat je cv in enkele seconden de aandacht trekt."
+      },
+      {
+        "title": "Bouw Vertrouwen Op In Je Zoektocht Naar Werk",
+        "description": "Presenteer je beste professionele zelf met een gepolijst, foutloos cv dat je ware potentieel en professionele prestaties weerspiegelt.",
+        "detail": "Voel je zelfverzekerd wetende dat je sollicitatiedocumenten professioneel zijn opgesteld en voldoen aan de branchestandaarden."
+      }
+    ],
+    "stats": [
+      {
+        "number": "50K+",
+        "label": "Tevreden Gebruikers"
+      },
+      {
+        "number": "98.7%",
+        "label": "Succespercentage"
+      },
+      {
+        "number": "50+",
+        "label": "Sjablonen"
+      },
+      {
+        "number": "24 uur",
+        "label": "Gem. Tijd"
+      }
+    ],
+    "badges": {
+      "aiPowered": {
+        "title": "AI-gestuurd",
+        "subtitle": "Slimme Cv Maker"
+      },
+      "atsOptimized": {
+        "title": "✓",
+        "subtitle": "ATS Geoptimaliseerd"
+      }
+    },
+    "cta": {
+      "title": "Klaar Om Je Droombaan Te Vinden?",
+      "description": "Sluit je aan bij meer dan 50.000 professionals die hun carrière hebben getransformeerd. Begin vandaag nog met het bouwen van je winnende cv.",
+      "button": "Start Je Succesverhaal",
+      "noCredit": "✨ Geen creditcard vereist • Inclusief gratis sjablonen"
+    }
+  },
+  "HomepageReviews": {
+    "badge": "KLANTBEOORDELINGEN",
+    "title": {
+      "part1": "Wat Onze ",
+      "part2": "Gebruikers",
+      "part3": " Zeggen"
+    },
+    "description": "Sluit je aan bij duizenden tevreden werkzoekenden die hun droombaan hebben gevonden met onze AI-gestuurde cv maker.",
+    "navigation": {
+      "previous": "Vorige",
+      "next": "Volgende",
+      "slideLabel": "Ga naar dia {{number}}",
+      "pauseAutoplay": "Automatische afspeelonderbreken",
+      "startAutoplay": "Automatische afspeelstarten"
+    },
+    "review": {
+      "category": "Technologie",
+      "verifiedBadge": "Geverifieerde Gebruiker",
+      "avatarAlt": "Profielfoto van {{name}}",
+      "dateFormat": "DD/MM/JJJJ"
+    }
+  },
+  "HomepagePricing": {
+    "badge": "PRIJSPLANNEN",
+    "header": "Kies Het Perfecte Plan Voor Jouw Behoeften",
+    "description": "Krijg onbeperkte toegang tot professionele sjablonen en geavanceerde functies met onze flexibele prijsopties.",
+    "plans": {
+      "monthly": {
+        "title": "Premium Maandelijks",
+        "description": "Betaal {{currency}}{{price}} voor 1 maand",
+        "perMonth": "maand"
+      },
+      "halfYear": {
+        "title": "Premium Halfjaarlijks",
+        "description": "Betaal {{currency}}{{price}} voor 6 maanden",
+        "perMonth": "maand",
+        "mostPopular": "🔥 Meest Populair"
+      },
+      "yearly": {
+        "title": "Premium Jaarlijks",
+        "description": "{{currency}}{{price}} voor 1 Jaar",
+        "perMonth": "maand"
+      }
+    },
+    "features": {
+      "unlimitedPDF": "Onbeperkt PDF Downloads",
+      "unlimitedResumes": "Onbeperkt Cv's",
+      "nonRecurring": "Niet-terugkerende Betaling"
+    },
+    "upgradeButton": "Nu Upgraden en Downloaden",
+    "upgradeButtonStar": "Nu Upgraden en Downloaden ⭐"
+  },
+  "Homepagefaqs": {
+    "badge": "KENNISBANK",
+    "header": "Vind Je Antwoord Direct",
+    "subtitle": "Alles wat je moet weten over het maken van professionele cv's met AI",
+    "quickStats": {
+      "resumesCreated": "Cv's Gemaakt",
+      "avgBuildTime": "Gem. Cv Bouwtijd",
+      "satisfaction": "Klanttevredenheid",
+      "support": "Ondersteuning Beschikbaar"
+    },
+    "search": {
+      "placeholder": "Zoek naar antwoorden...",
+      "categories": "Categorieën"
+    },
+    "categoryNames": {
+      "allQuestions": "Alle vragen",
+      "gettingStarted": "Aan de slag",
+      "features": "Functies",
+      "billing": "Facturering",
+      "technical": "Technisch"
+    },
+    "popularBadge": "Populair",
+    "helpfulQuestion": "Was dit nuttig?",
+    "noResults": {
+      "title": "Geen resultaten gevonden",
+      "message": "Probeer je zoektermen of categoriefilter aan te passen"
+    },
+    "contactSupport": {
+      "title": "Nog steeds hulp nodig?",
+      "description": "Ons ondersteuningsteam staat 24/7 voor je klaar om je te helpen slagen",
+      "contactButton": "Contacteer Ondersteuning",
+      "docsButton": "Blader door Docs"
+    },
+    "cta": {
+      "badge": "Klaar om je cv te maken?",
+      "title": "Transformeer Je Carrière met AI-gestuurde Cv's",
+      "description": "Sluit je aan bij duizenden professionals die in enkele seconden verbluffende cv's hebben gemaakt. Begin vandaag nog met je carrière met ons intelligente ontwerpplatform.",
+      "button": "Begin Gratis Met Maken",
+      "freeCredits": "3 gratis credits • Geen creditcard vereist",
+      "support": "24/7 Ondersteuning",
+      "secure": "Veilig en Privé",
+      "instant": "Directe Resultaten"
+    },
+    "trustIndicators": {
+      "secure": "Veilig en Privé",
+      "instant": "Directe Resultaten",
+      "support": "24/7 Ondersteuning"
+    },
+    "q1": {
+      "question": "Hoe begin ik met AI-cv-generatie?",
+      "answer": "Meld je gratis aan, vul je gegevens in en zie hoe onze AI binnen enkele seconden een prachtig cv maakt."
+    },
+    "q2": {
+      "question": "Hoe snel is het cv-generatieproces?",
+      "answer": "Onze AI genereert meerdere cv-variaties in minder dan 5 minuten!"
+    },
+    "q3": {
+      "question": "Wat is inbegrepen in het gratis abonnement?",
+      "answer": "Nieuwe gebruikers krijgen gratis credits om cv's te maken en te downloaden in PDF- en Word-formaat."
+    },
+    "q4": {
+      "question": "Kan ik het gegenereerde cv aanpassen?",
+      "answer": "Ja! Je kunt eenvoudigstijlen, kleuren en lay-outs aanpassen."
+    },
+    "q5": {
+      "question": "Welke bestandsindelingen bieden jullie aan?",
+      "answer": "Alle cv's zijn beschikbaar in hoogwaardige PDF- en Word-indelingen."
+    },
+    "q6": {
+      "question": "Hoe werkt het creditsysteem?",
+      "answer": "Elke generatie kost 1 credit. Credits verlopen nooit."
+    }
+  },
+  "HomepageFooter": {
+    "headings": {
+      "aboutUs": "Over Ons",
+      "quickLinks": "Snelle Links",
+      "stayUpdated": "Blijf Op De Hoogte",
+      "securePayments": "Veilige Betalingen"
+    },
+    "aboutText": "We helpen werkzoekenden binnen enkele minuten professionele cv's te maken. Onze missie is om individuen in staat te stellen hun droombaan te vinden met hoogwaardige, door AI gemaakte sollicitatiedocumenten.",
+    "links": {
+      "pricing": "Prijzen",
+      "contact": "Contact"
+    },
+    "newsletter": {
+      "description": "Abonneer je op onze nieuwsbrief voor de laatste carriertips, cv-advies en functie-updates.",
+      "placeholder": "Voer je e-mailadres in",
+      "buttonText": "Abonneren",
+      "privacyNote": "Wij respecteren je privacy"
+    },
+    "paymentMethods": {
+      "visa": "visa",
+      "mastercard": "mastercard",
+      "paypal": "paypal",
+      "applepay": "applepay",
+      "googlepay": "googlepay",
+      "discover": "discover"
+    },
+    "legal": {
+      "privacyPolicy": "Privacybeleid",
+      "termsOfService": "Servicevoorwaarden",
+      "cookiePolicy": "Cookiebeleid",
+      "allRightsReserved": "Alle rechten voorbehouden."
+    }
+  },
+  "ActionSelection": {
+    "templateHeading": "Kies Je Perfecte",
+    "templateHeadingSpan": "Sjabloon",
+    "templateDescription": "Kies uit onze professioneel ontworpen sjablonen om een cv te maken dat eruit springt",
+    "coverLetterHeading": "Selecteer Je",
+    "coverLetterHeadingSpan": "Motivatiebrief",
+    "coverLetterDescription": "Kies een sjabloon voor je motivatiebrief dat je cv aanvult",
+    "search": {
+      "searchTemplates": "Sjablonen zoeken...",
+      "searchCoverLetters": "Motivatiebrieven zoeken...",
+      "noTemplatesFound": "Geen sjablonen gevonden",
+      "noTemplatesFoundDescription": "Probeer je zoekcriteria aan te passen of blader door verschillende categorieën",
+      "clearFilters": "Filters wissen",
+      "resultsInfo": "sjablonen • Tonen",
+      "resultsCount": "resultaten",
+      "selectedTemplate": "geselecteerd"
+    },
+    "categories": {
+      "all": "Alle",
+      "modern": "Modern",
+      "professional": "Professioneel",
+      "creative": "Creatief",
+      "simple": "Eenvoudig",
+      "standard": "Standaard"
+    },
+    "sortBy": {
+      "label": "Sorteren op",
+      "popular": "Populair",
+      "name": "Naam",
+      "newest": "Nieuwste"
+    },
+    "viewMode": {
+      "grid": "Rasterweergave",
+      "list": "Lijstweergave"
+    },
+    "templateCards": {
+      "popular": "Populair",
+      "select": "Selecteren",
+      "selectTemplate": "Sjabloon Selecteren",
+      "popularity": "% populair",
+      "templateDescriptions": {
+        "professionalClassic": "Strak en traditioneel ontwerp, perfect voor zakelijke omgevingen",
+        "modernCreative": "Hedendaagse lay-out met creatieve elementen",
+        "simpleElegant": "Minimalistisch ontwerp met focus op duidelijkheid van de inhoud",
+        "creativeBold": "Artistiek sjabloon voor creatieve professionals",
+        "executivePro": "Verfijnd ontwerp voor senior functies",
+        "techModern": "Modern sjabloon, perfect voor de tech-industrie",
+        "designerSpecial": "Unieke lay-out voor ontwerpprofessionals",
+        "cleanSimple": "Eenvoudig en professioneel",
+        "corporateElite": "Premium bedrijfssjabloon",
+        "startupReady": "Dynamisch sjabloon voor startup-cultuur",
+        "creativePro": "Professioneel creatief sjabloon",
+        "minimalPro": "Schoon minimalistisch professioneel ontwerp",
+        "businessClassic": "Traditioneel bedrijfssjabloon",
+        "modernEdge": "Baanbrekend modern ontwerp",
+        "artistPortfolio": "Perfect voor creatieve portfolio's",
+        "standardProfessional": "Klassiek motivatiebrief formaat",
+        "modernAppeal": "Hedendaags motivatiebrief ontwerp",
+        "businessStandard": "Traditioneel zakelijk formaat",
+        "creativeModern": "Moderne creatieve motivatiebrief"
+      }
+    },
+    "preview": {
+      "useTemplate": "Sjabloon Gebruiken",
+      "cancel": "Annuleren"
+    },
+    "pagination": {
+      "prev": "Vorige",
+      "next": "Volgende"
+    },
+    "loading": {
+      "processingTemplate": "Sjabloon Verwerken",
+      "settingUp": "Geselecteerd sjabloon instellen..."
+    }
+  },
+  "ProfileDisplay": {
+    "appName": "Nolito",
+    "search": "Zoeken",
+    "navigation": "NAVIGATIE",
+    "menu": {
+      "dashboard": "Dashboard",
+      "interviews": "Sollicitatiegesprekken",
+      "settings": "Instellingen"
+    }
+  },
+  "DashboardHomepage": {
+    "greeting": "Hallo! 👋",
+    "completeSteps": "Voltooi deze stappen om je volgende functie te vinden",
+    "stepsCompletion": "voltooid",
+    "showButton": "Tonen",
+    "tabs": {
+      "resumes": "Cv's",
+      "coverLetters": "Motivatiebrieven"
+    },
+    "actions": {
+      "createNew": "Nieuw Maken",
+      "editResume": "Cv Bewerken",
+      "shareResume": "Cv Delen",
+      "delete": "Verwijderen",
+      "createNewDocument": "Nieuw Document Maken"
+    },
+    "promotion": {
+      "title": "Klaar om je zoektocht naar werk een boost te geven en meer bekendheid te krijgen?",
+      "description": "Kies je cv en we sturen het met slechts een paar klikken naar honderden recruiters in jouw vakgebied",
+      "startNow": "Nu Starten"
+    },
+    "card": {
+      "created": "Gemaakt",
+      "untitledResume": "Cv Zonder Titel",
+      "aiJobMatching": "AI Job Matching",
+      "new": "NIEUW",
+      "newResumeTitle": "Nieuw Cv",
+      "newResumeDescription": "Maak een op maat gemaakt cv voor elke sollicitatie. Verdubbel je kansen om aangenomen te worden!"
+    },
+    "emptyState": {
+      "noDocumentsFound": "Geen Documenten Beschikbaar",
+      "emptyLibrary": "Je documentenbibliotheek is momenteel leeg.",
+      "createFirstDoc": "Maak je eerste cv of motivatiebrief om te beginnen."
+    },
+    "pagination": {
+      "page": "Pagina",
+      "of": "van"
+    },
+    "confirmDelete": "Weet je zeker dat je dit cv wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt."
+  },
+  "DashboardSettings": {
+    "pageTitle": "Instellingen",
+    "pageDescription": "Beheer je account- en profielinstellingen",
+    "tabs": {
+      "profile": "Profiel",
+      "account": "Account"
+    },
+    "profile": {
+      "title": "Profiel",
+      "description": "Update je persoonlijke informatie en profielfoto",
+      "uploadPicture": "Profielfoto uploaden",
+      "dragOrUpload": "Sleep een afbeelding hierheen of klik om te uploaden",
+      "uploadButton": "Uploaden",
+      "removeButton": "Verwijderen",
+      "fullName": "Volledige Naam",
+      "fullNameDesc": "Je naam zoals deze op je account verschijnt",
+      "phone": "Telefoonnummer",
+      "address": "Adres",
+      "city": "Stad",
+      "postalCode": "Postcode",
+      "country": "Land",
+      "placeholders": {
+        "fullName": "Voer je volledige naam in",
+        "phone": "Voer je telefoonnummer in",
+        "address": "Voer je adres in",
+        "city": "Voer je stad in",
+        "postalCode": "Voer je postcode in",
+        "country": "Voer je land in"
+      },
+      "saving": "Opslaan...",
+      "saveChanges": "Wijzigingen Opslaan"
+    },
+    "account": {
+      "title": "Account",
+      "description": "Beheer de beveiliging van je account en je abonnement",
+      "email": "E-mailadres",
+      "emailDesc": "Je e-mailadres kan niet worden gewijzigd",
+      "subscription": "Abonnement",
+      "subscriptionDesc": "Je huidige abonnementsplan",
+      "subscriptionEnd": "Abonnement Eindigt",
+      "subscriptionEndDesc": "Datum van verlenging van je abonnement",
+      "noActiveSubscription": "Geen actief abonnement",
+      "changePassword": "Wachtwoord Wijzigen",
+      "newPassword": "Nieuw Wachtwoord",
+      "passwordStrength": {
+        "weak": "Zwak",
+        "fair": "Redelijk",
+        "good": "Goed",
+        "strong": "Sterk"
+      },
+      "passwordRequirement": "Wachtwoord moet minimaal 6 tekens lang zijn"
+    }
+  },
+  "contact": {
+    "title": "Neem Contact Op",
+    "subtitle": "Heb je een vraag of heb je hulp nodig? Stuur ons een bericht en we nemen zo snel mogelijk contact met je op!",
+    "form": {
+      "fullName": "Volledige Naam *",
+      "fullNamePlaceholder": "Voer je volledige naam in",
+      "email": "E-mailadres *",
+      "emailPlaceholder": "Voer je e-mailadres in",
+      "message": "Bericht *",
+      "messagePlaceholder": "Vertel ons over je vraag...",
+      "sendButton": "Bericht Verzenden",
+      "sendingButton": "Bericht Verzenden..."
+    },
+    "quickResponse": {
+      "title": "Snelle Reactie",
+      "text": "We reageren meestal binnen 24 uur"
+    },
+    "success": {
+      "title": "Bericht Succesvol Verzonden!",
+      "text": "Bedankt voor je bericht. We nemen zo spoedig mogelijk contact met je op.",
+      "button": "Nog Een Bericht Verzenden"
+    },
+    "error": {
+      "general": "Er ging iets mis. Probeer het opnieuw."
+    }
+  },
+  "billing": {
+    "title": "Abonnementsplannen",
+    "subtitle": "Kies het plan dat het beste bij jou past",
+    "navbar": {
+      "home": "Home",
+      "contact": "Contact"
+    },
+    "plans": {
+      "monthly": "Maandelijks",
+      "quarterly": "Kwartaal",
+      "yearly": "Jaarlijks",
+      "selectPlan": "Plan Selecteren",
+      "perMonth": "/maand",
+      "perQuarter": "/kwartaal",
+      "perYear": "/jaar",
+      "mostPopular": "Meest Populair",
+      "bestValue": "Beste Waarde",
+      "unlimitedPDF": "Onbeperkt PDF Downloads",
+      "unlimitedResumes": "Onbeperkt Cv Sjablonen",
+      "nonRecurring": "Eenmalige Betaling, Niet-terugkerend"
+    },
+    "checkout": {
+      "title": "Voltooi Je Aankoop",
+      "subtitle": "Voer je betalingsgegevens in om je te abonneren",
+      "securePayment": "Veilige Betaling",
+      "feature1": "Directe toegang tot alle premium functies",
+      "feature2": "Geen verborgen kosten of extra kosten",
+      "feature3": "Annuleer op elk moment via je account",
+      "faqTitle": "Veelgestelde Vragen",
+      "faqContent": "Je abonnement wordt onmiddellijk na betaling geactiveerd. Je kunt je abonnement beheren via het dashboard van je account.",
+      "totalPrice": "Totaalprijs",
+      "locationTitle": "Factuuradres",
+      "locationDescription": "Geef je factuuradres op",
+      "backToPlans": "Terug naar Plannen",
+      "cardDetails": "Kaartgegevens",
+      "cardholderName": "Naam Kaarthouder",
+      "cardNumber": "Kaartnummer",
+      "expiryDate": "Vervaldatum",
+      "cvv": "CVV",
+      "payNow": "Nu Betalen",
+      "processing": "Betaling Verwerken...",
+      "subscriptionDetails": "Abonnementsdetails",
+      "plan": "Plan",
+      "price": "Prijs",
+      "billingFrequency": "Factureringsfrequentie",
+      "paymentMethods": {
+        "title": "Kies Betaalmethode",
+        "subtitle": "Selecteer je voorkeurs betaaloptie",
+        "creditCard": "Creditcard",
+        "paypal": "PayPal"
+      },
+      "cardForm": {
+        "title": "Betalingsgegevens",
+        "subtitle": "Voer je kaartgegevens veilig in",
+        "cardholderName": "Naam Kaarthouder",
+        "address": "Factuuradres",
+        "country": "Land",
+        "postalCode": "Postcode"
+      },
+      "success": {
+        "title": "Betaling Gelukt!",
+        "subtitle": "Je abonnement is geactiveerd",
+        "message": "Bedankt voor je aankoop. Je hebt nu volledige toegang tot alle premium functies.",
+        "button": "Doorgaan naar Dashboard"
+      },
+      "or": "OF"
+    },
+    "success": {
+      "title": "Betaling Gelukt!",
+      "subtitle": "Je abonnement is geactiveerd",
+      "viewAccount": "Account Bekijken",
+      "returnHome": "Terug naar Home"
+    },
+    "error": {
+      "payment": "Betaling mislukt. Probeer het opnieuw.",
+      "login": "Meld je aan om de betaling te voltooien.",
+      "general": "Er ging iets mis. Probeer het opnieuw."
+    }
+  },
+  "DashboardInterviews": {
+    "configurationScreen": {
+      "title": "Configureer uw interview",
+      "subtitle": "Personaliseer uw interviewervaring door uw beroep en voorkeuren op te geven",
+      "occupationLabel": "Uw beroep",
+      "occupationPlaceholder": "Bijv.: Software Engineer, Leraar, Verpleegkundige, Boer, Chef...",
+      "occupationHint": "Wees specifiek over uw rol voor meer gerichte vragen",
+      "questionCountLabel": "Aantal Vragen",
+      "questionsText": "vragen",
+      "estimatedTime": "Geschatte tijd:",
+      "minutesPerQuestion": "minuten per vraag",
+      "interviewDetails": "Interview Details",
+      "type": "Type:",
+      "questions": "Vragen:",
+      "timeLimit": "Tijdslimiet:",
+      "passingScore": "Cijfer om te slagen:",
+      "errorGenerating": "Fout bij het genereren van het interview:",
+      "tryAgainError": "Probeer het opnieuw of probeer een ander beroep.",
+      "generatingQuestions": "Bezig met genereren van {{count}} gepersonaliseerde interviewvragen...",
+      "generatingHint": "Dit kan enkele seconden duren. We stellen vragen op die specifiek zijn voor uw beroep.",
+      "back": "Terug",
+      "startAssessment": "Start Beoordeling",
+      "generatingInterview": "Interview Genereren..."
+    },
+    "selectionScreen": {
+      "title": "Interview Beoordeling",
+      "subtitle": "Kies uw beoordelingstype en voltooi het interviewproces",
+      "technicalTitle": "Technische Beoordeling",
+      "technicalDepartment": "Technische Afdeling",
+      "technicalDescription": "Evalueer technische vaardigheden, programmeertalen, frameworks, methodologieën en probleemoplossende vaardigheden die specifiek zijn voor uw rol.",
+      "behavioralTitle": "Gedragsbeoordeling",
+      "behavioralDepartment": "Human Resources",
+      "behavioralDescription": "Beoordeel leiderschapskwaliteiten, communicatieve vaardigheden, teamworkvaardigheden en hoe u omgaat met werksituaties.",
+      "focusAreas": "Focusgebieden:",
+      "technicalSkills": "Technische Vaardigheden",
+      "problemSolving": "Probleemoplossend Vermogen",
+      "bestPractices": "Best Practices",
+      "toolsTechnologies": "Gereedschappen & Technologieën",
+      "leadership": "Leiderschap",
+      "communication": "Communicatie",
+      "teamwork": "Teamwork",
+      "assessmentGuidelines": "Beoordelingsrichtlijnen",
+      "bestPracticesTitle": "✅ Best Practices",
+      "thingsToAvoid": "❌ Te Vermijden Zaken",
+      "guideline1": "• Lees elke vraag zorgvuldig door voordat u antwoordt",
+      "guideline2": "• Gebruik de vlagfunctie om vragen te markeren voor revisie",
+      "guideline3": "• Beheer uw tijd effectief",
+      "guideline4": "• Maak gebruik van de pauzefunctie indien nodig",
+      "avoid1": "• Haast u niet door de vragen",
+      "avoid2": "• Laat geen vragen onbeantwoord",
+      "avoid3": "• Wissel niet tussen applicaties",
+      "avoid4": "• Denkt niet te veel na over uw antwoorden",
+      "continueToConfiguration": "Doorgaan naar Configuratie",
+      "configurationHint": "Configureer uw beroep en interviewvoorkeuren"
+    },
+    "resultsScreen": {
+      "title": "Beoordeling Voltooid!",
+      "noDataAvailable": "Geen interviewgegevens beschikbaar",
+      "technicalInterview": "Technisch",
+      "behavioralInterview": "Gedragsmatig",
+      "questionsText": "Vragen",
+      "overallPerformance": "Algemene Prestatie",
+      "passedAssessment": "✅ Beoordeling Behaald",
+      "failedAssessment": "❌ Beoordelingsnorm (70%) niet behaald",
+      "correctAnswers": "Correcte Antwoorden",
+      "incorrectAnswers": "Incorrecte Antwoorden"
+    },
+    "performanceLevels": {
+      "exceptional": "Uitzonderlijk",
+      "excellent": "Uitstekend",
+      "good": "Goed",
+      "satisfactory": "Tevredenstellend",
+      "needsImprovement": "Verbetering Nodig"
+    },
+    "metricsScreen": {
+      "timeAnalysis": "Tijd Analyse",
+      "totalTime": "Totale Tijd",
+      "avgPerQuestion": "Gem. per Vraag",
+      "fastest": "Snelst",
+      "slowest": "Langzaamst",
+      "activitySummary": "Activiteit Samenvatting",
+      "questionsAnswered": "Beantwoorde Vragen",
+      "questionsFlagged": "Gemarkeerde Vragen",
+      "completionRate": "Voltooiingspercentage",
+      "performanceByCategory": "Prestatie per Categorie",
+      "retakeAssessment": "Herhaal Beoordeling",
+      "reviewAnswers": "Antwoorden Beoordelen",
+      "downloadReport": "Download Rapport",
+      "backToDashboard": "Terug naar Dashboard",
+      "answerReview": "Antwoord Beoordeling",
+      "question": "Vraag",
+      "difficulty": {
+        "easy": "Makkelijk",
+        "intermediate": "Gemiddeld",
+        "hard": "Moeilijk"
+      },
+      "correct": "✓ Correct",
+      "yourAnswer": "✗ Uw Antwoord",
+      "explanation": "Uitleg",
+      "timeSpent": "Tijd gespendeerd:"
+    },
+    "interviewScreen": {
+      "loadingData": "Interviewgegevens laden...",
+      "professionalEvaluation": "Professionele Beoordeling",
+      "timeRemaining": "Resterende Tijd",
+      "resume": "Hervatten",
+      "pause": "Pauze",
+      "questionProgress": "Vraag {current} van {total}",
+      "complete": "% Voltooid",
+      "interviewPaused": "Interview Gepauzeerd",
+      "pauseMessage": "Klik op Hervatten om uw beoordeling voort te zetten",
+      "flag": "Vlag",
+      "flagged": "Gemarkeerd",
+      "previous": "Vorige",
+      "nextQuestion": "Volgende Vraag",
+      "finishAssessment": "Beoordeling Afronden"
+    },
+    "confirmationModal": {
+      "title": "Beoordeling Afronden?",
+      "message": "Weet u zeker dat u uw beoordeling wilt indienen? U kunt uw antwoorden niet meer wijzigen.",
+      "questionsAnswered": "Beantwoorde Vragen:",
+      "questionsFlagged": "Gemarkeerde Vragen:",
+      "timeUsed": "Gebruikte Tijd:",
+      "unansweredWarning": "⚠️ U heeft {count} onbeantwoorde vragen",
+      "continueInterview": "Doorgaan met Interview",
+      "submitNow": "Nu Indienen"
+    },
+    "common": {
+      "toggleSidebar": "Schakel zijbalk in/uit",
+      "min": "min"
+    }
+  },
+  "BuildResume": {
+    "steps": {
+      "personalInfo": "Persoonlijke gegevens",
+      "workHistory": "Werkervaring",
+      "education": "Opleiding",
+      "skills": "Vaardigheden",
+      "summary": "Samenvatting"
+    },
+    "navigation": {
+      "previous": "Vorige",
+      "next": "Volgende",
+      "preview": "Voorbeeld",
+      "download": "Download",
+      "downloading": "Bezig met downloaden...",
+      "complete": "Voltooid",
+      "current": "Huidig",
+      "nextStep": "Volgende: {{stepName}}"
+    },
+    "progress": {
+      "progress": "Voortgang",
+      "completed": "voltooid",
+      "of": "van",
+      "step": "Stap {{current}}/{{total}}",
+      "completeness": "Volledigheid"
+    },
+    "sidebar": {
+      "helpSupport": "Hulp & Ondersteuning",
+      "privacyPolicy": "Privacybeleid",
+      "copyright": "© 2025 Bold Limited. Alle rechten voorbehouden."
+    },
+    "preview": {
+      "livePreview": "Live Voorbeeld",
+      "autoUpdating": "Automatisch bijwerken",
+      "clickToView": "Klik om op ware grootte te bekijken",
+      "changeTemplate": "Wijzig Sjabloon",
+      "viewFullSize": "Volledige Grootte Weergeven",
+      "trustedBy": "Vertrouwd door 50K+ professionals",
+      "joinSuccess": "Word lid van de succesverhalen",
+      "resumePdf": "CV.pdf"
+    },
+    "templates": {
+      "professionalClassic": "Professioneel Klassiek",
+      "modernCreative": "Modern Creatief",
+      "creativeBold": "Creatief Gedurfd",
+      "executivePro": "Professioneel Executive",
+      "techModern": "Technisch Modern",
+      "simpleElegant": "Eenvoudig Elegant",
+      "designerSpecial": "Speciaal Ontwerper",
+      "cleanSimple": "Schoon Eenvoudig",
+      "corporateElite": "Zakelijk Elite",
+      "startupReady": "Klaar voor Start-ups",
+      "creativePro": "Professioneel Creatief",
+      "minimalPro": "Minimaal Professioneel",
+      "businessClassic": "Zakelijk Klassiek",
+      "modernEdge": "Moderne Rand",
+      "artistPortfolio": "Portfolio Kunstenaar",
+      "techInnovation": "Technologische Innovatie",
+      "executiveSuite": "Executive Suite",
+      "creativeShowcase": "Creatieve Vitrine",
+      "cleanProfessional": "Schoon Professioneel",
+      "futureForward": "Toekomstgericht",
+      "professional21": "Professioneel 21",
+      "professional22": "Professioneel 22",
+      "professional23": "Professioneel 23",
+      "professional24": "Professioneel 24",
+      "professional25": "Professioneel 25",
+      "professional26": "Professioneel 26",
+      "professional27": "Professioneel 27",
+      "professional28": "Professioneel 28",
+      "professional29": "Professioneel 29",
+      "professional30": "Professioneel 30",
+      "professional31": "Professioneel 31",
+      "professional32": "Professioneel 32",
+      "professional33": "Professioneel 33",
+      "professional34": "Professioneel 34",
+      "professional35": "Professioneel 35",
+      "professional36": "Professioneel 36",
+      "professional37": "Professioneel 37",
+      "professional38": "Professioneel 38",
+      "professional39": "Professioneel 39",
+      "professional40": "Professioneel 40",
+      "professional41": "Professioneel 41",
+      "professional42": "Professioneel 42",
+      "professional43": "Professioneel 43",
+      "professional44": "Professioneel 44",
+      "professional45": "Professioneel 45",
+      "professional46": "Professioneel 46",
+      "professional47": "Professioneel 47",
+      "professional48": "Professioneel 48",
+      "professional49": "Professioneel 49",
+      "professional50": "Professioneel 50"
+    },
+    "errors": {
+      "downloadFailed": "Download mislukt. Probeer het opnieuw.",
+      "templateError": "Sjabloon Fout",
+      "usingDefault": "Gebruik standaard sjabloon"
+    },
+    "analytics": {
+      "templateChanged": "Sjabloon gewijzigd naar: {{templateName}} ({{templateId}})"
+    }
+  },
+  "HeadingStep": {
+    "title": "Persoonlijke en Contactgegevens",
+    "subtitle": "Vertel ons over uzelf, zodat werkgevers u gemakkelijk kunnen bereiken. Alle vereiste velden moeten zijn ingevuld om verder te gaan.",
+    "progress": {
+      "label": "Voortgang: {{completed}}/{{total}} vereiste velden",
+      "percentage": "{{percentage}}%"
+    },
+    "sections": {
+      "personalInfo": {
+        "title": "Persoonlijke Informatie",
+        "badge": "{{completed}}/3 Voltooid"
+      },
+      "contactInfo": {
+        "title": "Contactgegevens",
+        "badge": "{{completed}}/2 Voltooid"
+      },
+      "locationInfo": {
+        "title": "Locatie Informatie",
+        "badge": "Optioneel",
+        "badgeWithCount": "{{completed}}/4 Optioneel"
+      }
+    },
+    "fields": {
+      "profilePhoto": {
+        "label": "Profiel Foto",
+        "hint": "Aanbevolen: Vierkante foto, max 5 MB"
+      },
+      "firstName": {
+        "label": "Voornaam",
+        "placeholder": "Voer uw voornaam in"
+      },
+      "lastName": {
+        "label": "Achternaam",
+        "placeholder": "Voer uw achternaam in"
+      },
+      "jobTitle": {
+        "label": "Functietitel / Beroep",
+        "placeholder": "bijv. Software Engineer, Marketing Manager, Data Analyst",
+        "hint": "Dit wordt prominent weergegeven op uw CV"
+      },
+      "email": {
+        "label": "E-mailadres",
+        "placeholder": "uw.email@voorbeeld.nl",
+        "hint": "Gebruik een professioneel e-mailadres"
+      },
+      "phone": {
+        "label": "Telefoonnummer",
+        "placeholder": "+31 6 12345678",
+        "hint": "Voer de landcode in indien van toepassing"
+      },
+      "address": {
+        "label": "Adres",
+        "placeholder": "Straat (optioneel)",
+        "hint": "Volledig adres is optioneel, stad en land zijn doorgaans voldoende"
+      },
+      "city": {
+        "label": "Stad",
+        "placeholder": "Stad"
+      },
+      "postalCode": {
+        "label": "Postcode",
+        "placeholder": "Postcode"
+      },
+      "country": {
+        "label": "Land",
+        "placeholder": "Land"
+      }
+    },
+    "tips": {
+      "contactInfo": {
+        "title": "Tips voor Contactgegevens",
+        "description": "Gebruik een professioneel e-mailadres en zorg ervoor dat uw telefoonnummer up-to-date is. Zo bereiken werkgevers u."
+      },
+      "locationInfo": {
+        "title": "Locatie Informatie",
+        "description": "Het toevoegen van de locatie helpt werkgevers uw beschikbaarheid voor lokale posities en uw voorkeuren voor werken op afstand te begrijpen."
+      }
+    },
+    "completion": {
+      "title": "Sectie Voltooid!",
+      "description": "Geweldig! Alle vereiste informatie is verstrekt. U kunt nu doorgaan naar de volgende sectie of doorgaan met het toevoegen van optionele details."
+    },
+    "errors": {
+      "required": "{{field}} is vereist",
+      "invalidEmail": "Voer een geldig e-mailadres in",
+      "invalidPhone": "Voer een geldig telefoonnummer in"
+    }
+  },
+  "WorkHistoryStep": {
+    "title": "Vertel ons over uw werkervaring",
+    "subtitle": "Begin met uw meest recente functie en werk terug in de tijd. Voeg uw laatste 10 jaar relevante ervaring toe.",
+    "requiredNote": "* Geeft een verplicht veld aan",
+    "defaultValues": {
+      "untitledPosition": "Functie zonder titel",
+      "noCompany": "Geen bedrijf gespecificeerd",
+      "present": "Huidig"
+    },
+    "fields": {
+      "jobTitle": {
+        "label": "Functie",
+        "placeholder": "Software Engineer"
+      },
+      "company": {
+        "label": "Bedrijf",
+        "placeholder": "Google Inc."
+      },
+      "startDate": {
+        "label": "Startdatum",
+        "placeholder": "Januari 2020"
+      },
+      "endDate": {
+        "label": "Einddatum",
+        "placeholder": "December 2023"
+      },
+      "currentWork": {
+        "label": "Ik werk hier momenteel"
+      },
+      "description": {
+        "label": "Functiebeschrijving",
+        "placeholder": "Beschrijf uw belangrijkste verantwoordelijkheden en prestaties in detail. Welke impact had u? Welke vaardigheden heeft u gebruikt?"
+      }
+    },
+    "actions": {
+      "addPosition": "Nog een Functie Toevoegen",
+      "collapse": "Inklappen",
+      "expand": "Uitklappen",
+      "remove": "Deze functie Verwijderen"
+    },
+    "ai": {
+      "suggestions": "✨ AI Suggesties",
+      "tooltip": "Genereer AI suggesties",
+      "tooltipDisabled": "Vul eerst Functietitel en Bedrijf in"
+    }
+  },
+  "EducationStep": {
+    "title": "Vertel ons over uw opleiding",
+    "subtitle": "Voeg uw opleidingsachtergrond toe. Begin met uw meest recente opleiding.",
+    "requiredNote": "* Geeft een verplicht veld aan",
+    "defaultValues": {
+      "school": "Naam van de School",
+      "degree": "Geen diploma gespecificeerd",
+      "present": "Huidig"
+    },
+    "fields": {
+      "school": {
+        "label": "School",
+        "placeholder": "Universiteit van Californië"
+      },
+      "degree": {
+        "label": "Diploma",
+        "placeholder": "Bachelor of Science"
+      },
+      "startDate": {
+        "label": "Startdatum",
+        "placeholder": "September 2018"
+      },
+      "endDate": {
+        "label": "Einddatum",
+        "placeholder": "Mei 2022"
+      },
+      "currentStudy": {
+        "label": "Ik studeer hier momenteel"
+      },
+      "description": {
+        "label": "Opleidingsbeschrijving",
+        "placeholder": "Relevante cursussen, prestaties, onderscheidingen, GPA, onderzoeksprojecten, scriptie, etc..."
+      }
+    },
+    "actions": {
+      "addEducation": "Nog een Opleiding Toevoegen",
+      "collapse": "Inklappen",
+      "expand": "Uitklappen",
+      "remove": "Deze opleiding Verwijderen"
+    },
+    "ai": {
+      "suggestions": "✨ AI Suggesties",
+      "tooltip": "Genereer AI suggesties",
+      "tooltipDisabled": "Vul eerst School en Diploma in"
+    }
+  },
+  "SkillsStep": {
+    "title": "Welke vaardigheden wilt u benadrukken?",
+    "subtitle": "Kies de vaardigheden die het meest relevant zijn voor de functie waarop u solliciteert. Voeg zowel technische als soft skills toe.",
+    "requiredNote": "* Voeg minimaal 3 vaardigheden toe voor de beste resultaten",
+    "defaultValues": {
+      "skillName": "Vaardigheidsnaam",
+      "clickToAdd": "Klik om vaardigheidsdetails toe te voegen"
+    },
+    "fields": {
+      "skillName": {
+        "label": "Vaardigheidsnaam",
+        "placeholder": "bijv. JavaScript, Leiderschap, Projectmanagement"
+      },
+      "proficiencyLevel": {
+        "label": "Vaardigheidsniveau"
+      }
+    },
+    "skillLevels": {
+      "beginner": "Beginner",
+      "intermediate": "Gemiddeld",
+      "advanced": "Gevorderd",
+      "expert": "Expert"
+    },
+    "actions": {
+      "addSkill": "Nog een Vaardigheid Toevoegen",
+      "collapse": "Inklappen",
+      "expand": "Uitklappen",
+      "remove": "Deze vaardigheid Verwijderen"
+    },
+    "ai": {
+      "suggestions": "✨ AI Suggesties",
+      "generating": "Bezig met genereren..."
+    },
+    "quickAdd": {
+      "title": "Snelle Toevoeging Vaardigheden",
+      "subtitle": "Klik om direct populaire vaardigheden toe te voegen"
+    },
+    "popularSkills": [
+      "JavaScript",
+      "Python",
+      "React",
+      "Node.js",
+      "SQL",
+      "Git",
+      "Communicatie",
+      "Leiderschap",
+      "Probleemoplossing",
+      "Teamwork",
+      "Projectmanagement",
+      "Data-analyse"
+    ]
+  },
+  "SummaryStep": {
+    "title": "Schrijf een professionele samenvatting",
+    "subtitle": "Uw professionele samenvatting is een korte verklaring die uw belangrijkste kwalificaties en carrièredoelen benadrukt.",
+    "professionalSummary": {
+      "title": "Professionele Samenvatting",
+      "description": "Showcase uw achtergrond en carrièredoelen"
+    },
+    "progress": {
+      "tooShort": "Te kort - voeg meer details toe",
+      "gettingThere": "Bijna daar - voeg meer inhoud toe",
+      "goodLength": "Goede lengte - overweeg meer toe te voegen",
+      "greatLength": "Geweldige lengte - goed gedetailleerd",
+      "excellent": "Uitstekend - uitgebreide samenvatting"
+    },
+    "characterCount": "{{current}}/{{max}} tekens",
+    "content": {
+      "label": "Inhoud Samenvatting",
+      "placeholder": "Schrijf een boeiende samenvatting die uw professionele achtergrond, belangrijkste vaardigheden en carrièreambities laat zien. Benadruk uw unieke waardepropositie en wat u onderscheidt..."
+    },
+    "ai": {
+      "generate": "✨ Genereer met AI",
+      "generating": "Bezig met genereren...",
+      "tooltip": "Genereer een AI-verbeterde samenvatting"
+    },
+    "errors": {
+      "noOccupation": "Vul eerst uw beroep in bij Persoonlijke Gegevens om een AI-samenvatting te genereren.",
+      "generationFailed": "Kon AI-samenvatting niet genereren. Probeer het opnieuw."
+    }
+  },
+  "EducationSuggestionModal": {
+    "title": "AI Opleidingssuggesties",
+    "subtitle": "Genereer professionele beschrijvingen op basis van uw opleidingsgegevens",
+    "educationDetails": {
+      "title": "Opleidingsgegevens",
+      "school": "School:",
+      "degree": "Diploma:",
+      "duration": "Duur:",
+      "notSpecified": "Niet gespecificeerd",
+      "present": "Huidig"
+    },
+    "generateButton": {
+      "generate": "Genereer AI Beschrijvingen",
+      "generating": "Bezig met genereren AI suggesties..."
+    },
+    "requirements": {
+      "fillFields": "Vul eerst de velden School en Diploma in"
+    },
+    "suggestions": {
+      "title": "Voorgestelde Beschrijvingen:",
+      "suggestionLabel": "Suggestie {{number}}",
+      "useThis": "Gebruik Dit"
+    },
+    "instructions": {
+      "title": "Klik op \"Genereer AI Beschrijvingen\" om gepersonaliseerde suggesties te krijgen voor uw opleidingsachtergrond."
+    },
+    "actions": {
+      "close": "Sluiten"
+    },
+    "errors": {
+      "requiredFields": "School en diploma zijn vereist om suggesties te genereren",
+      "failed": "Kon suggesties niet genereren. Probeer het opnieuw."
+    }
+  },
+  "InputField": {
+    "required": "Dit veld is verplicht",
+    "accessibility": {
+      "required": "Dit veld is verplicht"
+    }
+  },
+  "PhotoUpload": {
+    "actions": {
+      "addPhoto": "Foto Toevoegen",
+      "dropPhotoHere": "Sleep foto hierheen",
+      "clickOrDrag": "Klik of Sleep",
+      "changePhoto": "Foto Wijzigen",
+      "removePhoto": "Foto Verwijderen",
+      "processing": "Bezig met verwerken..."
+    },
+    "hints": {
+      "recommended": "Aanbevolen: Vierkante foto, max 5 MB"
+    },
+    "errors": {
+      "sizeLimit": "Afbeelding overschrijdt de limiet van 5 MB",
+      "processingError": "Fout bij het verwerken van de afbeelding",
+      "readingError": "Fout bij het lezen van het bestand"
+    }
+  },
+  "ProgressCard": {
+    "accessibility": {
+      "progressBar": "Voortgang: {{value}} van {{maxValue}}"
+    }
+  },
+  "SectionCard": {
+    "accessibility": {
+      "section": "Sectie: {{title}}"
+    }
+  },
+  "WorkHistorySuggestionModal": {
+    "title": "AI Beschrijvingssuggesties",
+    "subtitle": "Genereer professionele beschrijvingen op basis van uw functiegegevens",
+    "positionDetails": {
+      "title": "Functiedetails",
+      "jobTitle": "Functie:",
+      "company": "Bedrijf:",
+      "duration": "Duur:",
+      "notSpecified": "Niet gespecificeerd",
+      "present": "Huidig"
+    },
+    "generateButton": {
+      "generate": "Genereer AI Beschrijvingen",
+      "generating": "Bezig met genereren AI suggesties..."
+    },
+    "requirements": {
+      "fillFields": "Vul eerst de velden Functietitel en Bedrijf in"
+    },
+    "suggestions": {
+      "title": "Voorgestelde Beschrijvingen:",
+      "suggestionLabel": "Suggestie {{number}}",
+      "useThis": "Gebruik Dit"
+    },
+    "instructions": {
+      "title": "Klik op \"Genereer AI Beschrijvingen\" om gepersonaliseerde suggesties te krijgen voor uw werkervaring."
+    },
+    "actions": {
+      "close": "Sluiten"
+    },
+    "errors": {
+      "requiredFields": "Functietitel en Bedrijf zijn vereist om suggesties te genereren",
+      "failed": "Kon suggesties niet genereren. Probeer het opnieuw."
+    }
+  },
+  "PreviewModal": {
+    "title": "CV Voorbeeld",
+    "subtitle": "{{templateName}} - Professioneel overzicht van uw CV",
+    "actions": {
+      "downloadPdf": "Download PDF",
+      "generatingPdf": "PDF genereren...",
+      "close": "Voorbeeld Sluiten"
+    },
+    "keyboard": {
+      "escToClose": "om te sluiten"
+    },
+    "errors": {
+      "noTemplate": "Geen sjablooncomponent opgegeven",
+      "templateError": "Fout bij Sjabloon Voorbeeld",
+      "tryDifferent": "Probeer een ander sjabloon"
+    }
+  },
+  "TemplateSelectionModal": {
+    "header": {
+      "title": "Sjabloon Kiezen",
+      "subtitle": "Selecteer een professioneel sjabloon voor uw CV",
+      "closeLabel": "Sluit sjabloonselectie"
+    },
+    "search": {
+      "placeholder": "Zoek naar sjablonen...",
+      "resultsFound": "{{count}} sjablonen gevonden",
+      "noResults": {
+        "title": "Geen sjablonen gevonden",
+        "message": "Probeer uw zoek- of filtercriteria aan te passen",
+        "clearFilters": "Filters Wissen"
+      }
+    },
+    "categories": {
+      "all": "Alle",
+      "professional": "Professioneel",
+      "modern": "Modern",
+      "creative": "Creatief",
+      "simple": "Eenvoudig"
+    },
+    "sorting": {
+      "popular": "Meest Populair",
+      "name": "Naam A-Z"
+    },
+    "viewMode": {
+      "grid": "Rasterweergave",
+      "list": "Lijstweergave"
+    },
+    "templateCard": {
+      "badges": {
+        "popular": "Populair",
+        "current": "Huidig"
+      },
+      "actions": {
+        "favorite": "Toevoegen aan favorieten",
+        "unfavorite": "Verwijderen uit favorieten",
+        "preview": "Sjabloon Voorbeeld",
+        "select": "Sjabloon Selecteren",
+        "currentTemplate": "Huidig Sjabloon"
+      },
+      "popularity": "{{percentage}}% populariteit"
+    },
+    "templateNames": {
+      "professionalClassic": "Professioneel Klassiek",
+      "modernCreative": "Modern Creatief",
+      "creativeBold": "Creatief Gedurfd",
+      "executivePro": "Professioneel Executive",
+      "techModern": "Technisch Modern",
+      "simpleElegant": "Eenvoudig Elegant",
+      "designerSpecial": "Speciaal Ontwerper",
+      "cleanSimple": "Schoon Eenvoudig",
+      "corporateElite": "Zakelijk Elite",
+      "startupReady": "Klaar voor Start-ups",
+      "creativePro": "Professioneel Creatief",
+      "minimalPro": "Minimaal Professioneel",
+      "businessClassic": "Zakelijk Klassiek",
+      "modernEdge": "Moderne Rand",
+      "artistPortfolio": "Portfolio Kunstenaar",
+      "techInnovation": "Technologische Innovatie",
+      "executiveSuite": "Executive Suite",
+      "creativeShowcase": "Creatieve Vitrine",
+      "cleanProfessional": "Schoon Professioneel",
+      "futureForward": "Toekomstgericht",
+      "professional21": "Professioneel 21",
+      "professional22": "Professioneel 22",
+      "professional23": "Professioneel 23",
+      "professional24": "Professioneel 24",
+      "professional25": "Professioneel 25",
+      "professional26": "Professioneel 26",
+      "professional27": "Professioneel 27",
+      "professional28": "Professioneel 28",
+      "professional29": "Professioneel 29",
+      "professional30": "Professioneel 30",
+      "professional31": "Professioneel 31",
+      "professional32": "Professioneel 32",
+      "professional33": "Professioneel 33",
+      "professional34": "Professioneel 34",
+      "professional35": "Professioneel 35",
+      "professional36": "Professioneel 36",
+      "professional37": "Professioneel 37",
+      "professional38": "Professioneel 38",
+      "professional39": "Professioneel 39",
+      "professional40": "Professioneel 40",
+      "professional41": "Professioneel 41",
+      "professional42": "Professioneel 42",
+      "professional43": "Professioneel 43",
+      "professional44": "Professioneel 44",
+      "professional45": "Professioneel 45",
+      "professional46": "Professioneel 46",
+      "professional47": "Professioneel 47",
+      "professional48": "Professioneel 48",
+      "professional49": "Professioneel 49",
+      "professional50": "Professioneel 50"
+    },
+    "templateDescriptions": {
+      "professionalClassic": "Strak en traditioneel ontwerp, perfect voor zakelijke omgevingen",
+      "modernCreative": "Hedendaagse lay-out met creatieve elementen",
+      "creativeBold": "Artistiek sjabloon voor creatieve professionals",
+      "executivePro": "Verfijnd ontwerp voor leidinggevende functies",
+      "techModern": "Modern sjabloon, perfect voor de tech-industrie",
+      "simpleElegant": "Minimalistisch ontwerp gericht op duidelijkheid van inhoud",
+      "designerSpecial": "Unieke lay-out voor design professionals",
+      "cleanSimple": "Rechttoe rechtaan en professioneel",
+      "corporateElite": "Premium zakelijk sjabloon",
+      "startupReady": "Dynamisch sjabloon voor start-up cultuur",
+      "creativePro": "Professioneel creatief sjabloon",
+      "minimalPro": "Schoon minimalistisch professioneel ontwerp",
+      "businessClassic": "Traditioneel zakelijk sjabloon",
+      "modernEdge": "Cutting-edge modern ontwerp",
+      "artistPortfolio": "Perfect voor creatieve portfolio's",
+      "techInnovation": "Innovatief ontwerp voor tech professionals",
+      "executiveSuite": "Premium executive sjabloon",
+      "creativeShowcase": "Toon uw creatieve werk",
+      "cleanProfessional": "Schone professionele uitstraling",
+      "futureForward": "Toekomstgericht modern ontwerp",
+      "professional21": "Professioneel sjabloonontwerp",
+      "professional22": "Professioneel sjabloonontwerp",
+      "professional23": "Professioneel sjabloonontwerp",
+      "professional24": "Professioneel sjabloonontwerp",
+      "professional25": "Professioneel sjabloonontwerp",
+      "professional26": "Professioneel sjabloonontwerp",
+      "professional27": "Professioneel sjabloonontwerp",
+      "professional28": "Professioneel sjabloonontwerp",
+      "professional29": "Professioneel sjabloonontwerp",
+      "professional30": "Professioneel sjabloonontwerp",
+      "professional31": "Professioneel sjabloonontwerp",
+      "professional32": "Professioneel sjabloonontwerp",
+      "professional33": "Professioneel sjabloonontwerp",
+      "professional34": "Professioneel sjabloonontwerp",
+      "professional35": "Professioneel sjabloonontwerp",
+      "professional36": "Professioneel sjabloonontwerp",
+      "professional37": "Professioneel sjabloonontwerp",
+      "professional38": "Professioneel sjabloonontwerp",
+      "professional39": "Professioneel sjabloonontwerp",
+      "professional40": "Professioneel sjabloonontwerp",
+      "professional41": "Professioneel sjabloonontwerp",
+      "professional42": "Professioneel sjabloonontwerp",
+      "professional43": "Professioneel sjabloonontwerp",
+      "professional44": "Professioneel sjabloonontwerp",
+      "professional45": "Professioneel sjabloonontwerp",
+      "professional46": "Professioneel sjabloonontwerp",
+      "professional47": "Professioneel sjabloonontwerp",
+      "professional48": "Professioneel sjabloonontwerp",
+      "professional49": "Professioneel sjabloonontwerp",
+      "professional50": "Professioneel sjabloonontwerp"
+    },
+    "pagination": {
+      "previous": "Vorige",
+      "next": "Volgende"
+    },
+    "preview": {
+      "title": "Sjabloon Voorbeeld",
+      "popularity": "{{percentage}}% populariteit",
+      "actions": {
+        "cancel": "Annuleren",
+        "useTemplate": "Sjabloon Gebruiken"
+      }
+    },
+    "keyboard": {
+      "escToClose": "om te sluiten"
+    },
+    "selectedTemplate": "\"{{templateId}}\" geselecteerd"
+  },
+  "missing1": {
+    "quickBuilder": {
+      "title": "Snel",
+      "badge": "AANBEVOLEN"
+    },
+    "stepByStep": {
+      "title": "Begeleid",
+      "badge": "NIEUW"
+    },
+    "portfolioBuilder": {
+      "title": "Portfolio",
+      "badge": "NIEUW"
+    }
+  },
+  "DashboardPortfolios": {
+    "title": "Mijn Portfolio's",
+    "subtitle": "Beheer en toon uw portfolioverzameling",
+    "createPortfolio": "Portfolio Maken",
+    "searchPlaceholder": "Zoek portfolio's...",
+    "themes": {
+      "allThemes": "Alle Thema's",
+      "default": "Standaard",
+      "darkTheme": "Donker Thema",
+      "minimal": "Minimalistisch",
+      "creative": "Creatief",
+      "professional": "Professioneel"
+    },
+    "status": {
+      "published": "Gepubliceerd",
+      "draft": "Concept"
+    },
+    "actions": {
+      "view": "Bekijken",
+      "edit": "Bewerken",
+      "delete": "Verwijderen",
+      "viewPreview": "Voorbeeld Bekijken"
+    },
+    "stats": {
+      "views": "Weergaven",
+      "updated": "Bijgewerkt"
+    },
+    "table": {
+      "portfolio": "Portfolio",
+      "theme": "Thema",
+      "views": "Weergaven",
+      "updated": "Bijgewerkt",
+      "actions": "Acties"
+    },
+    "tooltips": {
+      "viewPortfolio": "Portfolio Bekijken",
+      "editPortfolio": "Portfolio Bewerken",
+      "deletePortfolio": "Portfolio Verwijderen"
+    },
+    "search": {
+      "portfolioFound": "portfolio gevonden",
+      "portfoliosFound": "portfolio's gevonden"
+    },
+    "emptyState": {
+      "title": "Geen portfolio's gevonden",
+      "noSearchResults": "Pas uw zoek- of filtercriteria aan.",
+      "noPortfolios": "Maak uw eerste portfolio om te beginnen!",
+      "createFirstPortfolio": "Maak Uw Eerste Portfolio"
+    },
+    "deleteConfirmation": "Weet u zeker dat u dit portfolio wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.",
+    "messages": {
+      "loadError": "Kon portfolio's niet laden",
+      "deleteSuccess": "Portfolio succesvol verwijderd",
+      "deleteError": "Kon portfolio niet verwijderen"
+    }
+  },
+  "JobsUpdate": {
+    "JobsLandingHero": {
+      "typingEffect": {
+        "sentence1": "Vind vandaag nog uw droombaan",
+        "sentence2": "Maak contact met topwerkgevers",
+        "sentence3": "Geef uw carrière een boost",
+        "sentence4": "Ontdek remote mogelijkheden",
+        "sentence5": "Sluit u aan bij toonaangevende bedrijven"
+      },
+      "badge": "Banenportal",
+      "description": "Ontdek duizenden vacatures van topbedrijven. Of u nu op zoek bent naar thuiswerk, carrièremogelijkheden of uw eerste baan, wij verbinden getalenteerde professionals met hun perfecte match.",
+      "searchPlaceholder": "Functietitel, trefwoorden of bedrijf",
+      "locationPlaceholder": "Stad, provincie of remote",
+      "searchButton": "Zoek vacatures",
+      "browseJobs": "Blader door vacatures",
+      "hotBadge": "HEET",
+      "postJob": "Plaats een vacature",
+      "employerBadge": "WERKGEVER",
+      "careerResources": "Carrièretips",
+      "browse": "Bladeren",
+      "browseDesc": "Verken alle mogelijkheden",
+      "post": "Plaatsen",
+      "postDesc": "Huur toptalent in",
+      "resources": "Bronnen",
+      "resourcesDesc": "Carrièrebegeleiding & tips",
+      "stats": {
+        "jobs": "10.000+ actieve vacatures",
+        "rating": "4.8/5 beoordeling"
+      },
+      "features": {
+        "freeToApply": "Gratis solliciteren",
+        "verifiedEmployers": "Geverifieerde werkgevers"
+      }
+    },
+    "LandingJobTopCompanies": {
+      "badge": "Topwerkgevers",
+      "title": "Sluit u aan bij toonaangevende bedrijven",
+      "description": "Ontdek mogelijkheden bij bedrijven van wereldklasse die actief aanwerven. Van startups tot Fortune 500, vind uw perfecte match.",
+      "featured": "Uitgelicht",
+      "viewAll": "Bekijk alle bedrijven",
+      "stats": {
+        "companies": "Partnerbedrijven",
+        "jobs": "Actieve vacatures",
+        "hires": "Succesvolle aanwervingen"
+      }
+    },
+    "LandingJobsProcess": {
+      "badge": "Hoe het werkt",
+      "title": "Vind uw droombaan in",
+      "titleHighlight": "4 eenvoudige stappen",
+      "description": "Ons gestroomlijnde proces maakt het zoeken naar werk moeiteloos. Van ontdekking tot aanwerving, wij begeleiden u bij elke stap om ervoor te zorgen dat u de perfecte kans vindt.",
+      "featuresTitle": "Waarom kiezen voor ons platform?",
+      "featuresDescription": "Wij bieden geavanceerde tools en functies om uw zoektocht naar werk effectiever en efficiënter te maken.",
+      "steps": {
+        "0": {
+          "title": "Zoeken & Ontdekken",
+          "description": "Blader door duizenden vacatures van topbedrijven. Gebruik onze geavanceerde filters om de perfecte match te vinden voor uw vaardigheden en voorkeuren."
+        },
+        "1": {
+          "title": "Profiel aanmaken",
+          "description": "Bouw uw professionele profiel op met onze CV-bouwer. Presenteer uw vaardigheden, ervaring en prestaties om u te onderscheiden van de massa."
+        },
+        "2": {
+          "title": "Direct solliciteren",
+          "description": "Solliciteer met één klik op meerdere vacatures. Ons slimme sollicitatiesysteem past uw profiel automatisch aan elke functie aan."
+        },
+        "3": {
+          "title": "Aangenomen worden",
+          "description": "Maak contact met wervingsmanagers, plan interviews en vind uw droombaan. Wij ondersteunen u gedurende het hele proces."
+        }
+      },
+      "features": {
+        "0": {
+          "title": "AI-gestuurde matching",
+          "description": "Ons intelligente algoritme matcht u met relevante mogelijkheden"
+        },
+        "1": {
+          "title": "CV-optimalisatie",
+          "description": "Optimaliseer automatisch uw CV voor elke sollicitatie"
+        },
+        "2": {
+          "title": "Geverifieerde bedrijven",
+          "description": "Alle werkgevers zijn geverifieerd op authenticiteit en kwaliteit"
+        }
+      },
+      "cta": {
+        "title": "Klaar om uw reis te beginnen?",
+        "description": "Sluit u aan bij duizenden professionals die hun droombaan hebben gevonden via ons platform. Uw volgende kans is slechts één klik verwijderd.",
+        "searchButton": "Start zoektocht naar werk",
+        "profileButton": "Profiel aanmaken"
+      }
+    },
+    "LandingJobsFeatured": {
+      "badge": "Uitgelichte vacatures",
+      "title": "Ontdek uw volgende",
+      "titleHighlight": "Droomkans",
+      "description": "Ontdek zorgvuldig geselecteerde kansen van topbedrijven. Deze uitgelichte posities bieden uitzonderlijke carrièregroei, competitieve compensatie en geweldige werkomgevingen.",
+      "statsTitle": "Sluit u aan bij duizenden succesvolle professionals",
+      "statsDescription": "Ons platform heeft talloze professionals geholpen hun droombaan te vinden bij topbedrijven wereldwijd.",
+      "stats": {
+        "jobs": "Uitgelichte vacatures",
+        "success": "Succespercentage",
+        "companies": "Topbedrijven"
+      },
+      "JobCard": {
+        "skills": {
+          "moreSkills": "+{0} meer"
+        },
+        "badges": {
+          "featured": "⭐ Uitgelicht",
+          "urgent": "🔥 Spoed",
+          "remote": "🌍 Remote"
+        },
+        "buttons": {
+          "applyNow": "Nu solliciteren"
+        }
+      },
+      "viewAll": "Bekijk alle vacatures"
+    },
+    "MainJobListings": {
+      "jobSingular": "vacature",
+      "jobPlural": "vacatures",
+      "found": "gevonden",
+      "page": "Pagina",
+      "of": "van",
+      "sort": "Sorteren",
+      "sortNewest": "Nieuwste",
+      "sortSalaryDesc": "Salaris ↓",
+      "sortSalaryAsc": "Salaris ↑",
+      "sortCompany": "Bedrijf",
+      "sortRelevance": "Relevantie",
+      "noJobsFound": "Geen vacatures gevonden",
+      "tryAdjusting": "Probeer uw zoekcriteria of filters aan te passen om meer mogelijkheden te ontdekken.",
+      "clearAllFilters": "Wis alle filters",
+      "previous": "Vorige",
+      "next": "Volgende"
+    },
+    "JobSearchBar": {
+      "heading": "Vind uw volgende kans",
+      "subheading": "Ontdek vacatures van topbedrijven wereldwijd",
+      "favorites": "Favorieten",
+      "postJob": "Plaats vacature",
+      "filters": "Filters",
+      "searchPlaceholder": "Zoek vacatures, bedrijven, trefwoorden...",
+      "locationPlaceholder": "Locatie (stad, provincie, land)",
+      "searchButton": "Zoeken"
+    },
+    "JobFilters": {
+      "title": "Filters",
+      "clearAll": "Wis alles",
+      "jobTypeTitle": "Type vacature",
+      "experienceLevelTitle": "Ervaringsniveau",
+      "workModeTitle": "Werkwijze",
+      "salaryRangeTitle": "Salarisbereik",
+      "jobType": {
+        "fullTime": "Voltijds",
+        "partTime": "Deeltijds",
+        "contract": "Contract",
+        "freelance": "Freelance"
+      },
+      "experienceLevel": {
+        "entryLevel": "Startersniveau",
+        "junior": "Junior",
+        "midLevel": "Middenniveau",
+        "senior": "Senior",
+        "seniorLevel": "Senior niveau",
+        "executive": "Directie/Bestuur"
+      },
+      "salaryRange": {
+        "range1": "$40k - $60k",
+        "range2": "$60k - $80k",
+        "range3": "$80k - $120k",
+        "range4": "$120k+"
+      },
+      "workMode": {
+        "remote": "Remote",
+        "onSite": "Op locatie",
+        "hybrid": "Hybride"
+      }
+    },
+    "JobDetailsModal": {
+      "tabs": {
+        "overview": "Overzicht",
+        "company": "Bedrijf",
+        "details": "Details"
+      },
+      "jobDescription": "Functiebeschrijving",
+      "responsibilities": "Verantwoordelijkheden",
+      "requirements": "Vereisten",
+      "benefits": "Voordelen",
+      "companyInfo": "Bedrijfsinformatie",
+      "location": "Locatie",
+      "postedOn": "Geplaatst op",
+      "deadline": "Deadline",
+      "apply": "Nu solliciteren",
+      "share": "Delen",
+      "save": "Opslaan",
+      "saved": "Opgeslagen",
+      "viewsPrefix": "👀",
+      "applicantsPrefix": "👥",
+      "viewsText": "weergaven afgelopen 24 uur",
+      "applicantsText": "sollicitanten",
+      "noDescription": "Geen functiebeschrijving opgegeven.",
+      "noResponsibilities": "Geen specifieke verantwoordelijkheden vermeld.",
+      "noRequirements": "Geen specifieke vereisten vermeld.",
+      "noBenefits": "Geen informatie over voordelen beschikbaar.",
+      "urgencyPriority": "Prioriteit",
+      "fastTrack": "Versneld",
+      "qualifications": "Vereisten",
+      "qualifications.default": "Vereisten worden besproken tijdens het sollicitatieproces.",
+      "jobDetails": {
+        "title": "Vacature details",
+        "jobType": "Type vacature",
+        "workMode": "Werkwijze",
+        "experienceLevel": "Ervaringsniveau",
+        "location": "Locatie",
+        "salary": "Salaris",
+        "salaryRange": "Salarisbereik",
+        "competitive": "Competitief",
+        "applicationDeadline": "Sollicitatiedeadline",
+        "postedDate": "Geplaatst op",
+        "notSpecified": "Niet gespecificeerd"
+      },
+      "jobDescription.default": "Sluit u aan bij {{company}} als {{title}}. Wij zoeken een getalenteerde professional om ons team te versterken.",
+      "aboutCompany": {
+        "title": "Over het bedrijf",
+        "defaultDescription": "Lees meer over {{company}} tijdens het sollicitatieproces. Bedrijfsgegevens en cultuurinformatie worden gedeeld met gekwalificeerde kandidaten."
+      },
+      "actions": {
+        "applyNow": "Nu solliciteren",
+        "save": "Opslaan",
+        "share": "Delen",
+        "contact": "Contact",
+        "expand": "Uitvouwen",
+        "collapse": "Invouwen"
+      },
+      "stats": {
+        "viewsToday": "weergaven vandaag",
+        "applications": "sollicitaties",
+        "deadline": "Deadline"
+      },
+      "defaultBenefits": {
+        "healthInsurance": {
+          "title": "Ziektekostenverzekering",
+          "description": "Details over medische dekking worden besproken"
+        },
+        "timeOff": {
+          "title": "Vrije tijd",
+          "description": "Vakantie- en persoonlijke tijd"
+        },
+        "equipment": {
+          "title": "Apparatuur",
+          "description": "Werkapparatuur geleverd"
+        },
+        "workMode": {
+          "title": "Werkwijze",
+          "description": "Te bespreken"
+        }
+      },
+      "noCompanyInfo": "Geen bedrijfsinformatie beschikbaar.",
+      "companyStats": {
+        "locationTBD": "Locatie nader te bepalen"
+      },
+      "applicationProcess": {
+        "applicationReview": "Sollicitatiebeoordeling",
+        "initialInterview": "Eerste sollicitatiegesprek",
+        "technicalAssessment": "Technische beoordeling",
+        "finalInterview": "Laatste sollicitatiegesprek",
+        "duration": {
+          "days2to3": "2-3 dagen",
+          "days3to5": "3-5 dagen",
+          "week1to2": "1-2 weken",
+          "mins30to45": "30-45 min",
+          "hours1to2": "1-2 uur",
+          "mins45to60": "45-60 min"
+        },
+        "status": {
+          "pending": "in behandeling",
+          "completed": "voltooid",
+          "current": "huidig",
+          "upcoming": "aankomend"
+        }
+      }
+    },
+    "CreateJobModal": {
+      "title": "Nieuwe vacature plaatsen",
+      "requiredFields": "Alle velden gemarkeerd met * zijn verplicht",
+      "cancel": "Annuleren",
+      "submitting": "Verzenden...",
+      "submitApplication": "Sollicitatie indienen",
+      "creatingJob": "Vacature aanmaken...",
+      "createJobPosting": "Vacature plaatsen",
+      "loadingCompanies": "Bedrijven laden...",
+      "selectCompany": "Selecteer een bedrijf",
+      "noCompanies": "U heeft geen goedgekeurde bedrijven. Maak er eerst een aan.",
+      "noCompaniesDescription": "U moet ten minste één bedrijf toevoegen en laten goedkeuren voordat u vacatures kunt plaatsen. Gebruik de knop \"Bedrijf toevoegen\" in uw dashboard.",
+      "sections": {
+        "jobInformation": "Vacature-informatie",
+        "location": "Locatie & type",
+        "compensation": "Compensatie & deadline",
+        "jobDescription": "Functiebeschrijving",
+        "requirements": "Vereisten & voordelen"
+      },
+      "fields": {
+        "jobTitle": "Functietitel",
+        "company": "Bedrijf",
+        "jobType": "Type vacature",
+        "workMode": "Werkwijze",
+        "location": "Locatie",
+        "country": "Land",
+        "experience": "Ervaringsniveau",
+        "minSalary": "Min. salaris",
+        "maxSalary": "Max. salaris",
+        "deadline": "Sollicitatiedeadline",
+        "jobDescription": "Functiebeschrijving",
+        "requirements": "Vereisten",
+        "benefits": "Voordelen"
+      },
+      "placeholders": {
+        "jobTitle": "bijv. Senior Productmanager",
+        "location": "Begin te typen: stad, provincie, land...",
+        "jobDescription": "Beschrijf de rol, verantwoordelijkheden en wat deze positie spannend maakt...",
+        "requirement": "bijv. 2+ jaar ervaring in softwareontwikkeling",
+        "benefit": "bijv. Ziektekostenverzekering, 401(k) matching"
+      },
+      "actions": {
+        "addRequirement": "Vereiste toevoegen",
+        "addBenefit": "Voordeel toevoegen"
+      },
+      "jobTypes": {
+        "fullTime": "Voltijds",
+        "partTime": "Deeltijds",
+        "contract": "Contract",
+        "freelance": "Freelance",
+        "internship": "Stage",
+        "temporary": "Tijdelijk"
+      },
+      "workModes": {
+        "onSite": "Op locatie",
+        "remote": "Remote",
+        "hybrid": "Hybride"
+      },
+      "experienceLevels": {
+        "entryLevel": "Startersniveau",
+        "junior": "Junior",
+        "midLevel": "Middenniveau",
+        "senior": "Senior",
+        "executive": "Directie"
+      }
+    },
+    "FavoritesModal": {
+      "title": "Favoriete vacatures",
+      "job": "vacature",
+      "jobs": "vacatures",
+      "saved": "opgeslagen",
+      "removeFromFavorites": "Verwijder uit favorieten",
+      "viewDetails": "Bekijk details",
+      "yourSavedJobs": "Uw opgeslagen vacatures",
+      "browseJobs": "Blader door vacatures",
+      "cleanUpMissingJobs": "Ontbrekende vacatures opschonen",
+      "missingJobsWarning": {
+        "title": "{0} Opgeslagen vacature(s) niet langer beschikbaar",
+        "description": "Sommige vacatures in uw favorieten zijn mogelijk verwijderd of zijn niet langer actief."
+      },
+      "noSavedJobs": "Geen opgeslagen vacatures",
+      "noSavedJobsMessage": "U heeft nog geen vacatures opgeslagen. Klik op het bladwijzerpictogram bij een vacature om deze later op te slaan."
+    },
+    "AppliedJobs": {
+      "title": "Geselecteerde vacatures",
+      "subtitle": "Volg uw sollicitaties en hun huidige status",
+      "loading": "Uw sollicitaties worden geladen...",
+      "loginRequired": {
+        "title": "Gelieve in te loggen",
+        "message": "U moet ingelogd zijn om uw sollicitaties te bekijken."
+      },
+      "stats": {
+        "totalApplied": "Totaal aantal sollicitaties",
+        "pending": "In behandeling",
+        "interviews": "Interviews",
+        "successRate": "Succespercentage"
+      },
+      "search": {
+        "placeholder": "Zoek vacatures, bedrijven of locaties..."
+      },
+      "filters": {
+        "allStatus": "Alle statussen",
+        "underReview": "In behandeling",
+        "interview": "Interview",
+        "accepted": "Geaccepteerd",
+        "rejected": "Afgekeurd"
+      },
+      "sort": {
+        "byDate": "Sorteren op datum",
+        "byCompany": "Sorteren op bedrijf",
+        "byStatus": "Sorteren op status"
+      },
+      "noApplications": {
+        "title": "Geen sollicitaties gevonden",
+        "filterMessage": "Probeer uw zoek- of filtercriteria aan te passen.",
+        "emptyMessage": "U heeft nog geen vacatures gesolliciteerd. Begin met het verkennen van mogelijkheden!"
+      },
+      "actions": {
+        "browseJobs": "Blader door vacatures",
+        "moreDetails": "Meer details",
+        "lessDetails": "Minder details"
+      },
+      "jobInfo": {
+        "applied": "Gesolliciteerd",
+        "status": "Status"
+      },
+      "jobDetails": {
+        "jobDescription": "Functiebeschrijving",
+        "requirements": "Vereisten",
+        "noRequirements": "Geen specifieke vereisten vermeld",
+        "applicationStatus": "Sollicitatiestatus",
+        "status": "Status",
+        "appliedOn": "Gesolliciteerd op",
+        "title": "Vacature details",
+        "type": "Type",
+        "mode": "Werkwijze",
+        "salary": "Salaris"
+      }
+    },
+    "DashboardMessages": {
+      "search": {
+        "placeholder": "Zoeken"
+      },
+      "header": {
+        "title": "Berichten"
+      },
+      "noMessages": {
+        "title": "Nog geen berichten",
+        "message": "Werkgevers nemen hier contact met u op wanneer ze geïnteresseerd zijn in uw profiel"
+      },
+      "status": {
+        "active": "Nu actief"
+      },
+      "loading": {
+        "inProgress": "Laden...",
+        "loadMore": "Oudere berichten laden",
+        "noMore": "Geen berichten meer",
+        "messages": "Berichten laden..."
+      },
+      "errors": {
+        "loadFailed": "Niet gelukt om berichten te laden",
+        "sendFailed": "Niet gelukt om bericht te versturen. Probeer het opnieuw.",
+        "loadingError": "Fout bij het laden van berichten: {{message}}",
+        "permission": "Toegang geweigerd of netwerkfout",
+        "connection": "Controleer uw Firebase-beveiligingsregels en netwerkverbinding."
+      },
+      "emptyState": {
+        "title": "Geen berichten in dit gesprek",
+        "description": "Dit is het begin van uw gesprek met {{name}}.",
+        "hint": "Berichten verschijnen hier"
+      },
+      "input": {
+        "placeholder": "Typ een bericht...",
+        "sendButton": "Verzenden"
+      },
+      "welcome": {
+        "title": "Welkom bij Berichten",
+        "description": "Selecteer een gesprek uit de zijbalk om met uw contacten te chatten.",
+        "hint": "Kies een gesprek om te beginnen met berichten"
+      },
+      "conversation": {
+        "noMessages": "Nog geen berichten"
+      },
+      "time": {
+        "now": "Nu",
+        "minutes": "{{count}} min geleden",
+        "hours": "{{count}} uur geleden"
+      },
+      "user": {
+        "unknown": "Onbekende gebruiker"
+      }
+    },
+    "JobApplicationsModal": {
+      "header": {
+        "title": "Sollicitaties voor",
+        "totalApplications": "totaal aantal sollicitaties"
+      },
+      "search": {
+        "placeholder": "Zoeken op naam, e-mail of vaardigheden..."
+      },
+      "filters": {
+        "allStatus": "Alle statussen",
+        "pending": "In behandeling",
+        "interview": "Interview",
+        "accepted": "Geaccepteerd",
+        "rejected": "Afgekeurd"
+      },
+      "status": {
+        "pending": "In behandeling",
+        "interview": "Interview",
+        "accepted": "Geaccepteerd",
+        "rejected": "Afgekeurd"
+      },
+      "emptyState": {
+        "title": "Geen sollicitaties gevonden",
+        "noApplications": "Niemand heeft nog op deze vacature gesolliciteerd.",
+        "noResults": "Geen sollicitaties komen overeen met uw huidige filters."
+      },
+      "coverLetter": {
+        "none": "Geen sollicitatiebrief meegeleverd"
+      },
+      "applicantInfo": {
+        "experience": "ervaring",
+        "resumeAttached": "CV bijgevoegd",
+        "more": "meer"
+      },
+      "buttons": {
+        "accept": "Accepteren",
+        "reject": "Afwijzen",
+        "downloadResume": "Download CV",
+        "sendEmail": "E-mail verzenden",
+        "showResume": "Toon CV"
+      }
+    },
+    "EmployerDashboard": {
+      "loading": "Uw vacatures worden geladen...",
+      "header": {
+        "title": "Vacatures",
+        "subtitle": "Beheer uw vacatures en bekijk sollicitaties"
+      },
+      "buttons": {
+        "addCompany": "Bedrijf toevoegen",
+        "company": "Bedrijf",
+        "postNewJob": "Nieuwe vacature plaatsen",
+        "newJob": "Nieuwe vacature",
+        "postFirstJob": "Plaats uw eerste vacature",
+        "applications": "Sollicitaties",
+        "editJob": "Vacature bewerken",
+        "pause": "Pauzeren",
+        "activate": "Activeren",
+        "delete": "Verwijderen"
+      },
+      "stats": {
+        "totalJobs": "Totaal aantal vacatures",
+        "active": "Actief",
+        "applications": "Sollicitaties",
+        "views": "Weergaven"
+      },
+      "search": {
+        "placeholder": "Zoek vacatures op titel, locatie..."
+      },
+      "filters": {
+        "allStatus": "Alle statussen",
+        "active": "Actief",
+        "pending": "Goedkeuring in behandeling",
+        "paused": "Gepauzeerd",
+        "closed": "Gesloten",
+        "draft": "Concept"
+      },
+      "sort": {
+        "byDate": "Sorteren op datum",
+        "byApplications": "Sollicitaties",
+        "byViews": "Weergaven",
+        "byTitle": "Titel"
+      },
+      "emptyState": {
+        "title": "Geen vacatures gevonden",
+        "noJobs": "U heeft nog geen vacatures geplaatst. Plaats uw eerste vacature om te beginnen!",
+        "noResults": "Geen vacatures komen overeen met uw huidige filters. Probeer uw zoekcriteria aan te passen."
+      },
+      "jobDetails": {
+        "description": "Functiebeschrijving",
+        "requirements": "Vereisten",
+        "moreRequirements": "+{{count}} meer"
+      },
+      "jobInfo": {
+        "applications": "sollicitaties",
+        "views": "weergaven",
+        "deadline": "Deadline:"
+      },
+      "AddCompanyModal": {
+        "header": {
+          "title": "Bedrijf toevoegen",
+          "subtitle": "Voeg uw bedrijfsgegevens toe ter beoordeling en goedkeuring"
+        },
+        "info": {
+          "title": "Bedrijfsbeoordelingsproces",
+          "description": "Alle bedrijfsopgaven worden door ons team beoordeeld om kwaliteit en authenticiteit te garanderen. U wordt op de hoogte gebracht zodra uw bedrijf is goedgekeurd en kan worden gebruikt voor vacatures."
+        },
+        "form": {
+          "companyName": "Bedrijfsnaam *",
+          "website": "Website",
+          "companyLogo": "Bedrijfslogo (optioneel)",
+          "industry": "Branche *",
+          "companySize": "Bedrijfsomvang *",
+          "location": "Locatie *",
+          "address": "Adres",
+          "phone": "Telefoon",
+          "email": "E-mail",
+          "description": "Bedrijfsbeschrijving",
+          "companyNamePlaceholder": "Voer bedrijfsnaam in"
+        },
+        "validation": {
+          "nameRequired": "Bedrijfsnaam is verplicht",
+          "industryRequired": "Branche is verplicht",
+          "sizeRequired": "Bedrijfsomvang is verplicht",
+          "locationRequired": "Locatie is verplicht",
+          "invalidWebsite": "Voer een geldige website-URL in",
+          "invalidImage": "Voer een geldige afbeeldings-URL in",
+          "invalidEmail": "Voer een geldig e-mailadres in"
+        },
+        "industries": {
+          "technology": "Technologie",
+          "healthcare": "Gezondheidszorg",
+          "finance": "Financiën",
+          "education": "Onderwijs",
+          "retail": "Detailhandel",
+          "manufacturing": "Productie",
+          "consulting": "Consultancy",
+          "marketing": "Marketing",
+          "realEstate": "Vastgoed",
+          "hospitality": "Horeca",
+          "transportation": "Transport",
+          "energy": "Energie",
+          "media": "Media",
+          "government": "Overheid",
+          "nonprofit": "Non-profit",
+          "other": "Overig"
+        },
+        "companySizes": {
+          "size1to10": "1-10 medewerkers",
+          "size11to50": "11-50 medewerkers",
+          "size51to200": "51-200 medewerkers",
+          "size201to500": "201-500 medewerkers",
+          "size501to1000": "501-1000 medewerkers",
+          "size1000plus": "1000+ medewerkers"
+        },
+        "placeholders": {
+          "selectIndustry": "Selecteer branche",
+          "selectCompanySize": "Selecteer bedrijfsomvang"
+        },
+        "messages": {
+          "validationError": "Validatiefout",
+          "fixErrors": "Gelieve de fouten in het formulier te herstellen",
+          "error": "Fout",
+          "mustBeLoggedIn": "U moet ingelogd zijn om een bedrijf toe te voegen",
+          "success": "Succes",
+          "companyAdded": "Bedrijf succesvol toegevoegd! Het wordt beoordeeld door ons team.",
+          "failedToAdd": "Niet gelukt om bedrijf toe te voegen",
+          "unexpectedError": "Er is een onverwachte fout opgetreden"
+        },
+        "buttons": {
+          "cancel": "Annuleren",
+          "addCompany": "Bedrijf toevoegen",
+          "addingCompany": "Bedrijf toevoegen..."
+        }
+      },
+      "CompaniesManagement": {
+        "loading": {
+          "companies": "Uw bedrijven worden geladen..."
+        },
+        "header": {
+          "title": "Mijn bedrijven",
+          "subtitle": "Beheer uw bedrijven en volg hun goedkeuringsstatus"
+        },
+        "buttons": {
+          "addCompany": "Bedrijf toevoegen",
+          "add": "Toevoegen"
+        },
+        "infoBanner": {
+          "title": "Bedrijfsgoedkeuringsproces",
+          "message": "Alle bedrijven moeten worden goedgekeurd voordat ze kunnen worden gebruikt voor vacatures. Alleen goedgekeurde bedrijven verschijnen in uw vacatureformulier."
+        },
+        "stats": {
+          "totalCompanies": "Totaal aantal bedrijven",
+          "approved": "Goedgekeurd",
+          "pending": "In behandeling",
+          "rejected": "Afgekeurd"
+        },
+        "search": {
+          "placeholder": "Zoek bedrijven op naam, branche, locatie..."
+        },
+        "filters": {
+          "allStatus": "Alle statussen",
+          "pending": "In behandeling",
+          "approved": "Goedgekeurd",
+          "rejected": "Afgekeurd"
+        },
+        "emptyState": {
+          "title": "Geen bedrijven gevonden",
+          "noCompanies": "U heeft nog geen bedrijven toegevoegd. Voeg uw eerste bedrijf toe om te beginnen!",
+          "noMatches": "Geen bedrijven komen overeen met uw huidige filters. Probeer uw zoekcriteria aan te passen.",
+          "addFirstCompany": "Voeg uw eerste bedrijf toe"
+        },
+        "companyDetails": {
+          "description": "Bedrijfsbeschrijving",
+          "visitWebsite": "Bezoek website"
+        },
+        "actions": {
+          "editCompany": "Bedrijf bewerken",
+          "delete": "Verwijderen"
+        }
+      },
+      "JobCard": {
+        "badges": {
+          "featured": "⭐ Uitgelicht",
+          "urgent": "🔥 Spoed",
+          "remote": "🌍 Remote"
+        },
+        "jobDetails": {
+          "location": "Locatie",
+          "type": "Type vacature",
+          "salary": "Salaris",
+          "postedTime": "Plaatsingstijd"
+        },
+        "skills": {
+          "moreSkills": "+{0} meer"
+        },
+        "buttons": {
+          "applyNow": "Nu solliciteren"
+        }
+      }
+    },
+    "JobCard2": {
+      "alerts": {
+        "signInRequired": "Gelieve in te loggen om te solliciteren."
+      },
+      "applicationStatus": {
+        "loading": "Laden...",
+        "applyNow": "Nu solliciteren",
+        "pending": "Sollicitatie in behandeling",
+        "interview": "Interview gepland",
+        "accepted": "Sollicitatie geaccepteerd",
+        "rejected": "Sollicitatie afgekeurd"
+      },
+      "jobInfo": {
+        "locationTBD": "Locatie nader te bepalen",
+        "applicants": "{{applicants}} sollicitanten",
+        "requirements": "Vereisten",
+        "posted": "Geplaatst op {{postedDate}}"
+      },
+      "buttons": {
+        "viewDetails": "Bekijk details"
+      }
+    },
+    "JobApplicationModal": {
+      "title": "Solliciteer voor {{jobTitle}}",
+      "subtitle": "Vul het onderstaande formulier in om op deze functie te solliciteren",
+      "personalInfo": {
+        "heading": "Persoonlijke informatie",
+        "fullName": "Volledige naam",
+        "email": "E-mailadres",
+        "phone": "Telefoonnummer",
+        "linkedin": "LinkedIn profiel-URL",
+        "github": "GitHub/Portfolio-URL",
+        "website": "Persoonlijke website"
+      },
+      "resume": {
+        "heading": "CV",
+        "selectResume": "Selecteer CV",
+        "browseResumes": "Blader door CV's",
+        "uploadNew": "Nieuw CV uploaden",
+        "preview": "Voorbeeld CV",
+        "noResumes": "Geen CV's gevonden",
+        "createResume": "Maak eerst een CV aan",
+        "loading": "CV's laden...",
+        "error": "Fout bij het laden van CV's",
+        "selectThis": "Selecteer dit CV",
+        "createdAt": "Aangemaakt op {{date}}"
+      },
+      "coverLetter": {
+        "heading": "Motivatiebrief",
+        "placeholder": "Schrijf een korte motivatiebrief waarin u uitlegt waarom u geschikt bent voor deze functie...",
+        "loadTemplate": "Sjabloon laden",
+        "templates": {
+          "standard": "Standaard",
+          "professional": "Professioneel",
+          "creative": "Creatief",
+          "technical": "Technisch",
+          "career": "Carrièreverandering"
+        }
+      },
+      "buttons": {
+        "back": "Terug",
+        "submit": "Sollicitatie indienen",
+        "submitting": "Verzenden...",
+        "cancel": "Annuleren",
+        "close": "Sluiten",
+        "viewMyApplications": "Bekijk mijn sollicitaties",
+        "browseMore": "Blader door meer vacatures"
+      },
+      "success": {
+        "title": "Sollicitatie ingediend!",
+        "message": "Uw sollicitatie is succesvol ingediend. Wij nemen binnenkort contact met u op."
+      },
+      "error": {
+        "title": "Sollicitatie mislukt",
+        "message": "Er is een probleem opgetreden bij het indienen van uw sollicitatie. Probeer het opnieuw.",
+        "requiredFields": "Vul alle verplichte velden in"
+      },
+      "pagination": {
+        "prev": "Vorige",
+        "next": "Volgende",
+        "page": "Pagina {{current}} van {{total}}"
+      }
+    },
+    "ProfileDisplay2": {
+      "search": "Zoeken",
+      "navigation": "NAVIGATIE",
+      "menu": {
+        "dashboard": "Dashboard",
+        "interviews": "Interviews",
+        "portfolios": "Portfolio's",
+        "settings": "Instellingen",
+        "appliedJobs": "Gesolliciteerde vacatures",
+        "messages": "Berichten",
+        "myJobs": "Mijn vacatures",
+        "myCompanies": "Mijn bedrijven"
+      }
+    },
+    "DashboardHomepageFix1": {
+      "subtitle": "Beheer uw CV's en motivatiebrieven"
+    }
+  },
+  "blog": {
+    "title": "Blog",
+    "description": "Laatste carrièretips en trends",
+    "knowledgeHub": "Kenniscentrum",
+    "blogTitle": "Inzichten & Bronnen",
+    "blogDescription": "Deskundige inzichten, trends in de sector en praktische gidsen om u te helpen slagen",
+    "searchPlaceholder": "Zoek artikelen, gidsen en inzichten...",
+    "search": "Zoeken",
+    "allArticles": "Alle artikelen",
+    "allCategories": "Alle categorieën",
+    "noArticlesFound": "Geen artikelen gevonden",
+    "adjustSearch": "Probeer uw zoektermen of categoriefilter aan te passen.",
+    "loadMore": "Meer artikelen laden",
+    "articleLabel": "Artikel",
+    "minRead": "min leestijd",
+    "recently": "Onlangs",
+    "articleNotFound": "Artikel niet gevonden",
+    "backToArticles": "Terug naar artikelen",
+    "backToBlog": "Terug naar blog",
+    "shareArticle": "Artikel delen",
+    "relatedArticles": "Gerelateerde artikelen",
+    "views": "weergaven",
+    "tags": "Tags"
+  }
+}

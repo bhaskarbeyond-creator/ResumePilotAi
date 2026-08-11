@@ -1,0 +1,33 @@
+.cover3-content{
+    margin-top: 50px;
+    width: 90%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+    // reset font to default
+    font-family: 'Roboto', sans-serif;
+    
+    
+    .cover3-head{
+        padding: 0px 13px;
+
+    }
+    .cover3-body{
+        display:flex;
+        padding: 0px 13px;
+        box-sizing: border-box;
+        .cover3-body-left{
+            width: 70%;
+            padding-right:20px
+        }
+        .cover3-body-right{
+ 
+            padding-right: 20px;
+            width: 30%;
+        }
+
+
+        
+    }
+}

@@ -1,0 +1,2562 @@
+{
+  "intro": {
+    "titleLeft": "Din CV i tre",
+    "titleSpan": "enkle",
+    "titleRight": "steg",
+    "step1": "Velg en mal fra vår samling.",
+    "step2": "Bygg din CV ved hjelp av vår brukervennlige CV-bygger.",
+    "step3": "Last ned din CV.",
+    "login": "Logg inn",
+    "selectTemplate": "Velg Mal",
+    "rightReserved": "Alle rettigheter reservert"
+  },
+  "selectionAction": {
+    "titleLeft": "Velg en",
+    "titleSpan": "mal",
+    "titleRight": "fra listen.",
+    "templates": "Maler",
+    "account": "Min Konto",
+    "admin": "Admin"
+  },
+  "form": {
+    "untitled": "Uten tittel",
+    "profileCompleteness": "Profilkompletthet",
+    "personalDetails": "Personlige Detaljer",
+    "firstName": "Fornavn",
+    "lastName": "Etternavn",
+    "email": "E-post",
+    "phone": "Telefon",
+    "photo": "Bilde",
+    "occupation": "Yrke",
+    "country": "Land",
+    "nationality": "Nasjonalitet",
+    "city": "By",
+    "address": "Adresse",
+    "postalcode": "Postnummer",
+    "dateOfBirth": "Fødselsdato",
+    "drivingLicense": "Førerkort",
+    "profesionalSummary": "Profesjonell Sammendrag",
+    "profesionalSummarySubtitle": "Raskt sammendrag om din samlede erfaring.",
+    "employmentHistory": "Arbeidserfaring",
+    "employmentHistorySubtitle": "Inkluder dine siste 10 år med relevant erfaring og datoer i denne delen. List opp din mest nylige stilling først.",
+    "jobTitle": "Stillingstittel",
+    "employer": "Arbeidsgiver",
+    "begin": "Start",
+    "end": "Slutt",
+    "description": "Beskrivelse",
+    "education": "Utdanning",
+    "educationSubtitle": "Inkluder dine siste 10 år med utdanningshistorikk og datoer i denne delen. List opp din mest nylige stilling først.",
+    "school": "Skole",
+    "degree": "Grad",
+    "courseDescription": "Kursbeskrivelse",
+    "languages": "Språk",
+    "laguagesSubtitle": "Skriv inn språkene du kan jobbe med.",
+    "language": "Språk",
+    "level": "Nivå",
+    "skills": "Ferdigheter",
+    "skillsSubtitle": "Skriv inn dine ferdigheter og gi hver av dem en vurdering.",
+    "skillName": "Ferdighetsnavn",
+    "rating": "Vurdering",
+    "addSkill": "Legg til Ferdighet",
+    "addLanguage": "Legg til Språk",
+    "addJob": "Legg til Jobb",
+    "addEducation": "Legg til Utdanning",
+    "showDetails": "Vis flere detaljer",
+    "hideDetails": "Skjul flere detaljer",
+    "previous": "Forrige",
+    "next": "Neste",
+    "selectTemplate": "Velg Mal",
+    "save": "Lagre",
+    "download": "Last ned"
+  },
+  "login": {
+    "login": "Logg inn",
+    "email": "E-post",
+    "googleLogin": "Logg inn med ",
+    "facebookLogin": "Logg inn med",
+    "or": "Eller",
+    "password": "Passord",
+    "passwordRepeat": "Gjenta Passord",
+    "dontHaveAcc": "Har du ikke en konto? ",
+    "signup": "Registrer deg",
+    "passwordLost": "Glemt passord? ",
+    "recoverPassword": "Gjenopprett passord",
+    "register": "Registrer",
+    "alreadyHaveAccount": "Har du allerede en konto?",
+    "passwordRecovery": "Passordgjenoppretting",
+    "recoverMyPassword": "Gjenopprett Mitt Passord"
+  },
+  "dashboard": {
+    "homepage": "Hjemmeside",
+    "dashboard": "Dashboard",
+    "coverLetter": "Søknadsbrev",
+    "dashBoard": "Dashboard",
+    "goToResume": "Gå til CV",
+    "remove": "Fjern",
+    "addNew": "Legg til ny",
+    "addResume": "Legg til CV",
+    "accountSettings": "Kontoinnstillinger",
+    "logout": "Logg ut",
+    "settings": "Innstillinger",
+    "personalInfo": "PERSONLIG INFORMASJON",
+    "firstname": "Fornavn",
+    "lastname": "Etternavn",
+    "changePassword": "BYTT PASSORD",
+    "newPassword": "Nytt passord",
+    "save": "Lagre",
+    "commingSoon": "Kommer snart",
+    "adsManager": "Annonsbehandling",
+    "currentAds": "Gjeldende Annonser",
+    "name": "Navn",
+    "date": "Dato",
+    "bannerLink": "Bannerlenke",
+    "bannerName": "Banner Navn",
+    "destinationLink": "Destinasjonslenke",
+    "add": "Legg til",
+    "noAdsFound": "Ingen annonser funnet!",
+    "pages": "Sider",
+    "currentPages": "Gjeldende Sider",
+    "addPages": "Legg til Sider",
+    "pageName": "Side Navn",
+    "addPage": "Legg til Side"
+  },
+  "resume": {
+    "personalSummary": "Personlig Sammendrag",
+    "employmentHistory": "Arbeidserfaring",
+    "educationHistory": "Utdanningshistorikk",
+    "info": "Info",
+    "address": "Adresse",
+    "phone": "Telefon",
+    "email": "E-post",
+    "languages": "Språk",
+    "skills": "Ferdigheter"
+  },
+  "Language": {
+    "elemntary": "Elementær",
+    "Intermediate": "Middels",
+    "Advanced": "Avansert",
+    "Proficient": "Flytende"
+  },
+  "dashNew": {
+    "noDocumentFound": "Ingen dokumenter funnet!",
+    "noDocumentFoundSub": "Du kan starte med å opprette en ny CV eller et nytt søknadsbrev",
+    "personalDetails": "Personlige Detaljer",
+    "name": "Navn",
+    "email": "E-post",
+    "phone": "Telefon",
+    "address": "Adresse",
+    "city": "By",
+    "country": "Land",
+    "postalcode": "Postnummer",
+    "skills": "Ferdigheter",
+    "searchDocuments": "Søk etter dokumenter",
+    "resume": "CV",
+    "coverLetter": "Søknadsbrev",
+    "clearAll": "Slett alt",
+    "filter": "Filter",
+    "noSkillsAdded": "Ingen ferdigheter lagt til",
+    "shareDocument": "Del dette dokumentet",
+    "link": "Lenke",
+    "linkDesc": "Du kan bruke denne delbare lenken for å la hvem som helst se dette dokumentet",
+    "copy": "Kopier",
+    "copied": "Kopiert",
+    "quickAccess": "Rask Tilgang",
+    "quickAccessDesc": "I denne seksjonen finner du alle handlingene du kan utføre på dokumentene dine og kontoen din.",
+    "createDocument": "Opprett dokument",
+    "favourites": "Favoritter",
+    "settings": "Innstillinger",
+    "statistics": "Statistikk",
+    "statisticsDesc": "Her kan du se statistikken din, hvor mange dokumenter du har generert, hvor mange nedlastinger du har hatt",
+    "documentsGenerated": "Genererte Dokumenter",
+    "downloads": "Nedlastinger",
+    "favouitesDesc": "Dette er en liste over dine favorittdokumenter, du kan fjerne dem herfra.",
+    "noFavouritesFound": "Du har ingen favoritter ennå!",
+    "fullName": "Fullt navn",
+    "type": "Type",
+    "summary": "Sammendrag",
+    "close": "Lukk",
+    "profil": "Profil",
+    "account": "Konto",
+    "upload": "Last opp",
+    "remove": "Fjern",
+    "fullNameDesc": "Vi bruker det når vi bygger CV",
+    "emailDesc": "For å autentisere deg til applikasjonen",
+    "description": "Beskrivelse",
+    "descriptionDesc": "Din kontotype",
+    "changePassword": "Bytt Passord",
+    "newPassword": "Nytt Passord",
+    "sbsend": "Abonnement Utløper",
+    "sbsendDesc": "Datoen abonnementet ditt utløper",
+    "profileUpdated": "Profil oppdatert",
+    "profileUpdatedDesc": "Profilen ble oppdatert",
+    "passChanged": "Passord endret",
+    "passChangedDesc": "Passordet ble endret",
+    "passError": "Passordet er for kort",
+    "passErrorDesc": "Passordet må være minst 6 tegn langt",
+    "profile": "Profil"
+  },
+  "static": {
+    "plansHeader": "Enkle, transparente priser",
+    "plansDesc": "For å laste ned din CV melder du deg enkelt på vårt Premium medlemskap. Velg planen som passer best for deg.",
+    "month": "Måned",
+    "premiumMonth": "Premium Månedlig",
+    "premiumYear": "Premium 6 Måneder",
+    "premiumHalfYear": "Premium Årlig",
+    "unlimitedPDF": "Ubegrenset PDF Nedlastinger",
+    "unlimitedResumes": "Ubegrenset CV-er",
+    "nonRecuring": "Ikke-gjentagende betaling.",
+    "upgradeAndDownload": "Oppgrader og Last ned",
+    "payment1": "Få drømmejobben din",
+    "payment2": "Betaling gjennom en pålitelig betalingstjeneste",
+    "payment3": "SSL Sikker / 256-bits SSL sikker kasse",
+    "payment4": "7-dagers pengene tilbake-garanti",
+    "payment5": "Hvordan kan jeg avbryte?",
+    "payment6": "Du kan enkelt avbryte abonnementet ditt ved å kontakte vårt supportteam via e-post eller telefon, eller ved å bruke kontaktsiden vår.",
+    "payment7": "Aksepterte Betalingsmåter",
+    "payment8": "Totalt skyldig i dag:",
+    "payment9": "Hvor er du lokalisert?",
+    "payment10": "Vennligst skriv inn ditt land og postnummer nedenfor. Vi samler inn denne informasjonen for å bekjempe svindel og garantere sikkerheten for din betaling.",
+    "payment11": "Land",
+    "payment12": "Postnummer",
+    "payment13": "Betal med kort",
+    "payment14": "tilbake",
+    "payment15": "Kortholder",
+    "payment16": "Adresse",
+    "nav1": "Gå til App",
+    "nav2": "Kontakt Oss",
+    "footer1": "Sosialt",
+    "footer2": "Kontakt Oss",
+    "footer3": "Personvernerklæring",
+    "footer4": "Følg oss på sosiale medier for å få eksklusive ressurser rett i feeden din",
+    "footer5": "Om",
+    "footer6": "Copyright © 2021-2022 Alle rettigheter reservert.",
+    "footer7": "Innhold",
+    "footer8": "Hjem"
+  },
+  "navbar": {
+    "home": "Hjem",
+    "featuresNav": "Funksjoner",
+    "resumeBuilderFeatures": "CV-bygger funksjoner",
+    "featureTagline": "Alt du trenger for det perfekte CV-et",
+    "userCount": "50K+ brukere",
+    "exploreFeatures": "Utforsk Alle Funksjoner",
+    "freeToTry": "Gratis å prøve",
+    "startBuilding": "Start bygging",
+    "pricing": "Priser",
+    "contact": "Kontakt",
+    "signOut": "Logg ut",
+    "dashboard": "Dashboard",
+    "signIn": "Logg inn",
+    "getStarted": "Kom i gang",
+    "viewAllFeatures": "Se alle funksjoner",
+    "popular": "Populær",
+    "features": {
+      "atsOptimization": {
+        "title": "ATS-optimalisering",
+        "description": "Slå automatiserte screening-systemer",
+        "badge": "Smart"
+      },
+      "aiBuilder": {
+        "title": "AI Innholdsbygger",
+        "description": "AI-drevet CV-skriving",
+        "badge": "AI"
+      },
+      "templates": {
+        "title": "Profesjonelle Maler",
+        "description": "Moderne, bransjespesifikke design"
+      },
+      "export": {
+        "title": "Multi-format eksport",
+        "description": "PDF, DOCX og flere formater"
+      },
+      "security": {
+        "title": "Personvern og Sikkerhet",
+        "description": "Datasikkerhet på banknivå",
+        "badge": "Sikker"
+      },
+      "analytics": {
+        "title": "Karriereanalyse",
+        "description": "Spor suksessen til dine søknader",
+        "badge": "Pro"
+      }
+    },
+    "resources": {
+      "learn": "Lær",
+      "documentation": {
+        "title": "Dokumentasjon",
+        "description": "Komplette guider og API-referanser"
+      },
+      "videoTutorials": {
+        "title": "Videoopplæringer",
+        "description": "Lær med trinnvise videoer"
+      },
+      "designCourse": {
+        "title": "Designkurs",
+        "description": "Mestre grunnleggende om logodesign",
+        "badge": "Gratis"
+      },
+      "community": "Samfunn",
+      "communityForum": {
+        "title": "Samfunnsforum",
+        "description": "Kom i kontakt med andre designere"
+      },
+      "blog": {
+        "title": "Blogg",
+        "description": "Siste designtrender og tips"
+      },
+      "support": "Støtte",
+      "helpCenter": {
+        "title": "Hjelpesenter",
+        "description": "Finn svar på vanlige spørsmål"
+      },
+      "faq": {
+        "title": "FAQ",
+        "description": "Ofte stilte spørsmål"
+      },
+      "contactUs": {
+        "title": "Kontakt Oss",
+        "description": "Kom i kontakt med teamet vårt"
+      }
+    },
+    "blog": "Blogg"
+  },
+  "homepageText": {
+    "text1": "Skil deg ut fra mengden med vår online CV-bygger",
+    "text2": "Vår CV-bygger er det perfekte verktøyet for å hjelpe deg med å lage et profesjonelt, polert CV på bare noen få minutter. Med vårt intuitive design og enkle trinn-for-trinn-prosess kan du enkelt bygge et CV som skiller seg ut fra konkurrentene. Enten du er nyutdannet eller en erfaren profesjonell, har vår webapplikasjon alt du trenger for å ta karrieren din til neste nivå.",
+    "text3": "CV",
+    "text4": "Søknadsbrev",
+    "text5": "Anmeldelser",
+    "text6": "Velg hva du vil opprette.",
+    "text7": "Anmeldelser",
+    "text8": "Styrk din CV med våre avanserte funksjoner",
+    "text9": "Vår CV-bygger tilbyr en rekke funksjoner for å hjelpe brukere med å lage en profesjonell og effektiv CV. Disse inkluderer forhåndsskrevne setningsforslag, delbar lenke, PDF-eksport, tilpassbare maler, automatisk lagring, stavekontroll, spor endringer, samarbeid og ressurser for personlig merkevarebygging. Alle disse funksjonene gjør det enkelt og effektivt å lage en profesjonell CV."
+  },
+  "HomepageHero": {
+    "typingEffect": {
+      "sentence1": "Lag profesjonelle CV-er med AI",
+      "sentence2": "Velg mellom over 50 ekspertmaler",
+      "sentence3": "Få intelligent skriveassistanse",
+      "sentence4": "Forhåndsvis endringer i sanntid",
+      "sentence5": "Mestre intervjuer med AI-forberedelsesverktøy"
+    },
+    "badge": "AI-drevet CV-bygger",
+    "description": "Lag fantastiske, ATS-vennlige CV-er og søknadsbrev med AI-assistanse. Velg fra profesjonelle maler, få sanntids tilbakemelding og land drømmejobben din raskere.",
+    "createResume": "Lag CV",
+    "createCoverLetter": "Lag søknadsbrev",
+    "stats": {
+      "users": "5.000+ fornøyde brukere",
+      "rating": "4.9/5"
+    },
+    "features": {
+      "freeToStart": "Gratis å starte",
+      "noCreditCard": "Ingen kredittkort"
+    },
+    "quick": "Rask",
+    "quickDesc": "Velg mal og skriv",
+    "guided": "Veiledet",
+    "guidedDesc": "Steg for steg med AI",
+    "portfolio": "Portefølje",
+    "portfolioDesc": "Dra og slipp nettsidebygger"
+  },
+  "HomepageTrustedBy": {
+    "badge": "KOMPATIBEL MED LEDENDE PLATTFORMER",
+    "title": "Fungerer sømløst med bransjeverktøy",
+    "description": "Vår AI-drevne CV-bygger integreres med populære plattformer og verktøy som brukes av fagfolk over hele verden.",
+    "trustIndicators": {
+      "platforms": "Kompatibel med 30+ store plattformer",
+      "countries": "Brukt i over 120 land",
+      "technology": "Bransjeledende teknologi"
+    }
+  },
+  "HomepageSteps": {
+    "badge": "BEVISTE RESULTATER • STOLT PÅ AV 50K+ PROFESJONELLE",
+    "title": {
+      "part1": "Forvandle",
+      "part2": "Din Karriere",
+      "part3": "Reise"
+    },
+    "description": "Slutt deg til tusenvis av fagfolk som har akselerert karrieren sin med vår AI-drevne CV-bygger. Bli lagt merke til, få intervjuer og sikre deg drømmejobben din raskere enn noen gang før.",
+    "benefits": [
+      {
+        "title": "Få Flere Jobbintervjuer",
+        "description": "Våre ATS-optimaliserte maler og AI-drevne innholdssuggestjoner hjelper din CV med å komme forbi automatiserte screeningsystemer og i hendene på ansettelsesledere.",
+        "detail": "Slutt deg til tusenvis av fagfolk som har økt intervjuprosenten sin med 3x ved å bruke vårt velprøvde system."
+      },
+      {
+        "title": "Skil Deg Ut Fra Konkurransen",
+        "description": "Med profesjonelle design og overbevisende innholdsanbefalinger, vis frem din unike verdi proposisjon og bli raskere lagt merke til av rekrutterere.",
+        "detail": "Vår smarte formatering og søkeordoptimalisering sikrer at din CV fanger oppmerksomheten på sekunder."
+      },
+      {
+        "title": "Bygg Selvtillit I Din Jobbjakt",
+        "description": "Presentere ditt beste profesjonelle selv med en polert, feilfri CV som gjenspeiler ditt sanne potensial og profesjonelle prestasjoner.",
+        "detail": "Føl deg trygg på at søknadsmaterialene dine er profesjonelt utformet og i samsvar med bransjestandarder."
+      }
+    ],
+    "stats": [
+      {
+        "number": "50K+",
+        "label": "Fornøyde brukere"
+      },
+      {
+        "number": "98.7%",
+        "label": "Suksessrate"
+      },
+      {
+        "number": "50+",
+        "label": "Maler"
+      },
+      {
+        "number": "24 timer",
+        "label": "Gj.sn. Tid"
+      }
+    ],
+    "badges": {
+      "aiPowered": {
+        "title": "AI-drevet",
+        "subtitle": "Smart CV-bygger"
+      },
+      "atsOptimized": {
+        "title": "✓",
+        "subtitle": "ATS-optimalisert"
+      }
+    },
+    "cta": {
+      "title": "Klar for å lande drømmejobben?",
+      "description": "Slutt deg til over 50 000 fagfolk som har transformert karrierene sine. Start byggingen av din vinnende CV i dag.",
+      "button": "Start din suksesshistorie",
+      "noCredit": "✨ Ingen kredittkort kreves • Gratis maler inkludert"
+    }
+  },
+  "HomepageReviews": {
+    "badge": "KUNDEVURDERINGER",
+    "title": {
+      "part1": "Hva Våre ",
+      "part2": "Brukere",
+      "part3": " Sier"
+    },
+    "description": "Bli med tusenvis av fornøyde jobbsøkere som har landet drømmejobbene sine med vår AI-drevne CV-bygger.",
+    "navigation": {
+      "previous": "Forrige",
+      "next": "Neste",
+      "slideLabel": "Gå til lysbilde {{number}}",
+      "pauseAutoplay": "Sett automatisk avspilling på pause",
+      "startAutoplay": "Start automatisk avspilling"
+    },
+    "review": {
+      "category": "Teknologi",
+      "verifiedBadge": "Verifisert bruker",
+      "avatarAlt": "{{name}}'s profilbilde",
+      "dateFormat": "MM/DD/YYYY"
+    }
+  },
+  "HomepagePricing": {
+    "badge": "PRISPLANER",
+    "header": "Velg den perfekte planen for dine behov",
+    "description": "Få ubegrenset tilgang til profesjonelle maler og avanserte funksjoner med våre fleksible prisalternativer.",
+    "plans": {
+      "monthly": {
+        "title": "Premium Månedlig",
+        "description": "Betal {{currency}}{{price}} for 1 måned",
+        "perMonth": "måned"
+      },
+      "halfYear": {
+        "title": "Premium Halvårig",
+        "description": "Betal {{currency}}{{price}} for 6 måneder",
+        "perMonth": "måned",
+        "mostPopular": "🔥 Mest Populær"
+      },
+      "yearly": {
+        "title": "Premium Årlig",
+        "description": "{{currency}}{{price}} for 1 år",
+        "perMonth": "måned"
+      }
+    },
+    "features": {
+      "unlimitedPDF": "Ubegrenset PDF-nedlastinger",
+      "unlimitedResumes": "Ubegrenset CV-er",
+      "nonRecurring": "Ikke-gjentakende betaling"
+    },
+    "upgradeButton": "Oppgrader og Last ned Nå",
+    "upgradeButtonStar": "Oppgrader og Last ned Nå ⭐"
+  },
+  "Homepagefaqs": {
+    "badge": "KUNNSKAPSBASEN",
+    "header": "Finn svaret ditt umiddelbart",
+    "subtitle": "Alt du trenger å vite om å lage profesjonelle CV-er med AI",
+    "quickStats": {
+      "resumesCreated": "CV-er Opprettet",
+      "avgBuildTime": "Gj.sn. CV Byggetid",
+      "satisfaction": "Kundetilfredshet",
+      "support": "Support Tilgjengelig"
+    },
+    "search": {
+      "placeholder": "Søk etter svar...",
+      "categories": "Kategorier"
+    },
+    "categoryNames": {
+      "allQuestions": "Alle spørsmål",
+      "gettingStarted": "Komme i gang",
+      "features": "Funksjoner",
+      "billing": "Fakturering",
+      "technical": "Teknisk"
+    },
+    "popularBadge": "Populær",
+    "helpfulQuestion": "Var dette nyttig?",
+    "noResults": {
+      "title": "Ingen resultater funnet",
+      "message": "Prøv å justere søketermen eller kategorifilteret"
+    },
+    "contactSupport": {
+      "title": "Trenger du fortsatt hjelp?",
+      "description": "Vårt supportteam er her 24/7 for å hjelpe deg med å lykkes",
+      "contactButton": "Kontakt Support",
+      "docsButton": "Bla gjennom dokumenter"
+    },
+    "cta": {
+      "badge": "Klar til å lage CV-en din?",
+      "title": "Transformer din karriere med AI-drevne CV-er",
+      "description": "Bli med tusenvis av fagfolk som har laget fantastiske CV-er på sekunder. Start din karrierereise i dag med vår intelligente designplattform.",
+      "button": "Start å lage gratis",
+      "freeCredits": "3 gratis kreditter • Ingen kredittkort kreves",
+      "support": "24/7 Support",
+      "secure": "Sikker og Privat",
+      "instant": "Øyeblikkelige Resultater"
+    },
+    "trustIndicators": {
+      "secure": "Sikker og Privat",
+      "instant": "Øyeblikkelige Resultater",
+      "support": "24/7 Support"
+    },
+    "q1": {
+      "question": "Hvordan kommer jeg i gang med AI-CV-bygging?",
+      "answer": "Registrer deg gratis, legg inn din informasjon og se vår AI lage flotte CVer på sekunder."
+    },
+    "q2": {
+      "question": "Hvor rask er prosessen?",
+      "answer": "Vår AI genererer flere CV-varianter på under 5 minuter!"
+    },
+    "q3": {
+      "question": "Hva er inkludert i gratisplanen?",
+      "answer": "Nye brukere får gratiskreditter til å laste ned CVer i PDF- og Word-format."
+    },
+    "q4": {
+      "question": "Kan jeg tilpasse CVen?",
+      "answer": "Ja! Du kan enkelt endre stiler, farger og oppsett."
+    },
+    "q5": {
+      "question": "Hvilke filformater tilbyr dere?",
+      "answer": "Alle CVer er tilgjengelige i PDF- og Word-formater av høy kvalitet."
+    },
+    "q6": {
+      "question": "Hvordan fungerer kredittsystemet?",
+      "answer": "Hver generering bruker 1 kreditt. Kreditter utløper aldri."
+    }
+  },
+  "HomepageFooter": {
+    "headings": {
+      "aboutUs": "Om Oss",
+      "quickLinks": "Raske Lenker",
+      "stayUpdated": "Hold Deg Oppdatert",
+      "securePayments": "Sikre Betalinger"
+    },
+    "aboutText": "Vi hjelper jobbsøkere med å lage profesjonelle CV-er på minutter. Vår misjon er å styrke enkeltpersoner til å lande drømmejobbene sine med høykvalitets, AI-utformede søknadsdokumenter.",
+    "links": {
+      "pricing": "Priser",
+      "contact": "Kontakt"
+    },
+    "newsletter": {
+      "description": "Abonner på vårt nyhetsbrev for de siste karrieretipsene, CV-rådene og funksjonsoppdateringene.",
+      "placeholder": "Skriv inn din e-post",
+      "buttonText": "Abonner",
+      "privacyNote": "Vi respekterer personvernet ditt"
+    },
+    "paymentMethods": {
+      "visa": "visa",
+      "mastercard": "mastercard",
+      "paypal": "paypal",
+      "applepay": "applepay",
+      "googlepay": "googlepay",
+      "discover": "discover"
+    },
+    "legal": {
+      "privacyPolicy": "Personvernerklæring",
+      "termsOfService": "Vilkår for bruk",
+      "cookiePolicy": "Retningslinjer for informasjonskapsler",
+      "allRightsReserved": "Alle rettigheter reservert."
+    }
+  },
+  "ActionSelection": {
+    "templateHeading": "Velg Din Perfekte",
+    "templateHeadingSpan": "Mal",
+    "templateDescription": "Velg fra våre profesjonelt designede maler for å lage en CV som skiller seg ut",
+    "coverLetterHeading": "Velg Ditt",
+    "coverLetterHeadingSpan": "Søknadsbrev",
+    "coverLetterDescription": "Velg en mal for søknadsbrev som utfyller din CV",
+    "search": {
+      "searchTemplates": "Søk i maler...",
+      "searchCoverLetters": "Søk i søknadsbrev...",
+      "noTemplatesFound": "Ingen maler funnet",
+      "noTemplatesFoundDescription": "Prøv å justere søkekriteriene eller bla gjennom forskjellige kategorier",
+      "clearFilters": "Fjern filtre",
+      "resultsInfo": "maler • Viser",
+      "resultsCount": "resultater",
+      "selectedTemplate": "valgt"
+    },
+    "categories": {
+      "all": "Alle",
+      "modern": "Moderne",
+      "professional": "Profesjonell",
+      "creative": "Kreativ",
+      "simple": "Enkel",
+      "standard": "Standard"
+    },
+    "sortBy": {
+      "label": "Sorter etter",
+      "popular": "Populær",
+      "name": "Navn",
+      "newest": "Nyeste"
+    },
+    "viewMode": {
+      "grid": "Rutenettvisning",
+      "list": "Listevisning"
+    },
+    "templateCards": {
+      "popular": "Populær",
+      "select": "Velg",
+      "selectTemplate": "Velg Mal",
+      "popularity": "% populær",
+      "templateDescriptions": {
+        "professionalClassic": "Rent og tradisjonelt design, perfekt for bedriftsmiljøer",
+        "modernCreative": "Moderne layout med kreative elementer",
+        "simpleElegant": "Minimalistisk design med fokus på innholdsklarhet",
+        "creativeBold": "Kunstnerisk mal for kreative fagfolk",
+        "executivePro": "Sofistikert design for seniorstillinger",
+        "techModern": "Moderne mal perfekt for teknologibransjen",
+        "designerSpecial": "Unik layout for designprofesjonelle",
+        "cleanSimple": "Rett frem og profesjonell",
+        "corporateElite": "Premium bedriftsmal",
+        "startupReady": "Dynamisk mal for oppstartskultur",
+        "creativePro": "Profesjonell kreativ mal",
+        "minimalPro": "Rent minimalistisk profesjonelt design",
+        "businessClassic": "Tradisjonell forretningsmal",
+        "modernEdge": "Moderne kantete design",
+        "artistPortfolio": "Perfekt for kreative portfolioer",
+        "standardProfessional": "Klassisk format for søknadsbrev",
+        "modernAppeal": "Moderne design for søknadsbrev",
+        "businessStandard": "Tradisjonelt forretningsformat",
+        "creativeModern": "Moderne kreativt søknadsbrev"
+      }
+    },
+    "preview": {
+      "useTemplate": "Bruk Mal",
+      "cancel": "Avbryt"
+    },
+    "pagination": {
+      "prev": "Forrige",
+      "next": "Neste"
+    },
+    "loading": {
+      "processingTemplate": "Behandler mal",
+      "settingUp": "Setter opp din valgte mal..."
+    }
+  },
+  "ProfileDisplay": {
+    "appName": "Nolito",
+    "search": "Søk",
+    "navigation": "NAVIGASJON",
+    "menu": {
+      "dashboard": "Dashboard",
+      "interviews": "Intervjuer",
+      "settings": "Innstillinger"
+    }
+  },
+  "DashboardHomepage": {
+    "greeting": "Hei! 👋",
+    "completeSteps": "Fullfør disse trinnene for å lande din neste rolle",
+    "stepsCompletion": "fullført",
+    "showButton": "Vis",
+    "tabs": {
+      "resumes": "CV-er",
+      "coverLetters": "Søknadsbrev"
+    },
+    "actions": {
+      "createNew": "Opprett ny",
+      "editResume": "Rediger CV",
+      "shareResume": "Del CV",
+      "delete": "Slett",
+      "createNewDocument": "Opprett nytt dokument"
+    },
+    "promotion": {
+      "title": "Klar for å gi jobbsøket ditt et løft og få mer eksponering?",
+      "description": "Velg din CV og vi sender den til hundrevis av rekrutterere i ditt fagfelt med bare noen få klikk",
+      "startNow": "Start Nå"
+    },
+    "card": {
+      "created": "Opprettet",
+      "untitledResume": "Uten tittel CV",
+      "aiJobMatching": "AI Jobb Matching",
+      "new": "NY",
+      "newResumeTitle": "Ny CV",
+      "newResumeDescription": "Lag en skreddersydd CV for hver jobbsøknad. Doble sjansene dine for å bli ansatt!"
+    },
+    "emptyState": {
+      "noDocumentsFound": "Ingen dokumenter tilgjengelig",
+      "emptyLibrary": "Dokumentbiblioteket ditt er for øyeblikket tomt.",
+      "createFirstDoc": "Opprett ditt første CV eller søknadsbrev for å komme i gang."
+    },
+    "pagination": {
+      "page": "Side",
+      "of": "av"
+    },
+    "confirmDelete": "Er du sikker på at du vil slette denne CV-en? Denne handlingen kan ikke angres."
+  },
+  "DashboardSettings": {
+    "pageTitle": "Innstillinger",
+    "pageDescription": "Behandle konto- og profilinnstillingene dine",
+    "tabs": {
+      "profile": "Profil",
+      "account": "Konto"
+    },
+    "profile": {
+      "title": "Profil",
+      "description": "Oppdater din personlige informasjon og profilbilde",
+      "uploadPicture": "Last opp profilbilde",
+      "dragOrUpload": "Dra og slipp et bilde her eller klikk for å laste opp",
+      "uploadButton": "Last opp",
+      "removeButton": "Fjern",
+      "fullName": "Fullt navn",
+      "fullNameDesc": "Ditt navn slik det vises på kontoen din",
+      "phone": "Telefonnummer",
+      "address": "Adresse",
+      "city": "By",
+      "postalCode": "Postnummer",
+      "country": "Land",
+      "placeholders": {
+        "fullName": "Skriv inn fullt navn",
+        "phone": "Skriv inn telefonnummer",
+        "address": "Skriv inn adresse",
+        "city": "Skriv inn by",
+        "postalCode": "Skriv inn postnummer",
+        "country": "Skriv inn land"
+      },
+      "saving": "Lagrer...",
+      "saveChanges": "Lagre endringer"
+    },
+    "account": {
+      "title": "Konto",
+      "description": "Behandle kontosikkerhet og abonnement",
+      "email": "E-postadresse",
+      "emailDesc": "Din e-postadresse kan ikke endres",
+      "subscription": "Abonnement",
+      "subscriptionDesc": "Ditt nåværende abonnementsplan",
+      "subscriptionEnd": "Abonnement Utløper",
+      "subscriptionEndDesc": "Datoen abonnementet ditt utløper",
+      "noActiveSubscription": "Ingen aktivt abonnement",
+      "changePassword": "Bytt Passord",
+      "newPassword": "Nytt Passord",
+      "passwordStrength": {
+        "weak": "Svak",
+        "fair": "Middels",
+        "good": "God",
+        "strong": "Sterk"
+      },
+      "passwordRequirement": "Passordet må være minst 6 tegn langt"
+    }
+  },
+  "contact": {
+    "title": "Ta Kontakt",
+    "subtitle": "Har du et spørsmål eller trenger du hjelp? Send oss en melding og vi vil kontakte deg så snart som mulig!",
+    "form": {
+      "fullName": "Fullt navn *",
+      "fullNamePlaceholder": "Skriv inn fullt navn",
+      "email": "E-postadresse *",
+      "emailPlaceholder": "Skriv inn din e-postadresse",
+      "message": "Melding *",
+      "messagePlaceholder": "Fortell oss om din henvendelse...",
+      "sendButton": "Send melding",
+      "sendingButton": "Sender melding..."
+    },
+    "quickResponse": {
+      "title": "Rask respons",
+      "text": "Vi svarer vanligvis innen 24 timer"
+    },
+    "success": {
+      "title": "Meldingen ble sendt!",
+      "text": "Takk for at du tok kontakt. Vi vil kontakte deg snart.",
+      "button": "Send en annen melding"
+    },
+    "error": {
+      "general": "Noe gikk galt. Prøv igjen."
+    }
+  },
+  "billing": {
+    "title": "Abonnementsplaner",
+    "subtitle": "Velg planen som passer best for deg",
+    "navbar": {
+      "home": "Hjem",
+      "contact": "Kontakt"
+    },
+    "plans": {
+      "monthly": "Månedlig",
+      "quarterly": "Kvartalsvis",
+      "yearly": "Årlig",
+      "selectPlan": "Velg Plan",
+      "perMonth": "/måned",
+      "perQuarter": "/kvartal",
+      "perYear": "/år",
+      "mostPopular": "Mest Populær",
+      "bestValue": "Beste Verdi",
+      "unlimitedPDF": "Ubegrenset PDF Nedlastinger",
+      "unlimitedResumes": "Ubegrenset CV-maler",
+      "nonRecurring": "Engangsbetaling, ikke-gjentakende"
+    },
+    "checkout": {
+      "title": "Fullfør Kjøpet Ditt",
+      "subtitle": "Skriv inn betalingsinformasjon for å abonnere",
+      "securePayment": "Sikker Betaling",
+      "feature1": "Øyeblikkelig tilgang til alle premium funksjoner",
+      "feature2": "Ingen skjulte avgifter eller ekstra kostnader",
+      "feature3": "Avbryt når som helst via din konto",
+      "faqTitle": "Ofte stilte spørsmål",
+      "faqContent": "Abonnementet ditt blir aktivert umiddelbart etter betaling. Du kan administrere abonnementet ditt via dashbordet på kontoen din.",
+      "totalPrice": "Total Pris",
+      "locationTitle": "Faktureringsadresse",
+      "locationDescription": "Vennligst oppgi dine faktureringsdetaljer",
+      "backToPlans": "Tilbake til planer",
+      "cardDetails": "Kortdetaljer",
+      "cardholderName": "Kortholderens navn",
+      "cardNumber": "Kortnummer",
+      "expiryDate": "Utløpsdato",
+      "cvv": "CVV",
+      "payNow": "Betal Nå",
+      "processing": "Behandler betaling...",
+      "subscriptionDetails": "Abonnementsdetaljer",
+      "plan": "Plan",
+      "price": "Pris",
+      "billingFrequency": "Faktureringsfrekvens",
+      "paymentMethods": {
+        "title": "Velg Betalingsmåte",
+        "subtitle": "Velg din foretrukne betalingsmåte",
+        "creditCard": "Kredittkort",
+        "paypal": "PayPal"
+      },
+      "cardForm": {
+        "title": "Betalingsdetaljer",
+        "subtitle": "Skriv inn kortinformasjonen din sikkert",
+        "cardholderName": "Kortholderens navn",
+        "address": "Faktureringsadresse",
+        "country": "Land",
+        "postalCode": "Postnummer"
+      },
+      "success": {
+        "title": "Betaling Vellykket!",
+        "subtitle": "Abonnementet ditt er aktivert",
+        "message": "Takk for kjøpet. Du har nå full tilgang til alle premium-funksjoner.",
+        "button": "Fortsett til Dashboard"
+      },
+      "or": "ELLER"
+    },
+    "success": {
+      "title": "Betaling Vellykket!",
+      "subtitle": "Abonnementet ditt er aktivert",
+      "viewAccount": "Vis konto",
+      "returnHome": "Tilbake til hjem"
+    },
+    "error": {
+      "payment": "Betaling mislyktes. Prøv igjen.",
+      "login": "Logg inn for å fullføre betalingen.",
+      "general": "Noe gikk galt. Prøv igjen."
+    }
+  },
+  "DashboardInterviews": {
+    "configurationScreen": {
+      "title": "Konfigurer ditt intervju",
+      "subtitle": "Tilpass din intervjuopplevelse ved å oppgi din yrkesbakgrunn og preferanser",
+      "occupationLabel": "Ditt yrke",
+      "occupationPlaceholder": "F.eks.: Programvareutvikler, Lærer, Sykepleier, Bonde, Kokk...",
+      "occupationHint": "Vær spesifikk om din rolle for mer målrettede spørsmål",
+      "questionCountLabel": "Antall Spørsmål",
+      "questionsText": "spørsmål",
+      "estimatedTime": "Estimert tid:",
+      "minutesPerQuestion": "minutter per spørsmål",
+      "interviewDetails": "Intervjudetaljer",
+      "type": "Type:",
+      "questions": "Spørsmål:",
+      "timeLimit": "Tidsbegrensning:",
+      "passingScore": "Bestått poengsum:",
+      "errorGenerating": "Feil ved generering av intervju:",
+      "tryAgainError": "Vennligst prøv igjen eller prøv en annen yrkesbakgrunn.",
+      "generatingQuestions": "Genererer {{count}} personlige intervjuspørsmål...",
+      "generatingHint": "Dette kan ta noen sekunder. Vi lager spørsmål spesifikke for ditt yrke.",
+      "back": "Tilbake",
+      "startAssessment": "Start Vurdering",
+      "generatingInterview": "Genererer Intervju..."
+    },
+    "selectionScreen": {
+      "title": "Intervju Vurdering",
+      "subtitle": "Velg din vurderingstype og fullfør intervjuprosessen",
+      "technicalTitle": "Teknisk Vurdering",
+      "technicalDepartment": "Teknisk Avdeling",
+      "technicalDescription": "Evaluer tekniske ferdigheter, programmeringsspråk, rammeverk, metoder og problemløsningsevner spesifikke for din rolle.",
+      "behavioralTitle": "Atferdsmessig Vurdering",
+      "behavioralDepartment": "HR",
+      "behavioralDescription": "Vurder lederegenskaper, kommunikasjonsevner, teamarbeidsevner og hvordan du håndterer arbeidssituasjoner.",
+      "focusAreas": "Fokusområder:",
+      "technicalSkills": "Tekniske Ferdigheter",
+      "problemSolving": "Problemløsning",
+      "bestPractices": "Beste Praksis",
+      "toolsTechnologies": "Verktøy og Teknologier",
+      "leadership": "Lederskap",
+      "communication": "Kommunikasjon",
+      "teamwork": "Teamarbeid",
+      "assessmentGuidelines": "Vurderingsretningslinjer",
+      "bestPracticesTitle": "✅ Beste Praksis",
+      "thingsToAvoid": "❌ Ting å Unngå",
+      "guideline1": "• Les hvert spørsmål nøye før du svarer",
+      "guideline2": "• Bruk flaggfunksjonen til å markere spørsmål for gjennomgang",
+      "guideline3": "• Håndter tiden din effektivt",
+      "guideline4": "• Benytt deg av pausefunksjonen om nødvendig",
+      "avoid1": "• Ikke forhast deg gjennom svarene",
+      "avoid2": "• Ikke la spørsmål stå ubesvart",
+      "avoid3": "• Ikke bytt mellom applikasjoner",
+      "avoid4": "• Ikke overtenk svarene dine",
+      "continueToConfiguration": "Fortsett til Konfigurasjon",
+      "configurationHint": "Konfigurer din yrkesbakgrunn og intervjupreferanser"
+    },
+    "resultsScreen": {
+      "title": "Vurdering Fullført!",
+      "noDataAvailable": "Ingen intervjudata tilgjengelig",
+      "technicalInterview": "Teknisk",
+      "behavioralInterview": "Atferdsmessig",
+      "questionsText": "Spørsmål",
+      "overallPerformance": "Total Ytelse",
+      "passedAssessment": "✅ Vurdering Bestått",
+      "failedAssessment": "❌ Bestått poengsum (70%) ikke oppnådd",
+      "correctAnswers": "Riktige Svar",
+      "incorrectAnswers": "Feil Svar"
+    },
+    "performanceLevels": {
+      "exceptional": "Eksepsjonell",
+      "excellent": "Utmerket",
+      "good": "Bra",
+      "satisfactory": "Tilfredsstillende",
+      "needsImprovement": "Trenger Forbedring"
+    },
+    "metricsScreen": {
+      "timeAnalysis": "Tidsanalyse",
+      "totalTime": "Total Tid",
+      "avgPerQuestion": "Gj.snitt per Spørsmål",
+      "fastest": "Raskest",
+      "slowest": "Sakte",
+      "activitySummary": "Aktivitets Sammendrag",
+      "questionsAnswered": "Besvarte Spørsmål",
+      "questionsFlagged": "Markerte Spørsmål",
+      "completionRate": "Fullføringsrate",
+      "performanceByCategory": "Ytelse per Kategori",
+      "retakeAssessment": "Ta Vurderingen Igjen",
+      "reviewAnswers": "Gjennomgå Svar",
+      "downloadReport": "Last Ned Rapport",
+      "backToDashboard": "Tilbake til Dashbordet",
+      "answerReview": "Svars Gjennomgang",
+      "question": "Spørsmål",
+      "difficulty": {
+        "easy": "Lett",
+        "intermediate": "Middels",
+        "hard": "Vanskelig"
+      },
+      "correct": "✓ Riktig",
+      "yourAnswer": "✗ Ditt Svar",
+      "explanation": "Forklaring",
+      "timeSpent": "Tid brukt:"
+    },
+    "interviewScreen": {
+      "loadingData": "Laster intervjudata...",
+      "professionalEvaluation": "Profesjonell Vurdering",
+      "timeRemaining": "Tid Igjen",
+      "resume": "Gjenoppta",
+      "pause": "Pause",
+      "questionProgress": "Spørsmål {current} av {total}",
+      "complete": "% Fullført",
+      "interviewPaused": "Intervju Pauset",
+      "pauseMessage": "Klikk Gjenoppta for å fortsette vurderingen din",
+      "flag": "Flagg",
+      "flagged": "Markert",
+      "previous": "Forrige",
+      "nextQuestion": "Neste Spørsmål",
+      "finishAssessment": "Fullfør Vurdering"
+    },
+    "confirmationModal": {
+      "title": "Fullføre Vurdering?",
+      "message": "Er du sikker på at du vil sende inn vurderingen din? Du kan ikke endre svarene dine.",
+      "questionsAnswered": "Besvarte Spørsmål:",
+      "questionsFlagged": "Markerte Spørsmål:",
+      "timeUsed": "Tid Brukt:",
+      "unansweredWarning": "⚠️ Du har {count} ubesvarte spørsmål",
+      "continueInterview": "Fortsett Intervjuet",
+      "submitNow": "Send Inn Nå"
+    },
+    "common": {
+      "toggleSidebar": "Veksle sidemeny",
+      "min": "min"
+    }
+  },
+  "BuildResume": {
+    "steps": {
+      "personalInfo": "Personlig Informasjon",
+      "workHistory": "Arbeidshistorikk",
+      "education": "Utdanning",
+      "skills": "Ferdigheter",
+      "summary": "Sammendrag"
+    },
+    "navigation": {
+      "previous": "Forrige",
+      "next": "Neste",
+      "preview": "Forhåndsvisning",
+      "download": "Last Ned",
+      "downloading": "Laster ned...",
+      "complete": "Fullført",
+      "current": "Nåværende",
+      "nextStep": "Neste: {{stepName}}"
+    },
+    "progress": {
+      "progress": "Fremgang",
+      "completed": "fullført",
+      "of": "av",
+      "step": "Steg {{current}}/{{total}}",
+      "completeness": "Fullstendighet"
+    },
+    "sidebar": {
+      "helpSupport": "Hjelp og Support",
+      "privacyPolicy": "Personvernerklæring",
+      "copyright": "© 2025 Bold Limited. Alle rettigheter forbeholdt."
+    },
+    "preview": {
+      "livePreview": "Direkte Forhåndsvisning",
+      "autoUpdating": "Automatisk Oppdatering",
+      "clickToView": "Klikk for å se i full størrelse",
+      "changeTemplate": "Endre Mal",
+      "viewFullSize": "Vis Full Størrelse",
+      "trustedBy": "Betrodd av over 50 000 fagpersoner",
+      "joinSuccess": "Bli med i suksesshistoriene",
+      "resumePdf": "CV.pdf"
+    },
+    "templates": {
+      "professionalClassic": "Profesjonell Klassisk",
+      "modernCreative": "Moderne Kreativ",
+      "creativeBold": "Kreativ Dristig",
+      "executivePro": "Profesjonell Leder",
+      "techModern": "Teknisk Moderne",
+      "simpleElegant": "Enkel Elegant",
+      "designerSpecial": "Designer Spesial",
+      "cleanSimple": "Ren Enkel",
+      "corporateElite": "Forretnings Elite",
+      "startupReady": "Klar for Oppstartsselskaper",
+      "creativePro": "Kreativ Profesjonell",
+      "minimalPro": "Minimal Profesjonell",
+      "businessClassic": "Forretnings Klassisk",
+      "modernEdge": "Moderne Kant",
+      "artistPortfolio": "Kunstner Portefølje",
+      "techInnovation": "Teknologisk Innovasjon",
+      "executiveSuite": "Executive Suite",
+      "creativeShowcase": "Kreativ Visning",
+      "cleanProfessional": "Ren Profesjonell",
+      "futureForward": "Fremtidsrettet Moderne",
+      "professional21": "Profesjonell 21",
+      "professional22": "Profesjonell 22",
+      "professional23": "Profesjonell 23",
+      "professional24": "Profesjonell 24",
+      "professional25": "Professionell 25",
+      "professional26": "Professionell 26",
+      "professional27": "Professionell 27",
+      "professional28": "Professionell 28",
+      "professional29": "Professionell 29",
+      "professional30": "Professionell 30",
+      "professional31": "Professionell 31",
+      "professional32": "Professionell 32",
+      "professional33": "Professionell 33",
+      "professional34": "Professionell 34",
+      "professional35": "Professionell 35",
+      "professional36": "Professionell 36",
+      "professional37": "Professionell 37",
+      "professional38": "Professionell 38",
+      "professional39": "Professionell 39",
+      "professional40": "Professionell 40",
+      "professional41": "Professionell 41",
+      "professional42": "Professionell 42",
+      "professional43": "Professionell 43",
+      "professional44": "Professionell 44",
+      "professional45": "Professionell 45",
+      "professional46": "Professionell 46",
+      "professional47": "Professionell 47",
+      "professional48": "Professionell 48",
+      "professional49": "Professionell 49",
+      "professional50": "Professionell 50"
+    },
+    "errors": {
+      "downloadFailed": "Nedlasting mislyktes. Prøv igjen.",
+      "templateError": "Malfeil",
+      "usingDefault": "Bruker standardmal"
+    },
+    "analytics": {
+      "templateChanged": "Mal endret til: {{templateName}} ({{templateId}})"
+    }
+  },
+  "HeadingStep": {
+    "title": "Personlig og Kontaktinformasjon",
+    "subtitle": "Fortell oss om deg selv, slik at arbeidsgivere enkelt kan kontakte deg. Alle obligatoriske felt må fylles ut for å fortsette.",
+    "progress": {
+      "label": "Fremgang: {{completed}}/{{total}} obligatoriske felt",
+      "percentage": "{{percentage}}%"
+    },
+    "sections": {
+      "personalInfo": {
+        "title": "Personlig Informasjon",
+        "badge": "{{completed}}/3 Fullført"
+      },
+      "contactInfo": {
+        "title": "Kontaktinformasjon",
+        "badge": "{{completed}}/2 Fullført"
+      },
+      "locationInfo": {
+        "title": "Stedsinformasjon",
+        "badge": "Valgfritt",
+        "badgeWithCount": "{{completed}}/4 Valgfritt"
+      }
+    },
+    "fields": {
+      "profilePhoto": {
+        "label": "Profilbilde",
+        "hint": "Anbefalt: Kvadratisk bilde, maks 5 MB"
+      },
+      "firstName": {
+        "label": "Fornavn",
+        "placeholder": "Skriv inn ditt fornavn"
+      },
+      "lastName": {
+        "label": "Etternavn",
+        "placeholder": "Skriv inn ditt etternavn"
+      },
+      "jobTitle": {
+        "label": "Tittel / Yrke",
+        "placeholder": "f.eks. Programvareutvikler, Markedssjef, Dataanalytiker",
+        "hint": "Dette vil vises fremtredende på CV-en din"
+      },
+      "email": {
+        "label": "E-postadresse",
+        "placeholder": "din.epost@eksempel.no",
+        "hint": "Bruk en profesjonell e-postadresse"
+      },
+      "phone": {
+        "label": "Telefonnummer",
+        "placeholder": "+47 123 45 678",
+        "hint": "Inkluder landskode om relevant"
+      },
+      "address": {
+        "label": "Adresse",
+        "placeholder": "Gate (valgfritt)",
+        "hint": "Full adresse er valgfritt, by og land er vanligvis tilstrekkelig"
+      },
+      "city": {
+        "label": "By",
+        "placeholder": "By"
+      },
+      "postalCode": {
+        "label": "Postnummer",
+        "placeholder": "Postnummer"
+      },
+      "country": {
+        "label": "Land",
+        "placeholder": "Land"
+      }
+    },
+    "tips": {
+      "contactInfo": {
+        "title": "Tips for Kontaktinformasjon",
+        "description": "Bruk en profesjonell e-postadresse og sørg for at telefonnummeret ditt er oppdatert. Slik vil arbeidsgivere kontakte deg."
+      },
+      "locationInfo": {
+        "title": "Stedsinformasjon",
+        "description": "Å legge til sted hjelper arbeidsgivere med å forstå din tilgjengelighet for lokale stillinger og dine preferanser for fjernarbeid."
+      }
+    },
+    "completion": {
+      "title": "Seksjon Fullført!",
+      "description": "Flott! All nødvendig informasjon er gitt. Du kan nå gå videre til neste seksjon eller fortsette å legge til valgfrie detaljer."
+    },
+    "errors": {
+      "required": "{{field}} er obligatorisk",
+      "invalidEmail": "Vennligst oppgi en gyldig e-postadresse",
+      "invalidPhone": "Vennligst oppgi et gyldig telefonnummer"
+    }
+  },
+  "WorkHistoryStep": {
+    "title": "Fortell oss om din arbeidserfaring",
+    "subtitle": "Start med din siste stilling og arbeid deg bakover. Inkluder dine siste 10 års relevant erfaring.",
+    "requiredNote": "* Angir et obligatorisk felt",
+    "defaultValues": {
+      "untitledPosition": "Uten Tittel",
+      "noCompany": "Ingen bedrift spesifisert",
+      "present": "Nåværende"
+    },
+    "fields": {
+      "jobTitle": {
+        "label": "Stilling",
+        "placeholder": "Programvareutvikler"
+      },
+      "company": {
+        "label": "Bedrift",
+        "placeholder": "Google Inc."
+      },
+      "startDate": {
+        "label": "Startdato",
+        "placeholder": "Januar 2020"
+      },
+      "endDate": {
+        "label": "Sluttdato",
+        "placeholder": "Desember 2023"
+      },
+      "currentWork": {
+        "label": "Jeg jobber her for tiden"
+      },
+      "description": {
+        "label": "Stillingbeskrivelse",
+        "placeholder": "Beskriv dine viktigste ansvarsområder og prestasjoner i detalj. Hvilken innvirkning hadde du? Hvilke ferdigheter brukte du?"
+      }
+    },
+    "actions": {
+      "addPosition": "Legg til en ny Stilling",
+      "collapse": "Kollaps",
+      "expand": "Utvid",
+      "remove": "Fjern denne Stillingen"
+    },
+    "ai": {
+      "suggestions": "✨ AI Forslag",
+      "tooltip": "Generer AI-forslag",
+      "tooltipDisabled": "Fyll ut Stillingstittel og Bedrift først"
+    }
+  },
+  "EducationStep": {
+    "title": "Fortell oss om din utdanning",
+    "subtitle": "Inkluder din utdanningsbakgrunn. Start med din siste utdanning.",
+    "requiredNote": "* Angir et obligatorisk felt",
+    "defaultValues": {
+      "school": "Skolens Navn",
+      "degree": "Ingen grad spesifisert",
+      "present": "Nåværende"
+    },
+    "fields": {
+      "school": {
+        "label": "Skole",
+        "placeholder": "University of California"
+      },
+      "degree": {
+        "label": "Grad",
+        "placeholder": "Bachelor of Science"
+      },
+      "startDate": {
+        "label": "Startdato",
+        "placeholder": "September 2018"
+      },
+      "endDate": {
+        "label": "Sluttdato",
+        "placeholder": "Mai 2022"
+      },
+      "currentStudy": {
+        "label": "Jeg studerer her for tiden"
+      },
+      "description": {
+        "label": "Utdanningsbeskrivelse",
+        "placeholder": "Relevante kurs, prestasjoner, utmerkelser, GPA, forskningsprosjekter, masteroppgaver, etc..."
+      }
+    },
+    "actions": {
+      "addEducation": "Legg til en ny Utdanning",
+      "collapse": "Kollaps",
+      "expand": "Utvid",
+      "remove": "Fjern denne Utdanningen"
+    },
+    "ai": {
+      "suggestions": "✨ AI Forslag",
+      "tooltip": "Generer AI-forslag",
+      "tooltipDisabled": "Fyll ut Skole og Grad først"
+    }
+  },
+  "SkillsStep": {
+    "title": "Hvilke ferdigheter vil du fremheve?",
+    "subtitle": "Velg ferdighetene som er mest relevante for jobben du søker på. Inkluder både tekniske og myke ferdigheter.",
+    "requiredNote": "* Legg til minst 3 ferdigheter for best resultat",
+    "defaultValues": {
+      "skillName": "Ferdighetsnavn",
+      "clickToAdd": "Klikk for å legge til ferdighetsdetaljer"
+    },
+    "fields": {
+      "skillName": {
+        "label": "Ferdighetsnavn",
+        "placeholder": "f.eks. JavaScript, Lederskap, Prosjektledelse"
+      },
+      "proficiencyLevel": {
+        "label": "Ferdighetsnivå"
+      }
+    },
+    "skillLevels": {
+      "beginner": "Nybegynner",
+      "intermediate": "Middels",
+      "advanced": "Avansert",
+      "expert": "Ekspert"
+    },
+    "actions": {
+      "addSkill": "Legg til en ny Ferdighet",
+      "collapse": "Kollaps",
+      "expand": "Utvid",
+      "remove": "Fjern denne Ferdigheten"
+    },
+    "ai": {
+      "suggestions": "✨ AI Forslag",
+      "generating": "Genererer..."
+    },
+    "quickAdd": {
+      "title": "Rask Legging av Ferdigheter",
+      "subtitle": "Klikk for å legge til populære ferdigheter umiddelbart"
+    },
+    "popularSkills": [
+      "JavaScript",
+      "Python",
+      "React",
+      "Node.js",
+      "SQL",
+      "Git",
+      "Kommunikasjon",
+      "Lederskap",
+      "Problemløsning",
+      "Teamarbeid",
+      "Prosjektledelse",
+      "Dataanalyse"
+    ]
+  },
+  "SummaryStep": {
+    "title": "Skriv et profesjonelt sammendrag",
+    "subtitle": "Ditt profesjonelle sammendrag er en kort uttalelse som fremhever dine viktigste kvalifikasjoner og karrieremål.",
+    "professionalSummary": {
+      "title": "Profesjonelt Sammendrag",
+      "description": "Vis frem din bakgrunn og dine karrieremål"
+    },
+    "progress": {
+      "tooShort": "For kort - legg til flere detaljer",
+      "gettingThere": "Nesten der - legg til mer innhold",
+      "goodLength": "God lengde - vurder å legge til mer",
+      "greatLength": "Flott lengde - godt detaljert",
+      "excellent": "Utmerket - omfattende sammendrag"
+    },
+    "characterCount": "{{current}}/{{max}} tegn",
+    "content": {
+      "label": "Sammendragsinnhold",
+      "placeholder": "Skriv et overbevisende sammendrag som viser din profesjonelle bakgrunn, dine viktigste ferdigheter og dine karrieremål. Fremhev ditt unike verdiforslag og hva som skiller deg ut..."
+    },
+    "ai": {
+      "generate": "✨ Generer med AI",
+      "generating": "Genererer...",
+      "tooltip": "Generer et AI-forbedret sammendrag"
+    },
+    "errors": {
+      "noOccupation": "Vennligst fyll ut ditt yrke i steget Personlig Informasjon først for å generere et AI-sammendrag.",
+      "generationFailed": "Kunne ikke generere AI-sammendrag. Prøv igjen."
+    }
+  },
+  "EducationSuggestionModal": {
+    "title": "AI Utdanningsforslag",
+    "subtitle": "Generer profesjonelle beskrivelser basert på dine utdanningsdetaljer",
+    "educationDetails": {
+      "title": "Utdanningsdetaljer",
+      "school": "Skole:",
+      "degree": "Grad:",
+      "duration": "Varighet:",
+      "notSpecified": "Ikke spesifisert",
+      "present": "Nåværende"
+    },
+    "generateButton": {
+      "generate": "Generer AI Beskrivelser",
+      "generating": "Genererer AI-forslag..."
+    },
+    "requirements": {
+      "fillFields": "Vennligst fyll ut feltene Skole og Grad først"
+    },
+    "suggestions": {
+      "title": "Foreslåtte Beskrivelser:",
+      "suggestionLabel": "Forslag {{number}}",
+      "useThis": "Bruk Dette"
+    },
+    "instructions": {
+      "title": "Klikk på \"Generer AI Beskrivelser\" for å få personlige forslag for din utdanningsbakgrunn."
+    },
+    "actions": {
+      "close": "Lukk"
+    },
+    "errors": {
+      "requiredFields": "Skole og grad er nødvendig for å generere forslag",
+      "failed": "Kunne ikke generere forslag. Prøv igjen."
+    }
+  },
+  "InputField": {
+    "required": "Dette feltet er obligatorisk",
+    "accessibility": {
+      "required": "Dette feltet er obligatorisk"
+    }
+  },
+  "PhotoUpload": {
+    "actions": {
+      "addPhoto": "Legg til Foto",
+      "dropPhotoHere": "Slipp foto her",
+      "clickOrDrag": "Klikk eller Dra",
+      "changePhoto": "Endre Foto",
+      "removePhoto": "Fjern Foto",
+      "processing": "Behandler..."
+    },
+    "hints": {
+      "recommended": "Anbefalt: Kvadratisk bilde, maks 5 MB"
+    },
+    "errors": {
+      "sizeLimit": "Bildet overskrider 5 MB-grensen",
+      "processingError": "Feil under bildebehandling",
+      "readingError": "Feil ved lesing av fil"
+    }
+  },
+  "ProgressCard": {
+    "accessibility": {
+      "progressBar": "Fremgang: {{value}} av {{maxValue}}"
+    }
+  },
+  "SectionCard": {
+    "accessibility": {
+      "section": "Seksjon: {{title}}"
+    }
+  },
+  "WorkHistorySuggestionModal": {
+    "title": "AI Beskrivelsesforslag",
+    "subtitle": "Generer profesjonelle beskrivelser basert på dine jobbdetaljer",
+    "positionDetails": {
+      "title": "Stillingsdetaljer",
+      "jobTitle": "Stilling:",
+      "company": "Bedrift:",
+      "duration": "Varighet:",
+      "notSpecified": "Ikke spesifisert",
+      "present": "Nåværende"
+    },
+    "generateButton": {
+      "generate": "Generer AI Beskrivelser",
+      "generating": "Genererer AI-forslag..."
+    },
+    "requirements": {
+      "fillFields": "Fyll ut feltene Stillingstittel og Bedrift først"
+    },
+    "suggestions": {
+      "title": "Foreslåtte Beskrivelser:",
+      "suggestionLabel": "Forslag {{number}}",
+      "useThis": "Bruk Dette"
+    },
+    "instructions": {
+      "title": "Klikk på \"Generer AI Beskrivelser\" for å få personlige forslag for din arbeidserfaring."
+    },
+    "actions": {
+      "close": "Lukk"
+    },
+    "errors": {
+      "requiredFields": "Stillingstittel og Bedrift er nødvendig for å generere forslag",
+      "failed": "Kunne ikke generere forslag. Prøv igjen."
+    }
+  },
+  "PreviewModal": {
+    "title": "CV Forhåndsvisning",
+    "subtitle": "{{templateName}} - Profesjonell visning av din CV",
+    "actions": {
+      "downloadPdf": "Last Ned PDF",
+      "generatingPdf": "Genererer PDF...",
+      "close": "Lukk forhåndsvisning"
+    },
+    "keyboard": {
+      "escToClose": "for å lukke"
+    },
+    "errors": {
+      "noTemplate": "Ingen malkomponent oppgitt",
+      "templateError": "Mal Forhåndsvisningsfeil",
+      "tryDifferent": "Prøv en annen mal"
+    }
+  },
+  "TemplateSelectionModal": {
+    "header": {
+      "title": "Velg Mal",
+      "subtitle": "Velg en profesjonell mal for CV-en din",
+      "closeLabel": "Lukk malvalg"
+    },
+    "search": {
+      "placeholder": "Søk etter maler...",
+      "resultsFound": "{{count}} maler funnet",
+      "noResults": {
+        "title": "Ingen maler funnet",
+        "message": "Prøv å justere dine søke- eller filterkriterier",
+        "clearFilters": "Tøm Filtre"
+      }
+    },
+    "categories": {
+      "all": "Alle",
+      "professional": "Profesjonell",
+      "modern": "Moderne",
+      "creative": "Kreativ",
+      "simple": "Enkel"
+    },
+    "sorting": {
+      "popular": "Mest Populære",
+      "name": "Navn A-Z"
+    },
+    "viewMode": {
+      "grid": "Rutenettvisning",
+      "list": "Listevisning"
+    },
+    "templateCard": {
+      "badges": {
+        "popular": "Populær",
+        "current": "Nåværende"
+      },
+      "actions": {
+        "favorite": "Legg til i favoritter",
+        "unfavorite": "Fjern fra favoritter",
+        "preview": "Forhåndsvisning Mal",
+        "select": "Velg Mal",
+        "currentTemplate": "Nåværende Mal"
+      },
+      "popularity": "{{percentage}}% popularitet"
+    },
+    "templateNames": {
+      "professionalClassic": "Profesjonell Klassisk",
+      "modernCreative": "Moderne Kreativ",
+      "creativeBold": "Kreativ Dristig",
+      "executivePro": "Profesjonell Leder",
+      "techModern": "Teknisk Moderne",
+      "simpleElegant": "Enkel Elegant",
+      "designerSpecial": "Designer Spesial",
+      "cleanSimple": "Ren Enkel",
+      "corporateElite": "Forretnings Elite",
+      "startupReady": "Klar for Oppstartsselskaper",
+      "creativePro": "Kreativ Profesjonell",
+      "minimalPro": "Minimal Profesjonell",
+      "businessClassic": "Forretnings Klassisk",
+      "modernEdge": "Moderne Kant",
+      "artistPortfolio": "Kunstner Portefølje",
+      "techInnovation": "Teknologisk Innovasjon",
+      "executiveSuite": "Executive Suite",
+      "creativeShowcase": "Kreativ Visning",
+      "cleanProfessional": "Ren Profesjonell",
+      "futureForward": "Fremtidsrettet Moderne",
+      "professional21": "Profesjonell 21",
+      "professional22": "Profesjonell 22",
+      "professional23": "Profesjonell 23",
+      "professional24": "Professionell 24",
+      "professional25": "Professionell 25",
+      "professional26": "Professionell 26",
+      "professional27": "Professionell 27",
+      "professional28": "Professionell 28",
+      "professional29": "Professionell 29",
+      "professional30": "Professionell 30",
+      "professional31": "Professionell 31",
+      "professional32": "Professionell 32",
+      "professional33": "Professionell 33",
+      "professional34": "Professionell 34",
+      "professional35": "Professionell 35",
+      "professional36": "Professionell 36",
+      "professional37": "Professionell 37",
+      "professional38": "Professionell 38",
+      "professional39": "Professionell 39",
+      "professional40": "Professionell 40",
+      "professional41": "Professionell 41",
+      "professional42": "Professionell 42",
+      "professional43": "Professionell 43",
+      "professional44": "Professionell 44",
+      "professional45": "Professionell 45",
+      "professional46": "Professionell 46",
+      "professional47": "Professionell 47",
+      "professional48": "Professionell 48",
+      "professional49": "Professionell 49",
+      "professional50": "Professionell 50"
+    },
+    "templateDescriptions": {
+      "professionalClassic": "Ren og tradisjonell design, perfekt for bedriftsmiljøer",
+      "modernCreative": "Moderne layout med kreative elementer",
+      "creativeBold": "Artistisk mal for kreative fagfolk",
+      "executivePro": "Sofistikert design for lederstillinger",
+      "techModern": "Moderne mal, perfekt for teknologibransjen",
+      "simpleElegant": "Minimalistisk design fokusert på innholds klarhet",
+      "designerSpecial": "Unik layout for designprofesjonelle",
+      "cleanSimple": "Enkel og profesjonell",
+      "corporateElite": "Premium bedriftsmal",
+      "startupReady": "Dynamisk mal for oppstartsbedrifter",
+      "creativePro": "Profesjonell kreativ mal",
+      "minimalPro": "Ren minimalistisk profesjonell design",
+      "businessClassic": "Klassisk forretningsmal",
+      "modernEdge": "Moderne banebrytende design",
+      "artistPortfolio": "Perfekt for kreative porteføljer",
+      "techInnovation": "Innovativ design for teknologiprofesjonelle",
+      "executiveSuite": "Premium lederpakke",
+      "creativeShowcase": "Vis frem ditt kreative arbeid",
+      "cleanProfessional": "Ren profesjonell fremtoning",
+      "futureForward": "Fremtidsrettet moderne design",
+      "professional21": "Profesjonell maldesign",
+      "professional22": "Profesjonell maldesign",
+      "professional23": "Profesjonell maldesign",
+      "professional24": "Profesjonell maldesign",
+      "professional25": "Profesjonell maldesign",
+      "professional26": "Profesjonell maldesign",
+      "professional27": "Profesjonell maldesign",
+      "professional28": "Profesjonell maldesign",
+      "professional29": "Profesjonell maldesign",
+      "professional30": "Profesjonell maldesign",
+      "professional31": "Profesjonell maldesign",
+      "professional32": "Profesjonell maldesign",
+      "professional33": "Profesjonell maldesign",
+      "professional34": "Profesjonell maldesign",
+      "professional35": "Profesjonell maldesign",
+      "professional36": "Profesjonell maldesign",
+      "professional37": "Profesjonell maldesign",
+      "professional38": "Profesjonell maldesign",
+      "professional39": "Profesjonell maldesign",
+      "professional40": "Profesjonell maldesign",
+      "professional41": "Profesjonell maldesign",
+      "professional42": "Profesjonell maldesign",
+      "professional43": "Profesjonell maldesign",
+      "professional44": "Profesjonell maldesign",
+      "professional45": "Profesjonell maldesign",
+      "professional46": "Profesjonell maldesign",
+      "professional47": "Profesjonell maldesign",
+      "professional48": "Profesjonell maldesign",
+      "professional49": "Profesjonell maldesign",
+      "professional50": "Profesjonell maldesign"
+    },
+    "pagination": {
+      "previous": "Forrige",
+      "next": "Neste"
+    },
+    "preview": {
+      "title": "Mal Forhåndsvisning",
+      "popularity": "{{percentage}}% popularitet",
+      "actions": {
+        "cancel": "Avbryt",
+        "useTemplate": "Bruk Mal"
+      }
+    },
+    "keyboard": {
+      "escToClose": "for å lukke"
+    },
+    "selectedTemplate": "\"{{templateId}}\" valgt"
+  },
+  "missing1": {
+    "quickBuilder": {
+      "title": "Rask",
+      "badge": "ANBEFALT"
+    },
+    "stepByStep": {
+      "title": "Veiledet",
+      "badge": "NY"
+    },
+    "portfolioBuilder": {
+      "title": "Portefølje",
+      "badge": "NY"
+    }
+  },
+  "DashboardPortfolios": {
+    "title": "Mine Porteføljer",
+    "subtitle": "Administrer og vis frem din porteføljasamling",
+    "createPortfolio": "Opprett Portefølje",
+    "searchPlaceholder": "Søk etter porteføljer...",
+    "themes": {
+      "allThemes": "Alle Temaer",
+      "default": "Standard",
+      "darkTheme": "Mørkt Tema",
+      "minimal": "Minimalistisk",
+      "creative": "Kreativ",
+      "professional": "Profesjonell"
+    },
+    "status": {
+      "published": "Publisert",
+      "draft": "Utkast"
+    },
+    "actions": {
+      "view": "Vis",
+      "edit": "Rediger",
+      "delete": "Slett",
+      "viewPreview": "Vis Forhåndsvisning"
+    },
+    "stats": {
+      "views": "Visninger",
+      "updated": "Oppdatert"
+    },
+    "table": {
+      "portfolio": "Portefølje",
+      "theme": "Tema",
+      "views": "Visninger",
+      "updated": "Oppdatert",
+      "actions": "Handlinger"
+    },
+    "tooltips": {
+      "viewPortfolio": "Vis Portefølje",
+      "editPortfolio": "Rediger Portefølje",
+      "deletePortfolio": "Slett Portefølje"
+    },
+    "search": {
+      "portfolioFound": "portefølje funnet",
+      "portfoliosFound": "porteføljer funnet"
+    },
+    "emptyState": {
+      "title": "Ingen porteføljer funnet",
+      "noSearchResults": "Prøv å justere søke- eller filterkriteriene dine.",
+      "noPortfolios": "Opprett ditt første portefølje for å komme i gang!",
+      "createFirstPortfolio": "Opprett Ditt Første Portefølje"
+    },
+    "deleteConfirmation": "Er du sikker på at du vil slette dette porteføljet? Denne handlingen kan ikke angres.",
+    "messages": {
+      "loadError": "Kunne ikke laste porteføljer",
+      "deleteSuccess": "Portefølje slettet",
+      "deleteError": "Kunne ikke slette porteføljet"
+    }
+  },
+  "JobsUpdate": {
+    "JobsLandingHero": {
+      "typingEffect": {
+        "sentence1": "Finn drømmejobben din i dag",
+        "sentence2": "Kom i kontakt med topparbeidsgivere",
+        "sentence3": "Fremme din karrierevei",
+        "sentence4": "Oppdag fjernmuligheter",
+        "sentence5": "Bli med i ledende selskaper"
+      },
+      "badge": "Jobbportal",
+      "description": "Oppdag tusenvis av jobbmuligheter fra toppselskaper. Enten du leter etter fjernarbeid, karriereutvikling eller din første jobb, kobler vi talentfulle fagfolk med deres perfekte match.",
+      "searchPlaceholder": "Jobbtittel, nøkkelord eller selskap",
+      "locationPlaceholder": "By, stat eller fjernstyrt",
+      "searchButton": "Søk jobber",
+      "browseJobs": "Bla gjennom jobber",
+      "hotBadge": "HOT",
+      "postJob": "Legg ut en jobb",
+      "employerBadge": "ARBEIDSGIVER",
+      "careerResources": "Karrieretips",
+      "browse": "Bla gjennom",
+      "browseDesc": "Utforsk alle muligheter",
+      "post": "Legg ut",
+      "postDesc": "Ansett topptalenter",
+      "resources": "Ressurser",
+      "resourcesDesc": "Karriereveiledning og tips",
+      "stats": {
+        "jobs": "10 000+ aktive jobber",
+        "rating": "4.8/5 vurdering"
+      },
+      "features": {
+        "freeToApply": "Gratis å søke",
+        "verifiedEmployers": "Verifiserte arbeidsgivere"
+      }
+    },
+    "LandingJobTopCompanies": {
+      "badge": "Topparbeidsgivere",
+      "title": "Bli med i ledende selskaper",
+      "description": "Oppdag muligheter hos selskaper i verdensklasse som aktivt ansetter. Fra oppstartsbedrifter til Fortune 500, finn din perfekte match.",
+      "featured": "Utvalgt",
+      "viewAll": "Vis alle selskaper",
+      "stats": {
+        "companies": "Partnerselskaper",
+        "jobs": "Aktive jobber",
+        "hires": "Vellykkede ansettelser"
+      }
+    },
+    "LandingJobsProcess": {
+      "badge": "Slik fungerer det",
+      "title": "Få drømmejobben din i",
+      "titleHighlight": "4 enkle trinn",
+      "description": "Vår strømlinjeformede prosess gjør jobbsøk enkelt. Fra oppdagelse til ansettelse veileder vi deg hele veien for å sikre at du finner den perfekte muligheten.",
+      "featuresTitle": "Hvorfor velge vår plattform?",
+      "featuresDescription": "Vi tilbyr banebrytende verktøy og funksjoner for å gjøre jobbsøket ditt mer effektivt og virkningsfullt.",
+      "steps": {
+        "0": {
+          "title": "Søk og oppdag",
+          "description": "Bla gjennom tusenvis av jobbmuligheter fra toppselskaper. Bruk våre avanserte filtre for å finne den perfekte matchen for dine ferdigheter og preferanser."
+        },
+        "1": {
+          "title": "Opprett profil",
+          "description": "Bygg din profesjonelle profil med vår CV-bygger. Vis frem dine ferdigheter, erfaring og prestasjoner for å skille deg ut fra mengden."
+        },
+        "2": {
+          "title": "Søk umiddelbart",
+          "description": "Søk på flere jobber med ett klikk. Vårt smarte søknadssystem tilpasser automatisk profilen din til hver stilling."
+        },
+        "3": {
+          "title": "Bli ansatt",
+          "description": "Kom i kontakt med rekrutteringsansvarlige, avtal intervjuer og få drømmejobben din. Vi støtter deg gjennom hele prosessen."
+        }
+      },
+      "features": {
+        "0": {
+          "title": "AI-drevet matching",
+          "description": "Vår intelligente algoritme matcher deg med relevante muligheter"
+        },
+        "1": {
+          "title": "CV-optimalisering",
+          "description": "Optimaliser CV-en din automatisk for hver søknad"
+        },
+        "2": {
+          "title": "Verifiserte selskaper",
+          "description": "Alle arbeidsgivere er verifisert for ekthet og kvalitet"
+        }
+      },
+      "cta": {
+        "title": "Klar til å starte reisen din?",
+        "description": "Bli med tusenvis av fagfolk som har funnet drømmejobbene sine gjennom plattformen vår. Din neste mulighet er bare et klikk unna.",
+        "searchButton": "Start jobbsøk",
+        "profileButton": "Opprett profil"
+      }
+    },
+    "LandingJobsFeatured": {
+      "badge": "Utvalgte jobber",
+      "title": "Oppdag din neste",
+      "titleHighlight": "Drømmemulighet",
+      "description": "Utforsk håndplukkede muligheter fra toppselskaper. Disse utvalgte stillingene tilbyr eksepsjonell karriereutvikling, konkurransedyktig kompensasjon og fantastiske arbeidsmiljøer.",
+      "statsTitle": "Bli med tusenvis av vellykkede fagfolk",
+      "statsDescription": "Plattformen vår har hjulpet utallige fagfolk med å finne drømmejobbene sine i toppselskaper over hele verden.",
+      "stats": {
+        "jobs": "Utvalgte jobber",
+        "success": "Suksessrate",
+        "companies": "Toppselskaper"
+      },
+      "JobCard": {
+        "skills": {
+          "moreSkills": "+{0} mer"
+        },
+        "badges": {
+          "featured": "⭐ Utvalgt",
+          "urgent": "🔥 Akutt",
+          "remote": "🌍 Fjernstyrt"
+        },
+        "buttons": {
+          "applyNow": "Søk nå"
+        }
+      },
+      "viewAll": "Vis alle jobber"
+    },
+    "MainJobListings": {
+      "jobSingular": "jobb",
+      "jobPlural": "jobber",
+      "found": "funnet",
+      "page": "Side",
+      "of": "av",
+      "sort": "Sorter",
+      "sortNewest": "Nyeste",
+      "sortSalaryDesc": "Lønn ↓",
+      "sortSalaryAsc": "Lønn ↑",
+      "sortCompany": "Selskap",
+      "sortRelevance": "Relevans",
+      "noJobsFound": "Ingen jobber funnet",
+      "tryAdjusting": "Prøv å justere søkekriteriene eller filtrene for å oppdage flere muligheter.",
+      "clearAllFilters": "Fjern alle filtre",
+      "previous": "Forrige",
+      "next": "Neste"
+    },
+    "JobSearchBar": {
+      "heading": "Finn din neste mulighet",
+      "subheading": "Oppdag jobber fra toppselskaper over hele verden",
+      "favorites": "Favoritter",
+      "postJob": "Legg ut jobb",
+      "filters": "Filtre",
+      "searchPlaceholder": "Søk jobber, selskaper, nøkkelord...",
+      "locationPlaceholder": "Sted (by, stat, land)",
+      "searchButton": "Søk"
+    },
+    "JobFilters": {
+      "title": "Filtre",
+      "clearAll": "Fjern alle",
+      "jobTypeTitle": "Jobbtype",
+      "experienceLevelTitle": "Erfaringsnivå",
+      "workModeTitle": "Arbeidsmodus",
+      "salaryRangeTitle": "Lønningsområde",
+      "jobType": {
+        "fullTime": "Heltid",
+        "partTime": "Deltid",
+        "contract": "Kontrakt",
+        "freelance": "Frilans"
+      },
+      "experienceLevel": {
+        "entryLevel": "Nyutdannet",
+        "junior": "Junior",
+        "midLevel": "Mellomnivå",
+        "senior": "Senior",
+        "seniorLevel": "Seniornivå",
+        "executive": "Leder/Direktør"
+      },
+      "salaryRange": {
+        "range1": "$40k - $60k",
+        "range2": "$60k - $80k",
+        "range3": "$80k - $120k",
+        "range4": "$120k+"
+      },
+      "workMode": {
+        "remote": "Fjernstyrt",
+        "onSite": "På stedet",
+        "hybrid": "Hybrid"
+      }
+    },
+    "JobDetailsModal": {
+      "tabs": {
+        "overview": "Oversikt",
+        "company": "Selskap",
+        "details": "Detaljer"
+      },
+      "jobDescription": "Stillingsbeskrivelse",
+      "responsibilities": "Ansvar",
+      "requirements": "Krav",
+      "benefits": "Fordeler",
+      "companyInfo": "Selskapsopplysninger",
+      "location": "Sted",
+      "postedOn": "Lagt ut den",
+      "deadline": "Frist",
+      "apply": "Søk nå",
+      "share": "Del",
+      "save": "Lagre",
+      "saved": "Lagret",
+      "viewsPrefix": "👀",
+      "applicantsPrefix": "👥",
+      "viewsText": "visninger siste 24 timer",
+      "applicantsText": "søkere",
+      "noDescription": "Ingen stillingsbeskrivelse er oppgitt.",
+      "noResponsibilities": "Ingen spesifikke ansvarsområder oppført.",
+      "noRequirements": "Ingen spesifikke krav oppført.",
+      "noBenefits": "Ingen informasjon om fordeler tilgjengelig.",
+      "urgencyPriority": "Prioritet",
+      "fastTrack": "Hurtigspor",
+      "qualifications": "Krav",
+      "qualifications.default": "Krav vil bli diskutert under intervjuprosessen.",
+      "jobDetails": {
+        "title": "Stillingsdetaljer",
+        "jobType": "Jobbtype",
+        "workMode": "Arbeidsmodus",
+        "experienceLevel": "Erfaringsnivå",
+        "location": "Sted",
+        "salary": "Lønn",
+        "salaryRange": "Lønningsområde",
+        "competitive": "Konkurransedyktig",
+        "applicationDeadline": "Søknadsfrist",
+        "postedDate": "Lagt ut dato",
+        "notSpecified": "Ikke spesifisert"
+      },
+      "jobDescription.default": "Bli med {{company}} som {{title}}. Vi ser etter en talentfull profesjonell til å bli med i teamet vårt.",
+      "aboutCompany": {
+        "title": "Om selskapet",
+        "defaultDescription": "Lær mer om {{company}} under intervjuprosessen. Selskapets detaljer og kulturinformasjon vil bli delt med kvalifiserte kandidater."
+      },
+      "actions": {
+        "applyNow": "Søk nå",
+        "save": "Lagre",
+        "share": "Del",
+        "contact": "Kontakt",
+        "expand": "Utvid",
+        "collapse": "Skjul"
+      },
+      "stats": {
+        "viewsToday": "visninger i dag",
+        "applications": "søknader",
+        "deadline": "Frist"
+      },
+      "defaultBenefits": {
+        "healthInsurance": {
+          "title": "Helseforsikring",
+          "description": "Detaljer om medisinsk dekning skal diskuteres"
+        },
+        "timeOff": {
+          "title": "Fritid",
+          "description": "Ferie og personlig tid"
+        },
+        "equipment": {
+          "title": "Utstyr",
+          "description": "Arbeidsutstyr leveres"
+        },
+        "workMode": {
+          "title": "Arbeidsmodus",
+          "description": "Skal diskuteres"
+        }
+      },
+      "noCompanyInfo": "Ingen selskapsopplysninger tilgjengelig.",
+      "companyStats": {
+        "locationTBD": "Sted TBA"
+      },
+      "applicationProcess": {
+        "applicationReview": "Søknadsvurdering",
+        "initialInterview": "Første intervju",
+        "technicalAssessment": "Teknisk vurdering",
+        "finalInterview": "Siste intervju",
+        "duration": {
+          "days2to3": "2-3 dager",
+          "days3to5": "3-5 dager",
+          "week1to2": "1-2 uker",
+          "mins30to45": "30-45 min",
+          "hours1to2": "1-2 timer",
+          "mins45to60": "45-60 min"
+        },
+        "status": {
+          "pending": "venter",
+          "completed": "fullført",
+          "current": "nåværende",
+          "upcoming": "kommende"
+        }
+      }
+    },
+    "CreateJobModal": {
+      "title": "Opprett ny stillingsannonse",
+      "requiredFields": "Alle felt merket med * er obligatoriske",
+      "cancel": "Avbryt",
+      "submitting": "Sender inn...",
+      "submitApplication": "Send søknad",
+      "creatingJob": "Oppretter jobb...",
+      "createJobPosting": "Opprett stillingsannonse",
+      "loadingCompanies": "Laster selskaper...",
+      "selectCompany": "Velg et selskap",
+      "noCompanies": "Du har ingen godkjente selskaper. Vennligst opprett et først.",
+      "noCompaniesDescription": "Du må legge til og få godkjent minst ett selskap før du kan legge ut jobber. Bruk knappen «Legg til selskap» i dashbordet ditt.",
+      "sections": {
+        "jobInformation": "Jobbinformasjon",
+        "location": "Sted og type",
+        "compensation": "Kompenasjon og frist",
+        "jobDescription": "Stillingsbeskrivelse",
+        "requirements": "Krav og fordeler"
+      },
+      "fields": {
+        "jobTitle": "Jobbtittel",
+        "company": "Selskap",
+        "jobType": "Jobbtype",
+        "workMode": "Arbeidsmodus",
+        "location": "Sted",
+        "country": "Land",
+        "experience": "Erfaringsnivå",
+        "minSalary": "Min. lønn",
+        "maxSalary": "Maks. lønn",
+        "deadline": "Søknadsfrist",
+        "jobDescription": "Stillingsbeskrivelse",
+        "requirements": "Krav",
+        "benefits": "Fordeler"
+      },
+      "placeholders": {
+        "jobTitle": "f.eks. Senior produktleder",
+        "location": "Begynn å skrive by, stat, land...",
+        "jobDescription": "Beskriv rollen, ansvaret og hva som gjør denne stillingen spennende...",
+        "requirement": "f.eks. 2+ års erfaring innen programvareutvikling",
+        "benefit": "f.eks. Helseforsikring, 401(k) matching"
+      },
+      "actions": {
+        "addRequirement": "Legg til krav",
+        "addBenefit": "Legg til fordel"
+      },
+      "jobTypes": {
+        "fullTime": "Heltid",
+        "partTime": "Deltid",
+        "contract": "Kontrakt",
+        "freelance": "Frilans",
+        "internship": "Praksisplass",
+        "temporary": "Midlertidig"
+      },
+      "workModes": {
+        "onSite": "På stedet",
+        "remote": "Fjernstyrt",
+        "hybrid": "Hybrid"
+      },
+      "experienceLevels": {
+        "entryLevel": "Nyutdannet",
+        "junior": "Junior",
+        "midLevel": "Mellomnivå",
+        "senior": "Senior",
+        "executive": "Leder"
+      }
+    },
+    "FavoritesModal": {
+      "title": "Favorittjobber",
+      "job": "jobb",
+      "jobs": "jobber",
+      "saved": "lagret",
+      "removeFromFavorites": "Fjern fra favoritter",
+      "viewDetails": "Vis detaljer",
+      "yourSavedJobs": "Dine lagrede jobber",
+      "browseJobs": "Bla gjennom jobber",
+      "cleanUpMissingJobs": "Rydd opp manglende jobber",
+      "missingJobsWarning": {
+        "title": "{0} lagrede jobber er ikke lenger tilgjengelige",
+        "description": "Noen jobber i favorittene dine kan ha blitt fjernet eller er ikke lenger aktive."
+      },
+      "noSavedJobs": "Ingen lagrede jobber",
+      "noSavedJobsMessage": "Du har ikke lagret noen jobber ennå. Klikk på bokmerkeikonet på en jobb for å lagre den til senere."
+    },
+    "AppliedJobs": {
+      "title": "Søkte jobber",
+      "subtitle": "Spor dine jobbsøknader og deres nåværende status",
+      "loading": "Laster inn dine søknader...",
+      "loginRequired": {
+        "title": "Vennligst logg inn",
+        "message": "Du må være logget inn for å se dine jobbsøknader."
+      },
+      "stats": {
+        "totalApplied": "Totalt søkt",
+        "pending": "Venter",
+        "interviews": "Intervjuer",
+        "successRate": "Suksessrate"
+      },
+      "search": {
+        "placeholder": "Søk jobber, selskaper eller steder..."
+      },
+      "filters": {
+        "allStatus": "Alle statuser",
+        "underReview": "Under vurdering",
+        "interview": "Intervju",
+        "accepted": "Godkjent",
+        "rejected": "Avvist"
+      },
+      "sort": {
+        "byDate": "Sorter etter dato",
+        "byCompany": "Sorter etter selskap",
+        "byStatus": "Sorter etter status"
+      },
+      "noApplications": {
+        "title": "Ingen søknader funnet",
+        "filterMessage": "Prøv å justere søkekriteriene eller filtrene.",
+        "emptyMessage": "Du har ikke søkt på noen jobber ennå. Begynn å utforske muligheter!"
+      },
+      "actions": {
+        "browseJobs": "Bla gjennom jobber",
+        "moreDetails": "Flere detaljer",
+        "lessDetails": "Mindre detaljer"
+      },
+      "jobInfo": {
+        "applied": "Søkt",
+        "status": "Status"
+      },
+      "jobDetails": {
+        "jobDescription": "Stillingsbeskrivelse",
+        "requirements": "Krav",
+        "noRequirements": "Ingen spesifikke krav oppført",
+        "applicationStatus": "Søknadsstatus",
+        "status": "Status",
+        "appliedOn": "Søkt den",
+        "title": "Stillingsdetaljer",
+        "type": "Type",
+        "mode": "Modus",
+        "salary": "Lønn"
+      }
+    },
+    "DashboardMessages": {
+      "search": {
+        "placeholder": "Søk"
+      },
+      "header": {
+        "title": "Meldinger"
+      },
+      "noMessages": {
+        "title": "Ingen meldinger ennå",
+        "message": "Arbeidsgivere vil kontakte deg her når de er interessert i profilen din"
+      },
+      "status": {
+        "active": "Aktiv nå"
+      },
+      "loading": {
+        "inProgress": "Laster inn...",
+        "loadMore": "Last eldre meldinger",
+        "noMore": "Ingen flere meldinger",
+        "messages": "Laster inn meldinger..."
+      },
+      "errors": {
+        "loadFailed": "Kunne ikke laste meldinger",
+        "sendFailed": "Kunne ikke sende melding. Vennligst prøv igjen.",
+        "loadingError": "Feil ved lasting av meldinger: {{message}}",
+        "permission": "Tillatelse nektet eller nettverksfeil",
+        "connection": "Sjekk dine Firebase-sikkerhetsregler og nettverkstilkoblingen."
+      },
+      "emptyState": {
+        "title": "Ingen meldinger i denne samtalen",
+        "description": "Dette er begynnelsen på samtalen din med {{name}}.",
+        "hint": "Meldinger vil vises her"
+      },
+      "input": {
+        "placeholder": "Skriv en melding...",
+        "sendButton": "Send"
+      },
+      "welcome": {
+        "title": "Velkommen til Meldinger",
+        "description": "Velg en samtale fra sidefeltet for å begynne å chatte med kontaktene dine.",
+        "hint": "Velg en samtale for å begynne å sende meldinger"
+      },
+      "conversation": {
+        "noMessages": "Ingen meldinger ennå"
+      },
+      "time": {
+        "now": "Nå",
+        "minutes": "{{count}} min siden",
+        "hours": "{{count}} timer siden"
+      },
+      "user": {
+        "unknown": "Ukjent bruker"
+      }
+    },
+    "JobApplicationsModal": {
+      "header": {
+        "title": "Søknader for",
+        "totalApplications": "totalt antall søknader"
+      },
+      "search": {
+        "placeholder": "Søk etter navn, e-post eller ferdigheter..."
+      },
+      "filters": {
+        "allStatus": "Alle statuser",
+        "pending": "Venter",
+        "interview": "Intervju",
+        "accepted": "Godkjent",
+        "rejected": "Avvist"
+      },
+      "status": {
+        "pending": "Venter",
+        "interview": "Intervju",
+        "accepted": "Godkjent",
+        "rejected": "Avvist"
+      },
+      "emptyState": {
+        "title": "Ingen søknader funnet",
+        "noApplications": "Ingen har søkt på denne jobben ennå.",
+        "noResults": "Ingen søknader samsvarer med dine nåværende filtre."
+      },
+      "coverLetter": {
+        "none": "Ingen søknadstekst gitt"
+      },
+      "applicantInfo": {
+        "experience": "erfaring",
+        "resumeAttached": "CV vedlagt",
+        "more": "mer"
+      },
+      "buttons": {
+        "accept": "Godta",
+        "reject": "Avvis",
+        "downloadResume": "Last ned CV",
+        "sendEmail": "Send e-post",
+        "showResume": "Vis CV"
+      }
+    },
+    "EmployerDashboard": {
+      "loading": "Laster inn dine stillingsannonser...",
+      "header": {
+        "title": "Stillingsannonser",
+        "subtitle": "Administrer dine stillingsannonser og vurder søknader"
+      },
+      "buttons": {
+        "addCompany": "Legg til selskap",
+        "company": "Selskap",
+        "postNewJob": "Legg ut ny jobb",
+        "newJob": "Ny jobb",
+        "postFirstJob": "Legg ut din første jobb",
+        "applications": "Søknader",
+        "editJob": "Rediger jobb",
+        "pause": "Pause",
+        "activate": "Aktiver",
+        "delete": "Slett"
+      },
+      "stats": {
+        "totalJobs": "Totalt antall jobber",
+        "active": "Aktive",
+        "applications": "Søknader",
+        "views": "Visninger"
+      },
+      "search": {
+        "placeholder": "Søk jobber etter tittel, sted..."
+      },
+      "filters": {
+        "allStatus": "Alle statuser",
+        "active": "Aktive",
+        "pending": "Venter på godkjenning",
+        "paused": "Pauset",
+        "closed": "Lukket",
+        "draft": "Utkast"
+      },
+      "sort": {
+        "byDate": "Sorter etter dato",
+        "byApplications": "Søknader",
+        "byViews": "Visninger",
+        "byTitle": "Tittel"
+      },
+      "emptyState": {
+        "title": "Ingen stillingsannonser funnet",
+        "noJobs": "Du har ikke lagt ut noen jobber ennå. Opprett din første stillingsannonse for å komme i gang!",
+        "noResults": "Ingen jobber samsvarer med dine nåværende filtre. Prøv å justere søkekriteriene."
+      },
+      "jobDetails": {
+        "description": "Stillingsbeskrivelse",
+        "requirements": "Krav",
+        "moreRequirements": "+{{count}} mer"
+      },
+      "jobInfo": {
+        "applications": "søknader",
+        "views": "visninger",
+        "deadline": "Frist:"
+      },
+      "AddCompanyModal": {
+        "header": {
+          "title": "Legg til selskap",
+          "subtitle": "Legg til selskapets detaljer for gjennomgang og godkjenning"
+        },
+        "info": {
+          "title": "Selskapets godkjenningsprosess",
+          "description": "Alle selskapssøknader blir gjennomgått av teamet vårt for å sikre kvalitet og autentisitet. Du vil bli varslet når selskapet ditt er godkjent og kan brukes til stillingsannonser."
+        },
+        "form": {
+          "companyName": "Selskapets navn *",
+          "website": "Nettsted",
+          "companyLogo": "Selskapets logo (valgfritt)",
+          "industry": "Industri *",
+          "companySize": "Selskapets størrelse *",
+          "location": "Sted *",
+          "address": "Adresse",
+          "phone": "Telefon",
+          "email": "E-post",
+          "description": "Selskapets beskrivelse",
+          "companyNamePlaceholder": "Skriv inn selskapsnavn"
+        },
+        "validation": {
+          "nameRequired": "Selskapsnavn er påkrevd",
+          "industryRequired": "Industri er påkrevd",
+          "sizeRequired": "Selskapets størrelse er påkrevd",
+          "locationRequired": "Sted er påkrevd",
+          "invalidWebsite": "Vennligst oppgi en gyldig nettsteds-URL",
+          "invalidImage": "Vennligst oppgi en gyldig bilde-URL",
+          "invalidEmail": "Vennligst oppgi en gyldig e-postadresse"
+        },
+        "industries": {
+          "technology": "Teknologi",
+          "healthcare": "Helsevesen",
+          "finance": "Finans",
+          "education": "Utdanning",
+          "retail": "Detaljhandel",
+          "manufacturing": "Produksjon",
+          "consulting": "Konsultasjon",
+          "marketing": "Markedsføring",
+          "realEstate": "Eiendom",
+          "hospitality": "Hotell og restaurant",
+          "transportation": "Transport",
+          "energy": "Energi",
+          "media": "Media",
+          "government": "Regjering",
+          "nonprofit": "Non-profit",
+          "other": "Annet"
+        },
+        "companySizes": {
+          "size1to10": "1-10 ansatte",
+          "size11to50": "11-50 ansatte",
+          "size51to200": "51-200 ansatte",
+          "size201to500": "201-500 ansatte",
+          "size501to1000": "501-1000 ansatte",
+          "size1000plus": "1000+ ansatte"
+        },
+        "placeholders": {
+          "selectIndustry": "Velg bransje",
+          "selectCompanySize": "Velg selskapets størrelse"
+        },
+        "messages": {
+          "validationError": "Valideringsfeil",
+          "fixErrors": "Vennligst rett feilene i skjemaet",
+          "error": "Feil",
+          "mustBeLoggedIn": "Du må være logget inn for å legge til et selskap",
+          "success": "Suksess",
+          "companyAdded": "Selskap lagt til! Det vil bli vurdert av teamet vårt.",
+          "failedToAdd": "Kunne ikke legge til selskap",
+          "unexpectedError": "En uventet feil oppsto"
+        },
+        "buttons": {
+          "cancel": "Avbryt",
+          "addCompany": "Legg til selskap",
+          "addingCompany": "Legger til selskap..."
+        }
+      },
+      "CompaniesManagement": {
+        "loading": {
+          "companies": "Laster inn dine selskaper..."
+        },
+        "header": {
+          "title": "Mine selskaper",
+          "subtitle": "Administrer dine selskaper og spor deres godkjenningsstatus"
+        },
+        "buttons": {
+          "addCompany": "Legg til selskap",
+          "add": "Legg til"
+        },
+        "infoBanner": {
+          "title": "Selskapets godkjenningsprosess",
+          "message": "Alle selskaper må godkjennes før de kan brukes til stillingsannonser. Bare godkjente selskaper vil vises i skjemaet for stillingsannonser."
+        },
+        "stats": {
+          "totalCompanies": "Totalt antall selskaper",
+          "approved": "Godkjent",
+          "pending": "Venter",
+          "rejected": "Avvist"
+        },
+        "search": {
+          "placeholder": "Søk selskaper etter navn, bransje, sted..."
+        },
+        "filters": {
+          "allStatus": "Alle statuser",
+          "pending": "Venter",
+          "approved": "Godkjent",
+          "rejected": "Avvist"
+        },
+        "emptyState": {
+          "title": "Ingen selskaper funnet",
+          "noCompanies": "Du har ikke lagt til noen selskaper ennå. Legg til ditt første selskap for å komme i gang!",
+          "noMatches": "Ingen selskaper samsvarer med dine nåværende filtre. Prøv å justere søkekriteriene.",
+          "addFirstCompany": "Legg til ditt første selskap"
+        },
+        "companyDetails": {
+          "description": "Selskapets beskrivelse",
+          "visitWebsite": "Besøk nettside"
+        },
+        "actions": {
+          "editCompany": "Rediger selskap",
+          "delete": "Slett"
+        }
+      },
+      "JobCard": {
+        "badges": {
+          "featured": "⭐ Utvalgt",
+          "urgent": "🔥 Akutt",
+          "remote": "🌍 Fjernstyrt"
+        },
+        "jobDetails": {
+          "location": "Sted",
+          "type": "Jobbtype",
+          "salary": "Lønn",
+          "postedTime": "Lagt ut tid"
+        },
+        "skills": {
+          "moreSkills": "+{0} mer"
+        },
+        "buttons": {
+          "applyNow": "Søk nå"
+        }
+      }
+    },
+    "JobCard2": {
+      "alerts": {
+        "signInRequired": "Vennligst logg inn for å søke jobber."
+      },
+      "applicationStatus": {
+        "loading": "Laster inn...",
+        "applyNow": "Søk nå",
+        "pending": "Søknad venter",
+        "interview": "Intervju planlagt",
+        "accepted": "Søknad akseptert",
+        "rejected": "Søknad avvist"
+      },
+      "jobInfo": {
+        "locationTBD": "Sted TBA",
+        "applicants": "{{applicants}} søkere",
+        "requirements": "Krav",
+        "posted": "Lagt ut {{postedDate}}"
+      },
+      "buttons": {
+        "viewDetails": "Vis detaljer"
+      }
+    },
+    "JobApplicationModal": {
+      "title": "Søk på {{jobTitle}}",
+      "subtitle": "Fyll ut skjemaet nedenfor for å søke på denne stillingen",
+      "personalInfo": {
+        "heading": "Personlig informasjon",
+        "fullName": "Fullt navn",
+        "email": "E-postadresse",
+        "phone": "Telefonnummer",
+        "linkedin": "LinkedIn-profilens URL",
+        "github": "GitHub/Portefølje URL",
+        "website": "Personlig nettsted"
+      },
+      "resume": {
+        "heading": "CV",
+        "selectResume": "Velg CV",
+        "browseResumes": "Bla gjennom CV-er",
+        "uploadNew": "Last opp ny CV",
+        "preview": "Forhåndsvis CV",
+        "noResumes": "Ingen CV-er funnet",
+        "createResume": "Lag en CV først",
+        "loading": "Laster CV-er...",
+        "error": "Feil ved lasting av CV-er",
+        "selectThis": "Velg denne CV-en",
+        "createdAt": "Opprettet {{date}}"
+      },
+      "coverLetter": {
+        "heading": "Søknadstekst",
+        "placeholder": "Skriv en kort søknadstekst som forklarer hvorfor du passer til denne rollen...",
+        "loadTemplate": "Last inn mal",
+        "templates": {
+          "standard": "Standard",
+          "professional": "Profesjonell",
+          "creative": "Kreativ",
+          "technical": "Teknisk",
+          "career": "Karriereskifte"
+        }
+      },
+      "buttons": {
+        "back": "Tilbake",
+        "submit": "Send søknad",
+        "submitting": "Sender inn...",
+        "cancel": "Avbryt",
+        "close": "Lukk",
+        "viewMyApplications": "Vis mine søknader",
+        "browseMore": "Bla gjennom flere jobber"
+      },
+      "success": {
+        "title": "Søknad sendt!",
+        "message": "Søknaden din er sendt. Vi kontakter deg snart."
+      },
+      "error": {
+        "title": "Søknad mislyktes",
+        "message": "Det oppsto et problem under innsending av søknaden din. Vennligst prøv igjen.",
+        "requiredFields": "Vennligst fyll ut alle obligatoriske felt"
+      },
+      "pagination": {
+        "prev": "Forrige",
+        "next": "Neste",
+        "page": "Side {{current}} av {{total}}"
+      }
+    },
+    "ProfileDisplay2": {
+      "search": "Søk",
+      "navigation": "NAVIGASJON",
+      "menu": {
+        "dashboard": "Dashbord",
+        "interviews": "Intervjuer",
+        "portfolios": "Porteføljer",
+        "settings": "Innstillinger",
+        "appliedJobs": "Søkte jobber",
+        "messages": "Meldinger",
+        "myJobs": "Mine jobber",
+        "myCompanies": "Mine selskaper"
+      }
+    },
+    "DashboardHomepageFix1": {
+      "subtitle": "Administrer dine CV-er og søknadstekster"
+    }
+  },
+  "blog": {
+    "title": "Blogg",
+    "description": "Siste karrieretips og trender",
+    "knowledgeHub": "Kunnskapssenter",
+    "blogTitle": "Innsikt og ressurser",
+    "blogDescription": "Ekspertinnsikt, bransjetrender og praktiske guider for å hjelpe deg med å lykkes",
+    "searchPlaceholder": "Søk i artikler, guider og innsikt...",
+    "search": "Søk",
+    "allArticles": "Alle artikler",
+    "allCategories": "Alle kategorier",
+    "noArticlesFound": "Ingen artikler funnet",
+    "adjustSearch": "Prøv å justere søkeordene dine eller kategorifilteret.",
+    "loadMore": "Last flere artikler",
+    "articleLabel": "Artikkel",
+    "minRead": "min lesing",
+    "recently": "Nylig",
+    "articleNotFound": "Artikkelen ble ikke funnet",
+    "backToArticles": "Tilbake til artikler",
+    "backToBlog": "Tilbake til bloggen",
+    "shareArticle": "Del artikkel",
+    "relatedArticles": "Relaterte artikler",
+    "views": "visninger",
+    "tags": "Tagger"
+  }
+}

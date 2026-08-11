@@ -1,0 +1,348 @@
+@use '../../components/variables' as *;
+
+.cv53-board {
+    width: 21cm;
+    min-height: 29.7cm;
+    font-family: $font;
+    background: #ffffff;
+    color: #000000;
+    box-sizing: border-box;
+    position: relative;
+    padding: 0;
+    margin: 0;
+
+    .cv53-content {
+        width: 100%;
+        height: 100%;
+        padding: 20mm;
+        
+        // Classic Header - Simple and clean
+        .cv53-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #000000;
+            
+            .full-name {
+                font-size: 28px;
+                font-weight: 700;
+                margin: 0 0 8px 0;
+                color: #000000;
+                letter-spacing: 1px;
+                text-transform: uppercase;
+            }
+            
+            .occupation {
+                font-size: 16px;
+                font-weight: 400;
+                margin: 0 0 12px 0;
+                color: #333333;
+                font-style: italic;
+            }
+            
+            .contact-info {
+                font-size: 13px;
+                color: #333333;
+                line-height: 1.4;
+            }
+        }
+        
+        // Classic Two-Column Layout (Left Label, Right Content)
+        .cv-body-section {
+            display: flex;
+            margin-bottom: 20px;
+            border-top: 1px solid #cccccc;
+            padding-top: 15px;
+            
+            &:first-child {
+                border-top: none;
+            }
+            
+            .cv-section-left {
+                width: 180px;
+                min-width: 180px;
+                padding-right: 20px;
+                
+                .section-title {
+                    font-size: 14px;
+                    font-weight: 700;
+                    color: #000000;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    margin: 0;
+                }
+            }
+            
+            .cv-section-right {
+                flex: 1;
+                
+                .section-content {
+                    font-size: 13px;
+                    line-height: 1.5;
+                    color: #333333;
+                    
+                    p {
+                        margin: 0 0 10px 0;
+                        
+                        &:last-child {
+                            margin-bottom: 0;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Job Items - Simple and clean
+        .job-item {
+            margin-bottom: 18px;
+            
+            &:last-child {
+                margin-bottom: 0;
+            }
+            
+            .job-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                margin-bottom: 4px;
+                flex-wrap: wrap;
+                
+                .job-title {
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #000000;
+                    margin: 0;
+                }
+                
+                .job-dates {
+                    font-size: 12px;
+                    color: #666666;
+                    font-style: italic;
+                    white-space: nowrap;
+                }
+            }
+            
+            .job-company {
+                font-size: 13px;
+                color: #333333;
+                margin-bottom: 6px;
+                font-weight: 500;
+            }
+            
+            .job-description {
+                font-size: 13px;
+                line-height: 1.4;
+                color: #333333;
+                margin-top: 6px;
+                
+                p {
+                    margin: 0 0 6px 0;
+                    
+                    &:last-child {
+                        margin-bottom: 0;
+                    }
+                }
+                
+                ul, ol {
+                    margin: 6px 0;
+                    padding-left: 15px;
+                    
+                    li {
+                        margin-bottom: 3px;
+                        color: #333333;
+                    }
+                }
+            }
+        }
+        
+        // Education Items
+        .education-item {
+            margin-bottom: 18px;
+            
+            &:last-child {
+                margin-bottom: 0;
+            }
+            
+            .education-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                margin-bottom: 4px;
+                flex-wrap: wrap;
+                
+                .education-degree {
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #000000;
+                    margin: 0;
+                }
+                
+                .education-dates {
+                    font-size: 12px;
+                    color: #666666;
+                    font-style: italic;
+                    white-space: nowrap;
+                }
+            }
+            
+            .education-school {
+                font-size: 13px;
+                color: #333333;
+                margin-bottom: 6px;
+                font-weight: 500;
+            }
+            
+            .education-description {
+                font-size: 13px;
+                line-height: 1.4;
+                color: #333333;
+                margin-top: 6px;
+            }
+        }
+        
+        // Skills List - Simple bullets
+        .skills-list {
+            .skill-item {
+                display: flex;
+                align-items: center;
+                margin-bottom: 6px;
+                
+                &:last-child {
+                    margin-bottom: 0;
+                }
+                
+                .skill-bullet {
+                    width: 5px;
+                    height: 5px;
+                    background: #000000;
+                    border-radius: 50%;
+                    margin-right: 8px;
+                    flex-shrink: 0;
+                }
+                
+                .skill-name {
+                    font-size: 13px;
+                    color: #333333;
+                    font-weight: 400;
+                }
+            }
+        }
+        
+        // Languages List - Simple bullets
+        .languages-list {
+            .language-item {
+                display: flex;
+                align-items: center;
+                margin-bottom: 6px;
+                
+                &:last-child {
+                    margin-bottom: 0;
+                }
+                
+                .skill-bullet {
+                    width: 5px;
+                    height: 5px;
+                    background: #000000;
+                    border-radius: 50%;
+                    margin-right: 8px;
+                    flex-shrink: 0;
+                }
+                
+                .language-name {
+                    font-size: 13px;
+                    color: #333333;
+                    font-weight: 400;
+                }
+            }
+        }
+    }
+    
+    // Rich Text Formatting Styles - Classic
+    strong, b {
+        font-weight: 600;
+        color: #000000;
+    }
+    
+    em, i {
+        font-style: italic;
+    }
+    
+    u {
+        text-decoration: underline;
+    }
+    
+    ul, ol {
+        margin: 0.5em 0;
+        padding-left: 1.2em;
+        
+        li {
+            margin: 0.2em 0;
+            padding-left: 0.2em;
+            list-style-position: outside;
+            line-height: 1.4;
+        }
+    }
+    
+    ul {
+        list-style-type: disc;
+    }
+    
+    ol {
+        list-style-type: decimal;
+    }
+    
+    ul ul, ol ul {
+        list-style-type: circle;
+        margin: 0.2em 0;
+        padding-left: 1em;
+    }
+}
+
+// Print-specific styles
+@media print {
+    .cv53-board {
+        box-shadow: none;
+        border-radius: 0;
+        border: none;
+        width: 100%;
+        min-height: auto;
+        
+        .cv53-content {
+            padding: 15mm;
+        }
+    }
+}
+
+// Responsive adjustments
+@media screen and (max-width: 768px) {
+    .cv53-board {
+        width: 100%;
+        
+        .cv53-content {
+            padding: 15px;
+            
+            .cv-body-section {
+                flex-direction: column;
+                
+                .cv-section-left {
+                    width: 100%;
+                    min-width: auto;
+                    padding-right: 0;
+                    margin-bottom: 10px;
+                }
+            }
+            
+            .job-header,
+            .education-header {
+                flex-direction: column;
+                align-items: flex-start;
+                
+                .job-dates,
+                .education-dates {
+                    margin-top: 4px;
+                    white-space: normal;
+                }
+            }
+        }
+    }
+}

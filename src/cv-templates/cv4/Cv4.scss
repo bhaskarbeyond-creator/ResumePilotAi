@@ -1,0 +1,211 @@
+@use '../../components/variables' as *;
+
+.cv4-board {
+    width: 100%;
+    width: 21cm;
+    min-height: 29.7cm !important;
+
+    //background-color: red;
+    display: flex;
+    justify-content: center;
+    font-family: $font;
+    color: #3b3b3b;
+    // cv-content
+    .cv4-content {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        font-size: 14px;
+        align-items: center;
+        .cv4-head {
+            height: 150px !important;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            .cv4-headBox {
+                border: 3px solid white;
+                padding: 10px 10%;
+                text-align: center;
+                width: fit-content;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                .cv4-name {
+                    margin: 0px;
+                    font-weight: 500;
+                }
+                .cv4-headBoxHr {
+                    width: 20%;
+                }
+            }
+        } /// head
+
+        //body
+        .cv4-body {
+            display: grid;
+            grid-template-columns: 1fr 3fr;
+            width: 92%;
+            margin-top: 20px;
+            min-height: 900px;
+
+            .cv4-leftSide {
+                width: 90%;
+                height: 100%;
+                // Details
+                .cv4-details {
+                    .cv4-detailsContent {
+                        display: flex;
+                        flex-direction: column;
+                        font-size: 11px;
+                    }
+                    margin-bottom: 10px;
+                } ///Details
+                .cv4-skills {
+                    .cv4-skill {
+                        .cv4-skillName {
+                            font-size: 11px;
+                        }
+                        .cv4-skillBox {
+                            height: 6px;
+                            margin-bottom: 3px;
+                            .cv4-skillRating {
+                                height: 100%;
+                            }
+                        }
+                    }
+                } /// skills
+                .cv4-languages {
+                    .cv4-languagesItem {
+                        display: flex;
+                        justify-content: space-between;
+                        margin-bottom: 4px;
+                        .cv4-languageName {
+                            font-size: 11px;
+                            font-weight: 600;
+                        }
+                        .cv4-languageLevel {
+                            font-size: 11px;
+                        }
+                    }
+                }
+            } /// Left side
+            //Right side
+            .cv4-rightSide {
+                padding-left: 20px;
+                margin-left: 10px;
+                height: 100%;
+                .cv4-profile {
+                    font-size: 12px;
+                    .cv4-employment {
+                        margin-bottom: 10px;
+                        .cv4-employmentsHead {
+                            display: flex;
+                            justify-content: space-between;
+                            .cv4-jobTitle {
+                                font-weight: 600;
+                            }
+                            .cv4-dates {
+                                font-weight: 600;
+                            }
+                        }
+                    }
+                }
+            }
+            ///Right side
+        }
+        .cv4-SectionTitle {
+            margin-bottom: 10px;
+            span {
+                font-weight: 700;
+                font-size: 24px;
+                text-transform: uppercase;
+            }
+        }
+    } /// cv4-content
+}
+
+p {
+    white-space: pre-wrap;
+}
+
+/* Rich Text Formatting Styles for CV4 Template */
+.cv4-board {
+    /* Bold text */
+    strong,
+    b {
+        font-weight: bold;
+    }
+
+    /* Italic text */
+    em,
+    i {
+        font-style: italic;
+    }
+
+    /* Underlined text */
+    u {
+        text-decoration: underline;
+    }
+
+    /* Lists */
+    ul,
+    ol {
+        margin: 0.3em 0;
+        padding-left: 1em;
+
+        li {
+            margin: 0.1em 0;
+            padding-left: 0.2em;
+            list-style-position: outside;
+        }
+    }
+
+    ul {
+        list-style-type: disc;
+    }
+
+    ol {
+        list-style-type: decimal;
+    }
+
+    /* Nested lists */
+    ul ul,
+    ol ul {
+        list-style-type: circle;
+        margin: 0.1em 0;
+        padding-left: 0.8em;
+    }
+
+    ul ul ul,
+    ol ul ul {
+        list-style-type: square;
+        margin: 0.1em 0;
+        padding-left: 0.8em;
+    }
+
+    /* Paragraphs in rich text */
+    p {
+        margin: 0.5em 0;
+
+        &:first-child {
+            margin-top: 0;
+        }
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+
+    /* Links */
+    a {
+        color: inherit;
+        text-decoration: underline;
+    }
+
+    /* Line breaks */
+    br {
+        line-height: 1.5;
+    }
+}

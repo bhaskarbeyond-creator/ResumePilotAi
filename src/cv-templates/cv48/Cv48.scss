@@ -1,0 +1,587 @@
+@use '../../components/variables' as *;
+
+.cv48-board {
+    width: 21cm;
+    min-height: 29.7cm;
+    font-family: $font;
+    background-color: #ffffff;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    color: #2d3748;
+
+    // Color Variables
+    $primary: #5a67d8; // Indigo
+    $primary-dark: #434190;
+    $primary-light: #7f9cf5;
+    $secondary: #ed64a6; // Pink
+    $secondary-light: #f687b3;
+    $secondary-dark: #d53f8c;
+    $dark: #2d3748; // Gray 800
+    $medium: #4a5568; // Gray 700
+    $light: #718096; // Gray 600
+    $lighter: #e2e8f0; // Gray 300
+    $lightest: #f7fafc; // Gray 100
+    $white: #ffffff;
+    $gradient-start: $primary;
+    $gradient-end: $secondary;
+
+    // Header Styles
+    .cv48-header {
+        background: linear-gradient(135deg, $primary-dark, $primary, $primary-light);
+        padding: 0;
+        position: relative;
+        overflow: hidden;
+
+        .profile-banner {
+            display: flex;
+            align-items: center;
+            padding: 30px 40px;
+            position: relative;
+
+            &:after {
+                content: '';
+                position: absolute;
+                bottom: -20px;
+                right: -20px;
+                width: 200px;
+                height: 200px;
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 50%;
+                z-index: 0;
+            }
+
+            .profile-photo-container {
+                width: 120px;
+                height: 120px;
+                border-radius: 12px;
+                overflow: hidden;
+                margin-right: 30px;
+                border: 4px solid rgba(255, 255, 255, 0.3);
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+                position: relative;
+                z-index: 1;
+
+                .profile-photo {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                }
+
+                .photo-placeholder {
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    background-color: rgba(255, 255, 255, 0.1);
+                    color: $white;
+                    font-size: 40px;
+                }
+            }
+
+            .name-position {
+                position: relative;
+                z-index: 1;
+
+                .full-name {
+                    font-size: 32px;
+                    font-weight: 700;
+                    color: $white;
+                    margin: 0 0 6px;
+                    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                    letter-spacing: 0.5px;
+                }
+
+                .position-title {
+                    font-size: 18px;
+                    font-weight: 400;
+                    color: rgba(255, 255, 255, 0.85);
+                    margin: 0;
+                    letter-spacing: 0.3px;
+                }
+            }
+        }
+    }
+
+    // Body Styles
+    .cv48-body {
+        display: flex;
+        flex: 1;
+
+        // Left Column
+        .left-column {
+            width: 33%;
+            background-color: $lightest;
+            padding: 40px 25px;
+
+            .section-title {
+                display: flex;
+                align-items: center;
+                font-size: 18px;
+                font-weight: 600;
+                color: $primary;
+                margin: 0 0 20px;
+                position: relative;
+                padding-bottom: 8px;
+
+                &:after {
+                    content: '';
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    width: 40px;
+                    height: 3px;
+                    background: linear-gradient(to right, $primary, $secondary);
+                    border-radius: 3px;
+                }
+
+                .section-icon {
+                    margin-right: 8px;
+                }
+            }
+
+            // Contact Info
+            .contact-section {
+                margin-bottom: 35px;
+
+                .contact-list {
+                    .contact-item {
+                        display: flex;
+                        align-items: flex-start;
+                        margin-bottom: 15px;
+
+                        .contact-icon {
+                            color: $primary;
+                            font-size: 14px;
+                            margin-top: 4px;
+                            margin-right: 10px;
+                            min-width: 16px;
+                        }
+
+                        .contact-text {
+                            font-size: 14px;
+                            color: $medium;
+                            line-height: 1.5;
+                        }
+                    }
+                }
+            }
+
+            // Skills Section
+            .skills-section {
+                margin-bottom: 35px;
+
+                .skills-container {
+                    .skill-item {
+                        margin-bottom: 15px;
+
+                        .skill-name-container {
+                            display: flex;
+                            align-items: center;
+                            margin-bottom: 6px;
+
+                            .skill-icon {
+                                color: $secondary;
+                                font-size: 12px;
+                                margin-right: 8px;
+                            }
+
+                            .skill-name {
+                                font-size: 14px;
+                                font-weight: 500;
+                                color: $dark;
+                            }
+                        }
+
+                        .skill-meter {
+                            height: 6px;
+                            background-color: $lighter;
+                            border-radius: 3px;
+                            overflow: hidden;
+
+                            .skill-level {
+                                height: 100%;
+                                background: linear-gradient(to right, $primary, $secondary);
+                                border-radius: 3px;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Languages Section
+            .languages-section {
+                .languages-container {
+                    .language-item {
+                        margin-bottom: 16px;
+                        padding-bottom: 16px;
+                        border-bottom: 1px dashed $lighter;
+
+                        &:last-child {
+                            border-bottom: none;
+                            margin-bottom: 0;
+                            padding-bottom: 0;
+                        }
+
+                        .language-header {
+                            margin-bottom: 8px;
+
+                            .language-name {
+                                font-size: 15px;
+                                font-weight: 600;
+                                color: $dark;
+                            }
+                        }
+
+                        .star-rating {
+                            display: flex;
+                            gap: 3px;
+                            margin-bottom: 5px;
+
+                            .star {
+                                font-size: 13px;
+
+                                &.active {
+                                    color: $secondary;
+                                }
+
+                                &.inactive {
+                                    color: $lighter;
+                                }
+                            }
+                        }
+
+                        .language-level {
+                            font-size: 12px;
+                            color: $light;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Right Column
+        .right-column {
+            width: 67%;
+            padding: 40px 35px;
+
+            .section-title {
+                display: flex;
+                align-items: center;
+                font-size: 22px;
+                font-weight: 600;
+                color: $primary;
+                margin: 0 0 25px;
+                position: relative;
+                padding-bottom: 10px;
+                border-bottom: 1px solid $lighter;
+
+                .section-icon {
+                    margin-right: 10px;
+                    color: $primary;
+                }
+            }
+
+            // Summary Section
+            .summary-section {
+                background-color: $lightest;
+                padding: 25px;
+                border-radius: 8px;
+                margin-bottom: 35px;
+                position: relative;
+
+                &:before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 4px;
+                    height: 100%;
+                    background: linear-gradient($primary, $secondary);
+                    border-radius: 4px 0 0 4px;
+                }
+
+                .summary-text {
+                    font-size: 15px;
+                    line-height: 1.6;
+                    color: $medium;
+                }
+            }
+
+            // Experience Section
+            .experience-section {
+                margin-bottom: 35px;
+
+                .experience-timeline {
+                    .experience-item {
+                        display: flex;
+                        margin-bottom: 25px;
+                        position: relative;
+
+                        &:last-child {
+                            margin-bottom: 0;
+                        }
+
+                        .position-timeline {
+                            flex: 0 0 100px;
+                            position: relative;
+
+                            .timeline-marker {
+                                position: relative;
+
+                                &:before {
+                                    content: '';
+                                    position: absolute;
+                                    top: 14px;
+                                    bottom: -25px;
+                                    left: 5px;
+                                    width: 1px;
+                                    background-color: $lighter;
+                                }
+
+                                .marker-circle {
+                                    width: 11px;
+                                    height: 11px;
+                                    border-radius: 50%;
+                                    background: linear-gradient(135deg, $primary, $secondary);
+                                    border: 2px solid $white;
+                                    box-shadow: 0 0 0 1px $primary;
+                                    z-index: 1;
+                                    position: relative;
+                                }
+                            }
+
+                            .position-details {
+                                margin-top: 16px;
+
+                                .timeperiod {
+                                    display: flex;
+                                    align-items: center;
+                                    font-size: 12px;
+                                    color: $light;
+                                    white-space: nowrap;
+
+                                    .calendar-icon {
+                                        margin-right: 5px;
+                                        font-size: 10px;
+                                        color: $secondary;
+                                    }
+                                }
+                            }
+                        }
+
+                        .position-content {
+                            flex: 1;
+                            padding-left: 15px;
+
+                            .job-title {
+                                font-size: 18px;
+                                font-weight: 600;
+                                color: $dark;
+                                margin: 0 0 5px;
+                            }
+
+                            .company {
+                                display: flex;
+                                align-items: center;
+                                margin-bottom: 10px;
+
+                                .company-icon {
+                                    color: $primary;
+                                    font-size: 12px;
+                                    margin-right: 6px;
+                                }
+
+                                .company-name {
+                                    font-size: 15px;
+                                    font-weight: 500;
+                                    color: $medium;
+                                }
+                            }
+
+                            .job-description {
+                                font-size: 14px;
+                                line-height: 1.6;
+                                color: $medium;
+                                margin: 0;
+                            }
+                        }
+
+                        &:last-child {
+                            .position-timeline {
+                                .timeline-marker {
+                                    &:before {
+                                        display: none;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Education Section
+            .education-section {
+                .education-timeline {
+                    .education-item {
+                        display: flex;
+                        margin-bottom: 25px;
+                        position: relative;
+
+                        &:last-child {
+                            margin-bottom: 0;
+                        }
+
+                        .position-timeline {
+                            flex: 0 0 100px;
+                            position: relative;
+
+                            .timeline-marker {
+                                position: relative;
+
+                                &:before {
+                                    content: '';
+                                    position: absolute;
+                                    top: 14px;
+                                    bottom: -25px;
+                                    left: 5px;
+                                    width: 1px;
+                                    background-color: $lighter;
+                                }
+
+                                .marker-circle {
+                                    width: 11px;
+                                    height: 11px;
+                                    border-radius: 50%;
+                                    background: linear-gradient(135deg, $primary, $secondary);
+                                    border: 2px solid $white;
+                                    box-shadow: 0 0 0 1px $primary;
+                                    z-index: 1;
+                                    position: relative;
+                                }
+                            }
+
+                            .position-details {
+                                margin-top: 16px;
+
+                                .timeperiod {
+                                    display: flex;
+                                    align-items: center;
+                                    font-size: 12px;
+                                    color: $light;
+                                    white-space: nowrap;
+
+                                    .calendar-icon {
+                                        margin-right: 5px;
+                                        font-size: 10px;
+                                        color: $secondary;
+                                    }
+                                }
+                            }
+                        }
+
+                        .position-content {
+                            flex: 1;
+                            padding-left: 15px;
+
+                            .degree {
+                                font-size: 18px;
+                                font-weight: 600;
+                                color: $dark;
+                                margin: 0 0 5px;
+                            }
+
+                            .institute {
+                                display: flex;
+                                align-items: center;
+                                margin-bottom: 10px;
+
+                                .institute-icon {
+                                    color: $primary;
+                                    font-size: 12px;
+                                    margin-right: 6px;
+                                }
+
+                                .school-name {
+                                    font-size: 15px;
+                                    font-weight: 500;
+                                    color: $medium;
+                                }
+                            }
+
+                            .education-description {
+                                font-size: 14px;
+                                line-height: 1.6;
+                                color: $medium;
+                                margin: 0;
+                            }
+                        }
+
+                        &:last-child {
+                            .position-timeline {
+                                .timeline-marker {
+                                    &:before {
+                                        display: none;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+.cv48-board {
+    .summary-text,
+    .job-description,
+    .education-description {
+        strong,
+        b {
+            font-weight: bold;
+        }
+
+        em,
+        i {
+            font-style: italic;
+        }
+
+        u {
+            text-decoration: underline;
+        }
+
+        ul,
+        ol {
+            padding-left: 20px;
+            margin-top: 5px;
+            margin-bottom: 5px;
+        }
+
+        li {
+            margin-bottom: 2px;
+        }
+    }
+}
+
+@media print {
+    body {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .cv48-board {
+        box-shadow: none;
+
+        .cv48-header {
+            .profile-banner {
+                .profile-photo-container {
+                    box-shadow: none;
+                }
+            }
+        }
+    }
+}

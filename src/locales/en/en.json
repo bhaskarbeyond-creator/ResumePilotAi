@@ -1,0 +1,2657 @@
+{
+  "intro": {
+    "titleLeft": "Your resume in three",
+    "titleSpan": "easy",
+    "titleRight": "steps",
+    "step1": "Select a template from our collection.",
+    "step2": "Build you resume using our easy to use resume builder .",
+    "step3": "Download your resume.",
+    "login": "Login",
+    "selectTemplate": "Select Template",
+    "rightReserved": "All Rights Reserved"
+  },
+  "selectionAction": {
+    "titleLeft": "Select a",
+    "titleSpan": "template",
+    "titleRight": "from the list.",
+    "templates": "Templates",
+    "account": "My Account",
+    "admin": "Admin"
+  },
+  "form": {
+    "untitled": "Untitled",
+    "profileCompleteness": "Profile Completness",
+    "personalDetails": "Personal Details",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "email": "Email",
+    "phone": "Phone",
+    "photo": "Photo",
+    "occupation": "Occupation",
+    "country": "Country",
+    "nationality": "Nationality",
+    "city": "City",
+    "address": "Address",
+    "postalcode": "Postal Code",
+    "dateOfBirth": "Date Of Birth",
+    "drivingLicense": "Driving License",
+    "profesionalSummary": "Professional Summary",
+    "profesionalSummarySubtitle": "Quick summary about your overall experience.",
+    "employmentHistory": "Employment History",
+    "employmentHistorySubtitle": "Include your last 10 years of relevant experience and dates in this section. List your most recent position first .",
+    "jobTitle": "Job Title",
+    "employer": "Employer",
+    "begin": "Begin",
+    "end": "End",
+    "description": "Description",
+    "education": "Education",
+    "educationSubtitle": "Include your last 10 years of education history  and dates in this section. List your most recent  position first .",
+    "school": "School",
+    "degree": "Degree",
+    "courseDescription": "Course Description",
+    "languages": "Languages",
+    "laguagesSubtitle": "Please enter the languages you are able to work with.",
+    "language": "Language",
+    "level": "Level",
+    "skills": "Skills",
+    "skillsSubtitle": "Please enter your skills and give each one a rating.",
+    "skillName": "Skill Name",
+    "rating": "Rating",
+    "addSkill": "Add Skill",
+    "addLanguage": "Add Language",
+    "addJob": "Add Job",
+    "addEducation": "Add Education",
+    "showDetails": "Show additional details",
+    "hideDetails": "Hide additional details",
+    "previous": "Previous",
+    "next": "Next",
+    "selectTemplate": "Select Template",
+    "save": "Save",
+    "download": "Download"
+  },
+  "login": {
+    "login": "Login",
+    "email": "Email",
+    "googleLogin": "Login with ",
+    "facebookLogin": "Login with",
+    "or": "Or",
+    "password": "Password",
+    "passwordRepeat": "Repeat Password",
+    "dontHaveAcc": "Don't have an account? ",
+    "signup": "Sign up",
+    "passwordLost": "Lost your password? ",
+    "recoverPassword": "Recover password",
+    "register": "Register",
+    "alreadyHaveAccount": "Already have an account?",
+    "passwordRecovery": "Password Recovery",
+    "recoverMyPassword": "Recover My Password"
+  },
+  "dashboard": {
+    "homepage": "Homepage",
+    "dashboard": "Dashboard",
+    "coverLetter": "Cover Letter",
+    "dashBoard": "Dashboard",
+    "goToResume": "Go To Resume",
+    "remove": "Remove",
+    "addNew": "Add New",
+    "addResume": "Add Resume",
+    "accountSettings": "Account Settings",
+    "logout": "Logout",
+    "settings": "Settings",
+    "personalInfo": "PERSONAL INFO",
+    "firstname": "First name",
+    "lastname": "Last name",
+    "changePassword": "CHANGE PASSWORD",
+    "newPassword": "New Password",
+    "save": "Save",
+    "commingSoon": "Coming soon",
+    "adsManager": "Ads Manager",
+    "currentAds": "Current Ads",
+    "name": "Name",
+    "date": "Date",
+    "bannerLink": "Banner Link",
+    "bannerName": "Banner Name",
+    "destinationLink": "Destination Link",
+    "add": "Add",
+    "noAdsFound": "No ads found!",
+    "pages": "Pages",
+    "currentPages": "Current Pages",
+    "addPages": "Add Pages",
+    "pageName": "Page Name",
+    "addPage": "Add Page"
+  },
+  "resume": {
+    "personalSummary": "Personal Summary",
+    "employmentHistory": "Experience",
+    "educationHistory": "Education",
+    "info": "Info",
+    "address": "Address",
+    "phone": "Phone",
+    "email": "Email",
+    "languages": "Languages",
+    "skills": "Skills"
+  },
+  "Language": {
+    "elemntary": "Elementary",
+    "Intermediate": "Intermediate",
+    "Advanced": "Advanced",
+    "Proficient": "Proficient"
+  },
+  "dashNew": {
+    "noDocumentFound": "No document found!",
+    "noDocumentFoundSub": "You can start by creating a new resume or cover letter",
+    "personalDetails": "Personal Details",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "address": "Address",
+    "city": "City",
+    "country": "Country",
+    "postalcode": "Postal Code",
+    "skills": "Skills",
+    "searchDocuments": "Search Documents",
+    "resume": "Resume",
+    "coverLetter": "Cover Letter",
+    "clearAll": "Clear All",
+    "filter": "Filter",
+    "noSkillsAdded": "No skills added",
+    "shareDocument": "Share this document",
+    "link": "Link",
+    "linkDesc": "You can use this shareable link to let any one view this document",
+    "copy": "Copy",
+    "copied": "Copied",
+    "quickAccess": "Quick Access",
+    "quickAccessDesc": "In this section you will find all the actions you can perform on your documents and your account.",
+    "createDocument": "Create Document",
+    "favourites": "Favourites",
+    "settings": "Settings",
+    "statistics": "Statistics",
+    "statisticsDesc": "Here you can see your statistics, how many documents you have generated, how many downloads you have",
+    "documentsGenerated": "Documents Generated",
+    "downloads": "Downloads",
+    "favouitesDesc": "this is a list of your favourite documents, you can remove them from here.",
+    "noFavouritesFound": "You don't have any favourites yet!",
+    "fullName": "Full Name",
+    "type": "Type",
+    "summary": "Summary",
+    "close": "Close",
+    "profil": "Profile",
+    "account": "Account",
+    "upload": "Upload",
+    "remove": "Remove",
+    "fullNameDesc": "We use it when building resume",
+    "emailDesc": "To authenticate to the application",
+    "description": "Description",
+    "descriptionDesc": "Your account type",
+    "changePassword": "Change Password",
+    "newPassword": "New Password",
+    "sbsend": "Subscription Ends",
+    "sbsendDesc": "The date when your subscription end ",
+    "profileUpdated": "Profile updated",
+    "profileUpdatedDesc": "Profile updated successfully",
+    "passChanged": "Password changed",
+    "passChangedDesc": "Password changed successfully",
+    "passError": "Password too short",
+    "passErrorDesc": "Password must be at least 6 characters",
+    "profile": "Profile",
+    "saveChanges": "Save Changes"
+  },
+  "static": {
+    "plansHeader": "Simple,Transparent pricing",
+    "plansDesc": "To download your resume simply sign up for your Premium Membership. Pick the plan that is the best for you.",
+    "month": "Month",
+    "premiumMonth": "Premium Monthly",
+    "premiumYear": "Premium 6 Months",
+    "premiumHalfYear": "Premium Yearly",
+    "unlimitedPDF": "Unlimited PDF Downloads",
+    "unlimitedResumes": "Unlimited Resumes",
+    "nonRecuring": "Non-recurring payment.",
+    "upgradeAndDownload": "Upgrade and Download",
+    "payment1": "Get your dream job",
+    "payment2": "Payment through a trusted payment service",
+    "payment3": "SSL Secure / 256-bit SSL secure checkout",
+    "payment4": "7-day money back guarantee",
+    "payment5": "How can I cancel?",
+    "payment6": "You can easily cancel your subscription by simply contacting our support team via email or telephone, or by using our contact page.        ",
+    "payment7": "Accepted Payments Methods",
+    "payment8": "Total due today :",
+    "payment9": "Where are you located?",
+    "payment10": "Please enter your country and postal code below. We collect this information in order to fight against fraud and guarantee the security of your payment.        ",
+    "payment11": "Country",
+    "payment12": "Postal Code",
+    "payment13": "Pay with card",
+    "payment14": "return",
+    "payment15": "Card Holder",
+    "payment16": "Address",
+    "nav1": "Go to App",
+    "nav2": "Contact Us",
+    "footer1": "Social",
+    "footer2": "Contact Us",
+    "footer3": "Privacy Policy",
+    "footer4": "Follow us in social media to get exclusive resources straight to your feed",
+    "footer5": "About",
+    "footer6": " Copyright © 2021-2022  All rights reserved.",
+    "footer7": "Content",
+    "footer8": "Home"
+  },
+  "navbar": {
+    "home": "Home",
+    "featuresNav": "Features",
+    "resumeBuilderFeatures": "Resume Builder Features",
+    "featureTagline": "Everything you need for the perfect resume",
+    "userCount": "50K+ users",
+    "exploreFeatures": "Explore All Features",
+    "freeToTry": "Free to try",
+    "startBuilding": "Start building",
+    "pricing": "Pricing",
+    "contact": "Contact",
+    "signOut": "Sign Out",
+    "dashboard": "Dashboard",
+    "signIn": "Sign In",
+    "getStarted": "Get Started",
+    "viewAllFeatures": "View all features",
+    "popular": "Popular",
+    "features": {
+      "atsOptimization": {
+        "title": "ATS Optimization",
+        "description": "Beat automated screening systems",
+        "badge": "Smart"
+      },
+      "aiBuilder": {
+        "title": "AI Content Builder",
+        "description": "AI-powered resume writing",
+        "badge": "AI"
+      },
+      "templates": {
+        "title": "Professional Templates",
+        "description": "Modern, industry-specific designs"
+      },
+      "export": {
+        "title": "Multi-Format Export",
+        "description": "PDF, DOCX, and more formats"
+      },
+      "security": {
+        "title": "Privacy & Security",
+        "description": "Bank-level data protection",
+        "badge": "Secure"
+      },
+      "analytics": {
+        "title": "Career Analytics",
+        "description": "Track your application success",
+        "badge": "Pro"
+      }
+    },
+    "resources": {
+      "learn": "Learn",
+      "documentation": {
+        "title": "Documentation",
+        "description": "Complete guides and API references"
+      },
+      "videoTutorials": {
+        "title": "Video Tutorials",
+        "description": "Learn with step-by-step videos"
+      },
+      "designCourse": {
+        "title": "Design Course",
+        "description": "Master logo design fundamentals",
+        "badge": "Free"
+      },
+      "community": "Community",
+      "communityForum": {
+        "title": "Community Forum",
+        "description": "Connect with other designers"
+      },
+      "blog": {
+        "title": "Blog",
+        "description": "Latest design trends and tips"
+      },
+      "support": "Support",
+      "helpCenter": {
+        "title": "Help Center",
+        "description": "Find answers to common questions"
+      },
+      "faq": {
+        "title": "FAQ",
+        "description": "Frequently asked questions"
+      },
+      "contactUs": {
+        "title": "Contact Us",
+        "description": "Get in touch with our team"
+      }
+    },
+    "blog": "Blog"
+  },
+  "homepageText": {
+    "text1": "Stand Out from the Crowd with Our Online Resume Builder",
+    "text2": "Our resume builder is the perfect tool to help you create a professional, polished resume in just a few minutes. With our intuitive design and simple step-by-step process, you can easily build a resume that stands out from the competition. Whether you're a recent graduate or a seasoned professional, our web application has everything you need to take your career to the next level",
+    "text3": "Resume",
+    "text4": "Cover Letter",
+    "text5": "Reviews",
+    "text6": "Select what do you want to create.",
+    "text7": "Reviews",
+    "text8": "Empower Your Resume with Our Advanced Features",
+    "text9": "Our resume builder offers a variety of features to help users create a professional and effective resume. These include pre-written phrase suggestions, shareable link, PDF export, customizable templates, auto-save, spell check, track changes, collaboration, and personal branding resources. All these features make creating a professional resume easy and efficient."
+  },
+  "HomepageHero": {
+    "typingEffect": {
+      "sentence1": "Build professional resumes with AI",
+      "sentence2": "Choose from 50+ expert templates",
+      "sentence3": "Get intelligent writing assistance",
+      "sentence4": "Preview changes in real-time",
+      "sentence5": "Ace interviews with AI prep tools"
+    },
+    "badge": "AI-Powered Resume Builder",
+    "description": "Create stunning, ATS-friendly resumes and cover letters with AI assistance. Choose from professional templates, get real-time feedback, and land your dream job faster.",
+    "createResume": "Create Resume",
+    "createCoverLetter": "Create Cover Letter",
+    "stats": {
+      "users": "5,000+ happy users",
+      "rating": "4.9/5"
+    },
+    "features": {
+      "freeToStart": "Free to start",
+      "noCreditCard": "No credit card"
+    },
+    "quick": "Quick",
+    "quickDesc": "Choose template & write",
+    "guided": "Guided",
+    "guidedDesc": "AI-powered step-by-step",
+    "portfolio": "Portfolio",
+    "portfolioDesc": "Drag & drop website builder"
+  },
+  "HomepageTrustedBy": {
+    "badge": "COMPATIBLE WITH LEADING PLATFORMS",
+    "title": "Seamlessly Works With Industry Tools",
+    "description": "Our AI-powered resume builder integrates with popular platforms and tools used by professionals worldwide.",
+    "trustIndicators": {
+      "platforms": "Compatible with 30+ major platforms",
+      "countries": "Used in 120+ countries",
+      "technology": "Industry-leading technology"
+    }
+  },
+  "HomepageSteps": {
+    "badge": "PROVEN RESULTS • TRUSTED BY 50K+ PROFESSIONALS",
+    "title": {
+      "part1": "Transform",
+      "part2": "Your Career",
+      "part3": "Journey"
+    },
+    "description": "Join thousands of professionals who've accelerated their careers with our AI-powered resume builder. Get noticed, land interviews, and secure your dream job faster than ever before.",
+    "benefits": [
+      {
+        "title": "Land More Job Interviews",
+        "description": "Our ATS-optimized templates and AI-powered content suggestions help your resume get past automated screening systems and into the hands of hiring managers.",
+        "detail": "Join thousands of professionals who've increased their interview rate by 3x using our proven system."
+      },
+      {
+        "title": "Stand Out From The Competition",
+        "description": "With professional designs and compelling content recommendations, showcase your unique value proposition and get noticed faster by recruiters.",
+        "detail": "Our smart formatting and keyword optimization ensure your resume catches attention in seconds."
+      },
+      {
+        "title": "Build Confidence In Your Job Search",
+        "description": "Present your best professional self with a polished, error-free resume that reflects your true potential and professional accomplishments.",
+        "detail": "Feel confident knowing your application materials are professionally crafted and industry-compliant."
+      }
+    ],
+    "stats": [
+      {
+        "number": "50K+",
+        "label": "Happy Users"
+      },
+      {
+        "number": "98.7%",
+        "label": "Success Rate"
+      },
+      {
+        "number": "50+",
+        "label": "Templates"
+      },
+      {
+        "number": "24hrs",
+        "label": "Avg. Time"
+      }
+    ],
+    "badges": {
+      "aiPowered": {
+        "title": "AI-Powered",
+        "subtitle": "Smart Resume Builder"
+      },
+      "atsOptimized": {
+        "title": "✓",
+        "subtitle": "ATS Optimized"
+      }
+    },
+    "cta": {
+      "title": "Ready to Land Your Dream Job?",
+      "description": "Join over 50,000 professionals who've transformed their careers. Start building your winning resume today.",
+      "button": "Start Your Success Story",
+      "noCredit": "✨ No credit card required • Free templates included"
+    }
+  },
+  "HomepageReviews": {
+    "badge": "CUSTOMER REVIEWS",
+    "title": {
+      "part1": "What Our ",
+      "part2": "Users",
+      "part3": " Are Saying"
+    },
+    "description": "Join thousands of satisfied job seekers who have landed their dream jobs with our AI-powered resume builder.",
+    "navigation": {
+      "previous": "Previous",
+      "next": "Next",
+      "slideLabel": "Go to slide {{number}}",
+      "pauseAutoplay": "Pause autoplay",
+      "startAutoplay": "Start autoplay"
+    },
+    "review": {
+      "category": "Technology",
+      "verifiedBadge": "Verified User",
+      "avatarAlt": "{{name}}'s profile picture",
+      "dateFormat": "MM/DD/YYYY"
+    }
+  },
+  "HomepagePricing": {
+    "badge": "PRICING PLANS",
+    "header": "Choose the Perfect Plan for Your Needs",
+    "description": "Get unlimited access to professional templates and advanced features with our flexible pricing options.",
+    "plans": {
+      "monthly": {
+        "title": "Premium Monthly",
+        "description": "Pay {{currency}}{{price}} for 1 month",
+        "perMonth": "month"
+      },
+      "halfYear": {
+        "title": "Premium Half Year",
+        "description": "Pay {{currency}}{{price}} for 6 months",
+        "perMonth": "month",
+        "mostPopular": "🔥 Most Popular"
+      },
+      "yearly": {
+        "title": "Premium Yearly",
+        "description": "{{currency}}{{price}} for 1 Year",
+        "perMonth": "month"
+      }
+    },
+    "features": {
+      "unlimitedPDF": "Unlimited PDF Downloads",
+      "unlimitedResumes": "Unlimited Resumes",
+      "nonRecurring": "Non-Recurring Payment"
+    },
+    "upgradeButton": "Upgrade & Download Now",
+    "upgradeButtonStar": "Upgrade & Download Now ⭐"
+  },
+  "Homepagefaqs": {
+    "badge": "KNOWLEDGE BASE",
+    "header": "Find Your Answer Instantly",
+    "subtitle": "Everything you need to know about creating professional resumes with AI",
+    "quickStats": {
+      "resumesCreated": "Resumes Created",
+      "avgBuildTime": "Avg. Resume Build Time",
+      "satisfaction": "Customer Satisfaction",
+      "support": "Support Available"
+    },
+    "search": {
+      "placeholder": "Search for answers...",
+      "categories": "Categories"
+    },
+    "categoryNames": {
+      "allQuestions": "All Questions",
+      "gettingStarted": "Getting Started",
+      "features": "Features",
+      "billing": "Billing",
+      "technical": "Technical"
+    },
+    "popularBadge": "Popular",
+    "helpfulQuestion": "Was this helpful?",
+    "noResults": {
+      "title": "No results found",
+      "message": "Try adjusting your search terms or category filter"
+    },
+    "contactSupport": {
+      "title": "Still need help?",
+      "description": "Our support team is here 24/7 to help you succeed",
+      "contactButton": "Contact Support",
+      "docsButton": "Browse Docs"
+    },
+    "cta": {
+      "badge": "Ready to create your resume?",
+      "title": "Transform Your Career with AI-Powered Resumes",
+      "description": "Join thousands of professionals who've created stunning resumes in seconds. Start your career journey today with our intelligent design platform.",
+      "button": "Start Creating Free",
+      "freeCredits": "3 free credits • No credit card required",
+      "support": "24/7 Support",
+      "secure": "Secure & Private",
+      "instant": "Instant Results"
+    },
+    "trustIndicators": {
+      "secure": "Secure & Private",
+      "instant": "Instant Results",
+      "support": "24/7 Support"
+    },
+    "q1": {
+      "question": "How do I get started with AI resume generation?",
+      "answer": "Getting started is incredibly simple! Just sign up for a free account, and you'll instantly receive 3 free credits. Then, enter your information, select your industry, and watch our AI create stunning resumes in seconds. No design experience needed!"
+    },
+    "q2": {
+      "question": "How fast is the resume generation process?",
+      "answer": "Our AI generates multiple resume variations in under 5 minutes! What traditionally takes days or weeks with traditional designers happens instantly. You can iterate and refine until you find the perfect resume for your brand."
+    },
+    "q3": {
+      "question": "What's included in the free plan?",
+      "answer": "New users get 3 free credits to generate and download resumes immediately. Each credit creates multiple resume variations, and you can download your favorites in PDF and Word formats."
+    },
+    "q4": {
+      "question": "Can I customize the generated resumes?",
+      "answer": "Yes! Our AI creates multiple variations automatically. You can regenerate with different styles, colors, and layouts. Plus, downloaded PDF files can be easily customized in any design software for further personalization."
+    },
+    "q5": {
+      "question": "What file formats do you provide?",
+      "answer": "All resumes are available in high-quality PDF (for print and editing) and Word formats. Files come with standard fonts and are ready for immediate use across all platforms."
+    },
+    "q6": {
+      "question": "How does the credit system work?",
+      "answer": "Each resume generation uses 1 credit and creates multiple design variations. Credits never expire, and you can purchase additional credits anytime through our flexible pricing plans."
+    }
+  },
+  "HomepageFooter": {
+    "headings": {
+      "aboutUs": "About Us",
+      "quickLinks": "Quick Links",
+      "stayUpdated": "Stay Updated",
+      "securePayments": "Secure Payments"
+    },
+    "aboutText": "We help job seekers create professional resumes in minutes. Our mission is to empower individuals to land their dream jobs with high-quality, AI-crafted application documents.",
+    "links": {
+      "pricing": "Pricing",
+      "contact": "Contact"
+    },
+    "newsletter": {
+      "description": "Subscribe to our newsletter for the latest career tips, resume advice, and feature updates.",
+      "placeholder": "Enter your email",
+      "buttonText": "Subscribe",
+      "privacyNote": "We respect your privacy"
+    },
+    "paymentMethods": {
+      "visa": "visa",
+      "mastercard": "mastercard",
+      "paypal": "paypal",
+      "amex": "American Express",
+      "jcb": "JCB",
+      "discover": "discover"
+    },
+    "legal": {
+      "privacyPolicy": "Privacy Policy",
+      "termsOfService": "Terms of Service",
+      "cookiePolicy": "Cookie Policy",
+      "allRightsReserved": "All rights reserved."
+    }
+  },
+  "ActionSelection": {
+    "templateHeading": "Choose Your Perfect",
+    "templateHeadingSpan": "Template",
+    "templateDescription": "Select from our professionally designed templates to create a resume that stands out",
+    "coverLetterHeading": "Select Your",
+    "coverLetterHeadingSpan": "Cover Letter",
+    "coverLetterDescription": "Choose a cover letter template that complements your resume",
+    "search": {
+      "searchTemplates": "Search templates...",
+      "searchCoverLetters": "Search cover letters...",
+      "noTemplatesFound": "No templates found",
+      "noTemplatesFoundDescription": "Try adjusting your search criteria or browse different categories",
+      "clearFilters": "Clear Filters",
+      "resultsInfo": "templates • Showing",
+      "resultsCount": "results",
+      "selectedTemplate": "selected"
+    },
+    "categories": {
+      "all": "All",
+      "modern": "Modern",
+      "professional": "Professional",
+      "creative": "Creative",
+      "simple": "Simple",
+      "standard": "Standard"
+    },
+    "sortBy": {
+      "label": "Sort by",
+      "popular": "Popular",
+      "name": "Name",
+      "newest": "Newest"
+    },
+    "viewMode": {
+      "grid": "Grid view",
+      "list": "List view"
+    },
+    "templateCards": {
+      "popular": "Popular",
+      "select": "Select",
+      "selectTemplate": "Select Template",
+      "popularity": "% popular",
+      "templateDescriptions": {
+        "professionalClassic": "Clean and traditional design perfect for corporate environments",
+        "modernCreative": "Contemporary layout with creative elements",
+        "simpleElegant": "Minimalist design focusing on content clarity",
+        "creativeBold": "Artistic template for creative professionals",
+        "executivePro": "Sophisticated design for senior positions",
+        "techModern": "Modern template perfect for tech industry",
+        "designerSpecial": "Unique layout for design professionals",
+        "cleanSimple": "Straightforward and professional",
+        "corporateElite": "Premium corporate template",
+        "startupReady": "Dynamic template for startup culture",
+        "creativePro": "Professional creative template",
+        "minimalPro": "Clean minimal professional design",
+        "businessClassic": "Traditional business template",
+        "modernEdge": "Cutting-edge modern design",
+        "artistPortfolio": "Perfect for creative portfolios",
+        "standardProfessional": "Classic cover letter format",
+        "modernAppeal": "Contemporary cover letter design",
+        "businessStandard": "Traditional business format",
+        "creativeModern": "Modern creative cover letter"
+      }
+    },
+    "preview": {
+      "useTemplate": "Use Template",
+      "cancel": "Cancel"
+    },
+    "pagination": {
+      "prev": "Prev",
+      "next": "Next"
+    },
+    "loading": {
+      "processingTemplate": "Processing Template",
+      "settingUp": "Setting up your selected template..."
+    }
+  },
+  "ProfileDisplay": {
+    "appName": "Nolito",
+    "search": "Search",
+    "navigation": "NAVIGATION",
+    "menu": {
+      "dashboard": "Dashboard",
+      "interviews": "Interviews",
+      "portfolios": "Portfolios",
+      "settings": "Settings"
+    }
+  },
+  "DashboardHomepage": {
+    "greeting": "Hi, there! 👋",
+    "completeSteps": "Complete these steps to land your next role",
+    "stepsCompletion": "of",
+    "completed": "completed",
+    "showButton": "Show All",
+    "title": "My Documents",
+    "subtitle": "Manage your resumes and cover letters",
+    "tabs": {
+      "resumes": "Resumes",
+      "coverLetters": "Cover Letters"
+    },
+    "actions": {
+      "createNew": "Create New",
+      "editResume": "Edit Resume",
+      "deleteResume": "Delete Resume",
+      "shareResume": "Share Resume",
+      "delete": "Delete",
+      "createNewDocument": "Create New Document"
+    },
+    "stats": {
+      "totalDocuments": "Total Documents",
+      "recentActivity": "Recent Activity",
+      "profileViews": "Profile Views",
+      "downloads": "Downloads",
+      "today": "Today",
+      "documentsCount": "documents"
+    },
+    "onboarding": {
+      "welcomeMessage": "Welcome! Let's get started",
+      "completionMessage": "Complete the steps below to set up your profile",
+      "steps": {
+        "createResume": {
+          "title": "Create your first resume",
+          "description": "Create or edit resumes with our easy-to-use builder, 20+ templates and advanced AI capabilities for customization and job-specific tailoring."
+        }
+      }
+    },
+    "tips": {
+      "sectionTitle": "Quick Tips",
+      "keepUpdated": "Keep it Updated",
+      "updatedDescription": "Regular updates improve your profile visibility",
+      "tailor": "Tailor for Jobs",
+      "tailorDescription": "Customize your resume for each application",
+      "organize": "Stay Organized",
+      "organizeDescription": "Use clear naming conventions for your documents"
+    },
+    "promotion": {
+      "title": "Ready to give your job search a boost and get more exposure?",
+      "description": "Choose your resume and we'll send it to hundreds of recruiters in your field in just a few clicks",
+      "startNow": "Start Now"
+    },
+    "card": {
+      "created": "Created",
+      "untitledResume": "Untitled Resume",
+      "aiJobMatching": "AI Job Matching",
+      "new": "NEW",
+      "newResumeTitle": "New Resume",
+      "newResumeDescription": "Create a tailored resume for each job application. Double your chances of getting hired!"
+    },
+    "emptyState": {
+      "noDocumentsFound": "No Documents Available",
+      "emptyLibrary": "Your document library is currently empty.",
+      "createFirstDoc": "Create your first resume or cover letter to get started."
+    },
+    "pagination": {
+      "page": "Page",
+      "of": "of"
+    },
+    "confirmDelete": "Are you sure you want to delete this resume? This action cannot be undone."
+  },
+  "DashboardSettings": {
+    "pageTitle": "Settings",
+    "pageDescription": "Manage your account and profile settings",
+    "tabs": {
+      "profile": "Profile",
+      "account": "Account"
+    },
+    "profile": {
+      "title": "Profile",
+      "description": "Update your personal information and profile picture",
+      "uploadPicture": "Upload profile picture",
+      "dragOrUpload": "Drag and drop an image or click to upload",
+      "uploadButton": "Upload",
+      "removeButton": "Remove",
+      "fullName": "Full Name",
+      "fullNameDesc": "Your name as it appears on your account",
+      "phone": "Phone Number",
+      "address": "Address",
+      "city": "City",
+      "postalCode": "Postal Code",
+      "country": "Country",
+      "placeholders": {
+        "fullName": "Enter your full name",
+        "phone": "Enter your phone number",
+        "address": "Enter your address",
+        "city": "Enter your city",
+        "postalCode": "Enter your postal code",
+        "country": "Enter your country"
+      },
+      "saving": "Saving...",
+      "saveChanges": "Save Changes"
+    },
+    "account": {
+      "title": "Account",
+      "description": "Manage your account security and subscription",
+      "email": "Email Address",
+      "emailDesc": "Your email cannot be changed",
+      "subscription": "Subscription",
+      "subscriptionDesc": "Your current subscription plan",
+      "subscriptionEnd": "Subscription Ends",
+      "subscriptionEndDesc": "Your subscription renewal date",
+      "noActiveSubscription": "No active subscription",
+      "changePassword": "Change Password",
+      "newPassword": "New Password",
+      "passwordStrength": {
+        "weak": "Weak",
+        "fair": "Fair",
+        "good": "Good",
+        "strong": "Strong"
+      },
+      "passwordRequirement": "Password must be at least 6 characters long"
+    }
+  },
+  "contact": {
+    "title": "Get in Touch",
+    "subtitle": "Have a question or need assistance? Send us a message and we'll get back to you as soon as possible!",
+    "form": {
+      "fullName": "Full Name *",
+      "fullNamePlaceholder": "Enter your full name",
+      "email": "Email Address *",
+      "emailPlaceholder": "Enter your email address",
+      "message": "Message *",
+      "messagePlaceholder": "Tell us about your inquiry...",
+      "sendButton": "Send Message",
+      "sendingButton": "Sending Message..."
+    },
+    "quickResponse": {
+      "title": "Quick Response",
+      "text": "We typically respond within 24 hours"
+    },
+    "success": {
+      "title": "Message Sent Successfully!",
+      "text": "Thank you for reaching out. We'll get back to you shortly.",
+      "button": "Send Another Message"
+    },
+    "error": {
+      "general": "Something went wrong. Please try again."
+    }
+  },
+  "billing": {
+    "title": "Subscription Plans",
+    "subtitle": "Choose the plan that works best for you",
+    "navbar": {
+      "home": "Home",
+      "contact": "Contact"
+    },
+    "plans": {
+      "monthly": "Monthly",
+      "quarterly": "Quarterly",
+      "yearly": "Yearly",
+      "selectPlan": "Select Plan",
+      "perMonth": "/month",
+      "perQuarter": "/quarter",
+      "perYear": "/year",
+      "mostPopular": "Most Popular",
+      "bestValue": "Best Value",
+      "unlimitedPDF": "Unlimited PDF Downloads",
+      "unlimitedResumes": "Unlimited Resume Templates",
+      "nonRecurring": "One-time Payment, Non-recurring"
+    },
+    "checkout": {
+      "title": "Complete Your Purchase",
+      "subtitle": "Enter your payment information to subscribe",
+      "securePayment": "Secure Payment",
+      "feature1": "Instant access to all premium features",
+      "feature2": "No hidden fees or additional charges",
+      "feature3": "Cancel anytime through your account",
+      "faqTitle": "Frequently Asked Questions",
+      "faqContent": "Your subscription will be activated immediately after payment. You can manage your subscription through your account dashboard.",
+      "totalPrice": "Total Price",
+      "locationTitle": "Billing Location",
+      "locationDescription": "Please provide your billing location details",
+      "backToPlans": "Back to Plans",
+      "secureCheckout": "Secure checkout powered by Stripe and PayPal",
+      "steps": {
+        "billingInfo": "Billing Information",
+        "paymentMethod": "Payment Method",
+        "cardDetails": "Card Details",
+        "confirmation": "Confirmation"
+      },
+      "orderSummary": {
+        "title": "Order Summary",
+        "plan": "Plan",
+        "billingCycle": "Billing Cycle",
+        "subtotal": "Subtotal",
+        "tax": "Tax",
+        "taxCalculated": "Calculated at checkout",
+        "total": "Total",
+        "whatsIncluded": "What's included:",
+        "weAccept": "We accept:"
+      },
+      "security": {
+        "sslSecured": "SSL Secured",
+        "encryption": "256-bit Encryption",
+        "pciCompliant": "PCI Compliant",
+        "moneyBack": "30-day money-back guarantee",
+        "support": "24/7 customer support",
+        "cancelAnytime": "Cancel anytime",
+        "securePaymentInfo": "Your payment is secure",
+        "securePaymentDescription": "We use industry-standard encryption to protect your card information. Your data is never stored on our servers."
+      },
+      "billingForm": {
+        "title": "Billing Information",
+        "description": "We need this information to process your payment and send you receipts.",
+        "countryLabel": "Country/Region *",
+        "countryPlaceholder": "Select your country",
+        "postalLabel": "Postal Code *",
+        "continueButton": "Continue to Payment Method"
+      },
+      "paymentMethod": {
+        "title": "Choose Payment Method",
+        "description": "Select how you'd like to pay for your subscription.",
+        "cardTitle": "Credit or Debit Card",
+        "cardDescription": "Visa, Mastercard, American Express",
+        "paypalTitle": "PayPal",
+        "paypalDescription": "Pay securely with your PayPal account",
+        "backButton": "Back to Billing"
+      },
+      "cardForm": {
+        "title": "Card Information",
+        "description": "Your payment information is encrypted and secure.",
+        "nameLabel": "Cardholder Name *",
+        "namePlaceholder": "Enter the name on your card",
+        "addressLabel": "Billing Address *",
+        "addressPlaceholder": "Enter your billing address",
+        "detailsLabel": "Card Details *",
+        "backButton": "Back to Payment",
+        "completeButton": "Complete Payment",
+        "processing": "Processing...",
+        "subtitle": "Enter your card information securely",
+        "cardholderName": "Cardholder Name",
+        "address": "Billing Address",
+        "country": "Country",
+        "postalCode": "Postal Code"
+      },
+      "success": {
+        "title": "Payment Successful!",
+        "message": "Thank you for your purchase. Your subscription is now active.",
+        "emailNotice": "You'll receive a confirmation email shortly with your receipt and subscription details.",
+        "activeMessage": "Your subscription is now active",
+        "continueButton": "Continue to Dashboard",
+        "subtitle": "Your subscription has been activated",
+        "button": "Continue to Dashboard"
+      },
+      "expiryDate": "Expiry Date",
+      "cvv": "CVV",
+      "payNow": "Pay Now",
+      "processing": "Processing Payment...",
+      "subscriptionDetails": "Subscription Details",
+      "plan": "Plan",
+      "price": "Price",
+      "billingFrequency": "Billing Frequency",
+      "paymentMethods": {
+        "title": "Choose Payment Method",
+        "subtitle": "Select your preferred payment option",
+        "creditCard": "Credit Card",
+        "paypal": "PayPal"
+      },
+      "or": "OR"
+    },
+    "success": {
+      "title": "Payment Successful!",
+      "subtitle": "Your subscription has been activated",
+      "viewAccount": "View Account",
+      "returnHome": "Return to Home"
+    },
+    "error": {
+      "payment": "Payment failed. Please try again.",
+      "login": "Please log in to complete the payment.",
+      "general": "Something went wrong. Please try again.",
+      "paypal": "PayPal payment failed. Please try again."
+    },
+    "paypal": {
+      "title": "PayPal Payment",
+      "description": "Complete your payment securely with PayPal.",
+      "secureTitle": "Secure PayPal Payment",
+      "secureDescription": "You will be redirected to PayPal to complete your payment securely."
+    }
+  },
+  "DashboardInterviews": {
+    "configurationScreen": {
+      "title": "Configure Your Interview",
+      "subtitle": "Customize your interview experience by providing your occupation and preferences",
+      "occupationLabel": "Your Occupation",
+      "occupationPlaceholder": "E.g., Software Engineer, Teacher, Nurse, Farmer, Chef...",
+      "occupationHint": "Be specific about your role for more tailored questions",
+      "questionCountLabel": "Number of Questions",
+      "questionsText": "questions",
+      "estimatedTime": "Estimated time:",
+      "minutesPerQuestion": "minutes per question",
+      "interviewDetails": "Interview Details",
+      "type": "Type:",
+      "questions": "Questions:",
+      "timeLimit": "Time Limit:",
+      "passingScore": "Passing Score:",
+      "errorGenerating": "Error generating interview:",
+      "tryAgainError": "Please try again or try a different occupation.",
+      "generatingQuestions": "Generating {{count}} personalized interview questions...",
+      "generatingHint": "This may take a few seconds. We're crafting questions specific to your occupation.",
+      "back": "Back",
+      "startAssessment": "Start Assessment",
+      "generatingInterview": "Generating Interview..."
+    },
+    "selectionScreen": {
+      "title": "Interview Assessment",
+      "subtitle": "Choose your assessment type and complete the interview process",
+      "technicalTitle": "Technical Assessment",
+      "technicalDepartment": "Technical Department",
+      "technicalDescription": "Evaluate technical skills, programming languages, frameworks, methodologies, and problem-solving abilities specific to your role.",
+      "behavioralTitle": "Behavioral Assessment",
+      "behavioralDepartment": "Human Resources",
+      "behavioralDescription": "Assess leadership qualities, communication skills, teamwork abilities, and how you handle workplace situations.",
+      "focusAreas": "Focus Areas:",
+      "technicalSkills": "Technical Skills",
+      "problemSolving": "Problem Solving",
+      "bestPractices": "Best Practices",
+      "toolsTechnologies": "Tools & Technologies",
+      "leadership": "Leadership",
+      "communication": "Communication",
+      "teamwork": "Teamwork",
+      "assessmentGuidelines": "Assessment Guidelines",
+      "bestPracticesTitle": "✅ Best Practices",
+      "thingsToAvoid": "❌ Things to Avoid",
+      "guideline1": "• Read each question carefully before answering",
+      "guideline2": "• Use the flag feature to mark questions for review",
+      "guideline3": "• Manage your time effectively",
+      "guideline4": "• Take advantage of the pause feature if needed",
+      "avoid1": "• Don't rush through questions",
+      "avoid2": "• Don't leave questions unanswered",
+      "avoid3": "• Don't switch between applications",
+      "avoid4": "• Don't overthink your answers",
+      "continueToConfiguration": "Continue to Configuration",
+      "configurationHint": "Configure your occupation and interview preferences"
+    },
+    "resultsScreen": {
+      "title": "Assessment Complete!",
+      "noDataAvailable": "No interview data available",
+      "technicalInterview": "Technical",
+      "behavioralInterview": "Behavioral",
+      "questionsText": "Questions",
+      "overallPerformance": "Overall Performance",
+      "passedAssessment": "✅ Passed Assessment",
+      "failedAssessment": "❌ Did not meet passing score (70%)",
+      "correctAnswers": "Correct Answers",
+      "incorrectAnswers": "Incorrect Answers"
+    },
+    "performanceLevels": {
+      "exceptional": "Exceptional",
+      "excellent": "Excellent",
+      "good": "Good",
+      "satisfactory": "Satisfactory",
+      "needsImprovement": "Needs Improvement"
+    },
+    "metricsScreen": {
+      "timeAnalysis": "Time Analysis",
+      "totalTime": "Total Time",
+      "avgPerQuestion": "Avg per Question",
+      "fastest": "Fastest",
+      "slowest": "Slowest",
+      "activitySummary": "Activity Summary",
+      "questionsAnswered": "Questions Answered",
+      "questionsFlagged": "Questions Flagged",
+      "completionRate": "Completion Rate",
+      "performanceByCategory": "Performance by Category",
+      "retakeAssessment": "Retake Assessment",
+      "reviewAnswers": "Review Answers",
+      "downloadReport": "Download Report",
+      "backToDashboard": "Back to Dashboard",
+      "answerReview": "Answer Review",
+      "question": "Question",
+      "difficulty": {
+        "easy": "Easy",
+        "intermediate": "Intermediate",
+        "hard": "Hard"
+      },
+      "correct": "✓ Correct",
+      "yourAnswer": "✗ Your Answer",
+      "explanation": "Explanation",
+      "timeSpent": "Time spent:"
+    },
+    "interviewScreen": {
+      "loadingData": "Loading interview data...",
+      "professionalEvaluation": "Professional Evaluation",
+      "timeRemaining": "Time Remaining",
+      "resume": "Resume",
+      "pause": "Pause",
+      "questionProgress": "Question {current} of {total}",
+      "complete": "% Complete",
+      "interviewPaused": "Interview Paused",
+      "pauseMessage": "Click Resume to continue your assessment",
+      "flag": "Flag",
+      "flagged": "Flagged",
+      "previous": "Previous",
+      "nextQuestion": "Next Question",
+      "finishAssessment": "Finish Assessment"
+    },
+    "confirmationModal": {
+      "title": "Finish Assessment?",
+      "message": "Are you sure you want to submit your assessment? You won't be able to change your answers.",
+      "questionsAnswered": "Questions Answered:",
+      "questionsFlagged": "Questions Flagged:",
+      "timeUsed": "Time Used:",
+      "unansweredWarning": "⚠️ You have {count} unanswered questions",
+      "continueInterview": "Continue Interview",
+      "submitNow": "Submit Now"
+    },
+    "common": {
+      "toggleSidebar": "Toggle sidebar",
+      "min": "min"
+    }
+  },
+  "BuildResume": {
+    "steps": {
+      "personalInfo": "Personal info",
+      "workHistory": "Work history",
+      "education": "Education",
+      "skills": "Skills",
+      "languages": "Languages",
+      "summary": "Summary"
+    },
+    "navigation": {
+      "previous": "Previous",
+      "next": "Next",
+      "preview": "Preview",
+      "download": "Download",
+      "downloading": "Downloading...",
+      "complete": "Complete",
+      "current": "Current",
+      "nextStep": "Next: {{stepName}}"
+    },
+    "progress": {
+      "progress": "Progress",
+      "completed": "completed",
+      "of": "of",
+      "step": "Step {{current}}/{{total}}",
+      "completeness": "Completeness"
+    },
+    "sidebar": {
+      "helpSupport": "Help & Support",
+      "privacyPolicy": "Privacy Policy",
+      "copyright": "© 2025 Bold Limited. All rights reserved."
+    },
+    "preview": {
+      "livePreview": "Live Preview",
+      "autoUpdating": "Auto-updating",
+      "clickToView": "Click to view full size",
+      "changeTemplate": "Change Template",
+      "viewFullSize": "View Full Size",
+      "trustedBy": "Trusted by 50K+ professionals",
+      "joinSuccess": "Join the success stories",
+      "resumePdf": "Resume.pdf"
+    },
+    "templates": {
+      "professionalClassic": "Professional Classic",
+      "modernCreative": "Modern Creative",
+      "creativeBold": "Creative Bold",
+      "executivePro": "Executive Pro",
+      "techModern": "Tech Modern",
+      "simpleElegant": "Simple Elegant",
+      "designerSpecial": "Designer Special",
+      "cleanSimple": "Clean Simple",
+      "corporateElite": "Corporate Elite",
+      "startupReady": "Startup Ready",
+      "creativePro": "Creative Pro",
+      "minimalPro": "Minimal Pro",
+      "businessClassic": "Business Classic",
+      "modernEdge": "Modern Edge",
+      "artistPortfolio": "Artist Portfolio",
+      "techInnovation": "Tech Innovation",
+      "executiveSuite": "Executive Suite",
+      "creativeShowcase": "Creative Showcase",
+      "cleanProfessional": "Clean Professional",
+      "futureForward": "Future Forward",
+      "professional21": "Professional 21",
+      "professional22": "Professional 22",
+      "professional23": "Professional 23",
+      "professional24": "Professional 24",
+      "professional25": "Professional 25",
+      "professional26": "Professional 26",
+      "professional27": "Professional 27",
+      "professional28": "Professional 28",
+      "professional29": "Professional 29",
+      "professional30": "Professional 30",
+      "professional31": "Professional 31",
+      "professional32": "Professional 32",
+      "professional33": "Professional 33",
+      "professional34": "Professional 34",
+      "professional35": "Professional 35",
+      "professional36": "Professional 36",
+      "professional37": "Professional 37",
+      "professional38": "Professional 38",
+      "professional39": "Professional 39",
+      "professional40": "Professional 40",
+      "professional41": "Professional 41",
+      "professional42": "Professional 42",
+      "professional43": "Professional 43",
+      "professional44": "Professional 44",
+      "professional45": "Professional 45",
+      "professional46": "Professional 46",
+      "professional47": "Professional 47",
+      "professional48": "Professional 48",
+      "professional49": "Professional 49",
+      "professional50": "Professional 50"
+    },
+    "errors": {
+      "downloadFailed": "Download failed. Please try again.",
+      "templateError": "Template Error",
+      "usingDefault": "Using default template"
+    },
+    "analytics": {
+      "templateChanged": "Template changed to: {{templateName}} ({{templateId}})"
+    }
+  },
+  "HeadingStep": {
+    "title": "Personal & Contact Information",
+    "subtitle": "Tell us about yourself so employers can reach you easily. All required fields must be completed to proceed.",
+    "progress": {
+      "label": "Progress: {{completed}}/{{total}} required fields",
+      "percentage": "{{percentage}}%"
+    },
+    "sections": {
+      "personalInfo": {
+        "title": "Personal Information",
+        "badge": "{{completed}}/3 Complete"
+      },
+      "contactInfo": {
+        "title": "Contact Information",
+        "badge": "{{completed}}/2 Complete"
+      },
+      "locationInfo": {
+        "title": "Location Information",
+        "badge": "Optional",
+        "badgeWithCount": "{{completed}}/4 Optional"
+      }
+    },
+    "fields": {
+      "profilePhoto": {
+        "label": "Profile Photo",
+        "hint": "Recommended: Square photo, max 5MB"
+      },
+      "firstName": {
+        "label": "First Name",
+        "placeholder": "Enter your first name"
+      },
+      "lastName": {
+        "label": "Last Name",
+        "placeholder": "Enter your last name"
+      },
+      "jobTitle": {
+        "label": "Job Title / Profession",
+        "placeholder": "e.g., Software Engineer, Marketing Manager, Data Analyst",
+        "hint": "This will be prominently displayed on your resume"
+      },
+      "email": {
+        "label": "Email Address",
+        "placeholder": "your.email@example.com",
+        "hint": "Use a professional email address"
+      },
+      "phone": {
+        "label": "Phone Number",
+        "placeholder": "+1 (555) 123-4567",
+        "hint": "Include country code if applicable"
+      },
+      "address": {
+        "label": "Address",
+        "placeholder": "Street address (optional)",
+        "hint": "Full address is optional, city and country are usually sufficient"
+      },
+      "city": {
+        "label": "City",
+        "placeholder": "City"
+      },
+      "postalCode": {
+        "label": "Postal Code",
+        "placeholder": "ZIP/Postal code"
+      },
+      "country": {
+        "label": "Country",
+        "placeholder": "Country"
+      }
+    },
+    "tips": {
+      "contactInfo": {
+        "title": "Contact Information Tips",
+        "description": "Use a professional email address and ensure your phone number is current. This is how employers will reach you."
+      },
+      "locationInfo": {
+        "title": "Location Information",
+        "description": "Adding location helps employers understand your availability for local positions and remote work preferences."
+      }
+    },
+    "completion": {
+      "title": "Section Complete!",
+      "description": "Great! All required information has been provided. You can now proceed to the next section or continue adding optional details."
+    },
+    "errors": {
+      "required": "{{field}} is required",
+      "invalidEmail": "Please enter a valid email address",
+      "invalidPhone": "Please enter a valid phone number"
+    }
+  },
+  "WorkHistoryStep": {
+    "title": "Tell us about your work experience",
+    "subtitle": "Start with your most recent position and work backwards. Include your last 10 years of relevant experience.",
+    "requiredNote": "* Indicates a required field",
+    "defaultValues": {
+      "untitledPosition": "Untitled Position",
+      "noCompany": "No company specified",
+      "present": "Present"
+    },
+    "fields": {
+      "jobTitle": {
+        "label": "Job Title",
+        "placeholder": "Software Engineer"
+      },
+      "company": {
+        "label": "Company",
+        "placeholder": "Google Inc."
+      },
+      "startDate": {
+        "label": "Start Date",
+        "placeholder": "January 2020"
+      },
+      "endDate": {
+        "label": "End Date",
+        "placeholder": "December 2023"
+      },
+      "currentWork": {
+        "label": "I currently work here"
+      },
+      "description": {
+        "label": "Job Description",
+        "placeholder": "Describe your key responsibilities and achievements in detail. What impact did you make? What skills did you use?"
+      }
+    },
+    "actions": {
+      "addPosition": "Add Another Position",
+      "collapse": "Collapse",
+      "expand": "Expand",
+      "remove": "Remove this position"
+    },
+    "ai": {
+      "suggestions": "✨ AI Suggestions",
+      "tooltip": "Generate AI suggestions",
+      "tooltipDisabled": "Fill in Job Title and Company first"
+    }
+  },
+  "EducationStep": {
+    "title": "Tell us about your education",
+    "subtitle": "Include your educational background. Start with your most recent education.",
+    "requiredNote": "* Indicates a required field",
+    "defaultValues": {
+      "school": "School Name",
+      "degree": "No degree specified",
+      "present": "Present"
+    },
+    "fields": {
+      "school": {
+        "label": "School",
+        "placeholder": "University of California"
+      },
+      "degree": {
+        "label": "Degree",
+        "placeholder": "Bachelor of Science"
+      },
+      "startDate": {
+        "label": "Start Date",
+        "placeholder": "September 2018"
+      },
+      "endDate": {
+        "label": "End Date",
+        "placeholder": "May 2022"
+      },
+      "currentStudy": {
+        "label": "I currently study here"
+      },
+      "description": {
+        "label": "Education Description",
+        "placeholder": "Relevant coursework, achievements, honors, GPA, research projects, thesis work, etc..."
+      }
+    },
+    "actions": {
+      "addEducation": "Add Another Education",
+      "collapse": "Collapse",
+      "expand": "Expand",
+      "remove": "Remove this education"
+    },
+    "ai": {
+      "suggestions": "✨ AI Suggestions",
+      "tooltip": "Generate AI suggestions",
+      "tooltipDisabled": "Fill in School and Degree first"
+    }
+  },
+  "SkillsStep": {
+    "title": "What skills would you like to highlight?",
+    "subtitle": "Choose skills that are most relevant to the job you're applying for. Include both technical and soft skills.",
+    "requiredNote": "* Add at least 3 skills for best results",
+    "defaultValues": {
+      "skillName": "Skill Name",
+      "clickToAdd": "Click to add skill details"
+    },
+    "fields": {
+      "skillName": {
+        "label": "Skill Name",
+        "placeholder": "e.g. JavaScript, Leadership, Project Management"
+      },
+      "proficiencyLevel": {
+        "label": "Proficiency Level"
+      }
+    },
+    "skillLevels": {
+      "beginner": "Beginner",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced",
+      "expert": "Expert"
+    },
+    "actions": {
+      "addSkill": "Add Another Skill",
+      "collapse": "Collapse",
+      "expand": "Expand",
+      "remove": "Remove this skill"
+    },
+    "ai": {
+      "suggestions": "✨ AI Suggestions",
+      "generating": "Generating..."
+    },
+    "quickAdd": {
+      "title": "Quick Add Skills",
+      "subtitle": "Click to add popular skills instantly"
+    },
+    "popularSkills": [
+      "JavaScript",
+      "Python",
+      "React",
+      "Node.js",
+      "SQL",
+      "Git",
+      "Communication",
+      "Leadership",
+      "Problem Solving",
+      "Teamwork",
+      "Project Management",
+      "Data Analysis"
+    ]
+  },
+  "SummaryStep": {
+    "title": "Write a professional summary",
+    "subtitle": "Your professional summary is a brief statement that highlights your key qualifications and career goals.",
+    "professionalSummary": {
+      "title": "Professional Summary",
+      "description": "Showcase your background and career goals"
+    },
+    "progress": {
+      "tooShort": "Too short - add more details",
+      "gettingThere": "Getting there - add more content",
+      "goodLength": "Good length - consider adding more",
+      "greatLength": "Great length - well detailed",
+      "excellent": "Excellent - comprehensive summary"
+    },
+    "characterCount": "{{current}}/{{max}} characters",
+    "content": {
+      "label": "Summary Content",
+      "placeholder": "Write a compelling summary that showcases your professional background, key skills, and career objectives. Highlight your unique value proposition and what makes you stand out..."
+    },
+    "ai": {
+      "generate": "✨ AI Generate",
+      "generating": "Generating...",
+      "tooltip": "Generate AI-enhanced summary"
+    },
+    "errors": {
+      "noOccupation": "Please fill in your occupation in the Personal Info step first to generate an AI summary.",
+      "generationFailed": "Failed to generate AI summary. Please try again."
+    }
+  },
+  "EducationSuggestionModal": {
+    "title": "AI Education Suggestions",
+    "subtitle": "Generate professional descriptions based on your education details",
+    "educationDetails": {
+      "title": "Education Details",
+      "school": "School:",
+      "degree": "Degree:",
+      "duration": "Duration:",
+      "notSpecified": "Not specified",
+      "present": "Present"
+    },
+    "generateButton": {
+      "generate": "Generate AI Descriptions",
+      "generating": "Generating AI Suggestions..."
+    },
+    "requirements": {
+      "fillFields": "Please fill in the school and degree fields first"
+    },
+    "suggestions": {
+      "title": "Suggested Descriptions:",
+      "suggestionLabel": "Suggestion {{number}}",
+      "useThis": "Use This"
+    },
+    "instructions": {
+      "title": "Click \"Generate AI Descriptions\" to get personalized suggestions for your education background."
+    },
+    "actions": {
+      "close": "Close"
+    },
+    "errors": {
+      "requiredFields": "School and degree are required to generate suggestions",
+      "failed": "Failed to generate suggestions. Please try again."
+    }
+  },
+  "InputField": {
+    "required": "This field is required",
+    "accessibility": {
+      "required": "This field is required"
+    }
+  },
+  "PhotoUpload": {
+    "actions": {
+      "addPhoto": "Add photo",
+      "dropPhotoHere": "Drop photo here",
+      "clickOrDrag": "Click or drag",
+      "changePhoto": "Change photo",
+      "removePhoto": "Remove photo",
+      "processing": "Processing..."
+    },
+    "hints": {
+      "recommended": "Recommended: Square photo, max 5MB"
+    },
+    "errors": {
+      "sizeLimit": "Image exceeds 5MB limit",
+      "processingError": "Error processing image",
+      "readingError": "Error reading file"
+    }
+  },
+  "ProgressCard": {
+    "accessibility": {
+      "progressBar": "Progress: {{value}} out of {{maxValue}}"
+    }
+  },
+  "SectionCard": {
+    "accessibility": {
+      "section": "Section: {{title}}"
+    }
+  },
+  "WorkHistorySuggestionModal": {
+    "title": "AI Description Suggestions",
+    "subtitle": "Generate professional descriptions based on your job details",
+    "positionDetails": {
+      "title": "Position Details",
+      "jobTitle": "Job Title:",
+      "company": "Company:",
+      "duration": "Duration:",
+      "notSpecified": "Not specified",
+      "present": "Present"
+    },
+    "generateButton": {
+      "generate": "Generate AI Descriptions",
+      "generating": "Generating AI Suggestions..."
+    },
+    "requirements": {
+      "fillFields": "Please fill in the job title and company fields first"
+    },
+    "suggestions": {
+      "title": "Suggested Descriptions:",
+      "suggestionLabel": "Suggestion {{number}}",
+      "useThis": "Use This"
+    },
+    "instructions": {
+      "title": "Click \"Generate AI Descriptions\" to get personalized suggestions for your work experience."
+    },
+    "actions": {
+      "close": "Close"
+    },
+    "errors": {
+      "requiredFields": "Job title and company are required to generate suggestions",
+      "failed": "Failed to generate suggestions. Please try again."
+    }
+  },
+  "PreviewModal": {
+    "title": "Resume Preview",
+    "subtitle": "{{templateName}} - Professional view of your resume",
+    "actions": {
+      "downloadPdf": "Download PDF",
+      "generatingPdf": "Generating PDF...",
+      "close": "Close preview"
+    },
+    "keyboard": {
+      "escToClose": "to close"
+    },
+    "errors": {
+      "noTemplate": "No template component provided",
+      "templateError": "Template Preview Error",
+      "tryDifferent": "Please try a different template"
+    }
+  },
+  "TemplateSelectionModal": {
+    "header": {
+      "title": "Choose Template",
+      "subtitle": "Select a professional template for your resume",
+      "closeLabel": "Close template selection"
+    },
+    "search": {
+      "placeholder": "Search templates...",
+      "resultsFound": "{{count}} templates found",
+      "noResults": {
+        "title": "No templates found",
+        "message": "Try adjusting your search or category filters",
+        "clearFilters": "Clear Filters"
+      }
+    },
+    "categories": {
+      "all": "All",
+      "professional": "Professional",
+      "modern": "Modern",
+      "creative": "Creative",
+      "simple": "Simple"
+    },
+    "sorting": {
+      "popular": "Most Popular",
+      "name": "Name A-Z"
+    },
+    "viewMode": {
+      "grid": "Grid view",
+      "list": "List view"
+    },
+    "templateCard": {
+      "badges": {
+        "popular": "Popular",
+        "current": "Current"
+      },
+      "actions": {
+        "favorite": "Add to favorites",
+        "unfavorite": "Remove from favorites",
+        "preview": "Preview template",
+        "select": "Select Template",
+        "currentTemplate": "Current Template"
+      },
+      "popularity": "{{percentage}}% popular"
+    },
+    "templateNames": {
+      "professionalClassic": "Professional Classic",
+      "modernCreative": "Modern Creative",
+      "creativeBold": "Creative Bold",
+      "executivePro": "Executive Pro",
+      "techModern": "Tech Modern",
+      "simpleElegant": "Simple Elegant",
+      "designerSpecial": "Designer Special",
+      "cleanSimple": "Clean Simple",
+      "corporateElite": "Corporate Elite",
+      "startupReady": "Startup Ready",
+      "creativePro": "Creative Pro",
+      "minimalPro": "Minimal Pro",
+      "businessClassic": "Business Classic",
+      "modernEdge": "Modern Edge",
+      "artistPortfolio": "Artist Portfolio",
+      "techInnovation": "Tech Innovation",
+      "executiveSuite": "Executive Suite",
+      "creativeShowcase": "Creative Showcase",
+      "cleanProfessional": "Clean Professional",
+      "futureForward": "Future Forward",
+      "professional21": "Professional 21",
+      "professional22": "Professional 22",
+      "professional23": "Professional 23",
+      "professional24": "Professional 24",
+      "professional25": "Professional 25",
+      "professional26": "Professional 26",
+      "professional27": "Professional 27",
+      "professional28": "Professional 28",
+      "professional29": "Professional 29",
+      "professional30": "Professional 30",
+      "professional31": "Professional 31",
+      "professional32": "Professional 32",
+      "professional33": "Professional 33",
+      "professional34": "Professional 34",
+      "professional35": "Professional 35",
+      "professional36": "Professional 36",
+      "professional37": "Professional 37",
+      "professional38": "Professional 38",
+      "professional39": "Professional 39",
+      "professional40": "Professional 40",
+      "professional41": "Professional 41",
+      "professional42": "Professional 42",
+      "professional43": "Professional 43",
+      "professional44": "Professional 44",
+      "professional45": "Professional 45",
+      "professional46": "Professional 46",
+      "professional47": "Professional 47",
+      "professional48": "Professional 48",
+      "professional49": "Professional 49",
+      "professional50": "Professional 50"
+    },
+    "templateDescriptions": {
+      "professionalClassic": "Clean and traditional design perfect for corporate environments",
+      "modernCreative": "Contemporary layout with creative elements",
+      "creativeBold": "Artistic template for creative professionals",
+      "executivePro": "Sophisticated design for senior positions",
+      "techModern": "Modern template perfect for tech industry",
+      "simpleElegant": "Minimalist design focusing on content clarity",
+      "designerSpecial": "Unique layout for design professionals",
+      "cleanSimple": "Straightforward and professional",
+      "corporateElite": "Premium corporate template",
+      "startupReady": "Dynamic template for startup culture",
+      "creativePro": "Professional creative template",
+      "minimalPro": "Clean minimal professional design",
+      "businessClassic": "Traditional business template",
+      "modernEdge": "Cutting-edge modern design",
+      "artistPortfolio": "Perfect for creative portfolios",
+      "techInnovation": "Innovative design for tech professionals",
+      "executiveSuite": "Premium executive template",
+      "creativeShowcase": "Showcase your creative work",
+      "cleanProfessional": "Simple yet professional appearance",
+      "futureForward": "Forward-thinking modern design",
+      "professional21": "Professional template design",
+      "professional22": "Professional template design",
+      "professional23": "Professional template design",
+      "professional24": "Professional template design",
+      "professional25": "Professional template design",
+      "professional26": "Professional template design",
+      "professional27": "Professional template design",
+      "professional28": "Professional template design",
+      "professional29": "Professional template design",
+      "professional30": "Professional template design",
+      "professional31": "Professional template design",
+      "professional32": "Professional template design",
+      "professional33": "Professional template design",
+      "professional34": "Professional template design",
+      "professional35": "Professional template design",
+      "professional36": "Professional template design",
+      "professional37": "Professional template design",
+      "professional38": "Professional template design",
+      "professional39": "Professional template design",
+      "professional40": "Professional template design",
+      "professional41": "Professional template design",
+      "professional42": "Professional template design",
+      "professional43": "Professional template design",
+      "professional44": "Professional template design",
+      "professional45": "Professional template design",
+      "professional46": "Professional template design",
+      "professional47": "Professional template design",
+      "professional48": "Professional template design",
+      "professional49": "Professional template design",
+      "professional50": "Professional template design"
+    },
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "preview": {
+      "title": "Template Preview",
+      "popularity": "{{percentage}}% popularity",
+      "actions": {
+        "cancel": "Cancel",
+        "useTemplate": "Use Template"
+      }
+    },
+    "keyboard": {
+      "escToClose": "to close"
+    },
+    "selectedTemplate": "\"{{templateId}}\" selected"
+  },
+  "missing1": {
+    "quickBuilder": {
+      "title": "Quick",
+      "badge": "RECOMMENDED"
+    },
+    "stepByStep": {
+      "title": "Guided",
+      "badge": "NEW"
+    },
+    "portfolioBuilder": {
+      "title": "Portfolio",
+      "badge": "NEW"
+    }
+  },
+  "DashboardPortfolios": {
+    "title": "My Portfolios",
+    "subtitle": "Manage and showcase your portfolio collection",
+    "createPortfolio": "Create Portfolio",
+    "searchPlaceholder": "Search portfolios...",
+    "themes": {
+      "allThemes": "All Themes",
+      "default": "Default",
+      "darkTheme": "Dark Theme",
+      "minimal": "Minimal",
+      "creative": "Creative",
+      "professional": "Professional"
+    },
+    "status": {
+      "published": "Published",
+      "draft": "Draft"
+    },
+    "actions": {
+      "view": "View",
+      "edit": "Edit",
+      "delete": "Delete",
+      "viewPreview": "View Preview"
+    },
+    "stats": {
+      "views": "Views",
+      "updated": "Updated"
+    },
+    "table": {
+      "portfolio": "Portfolio",
+      "theme": "Theme",
+      "views": "Views",
+      "updated": "Updated",
+      "actions": "Actions"
+    },
+    "tooltips": {
+      "viewPortfolio": "View Portfolio",
+      "editPortfolio": "Edit Portfolio",
+      "deletePortfolio": "Delete Portfolio"
+    },
+    "search": {
+      "portfolioFound": "portfolio found",
+      "portfoliosFound": "portfolios found"
+    },
+    "emptyState": {
+      "title": "No portfolios found",
+      "noSearchResults": "Try adjusting your search or filter criteria.",
+      "noPortfolios": "Create your first portfolio to get started!",
+      "createFirstPortfolio": "Create Your First Portfolio"
+    },
+    "deleteConfirmation": "Are you sure you want to delete this portfolio? This action cannot be undone.",
+    "messages": {
+      "loadError": "Failed to load portfolios",
+      "deleteSuccess": "Portfolio deleted successfully",
+      "deleteError": "Failed to delete portfolio"
+    }
+  },
+  "JobsUpdate": {
+    "JobsLandingHero": {
+      "typingEffect": {
+        "sentence1": "Find your dream job today",
+        "sentence2": "Connect with top employers",
+        "sentence3": "Advance your career journey",
+        "sentence4": "Discover remote opportunities",
+        "sentence5": "Join leading companies"
+      },
+      "badge": "Jobs Portal",
+      "description": "Discover thousands of job opportunities from top companies. Whether you're looking for remote work, career advancement, or your first job, we connect talented professionals with their perfect match.",
+      "searchPlaceholder": "Job title, keywords, or company",
+      "locationPlaceholder": "City, state, or remote",
+      "searchButton": "Search Jobs",
+      "browseJobs": "Browse Jobs",
+      "hotBadge": "HOT",
+      "postJob": "Post a Job",
+      "employerBadge": "EMPLOYER",
+      "careerResources": "Career Tips",
+      "browse": "Browse",
+      "browseDesc": "Explore all opportunities",
+      "post": "Post",
+      "postDesc": "Hire top talent",
+      "resources": "Resources",
+      "resourcesDesc": "Career guidance & tips",
+      "stats": {
+        "jobs": "10,000+ Active Jobs",
+        "rating": "4.8/5 Rating"
+      },
+      "features": {
+        "freeToApply": "Free to Apply",
+        "verifiedEmployers": "Verified Employers"
+      }
+    },
+    "LandingJobTopCompanies": {
+      "badge": "Top Employers",
+      "title": "Join Leading Companies",
+      "description": "Discover opportunities at world-class companies that are actively hiring. From startups to Fortune 500, find your perfect match.",
+      "featured": "Featured",
+      "viewAll": "View All Companies",
+      "stats": {
+        "companies": "Partner Companies",
+        "jobs": "Active Jobs",
+        "hires": "Successful Hires"
+      }
+    },
+    "LandingJobsProcess": {
+      "badge": "How It Works",
+      "title": "Land Your Dream Job in",
+      "titleHighlight": "4 Simple Steps",
+      "description": "Our streamlined process makes job searching effortless. From discovery to hiring, we guide you every step of the way to ensure you find the perfect opportunity.",
+      "featuresTitle": "Why Choose Our Platform?",
+      "featuresDescription": "We provide cutting-edge tools and features to make your job search more effective and efficient.",
+      "steps": {
+        "0": {
+          "title": "Search & Discover",
+          "description": "Browse thousands of job opportunities from top companies. Use our advanced filters to find the perfect match for your skills and preferences."
+        },
+        "1": {
+          "title": "Create Profile",
+          "description": "Build your professional profile with our resume builder. Showcase your skills, experience, and achievements to stand out from the crowd."
+        },
+        "2": {
+          "title": "Apply Instantly",
+          "description": "Apply to multiple jobs with one click. Our smart application system automatically tailors your profile to each position."
+        },
+        "3": {
+          "title": "Get Hired",
+          "description": "Connect with hiring managers, schedule interviews, and land your dream job. We support you throughout the entire process."
+        }
+      },
+      "features": {
+        "0": {
+          "title": "AI-Powered Matching",
+          "description": "Our intelligent algorithm matches you with relevant opportunities"
+        },
+        "1": {
+          "title": "Resume Optimization",
+          "description": "Automatically optimize your resume for each application"
+        },
+        "2": {
+          "title": "Verified Companies",
+          "description": "All employers are verified for authenticity and quality"
+        }
+      },
+      "cta": {
+        "title": "Ready to Start Your Journey?",
+        "description": "Join thousands of professionals who have found their dream jobs through our platform. Your next opportunity is just a click away.",
+        "searchButton": "Start Job Search",
+        "profileButton": "Create Profile"
+      }
+    },
+    "LandingJobsFeatured": {
+      "badge": "Featured Jobs",
+      "title": "Discover Your Next",
+      "titleHighlight": "Dream Opportunity",
+      "description": "Explore hand-picked opportunities from top companies. These featured positions offer exceptional career growth, competitive compensation, and amazing work environments.",
+      "statsTitle": "Join Thousands of Successful Professionals",
+      "statsDescription": "Our platform has helped countless professionals find their dream jobs at top companies worldwide.",
+      "stats": {
+        "jobs": "Featured Jobs",
+        "success": "Success Rate",
+        "companies": "Top Companies"
+      },
+      "JobCard": {
+        "skills": {
+          "moreSkills": "+{0} more"
+        },
+        "badges": {
+          "featured": "⭐ Featured",
+          "urgent": "🔥 Urgent",
+          "remote": "🌍 Remote"
+        },
+        "buttons": {
+          "applyNow": "Apply Now"
+        }
+      },
+      "viewAll": "View All Jobs"
+    },
+    "MainJobListings": {
+      "jobSingular": "job",
+      "jobPlural": "jobs",
+      "found": "found",
+      "page": "Page",
+      "of": "of",
+      "sort": "Sort",
+      "sortNewest": "Newest",
+      "sortSalaryDesc": "Salary ↓",
+      "sortSalaryAsc": "Salary ↑",
+      "sortCompany": "Company",
+      "sortRelevance": "Relevance",
+      "noJobsFound": "No jobs found",
+      "tryAdjusting": "Try adjusting your search criteria or filters to discover more opportunities.",
+      "clearAllFilters": "Clear All Filters",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "JobSearchBar": {
+      "heading": "Find Your Next Opportunity",
+      "subheading": "Discover jobs from top companies worldwide",
+      "favorites": "Favorites",
+      "postJob": "Post Job",
+      "filters": "Filters",
+      "searchPlaceholder": "Search jobs, companies, keywords...",
+      "locationPlaceholder": "Location (city, state, country)",
+      "searchButton": "Search"
+    },
+    "JobFilters": {
+      "title": "Filters",
+      "clearAll": "Clear All",
+      "jobTypeTitle": "Job Type",
+      "experienceLevelTitle": "Experience Level",
+      "workModeTitle": "Work Mode",
+      "salaryRangeTitle": "Salary Range",
+      "jobType": {
+        "fullTime": "Full-time",
+        "partTime": "Part-time",
+        "contract": "Contract",
+        "freelance": "Freelance"
+      },
+      "experienceLevel": {
+        "entryLevel": "Entry Level",
+        "junior": "Junior",
+        "midLevel": "Mid Level",
+        "senior": "Senior",
+        "seniorLevel": "Senior Level",
+        "executive": "Executive/Director"
+      },
+      "salaryRange": {
+        "range1": "$40k - $60k",
+        "range2": "$60k - $80k",
+        "range3": "$80k - $120k",
+        "range4": "$120k+"
+      },
+      "workMode": {
+        "remote": "Remote",
+        "onSite": "On-site",
+        "hybrid": "Hybrid"
+      }
+    },
+    "JobDetailsModal": {
+      "tabs": {
+        "overview": "Overview",
+        "company": "Company",
+        "details": "Details"
+      },
+      "jobDescription": "Job Description",
+      "responsibilities": "Responsibilities",
+      "requirements": "Requirements",
+      "benefits": "Benefits",
+      "companyInfo": "Company Info",
+      "location": "Location",
+      "postedOn": "Posted on",
+      "deadline": "Deadline",
+      "apply": "Apply Now",
+      "share": "Share",
+      "save": "Save",
+      "saved": "Saved",
+      "viewsPrefix": "👀",
+      "applicantsPrefix": "👥",
+      "viewsText": "views last 24h",
+      "applicantsText": "applicants",
+      "noDescription": "No job description provided.",
+      "noResponsibilities": "No specific responsibilities listed.",
+      "noRequirements": "No specific requirements listed.",
+      "noBenefits": "No benefits information available.",
+      "urgencyPriority": "Priority",
+      "fastTrack": "Fast-track",
+      "qualifications": "Requirements",
+      "qualifications.default": "Requirements will be discussed during the interview process.",
+      "jobDetails": {
+        "title": "Job Details",
+        "jobType": "Job Type",
+        "workMode": "Work Mode",
+        "experienceLevel": "Experience Level",
+        "location": "Location",
+        "salary": "Salary",
+        "salaryRange": "Salary Range",
+        "competitive": "Competitive",
+        "applicationDeadline": "Application Deadline",
+        "postedDate": "Posted Date",
+        "notSpecified": "Not specified"
+      },
+      "jobDescription.default": "Join {{company}} as a {{title}}. We are looking for a talented professional to join our team.",
+      "aboutCompany": {
+        "title": "About Company",
+        "defaultDescription": "Learn more about {{company}} during the interview process. Company details and culture information will be shared with qualified candidates."
+      },
+      "actions": {
+        "applyNow": "Apply Now",
+        "save": "Save",
+        "share": "Share",
+        "contact": "Contact",
+        "expand": "Expand",
+        "collapse": "Collapse"
+      },
+      "stats": {
+        "viewsToday": "views today",
+        "applications": "applications",
+        "deadline": "Deadline"
+      },
+      "defaultBenefits": {
+        "healthInsurance": {
+          "title": "Health Insurance",
+          "description": "Medical coverage details to be discussed"
+        },
+        "timeOff": {
+          "title": "Time Off",
+          "description": "Vacation and personal time"
+        },
+        "equipment": {
+          "title": "Equipment",
+          "description": "Work equipment provided"
+        },
+        "workMode": {
+          "title": "Work Mode",
+          "description": "To be discussed"
+        }
+      },
+      "noCompanyInfo": "No company information available.",
+      "companyStats": {
+        "locationTBD": "Location TBD"
+      },
+      "applicationProcess": {
+        "applicationReview": "Application Review",
+        "initialInterview": "Initial Interview",
+        "technicalAssessment": "Technical Assessment",
+        "finalInterview": "Final Interview",
+        "duration": {
+          "days2to3": "2-3 days",
+          "days3to5": "3-5 days",
+          "week1to2": "1-2 weeks",
+          "mins30to45": "30-45 mins",
+          "hours1to2": "1-2 hours",
+          "mins45to60": "45-60 mins"
+        },
+        "status": {
+          "pending": "pending",
+          "completed": "completed",
+          "current": "current",
+          "upcoming": "upcoming"
+        }
+      }
+    },
+    "CreateJobModal": {
+      "title": "Create New Job Posting",
+      "requiredFields": "All fields marked with * are required",
+      "cancel": "Cancel",
+      "submitting": "Submitting...",
+      "submitApplication": "Submit Application",
+      "creatingJob": "Creating Job...",
+      "createJobPosting": "Create Job Posting",
+      "loadingCompanies": "Loading companies...",
+      "selectCompany": "Select a company",
+      "noCompanies": "You don't have any approved companies. Please create one first.",
+      "noCompaniesDescription": "You need to add and get approval for at least one company before posting jobs. Use the \"Add Company\" button in your dashboard.",
+      "sections": {
+        "jobInformation": "Job Information",
+        "location": "Location & Type",
+        "compensation": "Compensation & Deadline",
+        "jobDescription": "Job Description",
+        "requirements": "Requirements & Benefits"
+      },
+      "fields": {
+        "jobTitle": "Job Title",
+        "company": "Company",
+        "jobType": "Job Type",
+        "workMode": "Work Mode",
+        "location": "Location",
+        "country": "Country",
+        "experience": "Experience Level",
+        "minSalary": "Min Salary",
+        "maxSalary": "Max Salary",
+        "deadline": "Application Deadline",
+        "jobDescription": "Job Description",
+        "requirements": "Requirements",
+        "benefits": "Benefits"
+      },
+      "placeholders": {
+        "jobTitle": "e.g., Senior Product Manager",
+        "location": "Start typing city, state, country...",
+        "jobDescription": "Describe the role, responsibilities, and what makes this position exciting...",
+        "requirement": "e.g., 2+ years of experience in software development",
+        "benefit": "e.g., Health insurance, 401(k) matching"
+      },
+      "actions": {
+        "addRequirement": "Add Requirement",
+        "addBenefit": "Add Benefit"
+      },
+      "jobTypes": {
+        "fullTime": "Full-time",
+        "partTime": "Part-time",
+        "contract": "Contract",
+        "freelance": "Freelance",
+        "internship": "Internship",
+        "temporary": "Temporary"
+      },
+      "workModes": {
+        "onSite": "On-site",
+        "remote": "Remote",
+        "hybrid": "Hybrid"
+      },
+      "experienceLevels": {
+        "entryLevel": "Entry Level",
+        "junior": "Junior",
+        "midLevel": "Mid Level",
+        "senior": "Senior",
+        "executive": "Executive"
+      }
+    },
+    "FavoritesModal": {
+      "title": "Favorite Jobs",
+      "job": "job",
+      "jobs": "jobs",
+      "saved": "saved",
+      "removeFromFavorites": "Remove from favorites",
+      "viewDetails": "View Details",
+      "yourSavedJobs": "Your Saved Jobs",
+      "browseJobs": "Browse Jobs",
+      "cleanUpMissingJobs": "Clean Up Missing Jobs",
+      "missingJobsWarning": {
+        "title": "{0} Saved Job{plural} No Longer Available",
+        "description": "Some jobs in your favorites may have been removed or are no longer active."
+      },
+      "noSavedJobs": "No Saved Jobs",
+      "noSavedJobsMessage": "You haven't saved any jobs yet. Click the bookmark icon on a job to save it for later."
+    },
+    "AppliedJobs": {
+      "title": "Applied Jobs",
+      "subtitle": "Track your job applications and their current status",
+      "loading": "Loading your applications...",
+      "loginRequired": {
+        "title": "Please log in",
+        "message": "You need to be logged in to view your job applications."
+      },
+      "stats": {
+        "totalApplied": "Total Applied",
+        "pending": "Pending",
+        "interviews": "Interviews",
+        "successRate": "Success Rate"
+      },
+      "search": {
+        "placeholder": "Search jobs, companies, or locations..."
+      },
+      "filters": {
+        "allStatus": "All Status",
+        "underReview": "Under Review",
+        "interview": "Interview",
+        "accepted": "Accepted",
+        "rejected": "Rejected"
+      },
+      "sort": {
+        "byDate": "Sort by Date",
+        "byCompany": "Sort by Company",
+        "byStatus": "Sort by Status"
+      },
+      "noApplications": {
+        "title": "No applications found",
+        "filterMessage": "Try adjusting your search or filter criteria.",
+        "emptyMessage": "You haven't applied to any jobs yet. Start exploring opportunities!"
+      },
+      "actions": {
+        "browseJobs": "Browse Jobs",
+        "moreDetails": "More details",
+        "lessDetails": "Less details"
+      },
+      "jobInfo": {
+        "applied": "Applied",
+        "status": "Status"
+      },
+      "jobDetails": {
+        "jobDescription": "Job Description",
+        "requirements": "Requirements",
+        "noRequirements": "No specific requirements listed",
+        "applicationStatus": "Application Status",
+        "status": "Status",
+        "appliedOn": "Applied on",
+        "title": "Job Details",
+        "type": "Type",
+        "mode": "Mode",
+        "salary": "Salary"
+      }
+    },
+    "DashboardMessages": {
+      "search": {
+        "placeholder": "Search"
+      },
+      "header": {
+        "title": "Messages"
+      },
+      "noMessages": {
+        "title": "No messages yet",
+        "message": "Employers will reach out to you here when interested in your profile"
+      },
+      "status": {
+        "active": "Active now"
+      },
+      "loading": {
+        "inProgress": "Loading...",
+        "loadMore": "Load Older Messages",
+        "noMore": "No more messages",
+        "messages": "Loading messages..."
+      },
+      "errors": {
+        "loadFailed": "Failed to load messages",
+        "sendFailed": "Failed to send message. Please try again.",
+        "loadingError": "Error loading messages: {{message}}",
+        "permission": "Permission denied or network error",
+        "connection": "Check your Firebase security rules and network connection."
+      },
+      "emptyState": {
+        "title": "No messages in this conversation",
+        "description": "This is the beginning of your conversation with {{name}}.",
+        "hint": "Messages will appear here"
+      },
+      "input": {
+        "placeholder": "Type a message...",
+        "sendButton": "Send"
+      },
+      "welcome": {
+        "title": "Welcome to Messages",
+        "description": "Select a conversation from the sidebar to start chatting with your contacts.",
+        "hint": "Choose a conversation to begin messaging"
+      },
+      "conversation": {
+        "noMessages": "No messages yet"
+      },
+      "time": {
+        "now": "Now",
+        "minutes": "{{count}}min ago",
+        "hours": "{{count}}hr ago"
+      },
+      "user": {
+        "unknown": "Unknown User"
+      }
+    },
+    "JobApplicationsModal": {
+      "header": {
+        "title": "Applications for",
+        "totalApplications": "total applications"
+      },
+      "search": {
+        "placeholder": "Search by name, email, or skills..."
+      },
+      "filters": {
+        "allStatus": "All Status",
+        "pending": "Pending",
+        "interview": "Interview",
+        "accepted": "Accepted",
+        "rejected": "Rejected"
+      },
+      "status": {
+        "pending": "Pending",
+        "interview": "Interview",
+        "accepted": "Accepted",
+        "rejected": "Rejected"
+      },
+      "emptyState": {
+        "title": "No applications found",
+        "noApplications": "No one has applied to this job yet.",
+        "noResults": "No applications match your current filters."
+      },
+      "coverLetter": {
+        "none": "No cover letter provided"
+      },
+      "applicantInfo": {
+        "experience": "experience",
+        "resumeAttached": "Resume attached",
+        "more": "more"
+      },
+      "buttons": {
+        "accept": "Accept",
+        "reject": "Reject",
+        "downloadResume": "Download Resume",
+        "sendEmail": "Send Email",
+        "showResume": "Show Resume"
+      }
+    },
+    "EmployerDashboard": {
+      "loading": "Loading your job postings...",
+      "header": {
+        "title": "Job Postings",
+        "subtitle": "Manage your job postings and review applications"
+      },
+      "buttons": {
+        "addCompany": "Add Company",
+        "company": "Company",
+        "postNewJob": "Post New Job",
+        "newJob": "New Job",
+        "postFirstJob": "Post Your First Job",
+        "applications": "Applications",
+        "editJob": "Edit Job",
+        "pause": "Pause",
+        "activate": "Activate",
+        "delete": "Delete"
+      },
+      "stats": {
+        "totalJobs": "Total Jobs",
+        "active": "Active",
+        "applications": "Applications",
+        "views": "Views"
+      },
+      "search": {
+        "placeholder": "Search jobs by title, location..."
+      },
+      "filters": {
+        "allStatus": "All Status",
+        "active": "Active",
+        "pending": "Pending Approval",
+        "paused": "Paused",
+        "closed": "Closed",
+        "draft": "Draft"
+      },
+      "sort": {
+        "byDate": "Sort by Date",
+        "byApplications": "Applications",
+        "byViews": "Views",
+        "byTitle": "Title"
+      },
+      "emptyState": {
+        "title": "No job postings found",
+        "noJobs": "You haven't posted any jobs yet. Create your first job posting to get started!",
+        "noResults": "No jobs match your current filters. Try adjusting your search criteria."
+      },
+      "jobDetails": {
+        "description": "Job Description",
+        "requirements": "Requirements",
+        "moreRequirements": "+{{count}} more"
+      },
+      "jobInfo": {
+        "applications": "applications",
+        "views": "views",
+        "deadline": "Deadline:"
+      },
+      "AddCompanyModal": {
+        "header": {
+          "title": "Add Company",
+          "subtitle": "Add your company details for review and approval"
+        },
+        "info": {
+          "title": "Company Review Process",
+          "description": "All company submissions are reviewed by our team to ensure quality and authenticity. You'll be notified once your company is approved and can be used for job postings."
+        },
+        "form": {
+          "companyName": "Company Name *",
+          "website": "Website",
+          "companyLogo": "Company Logo (Optional)",
+          "industry": "Industry *",
+          "companySize": "Company Size *",
+          "location": "Location *",
+          "address": "Address",
+          "phone": "Phone",
+          "email": "Email",
+          "description": "Company Description",
+          "companyNamePlaceholder": "Enter company name"
+        },
+        "validation": {
+          "nameRequired": "Company name is required",
+          "industryRequired": "Industry is required",
+          "sizeRequired": "Company size is required",
+          "locationRequired": "Location is required",
+          "invalidWebsite": "Please enter a valid website URL",
+          "invalidImage": "Please enter a valid image URL",
+          "invalidEmail": "Please enter a valid email address"
+        },
+        "industries": {
+          "technology": "Technology",
+          "healthcare": "Healthcare",
+          "finance": "Finance",
+          "education": "Education",
+          "retail": "Retail",
+          "manufacturing": "Manufacturing",
+          "consulting": "Consulting",
+          "marketing": "Marketing",
+          "realEstate": "Real Estate",
+          "hospitality": "Hospitality",
+          "transportation": "Transportation",
+          "energy": "Energy",
+          "media": "Media",
+          "government": "Government",
+          "nonprofit": "Non-profit",
+          "other": "Other"
+        },
+        "companySizes": {
+          "size1to10": "1-10 employees",
+          "size11to50": "11-50 employees",
+          "size51to200": "51-200 employees",
+          "size201to500": "201-500 employees",
+          "size501to1000": "501-1000 employees",
+          "size1000plus": "1000+ employees"
+        },
+        "placeholders": {
+          "selectIndustry": "Select industry",
+          "selectCompanySize": "Select company size"
+        },
+        "messages": {
+          "validationError": "Validation Error",
+          "fixErrors": "Please fix the errors in the form",
+          "error": "Error",
+          "mustBeLoggedIn": "You must be logged in to add a company",
+          "success": "Success",
+          "companyAdded": "Company added successfully! It will be reviewed by our team.",
+          "failedToAdd": "Failed to add company",
+          "unexpectedError": "An unexpected error occurred"
+        },
+        "buttons": {
+          "cancel": "Cancel",
+          "addCompany": "Add Company",
+          "addingCompany": "Adding Company..."
+        }
+      },
+      "CompaniesManagement": {
+        "loading": {
+          "companies": "Loading your companies..."
+        },
+        "header": {
+          "title": "My Companies",
+          "subtitle": "Manage your companies and track their approval status"
+        },
+        "buttons": {
+          "addCompany": "Add Company",
+          "add": "Add"
+        },
+        "infoBanner": {
+          "title": "Company Approval Process",
+          "message": "All companies must be approved before they can be used for job postings. Only approved companies will appear in your job posting form."
+        },
+        "stats": {
+          "totalCompanies": "Total Companies",
+          "approved": "Approved",
+          "pending": "Pending",
+          "rejected": "Rejected"
+        },
+        "search": {
+          "placeholder": "Search companies by name, industry, location..."
+        },
+        "filters": {
+          "allStatus": "All Status",
+          "pending": "Pending",
+          "approved": "Approved",
+          "rejected": "Rejected"
+        },
+        "emptyState": {
+          "title": "No companies found",
+          "noCompanies": "You haven't added any companies yet. Add your first company to get started!",
+          "noMatches": "No companies match your current filters. Try adjusting your search criteria.",
+          "addFirstCompany": "Add Your First Company"
+        },
+        "companyDetails": {
+          "description": "Company Description",
+          "visitWebsite": "Visit Website"
+        },
+        "actions": {
+          "editCompany": "Edit Company",
+          "delete": "Delete"
+        }
+      },
+      "JobCard": {
+        "badges": {
+          "featured": "⭐ Featured",
+          "urgent": "🔥 Urgent",
+          "remote": "🌍 Remote"
+        },
+        "jobDetails": {
+          "location": "Location",
+          "type": "Job Type",
+          "salary": "Salary",
+          "postedTime": "Posted Time"
+        },
+        "skills": {
+          "moreSkills": "+{0} more"
+        },
+        "buttons": {
+          "applyNow": "Apply Now"
+        }
+      }
+    },
+    "JobCard2": {
+      "alerts": {
+        "signInRequired": "Please sign in to apply for jobs."
+      },
+      "applicationStatus": {
+        "loading": "Loading...",
+        "applyNow": "Apply Now",
+        "pending": "Application Pending",
+        "interview": "Interview Scheduled",
+        "accepted": "Application Accepted",
+        "rejected": "Application Rejected"
+      },
+      "jobInfo": {
+        "locationTBD": "Location TBD",
+        "applicants": "{{applicants}} applicants",
+        "requirements": "Requirements",
+        "posted": "Posted {{postedDate}}"
+      },
+      "buttons": {
+        "viewDetails": "View Details"
+      }
+    },
+    "JobApplicationModal": {
+      "title": "Apply for {{jobTitle}}",
+      "subtitle": "Complete the form below to apply for this position",
+      "personalInfo": {
+        "heading": "Personal Information",
+        "fullName": "Full Name",
+        "email": "Email Address",
+        "phone": "Phone Number",
+        "linkedin": "LinkedIn Profile URL",
+        "github": "GitHub/Portfolio URL",
+        "website": "Personal Website"
+      },
+      "resume": {
+        "heading": "Resume",
+        "selectResume": "Select Resume",
+        "browseResumes": "Browse Resumes",
+        "uploadNew": "Upload New Resume",
+        "preview": "Preview Resume",
+        "noResumes": "No resumes found",
+        "createResume": "Create a resume first",
+        "loading": "Loading resumes...",
+        "error": "Error loading resumes",
+        "selectThis": "Select This Resume",
+        "createdAt": "Created {{date}}"
+      },
+      "coverLetter": {
+        "heading": "Cover Letter",
+        "placeholder": "Write a brief cover letter explaining why you're a good fit for this role...",
+        "loadTemplate": "Load Template",
+        "templates": {
+          "standard": "Standard",
+          "professional": "Professional",
+          "creative": "Creative",
+          "technical": "Technical",
+          "career": "Career Change"
+        }
+      },
+      "buttons": {
+        "back": "Back",
+        "submit": "Submit Application",
+        "submitting": "Submitting...",
+        "cancel": "Cancel",
+        "close": "Close",
+        "viewMyApplications": "View My Applications",
+        "browseMore": "Browse More Jobs"
+      },
+      "success": {
+        "title": "Application Submitted!",
+        "message": "Your application has been successfully submitted. We'll be in touch soon."
+      },
+      "error": {
+        "title": "Application Failed",
+        "message": "There was a problem submitting your application. Please try again.",
+        "requiredFields": "Please fill in all required fields"
+      },
+      "pagination": {
+        "prev": "Previous",
+        "next": "Next",
+        "page": "Page {{current}} of {{total}}"
+      }
+    },
+    "ProfileDisplay2": {
+      "search": "Search",
+      "navigation": "NAVIGATION",
+      "menu": {
+        "dashboard": "Dashboard",
+        "interviews": "Interviews",
+        "portfolios": "Portfolios",
+        "settings": "Settings",
+        "appliedJobs": "Applied Jobs",
+        "messages": "Messages",
+        "myJobs": "My Jobs",
+        "myCompanies": "My Companies"
+      }
+    },
+    "DashboardHomepageFix1": {
+      "subtitle": "Manage your resumes and cover letters"
+    }
+  },
+  "blog": {
+    "title": "Blog",
+    "description": "Latest career tips and trends",
+    "knowledgeHub": "Knowledge Hub",
+    "blogTitle": "Insights & Resources",
+    "blogDescription": "Expert insights, industry trends, and practical guides to help you succeed",
+    "searchPlaceholder": "Search articles, guides, and insights...",
+    "search": "Search",
+    "allArticles": "All Articles",
+    "allCategories": "All Categories",
+    "noArticlesFound": "No articles found",
+    "adjustSearch": "Try adjusting your search terms or category filter.",
+    "loadMore": "Load More Articles",
+    "articleLabel": "Article",
+    "minRead": "min read",
+    "recently": "Recently",
+    "articleNotFound": "Article Not Found",
+    "backToArticles": "Back to Articles",
+    "backToBlog": "Back to Blog",
+    "shareArticle": "Share Article",
+    "relatedArticles": "Related Articles",
+    "views": "views",
+    "tags": "Tags"
+  }
+}

@@ -1,0 +1,122 @@
+.dashboard-cover-card {
+    // a card styling with shadow etc
+    // implement light shadow lightgrey with
+    border: 1px solid rgba(219, 219, 219, 0.393);
+    border-radius: 15px;
+    margin: 20px 5px;
+    box-sizing: border-box;
+    background-color: #fff;
+    padding: 0px 15px;
+
+    .dashboard-cover-card-head {
+        display: flex;
+        justify-content: space-between;
+        .dashboard-cover-card-head-left {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            .dashboard-cover-card-head-left-avatar {
+                // a circle avatar with prototype color
+                background-color: #426ae0;
+                width: 70px;
+                height: 70px;
+                border-radius: 50%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                margin-right: 10px;
+                overflow: hidden;
+                .dashboard-cover-card-head-left-avatar-icon {
+                    transform: translateY(10px);
+                    width: 60px;
+                    height: 60px;
+                }
+            }
+        }
+
+        .dashboard-cover-card-head-center {
+            display: flex;
+            align-items: flex-start;
+            width: 80%;
+            flex-direction: column;
+            padding: 10px 0px;
+            .dashboard-cover-card-head-center-title {
+                font-size: 1.2em;
+                font-weight: 500;
+                margin-bottom: 5px;
+                padding: 10px 0px;
+            }
+
+            .dashboard-cover-card-head-center-skills {
+                display: flex;
+                flex-wrap: wrap;
+
+                .dashboard-cover-card-head-center-skills-item {
+                    // list of skills like the ones we did before in the dashboard
+                    background-color: #e6ebfb;
+                    color: #426ae0;
+                    text-decoration: none;
+                    padding: 5px 20px;
+                    border-radius: 25px;
+                    // give the button a small shadow
+                    margin-right: 5px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: 0.1s all ease-in;
+                    cursor: pointer;
+                }
+            }
+        }
+
+        .dashboard-cover-card-head-right {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px 30px;
+
+            .dashboard-cover-card-head-right-bookmark {
+                background-color: #f7f7f7;
+                padding: 8px;
+                border-radius: 10px;
+                // small hover effect for this element
+                transition: 0.1s all ease-in;
+                cursor: pointer;
+                &:hover {
+                    background-color: #edebeb;
+                }
+                .dashboard-cover-card-head-right-bookmark-icon {
+                    width: 40px;
+                    height: 40px;
+                    fill: #818181;
+                }
+                &.active {
+                    background-color: #f7c04c;
+                    .dashboard-cover-card-head-right-bookmark-icon {
+                        fill: #fff;
+                    }
+                }
+            }
+        }
+    }
+
+    .dashboard-cover-card-body {
+        .dashboard-cover-card-body-description {
+            padding: 10px;
+            font-size: 0.9em;
+            color: #818181;
+        }
+    }
+
+    .dashboard-cover-card-footer {
+        display: flex;
+        // reverse items
+        flex-direction: row-reverse;
+        .dashboard-cover-card-footer-date {
+            padding: 10px;
+            font-size: 0.75em;
+            color: #818181;
+        }
+    }
+}

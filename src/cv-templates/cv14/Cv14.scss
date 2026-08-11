@@ -1,0 +1,272 @@
+@use '../../components/variables' as *;
+.cv14-board {
+    width: 21cm;
+    font-family: $font;
+    word-break: break-word;
+    // cv-content
+    .cv14-content {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        font-size: 14px;
+        box-sizing: border-box;
+
+        //left
+        .cv14-left-side {
+            width: 340px;
+            background-color: #6c999a;
+            padding: 20px;
+            min-height: 28.6cm;
+
+            .cv14-left-side-head {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                margin-top: 30px;
+                .cv14-image {
+                    width: 200px;
+                    height: 200px;
+                    border-radius: 50%;
+                    border: 3px solid white;
+                    overflow: hidden;
+                    img {
+                        width: 100%;
+                        height: 100%;
+                        object-fit: cover;
+                    }
+                }
+            }
+            .cv14-left-side-body {
+                margin-top: 30px;
+                .cv14-left-title {
+                    font-weight: 600;
+                    // to upper case
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                    font-size: 1.2em;
+
+                    color: white;
+                }
+                .cv14-summary {
+                    font-size: 0.9em;
+                    color: white;
+                }
+                .cv14-skills {
+                    margin-bottom: 10px;
+                    .cv14-skills-item {
+                        p {
+                            font-size: 0.9em;
+                            color: white;
+                        }
+                        .cv14-skills-item-bar {
+                            border: 1px solid white;
+                            border-radius: 5px;
+                            height: 5px;
+                            margin-top: 5px;
+
+                            .cv14-skills-item-bar-inner {
+                                background-color: white;
+                                height: 100%;
+                                border-radius: 5px;
+                                transition: all 0.5s ease;
+                            }
+                        }
+                    }
+                }
+                .cv14-languages {
+                    .cv14-languages-item {
+                        display: flex;
+                        justify-content: space-between;
+                        p {
+                            font-size: 0.9em;
+                            color: white;
+                        }
+                        // the second p
+                        p:nth-child(2) {
+                            // to uper case
+                            text-transform: uppercase;
+                        }
+                    }
+                }
+            }
+        }
+        //right
+        .cv14-right-side {
+            width: 100%;
+            .cv14-right-side-head {
+                display: flex;
+                padding: 20px 10px;
+                justify-content: space-between;
+                background-color: #ebcbbb;
+                align-items: center;
+                color: #232120;
+                .cv14-right-side-head-left {
+                    p,
+                    h1 {
+                        margin: 0px;
+                    }
+                    h1 {
+                        text-transform: uppercase;
+                    }
+                }
+                .cv14-right-side-head-right {
+                    .cv14-contact-info {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        padding: 20px 0px;
+
+                        .cv14-contact-info-item {
+                            display: flex;
+                            font-size: 0.8em;
+                            align-items: center;
+                            margin-top: 10px;
+                            .cv14-contact-icon {
+                                margin-right: 10px;
+                                font-size: 0.8em;
+                            }
+                            p {
+                                width: 150px;
+                                margin: 0px;
+                                font-size: 0.8em;
+                            }
+                        }
+                    }
+                }
+            }
+            .cv14-right-side-body {
+                padding: 20px;
+                .cv14-right-title {
+                    display: flex;
+                    align-items: center;
+                    span {
+                        font-weight: 600;
+                        // to upper case
+                        text-transform: uppercase;
+                        letter-spacing: 1px;
+                        font-size: 1.4em;
+                    }
+                    .cv14-right-title-icon {
+                        margin-right: 10px;
+                        fill: #6c999a;
+                        font-size: 1.8em;
+                    }
+                }
+                .cv14-work-history {
+                    width: 100%;
+                    margin-bottom: 20px;
+                    .cv14-work-history-item {
+                        width: 100%;
+                        display: flex;
+                        margin-top: 20px;
+                        .cv14-work-history-item-left {
+                            width: 20%;
+                            font-size: 0.8em;
+                            margin-top: 8px;
+
+                            p {
+                                margin: 0px;
+                            }
+                        }
+                        .cv14-work-history-item-right {
+                            width: 70%;
+                            padding-left: 10px;
+                            h3 {
+                                margin: 5px 0px;
+                            }
+                            p {
+                                margin: 0px;
+                                font-size: 0.8em;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/* Rich Text Support for CV14 */
+.cv14-board {
+    // Styling for summary section
+    .cv14-summary p {
+        strong,
+        b {
+            font-weight: bold;
+        }
+        em,
+        i {
+            font-style: italic;
+        }
+        u {
+            text-decoration: underline;
+        }
+        ul,
+        ol {
+            margin: 6px 0;
+            padding-left: 1em;
+        }
+        li {
+            display: list-item;
+            margin: 0.1em 0;
+            padding-left: 0.2em;
+        }
+        ul {
+            list-style-type: disc;
+        }
+        ol {
+            list-style-type: decimal;
+        }
+        ul ul {
+            list-style-type: circle;
+            margin: 1px 0;
+            padding-left: 0.8em;
+        }
+        ol ol {
+            list-style-type: lower-alpha;
+            margin: 1px 0;
+            padding-left: 0.8em;
+        }
+    }
+
+    // Styling for job/education descriptions
+    .cv14-work-history-item-right p {
+        strong,
+        b {
+            font-weight: bold;
+        }
+        em,
+        i {
+            font-style: italic;
+        }
+        u {
+            text-decoration: underline;
+        }
+        ul,
+        ol {
+            margin: 6px 0;
+            padding-left: 1em;
+        }
+        li {
+            display: list-item;
+            margin: 0.1em 0;
+            padding-left: 0.2em;
+        }
+        ul {
+            list-style-type: disc;
+        }
+        ol {
+            list-style-type: decimal;
+        }
+        ul ul {
+            list-style-type: circle;
+            margin: 1px 0;
+            padding-left: 0.8em;
+        }
+        ol ol {
+            list-style-type: lower-alpha;
+            margin: 1px 0;
+            padding-left: 0.8em;
+        }
+    }
+}

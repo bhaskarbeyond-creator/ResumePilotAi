@@ -1,0 +1,170 @@
+@use '../../variables' as *;
+@use 'sass:color';
+.dashboardWrapper {
+    //   height: 100%;
+    width: 100%;
+    position: relative;
+    font-family: $font;
+    overflow-y: auto;
+    overflow-x: hidden; /* Prevent horizontal scrollbar */
+
+    .navbar {
+        height: 70px;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        position: relative;
+        z-index: 1500;
+        .brand {
+            padding-left: 40px;
+            img {
+                width: 160px;
+                height: 38px;
+                vertical-align: middle;
+            }
+            span {
+                font-size: 22px;
+                font-weight: 600;
+                font-family: $font;
+            }
+        }
+        .dashboardNavigaitionList {
+            ul {
+                list-style-type: none;
+                li {
+                    display: inline;
+                    margin-right: 20px;
+                    .dashboardNavItem {
+                        text-decoration: none;
+                        color: #5e6773;
+                        font-size: 14px;
+                        font-weight: 500;
+                    }
+                    .statusSoon {
+                        font-size: 10px;
+                        background-color: #34495e !important;
+                        display: inline;
+                        color: white;
+                        padding: 4px;
+                        border-radius: 4px;
+                        position: absolute;
+                        margin-left: 10px;
+                    }
+                    .dashboardNavItemActive {
+                        color: #5e6773;
+                    }
+                }
+            }
+        }
+        .dashboarProfile {
+            display: flex;
+            height: 100%;
+            align-items: center;
+            cursor: pointer;
+            position: relative;
+
+            .dashboarProfileImage {
+                width: 35px;
+                vertical-align: middle;
+                margin-right: 10px;
+            }
+            .dashboarProfileName {
+                font-size: 14px;
+                color: black;
+                text-decoration: none;
+                font-weight: 500;
+                img {
+                    vertical-align: middle;
+                    height: 10px;
+                    margin-left: 5px;
+                }
+                &:visited {
+                    color: black;
+                }
+            }
+            .dashboardDropdown {
+                width: 200px;
+                background-color: white;
+                position: absolute;
+                left: 0;
+                top: 70px;
+                border-bottom-left-radius: 4px;
+                border-bottom-right-radius: 4px;
+                cursor: default;
+                z-index: 20000;
+                .mobileItems {
+                    display: none;
+                }
+                ul {
+                    padding: 0px;
+                    list-style: none;
+                    li {
+                        padding: 10px 15px;
+                        .dropDownItem {
+                            text-decoration: none;
+                            color: #6c6c75;
+                            font-size: 14px;
+                            font-weight: 500;
+                        }
+                        .logout {
+                            color: #e74c3c;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    .dashboardContentWrapper::-webkit-scrollbar {
+        display: none;
+    }
+    .dashboardContentWrapper {
+        display: flex;
+        // width: calc(100% - 250px); /* Adjust width to account for sidebar */
+        min-height: 100vh;
+        background-color: #f9fafb;
+        //  margin-left: 250px; /* Match the exact sidebar width from ProfileDisplay.scss */
+        transition: all 0.3s ease;
+        box-sizing: border-box; /* Include padding in width calculation */
+        padding: 0; /* Remove any default padding */
+        overflow-x: hidden; /* Prevent horizontal scrollbar */
+
+        &.sidebar-collapsed {
+            // margin-left: 60px; /* Match the exact collapsed sidebar width */
+            width: calc(100% - 60px); /* Adjust width when sidebar is collapsed */
+        }
+
+        /* Mobile responsive behavior */
+        @media only screen and (max-width: 768px) {
+            width: 100% !important;
+
+            &.sidebar-collapsed {
+                width: 100% !important;
+            }
+        }
+    }
+
+    .dashboardGridLeft {
+        width: 240px;
+        min-height: 100vh;
+        background-color: #fff;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        position: sticky;
+        top: 0;
+        transition: width 0.3s ease;
+        flex-shrink: 0;
+        z-index: 10;
+    }
+
+    .dashboardMainContent {
+        flex: 1;
+        padding: 0;
+        transition: all 0.3s ease;
+        max-width: 100%;
+        overflow-x: hidden; /* Prevent horizontal scrolling */
+        box-sizing: border-box; /* Include padding in width calculation */
+
+        /* Sidebar collapsed state width is handled by parent container */
+    }
+}

@@ -1,0 +1,376 @@
+@use '../../components/variables' as *;
+
+.cv26-board {
+    width: 21cm;
+    min-height: 29.7cm;
+    font-family: $font;
+    background-color: #fff;
+    color: #333;
+    position: relative;
+    overflow: hidden;
+
+    .cv26-content {
+        width: 100%;
+        height: 100%;
+        position: relative;
+
+        // Accent Band
+        .cv26-accent-band {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 15px;
+            background-color: #26a69a;
+            z-index: 1;
+        }
+
+        // Header Section
+        .cv26-header {
+            padding: 40px 40px 30px;
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            border-bottom: 1px solid #eaeaea;
+
+            .name-section {
+                h1 {
+                    font-size: 32px;
+                    font-weight: 700;
+                    margin: 0;
+                    color: #333;
+                    letter-spacing: 0.5px;
+                }
+
+                h2 {
+                    font-size: 18px;
+                    font-weight: 400;
+                    margin: 5px 0 0;
+                    color: #26a69a;
+                }
+            }
+
+            .photo-section {
+                .photo-container {
+                    width: 120px;
+                    height: 120px;
+                    border-radius: 4px;
+                    border: 2px solid #26a69a;
+                    overflow: hidden;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+
+                    .profile-image {
+                        width: 100%;
+                        height: 100%;
+                        object-fit: cover;
+                    }
+
+                    .photo-placeholder {
+                        color: #ccc;
+                        font-size: 14px;
+                    }
+                }
+            }
+        }
+
+        // Main Content
+        .cv26-main {
+            display: flex;
+            min-height: calc(29.7cm - 200px);
+
+            // Left Column (Sidebar)
+            .cv26-left-column {
+                flex: 1;
+                padding: 30px;
+                background-color: #f9f9f9;
+                border-right: 1px solid #eaeaea;
+
+                .cv26-section {
+                    margin-bottom: 30px;
+
+                    .section-header {
+                        display: flex;
+                        align-items: center;
+                        margin-bottom: 15px;
+
+                        .section-icon {
+                            color: #26a69a;
+                            font-size: 18px;
+                            margin-right: 10px;
+                        }
+
+                        h3 {
+                            font-size: 18px;
+                            font-weight: 600;
+                            margin: 0;
+                            color: #333;
+                            text-transform: uppercase;
+                            letter-spacing: 1px;
+                        }
+                    }
+
+                    // Contact Details
+                    .contact-details {
+                        .contact-item {
+                            display: flex;
+                            align-items: flex-start;
+                            margin-bottom: 12px;
+
+                            .contact-icon {
+                                color: #26a69a;
+                                font-size: 14px;
+                                margin-right: 10px;
+                                margin-top: 3px;
+                            }
+
+                            span {
+                                font-size: 14px;
+                                line-height: 1.5;
+                                color: #555;
+                            }
+                        }
+                    }
+
+                    // Skills Content
+                    .skills-content {
+                        .skill-item {
+                            margin-bottom: 12px;
+
+                            .skill-info {
+                                display: flex;
+                                flex-direction: column;
+
+                                .skill-name {
+                                    font-size: 14px;
+                                    font-weight: 500;
+                                    margin-bottom: 5px;
+                                    color: #444;
+                                }
+
+                                .skill-rating {
+                                    .stars-container {
+                                        display: flex;
+
+                                        .star {
+                                            font-size: 12px;
+                                            margin-right: 2px;
+
+                                            &.filled {
+                                                color: #26a69a;
+                                            }
+
+                                            &.empty {
+                                                color: #e0e0e0;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Language Grid
+                    .language-grid {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 10px;
+
+                        .language-grid-item {
+                            padding: 10px;
+                            background-color: #fff;
+                            border-radius: 4px;
+                            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+                            .language-name {
+                                font-size: 14px;
+                                font-weight: 500;
+                                color: #444;
+                                margin-bottom: 5px;
+                            }
+
+                            .language-level {
+                                font-size: 12px;
+                                color: #26a69a;
+                                font-weight: 400;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Right Column (Main Content)
+            .cv26-right-column {
+                flex: 2;
+                padding: 30px 40px;
+
+                .cv26-section {
+                    margin-bottom: 30px;
+
+                    .section-header {
+                        display: flex;
+                        align-items: center;
+                        margin-bottom: 20px;
+                        border-bottom: 2px solid #f0f0f0;
+                        padding-bottom: 8px;
+
+                        .section-icon {
+                            color: #26a69a;
+                            font-size: 20px;
+                            margin-right: 10px;
+                        }
+
+                        h3 {
+                            font-size: 20px;
+                            font-weight: 600;
+                            margin: 0;
+                            color: #333;
+                            text-transform: uppercase;
+                            letter-spacing: 1px;
+                        }
+                    }
+
+                    // Summary Content
+                    .summary-content {
+                        p {
+                            font-size: 15px;
+                            line-height: 1.6;
+                            color: #555;
+                            margin: 0;
+                            white-space: pre-wrap;
+                        }
+                    }
+
+                    // Experience Timeline
+                    .experience-timeline {
+                        .experience-item {
+                            display: flex;
+                            margin-bottom: 25px;
+                            position: relative;
+
+                            .experience-period {
+                                width: 120px;
+                                flex-shrink: 0;
+
+                                span {
+                                    display: inline-block;
+                                    font-size: 13px;
+                                    font-weight: 500;
+                                    color: #26a69a;
+                                    background-color: rgba(38, 166, 154, 0.08);
+                                    padding: 4px 8px;
+                                    border-radius: 2px;
+                                }
+                            }
+
+                            .experience-details {
+                                flex: 1;
+                                position: relative;
+                                padding-left: 20px;
+                                padding-bottom: 5px;
+
+                                &:before {
+                                    content: '';
+                                    position: absolute;
+                                    left: 0;
+                                    top: 8px;
+                                    bottom: 0;
+                                    width: 2px;
+                                    background-color: #e0e0e0;
+                                }
+
+                                &:after {
+                                    content: '';
+                                    position: absolute;
+                                    left: -4px;
+                                    top: 8px;
+                                    width: 10px;
+                                    height: 10px;
+                                    border-radius: 50%;
+                                    background-color: #26a69a;
+                                }
+
+                                .experience-title {
+                                    font-size: 16px;
+                                    font-weight: 600;
+                                    margin: 0 0 5px;
+                                    color: #333;
+                                }
+
+                                .experience-company {
+                                    font-size: 14px;
+                                    font-weight: 500;
+                                    margin: 0 0 10px;
+                                    color: #555;
+                                }
+
+                                .experience-description {
+                                    font-size: 14px;
+                                    line-height: 1.5;
+                                    color: #666;
+                                    margin: 0;
+                                    white-space: pre-wrap;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/* Rich Text Support for CV26 */
+.cv26-board {
+    p {
+        strong,
+        b {
+            font-weight: bold;
+        }
+        em,
+        i {
+            font-style: italic;
+        }
+        u {
+            text-decoration: underline;
+        }
+        ul,
+        ol {
+            margin: 6px 0;
+            padding-left: 1em;
+        }
+        li {
+            display: list-item;
+            margin: 0.1em 0;
+            padding-left: 0.2em;
+        }
+        ul {
+            list-style-type: disc;
+        }
+        ol {
+            list-style-type: decimal;
+        }
+        ul ul {
+            list-style-type: circle;
+            margin: 1px 0;
+            padding-left: 0.8em;
+        }
+        ol ol {
+            list-style-type: lower-alpha;
+            margin: 1px 0;
+            padding-left: 0.8em;
+        }
+    }
+}
+
+@media print {
+    body {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .cv26-board {
+        box-shadow: none;
+    }
+}

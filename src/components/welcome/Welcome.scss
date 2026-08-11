@@ -1,0 +1,150 @@
+@use '../variables' as *;
+@use 'sass:color';
+.wrapper {
+    //height: 100%;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: row;
+
+    // Mobile responsiveness
+    @media (max-width: 640px) {
+        flex-direction: column;
+        min-height: 100vh;
+    }
+    .menuToggle {
+        position: absolute;
+        right: 40px;
+        top: 30px;
+        z-index: 10000;
+        .hamburgerImage {
+            width: 30px;
+            height: 30px;
+            fill: white;
+        }
+        a {
+            cursor: pointer;
+            color: white;
+        }
+    }
+    .menu {
+        width: 0px; // animate to 1200px on desktop
+        height: 0px; // animate to 1200px on desktop
+        background-color: white;
+        border-radius: 800px;
+        position: absolute;
+        right: -450px;
+        top: -450px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        align-items: flex-start;
+        z-index: 10000;
+    }
+
+    .menu-content {
+        width: 40%;
+        height: 40%;
+        display: flex;
+        opacity: 0;
+        justify-content: center;
+        position: absolute;
+        right: 100px !important;
+        top: 200px !important;
+        z-index: 10000;
+        align-items: center;
+        transform: translateX(100px) translateY(-100px);
+        ul {
+            list-style-type: none;
+            font-family: $font;
+            font-size: 23px;
+            cursor: pointer;
+            .menu-active {
+                color: black;
+            }
+            li {
+                a,
+                a:visited {
+                    color: rgb(172, 169, 169);
+                    text-decoration: none;
+                }
+                a:hover {
+                    color: black;
+                }
+            }
+            .closeImage {
+                width: 40px;
+                margin-top: 20px;
+                cursor: pointer;
+            }
+        }
+    }
+}
+.actions {
+    flex: 1;
+    min-width: 0;
+    overflow-x: hidden;
+    // height: 70vh;
+
+    // Mobile responsiveness
+    @media (max-width: 640px) {
+        width: 100%;
+        flex: none;
+    }
+}
+.right-panel {
+    flex: 1;
+    height: 100%;
+    min-width: 0;
+
+    // Mobile responsiveness
+    @media (max-width: 640px) {
+        // Use transform instead of display:none to allow boardShowed to work
+        transform: translateX(100vw);
+        transition: all 0.3s ease-in-out;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1000;
+
+        &.boardShowed {
+            transform: translateX(0px) !important;
+        }
+    }
+}
+.previewButton {
+    display: none;
+    background-color: $mobile-toggler-color;
+    height: 70px;
+    width: 70px;
+    border-radius: 100px;
+    position: fixed;
+    bottom: 40px;
+    right: 30px;
+    text-align: center;
+    cursor: pointer;
+    z-index: 1001; // Above the board panel
+    img {
+        width: 50%;
+        padding-top: 15px;
+    }
+
+    // Show on mobile screens
+    @media (max-width: 640px) {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+}
+
+.previewfade-appear {
+    transform: translateY(100px);
+}
+.previewfade-appear-active {
+    transform: translateY(0px);
+
+    transition: all 400ms;
+}

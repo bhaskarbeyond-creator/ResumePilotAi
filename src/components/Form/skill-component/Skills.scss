@@ -1,0 +1,112 @@
+.panel {
+    margin: 10px 0px;
+    border: 2px solid #f8fafe;
+    border-radius: 5px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    transition: all ease-in-out;
+    .panel-heading {
+        width: 100%;
+        display: flex;
+        transition: all ease-in-out;
+        .panel-title {
+            font-weight: 600;
+            font-size: 17px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .panel-subtitle {
+            width: 50%;
+            font-size: 15px;
+            margin-left: 20px;
+            color: #98a1b3;
+        }
+        .actionButtons {
+            margin-left: auto;
+            .cross {
+                height: 14px;
+                margin-right: 10px;
+            }
+        }
+        .panel-toggler {
+            align-self: center;
+            cursor: pointer;
+            transition: all 0.4s ease-in-out;
+        }
+        .panel-toggler-opened {
+            transform: rotate(180deg);
+        }
+    }
+
+    .skillHandleWrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 0px 20px;
+        margin-top: 29px;
+
+        .skill-slider-container {
+            position: relative;
+            width: 100%;
+            height: 50px;
+        }
+
+        .skill-progress-bar {
+            position: absolute;
+            height: 50px;
+            left: 0;
+            top: 0;
+            border-radius: 5px 0 0 5px;
+            z-index: 100;
+            pointer-events: none;
+            opacity: 1;
+            border-radius: 10px;
+        }
+
+        input {
+            // This is a range input
+            // i want you to style it like the skills input in resume.io range input
+
+            // 1. remove the default styling
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-color: red;
+            margin: 0px;
+            // 2. set the width and height
+            width: 100%;
+            height: 50px;
+            border-radius: 5px;
+            // 3. set the background color
+            background-color: #f1f0f3c6;
+            // 4. set the border
+            border: 1px solid transparent;
+            // 5. set the outline
+            outline: none;
+            // 6. set the transition
+            transition: all 0.2s ease-in-out;
+            position: relative;
+            z-index: 100;
+            // 7. set the value
+            &::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 100px;
+                height: 50px;
+                background: #7b7979;
+                cursor: pointer;
+                border-radius: 10px;
+                border: 1px solid transparent;
+                transition: all 0.2s ease-in-out;
+                position: relative;
+                z-index: 100;
+            }
+        }
+    }
+}
+
+.skill_slider {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}

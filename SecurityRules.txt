@@ -1,0 +1,253 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+  
+     function isAuthenticated(){
+       return request.auth != null;
+     }  
+     
+     function isA(){
+       return isAuthenticated() && 
+              exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isA == true;
+     }
+ 
+     // Users Collection - Fixed to prevent circular dependency
+     match /users/{userId} {
+       allow read: if isAuthenticated();
+       allow create: if isAuthenticated();
+       allow update: if isAuthenticated() && (request.auth.uid == userId || isA());
+       allow delete: if isA();
+     }
+     
+     match /users/{userId}/{resumes=**} {
+       allow read, update, delete: if isAuthenticated() && request.auth.uid == userId;
+       allow create: if isAuthenticated();
+     }
+     
+     match /users/{userId}/{covers=**} {
+       allow read, update, delete: if isAuthenticated() && request.auth.uid == userId;
+       allow create: if isAuthenticated();
+     }
+     
+     // User favorites subcollection
+     match /users/{userId}/favourites/{favouriteId} {
+       allow read, write: if isAuthenticated() && request.auth.uid == userId;
+     }
+
+    // Employer Applications Collection
+    match /employerApplications/{applicationId} {
+      allow create: if isAuthenticated() && request.auth.uid == applicationId &&
+                       request.resource.data.userId == request.auth.uid;
+      allow read: if isAuthenticated() && request.auth.uid == applicationId;
+      allow read, update: if isA();
+      allow update: if false;
+      allow delete: if isA();
+    }
+
+    // Companies Collection
+    match /companies/{companyId} {
+      // Only authenticated employers can create companies
+      allow create: if isAuthenticated() && 
+                       request.resource.data.employerId == request.auth.uid &&
+                       exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isEmployer == true;
+      
+      // Company owners can read and update their own companies
+      allow read, update: if isAuthenticated() && 
+                             resource.data.employerId == request.auth.uid;
+      
+      // Admins can read, update, and delete any company
+      allow read, update, delete: if isA();
+      
+      // Public read access for approved companies (for job listings)
+      allow read: if resource.data.status == 'approved';
+    }
+
+     // Jobs Collection - Allow public read access, authenticated write access
+     match /jobs/{jobId} {
+       allow read: if true; // Anyone can view jobs
+       allow write: if isAuthenticated(); // Only authenticated users can create/update jobs
+     }
+
+     // Job Applications Collection
+     match /jobApplications/{applicationId} {
+       allow read, write: if isAuthenticated();
+     }
+     
+     // Portfolio rules for user's portfolio subcollection
+     match /users/{userId}/portfolios/{portfolioId} {
+       allow read, write, update, delete: if isAuthenticated() && request.auth.uid == userId;
+       allow create: if isAuthenticated() && request.auth.uid == userId;
+     }
+     
+     // Main portfolios collection rules
+     match /portfolios/{portfolioId} {
+       allow read: if resource.data.isPublished == true || 
+                      (isAuthenticated() && request.auth.uid == resource.data.userId);
+       allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
+       allow update, delete: if isAuthenticated() && request.auth.uid == resource.data.userId;
+     }
+  
+     match /data/id {
+       allow read, write, update;
+     }
+     
+     match /ads/{ads} {
+       allow read;
+       allow write: if isA();
+     }
+     
+     match /pages/{pages} {
+       allow read;
+       allow write: if isA();
+     }
+     
+     match /pb/{pb} {
+       allow read, write;
+     }
+     
+     match /pbc/{pbc} {
+       allow read, write;
+     }
+     
+    match /data/stats {
+      allow write;
+      allow read: if isA();
+    }
+    
+    match /data/frontendstats {
+      allow read;
+      allow write: if isA();
+    }
+     
+     match /data/details {
+       allow read;
+       allow write: if isA();
+     }
+     
+     match /data/meta {
+       allow read;
+       allow write: if isA();
+     }
+     
+     match /data/system_settings {
+       allow read;
+       allow write: if isA();
+     }
+     
+     match /subscriptions/{subscriptions} {
+       allow write;
+       allow read: if isA();
+     }
+     
+     match /data/subscriptions {
+       allow read;
+       allow write: if isA();
+     }
+     
+     match /categories/{categories} {
+       allow read;
+       allow write, delete, update: if isA();
+     }
+     
+     match /reviews/{reviews} {
+       allow read;
+       allow write, delete, update: if isA();
+     }
+     
+     match /trustedBy/{trustedBy} {
+       allow read;
+       allow write, delete, update: if isA();
+     }
+     
+     match /data/earnings {
+       allow read, write;
+     }
+     
+     match /contact/{contacts} {
+       allow read: if isA();
+       allow write;
+     }
+     
+     match /data/social {
+       allow read;
+       allow write: if isA();
+     }
+     
+    // Notifications Collection
+    match /notifications/{userId} {
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+      
+      match /userNotifications/{notificationId} {
+        allow read: if isAuthenticated() && request.auth.uid == userId;
+        allow write: if isAuthenticated() && request.auth.uid == userId;
+        // Allow employers to create notifications for candidates (for job application updates)
+        allow create: if isAuthenticated() && 
+                         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isEmployer == true;
+      }
+    }
+
+    // ==================== BLOG COLLECTIONS ====================
+    
+    // Blog Posts Collection
+    match /blog_posts/{postId} {
+      // Public read access for approved posts
+      allow read: if resource.data.status == 'approved';
+      
+      // Authenticated users can read their own posts regardless of status
+      allow read: if isAuthenticated() && request.auth.uid == resource.data.authorUid;
+      
+      // Admins can read all posts
+      allow read: if isA();
+      
+      // Authenticated users can create posts (they will be set to 'pending' status)
+      allow create: if isAuthenticated() && 
+                       request.resource.data.authorUid == request.auth.uid &&
+                       request.resource.data.status == 'pending' &&
+                       request.resource.data.keys().hasAll(['title', 'content', 'slug', 'categoryId']) &&
+                       request.resource.data.title is string &&
+                       request.resource.data.title.size() > 0 &&
+                       request.resource.data.title.size() <= 200 &&
+                       request.resource.data.content is string &&
+                       request.resource.data.content.size() > 0 &&
+                       request.resource.data.slug is string &&
+                       request.resource.data.slug.size() > 0;
+      
+      // Authors can update their own posts, but only if status is 'pending' or 'rejected'
+      // They cannot change status, authorUid, or createdAt
+      allow update: if isAuthenticated() && 
+                       request.auth.uid == resource.data.authorUid &&
+                       (resource.data.status == 'pending' || resource.data.status == 'rejected') &&
+                       request.resource.data.authorUid == resource.data.authorUid &&
+                       request.resource.data.status == resource.data.status &&
+                       request.resource.data.createdAt == resource.data.createdAt;
+      
+      // Admins can update any post (including status changes)
+      allow update: if isA();
+      
+      // Only admins can delete posts
+      allow delete: if isA();
+    }
+    
+    // Blog Categories Collection
+    match /blog_categories/{categoryId} {
+      // Public read access for all categories
+      allow read: if true;
+      
+      // Only admins can create, update, or delete categories
+      allow create, update, delete: if isA();
+    }
+    
+    // Blog Settings (stored in data collection)
+    match /data/blog_settings {
+      // Public read access for blog settings
+      allow read: if true;
+      
+      // Only admins can update blog settings
+      allow write: if isA();
+    }
+  }
+}
