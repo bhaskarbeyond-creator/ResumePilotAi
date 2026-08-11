@@ -9,6 +9,7 @@ import AiRecommendationModal from '../../Form/AiRecommendationModal';
 import BulletPointsEditor from '../../Form/BulletPointsEditor';
 import AutocompleteInputField from '../../BuildResume/steps/components/AutocompleteInputField';
 import ImageCropModal from './ImageCropModal';
+import SubscriptionModal from './SubscriptionModal';
 import { inferCountryFromCity } from '../../../utils/locationHelper';
 
 function DashboardSettings(props) {
@@ -53,6 +54,7 @@ function DashboardSettings(props) {
     const [deleteAccountModalOpen, setDeleteAccountModalOpen] = useState(false);
     const [deleteInputText, setDeleteInputText] = useState('');
     const [userTransactions, setUserTransactions] = useState([]);
+    const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
 
     // Master Profile State matching ALL Resume & Cover Letter fields
     const [profile, setProfile] = useState({
@@ -1756,12 +1758,13 @@ function DashboardSettings(props) {
                                     <p className="text-xs text-slate-300 font-normal">Active access to unlimited AI resumes, cover letters &amp; job tracking tools.</p>
                                 </div>
                             </div>
-                            <a
-                                href="/billing/plans"
-                                className="px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => setIsSubscriptionModalOpen(true)}
+                                className="px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer">
                                 <FaCrown className="w-3.5 h-3.5 text-amber-300" />
                                 <span>Manage Subscription &amp; Plans</span>
-                            </a>
+                            </button>
                         </div>
 
                         {/* Card 2: Account Credentials & Password Change Form */}
@@ -2065,6 +2068,13 @@ function DashboardSettings(props) {
                 </div>
             </div>
         )}
+
+        {/* Native In-Dashboard Subscription Plans & Checkout Modal Popup */}
+        <SubscriptionModal
+            isOpen={isSubscriptionModalOpen}
+            onClose={() => setIsSubscriptionModalOpen(false)}
+            user={fire.auth().currentUser}
+        />
         </>
     );
 }
