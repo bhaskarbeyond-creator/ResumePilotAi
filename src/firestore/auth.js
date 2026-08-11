@@ -36,20 +36,50 @@ export async function testFirebaseRules() {
 async function addUser(userId, firstname, lastname, email) {
     const db = fire.firestore();
     try {
-        // Checking if user exists
+        // Checking if user doc for this UID already exists
         const userRef = db.collection('users').doc(userId);
         const snapshot = await userRef.get();
         
         if (!snapshot.exists) {
-            // Create user document
+            // Before creating a new doc, check if another user doc with the same email exists.
+            // This handles the case where the same person signs in via a different auth provider
+            // (e.g., Email/Password first, then Google OAuth) — Firebase creates separate UIDs
+            // for each provider, but we want to preserve their existing membership/plan data.
+            let existingMembership = 'Basic';
+            let existingData = {};
+            
+            if (email) {
+                try {
+                    const existingUserQuery = await db.collection('users')
+                        .where('email', '==', email.toLowerCase().trim())
+                        .limit(1)
+                        .get();
+                    
+                    if (!existingUserQuery.empty) {
+                        const existingDoc = existingUserQuery.docs[0];
+                        existingData = existingDoc.data();
+                        existingMembership = existingData.membership || 'Basic';
+                        console.log(`🔗 Found existing user doc for email ${email} (UID: ${existingDoc.id}). Copying membership: ${existingMembership}`);
+                    }
+                } catch (queryError) {
+                    console.warn('⚠️ Could not check for existing user by email:', queryError.message);
+                    // Continue with Basic membership as fallback
+                }
+            }
+
+            // Create user document, inheriting membership from any existing account with same email
             await db.collection('users')
                 .doc(userId)
                 .set({
                     userId: userId,
-                    firstname: firstname,
-                    lastname: lastname,
+                    firstname: existingData.firstname || firstname,
+                    lastname: existingData.lastname || lastname,
                     email: email,
-                    membership: 'Basic',
+                    membership: existingMembership,
+                    // Preserve premium expiry and admin status from existing account
+                    ...(existingData.membershipEnds ? { membershipEnds: existingData.membershipEnds } : {}),
+                    ...(existingData.isA ? { isA: existingData.isA } : {}),
+                    ...(existingData.profile ? { profile: existingData.profile } : {}),
                 });
             
             // Update user stats
@@ -71,7 +101,7 @@ async function addUser(userId, firstname, lastname, email) {
                     }
                 });
             
-            console.log('✅ User created successfully:', userId);
+            console.log('✅ User created successfully:', userId, '| Membership:', existingMembership);
             return { success: true, message: 'User created successfully' };
         } else {
             console.log('ℹ️ User already exists:', userId);

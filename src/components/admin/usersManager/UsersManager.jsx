@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
-import { getAllUsers, getUserById, setUserAdminStatus, makeUserAdminByEmail, deleteUserByAdmin, updateUserSubscription, toggleUserSuspension } from '../../../firestore/dbOperations';
+import { getAllUsers, getUserById, setUserAdminStatus, makeUserAdminByEmail, deleteUserByAdmin, updateUserSubscription, toggleUserSuspension, mergeUserAccounts } from '../../../firestore/dbOperations';
 import fire from '../../../conf/fire';
 import { Navigate } from 'react-router-dom';
-import { FaUsers, FaSearch, FaCrown, FaUser, FaEnvelope, FaCheck, FaShieldAlt, FaUserPlus, FaSpinner, FaTimes, FaTrashAlt, FaEdit, FaBan, FaCheckCircle, FaLock } from 'react-icons/fa';
+import { FaUsers, FaSearch, FaCrown, FaUser, FaEnvelope, FaCheck, FaShieldAlt, FaUserPlus, FaSpinner, FaTimes, FaTrashAlt, FaEdit, FaBan, FaCheckCircle, FaLock, FaExclamationTriangle, FaLink } from 'react-icons/fa';
 
 class UsersManager extends Component {
     constructor(props) {
@@ -17,6 +17,8 @@ class UsersManager extends Component {
             statusMessage: null,
             userToDelete: null, // confirmation modal target
             isDeleting: false,
+            mergeTarget: null, // { keepId, deleteId, email } for merge modal
+            isMerging: false,
             /// Selected User data for edit redirect
             selectedId: null,
             selectedEmail: null,
@@ -253,6 +255,43 @@ class UsersManager extends Component {
         }
     }
 
+    // Compute duplicate emails from current rows
+    getDuplicateEmails() {
+        if (!this.state.rows) return new Set();
+        const emailCount = {};
+        this.state.rows.forEach(row => {
+            if (row.email && row.email !== 'Not Provided') {
+                const key = row.email.toLowerCase().trim();
+                emailCount[key] = (emailCount[key] || 0) + 1;
+            }
+        });
+        return new Set(Object.keys(emailCount).filter(e => emailCount[e] > 1));
+    }
+
+    // Handle merge: keep the account with higher-tier membership, delete the other
+    async handleMergeAccounts() {
+        if (!this.state.mergeTarget) return;
+        const { keepId, deleteId } = this.state.mergeTarget;
+        this.setState({ isMerging: true });
+        try {
+            const res = await mergeUserAccounts(keepId, deleteId);
+            if (res.success) {
+                this.setState({
+                    statusMessage: { type: 'success', text: res.message },
+                    mergeTarget: null,
+                });
+                this.showTable();
+            } else {
+                this.setState({ statusMessage: { type: 'error', text: res.error }, mergeTarget: null });
+            }
+        } catch (err) {
+            this.setState({ statusMessage: { type: 'error', text: err.message }, mergeTarget: null });
+        } finally {
+            this.setState({ isMerging: false });
+            setTimeout(() => this.setState({ statusMessage: null }), 5000);
+        }
+    }
+
     componentDidMount() {
         this.showTable();
     }
@@ -302,6 +341,58 @@ class UsersManager extends Component {
                                 >
                                     {this.state.isDeleting ? <FaSpinner className="w-4 h-4 animate-spin" /> : <FaTrashAlt className="w-4 h-4" />}
                                     <span>Delete Account</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Merge Confirmation Modal */}
+                {this.state.mergeTarget && (
+                    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
+                            <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 mb-4 mx-auto">
+                                <FaLink className="w-6 h-6" />
+                            </div>
+                            <h3 className="text-lg font-bold text-slate-900 text-center mb-2">Merge Duplicate Accounts</h3>
+                            <p className="text-sm text-slate-500 text-center mb-4">
+                                Two accounts found for <strong className="text-slate-800">{this.state.mergeTarget.keepEmail}</strong>. The merge will combine membership data and delete the duplicate.
+                            </p>
+                            <div className="grid grid-cols-2 gap-3 mb-6">
+                                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-center">
+                                    <div className="text-[10px] font-bold text-emerald-700 uppercase mb-1">✅ Keeping</div>
+                                    <div className="text-xs font-mono text-slate-600 mb-1">{this.state.mergeTarget.keepId?.slice(0, 12)}...</div>
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${this.state.mergeTarget.keepPlan === 'Premium' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}`}>
+                                        {this.state.mergeTarget.keepPlan} {this.state.mergeTarget.keepIsA ? '+ Admin' : ''}
+                                    </span>
+                                </div>
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
+                                    <div className="text-[10px] font-bold text-red-700 uppercase mb-1">🗑️ Deleting</div>
+                                    <div className="text-xs font-mono text-slate-600 mb-1">{this.state.mergeTarget.deleteId?.slice(0, 12)}...</div>
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${this.state.mergeTarget.deletePlan === 'Premium' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}`}>
+                                        {this.state.mergeTarget.deletePlan} {this.state.mergeTarget.deleteIsA ? '+ Admin' : ''}
+                                    </span>
+                                </div>
+                            </div>
+                            <p className="text-[11px] text-slate-400 text-center mb-4">
+                                Admin status, premium membership, and expiry dates will be merged into the kept account.
+                            </p>
+                            <div className="flex items-center space-x-3">
+                                <button
+                                    type="button"
+                                    onClick={() => this.setState({ mergeTarget: null })}
+                                    className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-lg transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => this.handleMergeAccounts()}
+                                    disabled={this.state.isMerging}
+                                    className="flex-1 px-4 py-2.5 bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center space-x-2"
+                                >
+                                    {this.state.isMerging ? <FaSpinner className="w-4 h-4 animate-spin" /> : <FaLink className="w-4 h-4" />}
+                                    <span>Merge Accounts</span>
                                 </button>
                             </div>
                         </div>
@@ -365,11 +456,11 @@ class UsersManager extends Component {
                         </div>
                         <div className="bg-slate-50 rounded-lg p-4">
                             <div className="flex items-center space-x-2">
-                                <FaCheck className="w-4 h-4 text-emerald-500" />
-                                <span className="text-sm text-slate-600">Status</span>
+                                <FaExclamationTriangle className={`w-4 h-4 ${this.getDuplicateEmails().size > 0 ? 'text-orange-500' : 'text-emerald-500'}`} />
+                                <span className="text-sm text-slate-600">Duplicates</span>
                             </div>
-                            <p className="text-lg font-semibold text-slate-900">
-                                {this.state.showUsers ? 'Loaded' : 'Ready'}
+                            <p className={`text-lg font-semibold ${this.getDuplicateEmails().size > 0 ? 'text-orange-600' : 'text-slate-900'}`}>
+                                {this.getDuplicateEmails().size > 0 ? `${this.getDuplicateEmails().size} email(s)` : 'None'}
                             </p>
                         </div>
                     </div>
@@ -500,8 +591,9 @@ class UsersManager extends Component {
                                 <tbody className="bg-white divide-y divide-slate-200">
                                     {this.state.rows?.map((row, index) => {
                                         const isSelf = this.isSelfAccount(row.id, row.email);
+                                        const isDuplicate = row.email && row.email !== 'Not Provided' && this.getDuplicateEmails().has(row.email.toLowerCase().trim());
                                         return (
-                                            <tr key={row.id || index} className={`hover:bg-slate-50 transition-colors duration-150 ${row.suspended ? 'bg-rose-50/30' : ''}`}>
+                                            <tr key={row.id || index} className={`hover:bg-slate-50 transition-colors duration-150 ${row.suspended ? 'bg-rose-50/30' : ''} ${isDuplicate ? 'bg-orange-50/60 border-l-4 border-l-orange-400' : ''}`}>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="flex items-center">
                                                         <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center mr-3">
@@ -513,11 +605,16 @@ class UsersManager extends Component {
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-slate-900 font-medium flex items-center space-x-2">
+                                                    <div className="text-sm text-slate-900 font-medium flex items-center space-x-2 flex-wrap gap-1">
                                                         <span>{row.email}</span>
                                                         {isSelf && (
                                                             <span className="px-2 py-0.5 text-[10px] bg-blue-100 text-blue-700 font-semibold rounded-md border border-blue-200">
                                                                 (You)
+                                                            </span>
+                                                        )}
+                                                        {isDuplicate && (
+                                                            <span className="px-2 py-0.5 text-[10px] bg-orange-100 text-orange-700 font-bold rounded-md border border-orange-300 flex items-center gap-0.5">
+                                                                <FaExclamationTriangle className="w-2.5 h-2.5" /> DUPLICATE
                                                             </span>
                                                         )}
                                                     </div>
@@ -610,6 +707,38 @@ class UsersManager extends Component {
                                                             <FaCrown className="w-3 h-3" />
                                                             <span>{row.subscription === 'Premium' ? 'Set Basic' : 'Set Premium'}</span>
                                                         </button>
+
+                                                        {/* Merge Duplicate Action */}
+                                                        {isDuplicate && !isSelf && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    // Find the other account with the same email
+                                                                    const duplicates = this.state.rows.filter(r => r.email && r.email.toLowerCase().trim() === row.email.toLowerCase().trim());
+                                                                    if (duplicates.length === 2) {
+                                                                        // Determine which to keep: prefer Premium, then admin
+                                                                        const tierRank = (r) => (r.subscription === 'Premium' ? 10 : 0) + (r.isA ? 5 : 0);
+                                                                        const sorted = [...duplicates].sort((a, b) => tierRank(b) - tierRank(a));
+                                                                        this.setState({
+                                                                            mergeTarget: {
+                                                                                keepId: sorted[0].id,
+                                                                                deleteId: sorted[1].id,
+                                                                                keepEmail: sorted[0].email,
+                                                                                keepPlan: sorted[0].subscription,
+                                                                                keepIsA: sorted[0].isA,
+                                                                                deletePlan: sorted[1].subscription,
+                                                                                deleteIsA: sorted[1].isA,
+                                                                            }
+                                                                        });
+                                                                    }
+                                                                }}
+                                                                className="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-orange-50 text-orange-700 hover:bg-orange-100 border border-orange-300 transition-colors flex items-center space-x-1"
+                                                                title="Merge this duplicate account"
+                                                            >
+                                                                <FaLink className="w-3 h-3 text-orange-600" />
+                                                                <span>Merge</span>
+                                                            </button>
+                                                        )}
 
                                                         {/* Edit Action */}
                                                         <button

@@ -550,6 +550,76 @@ export async function makeUserAdminByEmail(email) {
     }
 }
 
+// Merge duplicate user accounts (same email, different UIDs).
+// Keeps the "primary" account (with better membership) and deletes the "duplicate".
+// Merges admin status, membership tier, expiry, and profile data from both accounts.
+export async function mergeUserAccounts(keepUserId, deleteUserId) {
+    const db = fire.firestore();
+    try {
+        const keepRef = db.collection('users').doc(keepUserId);
+        const deleteRef = db.collection('users').doc(deleteUserId);
+        const [keepSnap, deleteSnap] = await Promise.all([keepRef.get(), deleteRef.get()]);
+
+        if (!keepSnap.exists || !deleteSnap.exists) {
+            return { success: false, error: 'One or both user documents do not exist.' };
+        }
+
+        const keepData = keepSnap.data();
+        const deleteData = deleteSnap.data();
+
+        // Merge strategy: take the "best" value from either account
+        const mergedUpdate = {};
+
+        // Admin status: if either account is admin, keep admin
+        if (deleteData.isA && !keepData.isA) {
+            mergedUpdate.isA = true;
+        }
+
+        // Membership: Premium wins over Basic
+        const tierRank = (m) => (m && m.toLowerCase().includes('premium') ? 2 : 1);
+        if (tierRank(deleteData.membership) > tierRank(keepData.membership)) {
+            mergedUpdate.membership = deleteData.membership;
+        }
+
+        // Membership expiry: keep the later date
+        const keepExpiry = keepData.membershipEnds?.toDate ? keepData.membershipEnds.toDate() : (keepData.membershipEnds ? new Date(keepData.membershipEnds) : null);
+        const deleteExpiry = deleteData.membershipEnds?.toDate ? deleteData.membershipEnds.toDate() : (deleteData.membershipEnds ? new Date(deleteData.membershipEnds) : null);
+        if (deleteExpiry && (!keepExpiry || deleteExpiry > keepExpiry)) {
+            mergedUpdate.membershipEnds = deleteData.membershipEnds;
+        }
+
+        // Merge profile data (keep existing, fill gaps)
+        if (deleteData.profile && typeof deleteData.profile === 'object') {
+            mergedUpdate.profile = { ...(deleteData.profile), ...(keepData.profile || {}) };
+        }
+
+        // Fill missing name
+        if (!keepData.firstname && deleteData.firstname) mergedUpdate.firstname = deleteData.firstname;
+        if (!keepData.lastname && deleteData.lastname) mergedUpdate.lastname = deleteData.lastname;
+
+        // Apply merged updates to the keeper account
+        if (Object.keys(mergedUpdate).length > 0) {
+            await keepRef.set(mergedUpdate, { merge: true });
+        }
+
+        // Delete the duplicate account's Firestore doc
+        await deleteRef.delete();
+
+        // Decrement user count
+        try {
+            await db.collection('data').doc('stats').update({
+                numberOfUsers: fire.firestore.FieldValue.increment(-1),
+            });
+        } catch (e) { /* stats doc may not exist */ }
+
+        console.log(`✅ Merged user ${deleteUserId} into ${keepUserId}`);
+        return { success: true, message: `Accounts merged successfully. Kept UID: ${keepUserId}` };
+    } catch (error) {
+        console.error('❌ Error merging users:', error);
+        return { success: false, error: error.message };
+    }
+}
+
 // Function to delete user record from Firestore by Admin
 export async function deleteUserByAdmin(userId) {
     const db = fire.firestore();
