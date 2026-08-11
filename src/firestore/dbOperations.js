@@ -2234,8 +2234,8 @@ export function settWebsiteData(title, description, keywords, language, disabled
     });
 }
 
-// Set Subscriptions Data
-export function setSubscriptionsData(state, month, quartarly, yearly, onlyPP, currency, razorpayUPI = true) {
+// Set Subscriptions Data (Enterprise Grade)
+export function setSubscriptionsData(state, month, quartarly, yearly, onlyPP, currency, razorpayUPI = true, options = {}) {
     const subData = {
         state: state,
         monthlyPrice: month,
@@ -2244,6 +2244,10 @@ export function setSubscriptionsData(state, month, quartarly, yearly, onlyPP, cu
         onlyPP: onlyPP,
         currency: currency,
         razorpayUPI: razorpayUPI,
+        stripeEnabled: options.stripeEnabled !== undefined ? options.stripeEnabled : true,
+        paypalEnabled: options.paypalEnabled !== undefined ? options.paypalEnabled : true,
+        razorpayEnabled: options.razorpayEnabled !== undefined ? options.razorpayEnabled : true,
+        sandboxMode: options.sandboxMode !== undefined ? options.sandboxMode : false,
     };
     try {
         if (typeof window !== 'undefined') {
@@ -2292,6 +2296,10 @@ export async function getSubscriptionStatus() {
         onlyPP: false,
         currency: 'INR',
         razorpayUPI: true,
+        stripeEnabled: true,
+        paypalEnabled: true,
+        razorpayEnabled: true,
+        sandboxMode: false,
     };
 }
 

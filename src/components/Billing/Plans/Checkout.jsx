@@ -781,68 +781,88 @@ class Checkout extends Component {
                                                 <p className="text-gray-600">{t('checkout.paymentMethod.description', "Choose how you'd like to pay.")}</p>
                                             </div>
 
-                                            <div className="space-y-4">
-                                                <div
-                                                    className={`flex items-center justify-between p-4 border ${
-                                                        this.state.paymentMethod === 'creditCard' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
-                                                    } rounded-lg cursor-pointer`}
-                                                    onClick={() => this.setState({ paymentMethod: 'creditCard' })}>
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-12 h-8 bg-gray-100 rounded-md flex items-center justify-center">
-                                                            <svg className="w-6 h-6 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-                                                                <path d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm0 2h12v1H4V6zm0 3h12v5H4V9z" />
-                                                            </svg>
-                                                        </div>
+                                            {/* Sandbox / Demo Mode Banner */}
+                                            {this.props.sandboxMode && (
+                                                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between shadow-2xs">
+                                                    <div className="flex items-center space-x-3">
+                                                        <span className="text-lg">⚡</span>
                                                         <div>
-                                                            <h3 className="font-medium text-gray-900">{t('checkout.paymentMethod.cardTitle', 'Credit / Debit Card')}</h3>
-                                                            <p className="text-sm text-gray-500">{t('checkout.paymentMethod.cardDescription', 'Visa, Mastercard, American Express')}</p>
+                                                            <p className="text-xs font-extrabold text-amber-900 uppercase tracking-wider">Sandbox / Demo Test Mode Active</p>
+                                                            <p className="text-xs text-amber-700">Simulating payment activation flow. No real charges will be processed.</p>
                                                         </div>
                                                     </div>
-                                                    <div
-                                                        className={`w-5 h-5 rounded-full ${
-                                                            this.state.paymentMethod === 'creditCard' ? 'bg-blue-500' : 'border border-gray-300'
-                                                        } flex items-center justify-center`}>
-                                                        {this.state.paymentMethod === 'creditCard' && (
-                                                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                                                <path
-                                                                    fillRule="evenodd"
-                                                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                                    clipRule="evenodd"
-                                                                />
-                                                            </svg>
-                                                        )}
-                                                    </div>
+                                                    <span className="px-2.5 py-1 bg-amber-200 text-amber-900 text-[10px] font-extrabold rounded-md uppercase">DEMO</span>
                                                 </div>
+                                            )}
 
-                                                <div
-                                                    className={`flex items-center justify-between p-4 border ${
-                                                        this.state.paymentMethod === 'paypal' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
-                                                    } rounded-lg cursor-pointer`}
-                                                    onClick={() => this.setState({ paymentMethod: 'paypal' })}>
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-12 h-8 bg-gray-100 rounded-md flex items-center justify-center">
-                                                            <img src={PayPalLogo} alt="PayPal" className="h-5 object-contain" />
-                                                        </div>
-                                                        <div>
-                                                            <h3 className="font-medium text-gray-900">{t('checkout.paymentMethod.paypalTitle', 'PayPal')}</h3>
-                                                            <p className="text-sm text-gray-500">{t('checkout.paymentMethod.paypalDescription', 'Pay with your PayPal account')}</p>
-                                                        </div>
-                                                    </div>
+                                            <div className="space-y-4">
+                                                {/* Stripe Credit/Debit Card Option */}
+                                                {(this.props.stripeEnabled !== false && !this.props.onlyPP) && (
                                                     <div
-                                                        className={`w-5 h-5 rounded-full ${
-                                                            this.state.paymentMethod === 'paypal' ? 'bg-blue-500' : 'border border-gray-300'
-                                                        } flex items-center justify-center`}>
-                                                        {this.state.paymentMethod === 'paypal' && (
-                                                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                                                <path
-                                                                    fillRule="evenodd"
-                                                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                                    clipRule="evenodd"
-                                                                />
-                                                            </svg>
-                                                        )}
+                                                        className={`flex items-center justify-between p-4 border ${
+                                                            this.state.paymentMethod === 'creditCard' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                                                        } rounded-lg cursor-pointer`}
+                                                        onClick={() => this.setState({ paymentMethod: 'creditCard' })}>
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-12 h-8 bg-gray-100 rounded-md flex items-center justify-center">
+                                                                <svg className="w-6 h-6 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                                                                    <path d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm0 2h12v1H4V6zm0 3h12v5H4V9z" />
+                                                                </svg>
+                                                            </div>
+                                                            <div>
+                                                                <h3 className="font-medium text-gray-900">{t('checkout.paymentMethod.cardTitle', 'Credit / Debit Card')}</h3>
+                                                                <p className="text-sm text-gray-500">{t('checkout.paymentMethod.cardDescription', 'Visa, Mastercard, American Express')}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div
+                                                            className={`w-5 h-5 rounded-full ${
+                                                                this.state.paymentMethod === 'creditCard' ? 'bg-blue-500' : 'border border-gray-300'
+                                                            } flex items-center justify-center`}>
+                                                            {this.state.paymentMethod === 'creditCard' && (
+                                                                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                                    <path
+                                                                        fillRule="evenodd"
+                                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                                        clipRule="evenodd"
+                                                                    />
+                                                                </svg>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                </div>
+                                                )}
+
+                                                {/* PayPal Option */}
+                                                {this.props.paypalEnabled !== false && (
+                                                    <div
+                                                        className={`flex items-center justify-between p-4 border ${
+                                                            this.state.paymentMethod === 'paypal' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                                                        } rounded-lg cursor-pointer`}
+                                                        onClick={() => this.setState({ paymentMethod: 'paypal' })}>
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-12 h-8 bg-gray-100 rounded-md flex items-center justify-center">
+                                                                <img src={PayPalLogo} alt="PayPal" className="h-5 object-contain" />
+                                                            </div>
+                                                            <div>
+                                                                <h3 className="font-medium text-gray-900">{t('checkout.paymentMethod.paypalTitle', 'PayPal')}</h3>
+                                                                <p className="text-sm text-gray-500">{t('checkout.paymentMethod.paypalDescription', 'Pay with your PayPal account')}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div
+                                                            className={`w-5 h-5 rounded-full ${
+                                                                this.state.paymentMethod === 'paypal' ? 'bg-blue-500' : 'border border-gray-300'
+                                                            } flex items-center justify-center`}>
+                                                            {this.state.paymentMethod === 'paypal' && (
+                                                                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                                    <path
+                                                                        fillRule="evenodd"
+                                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                                        clipRule="evenodd"
+                                                                    />
+                                                                </svg>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <div className="pt-6 border-t border-gray-100 flex items-center gap-4">

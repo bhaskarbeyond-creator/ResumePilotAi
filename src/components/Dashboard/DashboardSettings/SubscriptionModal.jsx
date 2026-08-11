@@ -40,6 +40,10 @@ const SubscriptionModal = ({ isOpen, onClose, user }) => {
                         symbol: currSymbol,
                         onlyPP: Boolean(data.onlyPP),
                         razorpayUPI: Boolean(data.razorpayUPI),
+                        stripeEnabled: data.stripeEnabled !== undefined ? Boolean(data.stripeEnabled) : true,
+                        paypalEnabled: data.paypalEnabled !== undefined ? Boolean(data.paypalEnabled) : true,
+                        razorpayEnabled: data.razorpayEnabled !== undefined ? Boolean(data.razorpayEnabled) : true,
+                        sandboxMode: Boolean(data.sandboxMode),
                         isLoading: false
                     });
                 }
@@ -160,6 +164,10 @@ const SubscriptionModal = ({ isOpen, onClose, user }) => {
                                                     currency={subscriptionConfig.symbol}
                                                     currencyCode={currencyCode}
                                                     onlyPP={subscriptionConfig.onlyPP}
+                                                    stripeEnabled={subscriptionConfig.stripeEnabled}
+                                                    paypalEnabled={subscriptionConfig.paypalEnabled}
+                                                    razorpayEnabled={subscriptionConfig.razorpayEnabled}
+                                                    sandboxMode={subscriptionConfig.sandboxMode}
                                                     previousStep={previousStep}
                                                     stripe={stripe}
                                                     elements={elements}
