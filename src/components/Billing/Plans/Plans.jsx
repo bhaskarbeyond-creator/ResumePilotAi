@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { FaCrown, FaCheck, FaShieldAlt, FaLock, FaCreditCard, FaPaypal, FaRupeeSign, FaTag, FaPercent, FaArrowRight, FaUserCheck, FaGift, FaCheckCircle, FaExclamationTriangle, FaClock, FaSparkles, FaArrowLeft } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { FaCrown, FaCheck, FaShieldAlt, FaLock, FaCreditCard, FaPaypal, FaRupeeSign, FaTag, FaPercent, FaArrowRight, FaUserCheck, FaGift, FaCheckCircle, FaExclamationTriangle, FaClock, FaSparkles, FaArrowLeft, FaCalendarAlt } from 'react-icons/fa';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, ElementsConsumer } from '@stripe/react-stripe-js';
 import { PayPalScriptProvider } from '@paypal/react-paypal-js';
 import conf from '../../../conf/configuration';
 import Checkout from './Checkout';
-import { getSubscriptionStatus, getAccountInfo } from '../../../firestore/dbOperations';
+import { getSubscriptionStatus } from '../../../firestore/dbOperations';
+import { getUserMembership } from '../../../firestore/paidOperations';
 import fire from '../../../conf/fire';
 import HomepageNavbar from '../../Dashboard2/elements/HomepageNavbar';
 import HomepageFooter from '../../Dashboard2/elements/HomepageFooter';
@@ -43,7 +44,9 @@ const PlansPage = (props) => {
     const [couponInput, setCouponInput] = useState('');
     const [appliedCoupon, setAppliedCoupon] = useState(null);
     const [couponError, setCouponError] = useState('');
-    const [userCurrentMembership, setUserCurrentMembership] = useState('Free Basic Tier');
+    const [userCurrentMembership, setUserCurrentMembership] = useState('Loading Tier...');
+    const [membershipExpiry, setMembershipExpiry] = useState('');
+    const [candidateName, setCandidateName] = useState('');
     const [userEmail, setUserEmail] = useState('');
 
     // Classic Public View State (for /billing/plans)
@@ -66,16 +69,48 @@ const PlansPage = (props) => {
     });
 
     useEffect(() => {
-        const currentUser = fire.auth().currentUser;
-        if (currentUser) {
-            setUserEmail(currentUser.email || '');
-            getAccountInfo(currentUser.uid).then((info) => {
-                if (info && info.membership) {
-                    setUserCurrentMembership(info.membership);
+        // Realtime Auth State Listener for robust dynamic details
+        const unsubscribe = fire.auth().onAuthStateChanged((currentUser) => {
+            if (currentUser) {
+                setUserEmail(currentUser.email || '');
+                if (currentUser.displayName) {
+                    setCandidateName(currentUser.displayName);
                 }
-            });
-        }
 
+                // Query Firestore user doc for exact dynamic tier & expiry
+                getUserMembership(currentUser.uid).then((data) => {
+                    if (data) {
+                        const rawTier = data.membership || data.profile?.membership || 'Basic';
+                        const isPremium = rawTier.toLowerCase().includes('premium') || rawTier.toLowerCase().includes('pro');
+                        const activeTierText = isPremium ? `${rawTier.toUpperCase()} PRO TIER` : 'FREE BASIC TIER';
+                        setUserCurrentMembership(activeTierText);
+
+                        if (data.firstname || data.lastname) {
+                            setCandidateName(`${data.firstname || ''} ${data.lastname || ''}`.trim());
+                        }
+
+                        if (data.membershipEnds) {
+                            try {
+                                const expiryDate = data.membershipEnds.toDate ? data.membershipEnds.toDate() : new Date(data.membershipEnds);
+                                if (!isNaN(expiryDate.getTime())) {
+                                    setMembershipExpiry(expiryDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }));
+                                }
+                            } catch (err) {
+                                console.error('Error parsing expiry date:', err);
+                            }
+                        }
+                    } else {
+                        setUserCurrentMembership('FREE BASIC TIER');
+                    }
+                }).catch(() => {
+                    setUserCurrentMembership('FREE BASIC TIER');
+                });
+            } else {
+                setUserCurrentMembership('GUEST / VISITOR');
+            }
+        });
+
+        // Global Subscription Config
         getSubscriptionStatus().then((data) => {
             if (data) {
                 const currSymbol = (data.currency === 'INR' || data.currency === '₹') ? '₹' : '$';
@@ -95,6 +130,8 @@ const PlansPage = (props) => {
                 });
             }
         });
+
+        return () => unsubscribe();
     }, []);
 
     // Classic Public View Handlers
@@ -232,9 +269,19 @@ const PlansPage = (props) => {
                             <div>
                                 <div className="flex items-center gap-2">
                                     <h1 className="text-xl font-extrabold text-slate-900">PRO Membership &amp; Subscription Plans</h1>
-                                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase">
+                                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border uppercase ${
+                                        userCurrentMembership.includes('PRO')
+                                            ? 'bg-amber-50 text-amber-800 border-amber-300'
+                                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                    }`}>
                                         Active Tier: {userCurrentMembership}
                                     </span>
+                                    {membershipExpiry && (
+                                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200 flex items-center gap-1">
+                                            <FaCalendarAlt className="w-2.5 h-2.5 text-slate-400" />
+                                            Expires: {membershipExpiry}
+                                        </span>
+                                    )}
                                 </div>
                                 <p className="text-xs text-slate-500 mt-0.5">Upgrade your account to unlock unlimited AI resumes, cover letters, and priority export tools.</p>
                             </div>
@@ -253,16 +300,16 @@ const PlansPage = (props) => {
                             {/* Current Plan vs PRO Upgrade Hero Comparison Card */}
                             <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-6 text-white border border-indigo-500/30 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-6 shadow-md">
                                 <div className="space-y-2 min-w-0">
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 flex-wrap">
                                         <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-800 text-slate-300 border border-slate-700 uppercase">
-                                            Logged in as: {userEmail || 'Candidate'}
+                                            Account: {candidateName ? `${candidateName} (${userEmail})` : userEmail || 'Candidate'}
                                         </span>
                                         <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase">
                                             INSTANT ACTIVATION
                                         </span>
                                     </div>
                                     <h3 className="text-xl font-extrabold text-white tracking-tight">
-                                        Upgrade to <strong className="text-amber-400">AI Resume Builder PRO</strong>
+                                        Upgrade from <span className="text-slate-300 underline font-semibold">{userCurrentMembership}</span> to <strong className="text-amber-400">AI Resume Builder PRO</strong>
                                     </h3>
                                     <p className="text-xs text-slate-300">
                                         Unlock full AI power, unlimited exports, ATS optimization, and VIP candidate support.
