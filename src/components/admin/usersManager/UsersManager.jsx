@@ -71,7 +71,7 @@ class UsersManager extends Component {
         return { id, email, subscription, isA, suspended: Boolean(suspended), rawElement };
     }
 
-    // Load users from Firestore
+    // Load users from Firestore and run autonomous background deduplication if duplicates exist
     showTable() {
         getAllUsers().then((value) => {
             if (!value) return;
@@ -88,7 +88,47 @@ class UsersManager extends Component {
                     )
                 );
             });
-            this.setState({ rows: Rows, showUsers: true });
+            this.setState({ rows: Rows, showUsers: true }, () => {
+                // Autonomous Deduplication: Automatically merge any duplicates found in the background
+                const duplicates = this.getDuplicateEmails();
+                if (duplicates.size > 0 && !this.isAutoMerging) {
+                    this.isAutoMerging = true;
+                    console.log(`⚡ Autonomous System: Auto-merging ${duplicates.size} duplicate email group(s)...`);
+                    bulkMergeDuplicateUsers().then((res) => {
+                        if (res.totalMerged > 0) {
+                            // Re-fetch users & backups to reflect clean deduplicated state
+                            getAllUsers().then((newValue) => {
+                                const cleanRows = [];
+                                newValue.forEach((el) => {
+                                    cleanRows.push(
+                                        this.createData(
+                                            el.userId,
+                                            el.email !== undefined ? el.email : 'Not Provided',
+                                            el.membership !== undefined ? el.membership : 'Basic',
+                                            Boolean(el.isA),
+                                            Boolean(el.suspended),
+                                            el
+                                        )
+                                    );
+                                });
+                                this.setState({
+                                    rows: cleanRows,
+                                    statusMessage: {
+                                        type: 'success',
+                                        text: `⚡ Autonomous Auto-Merge System: Cleaned up ${res.totalMerged} duplicate account(s). Full restore backups saved to Backup History.`
+                                    }
+                                });
+                                this.loadBackups();
+                                setTimeout(() => this.setState({ statusMessage: null }), 6000);
+                            });
+                        }
+                    }).catch(err => {
+                        console.warn('Auto-merge background error:', err);
+                    }).finally(() => {
+                        this.isAutoMerging = false;
+                    });
+                }
+            });
         }).catch(err => {
             console.error('Error fetching users:', err);
         });

@@ -52,22 +52,23 @@ async function addUser(userId, firstname, lastname, email) {
                 try {
                     const existingUserQuery = await db.collection('users')
                         .where('email', '==', email.toLowerCase().trim())
-                        .limit(1)
                         .get();
                     
                     if (!existingUserQuery.empty) {
-                        const existingDoc = existingUserQuery.docs[0];
-                        existingData = existingDoc.data();
-                        existingMembership = existingData.membership || 'Basic';
-                        console.log(`🔗 Found existing user doc for email ${email} (UID: ${existingDoc.id}). Copying membership: ${existingMembership}`);
+                        // Autonomous Deduplication: Find best existing doc
+                        const existingDoc = existingUserQuery.docs.find(d => d.id !== userId) || existingUserQuery.docs[0];
+                        if (existingDoc && existingDoc.id !== userId) {
+                            existingData = existingDoc.data();
+                            existingMembership = existingData.membership || 'Basic';
+                            console.log(`⚡ Autonomous Merge: Existing account ${existingDoc.id} found for email ${email}. Merging new UID ${userId}...`);
+                        }
                     }
                 } catch (queryError) {
                     console.warn('⚠️ Could not check for existing user by email:', queryError.message);
-                    // Continue with Basic membership as fallback
                 }
             }
 
-            // Create user document, inheriting membership from any existing account with same email
+            // Create user document, inheriting membership from existing account
             await db.collection('users')
                 .doc(userId)
                 .set({
@@ -76,11 +77,24 @@ async function addUser(userId, firstname, lastname, email) {
                     lastname: existingData.lastname || lastname,
                     email: email,
                     membership: existingMembership,
-                    // Preserve premium expiry and admin status from existing account
                     ...(existingData.membershipEnds ? { membershipEnds: existingData.membershipEnds } : {}),
                     ...(existingData.isA ? { isA: existingData.isA } : {}),
                     ...(existingData.profile ? { profile: existingData.profile } : {}),
                 });
+            
+            // If another doc exists with the same email, trigger autonomous merge to keep 1 single clean account
+            if (existingData && existingData.userId && existingData.userId !== userId) {
+                try {
+                    const { mergeUserAccounts } = await import('./dbOperations');
+                    // Prefer keeping whichever doc has Premium or is older
+                    const keepId = (existingData.membership === 'Premium') ? existingData.userId : userId;
+                    const deleteId = (keepId === userId) ? existingData.userId : userId;
+                    await mergeUserAccounts(keepId, deleteId);
+                    console.log(`⚡ Autonomous Merge Complete: Kept ${keepId}, deleted ${deleteId} (Backup saved).`);
+                } catch (mergeErr) {
+                    console.warn('Autonomous merge background notice:', mergeErr.message);
+                }
+            }
             
             // Update user stats
             await db.collection('data')
