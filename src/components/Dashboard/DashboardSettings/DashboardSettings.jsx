@@ -419,7 +419,7 @@ function DashboardSettings(props) {
                         <tbody>
                             <tr>
                                 <td style="font-weight: bold;">${txn.planType || 'Pro Membership Plan'}</td>
-                                <td>${txn.paimentType || 'Card / PayPal / Razorpay'}</td>
+                                <td>${txn.paymentType || txn.paimentType || 'Card / PayPal / Razorpay'}</td>
                                 <td style="text-align: right; font-weight: bold;">${currency}${subtotal}</td>
                             </tr>
                         </tbody>

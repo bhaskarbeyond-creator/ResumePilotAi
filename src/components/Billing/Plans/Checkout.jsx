@@ -135,6 +135,12 @@ class Checkout extends Component {
             isLoading: false,
             showMobileSummary: false,
             animating: false,
+            // Form validation
+            validationErrors: { Country: '', 'Postal Code': '' },
+            // In-app toast notification (replaces alert())
+            toast: { show: false, type: 'error', message: '' },
+            // Stripe idempotency key — generated once per checkout attempt
+            idempotencyKey: `ck_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
             taxConfig: {
                 enableTax: true,
                 taxName: 'GST',
@@ -149,6 +155,7 @@ class Checkout extends Component {
         this.handleSubmit = this.handleSubmit.bind(this);
         this.handlePayPalSuccess = this.handlePayPalSuccess.bind(this);
         this.handlePayPalError = this.handlePayPalError.bind(this);
+        this._toastTimer = null;
     }
 
     componentDidMount() {
@@ -167,13 +174,52 @@ class Checkout extends Component {
                 });
             }
         });
+
+        // PhonePe callback handler — restore pending order after redirect
+        try {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('phonepe_callback') === '1') {
+                const raw = sessionStorage.getItem('phonepe_pending');
+                if (raw) {
+                    const pending = JSON.parse(raw);
+                    sessionStorage.removeItem('phonepe_pending');
+                    // Clean URL params without reload
+                    const cleanUrl = window.location.origin + window.location.pathname;
+                    window.history.replaceState({}, '', cleanUrl);
+
+                    const currentUser = this.getCurrentUser();
+                    const uid = (currentUser && currentUser.uid) || pending.uid;
+                    if (uid) {
+                        const { plan, amount, taxCalc, currency, customerTaxId, orderId } = pending;
+                        addSbs(plan, 'PhonePe', new Date(), amount, uid, {
+                            subtotal: taxCalc.subtotal, taxAmount: taxCalc.taxAmount, taxRate: taxCalc.taxRate,
+                            taxName: taxCalc.taxName, companyTaxId: taxCalc.companyTaxId,
+                            customerTaxId: customerTaxId || '', currency: currency || 'INR',
+                            phonepeOrderId: orderId,
+                        }).then(() => {
+                            this.setState({ step: 3 });
+                            this.showToast('success', 'PhonePe payment verified & subscription activated!');
+                        }).catch((err) => {
+                            this.showToast('error', 'PhonePe callback processing failed: ' + err.message);
+                        });
+                    }
+                }
+            }
+        } catch (e) { /* sessionStorage may be unavailable */ }
+    }
+
+    componentWillUnmount() {
+        if (this._toastTimer) clearTimeout(this._toastTimer);
     }
 
     componentDidUpdate(prevProps) {
         if (
             prevProps.stripeEnabled !== this.props.stripeEnabled ||
             prevProps.paypalEnabled !== this.props.paypalEnabled ||
-            prevProps.onlyPP !== this.props.onlyPP
+            prevProps.onlyPP !== this.props.onlyPP ||
+            prevProps.razorpayEnabled !== this.props.razorpayEnabled ||
+            prevProps.paytmEnabled !== this.props.paytmEnabled ||
+            prevProps.phonepeEnabled !== this.props.phonepeEnabled
         ) {
             this.syncPaymentMethod();
         }
@@ -183,19 +229,24 @@ class Checkout extends Component {
         const isStripeAllowed = this.props.stripeEnabled !== false && !this.props.onlyPP;
         const isPayPalAllowed = this.props.paypalEnabled !== false;
         const isRazorpayAllowed = this.props.razorpayEnabled !== false;
+        const isPaytmAllowed = this.props.paytmEnabled === true;
+        const isPhonePeAllowed = this.props.phonepeEnabled === true;
 
-        if (this.state.paymentMethod === 'creditCard' && !isStripeAllowed) {
-            if (isPayPalAllowed) this.setState({ paymentMethod: 'paypal' });
-            else if (isRazorpayAllowed) this.setState({ paymentMethod: 'razorpay' });
-            else this.setState({ paymentMethod: '' });
-        } else if (this.state.paymentMethod === 'paypal' && !isPayPalAllowed) {
-            if (isStripeAllowed) this.setState({ paymentMethod: 'creditCard' });
-            else if (isRazorpayAllowed) this.setState({ paymentMethod: 'razorpay' });
-            else this.setState({ paymentMethod: '' });
-        } else if (this.state.paymentMethod === 'razorpay' && !isRazorpayAllowed) {
-            if (isStripeAllowed) this.setState({ paymentMethod: 'creditCard' });
-            else if (isPayPalAllowed) this.setState({ paymentMethod: 'paypal' });
-            else this.setState({ paymentMethod: '' });
+        // Build ordered priority list of allowed gateways
+        const allowed = [];
+        if (isStripeAllowed) allowed.push('creditCard');
+        if (isPayPalAllowed) allowed.push('paypal');
+        if (isRazorpayAllowed) allowed.push('razorpay');
+        if (isPaytmAllowed) allowed.push('paytm');
+        if (isPhonePeAllowed) allowed.push('phonepe');
+
+        const currentMethod = this.state.paymentMethod;
+        if (currentMethod && !allowed.includes(currentMethod)) {
+            // Current selection is now disabled — fall back to first available
+            this.setState({ paymentMethod: allowed[0] || '' });
+        } else if (!currentMethod && allowed.length > 0) {
+            // No selection yet — auto-select first available
+            this.setState({ paymentMethod: allowed[0] });
         }
     }
 
@@ -231,7 +282,23 @@ class Checkout extends Component {
     }
 
     handleInput(name, event) {
-        this.setState({ [name]: event.target ? event.target.value : event });
+        const value = event.target ? event.target.value : event;
+        this.setState((prev) => ({
+            [name]: value,
+            // Clear validation error for this field when user types
+            validationErrors: { ...prev.validationErrors, [name]: '' },
+        }));
+    }
+
+    // ── In-app toast system (replaces all native alert() calls) ──────────────
+    showToast(type, message) {
+        if (this._toastTimer) clearTimeout(this._toastTimer);
+        this.setState({ toast: { show: true, type, message } });
+        this._toastTimer = setTimeout(() => this.dismissToast(), 6000);
+    }
+
+    dismissToast() {
+        this.setState({ toast: { show: false, type: 'error', message: '' } });
     }
 
     getCurrentUser() {
@@ -275,7 +342,7 @@ class Checkout extends Component {
 
         const currentUser = this.getCurrentUser();
         if (!currentUser || !currentUser.uid) {
-            alert('User authentication error. Please sign in and try again.');
+            this.showToast('error', 'Session expired. Please sign in and try again.');
             return;
         }
         const uid = currentUser.uid;
@@ -292,14 +359,16 @@ class Checkout extends Component {
                     address: {
                         line1: this.state.Address || 'Billing Address',
                         postal_code: this.state['Postal Code'] || '000000',
-                        country: 'US',
+                        country: this.state.Country
+                            ? this.state.Country.substring(0, 2).toUpperCase()
+                            : (this.props.currencyCode === 'INR' ? 'IN' : this.props.currencyCode === 'GBP' ? 'GB' : 'US'),
                     },
                 },
             });
 
             if (error) {
                 console.error('Stripe Payment Method Error:', error);
-                alert(error.message);
+                this.showToast('error', error.message || 'Card validation failed. Please check your details.');
                 this.setState({ isLoading: false });
                 return;
             }
@@ -311,12 +380,14 @@ class Checkout extends Component {
             const taxCalc = this.getTaxCalculations(basePrice);
             const apiBase = `${conf.provider || 'http'}://${conf.backendUrl}`;
 
-            // Step 1: Create Stripe Payment Intent on backend
+            // Step 1: Create Stripe Payment Intent on backend (with idempotency key)
             const payRes = await axios.post(`${apiBase}/api/pay`, {
                 price: taxCalc.totalPrice,
                 userId: uid,
                 plan: this.props.selectedPlan,
                 currency: this.props.currencyCode || 'USD',
+            }, {
+                headers: { 'Idempotency-Key': this.state.idempotencyKey },
             });
 
             const clientSecret = payRes.data?.client_secret;
@@ -331,13 +402,13 @@ class Checkout extends Component {
 
             if (confirmError) {
                 console.error('Stripe Confirm Payment Error:', confirmError);
-                alert(confirmError.message || 'Payment confirmation failed.');
+                this.showToast('error', confirmError.message || 'Payment confirmation failed. Please try again.');
                 this.setState({ isLoading: false });
                 return;
             }
 
             if (paymentIntent.status !== 'succeeded') {
-                alert(`Payment was not completed (Status: ${paymentIntent.status}). Please try again.`);
+                this.showToast('warning', `Payment not completed (Status: ${paymentIntent.status}). Please try again.`);
                 this.setState({ isLoading: false });
                 return;
             }
@@ -356,14 +427,14 @@ class Checkout extends Component {
             this.setState({ step: 3, isLoading: false });
         } catch (err) {
             console.error('Unexpected Submit Error:', err);
-            alert(err.response?.data?.error || err.message || 'An unexpected error occurred. Please try again.');
+            this.showToast('error', err.response?.data?.error || err.message || 'An unexpected error occurred. Please try again.');
             this.setState({ isLoading: false });
         }
     }
 
     handlePayPalSuccess = async (details) => {
         const currentUser = this.getCurrentUser();
-        if (!currentUser || !currentUser.uid) { alert('User authentication error. Please refresh and try again.'); return; }
+        if (!currentUser || !currentUser.uid) { this.showToast('error', 'Session expired. Please refresh and try again.'); return; }
         const uid = currentUser.uid;
         const basePrice = this.props.selectedPlan == 'monthly' ? this.props.monthly
             : this.props.selectedPlan == 'halfYear' ? this.props.quartarly
@@ -400,12 +471,12 @@ class Checkout extends Component {
 
     handlePayPalError = (error) => {
         console.error('PayPal payment failed:', error);
-        alert(this.props.t('billing.error.paypal', 'PayPal payment failed. Please try again.'));
+        this.showToast('error', 'PayPal payment failed or was cancelled. Please try again.');
     };
 
     handleRazorpayPayment = async () => {
         const currentUser = this.getCurrentUser();
-        if (!currentUser || !currentUser.uid) { alert('User authentication error. Please refresh and try again.'); return; }
+        if (!currentUser || !currentUser.uid) { this.showToast('error', 'Session expired. Please refresh and try again.'); return; }
         const uid = currentUser.uid;
         this.setState({ isLoading: true });
 
@@ -468,7 +539,7 @@ class Checkout extends Component {
                         this.setState({ step: 3, isLoading: false });
                     } catch (err) {
                         console.error('Razorpay verification error:', err);
-                        alert('Payment verification failed: ' + (err.response?.data?.error || err.message));
+                        this.showToast('error', 'Payment verification failed: ' + (err.response?.data?.error || err.message));
                         this.setState({ isLoading: false });
                     }
                 },
@@ -488,13 +559,216 @@ class Checkout extends Component {
             rzp.open();
         } catch (err) {
             console.error('Razorpay initiation error:', err);
-            alert(err.response?.data?.error || err.message || 'Failed to initialize Razorpay checkout');
+            this.showToast('error', err.response?.data?.error || err.message || 'Failed to initialize Razorpay. Please retry.');
             this.setState({ isLoading: false });
         }
     };
 
-    nextStep() { this.setState((prev) => ({ step: prev.step + 1 })); }
-    previousStep() { this.setState((prev) => ({ step: prev.step - 1 })); }
+    handlePaytmPayment = async () => {
+        const currentUser = this.getCurrentUser();
+        if (!currentUser || !currentUser.uid) { this.showToast('error', 'Session expired. Please refresh and try again.'); return; }
+        const uid = currentUser.uid;
+        this.setState({ isLoading: true });
+
+        try {
+            const basePrice = this.props.selectedPlan === 'monthly' ? this.props.monthly
+                : this.props.selectedPlan === 'halfYear' ? this.props.quartarly
+                : this.props.yearly;
+            const taxCalc = this.getTaxCalculations(basePrice);
+            const apiBase = `${conf.provider || 'http'}://${conf.backendUrl}`;
+            const orderId = `PAYTM_${uid.slice(0, 8)}_${Date.now()}`;
+
+            const txnRes = await axios.post(`${apiBase}/api/paytm/initiate-transaction`, {
+                amount: taxCalc.totalPrice,
+                orderId,
+                userId: uid,
+                plan: this.props.selectedPlan,
+                currency: this.props.currencyCode || 'INR',
+            });
+
+            const txnData = txnRes.data;
+
+            if (txnData.demoMode) {
+                // Demo mode — simulate success after a brief delay
+                await new Promise(r => setTimeout(r, 1500));
+                trackSubscription(this.props.selectedPlan, taxCalc.totalPrice);
+                trackEvent('subscription_purchase', 'Billing', this.props.selectedPlan, taxCalc.totalPrice);
+                trackEngagement('purchase_completed', { plan_type: this.props.selectedPlan, payment_method: 'Paytm (Demo)', amount: taxCalc.totalPrice, user_id: uid });
+                await addSbs(this.props.selectedPlan, 'Paytm', new Date(), taxCalc.totalPrice, uid, {
+                    subtotal: taxCalc.subtotal, taxAmount: taxCalc.taxAmount, taxRate: taxCalc.taxRate,
+                    taxName: taxCalc.taxName, companyTaxId: taxCalc.companyTaxId,
+                    customerTaxId: this.state.customerTaxId || '', currency: this.props.currencyCode || 'INR',
+                    paytmOrderId: orderId, paytmTxnId: txnData.txnToken, demoMode: true,
+                });
+                this.setState({ step: 3, isLoading: false });
+                return;
+            }
+
+            if (!txnData.success || !txnData.txnToken) {
+                throw new Error(txnData.error || 'Paytm transaction initiation failed');
+            }
+
+            // Load Paytm Checkout SDK dynamically
+            const paytmEnv = txnData.isLive ? 'securegw.paytm.in' : 'securegw-stage.paytm.in';
+            await new Promise((resolve, reject) => {
+                const s = document.createElement('script');
+                s.src = `https://${paytmEnv}/merchantpgpui/checkoutjs/merchants/${txnData.mid}.js`;
+                s.crossOrigin = 'anonymous';
+                s.onload = resolve;
+                s.onerror = () => reject(new Error('Failed to load Paytm checkout SDK'));
+                document.body.appendChild(s);
+            });
+
+            const config = {
+                root: '',
+                flow: 'DEFAULT',
+                data: {
+                    orderId: txnData.orderId,
+                    token: txnData.txnToken,
+                    tokenType: 'TXN_TOKEN',
+                    amount: txnData.amount,
+                },
+                handler: {
+                    notifyMerchant: (eventName, data) => {
+                        if (eventName === 'SESSION_EXPIRED') {
+                            this.showToast('warning', 'Paytm session expired. Please go back and try again.');
+                            this.setState({ isLoading: false });
+                        }
+                    },
+                    transactionStatus: async (data) => {
+                        try {
+                            await axios.post(`${apiBase}/api/paytm/verify-transaction`, {
+                                orderId: txnData.orderId,
+                                txnId: data.TXNID,
+                            });
+                            trackSubscription(this.props.selectedPlan, taxCalc.totalPrice);
+                            trackEvent('subscription_purchase', 'Billing', this.props.selectedPlan, taxCalc.totalPrice);
+                            trackEngagement('purchase_completed', { plan_type: this.props.selectedPlan, payment_method: 'Paytm', amount: taxCalc.totalPrice, user_id: uid });
+                            await addSbs(this.props.selectedPlan, 'Paytm', new Date(), taxCalc.totalPrice, uid, {
+                                subtotal: taxCalc.subtotal, taxAmount: taxCalc.taxAmount, taxRate: taxCalc.taxRate,
+                                taxName: taxCalc.taxName, companyTaxId: taxCalc.companyTaxId,
+                                customerTaxId: this.state.customerTaxId || '', currency: this.props.currencyCode || 'INR',
+                                paytmOrderId: txnData.orderId, paytmTxnId: data.TXNID,
+                            });
+                            this.setState({ step: 3, isLoading: false });
+                        } catch (err) {
+                            this.showToast('error', 'Paytm payment verification failed: ' + err.message);
+                            this.setState({ isLoading: false });
+                        }
+                    },
+                },
+            };
+
+            if (window.Paytm && window.Paytm.CheckoutJS) {
+                window.Paytm.CheckoutJS.init(config).then(() => window.Paytm.CheckoutJS.invoke()).catch(err => {
+                    throw err;
+                });
+            } else {
+                throw new Error('Paytm CheckoutJS SDK not loaded properly.');
+            }
+        } catch (err) {
+            console.error('Paytm initiation error:', err);
+            this.showToast('error', err.response?.data?.error || err.message || 'Failed to initialize Paytm. Please retry.');
+            this.setState({ isLoading: false });
+        }
+    };
+
+    handlePhonePePayment = async () => {
+        const currentUser = this.getCurrentUser();
+        if (!currentUser || !currentUser.uid) { this.showToast('error', 'Session expired. Please refresh and try again.'); return; }
+        const uid = currentUser.uid;
+        this.setState({ isLoading: true });
+
+        try {
+            const basePrice = this.props.selectedPlan === 'monthly' ? this.props.monthly
+                : this.props.selectedPlan === 'halfYear' ? this.props.quartarly
+                : this.props.yearly;
+            const taxCalc = this.getTaxCalculations(basePrice);
+            const apiBase = `${conf.provider || 'http'}://${conf.backendUrl}`;
+            const orderId = `PP_${uid.slice(0, 8)}_${Date.now()}`;
+
+            const ppRes = await axios.post(`${apiBase}/api/phonepe/initiate`, {
+                amount: taxCalc.totalPrice,
+                orderId,
+                userId: uid,
+                plan: this.props.selectedPlan,
+                currency: this.props.currencyCode || 'INR',
+                redirectUrl: `${window.location.origin}/billing/plans?phonepe_callback=1&order=${orderId}`,
+            });
+
+            const ppData = ppRes.data;
+
+            if (ppData.demoMode) {
+                // Demo mode — simulate success flow
+                await new Promise(r => setTimeout(r, 1500));
+                trackSubscription(this.props.selectedPlan, taxCalc.totalPrice);
+                trackEvent('subscription_purchase', 'Billing', this.props.selectedPlan, taxCalc.totalPrice);
+                trackEngagement('purchase_completed', { plan_type: this.props.selectedPlan, payment_method: 'PhonePe (Demo)', amount: taxCalc.totalPrice, user_id: uid });
+                await addSbs(this.props.selectedPlan, 'PhonePe', new Date(), taxCalc.totalPrice, uid, {
+                    subtotal: taxCalc.subtotal, taxAmount: taxCalc.taxAmount, taxRate: taxCalc.taxRate,
+                    taxName: taxCalc.taxName, companyTaxId: taxCalc.companyTaxId,
+                    customerTaxId: this.state.customerTaxId || '', currency: this.props.currencyCode || 'INR',
+                    phonepeOrderId: orderId, demoMode: true,
+                });
+                this.setState({ step: 3, isLoading: false });
+                return;
+            }
+
+            if (!ppData.success || !ppData.redirectUrl) {
+                throw new Error(ppData.error || 'PhonePe payment initiation failed');
+            }
+
+            // Store pending order context in sessionStorage for callback handling
+            try {
+                sessionStorage.setItem('phonepe_pending', JSON.stringify({
+                    orderId, uid, plan: this.props.selectedPlan, amount: taxCalc.totalPrice,
+                    taxCalc: { subtotal: taxCalc.subtotal, taxAmount: taxCalc.taxAmount, taxRate: taxCalc.taxRate,
+                        taxName: taxCalc.taxName, companyTaxId: taxCalc.companyTaxId },
+                    currency: this.props.currencyCode || 'INR',
+                    customerTaxId: this.state.customerTaxId || ''
+                }));
+            } catch (e) { /* sessionStorage may be unavailable in some environments */ }
+
+            // Redirect to PhonePe-hosted payment page
+            window.location.href = ppData.redirectUrl;
+        } catch (err) {
+            console.error('PhonePe initiation error:', err);
+            this.showToast('error', err.response?.data?.error || err.message || 'Failed to initialize PhonePe. Please retry.');
+            this.setState({ isLoading: false });
+        }
+    };
+
+    nextStep() {
+        const { step } = this.state;
+        // Step 0 validation: Country and Postal Code are required
+        if (step === 0) {
+            const errors = {};
+            if (!this.state.Country || !this.state.Country.trim()) {
+                errors['Country'] = 'Please select your country / region.';
+            }
+            if (!this.state['Postal Code'] || !this.state['Postal Code'].trim()) {
+                errors['Postal Code'] = 'Please enter a valid postal / zip code.';
+            }
+            if (Object.keys(errors).length > 0) {
+                this.setState({ validationErrors: errors });
+                this.showToast('error', 'Please fill in all required billing fields before continuing.');
+                return;
+            }
+        }
+        // Step 1 validation: a payment method must be selected
+        if (step === 1 && !this.state.paymentMethod) {
+            this.showToast('error', 'Please select a payment method before continuing.');
+            return;
+        }
+        // Generate a fresh idempotency key each time user reaches step 2
+        if (step === 1) {
+            this.setState({ idempotencyKey: `ck_${Date.now()}_${Math.random().toString(36).slice(2, 9)}` });
+        }
+        this.setState((prev) => ({ step: prev.step + 1 }));
+    }
+    previousStep() {
+        this.setState((prev) => ({ step: prev.step - 1, validationErrors: { Country: '', 'Postal Code': '' } }));
+    }
 
     getPrice() {
         return this.props.selectedPlan == 'monthly' ? this.props.monthly
@@ -609,19 +883,36 @@ class Checkout extends Component {
         );
     }
 
+    renderToast() {
+        const { toast } = this.state;
+        if (!toast || !toast.show) return null;
+        const isError = toast.type === 'error';
+        const isWarning = toast.type === 'warning';
+        return (
+            <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl transition-all duration-300 transform translate-y-0 animate-bounce-short ${
+                isError ? 'bg-rose-900/95 text-rose-100 border border-rose-700/60' :
+                isWarning ? 'bg-amber-900/95 text-amber-100 border border-amber-700/60' :
+                'bg-emerald-900/95 text-emerald-100 border border-emerald-700/60'
+            }`} style={{ backdropFilter: 'blur(12px)', maxWidth: '420px', boxShadow: '0 20px 50px rgba(0,0,0,0.4)' }}>
+                <span className="text-xl shrink-0">{isError ? '⚠️' : isWarning ? '⚡' : '✅'}</span>
+                <div className="flex-1 text-xs font-bold leading-relaxed">{toast.message}</div>
+                <button type="button" onClick={() => this.dismissToast()} className="text-white/60 hover:text-white font-bold text-sm ml-2 p-1">✕</button>
+            </div>
+        );
+    }
+
     render() {
         const { t } = this.props;
         const isEmbedded = this.props.embedded === true;
         const price = this.getPrice();
         const planTitle = this.getPlanLabel();
 
-        // In embedded mode, skip the full-page dark outer shell.
-        // The Plans.jsx wrapper already provides a card container.
-        if (isEmbedded) {
-            return this.renderEmbedded(price, planTitle);
-        }
-
-        return this.renderStandalone(price, planTitle);
+        return (
+            <React.Fragment>
+                {this.renderToast()}
+                {isEmbedded ? this.renderEmbedded(price, planTitle) : this.renderStandalone(price, planTitle)}
+            </React.Fragment>
+        );
     }
 
     renderStandalone(price, planTitle) {
@@ -774,6 +1065,11 @@ class Checkout extends Component {
                                                             name="Country"
                                                             options={this.countries}
                                                         />
+                                                        {this.state.validationErrors['Country'] && (
+                                                            <p className="text-xs font-bold text-rose-500 mt-1.5 flex items-center gap-1">
+                                                                ⚠️ {this.state.validationErrors['Country']}
+                                                            </p>
+                                                        )}
                                                     </div>
                                                     <div>
                                                         <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-2">
@@ -783,24 +1079,54 @@ class Checkout extends Component {
                                                             type="text"
                                                             placeholder="Enter postal / zip code"
                                                             onChange={(e) => this.handleInput('Postal Code', e)}
-                                                            className="checkout-input"
+                                                            className={`checkout-input ${this.state.validationErrors['Postal Code'] ? 'border-rose-500 bg-rose-50/30' : ''}`}
                                                         />
+                                                        {this.state.validationErrors['Postal Code'] && (
+                                                            <p className="text-xs font-bold text-rose-500 mt-1.5 flex items-center gap-1">
+                                                                ⚠️ {this.state.validationErrors['Postal Code']}
+                                                            </p>
+                                                        )}
                                                     </div>
                                                 </div>
 
                                                 {/* Tax ID */}
                                                 {this.state.taxConfig.enableTax && (
                                                     <div>
-                                                        <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-2">
-                                                            Business {this.state.taxConfig.taxName}IN / Tax ID <span className="text-slate-400 font-normal normal-case">(Optional — for B2B invoices)</span>
+                                                        <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-2 flex items-center justify-between">
+                                                            <span>Business {this.state.taxConfig.taxName}IN / Tax ID <span className="text-slate-400 font-normal normal-case">(Optional — for B2B invoices)</span></span>
+                                                            {this.state.customerTaxId && (
+                                                                <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
+                                                                    this.state.customerTaxId.length === 15 && /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(this.state.customerTaxId)
+                                                                        ? 'bg-emerald-100 text-emerald-700'
+                                                                        : 'bg-amber-100 text-amber-800'
+                                                                }`}>
+                                                                    {this.state.customerTaxId.length === 15 && /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(this.state.customerTaxId)
+                                                                        ? 'VALID B2B GSTIN ✓'
+                                                                        : `${this.state.customerTaxId.length}/15 chars`}
+                                                                </span>
+                                                            )}
                                                         </label>
                                                         <input
                                                             type="text"
                                                             value={this.state.customerTaxId}
-                                                            onChange={(e) => this.setState({ customerTaxId: e.target.value })}
-                                                            placeholder={`Enter your ${this.state.taxConfig.taxName} registration number`}
-                                                            className="checkout-input"
+                                                            onChange={(e) => {
+                                                                const val = e.target.value.toUpperCase().trim();
+                                                                let err = '';
+                                                                if (val.length > 0 && val.length !== 15) {
+                                                                    err = 'GSTIN must be 15 alphanumeric characters (e.g. 27AAAAA0000A1Z5)';
+                                                                } else if (val.length === 15 && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(val)) {
+                                                                    err = 'Invalid GSTIN structure. Verify state code & PAN digits.';
+                                                                }
+                                                                this.setState({ customerTaxId: val, gstinError: err });
+                                                            }}
+                                                            placeholder={`Enter 15-character ${this.state.taxConfig.taxName} number (e.g. 27AAAAA0000A1Z5)`}
+                                                            className={`checkout-input uppercase font-mono ${this.state.gstinError ? 'border-amber-400 bg-amber-50/20' : ''}`}
                                                         />
+                                                        {this.state.gstinError && (
+                                                            <p className="text-[11px] font-bold text-amber-600 mt-1 flex items-center gap-1">
+                                                                💡 {this.state.gstinError}
+                                                            </p>
+                                                        )}
                                                     </div>
                                                 )}
 
@@ -960,8 +1286,82 @@ class Checkout extends Component {
                                                     </div>
                                                 )}
 
-                                                {/* Fallback Banner if all payment providers disabled by admin */}
-                                                {((this.props.stripeEnabled === false || this.props.onlyPP) && this.props.paypalEnabled === false) && (
+                                                {/* Paytm Option */}
+                                                {this.props.paytmEnabled === true && (
+                                                    <div
+                                                        onClick={() => this.setState({ paymentMethod: 'paytm' })}
+                                                        className={`relative p-5 rounded-2xl border-2 transition-all duration-300 cursor-pointer overflow-hidden ${
+                                                            paymentMethod === 'paytm'
+                                                                ? 'border-sky-500 shadow-xl shadow-sky-500/10'
+                                                                : 'border-slate-200 hover:border-slate-300 hover:shadow-md'
+                                                        }`}
+                                                        style={paymentMethod === 'paytm' ? { background: 'linear-gradient(135deg, #e0f2fe, #f0f9ff)' } : { background: '#fff' }}>
+                                                        {paymentMethod === 'paytm' && (
+                                                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-sky-500 to-cyan-500 rounded-t-2xl"></div>
+                                                        )}
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-14 h-14 bg-gradient-to-br from-sky-50 to-cyan-50 rounded-2xl flex items-center justify-center shrink-0 border border-sky-200">
+                                                                <span className="text-lg font-black text-sky-700 leading-none">Pay<br/>tm</span>
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <h3 className="text-sm font-black text-slate-900">Paytm Checkout</h3>
+                                                                <p className="text-xs text-slate-500 mt-0.5">Paytm Wallet, UPI, Cards &amp; NetBanking</p>
+                                                                <div className="flex items-center gap-2 mt-2.5">
+                                                                    <span className="px-2 py-0.5 bg-sky-100 text-sky-700 text-[10px] font-black rounded-md border border-sky-200">Paytm Wallet</span>
+                                                                    <span className="px-2 py-0.5 bg-sky-100 text-sky-700 text-[10px] font-black rounded-md border border-sky-200">UPI</span>
+                                                                </div>
+                                                            </div>
+                                                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+                                                                paymentMethod === 'paytm' ? 'border-sky-600 bg-sky-600' : 'border-slate-300'
+                                                            }`}>
+                                                                {paymentMethod === 'paytm' && <FaCheck className="w-3 h-3 text-white" />}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* PhonePe Option */}
+                                                {this.props.phonepeEnabled === true && (
+                                                    <div
+                                                        onClick={() => this.setState({ paymentMethod: 'phonepe' })}
+                                                        className={`relative p-5 rounded-2xl border-2 transition-all duration-300 cursor-pointer overflow-hidden ${
+                                                            paymentMethod === 'phonepe'
+                                                                ? 'border-violet-500 shadow-xl shadow-violet-500/10'
+                                                                : 'border-slate-200 hover:border-slate-300 hover:shadow-md'
+                                                        }`}
+                                                        style={paymentMethod === 'phonepe' ? { background: 'linear-gradient(135deg, #f5f3ff, #ede9fe)' } : { background: '#fff' }}>
+                                                        {paymentMethod === 'phonepe' && (
+                                                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-violet-500 to-purple-600 rounded-t-2xl"></div>
+                                                        )}
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-14 h-14 bg-gradient-to-br from-violet-50 to-purple-50 rounded-2xl flex items-center justify-center shrink-0 border border-violet-200">
+                                                                <span className="text-[10px] font-black text-violet-700 text-center leading-tight">Phone<br/>Pe</span>
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <h3 className="text-sm font-black text-slate-900">PhonePe UPI &amp; Payments</h3>
+                                                                <p className="text-xs text-slate-500 mt-0.5">India&apos;s #1 UPI App · Instant payments via PhonePe</p>
+                                                                <div className="flex items-center gap-2 mt-2.5">
+                                                                    <span className="px-2 py-0.5 bg-violet-100 text-violet-700 text-[10px] font-black rounded-md border border-violet-200">UPI Instant</span>
+                                                                    <span className="px-2 py-0.5 bg-violet-100 text-violet-700 text-[10px] font-black rounded-md border border-violet-200">500M+ Users</span>
+                                                                </div>
+                                                            </div>
+                                                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+                                                                paymentMethod === 'phonepe' ? 'border-violet-600 bg-violet-600' : 'border-slate-300'
+                                                            }`}>
+                                                                {paymentMethod === 'phonepe' && <FaCheck className="w-3 h-3 text-white" />}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Fallback Banner if ALL payment providers disabled by admin */}
+                                                {(
+                                                    (this.props.stripeEnabled === false || this.props.onlyPP) &&
+                                                    this.props.paypalEnabled === false &&
+                                                    this.props.razorpayEnabled === false &&
+                                                    this.props.paytmEnabled !== true &&
+                                                    this.props.phonepeEnabled !== true
+                                                ) && (
                                                     <div className="p-5 rounded-2xl bg-rose-50 border-2 border-rose-200 text-rose-800 text-xs font-semibold text-center space-y-2">
                                                         <p className="font-bold text-sm">No Active Payment Gateway</p>
                                                         <p>All online payment providers are currently disabled by the administrator. Please contact support.</p>
@@ -983,7 +1383,14 @@ class Checkout extends Component {
                                                         disabled={!paymentMethod}
                                                         className="flex-1 py-4 px-6 rounded-2xl text-white font-black text-sm uppercase tracking-wider flex items-center justify-center gap-3 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
                                                         style={{ background: 'linear-gradient(135deg, #7c3aed, #ec4899)', boxShadow: '0 8px 32px rgba(124,58,237,0.35)' }}>
-                                                        <span>{paymentMethod === 'creditCard' ? 'Enter Card Details' : 'Pay with PayPal'}</span>
+                                                        <span>{
+                                                            paymentMethod === 'creditCard' ? 'Enter Card Details' :
+                                                            paymentMethod === 'paypal' ? 'Continue with PayPal' :
+                                                            paymentMethod === 'razorpay' ? 'Pay via Razorpay / UPI' :
+                                                            paymentMethod === 'paytm' ? 'Pay via Paytm' :
+                                                            paymentMethod === 'phonepe' ? 'Pay via PhonePe' :
+                                                            'Continue to Payment'
+                                                        }</span>
                                                         <FaArrowRight className="w-4 h-4" />
                                                     </button>
                                                 </div>
@@ -1126,7 +1533,7 @@ class Checkout extends Component {
                                                         </p>
                                                     </div>
                                                 </>
-                                            ) : (
+                                            ) : paymentMethod === 'paypal' ? (
                                                 /* PayPal Flow */
                                                 <>
                                                     <div className="px-7 pt-7 pb-5 border-b border-slate-100">
@@ -1143,7 +1550,6 @@ class Checkout extends Component {
                                                     </div>
 
                                                     <div className="p-7 space-y-5">
-                                                        {/* PayPal Summary Card */}
                                                         <div className="rounded-2xl overflow-hidden" style={{ background: 'linear-gradient(135deg, #fffbeb, #fef3c7)', border: '1.5px solid #fcd34d' }}>
                                                             <div className="px-5 py-4 flex items-center justify-between border-b border-amber-200/60">
                                                                 <img src={PayPalLogo} alt="PayPal" className="h-6 object-contain" />
@@ -1173,16 +1579,125 @@ class Checkout extends Component {
                                                             </div>
                                                         </div>
 
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => this.previousStep()}
+                                                        <button type="button" onClick={() => this.previousStep()}
                                                             className="w-full py-3.5 border-2 border-slate-200 hover:border-slate-300 text-slate-600 font-bold text-xs rounded-2xl transition-all flex items-center justify-center gap-2 hover:bg-slate-50">
                                                             <FaArrowLeft className="w-3 h-3" />
                                                             <span>Back to Payment Method</span>
                                                         </button>
                                                     </div>
                                                 </>
-                                            )}
+                                            ) : paymentMethod === 'razorpay' ? (
+                                                /* Razorpay Flow */
+                                                <>
+                                                    <div className="px-7 pt-7 pb-5 border-b border-slate-100">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-11 h-11 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+                                                                <span className="text-xl font-black text-white">₹</span>
+                                                            </div>
+                                                            <div>
+                                                                <h2 className="text-lg font-black text-slate-900">Razorpay Express &amp; UPI</h2>
+                                                                <p className="text-xs text-slate-500">Pay via GPay, PhonePe, Paytm, Cards or NetBanking</p>
+                                                            </div>
+                                                            <span className="ml-auto text-xs font-black text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">Step 3 of 3</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="p-7 space-y-5">
+                                                        <div className="rounded-2xl overflow-hidden border border-blue-200" style={{ background: 'linear-gradient(135deg, #eff6ff, #e0e7ff)' }}>
+                                                            <div className="px-5 py-4 flex items-center justify-between border-b border-blue-200/60">
+                                                                <span className="text-xs font-black text-blue-900">Razorpay Secure Gateway</span>
+                                                                <span className="text-xl font-black text-blue-950">{this.props.currency}{price}</span>
+                                                            </div>
+                                                            <div className="p-5">
+                                                                <p className="text-xs text-blue-800 font-semibold mb-4">Instant auto-activation via UPI, GPay, PhonePe, Paytm or NetBanking</p>
+                                                                <button type="button" onClick={() => this.handleRazorpayPayment()} disabled={isLoading}
+                                                                    className="w-full py-4 rounded-2xl text-white font-black text-sm uppercase tracking-wider flex items-center justify-center gap-3 transition-all hover:scale-[1.02] disabled:opacity-70 disabled:scale-100"
+                                                                    style={{ background: 'linear-gradient(135deg, #2563eb, #4f46e5)', boxShadow: '0 8px 32px rgba(37,99,235,0.35)' }}>
+                                                                    {isLoading ? <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /><span>Launching Razorpay...</span></> : <><FaLock className="w-4 h-4" /><span>Pay {this.props.currency}{price} via Razorpay</span></>}
+                                                                </button>
+                                                                <div className="mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-900">
+                                                                    <span className="font-extrabold">💡 Test Mode Tip:</span> Use UPI ID <code className="bg-amber-100 px-1 rounded font-mono">success@razorpay</code> in sandbox mode.
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <button type="button" onClick={() => this.previousStep()}
+                                                            className="w-full py-3.5 border-2 border-slate-200 hover:border-slate-300 text-slate-600 font-bold text-xs rounded-2xl transition-all flex items-center justify-center gap-2 hover:bg-slate-50">
+                                                            <FaArrowLeft className="w-3 h-3" /><span>Back to Payment Method</span>
+                                                        </button>
+                                                    </div>
+                                                </>
+                                            ) : paymentMethod === 'paytm' ? (
+                                                /* Paytm Flow */
+                                                <>
+                                                    <div className="px-7 pt-7 pb-5 border-b border-slate-100">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-11 h-11 bg-gradient-to-br from-sky-500 to-cyan-600 rounded-2xl flex items-center justify-center shadow-lg shadow-sky-500/30">
+                                                                <span className="text-sm font-black text-white leading-none">Pay<br/>tm</span>
+                                                            </div>
+                                                            <div>
+                                                                <h2 className="text-lg font-black text-slate-900">Paytm Checkout</h2>
+                                                                <p className="text-xs text-slate-500">Pay via Paytm Wallet, UPI, Cards &amp; NetBanking</p>
+                                                            </div>
+                                                            <span className="ml-auto text-xs font-black text-sky-700 bg-sky-50 px-3 py-1 rounded-full border border-sky-100">Step 3 of 3</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="p-7 space-y-5">
+                                                        <div className="rounded-2xl overflow-hidden border border-sky-200" style={{ background: 'linear-gradient(135deg, #e0f2fe, #f0f9ff)' }}>
+                                                            <div className="px-5 py-4 flex items-center justify-between border-b border-sky-200/60">
+                                                                <span className="text-xs font-black text-sky-900">Paytm Secure Checkout</span>
+                                                                <span className="text-xl font-black text-sky-950">{this.props.currency}{price}</span>
+                                                            </div>
+                                                            <div className="p-5">
+                                                                <p className="text-xs text-sky-800 font-semibold mb-4">Instant payment via Paytm Wallet, UPI, Cards or NetBanking</p>
+                                                                <button type="button" onClick={() => this.handlePaytmPayment()} disabled={isLoading}
+                                                                    className="w-full py-4 rounded-2xl text-white font-black text-sm uppercase tracking-wider flex items-center justify-center gap-3 transition-all hover:scale-[1.02] disabled:opacity-70 disabled:scale-100"
+                                                                    style={{ background: 'linear-gradient(135deg, #0ea5e9, #06b6d4)', boxShadow: '0 8px 32px rgba(14,165,233,0.35)' }}>
+                                                                    {isLoading ? <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /><span>Launching Paytm...</span></> : <><FaLock className="w-4 h-4" /><span>Pay {this.props.currency}{price} via Paytm</span></>}
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                        <button type="button" onClick={() => this.previousStep()}
+                                                            className="w-full py-3.5 border-2 border-slate-200 hover:border-slate-300 text-slate-600 font-bold text-xs rounded-2xl transition-all flex items-center justify-center gap-2 hover:bg-slate-50">
+                                                            <FaArrowLeft className="w-3 h-3" /><span>Back to Payment Method</span>
+                                                        </button>
+                                                    </div>
+                                                </>
+                                            ) : paymentMethod === 'phonepe' ? (
+                                                /* PhonePe Flow */
+                                                <>
+                                                    <div className="px-7 pt-7 pb-5 border-b border-slate-100">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-11 h-11 bg-gradient-to-br from-violet-500 to-purple-700 rounded-2xl flex items-center justify-center shadow-lg shadow-violet-500/30">
+                                                                <span className="text-[10px] font-black text-white text-center leading-tight">Phone<br/>Pe</span>
+                                                            </div>
+                                                            <div>
+                                                                <h2 className="text-lg font-black text-slate-900">PhonePe UPI &amp; Payments</h2>
+                                                                <p className="text-xs text-slate-500">India&apos;s #1 UPI app — instant secure payment</p>
+                                                            </div>
+                                                            <span className="ml-auto text-xs font-black text-violet-700 bg-violet-50 px-3 py-1 rounded-full border border-violet-100">Step 3 of 3</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="p-7 space-y-5">
+                                                        <div className="rounded-2xl overflow-hidden border border-violet-200" style={{ background: 'linear-gradient(135deg, #f5f3ff, #ede9fe)' }}>
+                                                            <div className="px-5 py-4 flex items-center justify-between border-b border-violet-200/60">
+                                                                <span className="text-xs font-black text-violet-900">PhonePe Secure Gateway</span>
+                                                                <span className="text-xl font-black text-violet-950">{this.props.currency}{price}</span>
+                                                            </div>
+                                                            <div className="p-5">
+                                                                <p className="text-xs text-violet-800 font-semibold mb-4">Instant payment via PhonePe UPI. You will be redirected to PhonePe to complete payment.</p>
+                                                                <button type="button" onClick={() => this.handlePhonePePayment()} disabled={isLoading}
+                                                                    className="w-full py-4 rounded-2xl text-white font-black text-sm uppercase tracking-wider flex items-center justify-center gap-3 transition-all hover:scale-[1.02] disabled:opacity-70 disabled:scale-100"
+                                                                    style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', boxShadow: '0 8px 32px rgba(124,58,237,0.35)' }}>
+                                                                    {isLoading ? <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /><span>Redirecting to PhonePe...</span></> : <><FaLock className="w-4 h-4" /><span>Pay {this.props.currency}{price} via PhonePe</span></>}
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                        <button type="button" onClick={() => this.previousStep()}
+                                                            className="w-full py-3.5 border-2 border-slate-200 hover:border-slate-300 text-slate-600 font-bold text-xs rounded-2xl transition-all flex items-center justify-center gap-2 hover:bg-slate-50">
+                                                            <FaArrowLeft className="w-3 h-3" /><span>Back to Payment Method</span>
+                                                        </button>
+                                                    </div>
+                                                </>
+                                            ) : null}
                                         </div>
                                     )}
                                 </div>
@@ -1397,10 +1912,16 @@ class Checkout extends Component {
                                     <FaMapMarkerAlt className="w-2.5 h-2.5 text-indigo-500" /> Country / Region *
                                 </label>
                                 <DropdownInput handleInputs={this.handleInput} placeholder="Select your country" checkout={true} name="Country" options={this.countries} />
+                                {this.state.validationErrors['Country'] && (
+                                    <p className="text-[11px] font-bold text-rose-500 mt-1">⚠️ {this.state.validationErrors['Country']}</p>
+                                )}
                             </div>
                             <div>
                                 <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">Postal / Zip Code *</label>
-                                <input type="text" placeholder="Enter postal / zip code" onChange={(e) => this.handleInput('Postal Code', e)} className="checkout-input-emb" />
+                                <input type="text" placeholder="Enter postal / zip code" onChange={(e) => this.handleInput('Postal Code', e)} className={`checkout-input-emb ${this.state.validationErrors['Postal Code'] ? 'border-rose-500 bg-rose-50/30' : ''}`} />
+                                {this.state.validationErrors['Postal Code'] && (
+                                    <p className="text-[11px] font-bold text-rose-500 mt-1">⚠️ {this.state.validationErrors['Postal Code']}</p>
+                                )}
                             </div>
                         </div>
 
@@ -1526,6 +2047,62 @@ class Checkout extends Component {
                             )}
                         </div>
 
+                        {/* Paytm Option */}
+                        {this.props.paytmEnabled === true && (
+                            <div onClick={() => this.setState({ paymentMethod: 'paytm' })}
+                                className={`relative p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                                    paymentMethod === 'paytm' ? 'border-sky-500 bg-sky-50/60' : 'border-slate-200 bg-white hover:border-slate-300'
+                                }`}>
+                                {paymentMethod === 'paytm' && <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-sky-500 to-cyan-500 rounded-t-xl" />}
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 bg-sky-50 border border-sky-200 rounded-xl flex items-center justify-center shrink-0">
+                                        <span className="text-base font-black text-sky-700 leading-none">Pay<br/>tm</span>
+                                    </div>
+                                    <div className="flex-1">
+                                        <h4 className="text-xs font-black text-slate-900">Paytm Checkout</h4>
+                                        <p className="text-[11px] text-slate-500">Paytm Wallet, UPI, Cards &amp; NetBanking</p>
+                                        <div className="flex items-center gap-1.5 mt-1.5">
+                                            <span className="px-1.5 py-0.5 bg-sky-100 text-sky-700 text-[9px] font-black rounded border border-sky-200">Paytm Wallet</span>
+                                            <span className="px-1.5 py-0.5 bg-sky-100 text-sky-700 text-[9px] font-black rounded border border-sky-200">UPI</span>
+                                        </div>
+                                    </div>
+                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                                        paymentMethod === 'paytm' ? 'border-sky-600 bg-sky-600' : 'border-slate-300'
+                                    }`}>
+                                        {paymentMethod === 'paytm' && <FaCheck className="w-2.5 h-2.5 text-white" />}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* PhonePe Option */}
+                        {this.props.phonepeEnabled === true && (
+                            <div onClick={() => this.setState({ paymentMethod: 'phonepe' })}
+                                className={`relative p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                                    paymentMethod === 'phonepe' ? 'border-violet-500 bg-violet-50/60' : 'border-slate-200 bg-white hover:border-slate-300'
+                                }`}>
+                                {paymentMethod === 'phonepe' && <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-violet-500 to-purple-600 rounded-t-xl" />}
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 bg-violet-50 border border-violet-200 rounded-xl flex items-center justify-center shrink-0">
+                                        <span className="text-[10px] font-black text-violet-700 text-center leading-tight">Phone<br/>Pe</span>
+                                    </div>
+                                    <div className="flex-1">
+                                        <h4 className="text-xs font-black text-slate-900">PhonePe UPI &amp; Payments</h4>
+                                        <p className="text-[11px] text-slate-500">India&apos;s #1 UPI App · Instant payments via PhonePe</p>
+                                        <div className="flex items-center gap-1.5 mt-1.5">
+                                            <span className="px-1.5 py-0.5 bg-violet-100 text-violet-700 text-[9px] font-black rounded border border-violet-200">UPI Instant</span>
+                                            <span className="px-1.5 py-0.5 bg-violet-100 text-violet-700 text-[9px] font-black rounded border border-violet-200">500M+ Users</span>
+                                        </div>
+                                    </div>
+                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                                        paymentMethod === 'phonepe' ? 'border-violet-600 bg-violet-600' : 'border-slate-300'
+                                    }`}>
+                                        {paymentMethod === 'phonepe' && <FaCheck className="w-2.5 h-2.5 text-white" />}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="flex items-center gap-3 pt-2">
                             <button type="button" onClick={() => this.previousStep()}
                                 className="px-4 py-3 border-2 border-slate-200 hover:border-slate-300 text-slate-600 font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 hover:bg-slate-50 cursor-pointer">
@@ -1534,7 +2111,14 @@ class Checkout extends Component {
                             <button type="button" onClick={() => this.nextStep()} disabled={!paymentMethod}
                                 className="flex-1 py-3.5 rounded-xl text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all hover:scale-[1.01] disabled:opacity-50 cursor-pointer"
                                 style={{ background: 'linear-gradient(135deg, #7c3aed, #ec4899)', boxShadow: '0 6px 20px rgba(124,58,237,0.3)' }}>
-                                <span>{paymentMethod === 'creditCard' ? 'Enter Card Details' : paymentMethod === 'paypal' ? 'Pay with PayPal' : 'Pay with Razorpay'}</span>
+                                <span>{
+                                    paymentMethod === 'creditCard' ? 'Enter Card Details' :
+                                    paymentMethod === 'paypal' ? 'Pay with PayPal' :
+                                    paymentMethod === 'razorpay' ? 'Pay via Razorpay / UPI' :
+                                    paymentMethod === 'paytm' ? 'Pay via Paytm' :
+                                    paymentMethod === 'phonepe' ? 'Pay via PhonePe' :
+                                    'Continue to Payment'
+                                }</span>
                                 <FaArrowRight className="w-3.5 h-3.5" />
                             </button>
                         </div>
@@ -1639,7 +2223,7 @@ class Checkout extends Component {
                                     <FaArrowLeft className="w-3 h-3" /><span>Back to Payment Method</span>
                                 </button>
                             </>
-                        ) : (
+                        ) : paymentMethod === 'razorpay' ? (
                             /* Razorpay embedded */
                             <>
                                 <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
@@ -1659,20 +2243,13 @@ class Checkout extends Component {
                                     </div>
                                     <div className="p-4">
                                         <p className="text-xs text-blue-800 font-semibold mb-3">Instant auto-activation via UPI, GPay, PhonePe, Paytm or NetBanking</p>
-                                        <button
-                                            type="button"
-                                            onClick={() => this.handleRazorpayPayment()}
-                                            disabled={isLoading}
+                                        <button type="button" onClick={() => this.handleRazorpayPayment()} disabled={isLoading}
                                             className="w-full py-3.5 rounded-xl text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all hover:scale-[1.01] disabled:opacity-70 cursor-pointer"
                                             style={{ background: 'linear-gradient(135deg, #2563eb, #4f46e5)', boxShadow: '0 6px 20px rgba(37,99,235,0.3)' }}>
-                                            {isLoading ? (
-                                                <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /><span>Launching Razorpay...</span></>
-                                            ) : (
-                                                <><FaLock className="w-3.5 h-3.5" /><span>Pay {this.props.currency}{price} via Razorpay</span></>
-                                            )}
+                                            {isLoading ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /><span>Launching Razorpay...</span></> : <><FaLock className="w-3.5 h-3.5" /><span>Pay {this.props.currency}{price} via Razorpay</span></>}
                                         </button>
                                         <div className="mt-3 p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-[11px] text-amber-900 leading-snug">
-                                            <span className="font-extrabold text-amber-950">💡 Sandbox Test Mode Tip:</span> In Test Mode, use test UPI ID <code className="bg-amber-100 px-1 py-0.5 rounded font-mono font-bold text-amber-900">success@razorpay</code> or select Test NetBanking/Wallet inside the Razorpay modal. Switch Admin Settings to <strong>Live Production Mode</strong> to accept real GPay/PhonePe UPI payments.
+                                            <span className="font-extrabold text-amber-950">💡 Sandbox Test Mode Tip:</span> Use test UPI ID <code className="bg-amber-100 px-1 py-0.5 rounded font-mono font-bold text-amber-900">success@razorpay</code> or select Test NetBanking inside the Razorpay modal.
                                         </div>
                                     </div>
                                 </div>
@@ -1682,7 +2259,73 @@ class Checkout extends Component {
                                     <FaArrowLeft className="w-3 h-3" /><span>Back to Payment Method</span>
                                 </button>
                             </>
-                        )}
+                        ) : paymentMethod === 'paytm' ? (
+                            /* Paytm embedded */
+                            <>
+                                <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
+                                    <div className="w-10 h-10 bg-gradient-to-br from-sky-500 to-cyan-600 rounded-xl flex items-center justify-center shadow-md">
+                                        <span className="text-sm font-black text-white leading-none">Pay<br/>tm</span>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-black text-slate-900">Paytm Checkout</h3>
+                                        <p className="text-[11px] text-slate-500">Pay via Paytm Wallet, UPI, Cards &amp; NetBanking</p>
+                                    </div>
+                                </div>
+
+                                <div className="rounded-xl overflow-hidden border border-sky-200" style={{ background: 'linear-gradient(135deg, #e0f2fe, #f0f9ff)' }}>
+                                    <div className="px-5 py-3 flex items-center justify-between border-b border-sky-200/60">
+                                        <span className="text-xs font-black text-sky-900">Paytm Secure Checkout</span>
+                                        <span className="text-sm font-black text-sky-950">{this.props.currency}{price}</span>
+                                    </div>
+                                    <div className="p-4">
+                                        <p className="text-xs text-sky-800 font-semibold mb-3">Instant payment via Paytm Wallet, UPI, Cards or NetBanking</p>
+                                        <button type="button" onClick={() => this.handlePaytmPayment()} disabled={isLoading}
+                                            className="w-full py-3.5 rounded-xl text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all hover:scale-[1.01] disabled:opacity-70 cursor-pointer"
+                                            style={{ background: 'linear-gradient(135deg, #0ea5e9, #06b6d4)', boxShadow: '0 6px 20px rgba(14,165,233,0.3)' }}>
+                                            {isLoading ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /><span>Launching Paytm...</span></> : <><FaLock className="w-3.5 h-3.5" /><span>Pay {this.props.currency}{price} via Paytm</span></>}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <button type="button" onClick={() => this.previousStep()}
+                                    className="w-full py-3 border-2 border-slate-200 hover:border-slate-300 text-slate-600 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 hover:bg-slate-50 transition-all cursor-pointer">
+                                    <FaArrowLeft className="w-3 h-3" /><span>Back to Payment Method</span>
+                                </button>
+                            </>
+                        ) : paymentMethod === 'phonepe' ? (
+                            /* PhonePe embedded */
+                            <>
+                                <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
+                                    <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-700 rounded-xl flex items-center justify-center shadow-md">
+                                        <span className="text-[10px] font-black text-white text-center leading-tight">Phone<br/>Pe</span>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-black text-slate-900">PhonePe UPI &amp; Payments</h3>
+                                        <p className="text-[11px] text-slate-500">India&apos;s #1 UPI App — instant secure payment</p>
+                                    </div>
+                                </div>
+
+                                <div className="rounded-xl overflow-hidden border border-violet-200" style={{ background: 'linear-gradient(135deg, #f5f3ff, #ede9fe)' }}>
+                                    <div className="px-5 py-3 flex items-center justify-between border-b border-violet-200/60">
+                                        <span className="text-xs font-black text-violet-900">PhonePe Secure Gateway</span>
+                                        <span className="text-sm font-black text-violet-950">{this.props.currency}{price}</span>
+                                    </div>
+                                    <div className="p-4">
+                                        <p className="text-xs text-violet-800 font-semibold mb-3">Instant UPI payment via PhonePe. You will be redirected to complete the transaction.</p>
+                                        <button type="button" onClick={() => this.handlePhonePePayment()} disabled={isLoading}
+                                            className="w-full py-3.5 rounded-xl text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all hover:scale-[1.01] disabled:opacity-70 cursor-pointer"
+                                            style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', boxShadow: '0 6px 20px rgba(124,58,237,0.3)' }}>
+                                            {isLoading ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /><span>Redirecting to PhonePe...</span></> : <><FaLock className="w-3.5 h-3.5" /><span>Pay {this.props.currency}{price} via PhonePe</span></>}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <button type="button" onClick={() => this.previousStep()}
+                                    className="w-full py-3 border-2 border-slate-200 hover:border-slate-300 text-slate-600 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 hover:bg-slate-50 transition-all cursor-pointer">
+                                    <FaArrowLeft className="w-3 h-3" /><span>Back to Payment Method</span>
+                                </button>
+                            </>
+                        ) : null}
                     </div>
                 )}
 

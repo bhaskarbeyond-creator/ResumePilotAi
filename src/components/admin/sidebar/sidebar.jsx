@@ -10,7 +10,7 @@ import {
     FaFile, FaBullhorn, FaRobot, FaEnvelope, FaFilePdf, FaSearch as FaSearchIcon,
     FaMapMarkerAlt, FaPaintBrush, FaFileCode, FaShieldAlt, FaHeartbeat,
     FaFire, FaFacebook, FaCloud, FaLinkedin, FaStamp, FaCode,
-    FaCookieBite, FaCommentAlt, FaGlobeAsia, FaBrain, FaCubes,
+    FaCookieBite, FaCommentAlt, FaGlobeAsia, FaBrain, FaCubes, FaReceipt,
 } from 'react-icons/fa';
 import { GoSidebarCollapse, GoSidebarExpand } from 'react-icons/go';
 import { MdOutlineReviews } from 'react-icons/md';
@@ -43,6 +43,7 @@ const getStatusDotColor = (key, s) => {
             if (p === 'ollama') return 'bg-emerald-500';
             return activeGeminiKey ? 'bg-emerald-500' : 'bg-red-500';
         }
+        case 'subscriptionsSettings':
         case 'paymentSettings':
             return (activeRazorpayKey || s?.payments?.stripePublishableKey) ? 'bg-emerald-500' : 'bg-amber-400';
         case 'geoSeoSettings':
@@ -119,9 +120,9 @@ const SETTINGS_GROUPS = [
         { key: 'twilioSmsSettings', label: 'Twilio SMS', icon: FaCommentAlt },
     ]},
     { label: 'Payments', items: [
+        { key: 'ordersManagement', label: 'Orders & Transactions', icon: FaReceipt },
+        { key: 'subscriptionsSettings', label: 'Subscriptions & Gateways', icon: FaCreditCard },
         { key: 'watermarkSettings', label: 'PDF Watermark', icon: FaStamp },
-        { key: 'paymentSettings', label: 'Payment & Razorpay', icon: FaCreditCard },
-        { key: 'subscriptionsSettings', label: 'Subscriptions', icon: FaCreditCard },
     ]},
     { label: 'Security & Health', items: [
         { key: 'integrationsSettings', label: 'Maps & Keys', icon: FaMapMarkerAlt },

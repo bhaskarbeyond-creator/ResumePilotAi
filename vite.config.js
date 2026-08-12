@@ -5,6 +5,20 @@ import tailwindcss from '@tailwindcss/vite';
 // https://vite.dev/config/
 export default defineConfig({
     plugins: [tailwindcss(), react()],
+    build: {
+        rollupOptions: {
+            output: {
+                entryFileNames: 'assets/index.js',
+                chunkFileNames: 'assets/[name]-[hash].js',
+                assetFileNames: (assetInfo) => {
+                    if (assetInfo.name && assetInfo.name.endsWith('.css')) {
+                        return 'assets/index.css';
+                    }
+                    return 'assets/[name]-[hash].[ext]';
+                },
+            },
+        },
+    },
     css: {
         preprocessorOptions: {
             scss: {

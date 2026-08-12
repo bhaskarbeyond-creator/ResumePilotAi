@@ -56,12 +56,27 @@ for root, dirs, files in os.walk(local_backend_routes):
 sftp.close()
 print("Uploaded frontend zip & backend files!")
 
-# Deploy frontend zip + restart backend process
+# Deploy frontend zip + write production .htaccess + restart backend process
 restart_cmd = (
     f'unzip -o {remote_zip} -d {remote_public} && rm -f {remote_zip} && '
-    f'pkill -f "node /home/u727965524/backend/index.js" || true; '
-    f'sleep 1; '
-    f'cd {remote_backend_dir} && nohup node index.js > server.log 2>&1 &'
+    f'cat << \'EOF\' > {remote_public}/.htaccess\n'
+    f'<IfModule mod_rewrite.c>\n'
+    f'  RewriteEngine On\n'
+    f'  RewriteBase /\n\n'
+    f'  # Proxy /api requests to PHP API proxy\n'
+    f'  RewriteCond %{{REQUEST_URI}} ^/api/ [NC]\n'
+    f'  RewriteRule ^api/(.*)$ api/index.php [L]\n\n'
+    f'  # SPA Routing — all other routes serve index.html directly\n'
+    f'  RewriteCond %{{REQUEST_FILENAME}} !-f\n'
+    f'  RewriteCond %{{REQUEST_FILENAME}} !-d\n'
+    f'  RewriteRule ^ index.html [L]\n'
+    f'</IfModule>\n\n'
+    f'<IfModule mod_mime.c>\n'
+    f'  AddType application/javascript .js .mjs\n'
+    f'  AddType text/css .css\n'
+    f'</IfModule>\n'
+    f'EOF\n'
+    f'pm2 restart airesume-backend || (cd {remote_backend_dir} && pm2 start index.js --name "airesume-backend")'
 )
 
 stdin, stdout, stderr = ssh.exec_command(restart_cmd)

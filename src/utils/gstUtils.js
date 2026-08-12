@@ -40,16 +40,16 @@ export const INDIAN_STATES = [
 ];
 
 export function getStateCodeByName(stateName) {
-    if (!stateName) return '27'; // Default to Maharashtra
+    if (!stateName) return '';
     const cleaned = stateName.trim().toLowerCase();
     const match = INDIAN_STATES.find(s => s.name.toLowerCase() === cleaned || cleaned.includes(s.name.toLowerCase()));
-    return match ? match.code : '27';
+    return match ? match.code : '';
 }
 
 export function getStateNameByCode(stateCode) {
-    if (!stateCode) return 'Maharashtra';
+    if (!stateCode) return '';
     const match = INDIAN_STATES.find(s => s.code === String(stateCode).padStart(2, '0'));
-    return match ? match.name : 'Maharashtra';
+    return match ? match.name : '';
 }
 
 // Convert monetary numbers to Indian Words (Rupees & Paise)

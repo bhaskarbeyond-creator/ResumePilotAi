@@ -40,16 +40,70 @@ def upload_dir(local_dir, remote_dir):
             remote_file = os.path.join(target_remote_dir, f).replace('\\', '/')
             sftp.put(local_file, remote_file)
 
-# 1. Upload dist to public_html
+# 1. Clean old assets and upload dist to public_html
 local_dist = r'd:\xampp\htdocs\ai-resume-builder\dist'
 remote_public = '/home/u727965524/domains/airesume.projectdemo.guru/public_html'
+
+# Remove old assets to prevent hash mismatch
+try:
+    stdin, stdout, stderr = ssh.exec_command(f'rm -rf {remote_public}/assets/*')
+    stdout.read()
+    print("Cleaned old assets on remote server.")
+except Exception as e:
+    print("Clean assets notice:", e)
+
 upload_dir(local_dist, remote_public)
 
-# Upload .htaccess
-local_htaccess = r'd:\xampp\htdocs\ai-resume-builder\.htaccess'
+# Upload remote production .htaccess
 remote_htaccess = os.path.join(remote_public, '.htaccess').replace('\\', '/')
-sftp.put(local_htaccess, remote_htaccess)
-print("Uploaded .htaccess to public_html")
+remote_htaccess_content = '''<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Proxy /api requests to PHP API proxy
+  RewriteCond %{REQUEST_URI} ^/api/ [NC]
+  RewriteRule ^api/(.*)$ api/index.php [L]
+
+  # Return 404 for missing static assets under /assets/ instead of falling back to index.html
+  RewriteCond %{REQUEST_URI} ^/assets/ [NC]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteRule ^ - [R=404,L]
+
+  # SPA Routing — all other page routes serve index.html directly
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+<IfModule mod_mime.c>
+  AddType application/javascript .js .mjs
+  AddType text/css .css
+</IfModule>
+
+<IfModule mod_headers.c>
+  # Force correct MIME types on Hostinger / LiteSpeed servers using ForceType + Header
+  <FilesMatch "\\.(js|mjs)$">
+    ForceType application/javascript
+    Header set Content-Type "application/javascript; charset=utf-8"
+    Header set Cache-Control "max-age=31536000, public, immutable"
+  </FilesMatch>
+  <FilesMatch "\\.css$">
+    ForceType text/css
+    Header set Content-Type "text/css; charset=utf-8"
+    Header set Cache-Control "max-age=31536000, public, immutable"
+  </FilesMatch>
+  # Never cache index.html so browsers always load newest asset hashes
+  <FilesMatch "^(index\\.html)?$">
+    Header set Content-Type "text/html; charset=utf-8"
+    Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+  </FilesMatch>
+</IfModule>
+'''
+with sftp.open(remote_htaccess, 'w') as f:
+    f.write(remote_htaccess_content)
+print("Uploaded production .htaccess to public_html")
 
 # Create PHP API Proxy (api/index.php) inside public_html
 api_dir = os.path.join(remote_public, 'api').replace('\\', '/')

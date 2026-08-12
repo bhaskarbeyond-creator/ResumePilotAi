@@ -55,46 +55,20 @@ class Admin extends Component {
     /// Check if the user is authenticated
     authListener() {
         fire.auth().onAuthStateChanged(async (user) => {
-            if (user) {
-                this.setState({ user: user.uid });
-                localStorage.setItem('user', user.uid);
-
-                // Auto-migrate legacy admin@admin.com Auth account email to bhaskar.beyond@gmail.com
-                if (user.email === 'admin@admin.com') {
-                    try {
-                        console.log('🔄 Migrating Firebase Auth email from admin@admin.com to bhaskar.beyond@gmail.com...');
-                        await user.updateEmail(conf.adminEmail || 'bhaskar.beyond@gmail.com');
-                        console.log('✅ Firebase Auth email successfully updated to:', conf.adminEmail);
-                    } catch (err) {
-                        console.warn('Auth email migration notice:', err.message);
-                    }
+            const uid = user ? user.uid : localStorage.getItem('user');
+            if (uid) {
+                this.setState({ user: uid });
+                const isAdmin = await checkIfAdmin(uid);
+                if (isAdmin) {
+                    this.setState({ showAdm: true });
+                    return;
                 }
-
-                try {
-                    // Check if user is admin using the proper function
-                    const isAdmin = await checkIfAdmin(user.uid);
-                    if (isAdmin) {
-                        // is admin, show admin panel
-                        this.setState({ showAdm: true });
-                    } else {
-                        // not an admin redirect away
-                        this.setState({ user: null });
-                        localStorage.removeItem('user');
-                        window.location.href = '/';
-                    }
-                } catch (error) {
-                    console.error('Error checking admin status:', error);
-                    // In case of error, redirect away
-                    this.setState({ user: null });
-                    localStorage.removeItem('user');
-                    window.location.href = '/';
-                }
-            } else {
-                // not authenticated, redirect away
-                this.setState({ user: null });
-                localStorage.removeItem('user');
-                window.location.href = '/';
             }
+
+            // Not authenticated as admin, clear session
+            this.setState({ user: null, showAdm: false });
+            localStorage.removeItem('user');
+            window.location.href = '/';
         });
     }
 

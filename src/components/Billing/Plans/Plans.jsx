@@ -35,6 +35,7 @@ const PlansPage = (props) => {
     const [activeTab, setActiveTab] = useState('plans'); // 'plans', 'invoices', 'manage'
     const [step, setStep] = useState(1); // 1 = Cart & Plan Selection, 2 = Native Checkout
     const [selectedDuration, setSelectedDuration] = useState('12'); // '1', '6', '12' months
+    const [selectedCurrency, setSelectedCurrency] = useState('INR'); // 'INR', 'USD', 'EUR', 'GBP'
     const [couponInput, setCouponInput] = useState('');
     const [appliedCoupon, setAppliedCoupon] = useState(null);
     const [couponError, setCouponError] = useState('');
@@ -70,6 +71,8 @@ const PlansPage = (props) => {
         stripeEnabled: true,
         paypalEnabled: true,
         razorpayEnabled: true,
+        paytmEnabled: false,
+        phonepeEnabled: false,
         sandboxMode: false,
         isLoading: true
     });
@@ -197,7 +200,7 @@ const PlansPage = (props) => {
         // Global Subscription Config
         getSubscriptionStatus().then((data) => {
             if (data) {
-                const currSymbol = (data.currency === 'INR' || data.currency === '₹') ? '₹' : '$';
+                const currSymbol = selectedCurrency === 'INR' ? '₹' : (selectedCurrency === 'EUR' ? '€' : (selectedCurrency === 'GBP' ? '£' : '$'));
                 setSubscriptionConfig({
                     monthlyPrice: Number(data.monthlyPrice) || 199,
                     quartarlyPrice: Number(data.quartarlyPrice) || 399,
@@ -209,6 +212,10 @@ const PlansPage = (props) => {
                     stripeEnabled: data.stripeEnabled !== undefined ? Boolean(data.stripeEnabled) : true,
                     paypalEnabled: data.paypalEnabled !== undefined ? Boolean(data.paypalEnabled) : true,
                     razorpayEnabled: data.razorpayEnabled !== undefined ? Boolean(data.razorpayEnabled) : true,
+                    paytmEnabled: data.paytmEnabled === true,
+                    phonepeEnabled: data.phonepeEnabled === true,
+                    receiptTemplate: data.receiptTemplate || 'modern',
+                    reverseCharge: data.reverseCharge || 'No',
                     sandboxMode: Boolean(data.sandboxMode),
                     isLoading: false
                 });
@@ -216,6 +223,19 @@ const PlansPage = (props) => {
         });
 
         return () => unsubscribe();
+    }, []);
+
+    // Check for PhonePe or Paytm redirect callback query params on page mount
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const urlParams = new URLSearchParams(window.location.search);
+            const orderId = urlParams.get('order');
+            if (urlParams.has('phonepe_callback') || urlParams.has('phonepe_demo')) {
+                toast.success(`🎉 PhonePe Payment Verified! Order ${orderId || ''} activated successfully.`);
+            } else if (urlParams.has('paytm_callback') || urlParams.has('paytm_demo')) {
+                toast.success(`🎉 Paytm Payment Verified! Order ${orderId || ''} activated successfully.`);
+            }
+        }
     }, []);
 
     // Classic Public View Handlers
@@ -354,8 +374,8 @@ const PlansPage = (props) => {
         const supplierPan = (subscriptionConfig.supplierPan || (supplierGstin.length === 15 ? supplierGstin.substring(2, 12) : '')).trim();
         const supplierAddress = (subscriptionConfig.supplierAddress || '').trim();
         const supplierCity = (subscriptionConfig.supplierCity || '').trim();
-        const supplierState = subscriptionConfig.supplierState || 'Maharashtra';
-        const supplierStateCode = String(subscriptionConfig.supplierStateCode || '27').padStart(2, '0');
+        const supplierState = (subscriptionConfig.supplierState || '').trim();
+        const supplierStateCode = subscriptionConfig.supplierStateCode ? String(subscriptionConfig.supplierStateCode).padStart(2, '0') : (supplierGstin.length === 15 ? supplierGstin.substring(0, 2) : '');
         const supplierPincode = (subscriptionConfig.supplierPincode || '').trim();
         const supplierSacCode = subscriptionConfig.sacCode || '998313';
         const supplierEmail = (subscriptionConfig.supplierEmail || conf.adminEmail || 'support@' + (typeof window !== 'undefined' ? window.location.hostname : 'airesume.projectdemo.guru')).trim();
@@ -379,8 +399,8 @@ const PlansPage = (props) => {
         const customerCompany = (txn.customerCompany || '').trim();
         const customerAddress = (txn.customerAddress || '').trim();
         const customerCity = (txn.customerCity || '').trim();
-        const customerState = txn.customerState || 'Maharashtra';
-        const customerStateCode = String(txn.customerStateCode || (customerState.toLowerCase().includes('delhi') ? '07' : (customerState.toLowerCase().includes('karnataka') ? '29' : '27'))).padStart(2, '0');
+        const customerState = (txn.customerState || '').trim();
+        const customerStateCode = txn.customerStateCode ? String(txn.customerStateCode).padStart(2, '0') : (customerGstin.length === 15 ? customerGstin.substring(0, 2) : '');
         const customerCountry = txn.customerCountry || 'India';
 
         const isB2B = Boolean(customerGstin && customerGstin.length === 15);
@@ -395,18 +415,18 @@ const PlansPage = (props) => {
         const formattedDate = txn.created_at?.toDate
             ? txn.created_at.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
             : (txn.createdDateString || txn.date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }));
-        const paymentMethod = txn.paymentMethod || txn.paimentType || 'Razorpay / Digital Payment';
+        const paymentMethod = txn.paymentType || txn.paymentMethod || txn.paimentType || 'Razorpay / Digital Payment';
 
         // Tax Math & Intra/Inter State Breakdown
         const totalPrice = parseFloat(txn.amount !== undefined ? txn.amount : (txn.price || '499')) || 499;
         const gstRate = parseFloat(subscriptionConfig.taxRate !== undefined ? subscriptionConfig.taxRate : 18) || 18;
         const currency = (txn.currency || subscriptionConfig.currency || 'INR').toUpperCase();
-        const currencySymbol = currency === 'INR' ? '₹' : (currency === 'EUR' ? '€' : '$');
+        const currencySymbol = currency === 'INR' ? '₹' : (currency === 'EUR' ? '€' : (currency === 'GBP' ? '£' : (currency === 'CAD' ? 'CA$' : '$')));
 
         const taxableAmount = parseFloat((totalPrice / (1 + (gstRate / 100))).toFixed(2));
         const totalTax = parseFloat((totalPrice - taxableAmount).toFixed(2));
 
-        const isIntraState = supplierStateCode === customerStateCode;
+        const isIntraState = supplierStateCode === customerStateCode || (!customerStateCode && (currency === 'INR' || !txn.currency));
         let cgstAmount = 0, sgstAmount = 0, igstAmount = 0;
         let cgstRate = 0, sgstRate = 0, igstRate = 0;
 
@@ -420,7 +440,7 @@ const PlansPage = (props) => {
             igstAmount = totalTax;
         }
 
-        // Amount in Words Generator (Rupees & Paise)
+        // Amount in Words Generator (Rupees, Dollars, Euros, Pounds)
         const units = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
             'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
         const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
@@ -454,19 +474,54 @@ const PlansPage = (props) => {
         const paise = Math.round((totalPrice - rupees) * 100);
         const rupeesWords = convertRupees(rupees);
         const paiseWords = paise > 0 ? convertGroup(paise) : '';
-        const mainUnit = currency === 'INR' ? 'Rupees' : (currency === 'USD' ? 'Dollars' : 'Euros');
-        const subUnit = currency === 'INR' ? 'Paise' : 'Cents';
+        const mainUnit = currency === 'INR' ? 'Rupees' : (currency === 'USD' ? 'Dollars' : (currency === 'EUR' ? 'Euros' : (currency === 'GBP' ? 'Pounds' : currency)));
+        const subUnit = currency === 'INR' ? 'Paise' : (currency === 'GBP' ? 'Pence' : 'Cents');
         const amountInWords = paise > 0
             ? `${rupeesWords} ${mainUnit} and ${paiseWords} ${subUnit} Only`
             : `${rupeesWords} ${mainUnit} Only`;
 
         const planTitle = txn.planName || txn.planType || 'Annual Resume Builder AI Subscription – 12 Months';
 
+        // Dynamic Admin-Selected Receipt Template Style ('modern', 'classic', 'gradient', 'compact')
+        const activeTemplateStyle = (txn.receiptTemplate || subscriptionConfig.receiptTemplate || 'modern').toLowerCase();
+        
+        let headerBg = 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)';
+        let headerBorder = 'linear-gradient(90deg, #4f46e5, #ec4899, #8b5cf6)';
+        let fontFamily = "'Plus Jakarta Sans', system-ui, -apple-system, sans-serif";
+        let cardBorder = '1px solid #cbd5e1';
+        let complianceBg = '#eef2ff';
+        let complianceBorder = '#e0e7ff';
+        let complianceText = '#4338ca';
+
+        if (activeTemplateStyle === 'classic') {
+            headerBg = 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)';
+            headerBorder = 'linear-gradient(90deg, #cbd5e1, #94a3b8, #cbd5e1)';
+            fontFamily = "Georgia, 'Times New Roman', serif";
+            cardBorder = '3px double #475569';
+            complianceBg = '#f8fafc';
+            complianceBorder = '#cbd5e1';
+            complianceText = '#1e293b';
+        } else if (activeTemplateStyle === 'gradient') {
+            headerBg = 'linear-gradient(135deg, #3b0764 0%, #4c1d95 50%, #1e1b4b 100%)';
+            headerBorder = 'linear-gradient(90deg, #f59e0b, #ec4899, #8b5cf6)';
+            complianceBg = '#f3e8ff';
+            complianceBorder = '#e9d5ff';
+            complianceText = '#6b21a8';
+        } else if (activeTemplateStyle === 'compact') {
+            headerBg = 'linear-gradient(135deg, #18181b 0%, #27272a 100%)';
+            headerBorder = 'linear-gradient(90deg, #10b981, #06b6d4)';
+            fontFamily = "'JetBrains Mono', monospace";
+            cardBorder = '2px dashed #64748b';
+            complianceBg = '#f4f4f5';
+            complianceBorder = '#e4e4e7';
+            complianceText = '#27272a';
+        }
+
         // Single Page A4 Styles Budget
         const templateStyles = `
             @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;700&display=swap');
             * { box-sizing: border-box; margin: 0; padding: 0; }
-            html, body { height: 100%; font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; background: #f1f5f9; color: #0f172a; line-height: 1.4; }
+            html, body { height: 100%; font-family: ${fontFamily}; background: #f1f5f9; color: #0f172a; line-height: 1.4; }
             body { padding: 20px 10px; display: flex; flex-direction: column; align-items: center; }
             
             .invoice-card { 
@@ -476,7 +531,7 @@ const PlansPage = (props) => {
                 background: #ffffff; 
                 border-radius: 16px; 
                 box-shadow: 0 20px 40px -12px rgba(15,23,42,0.12); 
-                border: 1px solid #cbd5e1; 
+                border: ${cardBorder}; 
                 display: flex;
                 flex-direction: column;
                 justify-content: space-between;
@@ -484,15 +539,15 @@ const PlansPage = (props) => {
             }
             .invoice-content { padding: 0; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
             
-            .header-bar { background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); color: #ffffff; padding: 24px 32px; display: flex; justify-content: space-between; align-items: center; position: relative; }
-            .header-bar::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #4f46e5, #ec4899, #8b5cf6); }
+            .header-bar { background: ${headerBg}; color: #ffffff; padding: 24px 32px; display: flex; justify-content: space-between; align-items: center; position: relative; }
+            .header-bar::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: ${headerBorder}; }
             .brand-title { font-size: 22px; font-weight: 900; letter-spacing: -0.5px; color: #ffffff; text-transform: uppercase; }
             .brand-subtitle { font-size: 11px; color: #a5b4fc; font-weight: 700; margin-top: 2px; letter-spacing: 0.5px; text-transform: uppercase; }
-            .copy-tag { background: #312e81; border: 1px solid #4338ca; color: #c7d2fe; font-size: 9px; font-weight: 800; padding: 3px 10px; border-radius: 4px; text-transform: uppercase; letter-spacing: 1px; margin-top: 6px; display: inline-block; }
+            .copy-tag { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: #ffffff; font-size: 9px; font-weight: 800; padding: 3px 10px; border-radius: 4px; text-transform: uppercase; letter-spacing: 1px; margin-top: 6px; display: inline-block; }
             .paid-badge { background: rgba(16,185,129,0.15); border: 1.5px solid #10b981; color: #34d399; font-size: 12px; font-weight: 800; padding: 5px 16px; border-radius: 99px; text-transform: uppercase; letter-spacing: 1px; }
             
-            .compliance-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 12px 32px; background: #eef2ff; border-bottom: 1px solid #e0e7ff; text-align: center; }
-            .comp-item .c-label { font-size: 8px; font-weight: 800; color: #4338ca; text-transform: uppercase; letter-spacing: 0.5px; }
+            .compliance-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 12px 32px; background: ${complianceBg}; border-bottom: 1px solid ${complianceBorder}; text-align: center; }
+            .comp-item .c-label { font-size: 8px; font-weight: 800; color: ${complianceText}; text-transform: uppercase; letter-spacing: 0.5px; }
             .comp-item .c-val { font-size: 11px; font-weight: 800; color: #1e1b4b; margin-top: 1px; }
 
             .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px 32px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
@@ -599,11 +654,11 @@ const PlansPage = (props) => {
                             </div>
                             <div class="comp-item">
                                 <div class="c-label">Place of Supply</div>
-                                <div class="c-val">${customerState} (${customerStateCode})</div>
+                                <div class="c-val">${customerState ? `${customerState}${customerStateCode ? ` (${customerStateCode})` : ''}` : (currency === 'INR' ? `${supplierState} (${supplierStateCode})` : 'International / Overseas')}</div>
                             </div>
                             <div class="comp-item">
                                 <div class="c-label">Reverse Charge</div>
-                                <div class="c-val">No</div>
+                                <div class="c-val">${txn.reverseCharge || subscriptionConfig.reverseCharge || 'No'}</div>
                             </div>
                             <div class="comp-item">
                                 <div class="c-label">Customer Type</div>
@@ -684,7 +739,7 @@ const PlansPage = (props) => {
                                     </div>
                                 </div>
                                 <div style="font-size: 10px; color: #64748b; margin-top: 8px;">
-                                    GST Tax Calculation: <strong>${gstRate}% (${isIntraState ? 'CGST 9% + SGST 9%' : 'IGST 18%'})</strong>
+                                    GST Tax Calculation: <strong>${gstRate}% (${isIntraState ? `CGST ${cgstRate}% + SGST ${sgstRate}%` : `IGST ${igstRate}%`})</strong>
                                 </div>
                             </div>
 
@@ -706,19 +761,24 @@ const PlansPage = (props) => {
                         </div>
 
                         <!-- Payment Gateway Audit Record -->
-                        <div class="audit-box">
+                        <div class="audit-box" style="${txn.status === 'Refunded' ? 'background:#fef2f2; border-color:#fecaca;' : ''}">
                             <div>
-                                <div style="font-size: 9px; font-weight: 800; color: #166534; uppercase; letter-spacing: 0.5px;">Payment Verification Audit</div>
-                                <div style="font-size: 12px; font-weight: 800; color: #14532d; margin-top: 1px;">
-                                    Method: <strong>${paymentMethod}</strong> | Status: <span style="color: #059669;">PAID ✓</span>
+                                <div style="font-size: 9px; font-weight: 800; color: ${txn.status === 'Refunded' ? '#991b1b' : '#166534'}; uppercase; letter-spacing: 0.5px;">Payment Verification Audit</div>
+                                <div style="font-size: 12px; font-weight: 800; color: ${txn.status === 'Refunded' ? '#7f1d1d' : '#14532d'}; margin-top: 1px;">
+                                    Method: <strong>${paymentMethod}</strong> | Status: <span style="color: ${txn.status === 'Refunded' ? '#dc2626' : '#059669'};">${txn.status === 'Refunded' ? 'REFUNDED ↩' : 'PAID ✓'}</span>
                                 </div>
-                                <div style="font-size: 10px; color: #15803d; font-family: 'JetBrains Mono', monospace; margin-top: 1px;">
+                                <div style="font-size: 10px; color: ${txn.status === 'Refunded' ? '#991b1b' : '#15803d'}; font-family: 'JetBrains Mono', monospace; margin-top: 1px;">
                                     Payment Ref / ID: ${txnId}
                                 </div>
+                                ${txn.refundReason ? `
+                                    <div style="font-size: 10px; font-weight: 700; color: #dc2626; margin-top: 3px; font-family: sans-serif;">
+                                        Refund Reason: ${txn.refundReason}
+                                    </div>
+                                ` : ''}
                             </div>
                             <div style="text-align: right;">
-                                <div style="font-size: 10px; font-weight: 700; color: #166534;">Computer Generated Receipt</div>
-                                <div style="font-size: 9px; color: #15803d;">No signature required under IT Act 2000</div>
+                                <div style="font-size: 10px; font-weight: 700; color: ${txn.status === 'Refunded' ? '#991b1b' : '#166534'};">Computer Generated Receipt</div>
+                                <div style="font-size: 9px; color: ${txn.status === 'Refunded' ? '#b91c1c' : '#15803d'};">No signature required under IT Act 2000</div>
                             </div>
                         </div>
                     </div>
@@ -790,6 +850,8 @@ const PlansPage = (props) => {
                                                 stripeEnabled={subscriptionConfig.stripeEnabled}
                                                 paypalEnabled={subscriptionConfig.paypalEnabled}
                                                 razorpayEnabled={subscriptionConfig.razorpayEnabled}
+                                                paytmEnabled={subscriptionConfig.paytmEnabled}
+                                                phonepeEnabled={subscriptionConfig.phonepeEnabled}
                                                 sandboxMode={subscriptionConfig.sandboxMode}
                                                 previousStep={handlePublicPreviousStep}
                                                 stripe={stripe}
@@ -887,6 +949,29 @@ const PlansPage = (props) => {
                             <FaShieldAlt className="w-3.5 h-3.5" />
                             <span>Subscription Controls</span>
                         </button>
+
+                        {/* Multi-Currency Switcher Pill Selector */}
+                        <div className="ml-auto flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                            <span className="text-[10px] font-extrabold text-slate-500 uppercase px-2">Currency:</span>
+                            {[
+                                { code: 'INR', symbol: '₹' },
+                                { code: 'USD', symbol: '$' },
+                                { code: 'EUR', symbol: '€' },
+                                { code: 'GBP', symbol: '£' },
+                            ].map((c) => (
+                                <button
+                                    key={c.code}
+                                    type="button"
+                                    onClick={() => setSelectedCurrency(c.code)}
+                                    className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                                        selectedCurrency === c.code
+                                            ? 'bg-white text-indigo-700 shadow-xs border border-indigo-200'
+                                            : 'text-slate-600 hover:text-slate-900 font-bold'
+                                    }`}>
+                                    {c.symbol} {c.code}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
                     {/* TAB 1: PLANS & UPGRADES */}
@@ -1215,6 +1300,8 @@ const PlansPage = (props) => {
                                                     stripeEnabled={subscriptionConfig.stripeEnabled}
                                                     paypalEnabled={subscriptionConfig.paypalEnabled}
                                                     razorpayEnabled={subscriptionConfig.razorpayEnabled}
+                                                    paytmEnabled={subscriptionConfig.paytmEnabled}
+                                                    phonepeEnabled={subscriptionConfig.phonepeEnabled}
                                                     sandboxMode={subscriptionConfig.sandboxMode}
                                                     previousStep={() => setStep(1)}
                                                     stripe={stripe}

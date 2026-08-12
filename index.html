@@ -37,9 +37,18 @@
     <!-- Self-hosted Poppins font (served locally so Playwright can load it without Google CDN) -->
     <link rel="preload" href="/fonts/poppins.css" as="style">
     <link href="/fonts/poppins.css" rel="stylesheet">
-  </head>
   <body>
     <div id="root"></div>
+    <script>
+      window.addEventListener('error', function (e) {
+        if (e.message && (e.message.indexOf('module script') !== -1 || e.message.indexOf('Loading chunk') !== -1 || e.message.indexOf('MIME type') !== -1)) {
+          if (!sessionStorage.getItem('chunk_reload')) {
+            sessionStorage.setItem('chunk_reload', 'true');
+            window.location.reload(true);
+          }
+        }
+      }, true);
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
