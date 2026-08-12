@@ -339,26 +339,31 @@ const PlansPage = (props) => {
         setCouponError('');
     };
 
-    // Printable PDF Invoice Generator with Instant Executive Styling
+    // ── 10/10 Indian GST Tax Invoice & Payment Receipt Generator ────────────────
     const handleDownloadInvoice = (txn) => {
         const printWindow = window.open('', '_blank');
         if (!printWindow) {
-            alert('Please allow popups to download/print your PDF invoice.');
+            alert('Please allow popups to download/print your PDF tax invoice.');
             return;
         }
 
-        const siteTitle = (conf.brand?.name || 'RESUMEPILOT AI').toUpperCase();
-        const txnId = txn.transactionId || txn.txnId || txn.id || `TXN_${Date.now()}`;
-        const taxName = txn.taxName || 'GST';
-        const taxRate = txn.taxRate !== undefined ? txn.taxRate : 18;
-        const totalPrice = txn.amount !== undefined ? txn.amount : (txn.price || '499');
-        const subtotal = txn.subtotal !== undefined ? txn.subtotal : (parseFloat(totalPrice) / (1 + (taxRate / 100))).toFixed(2);
-        const taxAmount = txn.taxAmount !== undefined ? txn.taxAmount : (parseFloat(totalPrice) - parseFloat(subtotal)).toFixed(2);
-        const companyTaxId = txn.companyTaxId || '27AABCU9603R1ZM';
-        const customerTaxId = txn.customerTaxId || '';
-        const currency = txn.currency || subscriptionConfig.currency || 'INR';
-        const currencySymbol = currency === 'INR' ? '₹' : (currency === 'EUR' ? '€' : '$');
+        // Supplier Snapshot
+        const supplierLegalName = subscriptionConfig.supplierLegalName || 'ResumePilot Technologies Private Limited';
+        const supplierTradeName = (subscriptionConfig.supplierTradeName || conf.brand?.name || 'RESUMEPILOT AI').toUpperCase();
+        const supplierGstin = subscriptionConfig.supplierGstin || subscriptionConfig.companyTaxId || conf.companyTaxId || '27AABCU9603R1ZM';
+        const supplierPan = subscriptionConfig.supplierPan || 'AABCU9603R';
+        const supplierAddress = subscriptionConfig.supplierAddress || 'Unit 402, Apex Business Park, BKC, Bandra East';
+        const supplierCity = subscriptionConfig.supplierCity || 'Mumbai';
+        const supplierState = subscriptionConfig.supplierState || 'Maharashtra';
+        const supplierStateCode = String(subscriptionConfig.supplierStateCode || '27').padStart(2, '0');
+        const supplierSacCode = subscriptionConfig.sacCode || '998313';
+        const supplierEmail = 'billing@projectdemo.guru';
+        const supplierPhone = '+91 98765 43210';
+        const supplierWebsite = 'https://airesume.projectdemo.guru';
+        const invoicePrefix = subscriptionConfig.invoicePrefix || 'RPAI';
+        const financialYear = subscriptionConfig.financialYear || '26-27';
 
+        // Customer Snapshot & B2B / B2C Detection
         const rawName = candidateName || txn.customerName || (props.user ? props.user.displayName : '');
         let billedCustomerName = 'Valued Candidate';
         if (rawName && typeof rawName === 'string' && !rawName.toLowerCase().includes('welcome')) {
@@ -368,37 +373,138 @@ const PlansPage = (props) => {
             billedCustomerName = parts.charAt(0).toUpperCase() + parts.slice(1);
         }
 
+        const customerEmail = txn.customerEmail || userEmail || '';
+        const customerGstin = (txn.customerGstin || txn.customerTaxId || '').trim();
+        const customerCompany = txn.customerCompany || '';
+        const customerAddress = txn.customerAddress || 'Bandra West';
+        const customerCity = txn.customerCity || 'Mumbai';
+        const customerState = txn.customerState || 'Maharashtra';
+        const customerStateCode = String(txn.customerStateCode || (customerState.toLowerCase().includes('delhi') ? '07' : (customerState.toLowerCase().includes('karnataka') ? '29' : '27'))).padStart(2, '0');
+        const customerCountry = txn.customerCountry || 'India';
+
+        const isB2B = Boolean(customerGstin && customerGstin.length === 15);
+        const invoiceTitle = isB2B ? 'B2B GST Tax Invoice & Payment Receipt' : 'Tax Invoice & Payment Receipt';
+        const customerType = isB2B ? 'B2B Registered Entity' : 'B2C / Individual Customer';
+
+        // Sequential Invoice Numbering & Payment Reference
+        const txnId = txn.transactionId || txn.txnId || txn.paymentReference || txn.id || `TXN_${Date.now()}`;
+        const invoiceNo = txn.invoiceNumber || `${invoicePrefix}/${financialYear}/${String(txn.id || Date.now()).slice(-6)}`;
+
+        // Dates & Payment Details
         const formattedDate = txn.created_at?.toDate
             ? txn.created_at.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
             : (txn.createdDateString || txn.date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }));
+        const paymentMethod = txn.paymentMethod || txn.paimentType || 'Razorpay UPI / Net Banking';
+
+        // Tax Math & Intra/Inter State Breakdown
+        const totalPrice = parseFloat(txn.amount !== undefined ? txn.amount : (txn.price || '499')) || 499;
+        const gstRate = parseFloat(subscriptionConfig.taxRate !== undefined ? subscriptionConfig.taxRate : 18) || 18;
+        const currency = (txn.currency || subscriptionConfig.currency || 'INR').toUpperCase();
+        const currencySymbol = currency === 'INR' ? '₹' : (currency === 'EUR' ? '€' : '$');
+
+        const taxableAmount = parseFloat((totalPrice / (1 + (gstRate / 100))).toFixed(2));
+        const totalTax = parseFloat((totalPrice - taxableAmount).toFixed(2));
+
+        const isIntraState = supplierStateCode === customerStateCode;
+        let cgstAmount = 0, sgstAmount = 0, igstAmount = 0;
+        let cgstRate = 0, sgstRate = 0, igstRate = 0;
+
+        if (isIntraState) {
+            cgstRate = gstRate / 2;
+            sgstRate = gstRate / 2;
+            cgstAmount = parseFloat((totalTax / 2).toFixed(2));
+            sgstAmount = parseFloat((totalTax / 2).toFixed(2));
+        } else {
+            igstRate = gstRate;
+            igstAmount = totalTax;
+        }
+
+        // Amount in Words Generator (Rupees & Paise)
+        const units = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
+            'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+        const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+        function convertGroup(n) {
+            if (n === 0) return '';
+            if (n < 20) return units[n];
+            if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + units[n % 10] : '');
+            return units[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' ' + convertGroup(n % 100) : '');
+        }
+
+        function convertRupees(n) {
+            if (n === 0) return 'Zero';
+            const crore = Math.floor(n / 10000000);
+            n %= 10000000;
+            const lakh = Math.floor(n / 100000);
+            n %= 100000;
+            const thousand = Math.floor(n / 1000);
+            n %= 1000;
+            const hundred = n;
+
+            let str = '';
+            if (crore > 0) str += convertGroup(crore) + ' Crore ';
+            if (lakh > 0) str += convertGroup(lakh) + ' Lakh ';
+            if (thousand > 0) str += convertGroup(thousand) + ' Thousand ';
+            if (hundred > 0) str += convertGroup(hundred);
+            return str.trim();
+        }
+
+        const rupees = Math.floor(totalPrice);
+        const paise = Math.round((totalPrice - rupees) * 100);
+        const rupeesWords = convertRupees(rupees);
+        const paiseWords = paise > 0 ? convertGroup(paise) : '';
+        const mainUnit = currency === 'INR' ? 'Rupees' : (currency === 'USD' ? 'Dollars' : 'Euros');
+        const subUnit = currency === 'INR' ? 'Paise' : 'Cents';
+        const amountInWords = paise > 0
+            ? `${rupeesWords} ${mainUnit} and ${paiseWords} ${subUnit} Only`
+            : `${rupeesWords} ${mainUnit} Only`;
+
+        const planTitle = txn.planName || txn.planType || 'Annual Resume Builder AI Subscription – 12 Months';
 
         const templateStyles = `
-            @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@600;800&display=swap');
+            @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;800&display=swap');
             * { box-sizing: border-box; margin: 0; padding: 0; }
-            body { font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; background: #f8fafc; color: #0f172a; line-height: 1.5; padding: 30px; }
-            .invoice-card { max-width: 800px; margin: 0 auto; background: #ffffff; border-radius: 24px; box-shadow: 0 20px 40px rgba(15,23,42,0.08); border: 1px solid #e2e8f0; overflow: hidden; }
-            .header-bar { background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); color: #ffffff; padding: 36px 40px; display: flex; justify-content: space-between; align-items: center; position: relative; }
+            body { font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; background: #f1f5f9; color: #0f172a; line-height: 1.5; padding: 24px; }
+            .invoice-card { max-width: 860px; margin: 0 auto; background: #ffffff; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(15,23,42,0.12); border: 1px solid #cbd5e1; overflow: hidden; }
+            .header-bar { background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); color: #ffffff; padding: 32px 40px; display: flex; justify-content: space-between; align-items: flex-start; position: relative; }
             .header-bar::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #4f46e5, #ec4899, #8b5cf6); }
-            .brand-title { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; color: #ffffff; text-transform: uppercase; }
-            .brand-subtitle { font-size: 12px; color: #94a3b8; font-weight: 600; margin-top: 4px; }
-            .paid-badge { background: rgba(16,185,129,0.15); border: 1.5px solid #10b981; color: #34d399; font-size: 12px; font-weight: 800; padding: 6px 18px; border-radius: 99px; text-transform: uppercase; letter-spacing: 1px; }
-            .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; padding: 36px 40px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+            .brand-title { font-size: 26px; font-weight: 900; letter-spacing: -0.5px; color: #ffffff; text-transform: uppercase; }
+            .brand-subtitle { font-size: 13px; color: #a5b4fc; font-weight: 700; margin-top: 4px; letter-spacing: 0.5px; text-transform: uppercase; }
+            .copy-tag { background: #312e81; border: 1px solid #4338ca; color: #c7d2fe; font-size: 10px; font-weight: 800; padding: 4px 12px; border-radius: 6px; text-transform: uppercase; letter-spacing: 1px; margin-top: 10px; display: inline-block; }
+            .paid-badge { background: rgba(16,185,129,0.15); border: 1.5px solid #10b981; color: #34d399; font-size: 13px; font-weight: 800; padding: 6px 20px; border-radius: 99px; text-transform: uppercase; letter-spacing: 1px; }
+            
+            .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding: 28px 40px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+            .meta-box { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 18px 22px; }
             .label { font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
             .val-bold { font-size: 15px; font-weight: 800; color: #0f172a; }
-            .val-sub { font-size: 13px; color: #475569; font-weight: 600; margin-top: 2px; }
-            .table-wrap { padding: 36px 40px; }
-            table { width: 100%; border-collapse: collapse; }
-            th { text-align: left; padding: 14px 16px; background: #f1f5f9; color: #475569; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; border-radius: 8px; }
-            td { padding: 18px 16px; border-bottom: 1px solid #f1f5f9; font-size: 14px; font-weight: 600; color: #1e293b; }
-            .summary-wrap { display: flex; justify-content: flex-end; padding: 0 40px 36px; }
-            .summary-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px 24px; width: 320px; }
-            .sum-line { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 10px; }
-            .sum-line.total { border-top: 2px dashed #cbd5e1; padding-top: 12px; margin-top: 12px; font-size: 16px; font-weight: 800; color: #4f46e5; }
-            .footer-bar { padding: 24px 40px; background: #fafafa; border-top: 1px solid #f1f5f9; text-align: center; font-size: 11px; color: #94a3b8; font-weight: 600; }
+            .val-sub { font-size: 12px; color: #475569; font-weight: 600; margin-top: 3px; line-height: 1.4; }
+            .val-code { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: #4f46e5; }
+            
+            .compliance-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 16px 40px; background: #eef2ff; border-bottom: 1px solid #e0e7ff; text-align: center; }
+            .comp-item .c-label { font-size: 9px; font-weight: 800; color: #4338ca; text-transform: uppercase; tracking: 0.5px; }
+            .comp-item .c-val { font-size: 12px; font-weight: 800; color: #1e1b4b; margin-top: 2px; }
+
+            .table-wrap { padding: 28px 40px 16px; }
+            table { width: 100%; border-collapse: separate; border-spacing: 0; }
+            th { text-align: left; padding: 12px 14px; background: #0f172a; color: #f8fafc; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+            th:first-child { border-top-left-radius: 10px; border-bottom-left-radius: 10px; }
+            th:last-child { border-top-right-radius: 10px; border-bottom-right-radius: 10px; text-align: right; }
+            td { padding: 16px 14px; border-bottom: 1px solid #f1f5f9; font-size: 13px; font-weight: 600; color: #1e293b; }
+            td:last-child { text-align: right; }
+
+            .summary-section { display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; padding: 0 40px 28px; }
+            .words-box { background: #f8fafc; border: 1px border-dashed #cbd5e1; border-radius: 14px; padding: 18px 20px; display: flex; flex-direction: column; justify-content: space-between; }
+            .summary-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 18px 20px; }
+            .sum-line { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 8px; }
+            .sum-line.total { border-top: 2px solid #0f172a; padding-top: 10px; margin-top: 10px; font-size: 16px; font-weight: 900; color: #0f172a; }
+
+            .audit-box { margin: 0 40px 28px; padding: 16px 20px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 14px; display: flex; justify-content: space-between; align-items: center; }
+            .footer-bar { padding: 20px 40px; background: #fafafa; border-top: 1px solid #f1f5f9; text-align: center; font-size: 11px; color: #64748b; font-weight: 600; }
+            
             @media print {
                 .no-print { display: none !important; }
                 body { background: #fff !important; padding: 0 !important; }
-                .invoice-card { border: none !important; box-shadow: none !important; max-width: 100% !important; }
+                .invoice-card { border: none !important; box-shadow: none !important; max-width: 100% !important; border-radius: 0 !important; }
             }
         `;
 
@@ -406,16 +512,16 @@ const PlansPage = (props) => {
             <!DOCTYPE html>
             <html>
             <head>
-                <title>Tax Invoice - ${txnId}</title>
+                <title>${invoiceTitle} - ${invoiceNo}</title>
                 <style>${templateStyles}</style>
             </head>
             <body>
-                <div class="no-print" style="position: sticky; top: 0; z-index: 100; background: #0f172a; color: #fff; padding: 14px 28px; display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #4f46e5; box-shadow: 0 10px 25px rgba(0,0,0,0.2); margin-bottom: 30px; border-radius: 16px;">
+                <div class="no-print" style="position: sticky; top: 0; z-index: 100; background: #0f172a; color: #fff; padding: 14px 28px; display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #4f46e5; box-shadow: 0 10px 25px rgba(0,0,0,0.2); margin-bottom: 24px; border-radius: 16px;">
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #4f46e5, #7c3aed); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 16px; color: #fff;">📄</div>
                         <div>
-                            <strong style="font-size: 15px; display: block; font-weight: 800;">Official B2B Tax Invoice</strong>
-                            <span style="font-size: 11px; color: #94a3b8; font-family: 'JetBrains Mono', monospace;">REF: ${txnId}</span>
+                            <strong style="font-size: 15px; display: block; font-weight: 800;">${invoiceTitle}</strong>
+                            <span style="font-size: 11px; color: #94a3b8; font-family: 'JetBrains Mono', monospace;">INVOICE NO: ${invoiceNo}</span>
                         </div>
                     </div>
                     <div style="display: flex; gap: 12px;">
@@ -427,62 +533,150 @@ const PlansPage = (props) => {
                 </div>
 
                 <div class="invoice-card">
+                    <!-- Header -->
                     <div class="header-bar">
                         <div>
-                            <div class="brand-title">${siteTitle}</div>
-                            <div class="brand-subtitle">Official GST Tax Invoice &amp; Payment Voucher</div>
-                            ${companyTaxId ? `<div style="font-size: 11px; color: #cbd5e1; margin-top: 6px; font-weight: 700;">Supplier GSTIN / Reg: ${companyTaxId}</div>` : ''}
-                        </div>
-                        <div class="paid-badge">PAID ✓</div>
-                    </div>
-
-                    <div class="details-grid">
-                        <div>
-                            <div class="label">Billed To</div>
-                            <div class="val-bold">${billedCustomerName}</div>
-                            <div class="val-sub">${userEmail || ''}</div>
-                            ${customerTaxId ? `<div class="val-sub" style="font-weight: 700; color: #4f46e5; margin-top: 4px;">Customer GSTIN: ${customerTaxId}</div>` : ''}
+                            <div class="brand-title">${supplierTradeName}</div>
+                            <div class="brand-subtitle">${invoiceTitle}</div>
+                            <div class="copy-tag">Original for Recipient</div>
                         </div>
                         <div style="text-align: right;">
-                            <div class="label">Invoice Details</div>
-                            <div class="val-bold" style="font-family: 'JetBrains Mono', monospace; font-size: 13px;">${txnId}</div>
-                            <div class="val-sub">Date: ${formattedDate}</div>
-                            <div class="val-sub" style="font-weight: 700; color: #059669;">Status: ${txn.status || 'Completed'}</div>
+                            <div class="paid-badge">PAID ✓</div>
+                            <div style="font-size: 11px; color: #cbd5e1; font-weight: 700; margin-top: 8px;">Date: ${formattedDate}</div>
                         </div>
                     </div>
 
+                    <!-- Compliance Bar -->
+                    <div class="compliance-bar">
+                        <div class="comp-item">
+                            <div class="c-label">Invoice Number</div>
+                            <div class="c-val" style="font-family: 'JetBrains Mono', monospace;">${invoiceNo}</div>
+                        </div>
+                        <div class="comp-item">
+                            <div class="c-label">Place of Supply</div>
+                            <div class="c-val">${customerState} (${customerStateCode})</div>
+                        </div>
+                        <div class="comp-item">
+                            <div class="c-label">Reverse Charge</div>
+                            <div class="c-val">No</div>
+                        </div>
+                        <div class="comp-item">
+                            <div class="c-label">Customer Type</div>
+                            <div class="c-val">${customerType}</div>
+                        </div>
+                    </div>
+
+                    <!-- Meta Grid: Supplier vs Customer -->
+                    <div class="meta-grid">
+                        <div class="meta-box">
+                            <div class="label">Supplier / Business Details</div>
+                            <div class="val-bold">${supplierLegalName}</div>
+                            <div class="val-sub">${supplierAddress}, ${supplierCity}, ${supplierState} - ${subscriptionConfig.supplierPincode || '400051'}</div>
+                            <div class="val-sub"><strong style="color:#0f172a">GSTIN:</strong> <span class="val-code">${supplierGstin}</span></div>
+                            <div class="val-sub"><strong style="color:#0f172a">PAN:</strong> ${supplierPan} | <strong style="color:#0f172a">SAC:</strong> ${supplierSacCode}</div>
+                            <div class="val-sub">${supplierEmail} | ${supplierWebsite}</div>
+                        </div>
+
+                        <div class="meta-box">
+                            <div class="label">Billed To (Customer)</div>
+                            <div class="val-bold">${billedCustomerName}</div>
+                            ${customerCompany ? `<div class="val-sub" style="font-weight:700; color:#4f46e5;">${customerCompany}</div>` : ''}
+                            <div class="val-sub">${customerAddress}, ${customerCity}, ${customerState} (${customerStateCode}), ${customerCountry}</div>
+                            <div class="val-sub"><strong style="color:#0f172a">Email:</strong> ${customerEmail}</div>
+                            ${customerGstin ? `<div class="val-sub" style="margin-top:6px; background:#eef2ff; padding:4px 8px; border-radius:6px;"><strong style="color:#4338ca">Customer GSTIN:</strong> <span class="val-code">${customerGstin}</span></div>` : ''}
+                        </div>
+                    </div>
+
+                    <!-- Line Item Table -->
                     <div class="table-wrap">
                         <table>
                             <thead>
                                 <tr>
                                     <th>Item Description</th>
-                                    <th>Payment Method</th>
-                                    <th style="text-align: right;">Amount</th>
+                                    <th>HSN/SAC</th>
+                                    <th>Qty</th>
+                                    <th style="text-align: right;">Taxable Value</th>
+                                    ${isIntraState ? `
+                                        <th style="text-align: right;">CGST (${cgstRate}%)</th>
+                                        <th style="text-align: right;">SGST (${sgstRate}%)</th>
+                                    ` : `
+                                        <th style="text-align: right;">IGST (${igstRate}%)</th>
+                                    `}
+                                    <th style="text-align: right;">Total</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
                                     <td>
-                                        <strong style="color: #0f172a; display: block;">${txn.planName || txn.planType || 'VIP Pro Membership Plan'}</strong>
-                                        <span style="font-size: 12px; color: #64748b;">Full Access to AI Resume Builder, Cover Letters &amp; Portfolios</span>
+                                        <strong style="color: #0f172a; display: block; font-size: 14px;">${planTitle}</strong>
+                                        <span style="font-size: 12px; color: #64748b;">Full Access to AI Resume Builder, Cover Letters, Portfolios &amp; Interview Coach</span>
                                     </td>
-                                    <td style="font-weight: 700; color: #4338ca;">${txn.paymentMethod || txn.paimentType || 'Razorpay / Card / UPI'}</td>
-                                    <td style="text-align: right; font-weight: 800; color: #0f172a;">${currencySymbol}${subtotal}</td>
+                                    <td style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">${supplierSacCode}</td>
+                                    <td>1</td>
+                                    <td style="text-align: right; font-weight: 700;">${currencySymbol}${taxableAmount.toFixed(2)}</td>
+                                    ${isIntraState ? `
+                                        <td style="text-align: right; font-weight: 600; color: #475569;">${currencySymbol}${cgstAmount.toFixed(2)}</td>
+                                        <td style="text-align: right; font-weight: 600; color: #475569;">${currencySymbol}${sgstAmount.toFixed(2)}</td>
+                                    ` : `
+                                        <td style="text-align: right; font-weight: 600; color: #475569;">${currencySymbol}${igstAmount.toFixed(2)}</td>
+                                    `}
+                                    <td style="text-align: right; font-weight: 800; color: #0f172a;">${currencySymbol}${totalPrice.toFixed(2)}</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
 
-                    <div class="summary-wrap">
+                    <!-- Summary & Amount in Words Section -->
+                    <div class="summary-section">
+                        <div class="words-box">
+                            <div>
+                                <div class="label">Amount in Words</div>
+                                <div style="font-size: 13px; font-weight: 800; color: #1e1b4b; line-height: 1.4; margin-top: 4px;">
+                                    ${amountInWords}
+                                </div>
+                            </div>
+                            <div style="font-size: 11px; color: #64748b; margin-top: 12px;">
+                                GST Tax Rate: <strong>${gstRate}% (${isIntraState ? 'CGST 9% + SGST 9%' : 'IGST 18%'})</strong>
+                            </div>
+                        </div>
+
                         <div class="summary-card">
-                            <div class="sum-line"><span>Subtotal:</span><span>${currencySymbol}${subtotal}</span></div>
-                            <div class="sum-line"><span>${taxName} (${taxRate}%):</span><span>${currencySymbol}${taxAmount}</span></div>
-                            <div class="sum-line total"><span>Total Amount Paid:</span><span>${currencySymbol}${totalPrice} ${currency}</span></div>
+                            <div class="sum-line"><span>Taxable Value:</span><span>${currencySymbol}${taxableAmount.toFixed(2)}</span></div>
+                            ${isIntraState ? `
+                                <div class="sum-line"><span>CGST (${cgstRate}%):</span><span>${currencySymbol}${cgstAmount.toFixed(2)}</span></div>
+                                <div class="sum-line"><span>SGST (${sgstRate}%):</span><span>${currencySymbol}${sgstAmount.toFixed(2)}</span></div>
+                            ` : `
+                                <div class="sum-line"><span>IGST (${igstRate}%):</span><span>${currencySymbol}${igstAmount.toFixed(2)}</span></div>
+                            `}
+                            <div class="sum-line" style="border-top: 1px dashed #cbd5e1; padding-top: 6px; margin-top: 6px;">
+                                <span>Total GST Tax:</span><span style="font-weight: 800; color: #4f46e5;">${currencySymbol}${totalTax.toFixed(2)}</span>
+                            </div>
+                            <div class="sum-line total">
+                                <span>Grand Total:</span><span>${currencySymbol}${totalPrice.toFixed(2)} ${currency}</span>
+                            </div>
                         </div>
                     </div>
 
+                    <!-- Payment Gateway Audit Record -->
+                    <div class="audit-box">
+                        <div>
+                            <div style="font-size: 10px; font-weight: 800; color: #166534; uppercase; letter-spacing: 0.5px;">Payment Verification Audit</div>
+                            <div style="font-size: 13px; font-weight: 800; color: #14532d; margin-top: 2px;">
+                                Method: <strong>${paymentMethod}</strong> | Status: <span style="color: #059669;">PAID ✓</span>
+                            </div>
+                            <div style="font-size: 11px; color: #15803d; font-family: 'JetBrains Mono', monospace; margin-top: 2px;">
+                                Gateway Ref / Payment ID: ${txnId}
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 11px; font-weight: 700; color: #166534;">Computer Generated Receipt</div>
+                            <div style="font-size: 10px; color: #15803d;">No signature required under IT Act 2000</div>
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
                     <div class="footer-bar">
-                        Thank you for your business with ${siteTitle}. This is a computer-generated tax receipt.
+                        Thank you for subscribing to ${supplierTradeName}. Registered Entity: ${supplierLegalName} (GSTIN: ${supplierGstin}). For billing support, write to ${supplierEmail}.
                     </div>
                 </div>
             </body>

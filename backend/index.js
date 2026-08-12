@@ -626,7 +626,272 @@ app.post('/api/payment/razorpay-order', async (req, res) => {
     }
 });
 
-// Item 35: Invoice PDF Generator Endpoint
+// --- Indian GST Tax Engine Helper Functions ---
+const INDIAN_STATES_DICT = {
+    '01': 'Jammu and Kashmir', '02': 'Himachal Pradesh', '03': 'Punjab', '04': 'Chandigarh',
+    '05': 'Uttarakhand', '06': 'Haryana', '07': 'Delhi', '08': 'Rajasthan', '09': 'Uttar Pradesh',
+    '10': 'Bihar', '11': 'Sikkim', '12': 'Arunachal Pradesh', '13': 'Nagaland', '14': 'Manipur',
+    '15': 'Mizoram', '16': 'Tripura', '17': 'Meghalaya', '18': 'Assam', '19': 'West Bengal',
+    '20': 'Jharkhand', '21': 'Odisha', '22': 'Chhattisgarh', '23': 'Madhya Pradesh', '24': 'Gujarat',
+    '26': 'Dadra and Nagar Haveli and Daman and Diu', '27': 'Maharashtra', '28': 'Andhra Pradesh',
+    '29': 'Karnataka', '30': 'Goa', '31': 'Lakshadweep', '32': 'Kerala', '33': 'Tamil Nadu',
+    '34': 'Puducherry', '35': 'Andaman and Nicobar Islands', '36': 'Telangana', '37': 'Ladakh'
+};
+
+function getStateCode(stateName) {
+    if (!stateName) return '27';
+    const cleaned = stateName.trim().toLowerCase();
+    for (const [code, name] of Object.entries(INDIAN_STATES_DICT)) {
+        if (name.toLowerCase() === cleaned || cleaned.includes(name.toLowerCase())) {
+            return code;
+        }
+    }
+    return '27';
+}
+
+function numberToWordsINR(amount, currency = 'INR') {
+    const num = Math.abs(parseFloat(amount) || 0);
+    const rupees = Math.floor(num);
+    const paise = Math.round((num - rupees) * 100);
+
+    const units = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
+        'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+    function convertGroup(n) {
+        if (n === 0) return '';
+        if (n < 20) return units[n];
+        if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + units[n % 10] : '');
+        return units[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' ' + convertGroup(n % 100) : '');
+    }
+
+    function convertRupees(n) {
+        if (n === 0) return 'Zero';
+        const crore = Math.floor(n / 10000000);
+        n %= 10000000;
+        const lakh = Math.floor(n / 100000);
+        n %= 100000;
+        const thousand = Math.floor(n / 1000);
+        n %= 1000;
+        const hundred = n;
+
+        let str = '';
+        if (crore > 0) str += convertGroup(crore) + ' Crore ';
+        if (lakh > 0) str += convertGroup(lakh) + ' Lakh ';
+        if (thousand > 0) str += convertGroup(thousand) + ' Thousand ';
+        if (hundred > 0) str += convertGroup(hundred);
+        return str.trim();
+    }
+
+    const isINR = (currency || 'INR').toUpperCase() === 'INR';
+    const mainUnit = isINR ? 'Rupees' : (currency === 'USD' ? 'Dollars' : 'Euros');
+    const subUnit = isINR ? 'Paise' : (currency === 'USD' ? 'Cents' : 'Cents');
+
+    const rupeesWords = convertRupees(rupees);
+    const paiseWords = paise > 0 ? convertGroup(paise) : '';
+
+    if (paise > 0) {
+        return `${rupeesWords} ${mainUnit} and ${paiseWords} ${subUnit} Only`;
+    }
+    return `${rupeesWords} ${mainUnit} Only`;
+}
+
+async function getSupplierSnapshot() {
+    let defaults = {
+        legalName: 'ResumePilot Technologies Private Limited',
+        tradeName: 'ResumePilot AI',
+        gstin: '27AABCU9603R1ZM',
+        pan: 'AABCU9603R',
+        address: 'Unit 402, Apex Business Park, Bandra Kurla Complex, Bandra East',
+        city: 'Mumbai',
+        state: 'Maharashtra',
+        stateCode: '27',
+        pincode: '400051',
+        country: 'India',
+        sacCode: '998313',
+        gstRate: 18,
+        invoicePrefix: 'RPAI',
+        financialYear: '26-27',
+        email: 'billing@projectdemo.guru',
+        phone: '+91 98765 43210',
+        website: 'https://airesume.projectdemo.guru'
+    };
+
+    if (db) {
+        try {
+            const doc = await db.collection('data').doc('subscriptions').get();
+            if (doc.exists) {
+                const d = doc.data();
+                if (d.supplierLegalName) defaults.legalName = d.supplierLegalName;
+                if (d.supplierTradeName) defaults.tradeName = d.supplierTradeName;
+                if (d.supplierGstin || d.companyTaxId) defaults.gstin = d.supplierGstin || d.companyTaxId;
+                if (d.supplierPan) defaults.pan = d.supplierPan;
+                if (d.supplierAddress) defaults.address = d.supplierAddress;
+                if (d.supplierState) defaults.state = d.supplierState;
+                if (d.supplierStateCode) defaults.stateCode = d.supplierStateCode;
+                if (d.sacCode) defaults.sacCode = d.sacCode;
+                if (d.taxRate) defaults.gstRate = parseFloat(d.taxRate);
+                if (d.invoicePrefix) defaults.invoicePrefix = d.invoicePrefix;
+                if (d.financialYear) defaults.financialYear = d.financialYear;
+            }
+        } catch (e) {
+            console.warn('[Supplier Config Notice]:', e.message);
+        }
+    }
+    return defaults;
+}
+
+// ── Official GST Tax Invoice Generator API Endpoint ───────────────────────
+app.post('/api/invoice/generate', async (req, res) => {
+    try {
+        const {
+            userId = 'guest',
+            amount = 499,
+            currency = 'INR',
+            plan = 'yearly',
+            planTitle = 'Annual Resume Builder AI Subscription – 12 Months',
+            paymentMethod = 'Razorpay UPI',
+            paymentReference = `TXN_${Date.now()}`,
+            customerName = 'Valued Candidate',
+            customerEmail = '',
+            customerGstin = '',
+            customerCompany = '',
+            customerAddress = 'Bandra West',
+            customerCity = 'Mumbai',
+            customerState = 'Maharashtra',
+            customerStateCode = '',
+            customerCountry = 'India'
+        } = req.body;
+
+        const supplier = await getSupplierSnapshot();
+
+        // Resolve customer state code
+        const resolvedCustomerStateCode = customerStateCode || getStateCode(customerState);
+        const resolvedCustomerState = INDIAN_STATES_DICT[resolvedCustomerStateCode] || customerState || 'Maharashtra';
+
+        // Check B2B vs B2C
+        const isB2B = Boolean(customerGstin && customerGstin.trim().length === 15);
+        const invoiceTitle = isB2B ? 'B2B GST Tax Invoice & Payment Receipt' : 'Tax Invoice & Payment Receipt';
+        const customerType = isB2B ? 'B2B' : 'B2C / Individual';
+
+        // Intra-State vs Inter-State Tax Engine
+        const isIntraState = String(supplier.stateCode).padStart(2, '0') === String(resolvedCustomerStateCode).padStart(2, '0');
+        const totalAmount = parseFloat(amount) || 499;
+        const gstRate = parseFloat(supplier.gstRate) || 18;
+
+        // Calculate Taxable Amount & GST Breakdown (Tax-Inclusive by Default)
+        const taxableAmount = parseFloat((totalAmount / (1 + (gstRate / 100))).toFixed(2));
+        const totalTax = parseFloat((totalAmount - taxableAmount).toFixed(2));
+
+        let cgstRate = 0, sgstRate = 0, igstRate = 0;
+        let cgstAmount = 0, sgstAmount = 0, igstAmount = 0;
+
+        if (isIntraState) {
+            cgstRate = gstRate / 2;
+            sgstRate = gstRate / 2;
+            cgstAmount = parseFloat((totalTax / 2).toFixed(2));
+            sgstAmount = parseFloat((totalTax / 2).toFixed(2));
+        } else {
+            igstRate = gstRate;
+            igstAmount = totalTax;
+        }
+
+        const grandTotal = totalAmount;
+        const amountInWords = numberToWordsINR(grandTotal, currency);
+
+        // Generate Server-Side Sequential GST Invoice Number (Format: RPAI/26-27/000001)
+        let invoiceSeq = 1;
+        if (db) {
+            try {
+                const counterDocRef = db.collection('data').doc('invoice_counter');
+                const counterDoc = await counterDocRef.get();
+                if (counterDoc.exists) {
+                    invoiceSeq = (counterDoc.data().currentSeq || 0) + 1;
+                    await counterDocRef.update({ currentSeq: invoiceSeq });
+                } else {
+                    await counterDocRef.set({ currentSeq: 1 });
+                }
+            } catch (e) {
+                console.warn('[Invoice Counter Notice]:', e.message);
+            }
+        }
+        const seqFormatted = String(invoiceSeq).padStart(6, '0');
+        const invoiceNumber = `${supplier.invoicePrefix}/${supplier.financialYear}/${seqFormatted}`;
+
+        // Construct Immutable Invoice Document Payload
+        const invoiceRecord = {
+            invoiceNumber,
+            invoiceSeq,
+            invoiceTitle,
+            financialYear: supplier.financialYear,
+            invoiceDate: new Date().toISOString(),
+            formattedDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            userId,
+            paymentMethod,
+            paymentReference,
+            paymentStatus: 'PAID',
+            currency,
+            subtotal: taxableAmount,
+            taxableAmount,
+            gstRate,
+            isIntraState,
+            cgstRate,
+            sgstRate,
+            igstRate,
+            cgstAmount,
+            sgstAmount,
+            igstAmount,
+            totalTax,
+            grandTotal,
+            amountInWords,
+            placeOfSupply: `${resolvedCustomerState} (${resolvedCustomerStateCode})`,
+            reverseCharge: 'No',
+            sacCode: supplier.sacCode,
+            customerSnapshot: {
+                name: customerName,
+                company: customerCompany,
+                email: customerEmail,
+                gstin: customerGstin,
+                type: customerType,
+                address: customerAddress,
+                city: customerCity,
+                state: resolvedCustomerState,
+                stateCode: resolvedCustomerStateCode,
+                country: customerCountry
+            },
+            supplierSnapshot: supplier,
+            lineItems: [
+                {
+                    description: planTitle || `${plan.toUpperCase()} Resume Builder AI Subscription`,
+                    sacCode: supplier.sacCode,
+                    quantity: 1,
+                    unitPrice: taxableAmount,
+                    taxableValue: taxableAmount,
+                    gstRate: gstRate,
+                    total: grandTotal
+                }
+            ],
+            created_at: new Date()
+        };
+
+        // Save into Firestore if db available
+        if (db) {
+            try {
+                await db.collection('invoices').doc(invoiceNumber.replace(/\//g, '_')).set(invoiceRecord);
+                await db.collection('users').doc(userId).collection('invoices').doc(invoiceNumber.replace(/\//g, '_')).set(invoiceRecord);
+            } catch (e) {
+                console.warn('[Invoice Save Notice]:', e.message);
+            }
+        }
+
+        res.json({ success: true, invoice: invoiceRecord });
+    } catch (err) {
+        console.error('[Invoice Generation Error]:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Legacy / Compatibility Endpoint
 app.post('/api/invoice', async (req, res) => {
     const { userId, invoiceId, amount, date, plan } = req.body;
     res.json({
@@ -634,7 +899,7 @@ app.post('/api/invoice', async (req, res) => {
         invoice: {
             invoiceId: invoiceId || `INV-${Date.now()}`,
             userId: userId || 'customer',
-            amount: amount || '$29.00',
+            amount: amount || '₹499.00',
             date: date || new Date().toLocaleDateString(),
             plan: plan || 'Premium Subscription',
             status: 'PAID',
