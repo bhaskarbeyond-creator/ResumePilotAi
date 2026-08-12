@@ -550,14 +550,14 @@ export async function makeUserAdminByEmail(email) {
     }
 }
 
-// Save backup snapshot before account deletion
-async function saveUserBackup(deletedUserId, keeperUserId, deletedUserData) {
+// Save backup snapshot before account deletion (for both merges & manual admin deletions)
+async function saveUserBackup(deletedUserId, keeperUserId, deletedUserData, actionType = 'merged') {
     const db = fire.firestore();
     try {
         await db.collection('merged_user_backups').doc(deletedUserId).set({
             backupId: deletedUserId,
             originalUserId: deletedUserId,
-            mergedIntoUserId: keeperUserId,
+            mergedIntoUserId: keeperUserId || null,
             email: deletedUserData.email || '',
             firstname: deletedUserData.firstname || '',
             lastname: deletedUserData.lastname || '',
@@ -565,9 +565,9 @@ async function saveUserBackup(deletedUserId, keeperUserId, deletedUserData) {
             userData: deletedUserData,
             mergedAt: firebase.firestore.FieldValue.serverTimestamp(),
             mergedBy: fire.auth().currentUser?.email || 'Admin',
-            status: 'merged',
+            status: actionType, // 'merged' or 'deleted'
         });
-        console.log(`📦 Saved user backup for ${deletedUserId}`);
+        console.log(`📦 Saved user backup snapshot for ${deletedUserId} (${actionType})`);
     } catch (e) {
         console.warn('⚠️ Could not save user backup:', e.message);
     }
@@ -590,7 +590,7 @@ export async function mergeUserAccounts(keepUserId, deleteUserId) {
         const deleteData = deleteSnap.data();
 
         // Save backup of duplicate account BEFORE deletion for safe restore
-        await saveUserBackup(deleteUserId, keepUserId, deleteData);
+        await saveUserBackup(deleteUserId, keepUserId, deleteData, 'merged');
 
         // Merge strategy: take the "best" value from either account
         const mergedUpdate = {};
@@ -699,7 +699,7 @@ export async function bulkMergeDuplicateUsers() {
     }
 }
 
-// Fetch all merged account backups for safe restore inspection
+// Fetch all merged/deleted account backups for safe restore inspection
 export async function getMergedUserBackups() {
     const db = fire.firestore();
     try {
@@ -760,18 +760,29 @@ export async function restoreMergedUserAccount(backupId) {
     }
 }
 
-// Function to delete user record from Firestore by Admin
+// Function to delete user record from Firestore by Admin (with automatic backup for safe restore)
 export async function deleteUserByAdmin(userId) {
     const db = fire.firestore();
     try {
-        await db.collection('users').doc(userId).delete();
+        const userRef = db.collection('users').doc(userId);
+        const userSnap = await userRef.get();
+        
+        if (userSnap.exists) {
+            const userData = userSnap.data();
+            // Save full backup snapshot before deletion for safe restore capability
+            await saveUserBackup(userId, null, userData, 'deleted');
+            await userRef.delete();
+        } else {
+            await userRef.delete();
+        }
+
         try {
             const statsRef = db.collection('data').doc('stats');
             await statsRef.update({
                 numberOfUsers: fire.firestore.FieldValue.increment(-1),
             });
         } catch (e) {}
-        return { success: true, message: 'User deleted successfully.' };
+        return { success: true, message: 'User deleted successfully (Backup saved to Backup History).' };
     } catch (error) {
         console.error('Error deleting user:', error);
         return { success: false, error: error.message };
