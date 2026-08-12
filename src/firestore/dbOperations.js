@@ -550,9 +550,31 @@ export async function makeUserAdminByEmail(email) {
     }
 }
 
+// Save backup snapshot before account deletion
+async function saveUserBackup(deletedUserId, keeperUserId, deletedUserData) {
+    const db = fire.firestore();
+    try {
+        await db.collection('merged_user_backups').doc(deletedUserId).set({
+            backupId: deletedUserId,
+            originalUserId: deletedUserId,
+            mergedIntoUserId: keeperUserId,
+            email: deletedUserData.email || '',
+            firstname: deletedUserData.firstname || '',
+            lastname: deletedUserData.lastname || '',
+            membership: deletedUserData.membership || 'Basic',
+            userData: deletedUserData,
+            mergedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            mergedBy: fire.auth().currentUser?.email || 'Admin',
+            status: 'merged',
+        });
+        console.log(`📦 Saved user backup for ${deletedUserId}`);
+    } catch (e) {
+        console.warn('⚠️ Could not save user backup:', e.message);
+    }
+}
+
 // Merge duplicate user accounts (same email, different UIDs).
-// Keeps the "primary" account (with better membership) and deletes the "duplicate".
-// Merges admin status, membership tier, expiry, and profile data from both accounts.
+// Keeps the "primary" account (with better membership) and creates a backup of the deleted account.
 export async function mergeUserAccounts(keepUserId, deleteUserId) {
     const db = fire.firestore();
     try {
@@ -566,6 +588,9 @@ export async function mergeUserAccounts(keepUserId, deleteUserId) {
 
         const keepData = keepSnap.data();
         const deleteData = deleteSnap.data();
+
+        // Save backup of duplicate account BEFORE deletion for safe restore
+        await saveUserBackup(deleteUserId, keepUserId, deleteData);
 
         // Merge strategy: take the "best" value from either account
         const mergedUpdate = {};
@@ -613,9 +638,124 @@ export async function mergeUserAccounts(keepUserId, deleteUserId) {
         } catch (e) { /* stats doc may not exist */ }
 
         console.log(`✅ Merged user ${deleteUserId} into ${keepUserId}`);
-        return { success: true, message: `Accounts merged successfully. Kept UID: ${keepUserId}` };
+        return { success: true, message: `Accounts merged successfully. Kept UID: ${keepUserId} (Backup saved).` };
     } catch (error) {
         console.error('❌ Error merging users:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+// Bulk merge all duplicate accounts across the system with safe backup snapshots
+export async function bulkMergeDuplicateUsers() {
+    const db = fire.firestore();
+    try {
+        const usersSnap = await db.collection('users').get();
+        if (usersSnap.empty) {
+            return { success: true, count: 0, message: 'No users found.' };
+        }
+
+        // Group users by email
+        const emailMap = {};
+        usersSnap.forEach((doc) => {
+            const data = doc.data();
+            if (data.email && data.email !== 'Not Provided') {
+                const key = data.email.toLowerCase().trim();
+                if (!emailMap[key]) emailMap[key] = [];
+                emailMap[key].push({ id: doc.id, ...data });
+            }
+        });
+
+        const tierRank = (u) => (u.membership === 'Premium' ? 10 : 0) + (u.isA ? 5 : 0);
+        let totalMerged = 0;
+        let duplicateEmailsCount = 0;
+
+        for (const email of Object.keys(emailMap)) {
+            const accounts = emailMap[email];
+            if (accounts.length > 1) {
+                duplicateEmailsCount++;
+                // Sort accounts: best account first
+                accounts.sort((a, b) => tierRank(b) - tierRank(a));
+                const keeper = accounts[0];
+
+                for (let i = 1; i < accounts.length; i++) {
+                    const duplicate = accounts[i];
+                    await mergeUserAccounts(keeper.id, duplicate.id);
+                    totalMerged++;
+                }
+            }
+        }
+
+        return {
+            success: true,
+            totalMerged,
+            duplicateEmailsCount,
+            message: totalMerged > 0
+                ? `Bulk merge completed! Merged ${totalMerged} duplicate account(s) across ${duplicateEmailsCount} email(s). All backups saved.`
+                : 'No duplicate accounts found to merge.'
+        };
+    } catch (error) {
+        console.error('❌ Error during bulk merge:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+// Fetch all merged account backups for safe restore inspection
+export async function getMergedUserBackups() {
+    const db = fire.firestore();
+    try {
+        const snapshot = await db.collection('merged_user_backups').get();
+        const backups = [];
+        snapshot.forEach((doc) => {
+            backups.push({ id: doc.id, ...doc.data() });
+        });
+        // Sort newest first
+        backups.sort((a, b) => {
+            const tA = a.mergedAt?.toDate ? a.mergedAt.toDate().getTime() : 0;
+            const tB = b.mergedAt?.toDate ? b.mergedAt.toDate().getTime() : 0;
+            return tB - tA;
+        });
+        return backups;
+    } catch (error) {
+        console.error('Error fetching merged backups:', error);
+        return [];
+    }
+}
+
+// Restore a previously merged/deleted user account from backup
+export async function restoreMergedUserAccount(backupId) {
+    const db = fire.firestore();
+    try {
+        const backupRef = db.collection('merged_user_backups').doc(backupId);
+        const backupSnap = await backupRef.get();
+
+        if (!backupSnap.exists) {
+            return { success: false, error: 'Backup snapshot not found.' };
+        }
+
+        const backupData = backupSnap.data();
+        const userData = backupData.userData || {};
+
+        // Restore user document to 'users' collection
+        await db.collection('users').doc(backupId).set({
+            ...userData,
+            userId: backupId,
+            restoredAt: firebase.firestore.FieldValue.serverTimestamp(),
+        });
+
+        // Delete backup record (or mark as restored)
+        await backupRef.delete();
+
+        // Increment stats user count
+        try {
+            await db.collection('data').doc('stats').update({
+                numberOfUsers: fire.firestore.FieldValue.increment(1),
+            });
+        } catch (e) { /* stats doc may not exist */ }
+
+        console.log(`↩ Restored user account ${backupId} (${backupData.email})`);
+        return { success: true, message: `Account ${backupData.email} (${backupId.slice(0, 8)}...) restored successfully!` };
+    } catch (error) {
+        console.error('❌ Error restoring user account:', error);
         return { success: false, error: error.message };
     }
 }
