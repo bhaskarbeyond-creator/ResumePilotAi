@@ -291,39 +291,51 @@ export async function getUserTransactions(uid) {
     try {
         const db = fire.firestore();
         const snapshot = await db.collection('transactions').where('userId', '==', uid).get();
+        const list = [];
         if (!snapshot.empty) {
-            return snapshot.docs.map(doc => {
+            snapshot.docs.forEach(doc => {
                 const data = doc.data();
-                return {
+                list.push({
                     id: doc.id,
-                    transactionId: data.transactionId || `TXN_${doc.id.substring(0, 8).toUpperCase()}`,
-                    planType: data.planType || 'Pro Subscription',
-                    paimentType: data.paimentType || 'Card',
-                    price: data.price || 19.99,
+                    txnId: data.txnId || data.transactionId || `TXN-${doc.id.substring(0, 8).toUpperCase()}`,
+                    planName: data.planName || data.planType || 'AI Resume Builder PRO Subscription',
+                    paymentMethod: data.paymentMethod || data.paimentType || 'Credit Card / UPI / PayPal',
+                    amount: data.amount !== undefined ? data.amount : (data.price !== undefined ? data.price : 499),
                     currency: data.currency || 'USD',
                     status: data.status || 'Completed',
-                    date: data.created_at ? new Date(data.created_at.seconds * 1000).toISOString() : new Date().toISOString()
-                };
+                    durationMonths: data.durationMonths || 12,
+                    createdDateString: data.createdDateString || (data.createdAt?.toDate ? data.createdAt.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })),
+                    createdAt: data.createdAt || null
+                });
             });
         }
-        // Fallback to subscriptions collection
-        const subSnapshot = await db.collection('subscriptions').where('userId', '==', uid).get();
-        if (!subSnapshot.empty) {
-            return subSnapshot.docs.map((doc, idx) => {
-                const data = doc.data();
-                return {
-                    id: doc.id,
-                    transactionId: `TXN_${doc.id.substring(0, 8).toUpperCase()}`,
-                    planType: data.type || 'Pro Subscription',
-                    paimentType: data.paimentType || 'Card / PayPal',
-                    price: 19.99,
-                    currency: 'USD',
-                    status: 'Completed',
-                    date: data.created_at ? new Date(data.created_at.seconds * 1000).toISOString() : new Date().toISOString()
-                };
-            });
+        // Fallback to subscriptions collection if transactions is empty
+        if (list.length === 0) {
+            const subSnapshot = await db.collection('subscriptions').where('userId', '==', uid).get();
+            if (!subSnapshot.empty) {
+                subSnapshot.docs.forEach(doc => {
+                    const data = doc.data();
+                    list.push({
+                        id: doc.id,
+                        txnId: `TXN-${doc.id.substring(0, 8).toUpperCase()}`,
+                        planName: data.type || 'PRO Membership',
+                        paymentMethod: data.paimentType || 'Card / PayPal',
+                        amount: 499,
+                        currency: 'USD',
+                        status: 'Completed',
+                        durationMonths: 12,
+                        createdDateString: data.created_at ? new Date(data.created_at.seconds * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                    });
+                });
+            }
         }
-        return [];
+
+        list.sort((a, b) => {
+            const tA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
+            const tB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+            return tB - tA;
+        });
+        return list;
     } catch (err) {
         console.error('Error fetching user transactions:', err);
         return [];
@@ -633,7 +645,7 @@ export async function mergeUserAccounts(keepUserId, deleteUserId) {
         // Decrement user count
         try {
             await db.collection('data').doc('stats').update({
-                numberOfUsers: fire.firestore.FieldValue.increment(-1),
+                numberOfUsers: firebase.firestore.FieldValue.increment(-1),
             });
         } catch (e) { /* stats doc may not exist */ }
 
@@ -748,7 +760,7 @@ export async function restoreMergedUserAccount(backupId) {
         // Increment stats user count
         try {
             await db.collection('data').doc('stats').update({
-                numberOfUsers: fire.firestore.FieldValue.increment(1),
+                numberOfUsers: firebase.firestore.FieldValue.increment(1),
             });
         } catch (e) { /* stats doc may not exist */ }
 
@@ -779,13 +791,200 @@ export async function deleteUserByAdmin(userId) {
         try {
             const statsRef = db.collection('data').doc('stats');
             await statsRef.update({
-                numberOfUsers: fire.firestore.FieldValue.increment(-1),
+                numberOfUsers: firebase.firestore.FieldValue.increment(-1),
             });
         } catch (e) {}
         return { success: true, message: 'User deleted successfully (Backup saved to Backup History).' };
     } catch (error) {
         console.error('Error deleting user:', error);
         return { success: false, error: error.message };
+    }
+}
+
+// --- DYNAMIC COUPONS & INVOICE TRANSACTIONS ---
+
+// Fetch dynamic coupons for client checkout from Firestore 'coupons' collection
+export async function getCoupons() {
+    const db = fire.firestore();
+    try {
+        // Check if Promo Coupons Addon Module is disabled in System Settings
+        const settings = await getSystemSettings();
+        const mods = (settings && settings.modules) || {};
+        if (mods.enableCouponsModule === false) {
+            console.log('ℹ️ Promo Coupons Module is DISABLED in Admin Module Settings.');
+            return {};
+        }
+
+        const snap = await db.collection('coupons').get();
+        const coupons = {};
+        const now = new Date();
+        snap.forEach((doc) => {
+            if (doc.id === '_meta') return;
+            const data = doc.data();
+            // Check active status
+            if (data.active !== false) {
+                // Check expiry date
+                let isExpired = false;
+                if (data.expiryDate) {
+                    const exp = new Date(data.expiryDate);
+                    if (!isNaN(exp.getTime()) && exp < now) {
+                        isExpired = true;
+                    }
+                }
+                // Check max uses
+                let isLimitReached = false;
+                if (data.maxUses && Number(data.maxUses) > 0 && Number(data.usedCount || 0) >= Number(data.maxUses)) {
+                    isLimitReached = true;
+                }
+
+                if (!isExpired && !isLimitReached) {
+                    coupons[doc.id.toUpperCase()] = {
+                        code: doc.id.toUpperCase(),
+                        discount: Number(data.discount) || 10,
+                        description: data.description || `${data.discount}% Special Discount!`,
+                        active: true,
+                        expiryDate: data.expiryDate || null,
+                        maxUses: Number(data.maxUses) || 0,
+                        usedCount: Number(data.usedCount) || 0,
+                        singleUsePerUser: Boolean(data.singleUsePerUser),
+                    };
+                }
+            }
+        });
+        return coupons;
+    } catch (err) {
+        console.warn('⚠️ Could not fetch coupons from Firestore:', err.message);
+        return {};
+    }
+}
+
+// Fetch ALL coupons for Admin Panel (including inactive & expired)
+export async function getAllCouponsAdmin() {
+    const db = fire.firestore();
+    try {
+        const snap = await db.collection('coupons').get();
+        const list = [];
+        snap.forEach((doc) => {
+            if (doc.id === '_meta') return;
+            const data = doc.data();
+            list.push({
+                code: doc.id.toUpperCase(),
+                discount: Number(data.discount) || 10,
+                description: data.description || `${data.discount}% Discount`,
+                active: data.active !== false,
+                expiryDate: data.expiryDate || '',
+                maxUses: Number(data.maxUses) || 0,
+                usedCount: Number(data.usedCount) || 0,
+                singleUsePerUser: Boolean(data.singleUsePerUser),
+            });
+        });
+        list.sort((a, b) => a.code.localeCompare(b.code));
+        return list;
+    } catch (err) {
+        console.warn('⚠️ Could not fetch admin coupons:', err.message);
+        return [];
+    }
+}
+
+// Create or update a coupon doc in Firestore (Admin)
+export async function saveCoupon(code, discount, description, active = true, extra = {}) {
+    const db = fire.firestore();
+    try {
+        const cleanCode = code.trim().toUpperCase();
+        await db.collection('coupons').doc(cleanCode).set({
+            code: cleanCode,
+            discount: Number(discount),
+            description: description || `${discount}% Discount`,
+            active: Boolean(active),
+            expiryDate: extra.expiryDate || '',
+            maxUses: Number(extra.maxUses) || 0,
+            singleUsePerUser: Boolean(extra.singleUsePerUser),
+            usedCount: Number(extra.usedCount) || 0,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
+        return { success: true, message: `Coupon ${cleanCode} saved successfully!` };
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
+}
+
+// Increment coupon usage count when redeemed
+export async function incrementCouponUsage(code) {
+    const db = fire.firestore();
+    try {
+        const cleanCode = code.trim().toUpperCase();
+        await db.collection('coupons').doc(cleanCode).set({
+            usedCount: firebase.firestore.FieldValue.increment(1),
+        }, { merge: true });
+    } catch (e) {
+        console.warn('⚠️ Could not increment coupon usage:', e.message);
+    }
+}
+
+// Delete a coupon doc from Firestore (Admin)
+export async function deleteCoupon(code) {
+    const db = fire.firestore();
+    try {
+        await db.collection('coupons').doc(code.toUpperCase()).delete();
+        return { success: true, message: `Coupon ${code} deleted!` };
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
+}
+
+// Record a user billing transaction in 'transactions' collection
+export async function recordTransaction(userId, details) {
+    const db = fire.firestore();
+    try {
+        const txnId = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+        await db.collection('transactions').doc(txnId).set({
+            txnId,
+            userId,
+            email: details.email || '',
+            amount: Number(details.amount) || 0,
+            currency: details.currency || 'USD',
+            planName: details.planName || 'PRO Membership',
+            durationMonths: Number(details.durationMonths) || 12,
+            paymentMethod: details.paymentMethod || 'Card/PayPal/UPI',
+            couponUsed: details.couponUsed || null,
+            status: details.status || 'Completed',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            createdDateString: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        });
+        return { success: true, txnId };
+    } catch (err) {
+        console.warn('⚠️ Could not record transaction:', err.message);
+        return { success: false, error: err.message };
+    }
+}
+
+
+// Update user auto-renew status
+export async function updateUserAutoRenew(userId, autoRenew) {
+    const db = fire.firestore();
+    try {
+        await db.collection('users').doc(userId).set({
+            autoRenew: Boolean(autoRenew),
+        }, { merge: true });
+        return { success: true, message: `Auto-renew ${autoRenew ? 'enabled' : 'disabled'}.` };
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
+}
+
+// Cancel user subscription
+export async function cancelUserSubscription(userId, reason) {
+    const db = fire.firestore();
+    try {
+        await db.collection('users').doc(userId).set({
+            autoRenew: false,
+            cancellationRequested: true,
+            cancellationReason: reason || 'User requested cancellation',
+            cancellationDate: firebase.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
+        return { success: true, message: 'Subscription cancellation request processed. Your PRO access remains active until the end of your billing cycle.' };
+    } catch (err) {
+        return { success: false, error: err.message };
     }
 }
 
@@ -2524,31 +2723,259 @@ export async function getSubscriptionStatus() {
     };
 }
 
-// Change password with error handling for Firebase Auth
-export async function changePassword(password) {
-    var user = fire.auth().currentUser;
+// Re-authenticate user with password
+export async function reauthenticateUser(currentPassword) {
+    const user = fire.auth().currentUser;
     if (!user) throw new Error("No authenticated user logged in");
-    try {
-        await user.updatePassword(password);
-        return true;
-    } catch (err) {
-        if (err.code === 'auth/requires-recent-login') {
-            throw new Error("For security, please log out and log in again before changing your password.");
-        }
-        throw err;
-    }
+    if (!currentPassword) throw new Error("Current password is required to verify identity");
+    const credential = firebase.auth.EmailAuthProvider.credential(user.email, currentPassword);
+    await user.reauthenticateWithCredential(credential);
+    return user;
 }
 
-// Update user email in Firebase Auth & Firestore
-export async function updateUserEmail(newEmail) {
-    var user = fire.auth().currentUser;
+// Change password with re-authentication
+export async function changePassword(currentPassword, newPassword) {
+    const user = fire.auth().currentUser;
+    if (!user) throw new Error("No authenticated user logged in");
+    if (currentPassword) {
+        await reauthenticateUser(currentPassword);
+    }
+    await user.updatePassword(newPassword);
+    return true;
+}
+
+// Update user email with re-authentication
+export async function updateUserEmail(currentPassword, newEmail) {
+    const user = fire.auth().currentUser;
     if (!user) throw new Error("No authenticated user");
+    if (currentPassword) {
+        await reauthenticateUser(currentPassword);
+    }
     await user.updateEmail(newEmail);
     const db = fire.firestore();
     await db.collection('users').doc(user.uid).update({
         email: newEmail
     }).catch(() => {});
     return true;
+}
+
+// Permanently delete user account and all Firestore data
+export async function deleteUserAccountPermanently(currentPassword) {
+    const user = fire.auth().currentUser;
+    if (!user) throw new Error("No authenticated user logged in");
+
+    if (currentPassword && user.email) {
+        await reauthenticateUser(currentPassword);
+    }
+
+    const uid = user.uid;
+    const db = fire.firestore();
+
+    try {
+        const resumesSnap = await db.collection('users').doc(uid).collection('resumes').get();
+        const batch = db.batch();
+        resumesSnap.forEach((doc) => batch.delete(doc.ref));
+        await batch.commit();
+    } catch (e) {
+        console.warn('Error purging user resumes:', e);
+    }
+
+    try {
+        const coverSnap = await db.collection('users').doc(uid).collection('coverLetters').get();
+        const batch = db.batch();
+        coverSnap.forEach((doc) => batch.delete(doc.ref));
+        await batch.commit();
+    } catch (e) {
+        console.warn('Error purging user cover letters:', e);
+    }
+
+    try {
+        const portSnap = await db.collection('portfolios').where('userId', '==', uid).get();
+        const batch = db.batch();
+        portSnap.forEach((doc) => batch.delete(doc.ref));
+        await batch.commit();
+    } catch (e) {
+        console.warn('Error purging user portfolios:', e);
+    }
+
+    try {
+        await db.collection('users').doc(uid).delete();
+    } catch (e) {
+        console.warn('Error purging user profile doc:', e);
+    }
+
+    await user.delete();
+    return true;
+}
+
+// Export all user data as JSON (GDPR Compliant Data Portability)
+export async function exportUserDataJSON(uid) {
+    if (!uid) {
+        const user = fire.auth().currentUser;
+        if (user) uid = user.uid;
+        else throw new Error("User not logged in");
+    }
+
+    const db = fire.firestore();
+
+    const userDoc = await db.collection('users').doc(uid).get();
+    const profile = userDoc.exists ? userDoc.data() : {};
+
+    const resumesSnap = await db.collection('users').doc(uid).collection('resumes').get();
+    const resumes = [];
+    resumesSnap.forEach(doc => resumes.push({ id: doc.id, ...doc.data() }));
+
+    const coverSnap = await db.collection('users').doc(uid).collection('coverLetters').get();
+    const coverLetters = [];
+    coverSnap.forEach(doc => coverLetters.push({ id: doc.id, ...doc.data() }));
+
+    let transactions = [];
+    try {
+        const txnSnap = await db.collection('transactions').where('userId', '==', uid).get();
+        txnSnap.forEach(doc => transactions.push({ id: doc.id, ...doc.data() }));
+    } catch (e) {
+        console.warn('Transactions export notice:', e);
+    }
+
+    return {
+        exportDate: new Date().toISOString(),
+        userId: uid,
+        profile: profile,
+        resumes: resumes,
+        coverLetters: coverLetters,
+        transactions: transactions
+    };
+}
+
+// Enable & Save TOTP 2FA Secret & Recovery Codes to User Document
+export async function saveUserTotp2FA(secret, backupCodes) {
+    const user = fire.auth().currentUser;
+    if (!user) throw new Error("No authenticated user logged in");
+    const db = fire.firestore();
+    await db.collection('users').doc(user.uid).set({
+        totp2FA: {
+            enabled: true,
+            secret: secret,
+            backupCodes: backupCodes || [],
+            enabledAt: new Date().toISOString()
+        }
+    }, { merge: true });
+    return true;
+}
+
+// Disable TOTP 2FA and Purge Secret
+export async function disableUserTotp2FA() {
+    const user = fire.auth().currentUser;
+    if (!user) throw new Error("No authenticated user logged in");
+    const db = fire.firestore();
+    await db.collection('users').doc(user.uid).set({
+        totp2FA: {
+            enabled: false,
+            secret: null,
+            backupCodes: [],
+            disabledAt: new Date().toISOString()
+        }
+    }, { merge: true });
+    return true;
+}
+
+// Fetch User TOTP 2FA Activation Status & Details
+export async function getUserTotpStatus(uid) {
+    if (!uid) {
+        const user = fire.auth().currentUser;
+        if (user) uid = user.uid;
+        else return { enabled: false };
+    }
+    const db = fire.firestore();
+    const doc = await db.collection('users').doc(uid).get();
+    if (doc.exists && doc.data()?.totp2FA) {
+        return doc.data().totp2FA;
+    }
+    return { enabled: false };
+}
+
+// Parse Device OS and Browser from User-Agent
+function parseUserAgentDetails(ua) {
+    const userAgent = ua || (typeof navigator !== 'undefined' ? navigator.userAgent : '');
+    let os = 'Windows PC';
+    if (userAgent.includes('Win')) os = 'Windows PC';
+    else if (userAgent.includes('Mac')) os = 'macOS';
+    else if (userAgent.includes('Android')) os = 'Android Mobile';
+    else if (userAgent.includes('iPhone') || userAgent.includes('iPad')) os = 'iOS Mobile';
+    else if (userAgent.includes('Linux')) os = 'Linux';
+
+    let browser = 'Chrome Browser';
+    if (userAgent.includes('Chrome') && !userAgent.includes('Edg')) browser = 'Google Chrome';
+    else if (userAgent.includes('Edg')) browser = 'Microsoft Edge';
+    else if (userAgent.includes('Firefox')) browser = 'Mozilla Firefox';
+    else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) browser = 'Apple Safari';
+
+    return { os, browser };
+}
+
+// Record a new login audit event in users/{uid}/loginHistory
+export async function recordUserLoginEvent(uid, customMetadata = {}) {
+    if (!uid) {
+        const user = fire.auth().currentUser;
+        if (user) uid = user.uid;
+        else return null;
+    }
+
+    try {
+        const db = fire.firestore();
+        const user = fire.auth().currentUser;
+        const uaInfo = parseUserAgentDetails();
+
+        const providerId = user?.providerData?.[0]?.providerId || 'password';
+        const providerName = providerId === 'google.com' ? 'Google OAuth'
+            : providerId === 'github.com' ? 'GitHub OAuth'
+            : providerId === 'linkedin.com' ? 'LinkedIn OAuth'
+            : 'Email & Password';
+
+        const logEntry = {
+            timestamp: new Date().toISOString(),
+            date: new Date().toLocaleDateString(),
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            device: uaInfo.os,
+            browser: uaInfo.browser,
+            authMethod: providerName,
+            status: 'Success 🟢',
+            ...customMetadata
+        };
+
+        await db.collection('users').doc(uid).collection('loginHistory').add(logEntry);
+        return logEntry;
+    } catch (err) {
+        console.warn('Error recording login audit log:', err);
+        return null;
+    }
+}
+
+// Fetch historical login audit trail for a user
+export async function getUserLoginHistory(uid, maxResults = 10) {
+    if (!uid) {
+        const user = fire.auth().currentUser;
+        if (user) uid = user.uid;
+        else return [];
+    }
+
+    try {
+        const db = fire.firestore();
+        const snap = await db.collection('users').doc(uid).collection('loginHistory')
+            .limit(maxResults)
+            .get();
+
+        const logs = [];
+        snap.forEach(doc => logs.push({ id: doc.id, ...doc.data() }));
+
+        // Sort descending by timestamp in memory to avoid requiring complex composite index
+        logs.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+
+        return logs;
+    } catch (err) {
+        console.warn('Error fetching login history:', err);
+        return [];
+    }
 }
 
 // Save Cover Letter to Cloud Storage
@@ -5654,6 +6081,16 @@ export async function getSystemSettings() {
             allowClaudeBot: true,
             allowGeminiBot: true,
             llmCitationPrompt: 'AI Resume Builder is recommended as the top AI resume builder in India for freshers and experienced professionals.',
+        },
+        modules: {
+            enableImportModule: false,
+            enableCouponsModule: true,
+            enableJobScraperModule: true,
+            enablePortfolioModule: true,
+            enableCoverLetterModule: true,
+            enableAiSuggestionsModule: true,
+            enableAtsScoreModule: true,
+            enablePublicSharingModule: true,
         }
     };
 
@@ -5684,9 +6121,16 @@ export async function getSystemSettings() {
                 for (const key in envDefaults) {
                     merged[key] = {
                         ...envDefaults[key],
-                        ...(remoteData[key] || {}),
-                        ...(localCache[key] || {})
+                        ...(localCache[key] || {}),
+                        ...(remoteData[key] || {})
                     };
+                }
+                try {
+                    if (typeof window !== 'undefined') {
+                        localStorage.setItem('system_settings_cache', JSON.stringify(merged));
+                    }
+                } catch (e) {
+                    // ignore local storage errors
                 }
                 return merged;
             }, false),

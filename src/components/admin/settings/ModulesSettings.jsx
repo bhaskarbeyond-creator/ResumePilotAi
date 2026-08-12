@@ -11,7 +11,8 @@ import {
     FaCheckCircle,
     FaSave,
     FaSpinner,
-    FaInfoCircle
+    FaInfoCircle,
+    FaTag
 } from 'react-icons/fa';
 import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
 
@@ -24,6 +25,7 @@ const ModulesSettings = () => {
         enableAiSuggestionsModule: true,
         enableAtsScoreModule: true,
         enablePublicSharingModule: true,
+        enableCouponsModule: true,
     });
 
     const [loading, setLoading] = useState(true);
@@ -36,7 +38,6 @@ const ModulesSettings = () => {
             const ai = (settings && settings.ai) || {};
 
             setModulesConfig({
-                // Priority to settings.modules.enableImportModule or fallback to settings.ai.enableImportModule (default false)
                 enableImportModule: mods.enableImportModule !== undefined
                     ? mods.enableImportModule
                     : (ai.enableImportModule !== undefined ? ai.enableImportModule : false),
@@ -46,6 +47,7 @@ const ModulesSettings = () => {
                 enableAiSuggestionsModule: mods.enableAiSuggestionsModule !== undefined ? mods.enableAiSuggestionsModule : true,
                 enableAtsScoreModule: mods.enableAtsScoreModule !== undefined ? mods.enableAtsScoreModule : true,
                 enablePublicSharingModule: mods.enablePublicSharingModule !== undefined ? mods.enablePublicSharingModule : true,
+                enableCouponsModule: mods.enableCouponsModule !== undefined ? mods.enableCouponsModule : true,
             });
             setLoading(false);
         }).catch((err) => {
@@ -113,6 +115,15 @@ const ModulesSettings = () => {
             icon: FaDownload,
             badgeColor: modulesConfig.enableImportModule ? 'purple' : 'slate',
             statusText: modulesConfig.enableImportModule ? 'ENABLED' : 'DISABLED (DEFAULT OFF)',
+        },
+        {
+            key: 'enableCouponsModule',
+            title: 'Promo Coupons & Discount Module',
+            subtitle: 'Checkout Discounts',
+            description: 'Enables promo coupon codes, discount calculations, and quick coupon pills on subscription plans and checkout steps.',
+            icon: FaTag,
+            badgeColor: modulesConfig.enableCouponsModule ? 'emerald' : 'slate',
+            statusText: modulesConfig.enableCouponsModule ? 'ENABLED' : 'DISABLED',
         },
         {
             key: 'enableJobScraperModule',

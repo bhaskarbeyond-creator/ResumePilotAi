@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
-import { getSubscriptionStatus, setSubscriptionsData } from '../../../firestore/dbOperations';
-import { FaCheck, FaTimes, FaCreditCard, FaRupeeSign, FaDollarSign, FaToggleOn, FaToggleOff, FaPaypal, FaStripe, FaFlask, FaShieldAlt } from 'react-icons/fa';
+import { getSubscriptionStatus, setSubscriptionsData, getAllCouponsAdmin, saveCoupon, deleteCoupon, getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
+import { FaCheck, FaTimes, FaCreditCard, FaRupeeSign, FaDollarSign, FaToggleOn, FaToggleOff, FaPaypal, FaStripe, FaFlask, FaShieldAlt, FaTag, FaPlus, FaTrash, FaEdit, FaCalendarAlt, FaPercent } from 'react-icons/fa';
 
 class SubscriptionSetting extends Component {
     constructor(props) {
@@ -19,6 +19,25 @@ class SubscriptionSetting extends Component {
             yearlyPrice: 499,
             currency: 'INR',
             isSuccessOpen: false,
+
+            // Coupon Management Admin State
+            couponsList: [],
+            showCouponModal: false,
+            enableCouponsModule: true,
+            editingCode: null,
+            couponForm: {
+                code: '',
+                discount: 20,
+                description: '',
+                expiryDate: '',
+                maxUses: 0,
+                singleUsePerUser: false,
+                active: true,
+            },
+            couponSuccessMsg: '',
+            couponErrorMsg: '',
+            deleteConfirmCode: null,
+            isDeleting: false,
         };
         this.handleChange = this.handleChange.bind(this);
         this.handleSubscriptionToggleChange = this.handleSubscriptionToggleChange.bind(this);
@@ -30,6 +49,13 @@ class SubscriptionSetting extends Component {
         this.submitHandler = this.submitHandler.bind(this);
         this.handleClose = this.handleClose.bind(this);
         this.applyIndianPreset = this.applyIndianPreset.bind(this);
+        this.fetchAdminCoupons = this.fetchAdminCoupons.bind(this);
+        this.handleOpenNewCoupon = this.handleOpenNewCoupon.bind(this);
+        this.handleEditCoupon = this.handleEditCoupon.bind(this);
+        this.handleSaveCouponForm = this.handleSaveCouponForm.bind(this);
+        this.handleToggleCouponStatus = this.handleToggleCouponStatus.bind(this);
+        this.handleDeleteCouponCode = this.handleDeleteCouponCode.bind(this);
+        this.confirmDeleteCouponCode = this.confirmDeleteCouponCode.bind(this);
     }
 
     handleChange(event, inputName) {
@@ -111,6 +137,134 @@ class SubscriptionSetting extends Component {
                 });
             }
         });
+        getSystemSettings().then((settings) => {
+            const mods = (settings && settings.modules) || {};
+            this.setState({ enableCouponsModule: mods.enableCouponsModule !== false });
+        });
+        this.fetchAdminCoupons();
+    }
+
+    async handleToggleCouponsModule() {
+        const nextState = !this.state.enableCouponsModule;
+        this.setState({ enableCouponsModule: nextState });
+
+        try {
+            const settings = (await getSystemSettings()) || {};
+            const mods = settings.modules || {};
+            const updatedMods = { ...mods, enableCouponsModule: nextState };
+            await saveSystemSettings('modules', updatedMods);
+
+            window.dispatchEvent(new CustomEvent('systemSettingsUpdated', {
+                detail: {
+                    modules: updatedMods
+                }
+            }));
+
+            this.setState({
+                couponSuccessMsg: `Promo Coupons Module is now ${nextState ? 'ENABLED (ACTIVE)' : 'DISABLED (OFF)'}!`
+            });
+            setTimeout(() => this.setState({ couponSuccessMsg: '' }), 4000);
+        } catch (err) {
+            console.error('Error toggling coupon module:', err);
+        }
+    }
+
+    fetchAdminCoupons() {
+        getAllCouponsAdmin().then((list) => {
+            this.setState({ couponsList: list });
+        });
+    }
+
+    handleOpenNewCoupon() {
+        this.setState({
+            editingCode: null,
+            couponForm: {
+                code: '',
+                discount: 20,
+                description: '',
+                expiryDate: '',
+                maxUses: 0,
+                singleUsePerUser: false,
+                active: true,
+            },
+            showCouponModal: true,
+            couponErrorMsg: '',
+        });
+    }
+
+    handleEditCoupon(c) {
+        this.setState({
+            editingCode: c.code,
+            couponForm: {
+                code: c.code,
+                discount: c.discount,
+                description: c.description || '',
+                expiryDate: c.expiryDate || '',
+                maxUses: c.maxUses || 0,
+                singleUsePerUser: Boolean(c.singleUsePerUser),
+                active: c.active !== false,
+            },
+            showCouponModal: true,
+            couponErrorMsg: '',
+        });
+    }
+
+    async handleSaveCouponForm(e) {
+        if (e) e.preventDefault();
+        const { code, discount, description, active, expiryDate, maxUses, singleUsePerUser } = this.state.couponForm;
+        if (!code || !code.trim()) {
+            this.setState({ couponErrorMsg: 'Please enter a valid coupon code (e.g. SUMMER50).' });
+            return;
+        }
+
+        const res = await saveCoupon(code.trim(), discount, description, active, {
+            expiryDate,
+            maxUses,
+            singleUsePerUser,
+        });
+
+        if (res.success) {
+            this.setState({
+                showCouponModal: false,
+                couponSuccessMsg: res.message,
+            });
+            this.fetchAdminCoupons();
+            setTimeout(() => this.setState({ couponSuccessMsg: '' }), 4000);
+        } else {
+            this.setState({ couponErrorMsg: res.error });
+        }
+    }
+
+    async handleToggleCouponStatus(c) {
+        await saveCoupon(c.code, c.discount, c.description, !c.active, {
+            expiryDate: c.expiryDate,
+            maxUses: c.maxUses,
+            singleUsePerUser: c.singleUsePerUser,
+            usedCount: c.usedCount,
+        });
+        this.fetchAdminCoupons();
+    }
+
+    handleDeleteCouponCode(code) {
+        this.setState({ deleteConfirmCode: code });
+    }
+
+    async confirmDeleteCouponCode() {
+        const code = this.state.deleteConfirmCode;
+        if (!code) return;
+        this.setState({ isDeleting: true });
+        const res = await deleteCoupon(code);
+        if (res.success !== false) {
+            await this.fetchAdminCoupons();
+            this.setState({
+                deleteConfirmCode: null,
+                isDeleting: false,
+                couponSuccessMsg: `Coupon ${code} deleted permanently!`
+            });
+            setTimeout(() => this.setState({ couponSuccessMsg: '' }), 4000);
+        } else {
+            this.setState({ isDeleting: false, couponErrorMsg: res.error || 'Failed to delete coupon' });
+        }
     }
 
     submitHandler() {
@@ -143,7 +297,7 @@ class SubscriptionSetting extends Component {
         const currencySymbol = this.state.currency === 'INR' ? '₹' : this.state.currency === 'USD' ? '$' : this.state.currency === 'EUR' ? '€' : '£';
 
         return (
-            <div className="space-y-6">
+            <div className="space-y-6 max-w-5xl mx-auto p-4 sm:p-6">
                 {/* Success Alert */}
                 {this.state.isSuccessOpen && (
                     <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center justify-between shadow-2xs">
@@ -327,6 +481,295 @@ class SubscriptionSetting extends Component {
                         </div>
                     </div>
                 </div>
+
+                {/* --- ENTERPRISE ADMIN COUPON MANAGER CARD --- */}
+                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs space-y-4">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border-b border-slate-100 pb-3">
+                        <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-700 font-extrabold">
+                                <FaTag className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h3 className="text-base font-bold text-slate-900">Dynamic Promo Coupon Manager</h3>
+                                <p className="text-xs text-slate-500">Create, edit, toggle active status, set expiry dates, and usage limits</p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto flex-wrap">
+                            {/* Promo Coupons Module Master Switch */}
+                            <button
+                                type="button"
+                                onClick={this.handleToggleCouponsModule}
+                                className={`px-3.5 py-2 rounded-xl font-bold text-xs transition-all border flex items-center gap-2 cursor-pointer ${
+                                    this.state.enableCouponsModule
+                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100'
+                                        : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'
+                                }`}>
+                                {this.state.enableCouponsModule ? (
+                                    <>
+                                        <FaToggleOn className="w-4 h-4 text-emerald-600" />
+                                        <span>Module ENABLED (ON)</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <FaToggleOff className="w-4 h-4 text-slate-400" />
+                                        <span>Module DISABLED (OFF)</span>
+                                    </>
+                                )}
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={this.handleOpenNewCoupon}
+                                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-all shadow-sm flex items-center gap-1.5 shrink-0 cursor-pointer">
+                                <FaPlus className="w-3 h-3" />
+                                <span>Create New Coupon</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {this.state.couponSuccessMsg && (
+                        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold rounded-xl flex items-center gap-2">
+                            <FaCheck className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>{this.state.couponSuccessMsg}</span>
+                        </div>
+                    )}
+
+                    {/* Coupons List Table */}
+                    {this.state.couponsList.length === 0 ? (
+                        <div className="text-center py-8 text-slate-400">
+                            <FaTag className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                            <p className="text-xs font-bold text-slate-600">No Custom Coupons Created Yet</p>
+                            <p className="text-[11px] text-slate-500">Click "Create New Coupon" to add a promo code (e.g. SAVE50, WELCOME20).</p>
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-xs">
+                                <thead className="bg-slate-50 text-slate-500 font-extrabold uppercase border-b border-slate-200">
+                                    <tr>
+                                        <th className="p-3">Code</th>
+                                        <th className="p-3">Discount</th>
+                                        <th className="p-3">Description</th>
+                                        <th className="p-3">Expiry</th>
+                                        <th className="p-3">Uses</th>
+                                        <th className="p-3">Per User Limit</th>
+                                        <th className="p-3">Status</th>
+                                        <th className="p-3 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {this.state.couponsList.map((c) => (
+                                        <tr key={c.code} className="hover:bg-slate-50/80 transition-all">
+                                            <td className="p-3 font-mono font-extrabold text-indigo-700">{c.code}</td>
+                                            <td className="p-3 font-bold text-emerald-700">-{c.discount}%</td>
+                                            <td className="p-3 text-slate-700 max-w-xs truncate">{c.description || '—'}</td>
+                                            <td className="p-3 text-slate-600">{c.expiryDate || 'Unlimited'}</td>
+                                            <td className="p-3 text-slate-600">{c.usedCount || 0} / {c.maxUses > 0 ? c.maxUses : '∞'}</td>
+                                            <td className="p-3 text-slate-600">{c.singleUsePerUser ? '1 Use / Candidate' : 'Multi-Use'}</td>
+                                            <td className="p-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => this.handleToggleCouponStatus(c)}
+                                                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border cursor-pointer ${
+                                                        c.active
+                                                            ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                                                            : 'bg-slate-100 text-slate-600 border-slate-300'
+                                                    }`}>
+                                                    {c.active ? 'ACTIVE' : 'INACTIVE'}
+                                                </button>
+                                            </td>
+                                            <td className="p-3 text-right space-x-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => this.handleEditCoupon(c)}
+                                                    className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
+                                                    title="Edit Coupon">
+                                                    <FaEdit className="w-3.5 h-3.5" />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => this.handleDeleteCouponCode(c.code)}
+                                                    className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                                    title="Delete Coupon">
+                                                    <FaTrash className="w-3.5 h-3.5" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+
+                {/* Modal for Creating / Editing Coupon */}
+                {this.state.showCouponModal && (
+                    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                                <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                                    <FaTag className="text-indigo-600" />
+                                    <span>{this.state.editingCode ? `Edit Coupon ${this.state.editingCode}` : 'Create New Promo Coupon'}</span>
+                                </h3>
+                                <button
+                                    type="button"
+                                    onClick={() => this.setState({ showCouponModal: false })}
+                                    className="text-slate-400 hover:text-slate-600 p-1">
+                                    <FaTimes className="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            {this.state.couponErrorMsg && (
+                                <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl font-bold">
+                                    {this.state.couponErrorMsg}
+                                </div>
+                            )}
+
+                            <form onSubmit={this.handleSaveCouponForm} className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Coupon Code</label>
+                                    <input
+                                        type="text"
+                                        value={this.state.couponForm.code}
+                                        onChange={(e) => this.setState({ couponForm: { ...this.state.couponForm, code: e.target.value.toUpperCase() } })}
+                                        disabled={Boolean(this.state.editingCode)}
+                                        placeholder="e.g. SUMMER50"
+                                        className="w-full px-3.5 py-2 text-xs font-mono font-bold border border-slate-300 rounded-xl focus:border-indigo-600 outline-none uppercase"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Discount %</label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            max="100"
+                                            value={this.state.couponForm.discount}
+                                            onChange={(e) => this.setState({ couponForm: { ...this.state.couponForm, discount: Number(e.target.value) } })}
+                                            className="w-full px-3.5 py-2 text-xs font-bold border border-slate-300 rounded-xl focus:border-indigo-600 outline-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Expiry Date</label>
+                                        <input
+                                            type="date"
+                                            value={this.state.couponForm.expiryDate}
+                                            onChange={(e) => this.setState({ couponForm: { ...this.state.couponForm, expiryDate: e.target.value } })}
+                                            className="w-full px-3.5 py-2 text-xs font-semibold border border-slate-300 rounded-xl focus:border-indigo-600 outline-none"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Description</label>
+                                    <input
+                                        type="text"
+                                        value={this.state.couponForm.description}
+                                        onChange={(e) => this.setState({ couponForm: { ...this.state.couponForm, description: e.target.value } })}
+                                        placeholder="e.g. 50% Special Career Accelerator Discount"
+                                        className="w-full px-3.5 py-2 text-xs border border-slate-300 rounded-xl focus:border-indigo-600 outline-none"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4 pt-1">
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Max Total Uses (0 = ∞)</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            value={this.state.couponForm.maxUses}
+                                            onChange={(e) => this.setState({ couponForm: { ...this.state.couponForm, maxUses: Number(e.target.value) } })}
+                                            className="w-full px-3.5 py-2 text-xs font-semibold border border-slate-300 rounded-xl focus:border-indigo-600 outline-none"
+                                        />
+                                    </div>
+
+                                    <div className="flex flex-col justify-center">
+                                        <label className="flex items-center gap-2 cursor-pointer pt-4">
+                                            <input
+                                                type="checkbox"
+                                                checked={this.state.couponForm.singleUsePerUser}
+                                                onChange={(e) => this.setState({ couponForm: { ...this.state.couponForm, singleUsePerUser: e.target.checked } })}
+                                                className="w-4 h-4 text-indigo-600 rounded"
+                                            />
+                                            <span className="text-xs font-bold text-slate-700">1 Use Per Candidate</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={this.state.couponForm.active}
+                                            onChange={(e) => this.setState({ couponForm: { ...this.state.couponForm, active: e.target.checked } })}
+                                            className="w-4 h-4 text-emerald-600 rounded"
+                                        />
+                                        <span className="text-xs font-bold text-slate-800">Coupon Active</span>
+                                    </label>
+
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => this.setState({ showCouponModal: false })}
+                                            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all">
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm">
+                                            Save Coupon
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
+
+                {/* Custom Delete Coupon Confirmation Modal Pop-Up */}
+                {this.state.deleteConfirmCode && (
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+                            <div className="flex items-center space-x-3">
+                                <div className="w-10 h-10 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center shrink-0">
+                                    <FaTrash className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-extrabold text-slate-900">Delete Promo Coupon</h3>
+                                    <p className="text-xs text-slate-500 mt-0.5">Confirm permanent removal from Firestore database.</p>
+                                </div>
+                            </div>
+
+                            <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 leading-relaxed">
+                                Are you sure you want to permanently delete coupon code <span className="font-mono font-extrabold text-rose-950 uppercase">{this.state.deleteConfirmCode}</span>? Candidate checkout will no longer accept this discount code.
+                            </div>
+
+                            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
+                                <button
+                                    type="button"
+                                    onClick={() => this.setState({ deleteConfirmCode: null })}
+                                    className="px-4 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all cursor-pointer">
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={this.state.isDeleting}
+                                    onClick={() => this.confirmDeleteCouponCode()}
+                                    className="px-5 py-2 text-xs font-extrabold text-white bg-rose-600 hover:bg-rose-700 disabled:bg-rose-300 rounded-xl transition-all shadow-md shadow-rose-600/20 flex items-center gap-1.5 cursor-pointer">
+                                    {this.state.isDeleting ? (
+                                        <>
+                                            <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white"></div>
+                                            <span>Deleting...</span>
+                                        </>
+                                    ) : (
+                                        <span>Yes, Delete Coupon</span>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Pricing Plans */}
                 <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs">

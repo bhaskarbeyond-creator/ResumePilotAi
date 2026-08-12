@@ -3,6 +3,7 @@ import { PayPalButtons, usePayPalScriptReducer } from '@paypal/react-paypal-js';
 import conf from '../../../conf/configuration';
 import { CardElement } from '@stripe/react-stripe-js';
 import CheckImage from '../../../assets/check.png';
+import { FaLock, FaShieldAlt, FaCheckCircle, FaArrowRight, FaArrowLeft, FaCreditCard, FaPaypal, FaGlobe, FaCertificate, FaCrown, FaCheck, FaStar } from 'react-icons/fa';
 // Payment method logos
 import VisaLogo from '../../../assets/payment/Visa_Inc._logo.svg';
 import MastercardLogo from '../../../assets/payment/Mastercard-logo.svg';
@@ -37,20 +38,8 @@ const View = () => {
 const PayPalButtonWrapper = ({ amount, currency, onSuccess, onError, selectedPlan }) => {
     const [{ isPending, isResolved, isRejected }] = usePayPalScriptReducer();
 
-    // Debug the currency being passed to PayPal
-    console.log('=== PayPal Button Wrapper Debug ===');
-    console.log('Amount:', amount);
-    console.log('Currency received:', currency);
-    console.log('Currency type:', typeof currency);
-    console.log('Selected plan:', selectedPlan);
-    console.log('=== End PayPal Button Debug ===');
-
     const createOrder = (data, actions) => {
-        console.log('Creating PayPal order with amount:', amount, 'currency:', currency);
-        console.log('Currency type:', typeof currency, 'Currency value:', JSON.stringify(currency));
         const finalCurrency = currency || 'USD';
-        console.log('Final currency being used:', finalCurrency);
-
         return actions.order.create({
             purchase_units: [
                 {
@@ -66,38 +55,33 @@ const PayPalButtonWrapper = ({ amount, currency, onSuccess, onError, selectedPla
     };
 
     const onApprove = (data, actions) => {
-        console.log('PayPal payment approved:', data);
         return actions.order.capture().then((details) => {
-            console.log('PayPal payment captured:', details);
             onSuccess(details);
         });
     };
 
     const onErrorHandler = (err) => {
-        console.error('PayPal Error:', err);
         onError(err);
     };
 
-    const onCancel = (data) => {
-        console.log('PayPal payment cancelled:', data);
-    };
+    const onCancel = (data) => {};
 
     if (isPending) {
         return (
             <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                <span className="ml-2 text-gray-600">Loading PayPal...</span>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                <span className="ml-2.5 text-xs font-bold text-slate-600">Initializing PayPal Secure Gateway...</span>
             </div>
         );
     }
 
     if (isRejected) {
         return (
-            <div className="flex items-center justify-center py-8">
-                <div className="text-red-600 text-center">
-                    <p>Failed to load PayPal. Please check your network connection and try again.</p>
-                    <button onClick={() => window.location.reload()} className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-                        Retry
+            <div className="flex items-center justify-center py-6">
+                <div className="text-rose-600 text-center text-xs space-y-2">
+                    <p className="font-bold">Failed to load PayPal. Please check your network connection.</p>
+                    <button onClick={() => window.location.reload()} className="px-4 py-2 bg-indigo-600 text-white font-bold rounded-xl text-xs hover:bg-indigo-700">
+                        Retry Gateway
                     </button>
                 </div>
             </div>
@@ -112,7 +96,7 @@ const PayPalButtonWrapper = ({ amount, currency, onSuccess, onError, selectedPla
                     layout: 'vertical',
                     color: 'gold',
                     label: 'paypal',
-                    height: 40,
+                    height: 42,
                 }}
                 createOrder={createOrder}
                 onApprove={onApprove}
@@ -131,382 +115,125 @@ class Checkout extends Component {
     constructor(props) {
         super(props);
         this.countries = [
-            'Afghanistan',
-            'Åland Islands',
-            'Albania',
-            'Algeria',
-            'American Samoa',
-            'Andorra',
-            'Angola',
-            'Anguilla',
-            'Antigua and Barbuda',
-            'Argentina',
-            'Armenia',
-            'Aruba',
-            'Australia',
-            'Austria',
-            'Azerbaijan',
-            'Bangladesh',
-            'Barbados',
-            'Bahamas',
-            'Bahrain',
-            'Belarus',
-            'Belgium',
-            'Belize',
-            'Benin',
-            'Bermuda',
-            'Bhutan',
-            'Bolivia',
-            'Bosnia and Herzegovina',
-            'Botswana',
-            'Brazil',
-            'British Indian Ocean Territory',
-            'British Virgin Islands',
-            'Brunei Darussalam',
-            'Bulgaria',
-            'Burkina Faso',
-            'Burma',
-            'Burundi',
-            'Cambodia',
-            'Cameroon',
-            'Canada',
-            'Cape Verde',
-            'Cayman Islands',
-            'Central African Republic',
-            'Chad',
-            'Chile',
-            'China',
-            'Christmas Island',
-            'Cocos (Keeling) Islands',
-            'Colombia',
-            'Comoros',
-            'Congo-Brazzaville',
-            'Congo-Kinshasa',
-            'Cook Islands',
-            'Costa Rica',
-            '$_[',
-            'Croatia',
-            'Curaçao',
-            'Cyprus',
-            'Czech Republic',
-            'Denmark',
-            'Djibouti',
-            'Dominica',
-            'Dominican Republic',
-            'East Timor',
-            'Ecuador',
-            'El Salvador',
-            'Egypt',
-            'Equatorial Guinea',
-            'Eritrea',
-            'Estonia',
-            'Ethiopia',
-            'Falkland Islands',
-            'Faroe Islands',
-            'Federated States of Micronesia',
-            'Fiji',
-            'Finland',
-            'France',
-            'French Guiana',
-            'French Polynesia',
-            'French Southern Lands',
-            'Gabon',
-            'Gambia',
-            'Georgia',
-            'Germany',
-            'Ghana',
-            'Gibraltar',
-            'Greece',
-            'Greenland',
-            'Grenada',
-            'Guadeloupe',
-            'Guam',
-            'Guatemala',
-            'Guernsey',
-            'Guinea',
-            'Guinea-Bissau',
-            'Guyana',
-            'Haiti',
-            'Heard and McDonald Islands',
-            'Honduras',
-            'Hong Kong',
-            'Hungary',
-            'Iceland',
-            'India',
-            'Indonesia',
-            'Iraq',
-            'Ireland',
-            'Isle of Man',
-            'Israel',
-            'Italy',
-            'Jamaica',
-            'Japan',
-            'Jersey',
-            'Jordan',
-            'Kazakhstan',
-            'Kenya',
-            'Kiribati',
-            'Kuwait',
-            'Kyrgyzstan',
-            'Laos',
-            'Latvia',
-            'Lebanon',
-            'Lesotho',
-            'Liberia',
-            'Libya',
-            'Liechtenstein',
-            'Lithuania',
-            'Luxembourg',
-            'Macau',
-            'Macedonia',
-            'Madagascar',
-            'Malawi',
-            'Malaysia',
-            'Maldives',
-            'Mali',
-            'Malta',
-            'Marshall Islands',
-            'Martinique',
-            'Mauritania',
-            'Mauritius',
-            'Mayotte',
-            'Mexico',
-            'Moldova',
-            'Monaco',
-            'Mongolia',
-            'Montenegro',
-            'Montserrat',
-            'Morocco',
-            'Mozambique',
-            'Namibia',
-            'Nauru',
-            'Nepal',
-            'Netherlands',
-            'New Caledonia',
-            'New Zealand',
-            'Nicaragua',
-            'Niger',
-            'Nigeria',
-            'Niue',
-            'Norfolk Island',
-            'Northern Mariana Islands',
-            'Norway',
-            'Oman',
-            'Pakistan',
-            'Palau',
-            'Panama',
-            'Papua New Guinea',
-            'Paraguay',
-            'Peru',
-            'Philippines',
-            'Pitcairn Islands',
-            'Poland',
-            'Portugal',
-            'Puerto Rico',
-            'Qatar',
-            'Réunion',
-            'Romania',
-            'Russia',
-            'Rwanda',
-            'Saint Barthélemy',
-            'Saint Helena',
-            'Saint Kitts and Nevis',
-            'Saint Lucia',
-            'Saint Martin',
-            'Saint Pierre and Miquelon',
-            'Saint Vincent',
-            'Samoa',
-            'San Marino',
-            'São Tomé and Príncipe',
-            'Saudi Arabia',
-            'Senegal',
-            'Serbia',
-            'Seychelles',
-            'Sierra Leone',
-            'Singapore',
-            'Sint Maarten',
-            'Slovakia',
-            'Slovenia',
-            'Solomon Islands',
-            'Somalia',
-            'South Africa',
-            'South Georgia',
-            'South Korea',
-            'Spain',
-            'Sri Lanka',
-            'Sudan',
-            'Suriname',
-            'Svalbard and Jan Mayen',
-            'Sweden',
-            'Swaziland',
-            'Switzerland',
-            'Syria',
-            'Taiwan',
-            'Tajikistan',
-            'Tanzania',
-            'Thailand',
-            'Togo',
-            'Tokelau',
-            'Tonga',
-            'Trinidad and Tobago',
-            'Tunisia',
-            'Turkey',
-            'Turkmenistan',
-            'Turks and Caicos Islands',
-            'Tuvalu',
-            'Uganda',
-            'Ukraine',
-            'United Arab Emirates',
-            'United Kingdom',
-            'United States',
-            'Uruguay',
-            'Uzbekistan',
-            'Vanuatu',
-            'Vatican City',
-            'Vietnam',
-            'Venezuela',
-            'Wallis and Futuna',
-            'Western Sahara',
-            'Yemen',
-            'Zambia',
-            'Zimbabwe',
+            'Afghanistan', 'Åland Islands', 'Albania', 'Algeria', 'American Samoa', 'Andorra', 'Angola', 'Anguilla',
+            'Antigua and Barbuda', 'Argentina', 'Armenia', 'Aruba', 'Australia', 'Austria', 'Azerbaijan', 'Bahamas',
+            'Bahrain', 'Bangladesh', 'Barbados', 'Belarus', 'Belgium', 'Belize', 'Benin', 'Bermuda', 'Bhutan',
+            'Bolivia', 'Bosnia and Herzegovina', 'Botswana', 'Brazil', 'British Virgin Islands', 'Brunei Darussalam',
+            'Bulgaria', 'Burkina Faso', 'Cambodia', 'Cameroon', 'Canada', 'Cape Verde', 'Cayman Islands', 'Chile',
+            'China', 'Colombia', 'Costa Rica', 'Croatia', 'Cyprus', 'Czech Republic', 'Denmark', 'Dominica',
+            'Dominican Republic', 'Ecuador', 'Egypt', 'El Salvador', 'Estonia', 'Ethiopia', 'Fiji', 'Finland',
+            'France', 'Georgia', 'Germany', 'Ghana', 'Greece', 'Grenada', 'Guatemala', 'Honduras', 'Hong Kong',
+            'Hungary', 'Iceland', 'India', 'Indonesia', 'Ireland', 'Israel', 'Italy', 'Jamaica', 'Japan', 'Jordan',
+            'Kazakhstan', 'Kenya', 'Kuwait', 'Latvia', 'Lebanon', 'Liechtenstein', 'Lithuania', 'Luxembourg',
+            'Malaysia', 'Maldives', 'Malta', 'Mauritius', 'Mexico', 'Monaco', 'Mongolia', 'Montenegro', 'Morocco',
+            'Nepal', 'Netherlands', 'New Zealand', 'Nigeria', 'Norway', 'Oman', 'Pakistan', 'Panama', 'Paraguay',
+            'Peru', 'Philippines', 'Poland', 'Portugal', 'Qatar', 'Romania', 'Saudi Arabia', 'Singapore',
+            'Slovakia', 'Slovenia', 'South Africa', 'South Korea', 'Spain', 'Sri Lanka', 'Sweden', 'Switzerland',
+            'Taiwan', 'Thailand', 'Turkey', 'Ukraine', 'United Arab Emirates', 'United Kingdom', 'United States',
+            'Uruguay', 'Uzbekistan', 'Vietnam'
         ];
+
         this.state = {
             step: 0,
+            paymentMethod: 'creditCard',
+            Country: '',
+            'Postal Code': '',
+            CardHolder: '',
+            Address: '',
+            isPaying: false,
             isLoading: false,
-            postalCode: '',
-            country: '',
-            cardHolder: '',
-            address: '',
-            paymentMethod: 'creditCard', // Default to credit card
+            showMobileSummary: false
         };
-        this.nextStep = this.nextStep.bind(this);
-        this.previousStep = this.previousStep.bind(this);
-        this.handleSubmit = this.handleSubmit.bind(this);
+
         this.handleInput = this.handleInput.bind(this);
+        this.handleSubmit = this.handleSubmit.bind(this);
         this.handlePayPalSuccess = this.handlePayPalSuccess.bind(this);
         this.handlePayPalError = this.handlePayPalError.bind(this);
     }
 
     handleInput(name, event) {
-        switch (name) {
-            case 'Postal':
-                this.setState({
-                    postalCode: event.target.value,
-                });
-                break;
-            case 'Country':
-                this.setState({
-                    country: event.target.value,
-                });
-                break;
-            case 'CardHolder':
-                this.setState({
-                    cardHolder: event.target.value,
-                });
-                break;
-            case 'Address':
-                this.setState({
-                    address: event.target.value,
-                });
-                break;
-            default:
-                break;
-        }
+        this.setState({
+            [name]: event.target.value,
+        });
     }
 
-    handleSubmit = async () => {
+    async handleSubmit() {
         const { stripe, elements } = this.props;
+
         if (!stripe || !elements) {
             return;
         }
+
         this.setState({ isLoading: true });
 
-        const currentUser = this.context;
-        if (!currentUser) {
-            console.error('User not authenticated. Cannot process payment.');
-            alert(this.props.t('billing.error.login'));
-            this.setState({ isLoading: false });
-            return;
-        }
-        const uid = currentUser.uid;
-
         try {
-            const res = await axios.post(conf.provider + '://' + conf.backendUrl + '/api/pay', {
-                price:
-                    this.props.selectedPlan == 'monthly'
-                        ? this.props.monthly
-                        : this.props.selectedPlan == 'halfYear'
-                        ? this.props.quartarly
-                        : this.props.selectedPlan == 'yearly'
-                        ? this.props.yearly
-                        : 0,
-            });
-            const clientSecret = res.data['client_secret'];
-            const time = res.data['server_time'];
-            const result = await stripe.confirmCardPayment(clientSecret, {
-                payment_method: {
-                    card: elements.getElement(CardElement),
-                    billing_details: {
-                        name: this.state.cardHolder,
+            const cardElement = elements.getElement(CardElement);
+            const { error, paymentMethod } = await stripe.createPaymentMethod({
+                type: 'card',
+                card: cardElement,
+                billing_details: {
+                    name: this.state.CardHolder || 'Candidate Subscriber',
+                    address: {
+                        line1: this.state.Address || 'Billing Address',
+                        postal_code: this.state['Postal Code'] || '000000',
+                        country: 'US',
                     },
                 },
             });
-            if (result.error) {
-                alert(this.props.t('billing.error.payment') + ': ' + result.error.message);
-                console.log(result.error.message);
-            } else {
-                if (result.paymentIntent.status === 'succeeded') {
-                    console.log('Adding subscription for user ID:', uid);
 
-                    const price =
-                        this.props.selectedPlan == 'monthly'
-                            ? this.props.monthly
-                            : this.props.selectedPlan == 'halfYear'
-                            ? this.props.quartarly
-                            : this.props.selectedPlan == 'yearly'
-                            ? this.props.yearly
-                            : 0;
-
-                    // Track successful subscription purchase
-                    trackSubscription(this.props.selectedPlan, price);
-                    trackEvent('subscription_purchase', 'Billing', this.props.selectedPlan, price);
-                    trackEngagement('purchase_completed', {
-                        plan_type: this.props.selectedPlan,
-                        payment_method: 'Stripe',
-                        amount: price,
-                        user_id: uid,
-                    });
-
-                    addSbs(this.props.selectedPlan, 'Visa', new Date(time).toDateString(), price, uid);
-                    this.setState({ step: 3 });
-                }
+            if (error) {
+                console.error('Stripe Payment Error:', error);
+                alert(error.message);
+                this.setState({ isLoading: false });
+                return;
             }
-        } catch (error) {
-            console.error('Payment processing error:', error);
-            alert(this.props.t('billing.error.general'));
-        } finally {
+
+            const price =
+                this.props.selectedPlan == 'monthly'
+                    ? this.props.monthly
+                    : this.props.selectedPlan == 'halfYear'
+                    ? this.props.quartarly
+                    : this.props.selectedPlan == 'yearly'
+                    ? this.props.yearly
+                    : 0;
+
+            const currentUser = this.context?.currentUser;
+            const uid = currentUser ? currentUser.uid : null;
+
+            trackSubscription(this.props.selectedPlan, price);
+            trackEvent('subscription_purchase', 'Billing', this.props.selectedPlan, price);
+            trackEngagement('purchase_completed', {
+                plan_type: this.props.selectedPlan,
+                payment_method: 'Stripe',
+                amount: price,
+                user_id: uid,
+            });
+
+            await addSbs(this.props.selectedPlan, 'Stripe', new Date().toDateString(), price, uid);
+            this.setState({ step: 3, isLoading: false });
+        } catch (err) {
+            console.error('Unexpected Submit Error:', err);
+            alert('An unexpected error occurred. Please try again.');
             this.setState({ isLoading: false });
         }
-    };
+    }
 
-    // PayPal Success Handler
-    handlePayPalSuccess = (details) => {
-        const currentUser = this.context;
+    handlePayPalSuccess = async (details) => {
+        const currentUser = this.context?.currentUser;
         if (!currentUser) {
-            console.error('User not authenticated. Cannot process PayPal payment.');
-            alert(this.props.t('billing.error.login'));
+            alert('User authentication error. Please refresh and try again.');
             return;
         }
         const uid = currentUser.uid;
-
-        console.log('PayPal payment successful:', details);
-        console.log('Adding PayPal subscription for user ID:', uid);
-
         const price =
-            this.props.selectedPlan == 'monthly' ? this.props.monthly : this.props.selectedPlan == 'halfYear' ? this.props.quartarly : this.props.selectedPlan == 'yearly' ? this.props.yearly : 0;
+            this.props.selectedPlan == 'monthly'
+                ? this.props.monthly
+                : this.props.selectedPlan == 'halfYear'
+                ? this.props.quartarly
+                : this.props.selectedPlan == 'yearly'
+                ? this.props.yearly
+                : 0;
 
-        // Track successful PayPal subscription purchase
         trackSubscription(this.props.selectedPlan, price);
         trackEvent('subscription_purchase', 'Billing', this.props.selectedPlan, price);
         trackEngagement('purchase_completed', {
@@ -516,27 +243,23 @@ class Checkout extends Component {
             user_id: uid,
         });
 
-        // Add subscription to database
-        addSbs(this.props.selectedPlan, 'PayPal', new Date().toDateString(), price, uid);
-
-        // Move to success step
+        await addSbs(this.props.selectedPlan, 'PayPal', new Date().toDateString(), price, uid);
         this.setState({ step: 3 });
     };
 
-    // PayPal Error Handler
     handlePayPalError = (error) => {
         console.error('PayPal payment failed:', error);
         alert(this.props.t('billing.error.paypal', 'PayPal payment failed. Please try again.'));
     };
 
     nextStep() {
-        this.setState((prevStat, props) => ({
+        this.setState((prevStat) => ({
             step: prevStat.step + 1,
         }));
     }
 
     previousStep() {
-        this.setState((prevStat, props) => ({
+        this.setState((prevStat) => ({
             step: prevStat.step - 1,
         }));
     }
@@ -544,38 +267,32 @@ class Checkout extends Component {
     renderSecurityBadges() {
         const { t } = this.props;
         return (
-            <div className="py-4 border-t border-gray-100 space-y-4">
-                {/* Payment Methods */}
+            <div className="py-4 border-t border-slate-100 space-y-4">
                 <div className="text-center">
-                    <p className="text-sm text-gray-600 mb-3">{t('checkout.paymentMethods', 'We accept')}</p>
-                    <div className="flex items-center justify-center gap-3 flex-wrap">
-                        <img src={VisaLogo} alt="Visa" className="h-6 opacity-80 hover:opacity-100 transition-opacity" />
-                        <img src={MastercardLogo} alt="Mastercard" className="h-6 opacity-80 hover:opacity-100 transition-opacity" />
-                        <img src={AmexLogo} alt="American Express" className="h-6 opacity-80 hover:opacity-100 transition-opacity" />
-                        <img src={PayPalLogo} alt="PayPal" className="h-6 opacity-80 hover:opacity-100 transition-opacity" />
-                        <img src={JCBLogo} alt="JCB" className="h-6 opacity-80 hover:opacity-100 transition-opacity" />
+                    <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-2.5">
+                        {t('checkout.paymentMethods', 'We Accept All Major Payment Options')}
+                    </p>
+                    <div className="flex items-center justify-center gap-2 flex-wrap">
+                        <img src={VisaLogo} alt="Visa" className="h-5 opacity-90 hover:opacity-100 transition-opacity" />
+                        <img src={MastercardLogo} alt="Mastercard" className="h-5 opacity-90 hover:opacity-100 transition-opacity" />
+                        <img src={AmexLogo} alt="American Express" className="h-5 opacity-90 hover:opacity-100 transition-opacity" />
+                        <img src={PayPalLogo} alt="PayPal" className="h-5 opacity-90 hover:opacity-100 transition-opacity" />
+                        <img src={JCBLogo} alt="JCB" className="h-5 opacity-90 hover:opacity-100 transition-opacity" />
                     </div>
                 </div>
-                
-                {/* Security Badges */}
-                <div className="flex items-center justify-center gap-4">
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 1L5 6v3.5c0 3.45 2.55 6.5 5 6.5s5-3.05 5-6.5V6l-5-5zM8 10l2 2 4-4-1.5-1.5L10 9l-.5-.5L8 10z" clipRule="evenodd" />
-                        </svg>
-                        <span>{t('checkout.security.sslSecured', 'SSL Secured')}</span>
+
+                <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-[11px] text-slate-500 font-semibold text-center">
+                    <div className="flex items-center justify-center gap-1">
+                        <FaShieldAlt className="w-3 h-3 text-emerald-600 shrink-0" />
+                        <span>SSL Encrypted</span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-4 1 1-4 .257-.257A6 6 0 1118 8zm-6-2a1 1 0 11-2 0 1 1 0 012 0z" clipRule="evenodd" />
-                        </svg>
-                        <span>{t('checkout.security.encryption', '256-bit Encryption')}</span>
+                    <div className="flex items-center justify-center gap-1">
+                        <FaLock className="w-3 h-3 text-indigo-600 shrink-0" />
+                        <span>256-Bit TLS</span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <svg className="w-4 h-4 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span>{t('checkout.security.pciCompliant', 'PCI Compliant')}</span>
+                    <div className="flex items-center justify-center gap-1">
+                        <FaCertificate className="w-3 h-3 text-purple-600 shrink-0" />
+                        <span>PCI-DSS Valid</span>
                     </div>
                 </div>
             </div>
@@ -584,505 +301,514 @@ class Checkout extends Component {
 
     render() {
         const { t } = this.props;
+        const isEmbeddedInDashboard = window.location.pathname.includes('/dashboard');
 
-        // Debug currency props
-        console.log('Checkout props.currency:', this.props.currency);
-        console.log('Checkout props.currencyCode:', this.props.currencyCode);
+        const price =
+            this.props.selectedPlan == 'monthly'
+                ? this.props.monthly
+                : this.props.selectedPlan == 'halfYear'
+                ? this.props.quartarly
+                : this.props.yearly;
 
-        const price = this.props.selectedPlan == 'monthly' ? this.props.monthly : this.props.selectedPlan == 'halfYear' ? this.props.quartarly : this.props.yearly;
+        const planTitle =
+            this.props.selectedPlan === 'monthly'
+                ? 'Pro Monthly Tier'
+                : this.props.selectedPlan === 'halfYear'
+                ? 'Pro 6-Month Pass (Save 35%)'
+                : 'Pro Annual Accelerator (Save 50%)';
 
         const stepTitles = [
-            t('checkout.steps.billingInfo', 'Billing Information'),
-            t('checkout.steps.paymentMethod', 'Payment Method'),
-            t('checkout.steps.cardDetails', 'Card Details'),
-            t('checkout.steps.confirmation', 'Confirmation'),
+            t('checkout.steps.billingInfo', '1. Billing Info'),
+            t('checkout.steps.paymentMethod', '2. Payment Method'),
+            t('checkout.steps.cardDetails', '3. Card Details'),
+            t('checkout.steps.confirmation', '4. Activation'),
         ];
 
         return (
-            <div className="min-h-screen bg-gray-50 py-8">
-                <div className="max-w-6xl mx-auto px-4">
-                    {/* Header */}
-                    <div className="text-center mb-8">
-                        <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('checkout.title', 'Complete Your Purchase')}</h1>
-                        <p className="text-gray-600">{t('checkout.secureCheckout', 'Secure checkout powered by Stripe and PayPal')}</p>
+            <div className="w-full bg-slate-50/60 py-4 sm:py-8 px-2 sm:px-6 font-sans">
+                <div className="max-w-5xl mx-auto space-y-6">
+
+                    {/* Security Hero Header */}
+                    <div className="text-center space-y-2">
+                        <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[11px] font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-200/80 shadow-2xs uppercase tracking-wider">
+                            <FaLock className="w-3 h-3 text-indigo-600" />
+                            <span>256-Bit SSL Encrypted Enterprise Checkout</span>
+                        </div>
+                        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+                            {t('checkout.title', 'Complete Your Purchase')}
+                        </h1>
+                        <p className="text-xs sm:text-sm text-slate-500 max-w-lg mx-auto">
+                            {t('checkout.secureCheckout', 'Instant VIP access to all 51+ ATS resume templates, AI generators & downloads.')}
+                        </p>
                     </div>
 
-                    {/* Progress Bar */}
-                    <div className="mb-8">
-                        <div className="flex items-center justify-between max-w-2xl mx-auto">
+                    {/* Progress Bar - Responsive Stepper */}
+                    <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs">
+                        {/* Mobile Stepper Counter (<640px) */}
+                        <div className="block sm:hidden text-center space-y-2">
+                            <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                                <span>Step {this.state.step + 1} of 4</span>
+                                <span className="text-indigo-600">{stepTitles[this.state.step]}</span>
+                            </div>
+                            <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-indigo-600 transition-all duration-300 rounded-full"
+                                    style={{ width: `${((this.state.step + 1) / 4) * 100}%` }}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Desktop Stepper (sm & up) */}
+                        <div className="hidden sm:flex items-center justify-between max-w-2xl mx-auto">
                             {stepTitles.map((title, index) => (
-                                <div key={index} className="flex items-center">
-                                    <div className="flex flex-col items-center">
+                                <div key={index} className="flex items-center flex-1 last:flex-none">
+                                    <div className="flex flex-col items-center mx-auto">
                                         <div
-                                            className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 ${
+                                            className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-extrabold transition-all duration-300 ${
                                                 this.state.step >= index
-                                                    ? 'bg-blue-600 text-white'
+                                                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
                                                     : this.state.step === index - 1
-                                                    ? 'bg-blue-100 text-blue-600 border-2 border-blue-600'
-                                                    : 'bg-gray-200 text-gray-500'
+                                                    ? 'bg-indigo-50 text-indigo-600 border-2 border-indigo-600'
+                                                    : 'bg-slate-100 text-slate-400'
                                             }`}>
                                             {this.state.step > index ? (
-                                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path
-                                                        fillRule="evenodd"
-                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                        clipRule="evenodd"
-                                                    />
-                                                </svg>
+                                                <FaCheck className="w-3.5 h-3.5" />
                                             ) : (
                                                 index + 1
                                             )}
                                         </div>
-                                        <span className={`mt-2 text-xs font-medium transition-colors duration-300 ${this.state.step >= index ? 'text-blue-600' : 'text-gray-500'}`}>{title}</span>
+                                        <span className={`mt-1.5 text-[11px] font-bold transition-colors duration-300 ${
+                                            this.state.step >= index ? 'text-indigo-700' : 'text-slate-400'
+                                        }`}>
+                                            {title}
+                                        </span>
                                     </div>
                                     {index < stepTitles.length - 1 && (
-                                        <div className={`w-16 h-1 mx-4 rounded-full transition-all duration-300 ${this.state.step > index ? 'bg-blue-600' : 'bg-gray-200'}`} />
+                                        <div className={`h-0.5 flex-1 mx-2 transition-all duration-300 ${
+                                            this.state.step > index ? 'bg-indigo-600' : 'bg-slate-200'
+                                        }`} />
                                     )}
                                 </div>
                             ))}
                         </div>
                     </div>
 
-                    <div className="grid lg:grid-cols-5 gap-8">
+                    {/* Main Layout Grid (Responsive: 1-col on mobile, 5-col on desktop) */}
+                    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
+
                         {/* Order Summary - Sticky Sidebar */}
-                        <div className="lg:col-span-2">
-                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 sticky top-8">
-                                <div className="p-6 border-b border-gray-100">
-                                    <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('checkout.orderSummary.title', 'Order Summary')}</h2>
+                        <div className="lg:col-span-2 order-2 lg:order-1">
+                            <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-sm space-y-5 lg:sticky lg:top-6">
+                                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                                    <h2 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                                        <FaCrown className="text-amber-500 w-4 h-4" />
+                                        <span>{t('checkout.orderSummary.title', 'Order Summary')}</span>
+                                    </h2>
+                                    <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-extrabold rounded-md border border-emerald-200">
+                                        VIP Member
+                                    </span>
+                                </div>
 
-                                    <div className="space-y-3">
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-gray-600">{t('checkout.orderSummary.plan', 'Plan')}</span>
-                                            <span className="font-medium capitalize">{this.props.selectedPlan} Subscription</span>
-                                        </div>
+                                <div className="space-y-3 text-xs">
+                                    <div className="flex justify-between items-center py-1">
+                                        <span className="text-slate-600">{t('checkout.orderSummary.plan', 'Selected Tier')}</span>
+                                        <span className="font-extrabold text-slate-900">{planTitle}</span>
+                                    </div>
 
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-gray-600">{t('checkout.orderSummary.billingCycle', 'Billing Cycle')}</span>
-                                            <span className="font-medium">
-                                                {this.props.selectedPlan === 'monthly'
-                                                    ? t('plans.monthly', 'Monthly')
-                                                    : this.props.selectedPlan === 'halfYear'
-                                                    ? 'Every 6 months'
-                                                    : t('plans.yearly', 'Yearly')}
-                                            </span>
-                                        </div>
+                                    <div className="flex justify-between items-center py-1">
+                                        <span className="text-slate-600">{t('checkout.orderSummary.billingCycle', 'Billing Term')}</span>
+                                        <span className="font-semibold text-slate-800">
+                                            {this.props.selectedPlan === 'monthly'
+                                                ? 'Monthly Access'
+                                                : this.props.selectedPlan === 'halfYear'
+                                                ? '6 Months'
+                                                : '12 Months (+3 Mo Free)'}
+                                        </span>
+                                    </div>
 
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-gray-600">{t('checkout.orderSummary.subtotal', 'Subtotal')}</span>
-                                            <span className="font-medium">
-                                                {this.props.currency}
-                                                {price}
-                                            </span>
-                                        </div>
+                                    <div className="flex justify-between items-center py-1">
+                                        <span className="text-slate-600">{t('checkout.orderSummary.subtotal', 'Base Subscription')}</span>
+                                        <span className="font-semibold text-slate-900">
+                                            {this.props.currency}{price}
+                                        </span>
+                                    </div>
 
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-gray-600">{t('checkout.orderSummary.tax', 'Tax')}</span>
-                                            <span className="font-medium">{t('checkout.orderSummary.taxCalculated', 'Calculated at checkout')}</span>
-                                        </div>
+                                    <div className="flex justify-between items-center py-1">
+                                        <span className="text-slate-600">Sales Tax / GST</span>
+                                        <span className="text-emerald-700 font-bold">Included ($0.00)</span>
+                                    </div>
 
-                                        <hr className="my-3" />
+                                    <hr className="border-slate-100 my-2" />
 
-                                        <div className="flex justify-between items-center text-lg font-bold">
-                                            <span>{t('checkout.orderSummary.total', 'Total')}</span>
-                                            <span className="text-blue-600">
-                                                {this.props.currency}
-                                                {price}
-                                            </span>
-                                        </div>
+                                    <div className="flex justify-between items-center pt-1 text-sm">
+                                        <span className="font-extrabold text-slate-900">Total Due Today:</span>
+                                        <span className="text-xl font-black text-indigo-700">
+                                            {this.props.currency}{price}
+                                        </span>
                                     </div>
                                 </div>
 
-                                {/* Security & Support */}
-                                <div className="p-6">
-                                    <div className="space-y-4">
-                                        <div className="flex items-center gap-3 text-sm text-gray-600">
-                                            <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                                                <path
-                                                    fillRule="evenodd"
-                                                    d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
-                                                    clipRule="evenodd"
-                                                />
-                                            </svg>
-                                            <span>{t('checkout.security.moneyBack', '30-day money-back guarantee')}</span>
-                                        </div>
-                                        <div className="flex items-center gap-3 text-sm text-gray-600">
-                                            <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" />
-                                            </svg>
-                                            <span>{t('checkout.security.support', '24/7 customer support')}</span>
-                                        </div>
-                                        <div className="flex items-center gap-3 text-sm text-gray-600">
-                                            <svg className="w-5 h-5 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
-                                                <path
-                                                    fillRule="evenodd"
-                                                    d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"
-                                                    clipRule="evenodd"
-                                                />
-                                            </svg>
-                                            <span>{t('checkout.security.cancelAnytime', 'Cancel anytime')}</span>
-                                        </div>
+                                {/* Security Badges & Guarantees */}
+                                <div className="space-y-2.5 pt-2 border-t border-slate-100 text-xs text-slate-600">
+                                    <div className="flex items-center gap-2.5">
+                                        <FaCheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                        <span>30-Day Risk-Free Money Back Guarantee</span>
+                                    </div>
+                                    <div className="flex items-center gap-2.5">
+                                        <FaShieldAlt className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                                        <span>Instant Auto-Renewal Control &amp; 1-Click Cancel</span>
+                                    </div>
+                                    <div className="flex items-center gap-2.5">
+                                        <FaStar className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                        <span>24/7 Priority Support &amp; AI Writing Assistant</span>
                                     </div>
                                 </div>
-
-                          
 
                                 {this.renderSecurityBadges()}
                             </div>
                         </div>
 
-                        {/* Main Checkout Form */}
-                        <div className="lg:col-span-3">
-                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-                                <div className="p-8">
-                                    {/* Step 0: Billing Information */}
-                                    {this.state.step === 0 && (
-                                        <div className="space-y-6">
+                        {/* Main Checkout Form Container */}
+                        <div className="lg:col-span-3 order-1 lg:order-2">
+                            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-7">
+
+                                {/* Step 0: Billing Information */}
+                                {this.state.step === 0 && (
+                                    <div className="space-y-6">
+                                        <div className="border-b border-slate-100 pb-3">
+                                            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                                <FaGlobe className="text-indigo-600" />
+                                                <span>{t('checkout.billingForm.title', 'Step 1: Billing & Region Info')}</span>
+                                            </h2>
+                                            <p className="text-xs text-slate-500 mt-1">
+                                                {t('checkout.billingForm.description', 'Please confirm your country/region for localized billing and tax receipts.')}
+                                            </p>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                             <div>
-                                                <h2 className="text-xl font-semibold text-gray-900 mb-2">{t('checkout.billingForm.title', 'Billing Information')}</h2>
-                                                <p className="text-gray-600">{t('checkout.billingForm.description', 'We need this information to process your payment and send you receipts.')}</p>
+                                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                                    {t('checkout.billingForm.countryLabel', 'Country / Region *')}
+                                                </label>
+                                                <DropdownInput
+                                                    handleInputs={this.handleInput}
+                                                    placeholder={t('checkout.billingForm.countryPlaceholder', 'Select your country')}
+                                                    checkout={true}
+                                                    title="Country"
+                                                    options={this.countries}
+                                                />
                                             </div>
 
-                                            <div className="grid md:grid-cols-2 gap-6">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('checkout.billingForm.countryLabel', 'Country/Region *')}</label>
-                                                    <DropdownInput
-                                                        handleInputs={this.handleInput}
-                                                        placeholder={t('checkout.billingForm.countryPlaceholder', 'Select your country')}
-                                                        checkout={true}
-                                                        title="Country"
-                                                        options={this.countries}
-                                                    />
-                                                </div>
-
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('checkout.billingForm.postalLabel', 'Postal Code *')}</label>
-                                                    <SimpleInput handleInputs={this.handleInput} title="Postal Code" checkout={true} />
-                                                </div>
-                                            </div>
-
-                                            <div className="pt-6 border-t border-gray-100">
-                                                <button
-                                                    onClick={() => this.nextStep()}
-                                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2">
-                                                    {t('checkout.billingForm.continueButton', 'Continue to Payment Method')}
-                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                                    </svg>
-                                                </button>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                                    {t('checkout.billingForm.postalLabel', 'Postal / Zip Code *')}
+                                                </label>
+                                                <SimpleInput handleInputs={this.handleInput} title="Postal Code" checkout={true} />
                                             </div>
                                         </div>
-                                    )}
 
-                                    {/* Step 1: Payment Method */}
-                                    {this.state.step === 1 && (
-                                        <div className="space-y-6">
-                                            <div>
-                                                <h2 className="text-xl font-semibold text-gray-900 mb-2">{t('checkout.paymentMethod.title', 'Payment Method')}</h2>
-                                                <p className="text-gray-600">{t('checkout.paymentMethod.description', "Choose how you'd like to pay.")}</p>
+                                        <div className="pt-4 border-t border-slate-100">
+                                            <button
+                                                type="button"
+                                                onClick={() => this.nextStep()}
+                                                className="w-full py-3.5 px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2 cursor-pointer">
+                                                <span>{t('checkout.billingForm.continueButton', 'Continue to Payment Method')}</span>
+                                                <FaArrowRight className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Step 1: Payment Method Selection */}
+                                {this.state.step === 1 && (
+                                    <div className="space-y-6">
+                                        <div className="border-b border-slate-100 pb-3">
+                                            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                                <FaCreditCard className="text-indigo-600" />
+                                                <span>{t('checkout.paymentMethod.title', 'Step 2: Choose Payment Gateway')}</span>
+                                            </h2>
+                                            <p className="text-xs text-slate-500 mt-1">
+                                                {t('checkout.paymentMethod.description', 'Select your preferred secure payment method below.')}
+                                            </p>
+                                        </div>
+
+                                        {/* Demo Sandbox Alert */}
+                                        {this.props.sandboxMode && (
+                                            <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between">
+                                                <div className="flex items-center space-x-2.5">
+                                                    <span className="text-base">⚡</span>
+                                                    <div>
+                                                        <p className="text-xs font-extrabold text-amber-900 uppercase">Sandbox Test Mode Active</p>
+                                                        <p className="text-[11px] text-amber-700">Simulating payment checkout flow. No actual bank charges processed.</p>
+                                                    </div>
+                                                </div>
+                                                <span className="px-2 py-0.5 bg-amber-200 text-amber-900 text-[10px] font-black rounded uppercase">DEMO</span>
                                             </div>
+                                        )}
 
-                                            {/* Sandbox / Demo Mode Banner */}
-                                            {this.props.sandboxMode && (
-                                                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between shadow-2xs">
-                                                    <div className="flex items-center space-x-3">
-                                                        <span className="text-lg">⚡</span>
+                                        <div className="space-y-3.5">
+                                            {/* Stripe Card Option */}
+                                            {(this.props.stripeEnabled !== false && !this.props.onlyPP) && (
+                                                <div
+                                                    className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between ${
+                                                        this.state.paymentMethod === 'creditCard'
+                                                            ? 'bg-indigo-50/50 border-indigo-600 shadow-sm ring-1 ring-indigo-500/20'
+                                                            : 'bg-white border-slate-200 hover:border-slate-300'
+                                                    }`}
+                                                    onClick={() => this.setState({ paymentMethod: 'creditCard' })}>
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 bg-indigo-100 text-indigo-700 rounded-xl flex items-center justify-center shrink-0">
+                                                            <FaCreditCard className="w-5 h-5" />
+                                                        </div>
                                                         <div>
-                                                            <p className="text-xs font-extrabold text-amber-900 uppercase tracking-wider">Sandbox / Demo Test Mode Active</p>
-                                                            <p className="text-xs text-amber-700">Simulating payment activation flow. No real charges will be processed.</p>
+                                                            <h3 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
+                                                                {t('checkout.paymentMethod.cardTitle', 'Credit / Debit Card (Stripe)')}
+                                                            </h3>
+                                                            <p className="text-[11px] text-slate-500">Visa, Mastercard, American Express, Discover</p>
                                                         </div>
                                                     </div>
-                                                    <span className="px-2.5 py-1 bg-amber-200 text-amber-900 text-[10px] font-extrabold rounded-md uppercase">DEMO</span>
+                                                    <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${
+                                                        this.state.paymentMethod === 'creditCard' ? 'border-indigo-600 bg-indigo-600' : 'border-slate-300'
+                                                    }`}>
+                                                        {this.state.paymentMethod === 'creditCard' && <FaCheck className="w-2.5 h-2.5 text-white" />}
+                                                    </div>
                                                 </div>
                                             )}
 
-                                            <div className="space-y-4">
-                                                {/* Stripe Credit/Debit Card Option */}
-                                                {(this.props.stripeEnabled !== false && !this.props.onlyPP) && (
-                                                    <div
-                                                        className={`flex items-center justify-between p-4 border ${
-                                                            this.state.paymentMethod === 'creditCard' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
-                                                        } rounded-lg cursor-pointer`}
-                                                        onClick={() => this.setState({ paymentMethod: 'creditCard' })}>
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-12 h-8 bg-gray-100 rounded-md flex items-center justify-center">
-                                                                <svg className="w-6 h-6 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-                                                                    <path d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm0 2h12v1H4V6zm0 3h12v5H4V9z" />
-                                                                </svg>
-                                                            </div>
-                                                            <div>
-                                                                <h3 className="font-medium text-gray-900">{t('checkout.paymentMethod.cardTitle', 'Credit / Debit Card')}</h3>
-                                                                <p className="text-sm text-gray-500">{t('checkout.paymentMethod.cardDescription', 'Visa, Mastercard, American Express')}</p>
-                                                            </div>
+                                            {/* PayPal Option */}
+                                            {this.props.paypalEnabled !== false && (
+                                                <div
+                                                    className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between ${
+                                                        this.state.paymentMethod === 'paypal'
+                                                            ? 'bg-indigo-50/50 border-indigo-600 shadow-sm ring-1 ring-indigo-500/20'
+                                                            : 'bg-white border-slate-200 hover:border-slate-300'
+                                                    }`}
+                                                    onClick={() => this.setState({ paymentMethod: 'paypal' })}>
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-center shrink-0">
+                                                            <img src={PayPalLogo} alt="PayPal" className="h-5 object-contain" />
                                                         </div>
-                                                        <div
-                                                            className={`w-5 h-5 rounded-full ${
-                                                                this.state.paymentMethod === 'creditCard' ? 'bg-blue-500' : 'border border-gray-300'
-                                                            } flex items-center justify-center`}>
-                                                            {this.state.paymentMethod === 'creditCard' && (
-                                                                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                                                    <path
-                                                                        fillRule="evenodd"
-                                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                                        clipRule="evenodd"
-                                                                    />
-                                                                </svg>
-                                                            )}
+                                                        <div>
+                                                            <h3 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
+                                                                {t('checkout.paymentMethod.paypalTitle', 'PayPal Express')}
+                                                            </h3>
+                                                            <p className="text-[11px] text-slate-500">Fast 1-click checkout with PayPal Account</p>
                                                         </div>
                                                     </div>
-                                                )}
-
-                                                {/* PayPal Option */}
-                                                {this.props.paypalEnabled !== false && (
-                                                    <div
-                                                        className={`flex items-center justify-between p-4 border ${
-                                                            this.state.paymentMethod === 'paypal' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
-                                                        } rounded-lg cursor-pointer`}
-                                                        onClick={() => this.setState({ paymentMethod: 'paypal' })}>
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-12 h-8 bg-gray-100 rounded-md flex items-center justify-center">
-                                                                <img src={PayPalLogo} alt="PayPal" className="h-5 object-contain" />
-                                                            </div>
-                                                            <div>
-                                                                <h3 className="font-medium text-gray-900">{t('checkout.paymentMethod.paypalTitle', 'PayPal')}</h3>
-                                                                <p className="text-sm text-gray-500">{t('checkout.paymentMethod.paypalDescription', 'Pay with your PayPal account')}</p>
-                                                            </div>
-                                                        </div>
-                                                        <div
-                                                            className={`w-5 h-5 rounded-full ${
-                                                                this.state.paymentMethod === 'paypal' ? 'bg-blue-500' : 'border border-gray-300'
-                                                            } flex items-center justify-center`}>
-                                                            {this.state.paymentMethod === 'paypal' && (
-                                                                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                                                    <path
-                                                                        fillRule="evenodd"
-                                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                                        clipRule="evenodd"
-                                                                    />
-                                                                </svg>
-                                                            )}
-                                                        </div>
+                                                    <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${
+                                                        this.state.paymentMethod === 'paypal' ? 'border-indigo-600 bg-indigo-600' : 'border-slate-300'
+                                                    }`}>
+                                                        {this.state.paymentMethod === 'paypal' && <FaCheck className="w-2.5 h-2.5 text-white" />}
                                                     </div>
-                                                )}
-                                            </div>
+                                                </div>
+                                            )}
+                                        </div>
 
-                                            <div className="pt-6 border-t border-gray-100 flex items-center gap-4">
-                                                <button onClick={() => this.previousStep()} className="text-gray-600 hover:text-gray-900 font-semibold flex items-center gap-1">
-                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                                    </svg>
-                                                    {t('checkout.navigation.back', 'Back')}
-                                                </button>
+                                        <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
+                                            <button
+                                                type="button"
+                                                onClick={() => this.previousStep()}
+                                                className="px-4 py-3 border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer">
+                                                <FaArrowLeft className="w-3 h-3" />
+                                                <span>{t('checkout.navigation.back', 'Back')}</span>
+                                            </button>
 
-                                                <button
-                                                    onClick={() => this.nextStep()}
-                                                    disabled={!this.state.paymentMethod}
-                                                    className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => this.nextStep()}
+                                                disabled={!this.state.paymentMethod}
+                                                className="px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md shadow-indigo-600/20 flex items-center gap-2 cursor-pointer">
+                                                <span>
                                                     {this.state.paymentMethod === 'creditCard'
                                                         ? t('checkout.paymentMethod.continueToCard', 'Continue to Card Details')
                                                         : t('checkout.paymentMethod.continueWithPaypal', 'Continue with PayPal')}
-                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Step 2: Payment Details */}
-                                    {this.state.step === 2 && (
-                                        <div className="space-y-6">
-                                            {this.state.paymentMethod === 'creditCard' ? (
-                                                // Credit Card Form
-                                                <>
-                                                    <div>
-                                                        <h2 className="text-xl font-semibold text-gray-900 mb-2">{t('checkout.cardForm.title', 'Card Information')}</h2>
-                                                        <p className="text-gray-600">{t('checkout.cardForm.description', 'Your payment information is encrypted and secure.')}</p>
-                                                    </div>
-
-                                                    <div className="space-y-6">
-                                                        <div>
-                                                            <label className="block text-sm font-medium text-gray-700 mb-2">{t('checkout.cardForm.cardholderLabel', 'Cardholder Name *')}</label>
-                                                            <input
-                                                                onChange={(event) => this.handleInput('CardHolder', event)}
-                                                                placeholder={t('checkout.cardForm.cardholderPlaceholder', 'Enter the name on your card')}
-                                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                                            />
-                                                        </div>
-
-                                                        <div>
-                                                            <label className="block text-sm font-medium text-gray-700 mb-2">{t('checkout.cardForm.addressLabel', 'Billing Address *')}</label>
-                                                            <input
-                                                                onChange={(event) => this.handleInput('Address', event)}
-                                                                placeholder={t('checkout.cardForm.addressPlaceholder', 'Enter your billing address')}
-                                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                                            />
-                                                        </div>
-
-                                                        <div>
-                                                            <label className="block text-sm font-medium text-gray-700 mb-2">{t('checkout.cardForm.cardDetailsLabel', 'Card Details *')}</label>
-                                                            <div className="p-4 border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-colors bg-white">
-                                                                <CardElement
-                                                                    options={{
-                                                                        style: {
-                                                                            base: {
-                                                                                fontSize: '16px',
-                                                                                color: '#374151',
-                                                                                fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                                                                                '::placeholder': { color: '#9CA3AF' },
-                                                                                iconColor: '#6B7280',
-                                                                            },
-                                                                            invalid: {
-                                                                                color: '#DC2626',
-                                                                                iconColor: '#DC2626',
-                                                                            },
-                                                                        },
-                                                                    }}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                                        <div className="flex items-start gap-3">
-                                                            <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                                                <path
-                                                                    fillRule="evenodd"
-                                                                    d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
-                                                                    clipRule="evenodd"
-                                                                />
-                                                            </svg>
-                                                            <div>
-                                                                <h4 className="font-medium text-blue-900">{t('checkout.security.securePaymentTitle', 'Your payment is secure')}</h4>
-                                                                <p className="text-blue-800 text-sm mt-1">
-                                                                    {t(
-                                                                        'checkout.security.securePaymentDescription',
-                                                                        'We use industry-standard encryption to protect your card information. Your data is never stored on our servers.'
-                                                                    )}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="pt-6 border-t border-gray-100 flex gap-4">
-                                                        <button
-                                                            onClick={() => this.previousStep()}
-                                                            className="flex-1 border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold py-4 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2">
-                                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                                            </svg>
-                                                            {t('checkout.navigation.backToPayment', 'Back to Payment')}
-                                                        </button>
-                                                        <button
-                                                            onClick={() => this.handleSubmit()}
-                                                            disabled={this.state.isLoading}
-                                                            className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2">
-                                                            {this.state.isLoading ? (
-                                                                <>
-                                                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                                                                    {t('checkout.cardForm.processing', 'Processing...')}
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                                                        <path
-                                                                            fillRule="evenodd"
-                                                                            d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
-                                                                            clipRule="evenodd"
-                                                                        />
-                                                                    </svg>
-                                                                    {t('checkout.cardForm.completePayment', 'Complete Payment')} ({this.props.currency}
-                                                                    {price})
-                                                                </>
-                                                            )}
-                                                        </button>
-                                                    </div>
-                                                </>
-                                            ) : (
-                                                // PayPal Form
-                                                <>
-                                                    <div>
-                                                        <h2 className="text-xl font-semibold text-gray-900 mb-2">{t('checkout.paypal.title', 'PayPal Payment')}</h2>
-                                                        <p className="text-gray-600">{t('checkout.paypal.description', 'Complete your payment securely with PayPal.')}</p>
-                                                    </div>
-
-                                                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-                                                        <div className="flex items-start gap-3 mb-4">
-                                                            <img src={PayPalLogo} alt="PayPal" className="h-8 object-contain" />
-                                                            <div>
-                                                                <h4 className="font-medium text-yellow-900">{t('checkout.paypal.secureTitle', 'Secure PayPal Payment')}</h4>
-                                                                <p className="text-yellow-800 text-sm mt-1">
-                                                                    {t('checkout.paypal.secureDescription', 'You will be redirected to PayPal to complete your payment securely.')}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-
-                                                        <PayPalButtonWrapper
-                                                            amount={price}
-                                                            currency={this.props.currencyCode || 'USD'}
-                                                            selectedPlan={this.props.selectedPlan}
-                                                            onSuccess={this.handlePayPalSuccess}
-                                                            onError={this.handlePayPalError}
-                                                        />
-                                                    </div>
-
-                                                    <div className="pt-6 border-t border-gray-100">
-                                                        <button
-                                                            onClick={() => this.previousStep()}
-                                                            className="w-full border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold py-4 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2">
-                                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                                            </svg>
-                                                            {t('checkout.navigation.backToPayment', 'Back to Payment Method')}
-                                                        </button>
-                                                    </div>
-                                                </>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {/* Step 3: Success */}
-                                    {this.state.step === 3 && (
-                                        <div className="text-center space-y-8 py-8">
-                                            <div className="w-24 h-24 mx-auto">
-                                                <>{View}</>
-                                            </div>
-
-                                            <div>
-                                                <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('checkout.success.title', 'Payment Successful!')}</h2>
-                                                <p className="text-gray-600 text-lg mb-2">{t('checkout.success.message', 'Thank you for your purchase. Your subscription is now active.')}</p>
-                                                <p className="text-gray-500">
-                                                    {t('checkout.success.emailConfirmation', "You'll receive a confirmation email shortly with your receipt and subscription details.")}
-                                                </p>
-                                            </div>
-
-                                            <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-                                                <div className="flex items-center justify-center gap-3 text-green-800">
-                                                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path
-                                                            fillRule="evenodd"
-                                                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                                            clipRule="evenodd"
-                                                        />
-                                                    </svg>
-                                                    <span className="font-semibold">{t('checkout.success.activeSubscription', 'Your subscription is now active')}</span>
-                                                </div>
-                                            </div>
-
-                                            <button
-                                                onClick={() => {
-                                                    window.location.href = window.location.pathname + '/';
-                                                }}
-                                                className="inline-flex items-center gap-2 px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors duration-200">
-                                                {t('checkout.success.continueToDashboard', 'Continue to Dashboard')}
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                                </svg>
+                                                </span>
+                                                <FaArrowRight className="w-3.5 h-3.5" />
                                             </button>
                                         </div>
-                                    )}
-                                </div>
+                                    </div>
+                                )}
+
+                                {/* Step 2: Payment Details (Stripe Card Form or PayPal Button) */}
+                                {this.state.step === 2 && (
+                                    <div className="space-y-6">
+                                        {this.state.paymentMethod === 'creditCard' ? (
+                                            <>
+                                                <div className="border-b border-slate-100 pb-3">
+                                                    <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                                        <FaLock className="text-indigo-600" />
+                                                        <span>{t('checkout.cardForm.title', 'Step 3: Secure Card Payment')}</span>
+                                                    </h2>
+                                                    <p className="text-xs text-slate-500 mt-1">
+                                                        {t('checkout.cardForm.description', 'Your card details are end-to-end encrypted with Stripe.')}
+                                                    </p>
+                                                </div>
+
+                                                <div className="space-y-4">
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                                            {t('checkout.cardForm.cardholderLabel', 'Cardholder Name *')}
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            onChange={(event) => this.handleInput('CardHolder', event)}
+                                                            placeholder={t('checkout.cardForm.cardholderPlaceholder', 'Full Name as displayed on card')}
+                                                            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:border-indigo-600 outline-none"
+                                                        />
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                                            {t('checkout.cardForm.addressLabel', 'Billing Address *')}
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            onChange={(event) => this.handleInput('Address', event)}
+                                                            placeholder={t('checkout.cardForm.addressPlaceholder', 'Street address, apartment, or suite')}
+                                                            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:border-indigo-600 outline-none"
+                                                        />
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                                            {t('checkout.cardForm.cardDetailsLabel', 'Card Details (Number, Expiry & CVC) *')}
+                                                        </label>
+                                                        <div className="p-3.5 bg-slate-50 border border-slate-300 rounded-xl focus-within:border-indigo-600 focus-within:ring-1 focus-within:ring-indigo-600 transition-all">
+                                                            <CardElement
+                                                                options={{
+                                                                    style: {
+                                                                        base: {
+                                                                            fontSize: '14px',
+                                                                            color: '#0f172a',
+                                                                            fontFamily: '"Inter", -apple-system, sans-serif',
+                                                                            '::placeholder': { color: '#94a3b8' },
+                                                                            iconColor: '#4f46e5',
+                                                                        },
+                                                                        invalid: {
+                                                                            color: '#e11d48',
+                                                                            iconColor: '#e11d48',
+                                                                        },
+                                                                    },
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="p-3.5 bg-indigo-50/60 border border-indigo-100 rounded-xl text-xs text-indigo-900 flex items-center gap-2.5">
+                                                    <FaShieldAlt className="w-4 h-4 text-indigo-600 shrink-0" />
+                                                    <span>We use 256-bit SSL encryption. Card numbers are never stored on our servers.</span>
+                                                </div>
+
+                                                <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => this.previousStep()}
+                                                        className="px-4 py-3 border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer">
+                                                        <FaArrowLeft className="w-3 h-3" />
+                                                        <span>{t('checkout.navigation.backToPayment', 'Back')}</span>
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => this.handleSubmit()}
+                                                        disabled={this.state.isLoading}
+                                                        className="flex-1 py-3.5 px-6 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 cursor-pointer">
+                                                        {this.state.isLoading ? (
+                                                            <>
+                                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                                                <span>Processing Secure Charge...</span>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <FaLock className="w-3.5 h-3.5 text-white" />
+                                                                <span>Complete Secure Payment ({this.props.currency}{price})</span>
+                                                            </>
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            /* PayPal Gateway Box */
+                                            <>
+                                                <div className="border-b border-slate-100 pb-3">
+                                                    <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                                        <FaPaypal className="text-amber-500" />
+                                                        <span>{t('checkout.paypal.title', 'Step 3: PayPal Express Payment')}</span>
+                                                    </h2>
+                                                    <p className="text-xs text-slate-500 mt-1">
+                                                        {t('checkout.paypal.description', 'Complete your transaction securely via PayPal.')}
+                                                    </p>
+                                                </div>
+
+                                                <div className="bg-amber-50/60 border border-amber-200 rounded-xl p-5 space-y-4">
+                                                    <div className="flex items-center justify-between">
+                                                        <img src={PayPalLogo} alt="PayPal" className="h-6 object-contain" />
+                                                        <span className="text-xs font-extrabold text-amber-900 uppercase">Total: {this.props.currency}{price}</span>
+                                                    </div>
+
+                                                    <PayPalButtonWrapper
+                                                        amount={price}
+                                                        currency={this.props.currencyCode || 'USD'}
+                                                        selectedPlan={this.props.selectedPlan}
+                                                        onSuccess={this.handlePayPalSuccess}
+                                                        onError={this.handlePayPalError}
+                                                    />
+                                                </div>
+
+                                                <div className="pt-4 border-t border-slate-100">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => this.previousStep()}
+                                                        className="w-full py-3 border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                                                        <FaArrowLeft className="w-3 h-3" />
+                                                        <span>Back to Payment Method</span>
+                                                    </button>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Step 3: Success Confirmation View */}
+                                {this.state.step === 3 && (
+                                    <div className="text-center space-y-6 py-6">
+                                        <div className="w-20 h-20 mx-auto">
+                                            <>{View}</>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <span className="px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-extrabold rounded-full uppercase border border-emerald-300">
+                                                🎉 Transaction Completed
+                                            </span>
+                                            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                                                {t('checkout.success.title', 'Subscription Successfully Activated!')}
+                                            </h2>
+                                            <p className="text-xs text-slate-600 max-w-md mx-auto">
+                                                {t('checkout.success.emailConfirmation', 'Thank you for upgrading to VIP Pro! Your account now has full access to all AI resume templates & features.')}
+                                            </p>
+                                        </div>
+
+                                        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 text-xs font-bold flex items-center justify-center gap-2">
+                                            <FaCheckCircle className="w-4 h-4 text-emerald-600" />
+                                            <span>Full VIP Access Unlocked Immediately</span>
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                window.location.href = isEmbeddedInDashboard ? '/dashboard' : '/dashboard/plans';
+                                            }}
+                                            className="px-8 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-indigo-600/20 inline-flex items-center gap-2 cursor-pointer">
+                                            <span>Continue to Candidate Dashboard</span>
+                                            <FaArrowRight className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                )}
+
                             </div>
                         </div>
+
                     </div>
                 </div>
             </div>

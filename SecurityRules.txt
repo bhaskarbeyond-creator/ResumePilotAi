@@ -249,5 +249,22 @@ service cloud.firestore {
       // Only admins can update blog settings
       allow write: if isA();
     }
+    // Promo Coupons Collection
+    // Public: Anyone can read coupons for checkout display
+    // Auth: Authenticated users can increment usedCount at checkout redemption
+    // Admin: Only admins can create, update (full edit), delete coupons
+    match /coupons/{couponId} {
+      allow read: if true;
+      allow create: if isA();
+      allow update: if isA() || (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['usedCount', 'updatedAt']));
+      allow delete: if isA();
+    }
+
+    // Transactions Collection
+    match /transactions/{txnId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isA());
+      allow create: if isAuthenticated();
+      allow update, delete: if isA();
+    }
   }
 }
