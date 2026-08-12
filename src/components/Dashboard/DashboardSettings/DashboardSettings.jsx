@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { uploadImageToFirebase, getProfileOfUser, addProfileToUser, getAccountInfo, changePassword, updateUserEmail, getSystemSettings, getUserTransactions, deleteUserAccountPermanently, exportUserDataJSON, saveUserTotp2FA, disableUserTotp2FA, getUserTotpStatus, reauthenticateUser, recordUserLoginEvent, getUserLoginHistory } from '../../../firestore/dbOperations';
+import { uploadImageToFirebase, getProfileOfUser, addProfileToUser, getAccountInfo, changePassword, updateUserEmail, getSystemSettings, getWebsiteData, getSubscriptionStatus, getUserTransactions, deleteUserAccountPermanently, exportUserDataJSON, saveUserTotp2FA, disableUserTotp2FA, getUserTotpStatus, reauthenticateUser, recordUserLoginEvent, getUserLoginHistory, sendSmsNotification } from '../../../firestore/dbOperations';
 import { generateUserAiContent, cleanSkillName } from '../../../services/aiService';
 import { FaUser, FaCog, FaCamera, FaTrash, FaUserCircle, FaKey, FaCalendarAlt, FaEnvelope, FaCreditCard, FaUpload, FaCheckCircle, FaExclamationTriangle, FaBriefcase, FaGraduationCap, FaTools, FaGlobe, FaPlus, FaCheck, FaShieldAlt, FaDesktop, FaDownload, FaCertificate, FaProjectDiagram, FaMagic, FaLinkedin, FaGithub, FaLink, FaSyncAlt, FaExternalLinkAlt, FaUnlink, FaLock, FaEye, FaEyeSlash, FaCrown, FaMobileAlt, FaQrcode, FaCopy, FaPrint, FaHistory } from 'react-icons/fa';
 import fire from '../../../conf/fire';
@@ -15,10 +16,27 @@ import { inferCountryFromCity } from '../../../utils/locationHelper';
 
 function DashboardSettings(props) {
     const { t } = useTranslation('common');
+    const location = useLocation();
+    const navigate = useNavigate();
+
     // State management
     const [selectedSettings, setSelectedSettings] = useState('Profile');
     const [profileSubTab, setProfileSubTab] = useState('basic');
     const SUB_TAB_ORDER = ['basic', 'experience', 'education', 'skills', 'certifications', 'projects', 'languages', 'summary'];
+
+    // Reactive URL query parameter listener for ?tab=Account or ?tab=Profile
+    useEffect(() => {
+        const searchParams = new URLSearchParams(location.search);
+        const tabParam = searchParams.get('tab');
+        if (tabParam) {
+            const lower = tabParam.toLowerCase();
+            if (lower.includes('account') || lower.includes('security') || lower === '2fa') {
+                setSelectedSettings('Account');
+            } else if (lower.includes('profile')) {
+                setSelectedSettings('Profile');
+            }
+        }
+    }, [location.search]);
     const [summaryTone, setSummaryTone] = useState('executive');
     const [skillFilter, setSkillFilter] = useState('all');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -245,79 +263,193 @@ function DashboardSettings(props) {
         fetchUserAccountData();
     };
 
-    const handleDownloadInvoice = (txn) => {
+    const handleDownloadInvoice = async (txn) => {
+        const subData = await getSubscriptionStatus();
+        const metaData = await getWebsiteData();
+        const siteTitle = (metaData && metaData.title ? metaData.title.split('—')[0].trim() : 'AI RESUME BUILDER').toUpperCase();
+        const activeTemplate = (subData && subData.receiptTemplate) || 'modern';
         const printWindow = window.open('', '_blank');
+
+        const taxName = txn.taxName || subData?.taxName || 'GST';
+        const taxRate = txn.taxRate !== undefined ? txn.taxRate : (subData?.taxRate !== undefined ? subData.taxRate : 18);
+        const subtotal = txn.subtotal !== undefined ? txn.subtotal : (txn.price || '19.99');
+        const taxAmount = txn.taxAmount !== undefined ? txn.taxAmount : 0;
+        const totalPrice = txn.price || '19.99';
+        const companyTaxId = txn.companyTaxId || subData?.companyTaxId || '';
+        const customerTaxId = txn.customerTaxId || '';
+        const currency = txn.currency || subData?.currency || 'INR';
+
+        let templateStyles = '';
+        let headerHtml = '';
+
+        if (activeTemplate === 'classic') {
+            // Classic Corporate monochrome formal
+            templateStyles = `
+                body { font-family: Georgia, 'Times New Roman', serif; margin: 40px; color: #000; line-height: 1.4; }
+                .header { border-bottom: 3px double #000; padding-bottom: 12px; margin-bottom: 24px; text-align: center; }
+                .title { font-size: 26px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; }
+                .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; border: 1px solid #000; padding: 12px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 16px; border: 1px solid #000; }
+                th { text-align: left; padding: 10px; background: #eee; border: 1px solid #000; font-size: 11px; text-transform: uppercase; }
+                td { padding: 10px; border: 1px solid #000; font-size: 12px; }
+                .summary-box { border: 1px solid #000; padding: 12px; margin-top: 16px; width: 260px; margin-left: auto; }
+                .total-row { font-weight: bold; font-size: 15px; border-top: 2px solid #000; margin-top: 6px; padding-top: 6px; }
+            `;
+            headerHtml = `
+                <div class="header">
+                    <div class="title">${siteTitle}</div>
+                    <div style="font-size: 13px; font-weight: bold; margin-top: 4px;">FORMAL TAX INVOICE &amp; PAYMENT RECEIPT</div>
+                    ${companyTaxId ? `<div style="font-size: 11px; margin-top: 4px;">Supplier ${taxName} Registration No: ${companyTaxId}</div>` : ''}
+                </div>
+            `;
+        } else if (activeTemplate === 'gradient') {
+            // Vibrant Enterprise Gradient Header
+            templateStyles = `
+                body { font-family: 'Outfit', 'Inter', sans-serif; margin: 30px; color: #0f172a; line-height: 1.5; background: #f8fafc; }
+                .card-wrap { background: #fff; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); padding: 30px; border: 1px solid #e2e8f0; }
+                .header { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #fff; padding: 24px; border-radius: 16px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }
+                .title { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
+                .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; background: #f1f5f9; padding: 16px; border-radius: 12px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+                th { text-align: left; padding: 12px; background: #ede9fe; color: #5b21b6; border-radius: 8px 8px 0 0; font-size: 11px; text-transform: uppercase; font-weight: 800; }
+                td { padding: 12px; border-bottom: 1px solid #e2e8f0; font-size: 13px; font-weight: 600; }
+                .summary-box { background: linear-gradient(135deg, #f8fafc 0%, #ede9fe 100%); border: 1px solid #c7d2fe; border-radius: 14px; padding: 18px; margin-top: 20px; width: 290px; margin-left: auto; }
+                .total-row { font-weight: 800; font-size: 16px; color: #4338ca; border-top: 2px solid #a5b4fc; padding-top: 8px; margin-top: 8px; }
+            `;
+            headerHtml = `
+                <div class="header">
+                    <div>
+                        <div class="title">${siteTitle}</div>
+                        <div style="font-size: 12px; opacity: 0.9;">Enterprise Tax Invoice Receipt</div>
+                        ${companyTaxId ? `<div style="font-size: 11px; opacity: 0.85; margin-top: 4px;">GSTIN: ${companyTaxId}</div>` : ''}
+                    </div>
+                    <div style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); color: #fff; padding: 6px 16px; border-radius: 99px; font-weight: 800; font-size: 12px;">${txn.status || 'PAID ✓'}</div>
+                </div>
+            `;
+        } else if (activeTemplate === 'compact') {
+            // Compact Stub Voucher Monospace
+            templateStyles = `
+                body { font-family: 'Courier New', Courier, monospace; margin: 20px auto; max-width: 420px; color: #000; line-height: 1.3; background: #fff; }
+                .header { text-align: center; border-bottom: 2px dashed #000; padding-bottom: 12px; margin-bottom: 16px; }
+                .title { font-size: 20px; font-weight: bold; }
+                .grid { border-bottom: 1px dashed #000; padding-bottom: 12px; margin-bottom: 12px; font-size: 12px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12px; }
+                th { text-align: left; padding: 6px 0; border-bottom: 1px dashed #000; text-transform: uppercase; }
+                td { padding: 6px 0; border-bottom: 1px dotted #ccc; }
+                .summary-box { border-top: 2px dashed #000; margin-top: 12px; padding-top: 8px; font-size: 13px; }
+                .total-row { font-weight: bold; font-size: 15px; margin-top: 6px; }
+            `;
+            headerHtml = `
+                <div class="header">
+                    <div class="title">${siteTitle}</div>
+                    <div>===============================</div>
+                    <div style="font-size: 12px; font-weight: bold;">PAYMENT RECEIPT VOUCHER</div>
+                    ${companyTaxId ? `<div style="font-size: 11px;">GSTIN: ${companyTaxId}</div>` : ''}
+                </div>
+            `;
+        } else {
+            // Modern Minimalist (Default)
+            templateStyles = `
+                body { font-family: 'Helvetica Neue', Arial, sans-serif; margin: 40px; color: #1e293b; line-height: 1.5; }
+                .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4338ca; padding-bottom: 20px; margin-bottom: 30px; }
+                .title { font-size: 24px; font-weight: bold; color: #4338ca; }
+                .badge { background: #e0e7ff; color: #4338ca; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: bold; }
+                .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+                .label { font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; margin-bottom: 4px; }
+                .value { font-size: 14px; font-weight: 600; color: #0f172a; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                th { text-align: left; padding: 12px; background: #f8fafc; border-bottom: 2px solid #e2e8f0; font-size: 11px; text-transform: uppercase; color: #475569; }
+                td { padding: 12px; border-bottom: 1px solid #e2e8f0; font-size: 13px; }
+                .summary-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-top: 20px; width: 280px; margin-left: auto; }
+                .summary-line { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+                .total-row { font-weight: bold; font-size: 16px; color: #4338ca; border-top: 2px solid #cbd5e1; padding-top: 8px; margin-top: 8px; }
+            `;
+            headerHtml = `
+                <div class="header">
+                    <div>
+                        <div class="title">${siteTitle}</div>
+                        <div style="font-size: 12px; color: #64748b;">Official B2B Tax Invoice &amp; Payment Receipt</div>
+                        ${companyTaxId ? `<div style="font-size: 11px; font-weight: bold; color: #4338ca; margin-top: 4px;">Supplier ${taxName}IN / Reg No: ${companyTaxId}</div>` : ''}
+                    </div>
+                    <div class="badge">${txn.status || 'PAID'}</div>
+                </div>
+            `;
+        }
+
+        const formattedDate = txn.created_at?.toDate
+            ? txn.created_at.toDate().toLocaleDateString()
+            : txn.date
+            ? new Date(txn.date).toLocaleDateString()
+            : new Date().toLocaleDateString();
+
         const invoiceHtml = `
             <!DOCTYPE html>
             <html>
             <head>
-                <title>Receipt Invoice - ${txn.transactionId}</title>
+                <title>Tax Invoice Receipt - ${txn.transactionId}</title>
                 <style>
-                    body { font-family: 'Helvetica Neue', Arial, sans-serif; margin: 40px; color: #1e293b; line-height: 1.5; }
-                    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #6366f1; padding-bottom: 20px; margin-bottom: 30px; }
-                    .title { font-size: 24px; font-weight: bold; color: #4338ca; }
-                    .badge { background: #e0e7ff; color: #4338ca; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: bold; }
-                    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
-                    .label { font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; margin-bottom: 4px; }
-                    .value { font-size: 14px; font-weight: 600; color: #0f172a; }
-                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                    th { text-align: left; padding: 12px; background: #f8fafc; border-bottom: 2px solid #e2e8f0; font-size: 11px; text-transform: uppercase; color: #475569; }
-                    td { padding: 12px; border-bottom: 1px solid #e2e8f0; font-size: 13px; }
-                    .total-row { font-weight: bold; font-size: 16px; color: #4338ca; }
-                    .footer { margin-top: 50px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 20px; }
+                    ${templateStyles}
+                    .footer { margin-top: 40px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 16px; }
                 </style>
             </head>
             <body>
-                <div class="header">
-                    <div>
-                        <div class="title">AI RESUME BUILDER</div>
-                        <div style="font-size: 12px; color: #64748b;">Official Payment Receipt</div>
+                <div class="card-wrap">
+                    ${headerHtml}
+                    <div class="grid">
+                        <div>
+                            <div style="font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase;">Billed To</div>
+                            <div style="font-size: 14px; font-weight: 600; color: #0f172a;">${profile.firstname || 'Valued User'} ${profile.lastname || ''}</div>
+                            <div style="font-size: 12px; color: #64748b;">${profile.email || databaseAccountSettings.email || ''}</div>
+                            ${customerTaxId ? `<div style="font-size: 11px; font-weight: bold; color: #0f172a; margin-top: 4px;">Customer ${taxName} ID: ${customerTaxId}</div>` : ''}
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase;">Invoice Reference</div>
+                            <div style="font-size: 14px; font-weight: 600; color: #0f172a;">${txn.transactionId}</div>
+                            <div style="font-size: 12px; color: #64748b;">Date: ${formattedDate}</div>
+                        </div>
                     </div>
-                    <div class="badge">${txn.status || 'PAID'}</div>
-                </div>
-                <div class="grid">
-                    <div>
-                        <div class="label">Billed To</div>
-                        <div class="value">${profile.firstname || 'Valued User'} ${profile.lastname || ''}</div>
-                        <div style="font-size: 12px; color: #64748b;">${profile.email || databaseAccountSettings.email || ''}</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Description</th>
+                                <th>Payment Gateway</th>
+                                <th style="text-align: right;">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="font-weight: bold;">${txn.planType || 'Pro Membership Plan'}</td>
+                                <td>${txn.paimentType || 'Card / PayPal / Razorpay'}</td>
+                                <td style="text-align: right; font-weight: bold;">${currency}${subtotal}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="summary-box">
+                        <div style="display:flex; justify-content: space-between; margin-bottom:6px;">
+                            <span>Base Price: </span>
+                            <span style="font-weight:600;">${currency}${subtotal}</span>
+                        </div>
+                        <div style="display:flex; justify-content: space-between; margin-bottom:6px;">
+                            <span>${taxName} (${taxRate}%): </span>
+                            <span style="font-weight:600;">${currency}${taxAmount}</span>
+                        </div>
+                        <div class="total-row" style="display:flex; justify-content: space-between;">
+                            <span>Total Paid: </span>
+                            <span>${currency}${totalPrice}</span>
+                        </div>
                     </div>
-                    <div style="text-align: right;">
-                        <div class="label">Invoice Reference</div>
-                        <div class="value">${txn.transactionId}</div>
-                        <div style="font-size: 12px; color: #64748b;">Date: ${txn.date ? new Date(txn.date).toLocaleDateString() : new Date().toLocaleDateString()}</div>
+
+                    <div class="footer">
+                        Thank you for subscribing to ${siteTitle}. Official compliance Tax Invoice. For support, visit ${window.location.hostname}
                     </div>
                 </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Description</th>
-                            <th>Payment Method</th>
-                            <th style="text-align: right;">Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td style="font-weight: bold;">${txn.planType || 'Pro Membership Plan'}</td>
-                            <td>${txn.paimentType || 'Card / PayPal'}</td>
-                            <td style="text-align: right; font-weight: bold;">$${txn.price || '19.99'} ${txn.currency || 'USD'}</td>
-                        </tr>
-                        <tr class="total-row">
-                            <td colspan="2" style="text-align: right; padding-top: 20px;">Total Paid:</td>
-                            <td style="text-align: right; padding-top: 20px;">$${txn.price || '19.99'} ${txn.currency || 'USD'}</td>
-                        </tr>
-                    </tbody>
-                </table>
-                <div class="footer">
-                    Thank you for subscribing to AI Resume Builder. For support, visit airesume.projectdemo.guru
-                </div>
-                <script>
-                    window.onload = function() { window.print(); };
-                </script>
             </body>
             </html>
         `;
         printWindow.document.write(invoiceHtml);
         printWindow.document.close();
+        printWindow.print();
     };
 
     useEffect(() => {
@@ -1108,7 +1240,7 @@ function DashboardSettings(props) {
                         <div className="bg-slate-100 p-1 sm:p-1.5 rounded-2xl flex items-center gap-1 self-stretch md:self-center flex-shrink-0">
                             <button
                                 type="button"
-                                onClick={() => setSelectedSettings('Profile')}
+                                onClick={() => { setSelectedSettings('Profile'); navigate('?tab=Profile', { replace: true }); }}
                                 className={`flex-1 md:flex-initial px-2.5 sm:px-4 py-2 text-[11px] sm:text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
                                     selectedSettings === 'Profile'
                                         ? 'bg-white text-indigo-600 shadow-xs border border-slate-200/60'
@@ -1119,7 +1251,7 @@ function DashboardSettings(props) {
                             </button>
                             <button
                                 type="button"
-                                onClick={() => setSelectedSettings('Account')}
+                                onClick={() => { setSelectedSettings('Account'); navigate('?tab=Account', { replace: true }); }}
                                 className={`flex-1 md:flex-initial px-2.5 sm:px-4 py-2 text-[11px] sm:text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
                                     selectedSettings === 'Account'
                                         ? 'bg-white text-indigo-600 shadow-xs border border-slate-200/60'
@@ -2063,65 +2195,55 @@ function DashboardSettings(props) {
                             </form>
                         </div>
 
-                        {/* Card 3: Billing History & Invoice Statements */}
-                        <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4">
-                            <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
-                                <div className="flex items-center space-x-3">
-                                    <div className="p-2.5 bg-indigo-50 rounded-xl">
-                                        <FaCreditCard className="w-5 h-5 text-indigo-600" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-sm font-bold text-slate-900">Billing History &amp; Invoice Statements</h3>
-                                        <p className="text-xs text-slate-500">View past payment records, transaction IDs, and print PDF receipts.</p>
-                                    </div>
+                        {/* Card 2.5: Twilio Mobile SMS Security & Alerts Center */}
+                        <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
+                            <div className="flex items-center space-x-3 pb-4 border-b border-slate-100">
+                                <div className="p-2.5 bg-red-50 rounded-xl">
+                                    <FaMobileAlt className="w-5 h-5 text-red-600" />
+                                </div>
+                                <div>
+                                    <h2 className="text-base font-bold text-slate-900">Mobile SMS Security &amp; Outgoing Alerts</h2>
+                                    <p className="text-xs text-slate-500">Configure your primary mobile number for instant SMS security notifications upon logins, 2FA updates, or password changes.</p>
                                 </div>
                             </div>
 
-                            {userTransactions.length === 0 ? (
-                                <div className="p-6 text-center bg-slate-50 border border-dashed border-slate-200 rounded-xl space-y-1">
-                                    <p className="text-xs font-semibold text-slate-700">No payment transactions recorded yet</p>
-                                    <p className="text-[11px] text-slate-500">Your subscription history and invoices will automatically appear here.</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                                        <FaMobileAlt className="w-3.5 h-3.5 text-red-600" /> Mobile Phone Number (with Country Code)
+                                    </label>
+                                    <input
+                                        type="tel"
+                                        value={profile?.phone || ''}
+                                        onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                                        placeholder="+1 415 555 2671 / +91 9876543210"
+                                        className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none"
+                                    />
                                 </div>
-                            ) : (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left text-xs">
-                                        <thead>
-                                            <tr className="border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
-                                                <th className="pb-2">Transaction ID</th>
-                                                <th className="pb-2">Date</th>
-                                                <th className="pb-2">Plan</th>
-                                                <th className="pb-2">Amount</th>
-                                                <th className="pb-2">Status</th>
-                                                <th className="pb-2 text-right">Invoice</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-100">
-                                            {userTransactions.map((txn, idx) => (
-                                                <tr key={txn.id || idx} className="hover:bg-slate-50/80 transition-colors">
-                                                    <td className="py-3 font-mono text-[11px] font-bold text-slate-700">{txn.transactionId || `TXN_${idx + 1001}`}</td>
-                                                    <td className="py-3 text-slate-600 font-medium">{txn.date ? new Date(txn.date).toLocaleDateString() : 'Recent'}</td>
-                                                    <td className="py-3 font-bold text-slate-900 capitalize">{txn.planType || 'Pro Plan'}</td>
-                                                    <td className="py-3 font-extrabold text-slate-900">${txn.price || '19.99'} {txn.currency || 'USD'}</td>
-                                                    <td className="py-3">
-                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 border border-emerald-200 text-emerald-700">
-                                                            <FaCheckCircle className="w-2.5 h-2.5 text-emerald-500" />
-                                                            <span>{txn.status || 'Completed'}</span>
-                                                        </span>
-                                                    </td>
-                                                    <td className="py-3 text-right">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleDownloadInvoice(txn)}
-                                                            className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-all shadow-2xs">
-                                                            <FaDownload className="w-2.5 h-2.5" /> PDF Receipt
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+
+                                <div className="flex flex-col justify-end">
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            const phoneToUse = profile?.phone;
+                                            if (!phoneToUse || !phoneToUse.trim()) {
+                                                setToastState({ type: 'error', msg: 'Please enter a valid mobile phone number first.' });
+                                                return;
+                                            }
+                                            setToastState({ type: 'info', msg: 'Dispatching test SMS via Twilio Gateway...' });
+                                            const res = await sendSmsNotification(phoneToUse, 'AI Resume Builder Security Alert: Test SMS notification successful!');
+                                            if (res.success) {
+                                                setToastState({ type: 'success', msg: `SMS Security Alert sent successfully to ${phoneToUse}! (SID: ${res.messageSid || 'OK'})` });
+                                            } else {
+                                                setToastState({ type: 'error', msg: `SMS Dispatch Failed: ${res.error}` });
+                                            }
+                                        }}
+                                        className="w-full sm:w-auto px-5 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer">
+                                        <FaMobileAlt className="w-3.5 h-3.5 text-red-400" />
+                                        <span>Dispatch Test SMS Alert</span>
+                                    </button>
                                 </div>
-                            )}
+                            </div>
                         </div>
 
                         {/* Card 4: Two-Factor Authentication (TOTP 2FA) */}

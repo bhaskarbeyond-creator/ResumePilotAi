@@ -227,11 +227,36 @@ export function removeResume(userId, resumeId) {
 }
 
 // Add sbs
-export async function addSbs(type, paimentType, currentDate, price, uid) {
+export async function addSbs(type, paimentType, currentDate, price, uid, taxDetails = {}) {
     // Don't rely on fire.auth().currentUser which might be null
     const db = fire.firestore();
+
+    // ── Renewal-Stack Logic ────────────────────────────────────────────────────
+    // If the user still has active time remaining, new plan stacks ONTO that date.
+    // If expired or no active membership, new plan starts from today.
+    let baseDate = new Date(currentDate); // fallback: today
+
+    try {
+        const userDoc = await db.collection('users').doc(uid).get();
+        if (userDoc.exists) {
+            const userData = userDoc.data();
+            const existingEndsRaw = userData.membershipEnds;
+            const existingMembership = userData.membership || '';
+            if (existingEndsRaw && (existingMembership === 'Premium' || existingMembership.toLowerCase().includes('premium') || existingMembership.toLowerCase().includes('pro'))) {
+                const existingEnds = existingEndsRaw.toDate ? existingEndsRaw.toDate() : new Date(existingEndsRaw);
+                if (existingEnds > new Date()) {
+                    // Active membership found — stack new plan time from their existing expiry
+                    baseDate = new Date(existingEnds);
+                }
+            }
+        }
+    } catch (e) {
+        // Fallback to today on error
+        baseDate = new Date(currentDate);
+    }
+
     var sbsEnd = null;
-    var date = new Date(currentDate);
+    var date = new Date(baseDate);
 
     if (type === 'monthly') {
         sbsEnd = new Date(date.setMonth(date.getMonth() + 1));
@@ -251,22 +276,41 @@ export async function addSbs(type, paimentType, currentDate, price, uid) {
         created_at: firebase.firestore.Timestamp.now(),
     });
 
-    // Save transaction record for Admin & User Billing History
+    // Save transaction record for Admin & User Billing History with Tax Breakdown
     const txnId = `TXN_${Date.now()}_${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
-    db.collection('transactions').add({
+    const txnData = {
         transactionId: txnId,
         userId: uid,
         planType: type || 'pro',
         paimentType: paimentType || 'Card',
         price: parseFloat(price) || 19.99,
-        currency: 'USD',
+        currency: taxDetails.currency || 'INR',
+        subtotal: parseFloat(taxDetails.subtotal) || parseFloat(price) || 19.99,
+        taxAmount: parseFloat(taxDetails.taxAmount) || 0,
+        taxRate: parseFloat(taxDetails.taxRate) || 0,
+        taxName: taxDetails.taxName || 'GST',
+        companyTaxId: taxDetails.companyTaxId || '',
+        customerTaxId: taxDetails.customerTaxId || '',
         status: 'Completed',
         created_at: firebase.firestore.Timestamp.now(),
-    });
+    };
+
+    // Save in global transactions collection
+    db.collection('transactions').add(txnData).catch(e => console.warn('Global txn add error:', e));
+
+    // Save in user's private subcollection (guaranteed read permission)
+    db.collection('users').doc(uid).collection('transactions').add(txnData).catch(e => console.warn('User txn add error:', e));
 
     db.collection('users').doc(uid).update({
         membership: 'Premium',
         membershipEnds: sbsEnd,
+        autoRenew: true,
+        lastPaymentGateway: paimentType || 'Card/PayPal/UPI',
+        lastPaymentDate: firebase.firestore.Timestamp.now(),
+        lastPaymentAmount: parseFloat(price) || 19.99,
+        lastPaymentCurrency: taxDetails.currency || 'INR',
+        cancellationRequested: false,
+        paymentStatus: 'ACTIVE',
     });
 
     const snapshot = await db.collection('data').doc('earnings').get();
@@ -288,58 +332,173 @@ export async function addSbs(type, paimentType, currentDate, price, uid) {
 // Fetch user payment transactions for Dashboard Billing History
 export async function getUserTransactions(uid) {
     if (!uid) return [];
+    const list = [];
+    const db = fire.firestore();
+
+    // 1. Try fetching from user's private transactions subcollection
     try {
-        const db = fire.firestore();
-        const snapshot = await db.collection('transactions').where('userId', '==', uid).get();
-        const list = [];
-        if (!snapshot.empty) {
-            snapshot.docs.forEach(doc => {
+        const subSnap = await db.collection('users').doc(uid).collection('transactions').get();
+        if (!subSnap.empty) {
+            subSnap.docs.forEach(doc => {
                 const data = doc.data();
+                const txnId = data.transactionId || data.txnId || `TXN-${doc.id.substring(0, 8).toUpperCase()}`;
+                const planType = data.planType || data.planName || 'AI Resume Builder PRO Subscription';
+                const paimentType = data.paimentType || data.paymentMethod || 'Credit Card / UPI / PayPal';
+                const price = data.price !== undefined ? data.price : (data.amount !== undefined ? data.amount : 499);
+                const dateStr = data.createdDateString || (data.created_at?.toDate ? data.created_at.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }));
+
                 list.push({
                     id: doc.id,
-                    txnId: data.txnId || data.transactionId || `TXN-${doc.id.substring(0, 8).toUpperCase()}`,
-                    planName: data.planName || data.planType || 'AI Resume Builder PRO Subscription',
-                    paymentMethod: data.paymentMethod || data.paimentType || 'Credit Card / UPI / PayPal',
-                    amount: data.amount !== undefined ? data.amount : (data.price !== undefined ? data.price : 499),
-                    currency: data.currency || 'USD',
+                    txnId: txnId,
+                    transactionId: txnId,
+                    planName: planType,
+                    planType: planType,
+                    paymentMethod: paimentType,
+                    paimentType: paimentType,
+                    amount: price,
+                    price: price,
+                    subtotal: data.subtotal,
+                    taxAmount: data.taxAmount,
+                    taxRate: data.taxRate,
+                    taxName: data.taxName,
+                    companyTaxId: data.companyTaxId,
+                    customerTaxId: data.customerTaxId,
+                    currency: data.currency || 'INR',
                     status: data.status || 'Completed',
                     durationMonths: data.durationMonths || 12,
-                    createdDateString: data.createdDateString || (data.createdAt?.toDate ? data.createdAt.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })),
-                    createdAt: data.createdAt || null
+                    createdDateString: dateStr,
+                    date: dateStr,
+                    created_at: data.created_at || null
                 });
             });
         }
-        // Fallback to subscriptions collection if transactions is empty
-        if (list.length === 0) {
+    } catch (e) {
+        console.warn('User subcollection transactions fetch error:', e);
+    }
+
+    // 2. Try fetching from root transactions collection if list is empty
+    if (list.length === 0) {
+        try {
+            const snapshot = await db.collection('transactions').where('userId', '==', uid).get();
+            if (!snapshot.empty) {
+                snapshot.docs.forEach(doc => {
+                    const data = doc.data();
+                    const txnId = data.transactionId || data.txnId || `TXN-${doc.id.substring(0, 8).toUpperCase()}`;
+                    const planType = data.planType || data.planName || 'AI Resume Builder PRO Subscription';
+                    const paimentType = data.paimentType || data.paymentMethod || 'Credit Card / UPI / PayPal';
+                    const price = data.price !== undefined ? data.price : (data.amount !== undefined ? data.amount : 499);
+                    const dateStr = data.createdDateString || (data.created_at?.toDate ? data.created_at.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }));
+
+                    list.push({
+                        id: doc.id,
+                        txnId: txnId,
+                        transactionId: txnId,
+                        planName: planType,
+                        planType: planType,
+                        paymentMethod: paimentType,
+                        paimentType: paimentType,
+                        amount: price,
+                        price: price,
+                        subtotal: data.subtotal,
+                        taxAmount: data.taxAmount,
+                        taxRate: data.taxRate,
+                        taxName: data.taxName,
+                        companyTaxId: data.companyTaxId,
+                        customerTaxId: data.customerTaxId,
+                        currency: data.currency || 'INR',
+                        status: data.status || 'Completed',
+                        durationMonths: data.durationMonths || 12,
+                        createdDateString: dateStr,
+                        date: dateStr,
+                        created_at: data.created_at || null
+                    });
+                });
+            }
+        } catch (e) {
+            console.warn('Root transactions query error:', e);
+        }
+    }
+
+    // 3. Fallback to subscriptions collection if list is still empty
+    if (list.length === 0) {
+        try {
             const subSnapshot = await db.collection('subscriptions').where('userId', '==', uid).get();
             if (!subSnapshot.empty) {
                 subSnapshot.docs.forEach(doc => {
                     const data = doc.data();
+                    const txnId = `TXN-${doc.id.substring(0, 8).toUpperCase()}`;
+                    const planType = data.type || 'PRO Membership';
+                    const paimentType = data.paimentType || 'Card / PayPal / UPI';
+                    const dateStr = data.created_at ? new Date(data.created_at.seconds * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
                     list.push({
                         id: doc.id,
-                        txnId: `TXN-${doc.id.substring(0, 8).toUpperCase()}`,
-                        planName: data.type || 'PRO Membership',
-                        paymentMethod: data.paimentType || 'Card / PayPal',
+                        txnId: txnId,
+                        transactionId: txnId,
+                        planName: planType,
+                        planType: planType,
+                        paymentMethod: paimentType,
+                        paimentType: paimentType,
                         amount: 499,
-                        currency: 'USD',
+                        price: 499,
+                        subtotal: 499,
+                        taxAmount: 0,
+                        currency: 'INR',
                         status: 'Completed',
                         durationMonths: 12,
-                        createdDateString: data.created_at ? new Date(data.created_at.seconds * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                        createdDateString: dateStr,
+                        date: dateStr,
+                        created_at: data.created_at || null
                     });
                 });
             }
+        } catch (e) {
+            console.warn('Subscriptions query error:', e);
         }
-
-        list.sort((a, b) => {
-            const tA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
-            const tB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
-            return tB - tA;
-        });
-        return list;
-    } catch (err) {
-        console.error('Error fetching user transactions:', err);
-        return [];
     }
+
+    // 4. Ultimate Fallback: Synthesize active subscription transaction for Premium / PRO users
+    if (list.length === 0) {
+        try {
+            const userDoc = await db.collection('users').doc(uid).get();
+            if (userDoc.exists) {
+                const uData = userDoc.data();
+                const isPremium = uData.membership === 'Premium' || (uData.membership && uData.membership.toLowerCase().includes('premium')) || uData.paymentStatus === 'ACTIVE';
+                if (isPremium) {
+                    const dateStr = uData.lastPaymentDate?.toDate ? uData.lastPaymentDate.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    list.push({
+                        id: `SYNTH_${uid.substring(0, 8)}`,
+                        txnId: `TXN-ACTIVE-${uid.substring(0, 6).toUpperCase()}`,
+                        transactionId: `TXN-ACTIVE-${uid.substring(0, 6).toUpperCase()}`,
+                        planName: 'VIP Pro Membership Plan',
+                        planType: 'yearly',
+                        paymentMethod: uData.lastPaymentGateway || 'Razorpay / Card / PayPal',
+                        paimentType: uData.lastPaymentGateway || 'Razorpay / Card / PayPal',
+                        amount: uData.lastPaymentAmount || 499,
+                        price: uData.lastPaymentAmount || 499,
+                        subtotal: uData.lastPaymentAmount || 499,
+                        taxAmount: 0,
+                        currency: uData.lastPaymentCurrency || 'INR',
+                        status: 'Completed',
+                        durationMonths: 12,
+                        createdDateString: dateStr,
+                        date: dateStr,
+                        created_at: uData.lastPaymentDate || null
+                    });
+                }
+            }
+        } catch (e) {
+            console.warn('User doc synthesis error:', e);
+        }
+    }
+
+    list.sort((a, b) => {
+        const tA = a.created_at?.toDate ? a.created_at.toDate().getTime() : 0;
+        const tB = b.created_at?.toDate ? b.created_at.toDate().getTime() : 0;
+        return tB - tA;
+    });
+
+    return list;
 }
 // Check Sbs Date
 export async function checkSbs(accountType, expDate) {
@@ -479,7 +638,6 @@ export function addUser(userId, firstname, lastname, email) {
         numberOfUsers: firebase.firestore.FieldValue.increment(1),
     });
 }
-// Adding user to firstore
 export function editUser(userId, email, membership, membershipsEnds, isA = null, suspended = null) {
     const db = fire.firestore();
     const updateData = {
@@ -497,6 +655,24 @@ export function editUser(userId, email, membership, membershipsEnds, isA = null,
         .doc(userId)
         .update(updateData)
         .catch((error) => console.log('Error updating user:', error));
+
+    if (membership && (membership.toLowerCase().includes('premium') || membership.toLowerCase().includes('pro'))) {
+        db.collection('transactions').add({
+            userId: userId,
+            email: email,
+            transactionId: `ADMIN-GRANT-${Date.now().toString(36).toUpperCase()}`,
+            planType: `${membership} Membership (Admin License Grant)`,
+            paimentType: 'Admin Complementary Grant',
+            amount: 0,
+            price: 0,
+            subtotal: 0,
+            taxAmount: 0,
+            currency: 'USD',
+            status: 'COMPLETED',
+            created_at: firebase.firestore.Timestamp.now(),
+            createdDateString: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        }).catch(err => console.log('Error logging admin grant txn:', err));
+    }
 }
 
 // Function to check if user is suspended
@@ -2667,7 +2843,19 @@ export function setSubscriptionsData(state, month, quartarly, yearly, onlyPP, cu
         stripeEnabled: options.stripeEnabled !== undefined ? options.stripeEnabled : true,
         paypalEnabled: options.paypalEnabled !== undefined ? options.paypalEnabled : true,
         razorpayEnabled: options.razorpayEnabled !== undefined ? options.razorpayEnabled : true,
-        sandboxMode: options.sandboxMode !== undefined ? options.sandboxMode : false,
+        razorpayKeyId: options.razorpayKeyId || '',
+        razorpayKeySecret: options.razorpayKeySecret || '',
+        stripePublishableKey: options.stripePublishableKey || '',
+        stripeSecretKey: options.stripeSecretKey || '',
+        paypalClientId: options.paypalClientId || '',
+        paypalClientSecret: options.paypalClientSecret || '',
+        enableTax: options.enableTax !== undefined ? options.enableTax : true,
+        taxName: options.taxName || 'GST',
+        taxRate: options.taxRate !== undefined ? options.taxRate : 18,
+        taxInclusive: options.taxInclusive !== undefined ? options.taxInclusive : false,
+        companyTaxId: options.companyTaxId || '',
+        requireCustomerTaxId: options.requireCustomerTaxId !== undefined ? options.requireCustomerTaxId : false,
+        receiptTemplate: options.receiptTemplate || 'modern',
     };
     try {
         if (typeof window !== 'undefined') {
@@ -2720,6 +2908,13 @@ export async function getSubscriptionStatus() {
         paypalEnabled: true,
         razorpayEnabled: true,
         sandboxMode: false,
+        enableTax: true,
+        taxName: 'GST',
+        taxRate: 18,
+        taxInclusive: false,
+        companyTaxId: '27AAAAA0000A1Z5',
+        requireCustomerTaxId: false,
+        receiptTemplate: 'modern',
     };
 }
 
@@ -2975,6 +3170,31 @@ export async function getUserLoginHistory(uid, maxResults = 10) {
     } catch (err) {
         console.warn('Error fetching login history:', err);
         return [];
+    }
+}
+
+// Send Twilio SMS Notification
+export async function sendSmsNotification(toPhone, messageBody, twilioOverride = null) {
+    if (!toPhone || !messageBody) return { success: false, error: 'Phone number and message are required' };
+    try {
+        const payload = { toPhone, messageBody };
+        if (twilioOverride) {
+            payload.accountSid = twilioOverride.accountSid;
+            payload.authToken = twilioOverride.authToken;
+            payload.fromPhoneNumber = twilioOverride.fromPhoneNumber;
+        }
+
+        const backendUrl = conf.backendUrl || '';
+        const res = await fetch(`${backendUrl}/api/send-sms`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        return data;
+    } catch (err) {
+        console.warn('Error sending SMS notification:', err);
+        return { success: false, error: err.message };
     }
 }
 

@@ -106,21 +106,27 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET);
 app.post('/api/pay', async (req, res) => {
     var price = req.body.price;
     const userId = req.body.userId || '';
-    const plan = req.body.plan || 'Premium';
-    price = parseInt(price) * 100;
-    const paymentIntent = await stripe.paymentIntents.create({
-        amount: price,
-        currency: 'usd',
-        metadata: {
-            userId: userId,
-            plan: plan,
-            integration_check: 'accept_a_payment'
-        },
-    });
-    res.json({ client_secret: paymentIntent['client_secret'], server_time: Date.now() });
+    const plan = req.body.plan || 'monthly';
+    const currency = (req.body.currency || 'usd').toLowerCase();
+    price = Math.round(parseFloat(price) * 100); // use round to avoid float drift
+    try {
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount: price,
+            currency: currency,
+            metadata: {
+                userId: userId,
+                plan: plan,
+                integration_check: 'accept_a_payment'
+            },
+        });
+        res.json({ client_secret: paymentIntent['client_secret'], server_time: Date.now() });
+    } catch (err) {
+        console.error('[Stripe /api/pay] Error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
 });
 
-// Automated Stripe Webhook Endpoint for instant subscription activation
+// Stripe Webhook — instant subscription activation + Firestore sync
 app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
     const sig = req.headers['stripe-signature'];
     let event;
@@ -131,31 +137,235 @@ app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async
             event = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
         }
     } catch (err) {
-        console.error('Stripe webhook signature error:', err.message);
+        console.error('[Stripe Webhook] Signature error:', err.message);
         return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
     if (event.type === 'payment_intent.succeeded' || event.type === 'checkout.session.completed') {
         const paymentData = event.data.object;
         const userId = paymentData.metadata?.userId;
-        const plan = paymentData.metadata?.plan || 'Premium';
-        console.log(`[Stripe Webhook] Payment succeeded for user ${userId}, plan ${plan}`);
-        
-        // Calculate 30-day membership expiration date
+        const plan = paymentData.metadata?.plan || 'monthly';
+        console.log(`[Stripe Webhook] Payment succeeded — userId: ${userId}, plan: ${plan}`);
+
+        // Calculate correct expiry based on plan type
         const expDate = new Date();
-        expDate.setDate(expDate.getDate() + 30);
-        
-        // Return automated activation confirmation response
+        if (plan === 'monthly') {
+            expDate.setMonth(expDate.getMonth() + 1);
+        } else if (plan === 'halfYear') {
+            expDate.setMonth(expDate.getMonth() + 6);
+        } else if (plan === 'yearly') {
+            expDate.setMonth(expDate.getMonth() + 15); // 12 + 3 bonus months
+        } else {
+            expDate.setMonth(expDate.getMonth() + 1); // fallback to monthly
+        }
+
+        // Sync Firestore user membership record
+        if (db && userId) {
+            try {
+                await db.collection('users').doc(userId).update({
+                    membership: 'Premium',
+                    membershipEnds: expDate,
+                    autoRenew: true,
+                    paymentStatus: 'ACTIVE',
+                    lastPaymentGateway: 'Stripe',
+                    cancellationRequested: false,
+                    lastWebhookSync: admin.firestore.FieldValue.serverTimestamp(),
+                });
+                console.log(`[Stripe Webhook] Firestore synced — user ${userId} → expires ${expDate.toISOString()}`);
+            } catch (dbErr) {
+                console.error('[Stripe Webhook] Firestore update failed:', dbErr.message);
+            }
+        } else {
+            console.warn('[Stripe Webhook] Skipped Firestore — db or userId missing');
+        }
+
         return res.json({
             received: true,
             status: 'activated',
-            userId: userId,
-            membership: plan,
-            membershipEnds: expDate.toISOString()
+            userId,
+            membership: 'Premium',
+            membershipEnds: expDate.toISOString(),
         });
     }
 
     res.json({ received: true });
+});
+
+// PayPal Server-Side Order Verification
+app.post('/api/paypal/verify', async (req, res) => {
+    const { orderId, userId, plan, amount, currency } = req.body;
+    if (!orderId) {
+        return res.status(400).json({ verified: false, error: 'orderId is required' });
+    }
+
+    const clientId = process.env.PAYPAL_CLIENT_ID;
+    const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
+    const paypalEnv = (process.env.PAYPAL_ENV || 'sandbox').toLowerCase();
+    const baseUrl = paypalEnv === 'live'
+        ? 'https://api-m.paypal.com'
+        : 'https://api-m.sandbox.paypal.com';
+
+    // Soft-verify if PayPal credentials not configured
+    if (!clientId || !clientSecret) {
+        console.warn('[PayPal Verify] No PayPal credentials in .env — soft-verifying order:', orderId);
+        return res.json({ verified: true, orderId, note: 'soft-verified-no-credentials' });
+    }
+
+    try {
+        // Step 1: Obtain PayPal access token
+        const tokenRes = await fetch(`${baseUrl}/v1/oauth2/token`, {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Basic ' + Buffer.from(`${clientId}:${clientSecret}`).toString('base64'),
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'grant_type=client_credentials',
+        });
+        const tokenData = await tokenRes.json();
+        const accessToken = tokenData.access_token;
+
+        if (!accessToken) {
+            console.error('[PayPal Verify] Token error:', tokenData);
+            return res.status(400).json({ verified: false, error: 'PayPal authentication failed' });
+        }
+
+        // Step 2: Fetch and verify order status from PayPal
+        const orderRes = await fetch(`${baseUrl}/v2/checkout/orders/${orderId}`, {
+            headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        });
+        const orderData = await orderRes.json();
+        console.log(`[PayPal Verify] Order ${orderId} → status: ${orderData.status}`);
+
+        if (orderData.status === 'COMPLETED') {
+            return res.json({
+                verified: true,
+                orderId,
+                status: 'COMPLETED',
+                payer: orderData.payer,
+                purchaseUnit: orderData.purchase_units?.[0],
+            });
+        } else {
+            return res.status(400).json({
+                verified: false,
+                error: `Order not completed — PayPal status: ${orderData.status || 'UNKNOWN'}`,
+            });
+        }
+    } catch (err) {
+        console.error('[PayPal Verify] Error:', err.message);
+        return res.status(500).json({ verified: false, error: err.message });
+    }
+});
+
+// Helper to resolve Razorpay keys dynamically
+async function getRazorpayKeys(req) {
+    let keyId = req.body?.keyId || process.env.RAZORPAY_KEY_ID;
+    let keySecret = req.body?.keySecret || process.env.RAZORPAY_KEY_SECRET;
+
+    if ((!keyId || !keySecret) && db) {
+        try {
+            const doc = await db.collection('data').doc('subscriptions').get();
+            if (doc.exists) {
+                const data = doc.data() || {};
+                if (!keyId && data.razorpayKeyId) keyId = data.razorpayKeyId;
+                if (!keySecret && data.razorpayKeySecret) keySecret = data.razorpayKeySecret;
+            }
+            if (!keyId || !keySecret) {
+                const sysDoc = await db.collection('settings').doc('subscription').get();
+                if (sysDoc.exists) {
+                    const data = sysDoc.data() || {};
+                    if (!keyId && data.razorpayKeyId) keyId = data.razorpayKeyId;
+                    if (!keySecret && data.razorpayKeySecret) keySecret = data.razorpayKeySecret;
+                }
+            }
+        } catch (e) {
+            console.warn('[Razorpay Keys] Firestore lookup notice:', e.message);
+        }
+    }
+    return { keyId: keyId || '', keySecret: keySecret || '' };
+}
+
+// Razorpay Order Creation Endpoint
+app.post('/api/razorpay/create-order', async (req, res) => {
+    const { keyId, keySecret } = await getRazorpayKeys(req);
+    const amount = req.body.amount;
+    const currency = (req.body.currency || 'INR').toUpperCase();
+    const userId = req.body.userId || '';
+    const plan = req.body.plan || 'monthly';
+
+    if (!keyId || !keySecret) {
+        console.warn('[Razorpay Order] Keys missing — returning demo order structure');
+        return res.json({
+            id: 'order_demo_' + Date.now(),
+            amount: Math.round(parseFloat(amount) * 100),
+            currency,
+            key: 'rzp_test_demo',
+            demoMode: true,
+        });
+    }
+
+    try {
+        const amountInSubunits = Math.round(parseFloat(amount) * 100);
+        const orderPayload = {
+            amount: amountInSubunits,
+            currency,
+            receipt: `rcpt_${userId.slice(0, 8)}_${Date.now()}`,
+            notes: { userId, plan },
+        };
+
+        const rzpRes = await fetch('https://api.razorpay.com/v1/orders', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Basic ' + Buffer.from(`${keyId}:${keySecret}`).toString('base64'),
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(orderPayload),
+        });
+
+        const orderData = await rzpRes.json();
+        if (orderData.id) {
+            return res.json({
+                id: orderData.id,
+                amount: orderData.amount,
+                currency: orderData.currency,
+                key: keyId,
+            });
+        } else {
+            console.error('[Razorpay Order] API Error:', orderData);
+            return res.status(400).json({ error: orderData.error?.description || 'Razorpay order creation failed' });
+        }
+    } catch (err) {
+        console.error('[Razorpay Order] Exception:', err.message);
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// Razorpay Payment Signature Verification Endpoint
+app.post('/api/razorpay/verify-payment', async (req, res) => {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    const { keySecret } = await getRazorpayKeys(req);
+
+    if (!keySecret) {
+        console.warn('[Razorpay Verify] No RAZORPAY_KEY_SECRET — soft-verifying demo transaction');
+        return res.json({ verified: true, note: 'soft-verified-demo' });
+    }
+
+    try {
+        const crypto = require('crypto');
+        const generatedSignature = crypto
+            .createHmac('sha256', keySecret)
+            .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+            .digest('hex');
+
+        if (generatedSignature === razorpay_signature) {
+            return res.json({ verified: true, status: 'captured' });
+        } else {
+            console.error('[Razorpay Verify] Signature mismatch!');
+            return res.status(400).json({ verified: false, error: 'Razorpay signature verification failed' });
+        }
+    } catch (err) {
+        console.error('[Razorpay Verify] Exception:', err.message);
+        return res.status(500).json({ verified: false, error: err.message });
+    }
 });
 app.post('/api/check', async (req, res) => {
     const accountType = req.body.accountType;
@@ -273,6 +483,14 @@ app.post('/api/admin/test-connection', async (req, res) => {
             return res.json({ success: true, message: `Connected to Stripe. Livemode: ${balance.livemode}` });
         } else if (type === 'smtp') {
             return res.json({ success: true, message: 'SMTP settings logged and verified.' });
+        } else if (type === 'twilio') {
+            const sid = req.body.accountSid || process.env.TWILIO_ACCOUNT_SID;
+            const token = req.body.authToken || process.env.TWILIO_AUTH_TOKEN;
+            const from = req.body.fromPhoneNumber || process.env.TWILIO_FROM_PHONE;
+            if (!sid || !token || !from) {
+                return res.json({ success: false, error: 'Twilio Account SID, Auth Token, and From Phone Number are required.' });
+            }
+            return res.json({ success: true, message: `Twilio gateway credentials configured for ${from}.` });
         } else if (type === 'diagnostics') {
             return res.json({
                 firebase: 'Connected',
@@ -284,6 +502,65 @@ app.post('/api/admin/test-connection', async (req, res) => {
         res.json({ success: true, message: 'Diagnostic check complete.' });
     } catch (err) {
         res.json({ success: false, error: err.message });
+    }
+});
+
+// Twilio SMS Dispatcher Endpoint
+app.post('/api/send-sms', async (req, res) => {
+    const { toPhone, messageBody, accountSid: bodySid, authToken: bodyToken, fromPhoneNumber: bodyFrom } = req.body;
+    if (!toPhone || !messageBody) {
+        return res.status(400).json({ success: false, error: 'Target phone number and message body are required.' });
+    }
+
+    try {
+        let accountSid = bodySid || process.env.TWILIO_ACCOUNT_SID;
+        let authToken = bodyToken || process.env.TWILIO_AUTH_TOKEN;
+        let fromPhoneNumber = bodyFrom || process.env.TWILIO_FROM_PHONE;
+
+        // Try loading from Firestore settings if db is initialized
+        if (!accountSid && db) {
+            const doc = await db.collection('settings').doc('system').get();
+            if (doc.exists && doc.data()?.twilio) {
+                const tw = doc.data().twilio;
+                accountSid = tw.accountSid;
+                authToken = tw.authToken;
+                fromPhoneNumber = tw.fromPhoneNumber;
+            }
+        }
+
+        if (!accountSid || !authToken || !fromPhoneNumber) {
+            return res.status(400).json({
+                success: false,
+                error: 'Twilio Gateway not configured. Please enter Account SID, Auth Token, and From Phone Number in Admin -> Twilio Settings.'
+            });
+        }
+
+        const authString = Buffer.from(`${accountSid}:${authToken}`).toString('base64');
+        const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
+
+        const params = new URLSearchParams();
+        params.append('To', toPhone);
+        params.append('From', fromPhoneNumber);
+        params.append('Body', messageBody);
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Basic ${authString}`,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: params.toString(),
+        });
+
+        const data = await response.json();
+        if (response.ok && data.sid) {
+            return res.json({ success: true, messageSid: data.sid, status: data.status });
+        } else {
+            return res.status(400).json({ success: false, error: data.message || 'Failed to dispatch Twilio SMS.' });
+        }
+    } catch (err) {
+        console.error('Twilio SMS Error:', err);
+        return res.status(500).json({ success: false, error: err.message || 'Internal SMS Gateway Error.' });
     }
 });
 

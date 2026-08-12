@@ -20,6 +20,23 @@ class SubscriptionSetting extends Component {
             currency: 'INR',
             isSuccessOpen: false,
 
+            // Payment Gateway API Credentials State
+            razorpayKeyId: 'rzp_test_TOnviD5XeHLE0y',
+            razorpayKeySecret: 'ERtqc12PbwXNyou8ITu0Ekqp',
+            stripePublishableKey: '',
+            stripeSecretKey: '',
+            paypalClientId: '',
+            paypalClientSecret: '',
+
+            // Sales Tax & GST Config State
+            enableTax: true,
+            taxName: 'GST',
+            taxRate: 18,
+            taxInclusive: false,
+            companyTaxId: '27AAAAA0000A1Z5',
+            requireCustomerTaxId: false,
+            receiptTemplate: 'modern',
+
             // Coupon Management Admin State
             couponsList: [],
             showCouponModal: false,
@@ -56,6 +73,7 @@ class SubscriptionSetting extends Component {
         this.handleToggleCouponStatus = this.handleToggleCouponStatus.bind(this);
         this.handleDeleteCouponCode = this.handleDeleteCouponCode.bind(this);
         this.confirmDeleteCouponCode = this.confirmDeleteCouponCode.bind(this);
+        this.previewTemplate = this.previewTemplate.bind(this);
     }
 
     handleChange(event, inputName) {
@@ -79,6 +97,200 @@ class SubscriptionSetting extends Component {
 
     handleSubscriptionToggleChange() {
         this.setState((prevState) => ({ checkedSubscriptions: !prevState.checkedSubscriptions }));
+    }
+
+    previewTemplate(templateId) {
+        const printWindow = window.open('', '_blank');
+        const activeTemplate = templateId || 'modern';
+
+        const sampleTxn = {
+            transactionId: 'TXN_2026_SAMPLE_9981',
+            date: new Date().toISOString(),
+            planType: 'VIP Pro Yearly Subscription',
+            paimentType: 'Credit Card / Stripe',
+            price: '499.00',
+            subtotal: '422.88',
+            taxAmount: '76.12',
+            taxRate: 18,
+            taxName: this.state.taxName || 'GST',
+            companyTaxId: this.state.companyTaxId || '27AAAAA0000A1Z5',
+            customerTaxId: '07AAPCB1234E1Z0',
+            currency: this.state.currency || 'INR',
+            status: 'COMPLETED',
+        };
+
+        const { taxName, taxRate, subtotal, taxAmount, totalPrice, companyTaxId, customerTaxId, currency, status } = {
+            taxName: sampleTxn.taxName,
+            taxRate: sampleTxn.taxRate,
+            subtotal: sampleTxn.subtotal,
+            taxAmount: sampleTxn.taxAmount,
+            totalPrice: sampleTxn.price,
+            companyTaxId: sampleTxn.companyTaxId,
+            customerTaxId: sampleTxn.customerTaxId,
+            currency: sampleTxn.currency,
+            status: sampleTxn.status,
+        };
+
+        let templateStyles = '';
+        let headerHtml = '';
+
+        if (activeTemplate === 'classic') {
+            templateStyles = `
+                body { font-family: Georgia, 'Times New Roman', serif; margin: 40px; color: #000; line-height: 1.4; }
+                .header { border-bottom: 3px double #000; padding-bottom: 12px; margin-bottom: 24px; text-align: center; }
+                .title { font-size: 26px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; }
+                .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; border: 1px solid #000; padding: 12px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 16px; border: 1px solid #000; }
+                th { text-align: left; padding: 10px; background: #eee; border: 1px solid #000; font-size: 11px; text-transform: uppercase; }
+                td { padding: 10px; border: 1px solid #000; font-size: 12px; }
+                .summary-box { border: 1px solid #000; padding: 12px; margin-top: 16px; width: 260px; margin-left: auto; }
+                .total-row { font-weight: bold; font-size: 15px; border-top: 2px solid #000; margin-top: 6px; padding-top: 6px; }
+            `;
+            headerHtml = `
+                <div class="header">
+                    <div class="title">AI RESUME BUILDER</div>
+                    <div style="font-size: 13px; font-weight: bold; margin-top: 4px;">FORMAL TAX INVOICE &amp; PAYMENT RECEIPT (SAMPLE PREVIEW)</div>
+                    ${companyTaxId ? `<div style="font-size: 11px; margin-top: 4px;">Supplier ${taxName} Registration No: ${companyTaxId}</div>` : ''}
+                </div>
+            `;
+        } else if (activeTemplate === 'gradient') {
+            templateStyles = `
+                body { font-family: 'Outfit', 'Inter', sans-serif; margin: 30px; color: #0f172a; line-height: 1.5; background: #f8fafc; }
+                .card-wrap { background: #fff; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); padding: 30px; border: 1px solid #e2e8f0; }
+                .header { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #fff; padding: 24px; border-radius: 16px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }
+                .title { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
+                .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; background: #f1f5f9; padding: 16px; border-radius: 12px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+                th { text-align: left; padding: 12px; background: #ede9fe; color: #5b21b6; border-radius: 8px 8px 0 0; font-size: 11px; text-transform: uppercase; font-weight: 800; }
+                td { padding: 12px; border-bottom: 1px solid #e2e8f0; font-size: 13px; font-weight: 600; }
+                .summary-box { background: linear-gradient(135deg, #f8fafc 0%, #ede9fe 100%); border: 1px solid #c7d2fe; border-radius: 14px; padding: 18px; margin-top: 20px; width: 290px; margin-left: auto; }
+                .total-row { font-weight: 800; font-size: 16px; color: #4338ca; border-top: 2px solid #a5b4fc; padding-top: 8px; margin-top: 8px; }
+            `;
+            headerHtml = `
+                <div class="header">
+                    <div>
+                        <div class="title">AI RESUME BUILDER</div>
+                        <div style="font-size: 12px; opacity: 0.9;">Enterprise Tax Invoice Receipt (SAMPLE PREVIEW)</div>
+                        ${companyTaxId ? `<div style="font-size: 11px; opacity: 0.85; margin-top: 4px;">GSTIN: ${companyTaxId}</div>` : ''}
+                    </div>
+                    <div style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); color: #fff; padding: 6px 16px; border-radius: 99px; font-weight: 800; font-size: 12px;">${status} ✓</div>
+                </div>
+            `;
+        } else if (activeTemplate === 'compact') {
+            templateStyles = `
+                body { font-family: 'Courier New', Courier, monospace; margin: 20px auto; max-width: 420px; color: #000; line-height: 1.3; background: #fff; }
+                .header { text-align: center; border-bottom: 2px dashed #000; padding-bottom: 12px; margin-bottom: 16px; }
+                .title { font-size: 20px; font-weight: bold; }
+                .grid { border-bottom: 1px dashed #000; padding-bottom: 12px; margin-bottom: 12px; font-size: 12px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12px; }
+                th { text-align: left; padding: 6px 0; border-bottom: 1px dashed #000; text-transform: uppercase; }
+                td { padding: 6px 0; border-bottom: 1px dotted #ccc; }
+                .summary-box { border-top: 2px dashed #000; margin-top: 12px; padding-top: 8px; font-size: 13px; }
+                .total-row { font-weight: bold; font-size: 15px; margin-top: 6px; }
+            `;
+            headerHtml = `
+                <div class="header">
+                    <div class="title">AI RESUME BUILDER</div>
+                    <div>===============================</div>
+                    <div style="font-size: 12px; font-weight: bold;">PAYMENT RECEIPT VOUCHER (SAMPLE PREVIEW)</div>
+                    ${companyTaxId ? `<div style="font-size: 11px;">GSTIN: ${companyTaxId}</div>` : ''}
+                </div>
+            `;
+        } else {
+            templateStyles = `
+                body { font-family: 'Helvetica Neue', Arial, sans-serif; margin: 40px; color: #1e293b; line-height: 1.5; }
+                .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4338ca; padding-bottom: 20px; margin-bottom: 30px; }
+                .title { font-size: 24px; font-weight: bold; color: #4338ca; }
+                .badge { background: #e0e7ff; color: #4338ca; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: bold; }
+                .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+                .label { font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; margin-bottom: 4px; }
+                .value { font-size: 14px; font-weight: 600; color: #0f172a; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                th { text-align: left; padding: 12px; background: #f8fafc; border-bottom: 2px solid #e2e8f0; font-size: 11px; text-transform: uppercase; color: #475569; }
+                td { padding: 12px; border-bottom: 1px solid #e2e8f0; font-size: 13px; }
+                .summary-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-top: 20px; width: 280px; margin-left: auto; }
+                .summary-line { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+                .total-row { font-weight: bold; font-size: 16px; color: #4338ca; border-top: 2px solid #cbd5e1; padding-top: 8px; margin-top: 8px; }
+            `;
+            headerHtml = `
+                <div class="header">
+                    <div>
+                        <div class="title">AI RESUME BUILDER</div>
+                        <div style="font-size: 12px; color: #64748b;">Official B2B Tax Invoice &amp; Payment Receipt (SAMPLE PREVIEW)</div>
+                        ${companyTaxId ? `<div style="font-size: 11px; font-weight: bold; color: #4338ca; margin-top: 4px;">Supplier ${taxName}IN / Reg No: ${companyTaxId}</div>` : ''}
+                    </div>
+                    <div class="badge">${status}</div>
+                </div>
+            `;
+        }
+
+        const invoiceHtml = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>PREVIEW: ${activeTemplate.toUpperCase()} Invoice Template</title>
+                <style>
+                    ${templateStyles}
+                    .footer { margin-top: 40px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 16px; }
+                </style>
+            </head>
+            <body>
+                <div class="card-wrap">
+                    ${headerHtml}
+                    <div class="grid">
+                        <div>
+                            <div style="font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase;">Billed To</div>
+                            <div style="font-size: 14px; font-weight: 600; color: #0f172a;">Sample Enterprise Candidate</div>
+                            <div style="font-size: 12px; color: #64748b;">candidate@example.com</div>
+                            ${customerTaxId ? `<div style="font-size: 11px; font-weight: bold; color: #0f172a; margin-top: 4px;">Customer ${taxName} ID: ${customerTaxId}</div>` : ''}
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase;">Invoice Reference</div>
+                            <div style="font-size: 14px; font-weight: 600; color: #0f172a;">${sampleTxn.transactionId}</div>
+                            <div style="font-size: 12px; color: #64748b;">Date: ${new Date().toLocaleDateString()}</div>
+                        </div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Description</th>
+                                <th>Payment Gateway</th>
+                                <th style="text-align: right;">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="font-weight: bold;">${sampleTxn.planType}</td>
+                                <td>${sampleTxn.paimentType}</td>
+                                <td style="text-align: right; font-weight: bold;">${currency}${subtotal}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="summary-box">
+                        <div style="display:flex; justify-content: space-between; margin-bottom:6px;">
+                            <span>Base Price: </span>
+                            <span style="font-weight:600;">${currency}${subtotal}</span>
+                        </div>
+                        <div style="display:flex; justify-content: space-between; margin-bottom:6px;">
+                            <span>${taxName} (${taxRate}%): </span>
+                            <span style="font-weight:600;">${currency}${taxAmount}</span>
+                        </div>
+                        <div class="total-row" style="display:flex; justify-content: space-between;">
+                            <span>Total Paid: </span>
+                            <span>${currency}${totalPrice}</span>
+                        </div>
+                    </div>
+
+                    <div class="footer">
+                        ADMIN PREVIEW: Official ${activeTemplate.toUpperCase()} Invoice Template. For support, visit airesume.projectdemo.guru
+                    </div>
+                </div>
+            </body>
+            </html>
+        `;
+        printWindow.document.write(invoiceHtml);
+        printWindow.document.close();
     }
 
     handlePPCheckedChange() {
@@ -134,6 +346,13 @@ class SubscriptionSetting extends Component {
                     checkedPayPal: data.paypalEnabled !== undefined ? data.paypalEnabled : true,
                     checkedRazorpay: data.razorpayEnabled !== undefined ? data.razorpayEnabled : true,
                     sandboxMode: data.sandboxMode !== undefined ? data.sandboxMode : false,
+                    enableTax: data.enableTax !== undefined ? data.enableTax : true,
+                    taxName: data.taxName || 'GST',
+                    taxRate: data.taxRate !== undefined ? data.taxRate : 18,
+                    taxInclusive: data.taxInclusive !== undefined ? data.taxInclusive : false,
+                    companyTaxId: data.companyTaxId || '27AAAAA0000A1Z5',
+                    requireCustomerTaxId: data.requireCustomerTaxId !== undefined ? data.requireCustomerTaxId : false,
+                    receiptTemplate: data.receiptTemplate || 'modern',
                 });
             }
         });
@@ -280,7 +499,20 @@ class SubscriptionSetting extends Component {
                 stripeEnabled: this.state.checkedStripe,
                 paypalEnabled: this.state.checkedPayPal,
                 razorpayEnabled: this.state.checkedRazorpay,
-                sandboxMode: this.state.sandboxMode
+                sandboxMode: this.state.sandboxMode,
+                razorpayKeyId: this.state.razorpayKeyId,
+                razorpayKeySecret: this.state.razorpayKeySecret,
+                stripePublishableKey: this.state.stripePublishableKey,
+                stripeSecretKey: this.state.stripeSecretKey,
+                paypalClientId: this.state.paypalClientId,
+                paypalClientSecret: this.state.paypalClientSecret,
+                enableTax: this.state.enableTax,
+                taxName: this.state.taxName,
+                taxRate: parseFloat(this.state.taxRate) || 0,
+                taxInclusive: this.state.taxInclusive,
+                companyTaxId: this.state.companyTaxId,
+                requireCustomerTaxId: this.state.requireCustomerTaxId,
+                receiptTemplate: this.state.receiptTemplate || 'modern',
             }
         );
         this.setState({ isSuccessOpen: true });
@@ -337,7 +569,167 @@ class SubscriptionSetting extends Component {
                     </button>
                 </div>
 
-                {/* Environment Mode: Live vs Sandbox / Demo */}
+                {/* Sales Tax & GST Compliance Panel */}
+                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                        <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold">
+                                %
+                            </div>
+                            <div>
+                                <h3 className="text-base font-bold text-slate-900">Sales Tax, GST &amp; VAT Configuration</h3>
+                                <p className="text-xs text-slate-500">Configure automated tax calculations, tax rates, GSTIN registration numbers, and B2B invoice fields.</p>
+                            </div>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={() => this.setState((prev) => ({ enableTax: !prev.enableTax }))}
+                            className={`flex items-center space-x-2 px-4 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+                                this.state.enableTax
+                                    ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                                    : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                            }`}
+                        >
+                            {this.state.enableTax ? (
+                                <>
+                                    <FaToggleOn className="w-5 h-5" />
+                                    <span>Tax Calculation ENABLED</span>
+                                </>
+                            ) : (
+                                <>
+                                    <FaToggleOff className="w-5 h-5" />
+                                    <span>Tax Disabled</span>
+                                </>
+                            )}
+                        </button>
+                    </div>
+
+                    {this.state.enableTax && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                    Tax Type / Name Label
+                                </label>
+                                <input
+                                    type="text"
+                                    value={this.state.taxName}
+                                    onChange={(e) => this.setState({ taxName: e.target.value })}
+                                    placeholder="GST / VAT / Sales Tax"
+                                    className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-indigo-500 outline-none"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                    Tax Rate (%)
+                                </label>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    value={this.state.taxRate}
+                                    onChange={(e) => this.setState({ taxRate: e.target.value })}
+                                    placeholder="18"
+                                    className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-indigo-500 outline-none"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                    Company GSTIN / Tax Registration No.
+                                </label>
+                                <input
+                                    type="text"
+                                    value={this.state.companyTaxId}
+                                    onChange={(e) => this.setState({ companyTaxId: e.target.value })}
+                                    placeholder="27AAAAA0000A1Z5"
+                                    className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-indigo-500 outline-none"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                    Tax Pricing Calculation Mode
+                                </label>
+                                <select
+                                    value={this.state.taxInclusive ? 'inclusive' : 'exclusive'}
+                                    onChange={(e) => this.setState({ taxInclusive: e.target.value === 'inclusive' })}
+                                    className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-indigo-500 outline-none"
+                                >
+                                    <option value="exclusive">Tax Exclusive (+ {this.state.taxRate}% added at checkout)</option>
+                                    <option value="inclusive">Tax Inclusive (Prices include {this.state.taxRate}% {this.state.taxName})</option>
+                                </select>
+                            </div>
+
+                            <div className="md:col-span-2 flex items-center space-x-2 pt-2">
+                                <input
+                                    type="checkbox"
+                                    id="requireCustomerTaxId"
+                                    checked={this.state.requireCustomerTaxId}
+                                    onChange={(e) => this.setState({ requireCustomerTaxId: e.target.checked })}
+                                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                                />
+                                <label htmlFor="requireCustomerTaxId" className="text-xs font-bold text-slate-700 cursor-pointer">
+                                    Collect Customer GSTIN / Tax ID field at checkout for B2B Tax Invoices
+                                </label>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* PDF Receipt & Invoice Template Selector Card */}
+                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs space-y-4">
+                    <div className="flex items-center space-x-3 border-b border-slate-100 pb-4">
+                        <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600 font-bold">
+                            📄
+                        </div>
+                        <div>
+                            <h3 className="text-base font-bold text-slate-900">User PDF Receipt &amp; Invoice Design Template</h3>
+                            <p className="text-xs text-slate-500">Select the official PDF invoice layout template that candidates download and print from their Billing History.</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-1">
+                        {[
+                            { id: 'modern', name: 'Modern Minimalist', desc: 'Clean slate layout, indigo badges, rounded summary card', color: 'border-indigo-500 bg-indigo-50/40 text-indigo-900' },
+                            { id: 'classic', name: 'Classic Corporate', desc: 'Traditional formal layout, serif headers, sharp black borders', color: 'border-slate-800 bg-slate-100/60 text-slate-900' },
+                            { id: 'gradient', name: 'Vibrant Enterprise', desc: 'Bold purple-indigo gradient header banner with pill badges', color: 'border-purple-600 bg-purple-50/50 text-purple-900' },
+                            { id: 'compact', name: 'Compact Stub Voucher', desc: 'Narrow monospace receipt stub layout with dashed line dividers', color: 'border-amber-500 bg-amber-50/40 text-amber-900' },
+                        ].map((tpl) => {
+                            const isSelected = (this.state.receiptTemplate || 'modern') === tpl.id;
+                            return (
+                                <div
+                                    key={tpl.id}
+                                    onClick={() => this.setState({ receiptTemplate: tpl.id })}
+                                    className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex flex-col justify-between space-y-3 ${
+                                        isSelected ? tpl.color + ' ring-2 ring-indigo-500/20 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300'
+                                    }`}>
+                                    <div className="space-y-1">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-extrabold uppercase tracking-wider">{tpl.name}</span>
+                                            {isSelected && <FaCheck className="w-3.5 h-3.5 text-indigo-600" />}
+                                        </div>
+                                        <p className="text-[11px] text-slate-600 leading-snug">{tpl.desc}</p>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100/80">
+                                        <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md uppercase ${isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                                            {isSelected ? 'ACTIVE ✓' : 'Select'}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                this.previewTemplate(tpl.id);
+                                            }}
+                                            className="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-300 text-slate-800 text-[10px] font-bold rounded-lg transition-colors cursor-pointer shadow-2xs">
+                                            👁️ Preview
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
                 <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
@@ -376,6 +768,112 @@ class SubscriptionSetting extends Component {
                                 </>
                             )}
                         </button>
+                    </div>
+                </div>
+
+                {/* --- PAYMENT GATEWAY API & SANDBOX CREDENTIALS CARD --- */}
+                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs space-y-5">
+                    <div className="flex items-center space-x-3 border-b border-slate-100 pb-4">
+                        <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 font-bold">
+                            <FaFlask className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h3 className="text-base font-bold text-slate-900">Payment Gateway API Keys &amp; Credentials (Sandbox &amp; Production)</h3>
+                            <p className="text-xs text-slate-500">Configure test (sandbox) or live API keys for Razorpay, Stripe, and PayPal.</p>
+                        </div>
+                    </div>
+
+                    {/* Section 1: Razorpay Credentials */}
+                    <div className="p-4 bg-emerald-50/60 border border-emerald-200 rounded-xl space-y-3">
+                        <div className="flex items-center gap-2">
+                            <FaRupeeSign className="w-4 h-4 text-emerald-700" />
+                            <h4 className="text-xs font-extrabold text-emerald-950 uppercase tracking-wider">Razorpay API Credentials (UPI, GPay, Paytm &amp; Cards)</h4>
+                            <span className="ml-auto text-[10px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200">
+                                {this.state.sandboxMode ? 'SANDBOX / TEST MODE' : 'PRODUCTION MODE'}
+                            </span>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label className="block text-[11px] font-bold text-slate-700 mb-1">Razorpay Key ID *</label>
+                                <input
+                                    type="text"
+                                    value={this.state.razorpayKeyId}
+                                    onChange={(e) => this.setState({ razorpayKeyId: e.target.value })}
+                                    placeholder="e.g. rzp_test_TOnviD5XeHLE0y or rzp_live_..."
+                                    className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 font-mono focus:border-emerald-500 outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[11px] font-bold text-slate-700 mb-1">Razorpay Key Secret *</label>
+                                <input
+                                    type="password"
+                                    value={this.state.razorpayKeySecret}
+                                    onChange={(e) => this.setState({ razorpayKeySecret: e.target.value })}
+                                    placeholder="e.g. ERtqc12PbwXNyou8ITu0Ekqp"
+                                    className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 font-mono focus:border-emerald-500 outline-none"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Section 2: Stripe Credentials */}
+                    <div className="p-4 bg-indigo-50/60 border border-indigo-200 rounded-xl space-y-3">
+                        <div className="flex items-center gap-2">
+                            <FaStripe className="w-5 h-5 text-indigo-700" />
+                            <h4 className="text-xs font-extrabold text-indigo-950 uppercase tracking-wider">Stripe API Credentials (Credit / Debit Cards)</h4>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label className="block text-[11px] font-bold text-slate-700 mb-1">Stripe Publishable Key</label>
+                                <input
+                                    type="text"
+                                    value={this.state.stripePublishableKey}
+                                    onChange={(e) => this.setState({ stripePublishableKey: e.target.value })}
+                                    placeholder="e.g. pk_test_..."
+                                    className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 font-mono focus:border-indigo-500 outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[11px] font-bold text-slate-700 mb-1">Stripe Secret Key</label>
+                                <input
+                                    type="password"
+                                    value={this.state.stripeSecretKey}
+                                    onChange={(e) => this.setState({ stripeSecretKey: e.target.value })}
+                                    placeholder="e.g. sk_test_..."
+                                    className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 font-mono focus:border-indigo-500 outline-none"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Section 3: PayPal Credentials */}
+                    <div className="p-4 bg-blue-50/60 border border-blue-200 rounded-xl space-y-3">
+                        <div className="flex items-center gap-2">
+                            <FaPaypal className="w-4 h-4 text-blue-700" />
+                            <h4 className="text-xs font-extrabold text-blue-950 uppercase tracking-wider">PayPal Express Credentials</h4>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label className="block text-[11px] font-bold text-slate-700 mb-1">PayPal Client ID</label>
+                                <input
+                                    type="text"
+                                    value={this.state.paypalClientId}
+                                    onChange={(e) => this.setState({ paypalClientId: e.target.value })}
+                                    placeholder="e.g. AX... or sandbox client ID"
+                                    className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 font-mono focus:border-blue-500 outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[11px] font-bold text-slate-700 mb-1">PayPal Client Secret</label>
+                                <input
+                                    type="password"
+                                    value={this.state.paypalClientSecret}
+                                    onChange={(e) => this.setState({ paypalClientSecret: e.target.value })}
+                                    placeholder="e.g. E..."
+                                    className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 font-mono focus:border-blue-500 outline-none"
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -570,12 +1068,23 @@ class SubscriptionSetting extends Component {
                                                 <button
                                                     type="button"
                                                     onClick={() => this.handleToggleCouponStatus(c)}
-                                                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border cursor-pointer ${
+                                                    className={`px-3 py-1 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs ${
                                                         c.active
-                                                            ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                                                            : 'bg-slate-100 text-slate-600 border-slate-300'
-                                                    }`}>
-                                                    {c.active ? 'ACTIVE' : 'INACTIVE'}
+                                                            ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                                                            : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                                                    }`}
+                                                    title={`Click to turn ${c.code} ${c.active ? 'OFF (Deactivate)' : 'ON (Activate)'}`}>
+                                                    {c.active ? (
+                                                        <>
+                                                            <FaToggleOn className="w-4 h-4 text-white" />
+                                                            <span>ON</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <FaToggleOff className="w-4 h-4 text-slate-500" />
+                                                            <span>OFF</span>
+                                                        </>
+                                                    )}
                                                 </button>
                                             </td>
                                             <td className="p-3 text-right space-x-2">

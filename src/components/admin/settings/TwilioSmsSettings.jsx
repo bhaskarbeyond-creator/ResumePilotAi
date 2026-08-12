@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
-import { FaCommentAlt, FaCheck, FaTimes, FaSpinner, FaPhoneAlt, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { getSystemSettings, saveSystemSettings, sendSmsNotification } from '../../../firestore/dbOperations';
+import { FaCommentAlt, FaCheck, FaTimes, FaSpinner, FaPhoneAlt, FaEye, FaEyeSlash, FaPaperPlane } from 'react-icons/fa';
 
 const TwilioSmsSettings = () => {
     const [twilioConfig, setTwilioConfig] = useState({
@@ -12,6 +12,7 @@ const TwilioSmsSettings = () => {
     const [showToken, setShowToken] = useState(false);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [testing, setTesting] = useState(false);
     const [statusMessage, setStatusMessage] = useState(null);
 
     useEffect(() => {
@@ -158,11 +159,35 @@ const TwilioSmsSettings = () => {
                 </div>
             </div>
 
-            <div className="flex items-center justify-end pt-2">
+            <div className="flex items-center justify-between pt-2">
+                <button
+                    type="button"
+                    disabled={testing || !twilioConfig.accountSid}
+                    onClick={async () => {
+                        const testNumber = prompt('Enter recipient mobile phone number with country code (e.g. +14155552671 or +919876543210):');
+                        if (!testNumber) return;
+                        setTesting(true);
+                        try {
+                            const res = await sendSmsNotification(testNumber, 'Hello! This is a test SMS security alert from AI Resume Builder.', twilioConfig);
+                            if (res.success) {
+                                setStatusMessage({ type: 'success', text: `Test SMS sent successfully! (SID: ${res.messageSid || 'OK'})` });
+                            } else {
+                                setStatusMessage({ type: 'error', text: `SMS Dispatch Failed: ${res.error}` });
+                            }
+                        } catch (err) {
+                            setStatusMessage({ type: 'error', text: `Error: ${err.message}` });
+                        } finally {
+                            setTesting(false);
+                        }
+                    }}
+                    className="px-4 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-md flex items-center space-x-1.5 shadow-xs cursor-pointer">
+                    {testing ? <FaSpinner className="animate-spin text-slate-600" /> : <FaPaperPlane className="text-indigo-600 w-3 h-3" />}
+                    <span>Send Test SMS</span>
+                </button>
                 <button
                     type="submit"
                     disabled={saving}
-                    className="px-5 py-2 text-sm font-medium text-white bg-slate-800 hover:bg-slate-900 rounded-md flex items-center space-x-2 shadow-sm"
+                    className="px-5 py-2 text-sm font-medium text-white bg-slate-800 hover:bg-slate-900 rounded-md flex items-center space-x-2 shadow-sm cursor-pointer"
                 >
                     {saving && <FaSpinner className="animate-spin text-white" />}
                     <span>Save SMS Settings</span>

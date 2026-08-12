@@ -26,6 +26,7 @@ const ModulesSettings = () => {
         enableAtsScoreModule: true,
         enablePublicSharingModule: true,
         enableCouponsModule: true,
+        enableSalesTaxModule: true,
     });
 
     const [loading, setLoading] = useState(true);
@@ -48,6 +49,7 @@ const ModulesSettings = () => {
                 enableAtsScoreModule: mods.enableAtsScoreModule !== undefined ? mods.enableAtsScoreModule : true,
                 enablePublicSharingModule: mods.enablePublicSharingModule !== undefined ? mods.enablePublicSharingModule : true,
                 enableCouponsModule: mods.enableCouponsModule !== undefined ? mods.enableCouponsModule : true,
+                enableSalesTaxModule: mods.enableSalesTaxModule !== undefined ? mods.enableSalesTaxModule : true,
             });
             setLoading(false);
         }).catch((err) => {
@@ -124,6 +126,15 @@ const ModulesSettings = () => {
             icon: FaTag,
             badgeColor: modulesConfig.enableCouponsModule ? 'emerald' : 'slate',
             statusText: modulesConfig.enableCouponsModule ? 'ENABLED' : 'DISABLED',
+        },
+        {
+            key: 'enableSalesTaxModule',
+            title: 'Sales Tax & GST / VAT Module',
+            subtitle: 'Checkout Tax & Compliance',
+            description: 'Enables dynamic Sales Tax, GST (18%), VAT calculations, company GSTIN numbers, and B2B tax invoice receipts.',
+            icon: FaCubes,
+            badgeColor: modulesConfig.enableSalesTaxModule ? 'indigo' : 'slate',
+            statusText: modulesConfig.enableSalesTaxModule ? 'ENABLED' : 'DISABLED',
         },
         {
             key: 'enableJobScraperModule',

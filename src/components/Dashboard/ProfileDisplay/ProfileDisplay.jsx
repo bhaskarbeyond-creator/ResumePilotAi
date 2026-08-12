@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FiGrid, FiSettings, FiFileText, FiBarChart, FiMousePointer, FiDownload, FiSearch, FiChevronLeft, FiChevronRight, FiSun, FiMoon, FiSidebar, FiX, FiUser, FiShield, FiLogOut, FiBell, FiMenu, FiMessageSquare } from 'react-icons/fi';
+import { FiGrid, FiSettings, FiFileText, FiBarChart, FiMousePointer, FiDownload, FiSearch, FiChevronLeft, FiChevronRight, FiChevronDown, FiSun, FiMoon, FiSidebar, FiX, FiUser, FiShield, FiLogOut, FiBell, FiMenu, FiMessageSquare } from 'react-icons/fi';
 import { GoSidebarCollapse, GoSidebarExpand } from 'react-icons/go';
-import { FaRegComments, FaBriefcase, FaBuilding } from 'react-icons/fa';
+import { FaRegComments, FaBriefcase, FaBuilding, FaCrown } from 'react-icons/fa';
 import { FaListCheck } from 'react-icons/fa6';
 import logo from '../../../assets/logo/logo.png';
 import userPlaceholder from '../../../assets/user.png';
@@ -32,6 +32,29 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
     const { unreadNotificationCount, refreshCount } = useUnreadNotifications(); // Get unread notifications count
     const [liveProfileImage, setLiveProfileImage] = useState(null);
     const [liveProfileName, setLiveProfileName] = useState(null);
+
+    // CM360 / DV360 Categorized Navigation Accordion State
+    const [openGroups, setOpenGroups] = useState({
+        career: true,
+        jobIntel: true,
+        billing: false,
+    });
+
+    const toggleNavGroup = (groupKey) => {
+        setOpenGroups((prev) => ({ ...prev, [groupKey]: !prev[groupKey] }));
+    };
+
+    // Auto-expand accordion when active path matches a sub-item
+    useEffect(() => {
+        const p = location.pathname;
+        if (p === '/dashboard/cover-letters' || p === '/dashboard/portfolios') {
+            setOpenGroups(prev => ({ ...prev, career: true }));
+        } else if (p === '/dashboard/applied-jobs' || p === '/dashboard/interview' || p === '/dashboard/messages' || p === '/dashboard/my-employments' || p === '/dashboard/my-companies') {
+            setOpenGroups(prev => ({ ...prev, jobIntel: true }));
+        } else if (p === '/dashboard/settings' || p === '/dashboard/plans') {
+            setOpenGroups(prev => ({ ...prev, billing: true }));
+        }
+    }, [location.pathname]);
 
     // Listen for live profile updates from Settings
     useEffect(() => {
@@ -217,8 +240,8 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
             <style jsx="true" global="true">{`
                 .dashboardContentWrapper,
                 .dashboardGrid {
-                    margin-left: 240px !important;
-                    width: calc(100% - 240px) !important;
+                    margin-left: 280px !important;
+                    width: calc(100% - 280px) !important;
                     box-sizing: border-box !important;
                     transition: margin-left 0.3s ease, width 0.3s ease !important;
                 }
@@ -351,18 +374,18 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
             />
 
             <div
-                className={`fixed left-0 top-0 h-screen bg-white border-r border-gray-100 z-50 flex flex-col transition-all duration-300 ease-in-out ${
-                    sidebarCollapsed ? 'lg:w-[60px] lg:min-w-[60px] w-[280px]' : 'w-[280px] lg:w-[240px]'
+                className={`fixed left-0 top-0 h-screen bg-slate-50 border-r border-slate-200/90 z-50 flex flex-col transition-all duration-300 ease-in-out text-slate-700 ${
+                    sidebarCollapsed ? 'lg:w-[60px] lg:min-w-[60px] w-[280px]' : 'w-[280px] lg:w-[280px]'
                 }
                 lg:flex lg:shadow-none
                 ${sidebarCollapsed ? 'max-lg:-translate-x-full' : 'max-lg:translate-x-0 shadow-2xl lg:shadow-none'}
                 `}>
-                <div className={`transition-all duration-300 ${sidebarCollapsed ? 'p-3' : 'px-4 py-4'}`}>
+                <div className={`transition-all duration-300 border-b border-slate-200/80 bg-white ${sidebarCollapsed ? 'p-3' : 'px-4 py-4'}`}>
                     {sidebarCollapsed ? (
                         <div className="space-y-5">
                             <div className="flex justify-center">
-                                <button onClick={toggleSidebar} className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors duration-200">
-                                    <GoSidebarCollapse className="w-5 h-5 text-gray-600" />
+                                <button onClick={toggleSidebar} className="w-10 h-10 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-center transition-colors duration-200 cursor-pointer">
+                                    <GoSidebarCollapse className="w-5 h-5 text-slate-600" />
                                 </button>
                             </div>
                             <div className="flex justify-center">
@@ -389,7 +412,7 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
                             </div>
                         </div>
                     ) : (
-                        <div className="space-y-5">
+                        <div className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <Link to="/">
@@ -397,8 +420,8 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
                                     </Link>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <button onClick={toggleSidebar} className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors duration-200">
-                                        <GoSidebarExpand className="w-5 h-5 text-gray-600" />
+                                    <button onClick={toggleSidebar} className="w-9 h-9 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-900 rounded-xl flex items-center justify-center transition-colors duration-200 cursor-pointer shadow-2xs">
+                                        <GoSidebarExpand className="w-4 h-4" />
                                     </button>
                                 </div>
                             </div>
@@ -406,7 +429,7 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
                             <Link to="/dashboard/settings" className="block text-slate-900 hover:opacity-95 transition-opacity" title="Master Profile & Settings">
                                 <div className="bg-white p-3 rounded-xl flex items-center gap-3 border border-slate-200 shadow-2xs hover:border-indigo-300 transition-all cursor-pointer">
                                     <div className="relative flex-shrink-0">
-                                        <div className="w-12 h-12 rounded-full ring-2 ring-indigo-500/20 overflow-hidden bg-indigo-50">
+                                        <div className="w-10 h-10 rounded-full ring-2 ring-indigo-500/20 overflow-hidden bg-indigo-50">
                                             <img
                                                 src={userAvatarUrl}
                                                 alt="User Avatar"
@@ -416,16 +439,16 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
                                                 }}
                                             />
                                         </div>
-                                        <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white"></div>
+                                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white"></div>
                                     </div>
                                     <div className="flex-1 min-w-0 overflow-hidden">
                                         <p className="text-xs font-bold text-slate-900 truncate whitespace-nowrap overflow-hidden text-ellipsis mb-0.5" title={candidateDisplayName}>
                                             {candidateDisplayName}
                                         </p>
-                                        <p className="text-[11px] text-slate-500 truncate whitespace-nowrap overflow-hidden text-ellipsis mb-1.5" title={authUser?.email || profile?.email}>
+                                        <p className="text-[10px] text-slate-500 truncate whitespace-nowrap overflow-hidden text-ellipsis mb-1" title={authUser?.email || profile?.email}>
                                             {authUser?.email || profile?.email || ''}
                                         </p>
-                                        <span className={`inline-flex items-center px-2 py-0.5 text-[10px] font-bold rounded-full border ${
+                                        <span className={`inline-flex items-center px-2 py-0.5 text-[9px] font-extrabold rounded-full border ${
                                             userMembershipTier.includes('Admin')
                                                 ? 'text-red-700 bg-red-50 border-red-200'
                                                 : 'text-indigo-700 bg-indigo-50 border-indigo-200'
@@ -442,153 +465,268 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
                     )}
                 </div>
 
-                {/* Navigation Menu */}
-                <div className="flex-1 overflow-y-auto">
-                    {!sidebarCollapsed && (
-                        <div className="px-4 py-1">
-                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">{t('JobsUpdate.ProfileDisplay2.navigation')}</p>
+                {/* Navigation Menu — CM360 Light Categorized Dropdowns */}
+                <div className="flex-1 overflow-y-auto px-2.5 py-3 space-y-3 custom-scrollbar">
+                    {/* ── 1. MAIN WORKSPACE ── */}
+                    <div>
+                        {!sidebarCollapsed && (
+                            <p className="text-[9px] font-extrabold text-slate-600 uppercase tracking-widest px-2 mb-1.5">Main Workspace</p>
+                        )}
+                        <Link to="/dashboard" onClick={closeMobileSidebar}>
+                            <div
+                                className={`flex items-center text-xs transition-all duration-150 rounded-xl ${
+                                    location.pathname === '/dashboard'
+                                        ? 'bg-indigo-50 text-indigo-700 font-bold border-l-3 border-indigo-600 shadow-2xs pl-2.5'
+                                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium'
+                                } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'px-2.5 py-2'}`}>
+                                <FiGrid className={`text-base min-w-[18px] ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
+                                {!sidebarCollapsed && <span className="flex-1">Overview &amp; Resumes</span>}
+                            </div>
+                        </Link>
+                    </div>
+
+                    {/* ── 2. CAREER SUITE (Dropdown) ── */}
+                    <div>
+                        {!sidebarCollapsed ? (
+                            <button
+                                type="button"
+                                onClick={() => toggleNavGroup('career')}
+                                className="w-full flex items-center justify-between px-2 py-1 text-[9px] font-extrabold text-slate-600 uppercase tracking-widest hover:text-slate-900 transition-colors cursor-pointer mb-1">
+                                <span>Career Suite</span>
+                                {openGroups.career ? <FiChevronDown className="w-3 h-3 text-slate-400" /> : <FiChevronRight className="w-3 h-3 text-slate-400" />}
+                            </button>
+                        ) : null}
+
+                        {(openGroups.career || sidebarCollapsed) && (
+                            <div className="space-y-0.5">
+                                <Link to="/dashboard" onClick={closeMobileSidebar}>
+                                    <div
+                                        className={`flex items-center text-xs transition-all duration-150 rounded-xl ${
+                                            location.pathname === '/dashboard'
+                                                ? 'bg-indigo-50 text-indigo-700 font-bold border-l-3 border-indigo-600 shadow-2xs pl-2.5'
+                                                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium'
+                                        } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'px-2.5 py-2'}`}>
+                                        <FiFileText className={`text-base min-w-[18px] ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
+                                        {!sidebarCollapsed && <span className="flex-1">AI Resumes &amp; Master CV</span>}
+                                    </div>
+                                </Link>
+
+                                <Link to="/dashboard/cover-letters" onClick={closeMobileSidebar}>
+                                    <div
+                                        className={`flex items-center text-xs transition-all duration-150 rounded-xl ${
+                                            location.pathname === '/dashboard/cover-letters'
+                                                ? 'bg-indigo-50 text-indigo-700 font-bold border-l-3 border-indigo-600 shadow-2xs pl-2.5'
+                                                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium'
+                                        } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'px-2.5 py-2'}`}>
+                                        <FiFileText className={`text-base min-w-[18px] ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
+                                        {!sidebarCollapsed && <span className="flex-1">Cover Letters</span>}
+                                    </div>
+                                </Link>
+
+                                {modulesConfig.enablePortfolioModule && (
+                                    <Link to="/dashboard/portfolios" onClick={closeMobileSidebar}>
+                                        <div
+                                            className={`flex items-center text-xs transition-all duration-150 rounded-xl ${
+                                                location.pathname === '/dashboard/portfolios'
+                                                    ? 'bg-indigo-50 text-indigo-700 font-bold border-l-3 border-indigo-600 shadow-2xs pl-2.5'
+                                                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium'
+                                            } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'px-2.5 py-2'}`}>
+                                            <FiBarChart className={`text-base min-w-[18px] ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
+                                            {!sidebarCollapsed && <span className="flex-1">Portfolios &amp; Web CV</span>}
+                                        </div>
+                                    </Link>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* ── 3. JOB INTELLIGENCE (Dropdown) ── */}
+                    <div>
+                        {!sidebarCollapsed ? (
+                            <button
+                                type="button"
+                                onClick={() => toggleNavGroup('jobIntel')}
+                                className="w-full flex items-center justify-between px-2 py-1 text-[9px] font-extrabold text-slate-600 uppercase tracking-widest hover:text-slate-900 transition-colors cursor-pointer mb-1">
+                                <span>Job Intelligence</span>
+                                {openGroups.jobIntel ? <FiChevronDown className="w-3 h-3 text-slate-400" /> : <FiChevronRight className="w-3 h-3 text-slate-400" />}
+                            </button>
+                        ) : null}
+
+                        {(openGroups.jobIntel || sidebarCollapsed) && (
+                            <div className="space-y-0.5">
+                                {modulesConfig.enableJobScraperModule && (
+                                    <Link to="/dashboard/applied-jobs" onClick={closeMobileSidebar}>
+                                        <div
+                                            className={`flex items-center text-xs transition-all duration-150 rounded-xl ${
+                                                location.pathname === '/dashboard/applied-jobs'
+                                                    ? 'bg-indigo-50 text-indigo-700 font-bold border-l-3 border-indigo-600 shadow-2xs pl-2.5'
+                                                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium'
+                                            } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'px-2.5 py-2'}`}>
+                                            <FaBriefcase className={`text-base min-w-[18px] ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
+                                            {!sidebarCollapsed && <span className="flex-1">Applied Jobs &amp; Tracker</span>}
+                                        </div>
+                                    </Link>
+                                )}
+
+                                <Link to="/dashboard/interview" onClick={closeMobileSidebar}>
+                                    <div
+                                        className={`flex items-center text-xs transition-all duration-150 rounded-xl ${
+                                            location.pathname === '/dashboard/interview'
+                                                ? 'bg-indigo-50 text-indigo-700 font-bold border-l-3 border-indigo-600 shadow-2xs pl-2.5'
+                                                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium'
+                                        } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'px-2.5 py-2'}`}>
+                                        <FaRegComments className={`text-base min-w-[18px] ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
+                                        {!sidebarCollapsed && <span className="flex-1">AI Interview Coach</span>}
+                                    </div>
+                                </Link>
+
+                                <Link to="/dashboard/messages" onClick={closeMobileSidebar}>
+                                    <div
+                                        className={`flex items-center text-xs transition-all duration-150 rounded-xl ${
+                                            location.pathname === '/dashboard/messages'
+                                                ? 'bg-indigo-50 text-indigo-700 font-bold border-l-3 border-indigo-600 shadow-2xs pl-2.5'
+                                                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium'
+                                        } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'px-2.5 py-2'}`}>
+                                        <FiMessageSquare className={`text-base min-w-[18px] ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
+                                        {!sidebarCollapsed && (
+                                            <>
+                                                <span className="flex-1">Messages &amp; Chat</span>
+                                                {unreadCount > 0 && (
+                                                    <span className="ml-2 bg-indigo-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] h-4 flex items-center justify-center">{unreadCount}</span>
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
+                                </Link>
+
+                                {isEmployer && modulesConfig.enableJobScraperModule && (
+                                    <Link to="/dashboard/my-employments" onClick={closeMobileSidebar}>
+                                        <div
+                                            className={`flex items-center text-xs transition-all duration-150 rounded-xl ${
+                                                location.pathname === '/dashboard/my-employments'
+                                                    ? 'bg-indigo-50 text-indigo-700 font-bold border-l-3 border-indigo-600 shadow-2xs pl-2.5'
+                                                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium'
+                                            } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'px-2.5 py-2'}`}>
+                                            <FaBriefcase className={`text-base min-w-[18px] ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
+                                            {!sidebarCollapsed && <span className="flex-1">My Posted Jobs</span>}
+                                        </div>
+                                    </Link>
+                                )}
+
+                                {isEmployer && (
+                                    <Link to="/dashboard/my-companies" onClick={closeMobileSidebar}>
+                                        <div
+                                            className={`flex items-center text-xs transition-all duration-150 rounded-xl ${
+                                                location.pathname === '/dashboard/my-companies'
+                                                    ? 'bg-indigo-50 text-indigo-700 font-bold border-l-3 border-indigo-600 shadow-2xs pl-2.5'
+                                                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium'
+                                            } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'px-2.5 py-2'}`}>
+                                            <FaBuilding className={`text-base min-w-[18px] ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
+                                            {!sidebarCollapsed && <span className="flex-1">My Companies</span>}
+                                        </div>
+                                    </Link>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* ── 4. BILLING & ACCOUNT (Dropdown) ── */}
+                    <div>
+                        {!sidebarCollapsed ? (
+                            <button
+                                type="button"
+                                onClick={() => toggleNavGroup('billing')}
+                                className="w-full flex items-center justify-between px-2 py-1 text-[9px] font-extrabold text-slate-600 uppercase tracking-widest hover:text-slate-900 transition-colors cursor-pointer mb-1">
+                                <span>Account &amp; Security</span>
+                                {openGroups.billing ? <FiChevronDown className="w-3 h-3 text-slate-400" /> : <FiChevronRight className="w-3 h-3 text-slate-400" />}
+                            </button>
+                        ) : null}
+
+                        {(openGroups.billing || sidebarCollapsed) && (
+                            <div className="space-y-0.5">
+                                <Link to="/dashboard/plans" onClick={closeMobileSidebar}>
+                                    <div
+                                        className={`flex items-center text-xs transition-all duration-150 rounded-xl ${
+                                            location.pathname === '/dashboard/plans'
+                                                ? 'bg-indigo-50 text-indigo-700 font-bold border-l-3 border-indigo-600 shadow-2xs pl-2.5'
+                                                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium'
+                                        } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'px-2.5 py-2'}`}>
+                                        <FiSettings className={`text-base min-w-[18px] ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
+                                        {!sidebarCollapsed && <span className="flex-1">Subscription &amp; Plans</span>}
+                                    </div>
+                                </Link>
+
+                                <Link to="/dashboard/settings?tab=Profile" onClick={closeMobileSidebar}>
+                                    <div
+                                        className={`flex items-center text-xs transition-all duration-150 rounded-xl ${
+                                            location.pathname === '/dashboard/settings' && (!location.search || location.search.includes('Profile'))
+                                                ? 'bg-indigo-50 text-indigo-700 font-bold border-l-3 border-indigo-600 shadow-2xs pl-2.5'
+                                                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium'
+                                        } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'px-2.5 py-2'}`}>
+                                        <FiUser className={`text-base min-w-[18px] ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
+                                        {!sidebarCollapsed && <span className="flex-1">Master Profile Data</span>}
+                                    </div>
+                                </Link>
+
+                                <Link to="/dashboard/settings?tab=Account" onClick={closeMobileSidebar}>
+                                    <div
+                                        className={`flex items-center text-xs transition-all duration-150 rounded-xl ${
+                                            location.pathname === '/dashboard/settings' && location.search.includes('Account')
+                                                ? 'bg-indigo-50 text-indigo-700 font-bold border-l-3 border-indigo-600 shadow-2xs pl-2.5'
+                                                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium'
+                                        } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'px-2.5 py-2'}`}>
+                                        <FiShield className={`text-base min-w-[18px] ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
+                                        {!sidebarCollapsed && <span className="flex-1">Security &amp; 2FA Hub</span>}
+                                    </div>
+                                </Link>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* ── 5. ADMIN PANEL (If Admin) ── */}
+                    {isAdmin && (
+                        <div>
+                            {!sidebarCollapsed && (
+                                <p className="text-[9px] font-extrabold text-red-600 uppercase tracking-widest px-2 mb-1.5">System Admin</p>
+                            )}
+                            <Link to="/adm" onClick={closeMobileSidebar}>
+                                <div
+                                    className={`flex items-center text-xs transition-all duration-150 rounded-xl ${
+                                        location.pathname.startsWith('/adm')
+                                            ? 'bg-red-50 text-red-700 font-bold border-l-3 border-red-600 shadow-2xs pl-2.5'
+                                            : 'text-red-600/90 hover:bg-red-50 hover:text-red-800 font-medium'
+                                    } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'px-2.5 py-2'}`}>
+                                    <FiShield className={`text-base min-w-[18px] ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
+                                    {!sidebarCollapsed && <span className="flex-1">Admin Control Panel</span>}
+                                </div>
+                            </Link>
                         </div>
                     )}
 
-                    <div className="px-2">
-                        <Link to="/dashboard" onClick={closeMobileSidebar}>
-                            <div
-                                className={`flex items-center text-sm transition-all duration-200 rounded-lg mb-1 ${
-                                    location.pathname === '/dashboard' ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
-                                } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'p-2.5'}`}>
-                                <FiGrid className={`text-lg min-w-[20px] ${sidebarCollapsed ? 'mr-0' : 'mr-3'}`} />
-                                {!sidebarCollapsed && <span className="flex-1">{t('JobsUpdate.ProfileDisplay2.menu.dashboard', 'Dashboard')}</span>}
-                            </div>
-                        </Link>
+                </div>
+                {/* END scrollable nav */}
 
-                        {/* Show Admin Panel only for admin users */}
-                        {isAdmin && (
-                            <Link to="/adm" onClick={closeMobileSidebar}>
-                                <div
-                                    className={`flex items-center text-sm transition-all duration-200 rounded-lg mb-1 ${
-                                        location.pathname.startsWith('/adm') ? 'bg-red-100 text-red-900 font-medium' : 'text-red-600 hover:bg-red-50 hover:text-red-800'
-                                    } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'p-2.5'}`}>
-                                    <FiShield className={`text-lg min-w-[20px] ${sidebarCollapsed ? 'mr-0' : 'mr-3'}`} />
-                                    {!sidebarCollapsed && <span className="flex-1">{t('JobsUpdate.ProfileDisplay2.menu.adminPanel', 'Admin Panel')}</span>}
-                                </div>
-                            </Link>
-                        )}
+                {/* ── FIXED BOTTOM SIDEBAR SECTION (never scrolls) ── */}
+                <div className={`flex-shrink-0 border-t border-slate-200/80 bg-slate-50 ${ sidebarCollapsed ? 'px-2 py-2' : 'px-2.5 py-2' }`}>
 
-                        <Link to="/dashboard/interview" onClick={closeMobileSidebar}>
-                            <div
-                                className={`flex items-center text-sm transition-all duration-200 rounded-lg mb-1 ${
-                                    location.pathname === '/dashboard/interview' ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
-                                } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'p-2.5'}`}>
-                                <FaRegComments className={`text-lg min-w-[20px] ${sidebarCollapsed ? 'mr-0' : 'mr-3'}`} />
-                                {!sidebarCollapsed && <span className="flex-1">{t('JobsUpdate.ProfileDisplay2.menu.interviews', 'Interviews')}</span>}
-                            </div>
-                        </Link>
-
-                        <Link to="/dashboard/cover-letters" onClick={closeMobileSidebar}>
-                            <div
-                                className={`flex items-center text-sm transition-all duration-200 rounded-lg mb-1 ${
-                                    location.pathname === '/dashboard/cover-letters' ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
-                                } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'p-2.5'}`}>
-                                <FiFileText className={`text-lg min-w-[20px] ${sidebarCollapsed ? 'mr-0' : 'mr-3'}`} />
-                                {!sidebarCollapsed && <span className="flex-1">Cover Letters</span>}
-                            </div>
-                        </Link>
-
-                        {modulesConfig.enablePortfolioModule && (
-                            <Link to="/dashboard/portfolios" onClick={closeMobileSidebar}>
-                                <div
-                                    className={`flex items-center text-sm transition-all duration-200 rounded-lg mb-1 ${
-                                        location.pathname === '/dashboard/portfolios' ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
-                                    } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'p-2.5'}`}>
-                                    <FiFileText className={`text-lg min-w-[20px] ${sidebarCollapsed ? 'mr-0' : 'mr-3'}`} />
-                                    {!sidebarCollapsed && <span className="flex-1">{t('JobsUpdate.ProfileDisplay2.menu.portfolios', 'Portfolios')}</span>}
-                                </div>
-                            </Link>
-                        )}
-
-                        {modulesConfig.enableJobScraperModule && (
-                            <Link to="/dashboard/applied-jobs" onClick={closeMobileSidebar}>
-                                <div
-                                    className={`flex items-center text-sm transition-all duration-200 rounded-lg mb-1 ${
-                                        location.pathname === '/dashboard/applied-jobs' ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
-                                    } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'p-2.5'}`}>
-                                    <FaBriefcase className={`text-lg min-w-[20px] ${sidebarCollapsed ? 'mr-0' : 'mr-3'}`} />
-                                    {!sidebarCollapsed && <span className="flex-1">{t('JobsUpdate.ProfileDisplay2.menu.appliedJobs', 'Applied Jobs')}</span>}
-                                </div>
-                            </Link>
-                        )}
-
-                        {/* Messages */}
-                        <Link to="/dashboard/messages" onClick={closeMobileSidebar}>
-                            <div
-                                className={`flex items-center text-sm transition-all duration-200 rounded-lg mb-1 ${
-                                    location.pathname === '/dashboard/messages' ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
-                                } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'p-2.5'}`}>
-                                <FaRegComments className={`text-lg min-w-[20px] ${sidebarCollapsed ? 'mr-0' : 'mr-3'}`} />
-                                {!sidebarCollapsed && (
-                                    <>
-                                        <span className="flex-1">{t('JobsUpdate.ProfileDisplay2.menu.messages', 'Messages')}</span>
-                                        {unreadCount > 0 && (
-                                            <span className="ml-2 bg-gray-900 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full min-w-[18px] h-4 flex items-center justify-center">{unreadCount}</span>
-                                        )}
-                                    </>
-                                )}
-                            </div>
-                        </Link>
-
-                        {/* Show My Employments only for employers */}
-                        {isEmployer && modulesConfig.enableJobScraperModule && (
-                            <Link to="/dashboard/my-employments" onClick={closeMobileSidebar}>
-                                <div
-                                    className={`flex items-center text-sm transition-all duration-200 rounded-lg mb-1 ${
-                                        location.pathname === '/dashboard/my-employments' ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
-                                    } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'p-2.5'}`}>
-                                    <FaBriefcase className={`text-lg min-w-[20px] ${sidebarCollapsed ? 'mr-0' : 'mr-3'}`} />
-                                    {!sidebarCollapsed && <span className="flex-1">{t('JobsUpdate.ProfileDisplay2.menu.myJobs', 'My Jobs')}</span>}
-                                </div>
-                            </Link>
-                        )}
-
-                        {/* Show My Companies only for employers */}
-                        {isEmployer && (
-                            <Link to="/dashboard/my-companies" onClick={closeMobileSidebar}>
-                                <div
-                                    className={`flex items-center text-sm transition-all duration-200 rounded-lg mb-1 ${
-                                        location.pathname === '/dashboard/my-companies' ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
-                                    } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'p-2.5'}`}>
-                                    <FaBuilding className={`text-lg min-w-[20px] ${sidebarCollapsed ? 'mr-0' : 'mr-3'}`} />
-                                    {!sidebarCollapsed && <span className="flex-1">{t('JobsUpdate.ProfileDisplay2.menu.myCompanies', 'My Companies')}</span>}
-                                </div>
-                            </Link>
-                        )}
-
-                        <Link to="/dashboard/settings" onClick={closeMobileSidebar}>
-                            <div
-                                className={`flex items-center text-sm transition-all duration-200 rounded-lg mb-1 ${
-                                    location.pathname === '/dashboard/settings' ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
-                                } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'p-2.5'}`}>
-                                <FiSettings className={`text-lg min-w-[20px] ${sidebarCollapsed ? 'mr-0' : 'mr-3'}`} />
-                                {!sidebarCollapsed && <span className="flex-1">{t('JobsUpdate.ProfileDisplay2.menu.settings', 'Settings')}</span>}
-                            </div>
-                        </Link>
-
-                        {/* Separate Notifications Item */}
+                    {/* Notifications & Sign Out */}
+                    <div className="space-y-0.5 mb-2">
                         <div
                             onClick={() => setShowNotifications(!showNotifications)}
-                            className={`flex items-center text-sm transition-all duration-200 rounded-lg mb-1 cursor-pointer font-medium ${
-                                showNotifications ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                            } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'p-2.5'}`}>
+                            className={`flex items-center text-xs transition-all duration-150 rounded-xl cursor-pointer ${
+                                showNotifications ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium'
+                            } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'px-2.5 py-2'}`}>
                             <div className="relative flex items-center">
-                                <FiBell className={`text-lg min-w-[20px] ${sidebarCollapsed ? 'mr-0' : 'mr-3'}`} />
+                                <FiBell className={`text-base min-w-[18px] ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
                                 {unreadNotificationCount > 0 && sidebarCollapsed && (
-                                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-indigo-600 rounded-full"></span>
+                                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-indigo-600 rounded-full"></span>
                                 )}
                             </div>
                             {!sidebarCollapsed && (
                                 <>
                                     <span className="flex-1">Notifications</span>
                                     {unreadNotificationCount > 0 && (
-                                        <span className="ml-2 bg-indigo-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full min-w-[20px] h-4 flex items-center justify-center">
+                                        <span className="ml-2 bg-indigo-600 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full min-w-[18px] h-4 flex items-center justify-center">
                                             {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
                                         </span>
                                     )}
@@ -596,7 +734,6 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
                             )}
                         </div>
 
-                        {/* Sign Out Action Button */}
                         <div
                             onClick={() => {
                                 fire.auth().signOut().then(() => {
@@ -605,13 +742,41 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
                                     window.location.href = '/';
                                 });
                             }}
-                            className={`flex items-center text-sm transition-all duration-200 rounded-lg mb-1 text-red-600 hover:bg-red-50 hover:text-red-700 cursor-pointer font-medium ${
-                                sidebarCollapsed ? 'p-2.5 justify-center' : 'p-2.5'
+                            className={`flex items-center text-xs font-semibold transition-all duration-150 rounded-xl text-red-600 hover:bg-red-50 hover:text-red-700 cursor-pointer ${
+                                sidebarCollapsed ? 'p-2.5 justify-center' : 'px-2.5 py-2'
                             }`}>
-                            <FiLogOut className={`text-lg min-w-[20px] ${sidebarCollapsed ? 'mr-0' : 'mr-3'}`} />
+                            <FiLogOut className={`text-base min-w-[18px] ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
                             {!sidebarCollapsed && <span className="flex-1">{t('common.signOut', 'Sign Out')}</span>}
                         </div>
                     </div>
+
+                    {/* Plans & Upgrades CTA — always visible at bottom */}
+                    <Link to="/dashboard/plans" onClick={closeMobileSidebar}>
+                        {sidebarCollapsed ? (
+                            <div className={`flex items-center justify-center p-2.5 rounded-xl transition-all cursor-pointer ${
+                                location.pathname === '/dashboard/plans'
+                                    ? 'bg-gradient-to-br from-indigo-600 to-purple-700 shadow-lg shadow-indigo-500/30'
+                                    : 'bg-gradient-to-br from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-md shadow-indigo-400/25'
+                            }`}>
+                                <FaCrown className="w-4 h-4 text-amber-300" />
+                            </div>
+                        ) : (
+                            <div className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all cursor-pointer group ${
+                                location.pathname === '/dashboard/plans'
+                                    ? 'bg-gradient-to-r from-indigo-600 to-purple-700 shadow-lg shadow-indigo-500/30'
+                                    : 'bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-md shadow-indigo-400/20 hover:shadow-lg hover:shadow-indigo-500/30'
+                            }`}>
+                                <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{background:'rgba(255,255,255,0.15)'}}>
+                                    <FaCrown className="w-3.5 h-3.5 text-amber-300 group-hover:scale-110 transition-transform duration-200" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-extrabold text-white leading-tight">Plans &amp; Upgrades</p>
+                                    <p className="text-[10px] text-indigo-200 font-medium leading-tight">Manage subscription</p>
+                                </div>
+                                <FiChevronRight className="w-3.5 h-3.5 text-white/60 shrink-0" />
+                            </div>
+                        )}
+                    </Link>
                 </div>
             </div>
 

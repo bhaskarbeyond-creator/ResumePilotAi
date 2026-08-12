@@ -15,6 +15,10 @@ import GA4Provider from './components/GA4Provider';
 import i18n from './i18n';
 import GoogleMapsProvider from './components/JobsListings/GoogleMapsProvider';
 
+if (typeof window !== 'undefined') {
+    window.fire = fire;
+}
+
 // Create a Context for authentication
 export const AuthContext = createContext(null);
 

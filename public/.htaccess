@@ -1,6 +1,13 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
+
+  # Route all /api/* requests to PHP proxy -> Node backend (port 8080)
+  RewriteRule ^api/(.*)$ api/index.php [L,QSA]
+  RewriteRule ^api$ api/index.php [L,QSA]
+
+  # Route all non-file/directory requests to SPA index.html
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule ^ index.html [L]
 </IfModule>
+

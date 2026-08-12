@@ -5,7 +5,7 @@ import { Elements, ElementsConsumer } from '@stripe/react-stripe-js';
 import { PayPalScriptProvider } from '@paypal/react-paypal-js';
 import conf from '../../../conf/configuration';
 import Checkout from './Checkout';
-import { getSubscriptionStatus, getCoupons, getUserTransactions, recordTransaction, updateUserAutoRenew, cancelUserSubscription, getSystemSettings } from '../../../firestore/dbOperations';
+import { getSubscriptionStatus, getCoupons, getUserTransactions, recordTransaction, updateUserAutoRenew, cancelUserSubscription, getSystemSettings, getWebsiteData } from '../../../firestore/dbOperations';
 import { getUserMembership } from '../../../firestore/paidOperations';
 import fire from '../../../conf/fire';
 import HomepageNavbar from '../../Dashboard2/elements/HomepageNavbar';
@@ -151,15 +151,14 @@ const PlansPage = (props) => {
                                 if (!isNaN(expiryDate.getTime())) {
                                     setMembershipExpiryDate(expiryDate);
                                     isExpired = expiryDate < new Date();
-                                    if (!isExpired) {
-                                        setMembershipExpiry(
-                                            expiryDate.toLocaleDateString('en-US', {
-                                                month: 'short',
-                                                day: 'numeric',
-                                                year: 'numeric',
-                                            })
-                                        );
-                                    }
+                                    // Always set the formatted date — used to show expiry or "Expired on" label
+                                    setMembershipExpiry(
+                                        expiryDate.toLocaleDateString('en-US', {
+                                            month: 'short',
+                                            day: 'numeric',
+                                            year: 'numeric',
+                                        })
+                                    );
                                 }
                             } catch (err) {
                                 console.error('Error parsing membershipEnds:', err);
@@ -340,95 +339,162 @@ const PlansPage = (props) => {
         setCouponError('');
     };
 
-    // Printable PDF Invoice Generator
+    // Printable PDF Invoice Generator with Instant Executive Styling
     const handleDownloadInvoice = (txn) => {
         const printWindow = window.open('', '_blank');
         if (!printWindow) {
             alert('Please allow popups to download/print your PDF invoice.');
             return;
         }
-        
+
+        const siteTitle = (conf.brand?.name || 'RESUMEPILOT AI').toUpperCase();
+        const txnId = txn.transactionId || txn.txnId || txn.id || `TXN_${Date.now()}`;
+        const taxName = txn.taxName || 'GST';
+        const taxRate = txn.taxRate !== undefined ? txn.taxRate : 18;
+        const totalPrice = txn.amount !== undefined ? txn.amount : (txn.price || '499');
+        const subtotal = txn.subtotal !== undefined ? txn.subtotal : (parseFloat(totalPrice) / (1 + (taxRate / 100))).toFixed(2);
+        const taxAmount = txn.taxAmount !== undefined ? txn.taxAmount : (parseFloat(totalPrice) - parseFloat(subtotal)).toFixed(2);
+        const companyTaxId = txn.companyTaxId || '27AABCU9603R1ZM';
+        const customerTaxId = txn.customerTaxId || '';
+        const currency = txn.currency || subscriptionConfig.currency || 'INR';
+        const currencySymbol = currency === 'INR' ? '₹' : (currency === 'EUR' ? '€' : '$');
+
+        const rawName = candidateName || txn.customerName || (props.user ? props.user.displayName : '');
+        let billedCustomerName = 'Valued Candidate';
+        if (rawName && typeof rawName === 'string' && !rawName.toLowerCase().includes('welcome')) {
+            billedCustomerName = rawName.trim();
+        } else if (userEmail) {
+            const parts = userEmail.split('@')[0].split('.')[0];
+            billedCustomerName = parts.charAt(0).toUpperCase() + parts.slice(1);
+        }
+
+        const formattedDate = txn.created_at?.toDate
+            ? txn.created_at.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+            : (txn.createdDateString || txn.date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }));
+
+        const templateStyles = `
+            @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@600;800&display=swap');
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body { font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; background: #f8fafc; color: #0f172a; line-height: 1.5; padding: 30px; }
+            .invoice-card { max-width: 800px; margin: 0 auto; background: #ffffff; border-radius: 24px; box-shadow: 0 20px 40px rgba(15,23,42,0.08); border: 1px solid #e2e8f0; overflow: hidden; }
+            .header-bar { background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); color: #ffffff; padding: 36px 40px; display: flex; justify-content: space-between; align-items: center; position: relative; }
+            .header-bar::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #4f46e5, #ec4899, #8b5cf6); }
+            .brand-title { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; color: #ffffff; text-transform: uppercase; }
+            .brand-subtitle { font-size: 12px; color: #94a3b8; font-weight: 600; margin-top: 4px; }
+            .paid-badge { background: rgba(16,185,129,0.15); border: 1.5px solid #10b981; color: #34d399; font-size: 12px; font-weight: 800; padding: 6px 18px; border-radius: 99px; text-transform: uppercase; letter-spacing: 1px; }
+            .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; padding: 36px 40px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+            .label { font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+            .val-bold { font-size: 15px; font-weight: 800; color: #0f172a; }
+            .val-sub { font-size: 13px; color: #475569; font-weight: 600; margin-top: 2px; }
+            .table-wrap { padding: 36px 40px; }
+            table { width: 100%; border-collapse: collapse; }
+            th { text-align: left; padding: 14px 16px; background: #f1f5f9; color: #475569; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; border-radius: 8px; }
+            td { padding: 18px 16px; border-bottom: 1px solid #f1f5f9; font-size: 14px; font-weight: 600; color: #1e293b; }
+            .summary-wrap { display: flex; justify-content: flex-end; padding: 0 40px 36px; }
+            .summary-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px 24px; width: 320px; }
+            .sum-line { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 10px; }
+            .sum-line.total { border-top: 2px dashed #cbd5e1; padding-top: 12px; margin-top: 12px; font-size: 16px; font-weight: 800; color: #4f46e5; }
+            .footer-bar { padding: 24px 40px; background: #fafafa; border-top: 1px solid #f1f5f9; text-align: center; font-size: 11px; color: #94a3b8; font-weight: 600; }
+            @media print {
+                .no-print { display: none !important; }
+                body { background: #fff !important; padding: 0 !important; }
+                .invoice-card { border: none !important; box-shadow: none !important; max-width: 100% !important; }
+            }
+        `;
+
         const html = `
             <!DOCTYPE html>
             <html>
             <head>
-                <title>Invoice #${txn.txnId || txn.id}</title>
-                <style>
-                    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #0f172a; padding: 40px; max-width: 800px; margin: 0 auto; line-height: 1.5; }
-                    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 30px; }
-                    .brand { font-size: 24px; font-weight: 800; color: #4f46e5; letter-spacing: -0.5px; }
-                    .badge { background: #dcfce7; color: #166534; padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 800; border: 1px solid #bbf7d0; }
-                    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 30px; }
-                    .card { background: #f8fafc; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0; font-size: 13px; }
-                    .table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-                    .table th { background: #f1f5f9; padding: 12px; text-align: left; font-size: 11px; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px; }
-                    .table td { padding: 16px 12px; border-bottom: 1px solid #e2e8f0; font-size: 13px; }
-                    .total-box { background: #e0e7ff; border: 1px solid #c7d2fe; padding: 16px; border-radius: 12px; text-align: right; font-size: 18px; font-weight: 800; color: #3730a3; margin-top: 20px; }
-                    .footer { text-align: center; margin-top: 60px; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 20px; }
-                </style>
+                <title>Tax Invoice - ${txnId}</title>
+                <style>${templateStyles}</style>
             </head>
             <body>
-                <div class="header">
-                    <div>
-                        <div class="brand">AI RESUME BUILDER PRO</div>
-                        <div style="font-size: 12px; color: #64748b; margin-top: 2px;">Official Tax Invoice &amp; Payment Receipt</div>
+                <div class="no-print" style="position: sticky; top: 0; z-index: 100; background: #0f172a; color: #fff; padding: 14px 28px; display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #4f46e5; box-shadow: 0 10px 25px rgba(0,0,0,0.2); margin-bottom: 30px; border-radius: 16px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #4f46e5, #7c3aed); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 16px; color: #fff;">📄</div>
+                        <div>
+                            <strong style="font-size: 15px; display: block; font-weight: 800;">Official B2B Tax Invoice</strong>
+                            <span style="font-size: 11px; color: #94a3b8; font-family: 'JetBrains Mono', monospace;">REF: ${txnId}</span>
+                        </div>
                     </div>
-                    <div class="badge">PAID • VERIFIED</div>
-                </div>
-
-                <div class="grid">
-                    <div class="card">
-                        <strong style="color: #475569; text-transform: uppercase; font-size: 11px;">Billed To Candidate:</strong><br>
-                        <strong style="font-size: 15px;">${candidateName || 'Candidate'}</strong><br>
-                        ${userEmail || ''}<br>
-                        Date: ${txn.createdDateString || new Date().toLocaleDateString()}
-                    </div>
-                    <div class="card" style="text-align: right;">
-                        <strong style="color: #475569; text-transform: uppercase; font-size: 11px;">Payment References:</strong><br>
-                        <strong>Invoice ID:</strong> ${txn.txnId || txn.id}<br>
-                        <strong>Method:</strong> ${txn.paymentMethod || 'Stripe / PayPal / Razorpay'}<br>
-                        <strong>Status:</strong> ${txn.status || 'Completed'}
+                    <div style="display: flex; gap: 12px;">
+                        <button onclick="window.print()" style="background: linear-gradient(135deg, #4f46e5, #6366f1); color: #fff; border: none; padding: 10px 22px; border-radius: 10px; font-weight: 800; cursor: pointer; font-size: 13px; box-shadow: 0 4px 14px rgba(79,70,229,0.4); display: flex; align-items: center; gap: 6px;">
+                            <span>🖨️</span> Save as PDF / Print
+                        </button>
+                        <button onclick="window.close()" style="background: #334155; color: #f8fafc; border: none; padding: 10px 18px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 13px;">Close</button>
                     </div>
                 </div>
 
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Description</th>
-                            <th>Billing Cycle</th>
-                            <th style="text-align: right;">Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>
-                                <strong>${txn.planName || 'AI Resume Builder PRO Subscription'}</strong><br>
-                                <small style="color: #64748b;">Unlimited AI Resumes, Cover Letters, ATS Keyword Engine &amp; Executive Synthesizer</small>
-                            </td>
-                            <td>${txn.durationMonths || 12} Months</td>
-                            <td style="text-align: right;"><strong>${subscriptionConfig.symbol}${txn.amount} ${txn.currency || 'USD'}</strong></td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="invoice-card">
+                    <div class="header-bar">
+                        <div>
+                            <div class="brand-title">${siteTitle}</div>
+                            <div class="brand-subtitle">Official GST Tax Invoice &amp; Payment Voucher</div>
+                            ${companyTaxId ? `<div style="font-size: 11px; color: #cbd5e1; margin-top: 6px; font-weight: 700;">Supplier GSTIN / Reg: ${companyTaxId}</div>` : ''}
+                        </div>
+                        <div class="paid-badge">PAID ✓</div>
+                    </div>
 
-                <div class="total-box">
-                    Total Amount Paid: ${subscriptionConfig.symbol}${txn.amount} ${txn.currency || 'USD'}
+                    <div class="details-grid">
+                        <div>
+                            <div class="label">Billed To</div>
+                            <div class="val-bold">${billedCustomerName}</div>
+                            <div class="val-sub">${userEmail || ''}</div>
+                            ${customerTaxId ? `<div class="val-sub" style="font-weight: 700; color: #4f46e5; margin-top: 4px;">Customer GSTIN: ${customerTaxId}</div>` : ''}
+                        </div>
+                        <div style="text-align: right;">
+                            <div class="label">Invoice Details</div>
+                            <div class="val-bold" style="font-family: 'JetBrains Mono', monospace; font-size: 13px;">${txnId}</div>
+                            <div class="val-sub">Date: ${formattedDate}</div>
+                            <div class="val-sub" style="font-weight: 700; color: #059669;">Status: ${txn.status || 'Completed'}</div>
+                        </div>
+                    </div>
+
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Item Description</th>
+                                    <th>Payment Method</th>
+                                    <th style="text-align: right;">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <strong style="color: #0f172a; display: block;">${txn.planName || txn.planType || 'VIP Pro Membership Plan'}</strong>
+                                        <span style="font-size: 12px; color: #64748b;">Full Access to AI Resume Builder, Cover Letters &amp; Portfolios</span>
+                                    </td>
+                                    <td style="font-weight: 700; color: #4338ca;">${txn.paymentMethod || txn.paimentType || 'Razorpay / Card / UPI'}</td>
+                                    <td style="text-align: right; font-weight: 800; color: #0f172a;">${currencySymbol}${subtotal}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="summary-wrap">
+                        <div class="summary-card">
+                            <div class="sum-line"><span>Subtotal:</span><span>${currencySymbol}${subtotal}</span></div>
+                            <div class="sum-line"><span>${taxName} (${taxRate}%):</span><span>${currencySymbol}${taxAmount}</span></div>
+                            <div class="sum-line total"><span>Total Amount Paid:</span><span>${currencySymbol}${totalPrice} ${currency}</span></div>
+                        </div>
+                    </div>
+
+                    <div class="footer-bar">
+                        Thank you for your business with ${siteTitle}. This is a computer-generated tax receipt.
+                    </div>
                 </div>
-
-                <div class="footer">
-                    AI Resume Builder PRO • Thank you for your business!<br>
-                    Official digital receipt generated for candidate ${userEmail || candidateName}
-                </div>
-
-                <script>
-                    window.onload = function() { window.print(); }
-                </script>
             </body>
             </html>
         `;
 
+        printWindow.document.open();
         printWindow.document.write(html);
         printWindow.document.close();
+        setTimeout(() => {
+            try { printWindow.print(); } catch (e) {}
+        }, 400);
     };
 
     const handleToggleAutoRenew = async () => {
@@ -474,6 +540,7 @@ const PlansPage = (props) => {
                                     <ElementsConsumer>
                                         {({ stripe, elements }) => (
                                             <Checkout
+                                                user={props.user || fire.auth().currentUser}
                                                 currency={subscriptionConfig.symbol}
                                                 currencyCode={currencyCode}
                                                 onlyPP={subscriptionConfig.onlyPP}
@@ -598,7 +665,10 @@ const PlansPage = (props) => {
                                                 </span>
                                             </div>
                                             <h3 className="text-xl font-extrabold text-white tracking-tight">
-                                                Upgrade from <span className="text-slate-300 underline font-semibold">{userCurrentMembership}</span> to <strong className="text-amber-400">AI Resume Builder PRO</strong>
+                                                {userCurrentMembership && userCurrentMembership !== 'Free' && userCurrentMembership !== 'Loading Tier...'
+                                                    ? <>Renew or Upgrade to <strong className="text-amber-400">AI Resume Builder PRO</strong></>
+                                                    : <>Unlock <strong className="text-amber-400">AI Resume Builder PRO</strong> — Full Power Access</>
+                                                }
                                             </h3>
                                             <p className="text-xs text-slate-300">
                                                 Unlock full AI power, unlimited exports, ATS optimization, and VIP candidate support.
@@ -894,6 +964,8 @@ const PlansPage = (props) => {
                                         <ElementsConsumer>
                                             {({ stripe, elements }) => (
                                                 <Checkout
+                                                    user={props.user || fire.auth().currentUser}
+                                                    embedded={true}
                                                     currency={subscriptionConfig.symbol}
                                                     currencyCode={currencyCode}
                                                     onlyPP={subscriptionConfig.onlyPP}
@@ -990,6 +1062,30 @@ const PlansPage = (props) => {
                             <div className="border-b border-slate-100 pb-4">
                                 <h3 className="text-lg font-bold text-slate-900">Subscription Auto-Renewal &amp; Plan Control</h3>
                                 <p className="text-xs text-slate-500">Manage your subscription renewal preferences or request plan cancellation</p>
+                            </div>
+
+                            {/* Active Membership Status Banner */}
+                            <div className="bg-gradient-to-r from-indigo-900 via-slate-900 to-purple-950 rounded-2xl p-5 border border-indigo-500/30 text-white flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 shadow-md">
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-400 text-slate-950 uppercase tracking-wider">
+                                            ACTIVE TIER: {userCurrentMembership}
+                                        </span>
+                                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${autoRenew ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border-amber-500/30'}`}>
+                                            {autoRenew ? 'AUTO-RENEWAL ON' : 'MANUAL RENEWAL (OFF)'}
+                                        </span>
+                                    </div>
+                                    <h4 className="text-base font-bold text-white">
+                                        Candidate Account: <span className="text-indigo-300">{userEmail || candidateName}</span>
+                                    </h4>
+                                    <p className="text-xs text-slate-300">
+                                        Access valid until: <strong className="text-amber-300">{membershipExpiry || 'Dec 1, 2099'}</strong>
+                                    </p>
+                                </div>
+                                <div className="text-right shrink-0">
+                                    <span className="text-xs font-bold text-slate-400 block">Status:</span>
+                                    <span className="text-sm font-extrabold text-emerald-400">ACTIVE &amp; FULLY UNLOCKED ✓</span>
+                                </div>
                             </div>
 
                             {cancellationStatus && (

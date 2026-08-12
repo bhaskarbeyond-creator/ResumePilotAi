@@ -226,6 +226,46 @@ const PaymentSettings = () => {
                 </div>
             </div>
 
+            {/* PayPal Settings */}
+            <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                <h3 className="text-base font-semibold text-slate-800 flex items-center gap-2 mb-1">
+                    <FaPaypal className="text-blue-600 text-xl" /> PayPal Express Configuration
+                </h3>
+                <p className="text-xs text-slate-500 mb-4">
+                    Configure your PayPal API Client ID and environment for 1-click global checkout.
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                            PayPal Client ID
+                        </label>
+                        <input
+                            type="text"
+                            name="paypalClientId"
+                            value={paymentsConfig.paypalClientId}
+                            onChange={handleChange}
+                            placeholder="Client ID (or 'sb' for sandbox)"
+                            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                            PayPal Environment Mode
+                        </label>
+                        <select
+                            name="paypalMode"
+                            value={paymentsConfig.paypalMode}
+                            onChange={handleChange}
+                            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none font-semibold text-slate-900"
+                        >
+                            <option value="sandbox">Sandbox (Testing Mode)</option>
+                            <option value="live">Live (Production Environment)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
             {/* Currency */}
             <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
                 <div className="w-full md:w-1/2">
