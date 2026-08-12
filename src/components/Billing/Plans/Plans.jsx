@@ -339,7 +339,7 @@ const PlansPage = (props) => {
         setCouponError('');
     };
 
-    // ── 10/10 Indian GST Tax Invoice & Payment Receipt Generator ────────────────
+    // ── 10/10 Factual Indian GST Tax Invoice & Payment Receipt Generator ────────────────
     const handleDownloadInvoice = (txn) => {
         const printWindow = window.open('', '_blank');
         if (!printWindow) {
@@ -347,25 +347,26 @@ const PlansPage = (props) => {
             return;
         }
 
-        // Supplier Snapshot
-        const supplierLegalName = subscriptionConfig.supplierLegalName || 'ResumePilot Technologies Private Limited';
-        const supplierTradeName = (subscriptionConfig.supplierTradeName || conf.brand?.name || 'RESUMEPILOT AI').toUpperCase();
-        const supplierGstin = subscriptionConfig.supplierGstin || subscriptionConfig.companyTaxId || conf.companyTaxId || '27AABCU9603R1ZM';
-        const supplierPan = subscriptionConfig.supplierPan || 'AABCU9603R';
-        const supplierAddress = subscriptionConfig.supplierAddress || 'Unit 402, Apex Business Park, BKC, Bandra East';
-        const supplierCity = subscriptionConfig.supplierCity || 'Mumbai';
+        // Factual Supplier Snapshot (Zero Hallucinated Placeholders)
+        const supplierTradeName = (subscriptionConfig.supplierTradeName || conf.brand?.name || 'ResumePilot AI').toUpperCase();
+        const supplierLegalName = subscriptionConfig.supplierLegalName || conf.brand?.name || 'ResumePilot AI';
+        const supplierGstin = (subscriptionConfig.supplierGstin || subscriptionConfig.companyTaxId || conf.companyTaxId || '').trim();
+        const supplierPan = (subscriptionConfig.supplierPan || (supplierGstin.length === 15 ? supplierGstin.substring(2, 12) : '')).trim();
+        const supplierAddress = (subscriptionConfig.supplierAddress || '').trim();
+        const supplierCity = (subscriptionConfig.supplierCity || '').trim();
         const supplierState = subscriptionConfig.supplierState || 'Maharashtra';
         const supplierStateCode = String(subscriptionConfig.supplierStateCode || '27').padStart(2, '0');
+        const supplierPincode = (subscriptionConfig.supplierPincode || '').trim();
         const supplierSacCode = subscriptionConfig.sacCode || '998313';
-        const supplierEmail = 'billing@projectdemo.guru';
-        const supplierPhone = '+91 98765 43210';
-        const supplierWebsite = 'https://airesume.projectdemo.guru';
+        const supplierEmail = (subscriptionConfig.supplierEmail || conf.adminEmail || 'support@' + (typeof window !== 'undefined' ? window.location.hostname : 'airesume.projectdemo.guru')).trim();
+        const supplierPhone = (subscriptionConfig.supplierPhone || '').trim();
+        const supplierWebsite = typeof window !== 'undefined' ? window.location.origin : 'https://airesume.projectdemo.guru';
         const invoicePrefix = subscriptionConfig.invoicePrefix || 'RPAI';
         const financialYear = subscriptionConfig.financialYear || '26-27';
 
-        // Customer Snapshot & B2B / B2C Detection
+        // Customer Snapshot & Dynamic B2B / B2C Detection
         const rawName = candidateName || txn.customerName || (props.user ? props.user.displayName : '');
-        let billedCustomerName = 'Valued Candidate';
+        let billedCustomerName = 'Valued Customer';
         if (rawName && typeof rawName === 'string' && !rawName.toLowerCase().includes('welcome')) {
             billedCustomerName = rawName.trim();
         } else if (userEmail) {
@@ -375,9 +376,9 @@ const PlansPage = (props) => {
 
         const customerEmail = txn.customerEmail || userEmail || '';
         const customerGstin = (txn.customerGstin || txn.customerTaxId || '').trim();
-        const customerCompany = txn.customerCompany || '';
-        const customerAddress = txn.customerAddress || 'Bandra West';
-        const customerCity = txn.customerCity || 'Mumbai';
+        const customerCompany = (txn.customerCompany || '').trim();
+        const customerAddress = (txn.customerAddress || '').trim();
+        const customerCity = (txn.customerCity || '').trim();
         const customerState = txn.customerState || 'Maharashtra';
         const customerStateCode = String(txn.customerStateCode || (customerState.toLowerCase().includes('delhi') ? '07' : (customerState.toLowerCase().includes('karnataka') ? '29' : '27'))).padStart(2, '0');
         const customerCountry = txn.customerCountry || 'India';
@@ -394,7 +395,7 @@ const PlansPage = (props) => {
         const formattedDate = txn.created_at?.toDate
             ? txn.created_at.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
             : (txn.createdDateString || txn.date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }));
-        const paymentMethod = txn.paymentMethod || txn.paimentType || 'Razorpay UPI / Net Banking';
+        const paymentMethod = txn.paymentMethod || txn.paimentType || 'Razorpay / Digital Payment';
 
         // Tax Math & Intra/Inter State Breakdown
         const totalPrice = parseFloat(txn.amount !== undefined ? txn.amount : (txn.price || '499')) || 499;
@@ -461,50 +462,93 @@ const PlansPage = (props) => {
 
         const planTitle = txn.planName || txn.planType || 'Annual Resume Builder AI Subscription – 12 Months';
 
+        // Single Page A4 Styles Budget
         const templateStyles = `
-            @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;800&display=swap');
+            @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;700&display=swap');
             * { box-sizing: border-box; margin: 0; padding: 0; }
-            body { font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; background: #f1f5f9; color: #0f172a; line-height: 1.5; padding: 24px; }
-            .invoice-card { max-width: 860px; margin: 0 auto; background: #ffffff; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(15,23,42,0.12); border: 1px solid #cbd5e1; overflow: hidden; }
-            .header-bar { background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); color: #ffffff; padding: 32px 40px; display: flex; justify-content: space-between; align-items: flex-start; position: relative; }
+            html, body { height: 100%; font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; background: #f1f5f9; color: #0f172a; line-height: 1.4; }
+            body { padding: 20px 10px; display: flex; flex-direction: column; align-items: center; }
+            
+            .invoice-card { 
+                width: 210mm; 
+                max-width: 840px; 
+                min-height: 285mm;
+                background: #ffffff; 
+                border-radius: 16px; 
+                box-shadow: 0 20px 40px -12px rgba(15,23,42,0.12); 
+                border: 1px solid #cbd5e1; 
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                overflow: hidden; 
+            }
+            .invoice-content { padding: 0; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+            
+            .header-bar { background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); color: #ffffff; padding: 24px 32px; display: flex; justify-content: space-between; align-items: center; position: relative; }
             .header-bar::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #4f46e5, #ec4899, #8b5cf6); }
-            .brand-title { font-size: 26px; font-weight: 900; letter-spacing: -0.5px; color: #ffffff; text-transform: uppercase; }
-            .brand-subtitle { font-size: 13px; color: #a5b4fc; font-weight: 700; margin-top: 4px; letter-spacing: 0.5px; text-transform: uppercase; }
-            .copy-tag { background: #312e81; border: 1px solid #4338ca; color: #c7d2fe; font-size: 10px; font-weight: 800; padding: 4px 12px; border-radius: 6px; text-transform: uppercase; letter-spacing: 1px; margin-top: 10px; display: inline-block; }
-            .paid-badge { background: rgba(16,185,129,0.15); border: 1.5px solid #10b981; color: #34d399; font-size: 13px; font-weight: 800; padding: 6px 20px; border-radius: 99px; text-transform: uppercase; letter-spacing: 1px; }
+            .brand-title { font-size: 22px; font-weight: 900; letter-spacing: -0.5px; color: #ffffff; text-transform: uppercase; }
+            .brand-subtitle { font-size: 11px; color: #a5b4fc; font-weight: 700; margin-top: 2px; letter-spacing: 0.5px; text-transform: uppercase; }
+            .copy-tag { background: #312e81; border: 1px solid #4338ca; color: #c7d2fe; font-size: 9px; font-weight: 800; padding: 3px 10px; border-radius: 4px; text-transform: uppercase; letter-spacing: 1px; margin-top: 6px; display: inline-block; }
+            .paid-badge { background: rgba(16,185,129,0.15); border: 1.5px solid #10b981; color: #34d399; font-size: 12px; font-weight: 800; padding: 5px 16px; border-radius: 99px; text-transform: uppercase; letter-spacing: 1px; }
             
-            .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding: 28px 40px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
-            .meta-box { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 18px 22px; }
-            .label { font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
-            .val-bold { font-size: 15px; font-weight: 800; color: #0f172a; }
-            .val-sub { font-size: 12px; color: #475569; font-weight: 600; margin-top: 3px; line-height: 1.4; }
-            .val-code { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: #4f46e5; }
-            
-            .compliance-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 16px 40px; background: #eef2ff; border-bottom: 1px solid #e0e7ff; text-align: center; }
-            .comp-item .c-label { font-size: 9px; font-weight: 800; color: #4338ca; text-transform: uppercase; tracking: 0.5px; }
-            .comp-item .c-val { font-size: 12px; font-weight: 800; color: #1e1b4b; margin-top: 2px; }
+            .compliance-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 12px 32px; background: #eef2ff; border-bottom: 1px solid #e0e7ff; text-align: center; }
+            .comp-item .c-label { font-size: 8px; font-weight: 800; color: #4338ca; text-transform: uppercase; letter-spacing: 0.5px; }
+            .comp-item .c-val { font-size: 11px; font-weight: 800; color: #1e1b4b; margin-top: 1px; }
 
-            .table-wrap { padding: 28px 40px 16px; }
+            .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px 32px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+            .meta-box { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 18px; }
+            .label { font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+            .val-bold { font-size: 14px; font-weight: 800; color: #0f172a; }
+            .val-sub { font-size: 11px; color: #475569; font-weight: 600; margin-top: 2px; line-height: 1.35; }
+            .val-code { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: #4f46e5; }
+            
+            .table-wrap { padding: 20px 32px 12px; }
             table { width: 100%; border-collapse: separate; border-spacing: 0; }
-            th { text-align: left; padding: 12px 14px; background: #0f172a; color: #f8fafc; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
-            th:first-child { border-top-left-radius: 10px; border-bottom-left-radius: 10px; }
-            th:last-child { border-top-right-radius: 10px; border-bottom-right-radius: 10px; text-align: right; }
-            td { padding: 16px 14px; border-bottom: 1px solid #f1f5f9; font-size: 13px; font-weight: 600; color: #1e293b; }
+            th { text-align: left; padding: 10px 12px; background: #0f172a; color: #f8fafc; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+            th:first-child { border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
+            th:last-child { border-top-right-radius: 8px; border-bottom-right-radius: 8px; text-align: right; }
+            td { padding: 12px 12px; border-bottom: 1px solid #f1f5f9; font-size: 12px; font-weight: 600; color: #1e293b; }
             td:last-child { text-align: right; }
 
-            .summary-section { display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; padding: 0 40px 28px; }
-            .words-box { background: #f8fafc; border: 1px border-dashed #cbd5e1; border-radius: 14px; padding: 18px 20px; display: flex; flex-direction: column; justify-content: space-between; }
-            .summary-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 18px 20px; }
-            .sum-line { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 8px; }
-            .sum-line.total { border-top: 2px solid #0f172a; padding-top: 10px; margin-top: 10px; font-size: 16px; font-weight: 900; color: #0f172a; }
+            .summary-section { display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px; padding: 0 32px 20px; }
+            .words-box { background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; justify-content: space-between; }
+            .summary-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; }
+            .sum-line { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 6px; }
+            .sum-line.total { border-top: 2px solid #0f172a; padding-top: 8px; margin-top: 8px; font-size: 15px; font-weight: 900; color: #0f172a; }
 
-            .audit-box { margin: 0 40px 28px; padding: 16px 20px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 14px; display: flex; justify-content: space-between; align-items: center; }
-            .footer-bar { padding: 20px 40px; background: #fafafa; border-top: 1px solid #f1f5f9; text-align: center; font-size: 11px; color: #64748b; font-weight: 600; }
+            .audit-box { margin: 0 32px 20px; padding: 12px 16px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
+            .footer-bar { padding: 16px 32px; background: #fafafa; border-top: 1px solid #f1f5f9; text-align: center; font-size: 10px; color: #64748b; font-weight: 600; }
             
+            @page {
+                size: A4 portrait;
+                margin: 0;
+            }
             @media print {
                 .no-print { display: none !important; }
-                body { background: #fff !important; padding: 0 !important; }
-                .invoice-card { border: none !important; box-shadow: none !important; max-width: 100% !important; border-radius: 0 !important; }
+                html, body { 
+                    width: 210mm !important; 
+                    height: 297mm !important; 
+                    margin: 0 !important; 
+                    padding: 0 !important; 
+                    background: #ffffff !important; 
+                    overflow: hidden !important; 
+                    -webkit-print-color-adjust: exact !important; 
+                    print-color-adjust: exact !important; 
+                }
+                .invoice-card { 
+                    width: 210mm !important; 
+                    max-width: 210mm !important; 
+                    height: 297mm !important; 
+                    max-height: 297mm !important; 
+                    margin: 0 !important; 
+                    border: none !important; 
+                    box-shadow: none !important; 
+                    border-radius: 0 !important; 
+                    padding: 0 !important; 
+                    page-break-inside: avoid !important;
+                    page-break-after: avoid !important;
+                    overflow: hidden !important;
+                }
             }
         `;
 
@@ -516,167 +560,172 @@ const PlansPage = (props) => {
                 <style>${templateStyles}</style>
             </head>
             <body>
-                <div class="no-print" style="position: sticky; top: 0; z-index: 100; background: #0f172a; color: #fff; padding: 14px 28px; display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #4f46e5; box-shadow: 0 10px 25px rgba(0,0,0,0.2); margin-bottom: 24px; border-radius: 16px;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #4f46e5, #7c3aed); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 16px; color: #fff;">📄</div>
+                <div class="no-print" style="position: sticky; top: 0; z-index: 100; background: #0f172a; color: #fff; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #4f46e5; box-shadow: 0 10px 25px rgba(0,0,0,0.2); margin-bottom: 20px; border-radius: 14px; width: 100%; max-width: 840px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #4f46e5, #7c3aed); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 14px; color: #fff;">📄</div>
                         <div>
-                            <strong style="font-size: 15px; display: block; font-weight: 800;">${invoiceTitle}</strong>
-                            <span style="font-size: 11px; color: #94a3b8; font-family: 'JetBrains Mono', monospace;">INVOICE NO: ${invoiceNo}</span>
+                            <strong style="font-size: 14px; display: block; font-weight: 800;">${invoiceTitle}</strong>
+                            <span style="font-size: 10px; color: #94a3b8; font-family: 'JetBrains Mono', monospace;">INVOICE NO: ${invoiceNo}</span>
                         </div>
                     </div>
-                    <div style="display: flex; gap: 12px;">
-                        <button onclick="window.print()" style="background: linear-gradient(135deg, #4f46e5, #6366f1); color: #fff; border: none; padding: 10px 22px; border-radius: 10px; font-weight: 800; cursor: pointer; font-size: 13px; box-shadow: 0 4px 14px rgba(79,70,229,0.4); display: flex; align-items: center; gap: 6px;">
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="window.print()" style="background: linear-gradient(135deg, #4f46e5, #6366f1); color: #fff; border: none; padding: 8px 18px; border-radius: 8px; font-weight: 800; cursor: pointer; font-size: 12px; box-shadow: 0 4px 14px rgba(79,70,229,0.4); display: flex; align-items: center; gap: 6px;">
                             <span>🖨️</span> Save as PDF / Print
                         </button>
-                        <button onclick="window.close()" style="background: #334155; color: #f8fafc; border: none; padding: 10px 18px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 13px;">Close</button>
+                        <button onclick="window.close()" style="background: #334155; color: #f8fafc; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 12px;">Close</button>
                     </div>
                 </div>
 
                 <div class="invoice-card">
-                    <!-- Header -->
-                    <div class="header-bar">
-                        <div>
-                            <div class="brand-title">${supplierTradeName}</div>
-                            <div class="brand-subtitle">${invoiceTitle}</div>
-                            <div class="copy-tag">Original for Recipient</div>
-                        </div>
-                        <div style="text-align: right;">
-                            <div class="paid-badge">PAID ✓</div>
-                            <div style="font-size: 11px; color: #cbd5e1; font-weight: 700; margin-top: 8px;">Date: ${formattedDate}</div>
-                        </div>
-                    </div>
-
-                    <!-- Compliance Bar -->
-                    <div class="compliance-bar">
-                        <div class="comp-item">
-                            <div class="c-label">Invoice Number</div>
-                            <div class="c-val" style="font-family: 'JetBrains Mono', monospace;">${invoiceNo}</div>
-                        </div>
-                        <div class="comp-item">
-                            <div class="c-label">Place of Supply</div>
-                            <div class="c-val">${customerState} (${customerStateCode})</div>
-                        </div>
-                        <div class="comp-item">
-                            <div class="c-label">Reverse Charge</div>
-                            <div class="c-val">No</div>
-                        </div>
-                        <div class="comp-item">
-                            <div class="c-label">Customer Type</div>
-                            <div class="c-val">${customerType}</div>
-                        </div>
-                    </div>
-
-                    <!-- Meta Grid: Supplier vs Customer -->
-                    <div class="meta-grid">
-                        <div class="meta-box">
-                            <div class="label">Supplier / Business Details</div>
-                            <div class="val-bold">${supplierLegalName}</div>
-                            <div class="val-sub">${supplierAddress}, ${supplierCity}, ${supplierState} - ${subscriptionConfig.supplierPincode || '400051'}</div>
-                            <div class="val-sub"><strong style="color:#0f172a">GSTIN:</strong> <span class="val-code">${supplierGstin}</span></div>
-                            <div class="val-sub"><strong style="color:#0f172a">PAN:</strong> ${supplierPan} | <strong style="color:#0f172a">SAC:</strong> ${supplierSacCode}</div>
-                            <div class="val-sub">${supplierEmail} | ${supplierWebsite}</div>
-                        </div>
-
-                        <div class="meta-box">
-                            <div class="label">Billed To (Customer)</div>
-                            <div class="val-bold">${billedCustomerName}</div>
-                            ${customerCompany ? `<div class="val-sub" style="font-weight:700; color:#4f46e5;">${customerCompany}</div>` : ''}
-                            <div class="val-sub">${customerAddress}, ${customerCity}, ${customerState} (${customerStateCode}), ${customerCountry}</div>
-                            <div class="val-sub"><strong style="color:#0f172a">Email:</strong> ${customerEmail}</div>
-                            ${customerGstin ? `<div class="val-sub" style="margin-top:6px; background:#eef2ff; padding:4px 8px; border-radius:6px;"><strong style="color:#4338ca">Customer GSTIN:</strong> <span class="val-code">${customerGstin}</span></div>` : ''}
-                        </div>
-                    </div>
-
-                    <!-- Line Item Table -->
-                    <div class="table-wrap">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Item Description</th>
-                                    <th>HSN/SAC</th>
-                                    <th>Qty</th>
-                                    <th style="text-align: right;">Taxable Value</th>
-                                    ${isIntraState ? `
-                                        <th style="text-align: right;">CGST (${cgstRate}%)</th>
-                                        <th style="text-align: right;">SGST (${sgstRate}%)</th>
-                                    ` : `
-                                        <th style="text-align: right;">IGST (${igstRate}%)</th>
-                                    `}
-                                    <th style="text-align: right;">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>
-                                        <strong style="color: #0f172a; display: block; font-size: 14px;">${planTitle}</strong>
-                                        <span style="font-size: 12px; color: #64748b;">Full Access to AI Resume Builder, Cover Letters, Portfolios &amp; Interview Coach</span>
-                                    </td>
-                                    <td style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">${supplierSacCode}</td>
-                                    <td>1</td>
-                                    <td style="text-align: right; font-weight: 700;">${currencySymbol}${taxableAmount.toFixed(2)}</td>
-                                    ${isIntraState ? `
-                                        <td style="text-align: right; font-weight: 600; color: #475569;">${currencySymbol}${cgstAmount.toFixed(2)}</td>
-                                        <td style="text-align: right; font-weight: 600; color: #475569;">${currencySymbol}${sgstAmount.toFixed(2)}</td>
-                                    ` : `
-                                        <td style="text-align: right; font-weight: 600; color: #475569;">${currencySymbol}${igstAmount.toFixed(2)}</td>
-                                    `}
-                                    <td style="text-align: right; font-weight: 800; color: #0f172a;">${currencySymbol}${totalPrice.toFixed(2)}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Summary & Amount in Words Section -->
-                    <div class="summary-section">
-                        <div class="words-box">
+                    <div class="invoice-content">
+                        <!-- Header -->
+                        <div class="header-bar">
                             <div>
-                                <div class="label">Amount in Words</div>
-                                <div style="font-size: 13px; font-weight: 800; color: #1e1b4b; line-height: 1.4; margin-top: 4px;">
-                                    ${amountInWords}
+                                <div class="brand-title">${supplierTradeName}</div>
+                                <div class="brand-subtitle">${invoiceTitle}</div>
+                                <div class="copy-tag">Original for Recipient</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div class="paid-badge">PAID ✓</div>
+                                <div style="font-size: 11px; color: #cbd5e1; font-weight: 700; margin-top: 6px;">Date: ${formattedDate}</div>
+                            </div>
+                        </div>
+
+                        <!-- Compliance Bar -->
+                        <div class="compliance-bar">
+                            <div class="comp-item">
+                                <div class="c-label">Invoice Number</div>
+                                <div class="c-val" style="font-family: 'JetBrains Mono', monospace;">${invoiceNo}</div>
+                            </div>
+                            <div class="comp-item">
+                                <div class="c-label">Place of Supply</div>
+                                <div class="c-val">${customerState} (${customerStateCode})</div>
+                            </div>
+                            <div class="comp-item">
+                                <div class="c-label">Reverse Charge</div>
+                                <div class="c-val">No</div>
+                            </div>
+                            <div class="comp-item">
+                                <div class="c-label">Customer Type</div>
+                                <div class="c-val">${customerType}</div>
+                            </div>
+                        </div>
+
+                        <!-- Meta Grid: Supplier vs Customer -->
+                        <div class="meta-grid">
+                            <div class="meta-box">
+                                <div class="label">Supplier / Business Details</div>
+                                <div class="val-bold">${supplierLegalName}</div>
+                                ${(supplierAddress || supplierCity) ? `<div class="val-sub">${[supplierAddress, supplierCity, supplierState, supplierPincode].filter(Boolean).join(', ')}</div>` : `<div class="val-sub">${supplierState} (${supplierStateCode})</div>`}
+                                ${supplierGstin ? `<div class="val-sub"><strong style="color:#0f172a">GSTIN:</strong> <span class="val-code">${supplierGstin}</span></div>` : ''}
+                                <div class="val-sub">
+                                    ${supplierPan ? `<strong style="color:#0f172a">PAN:</strong> ${supplierPan} | ` : ''}
+                                    <strong style="color:#0f172a">SAC:</strong> ${supplierSacCode}
+                                </div>
+                                <div class="val-sub">${supplierEmail}${supplierPhone ? ` | ${supplierPhone}` : ''}</div>
+                            </div>
+
+                            <div class="meta-box">
+                                <div class="label">Billed To (Customer)</div>
+                                <div class="val-bold">${billedCustomerName}</div>
+                                ${customerCompany ? `<div class="val-sub" style="font-weight:700; color:#4f46e5;">${customerCompany}</div>` : ''}
+                                ${(customerAddress || customerCity) ? `<div class="val-sub">${[customerAddress, customerCity, customerState, customerCountry].filter(Boolean).join(', ')}</div>` : `<div class="val-sub">${customerState} (${customerStateCode}), ${customerCountry}</div>`}
+                                ${customerEmail ? `<div class="val-sub"><strong style="color:#0f172a">Email:</strong> ${customerEmail}</div>` : ''}
+                                ${customerGstin ? `<div class="val-sub" style="margin-top:4px; background:#eef2ff; padding:3px 6px; border-radius:4px;"><strong style="color:#4338ca">Customer GSTIN:</strong> <span class="val-code">${customerGstin}</span></div>` : ''}
+                            </div>
+                        </div>
+
+                        <!-- Line Item Table -->
+                        <div class="table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Item Description</th>
+                                        <th>HSN/SAC</th>
+                                        <th>Qty</th>
+                                        <th style="text-align: right;">Taxable Value</th>
+                                        ${isIntraState ? `
+                                            <th style="text-align: right;">CGST (${cgstRate}%)</th>
+                                            <th style="text-align: right;">SGST (${sgstRate}%)</th>
+                                        ` : `
+                                            <th style="text-align: right;">IGST (${igstRate}%)</th>
+                                        `}
+                                        <th style="text-align: right;">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <strong style="color: #0f172a; display: block; font-size: 13px;">${planTitle}</strong>
+                                            <span style="font-size: 11px; color: #64748b;">Full Access to AI Resume Builder, Cover Letters &amp; Portfolios</span>
+                                        </td>
+                                        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">${supplierSacCode}</td>
+                                        <td>1</td>
+                                        <td style="text-align: right; font-weight: 700;">${currencySymbol}${taxableAmount.toFixed(2)}</td>
+                                        ${isIntraState ? `
+                                            <td style="text-align: right; font-weight: 600; color: #475569;">${currencySymbol}${cgstAmount.toFixed(2)}</td>
+                                            <td style="text-align: right; font-weight: 600; color: #475569;">${currencySymbol}${sgstAmount.toFixed(2)}</td>
+                                        ` : `
+                                            <td style="text-align: right; font-weight: 600; color: #475569;">${currencySymbol}${igstAmount.toFixed(2)}</td>
+                                        `}
+                                        <td style="text-align: right; font-weight: 800; color: #0f172a;">${currencySymbol}${totalPrice.toFixed(2)}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Summary & Amount in Words Section -->
+                        <div class="summary-section">
+                            <div class="words-box">
+                                <div>
+                                    <div class="label">Amount in Words</div>
+                                    <div style="font-size: 12px; font-weight: 800; color: #1e1b4b; line-height: 1.35; margin-top: 3px;">
+                                        ${amountInWords}
+                                    </div>
+                                </div>
+                                <div style="font-size: 10px; color: #64748b; margin-top: 8px;">
+                                    GST Tax Calculation: <strong>${gstRate}% (${isIntraState ? 'CGST 9% + SGST 9%' : 'IGST 18%'})</strong>
                                 </div>
                             </div>
-                            <div style="font-size: 11px; color: #64748b; margin-top: 12px;">
-                                GST Tax Rate: <strong>${gstRate}% (${isIntraState ? 'CGST 9% + SGST 9%' : 'IGST 18%'})</strong>
+
+                            <div class="summary-card">
+                                <div class="sum-line"><span>Taxable Value:</span><span>${currencySymbol}${taxableAmount.toFixed(2)}</span></div>
+                                ${isIntraState ? `
+                                    <div class="sum-line"><span>CGST (${cgstRate}%):</span><span>${currencySymbol}${cgstAmount.toFixed(2)}</span></div>
+                                    <div class="sum-line"><span>SGST (${sgstRate}%):</span><span>${currencySymbol}${sgstAmount.toFixed(2)}</span></div>
+                                ` : `
+                                    <div class="sum-line"><span>IGST (${igstRate}%):</span><span>${currencySymbol}${igstAmount.toFixed(2)}</span></div>
+                                `}
+                                <div class="sum-line" style="border-top: 1px dashed #cbd5e1; padding-top: 4px; margin-top: 4px;">
+                                    <span>Total GST Tax:</span><span style="font-weight: 800; color: #4f46e5;">${currencySymbol}${totalTax.toFixed(2)}</span>
+                                </div>
+                                <div class="sum-line total">
+                                    <span>Grand Total:</span><span>${currencySymbol}${totalPrice.toFixed(2)} ${currency}</span>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="summary-card">
-                            <div class="sum-line"><span>Taxable Value:</span><span>${currencySymbol}${taxableAmount.toFixed(2)}</span></div>
-                            ${isIntraState ? `
-                                <div class="sum-line"><span>CGST (${cgstRate}%):</span><span>${currencySymbol}${cgstAmount.toFixed(2)}</span></div>
-                                <div class="sum-line"><span>SGST (${sgstRate}%):</span><span>${currencySymbol}${sgstAmount.toFixed(2)}</span></div>
-                            ` : `
-                                <div class="sum-line"><span>IGST (${igstRate}%):</span><span>${currencySymbol}${igstAmount.toFixed(2)}</span></div>
-                            `}
-                            <div class="sum-line" style="border-top: 1px dashed #cbd5e1; padding-top: 6px; margin-top: 6px;">
-                                <span>Total GST Tax:</span><span style="font-weight: 800; color: #4f46e5;">${currencySymbol}${totalTax.toFixed(2)}</span>
+                        <!-- Payment Gateway Audit Record -->
+                        <div class="audit-box">
+                            <div>
+                                <div style="font-size: 9px; font-weight: 800; color: #166534; uppercase; letter-spacing: 0.5px;">Payment Verification Audit</div>
+                                <div style="font-size: 12px; font-weight: 800; color: #14532d; margin-top: 1px;">
+                                    Method: <strong>${paymentMethod}</strong> | Status: <span style="color: #059669;">PAID ✓</span>
+                                </div>
+                                <div style="font-size: 10px; color: #15803d; font-family: 'JetBrains Mono', monospace; margin-top: 1px;">
+                                    Payment Ref / ID: ${txnId}
+                                </div>
                             </div>
-                            <div class="sum-line total">
-                                <span>Grand Total:</span><span>${currencySymbol}${totalPrice.toFixed(2)} ${currency}</span>
+                            <div style="text-align: right;">
+                                <div style="font-size: 10px; font-weight: 700; color: #166534;">Computer Generated Receipt</div>
+                                <div style="font-size: 9px; color: #15803d;">No signature required under IT Act 2000</div>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- Payment Gateway Audit Record -->
-                    <div class="audit-box">
-                        <div>
-                            <div style="font-size: 10px; font-weight: 800; color: #166534; uppercase; letter-spacing: 0.5px;">Payment Verification Audit</div>
-                            <div style="font-size: 13px; font-weight: 800; color: #14532d; margin-top: 2px;">
-                                Method: <strong>${paymentMethod}</strong> | Status: <span style="color: #059669;">PAID ✓</span>
-                            </div>
-                            <div style="font-size: 11px; color: #15803d; font-family: 'JetBrains Mono', monospace; margin-top: 2px;">
-                                Gateway Ref / Payment ID: ${txnId}
-                            </div>
-                        </div>
-                        <div style="text-align: right;">
-                            <div style="font-size: 11px; font-weight: 700; color: #166534;">Computer Generated Receipt</div>
-                            <div style="font-size: 10px; color: #15803d;">No signature required under IT Act 2000</div>
                         </div>
                     </div>
 
                     <!-- Footer -->
                     <div class="footer-bar">
-                        Thank you for subscribing to ${supplierTradeName}. Registered Entity: ${supplierLegalName} (GSTIN: ${supplierGstin}). For billing support, write to ${supplierEmail}.
+                        Thank you for your business with ${supplierTradeName}${supplierGstin ? ` (GSTIN: ${supplierGstin})` : ''}. Support: ${supplierEmail}.
                     </div>
                 </div>
             </body>

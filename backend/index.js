@@ -698,22 +698,22 @@ function numberToWordsINR(amount, currency = 'INR') {
 
 async function getSupplierSnapshot() {
     let defaults = {
-        legalName: 'ResumePilot Technologies Private Limited',
+        legalName: 'ResumePilot AI',
         tradeName: 'ResumePilot AI',
-        gstin: '27AABCU9603R1ZM',
-        pan: 'AABCU9603R',
-        address: 'Unit 402, Apex Business Park, Bandra Kurla Complex, Bandra East',
-        city: 'Mumbai',
+        gstin: '',
+        pan: '',
+        address: '',
+        city: '',
         state: 'Maharashtra',
         stateCode: '27',
-        pincode: '400051',
+        pincode: '',
         country: 'India',
         sacCode: '998313',
         gstRate: 18,
         invoicePrefix: 'RPAI',
         financialYear: '26-27',
-        email: 'billing@projectdemo.guru',
-        phone: '+91 98765 43210',
+        email: 'bhaskar.beyond@gmail.com',
+        phone: '',
         website: 'https://airesume.projectdemo.guru'
     };
 
