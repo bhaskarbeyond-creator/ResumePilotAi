@@ -2872,6 +2872,59 @@ export function setSubscriptionsData(state, month, quartarly, yearly, onlyPP, cu
     });
 }
 
+// Admin Master Invoice Fetcher
+export async function getAllInvoicesAdmin() {
+    try {
+        const firestore = fire.firestore();
+        const snapshot = await firestore.collection('invoices').get();
+        const invoices = [];
+        snapshot.forEach(doc => {
+            invoices.push({ id: doc.id, ...doc.data() });
+        });
+        invoices.sort((a, b) => new Date(b.invoiceDate || b.created_at || 0) - new Date(a.invoiceDate || a.created_at || 0));
+        return invoices;
+    } catch (e) {
+        console.warn('[getAllInvoicesAdmin] Firestore notice:', e.message);
+        return [];
+    }
+}
+
+// Manual Admin PRO Subscription Override
+export async function grantProSubscriptionAdmin(userId, planType = 'yearly', durationMonths = 12) {
+    try {
+        const firestore = fire.firestore();
+        const now = new Date();
+        const expiryDate = new Date();
+        if (parseInt(durationMonths) === 999) {
+            expiryDate.setFullYear(now.getFullYear() + 50);
+        } else {
+            expiryDate.setMonth(now.getMonth() + parseInt(durationMonths));
+        }
+
+        const subData = {
+            status: 'ACTIVE',
+            plan: planType,
+            membershipTier: parseInt(durationMonths) === 999 ? 'LIFETIME PRO' : `${planType.toUpperCase()} VIP PRO`,
+            startedAt: now.toISOString(),
+            expiresAt: expiryDate.toISOString(),
+            grantedByAdmin: true,
+            autoRenew: false,
+            updatedAt: new Date()
+        };
+
+        await firestore.collection('users').doc(userId).update({
+            subscription: subData,
+            isPro: true,
+            isPremium: true
+        });
+
+        return { success: true, message: `Granted ${subData.membershipTier} subscription until ${expiryDate.toLocaleDateString()}` };
+    } catch (e) {
+        console.error('[grantProSubscriptionAdmin] Error:', e);
+        return { success: false, error: e.message };
+    }
+}
+
 // get Subscription data
 export async function getSubscriptionStatus() {
     let localCache = null;
