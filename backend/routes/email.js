@@ -728,31 +728,43 @@ async function logOutboundEmail(db, logEntry) {
     return entry;
 }
 
-// Helper: Dispatch Outbound Mail with Fallback Transport Support
+// Helper: Dispatch Outbound Mail with Fallback Transport Support (10/10 Enterprise Failover)
 async function dispatchMailWithFallback(config, mailOptions) {
     let primaryErr = null;
 
     // 1. Try Primary Transporter
-    if (config.smtp.username && config.smtp.password) {
+    if (config.smtp && config.smtp.username && config.smtp.password) {
         try {
             const primaryTransporter = createTransporter(config.smtp);
             const info = await primaryTransporter.sendMail(mailOptions);
             return { success: true, messageId: info.messageId, transport: 'primary_smtp' };
         } catch (err) {
             primaryErr = err;
-            console.warn('Primary SMTP Dispatch Failed:', err.message);
+            console.warn('⚠️ Primary SMTP Dispatch Failed:', err.message);
         }
     }
 
     // 2. Try Fallback Transporter if enabled
-    if (config.fallbackSmtp && config.fallbackSmtp.enabled && config.fallbackSmtp.username) {
+    const fallbackEnabled = config.fallbackSmtp && (config.fallbackSmtp.enabled === true || config.fallbackSmtp.enabled === 'true' || config.fallbackSmtp.enabled === 1);
+    if (fallbackEnabled && config.fallbackSmtp.username && config.fallbackSmtp.password) {
         try {
-            console.warn('Attempting Fallback SMTP Relay...');
+            console.warn('⚡ Primary SMTP unavailable. Activating Secondary Fallback Relay (Failover)...');
             const fallbackTransporter = createTransporter(config.fallbackSmtp);
-            const info = await fallbackTransporter.sendMail(mailOptions);
+
+            // SASL Compliance: Rewrite 'from' header to authenticated fallback username to prevent 550 Sender Address Rejected
+            const fallbackUser = config.fallbackSmtp.senderEmail || config.fallbackSmtp.username;
+            const senderName = config.smtp?.senderName || 'ResumePilot AI (Failover)';
+            const fallbackMailOptions = {
+                ...mailOptions,
+                from: `"${senderName}" <${fallbackUser}>`,
+                replyTo: config.smtp?.replyTo || fallbackUser
+            };
+
+            const info = await fallbackTransporter.sendMail(fallbackMailOptions);
+            console.log(`✅ Secondary Fallback Relay dispatched email successfully! (ID: ${info.messageId})`);
             return { success: true, messageId: info.messageId, transport: 'fallback_smtp' };
         } catch (fallbackErr) {
-            console.error('Fallback SMTP Dispatch Failed:', fallbackErr.message);
+            console.error('❌ Secondary Fallback SMTP Dispatch Failed:', fallbackErr.message);
             throw new Error(`Primary SMTP Error: ${primaryErr ? primaryErr.message : 'Not configured'}. Fallback Error: ${fallbackErr.message}`);
         }
     }
@@ -763,9 +775,57 @@ async function dispatchMailWithFallback(config, mailOptions) {
 
 // --- API ENDPOINTS ---
 
-// 1. Test Outbound SMTP Socket Connection
+// 1. Test Outbound SMTP Socket Connection (Supports type='smtp' and type='fallback_smtp')
 router.post('/admin/test-connection', async (req, res) => {
     const { type } = req.body;
+
+    if (type === 'fallback_smtp') {
+        try {
+            const fallbackConfig = {
+                host: req.body.host || 'smtp.gmail.com',
+                port: parseInt(req.body.port || '587', 10),
+                encryption: req.body.encryption || 'tls',
+                username: req.body.username || '',
+                password: req.body.password || '',
+                senderName: req.body.senderName || 'ResumePilot AI Failover',
+                adminEmail: req.body.adminEmail || req.body.username || 'bhaskar.beyond@gmail.com',
+            };
+
+            if (!fallbackConfig.username || !fallbackConfig.password) {
+                return res.status(400).json({ success: false, error: 'Secondary Fallback Relay Username and Password are required.' });
+            }
+
+            const transporter = createTransporter(fallbackConfig);
+            await transporter.verify();
+
+            const mailOptions = {
+                from: `"${fallbackConfig.senderName}" <${fallbackConfig.username}>`,
+                to: fallbackConfig.adminEmail,
+                subject: `🛡️ Secondary Fallback Relay Verified — ${fallbackConfig.senderName}`,
+                html: `
+                <div style="font-family: Arial, sans-serif; padding: 30px; background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; max-width: 500px; margin: 20px auto; color: #166534;">
+                    <h2 style="margin-top: 0; color: #15803d;">🛡️ Secondary Fallback Relay Successful!</h2>
+                    <p>Your failover SMTP relay socket is active and ready to deliver backup emails automatically if the primary server fails.</p>
+                    <hr style="border: none; border-top: 1px solid #bbf7d0; margin: 15px 0;" />
+                    <p style="font-size: 12px; color: #166534; font-family: monospace;">
+                        Host: ${fallbackConfig.host}:${fallbackConfig.port} (${fallbackConfig.encryption.toUpperCase()})<br/>
+                        Authenticated User: ${fallbackConfig.username}
+                    </p>
+                </div>`
+            };
+
+            const info = await transporter.sendMail(mailOptions);
+            return res.json({
+                success: true,
+                messageId: info.messageId,
+                message: `Secondary Fallback Relay verified! Test email sent to ${fallbackConfig.adminEmail}`
+            });
+        } catch (err) {
+            console.error('[Fallback Test Error]:', err);
+            return res.status(500).json({ success: false, error: err.message });
+        }
+    }
+
     if (type !== 'smtp') {
         return res.json({ success: true, message: 'Non-SMTP test logged.' });
     }
@@ -791,7 +851,7 @@ router.post('/admin/test-connection', async (req, res) => {
         const mailOptions = {
             from: `"${smtpConfig.senderName}" <${smtpConfig.username}>`,
             to: smtpConfig.adminEmail,
-            subject: `✅ SMTP Connection Verified — ${smtpConfig.senderName}`,
+            subject: `✅ Primary SMTP Connection Verified — ${smtpConfig.senderName}`,
             html: `
             <div style="font-family: Arial, sans-serif; padding: 30px; background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; max-width: 500px; margin: 20px auto; color: #166534;">
                 <h2 style="margin-top: 0; color: #15803d;">🎉 SMTP Connection Successful!</h2>

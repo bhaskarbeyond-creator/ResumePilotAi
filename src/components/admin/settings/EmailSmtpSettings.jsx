@@ -84,6 +84,7 @@ const EmailSmtpSettings = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [testingSmtp, setTestingSmtp] = useState(false);
+    const [testingFallbackSmtp, setTestingFallbackSmtp] = useState(false);
     const [testingImap, setTestingImap] = useState(false);
     const [sendingTestTemplate, setSendingTestTemplate] = useState(false);
     const [resendingLogId, setResendingLogId] = useState(null);
@@ -508,6 +509,28 @@ const EmailSmtpSettings = () => {
         }
     };
 
+    const handleTestFallbackSmtp = async () => {
+        setTestingFallbackSmtp(true);
+        setStatusMessage(null);
+        try {
+            const response = await fetch(`${API_BASE}/api/admin/test-connection`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: 'fallback_smtp', ...fallbackSmtp })
+            });
+            const data = await response.json();
+            if (data.success) {
+                setStatusMessage({ type: 'success', text: `🛡️ ${data.message}` });
+            } else {
+                setStatusMessage({ type: 'error', text: `Secondary Fallback Relay Test Failed: ${data.error}` });
+            }
+        } catch (err) {
+            setStatusMessage({ type: 'error', text: `Backend connection error: ${err.message}` });
+        } finally {
+            setTestingFallbackSmtp(false);
+        }
+    };
+
     const handleTestImap = async () => {
         setTestingImap(true);
         setStatusMessage(null);
@@ -857,52 +880,91 @@ const EmailSmtpSettings = () => {
                         </div>
 
                         {fallbackSmtp.enabled && (
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-                                <div>
-                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Fallback Host</label>
-                                    <input
-                                        type="text"
-                                        value={fallbackSmtp.host}
-                                        onChange={(e) => setFallbackSmtp(prev => ({ ...prev, host: e.target.value }))}
-                                        placeholder="smtp.sendgrid.net / smtp.gmail.com"
-                                        className="w-full px-3 py-1.5 text-xs font-semibold border border-slate-300 rounded-xl font-mono"
-                                    />
+                            <div className="space-y-4 pt-2">
+                                <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                                    <div className="md:col-span-2">
+                                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Fallback Host</label>
+                                        <input
+                                            type="text"
+                                            value={fallbackSmtp.host}
+                                            onChange={(e) => setFallbackSmtp(prev => ({ ...prev, host: e.target.value }))}
+                                            placeholder="smtp.gmail.com / smtp.sendgrid.net"
+                                            className="w-full px-3 py-1.5 text-xs font-semibold border border-slate-300 rounded-xl font-mono"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Fallback Port</label>
+                                        <input
+                                            type="number"
+                                            value={fallbackSmtp.port || 587}
+                                            onChange={(e) => setFallbackSmtp(prev => ({ ...prev, port: parseInt(e.target.value, 10) || 587 }))}
+                                            placeholder="587 / 465"
+                                            className="w-full px-3 py-1.5 text-xs font-semibold border border-slate-300 rounded-xl font-mono"
+                                        />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Fallback Encryption</label>
+                                        <select
+                                            value={fallbackSmtp.encryption || 'tls'}
+                                            onChange={(e) => setFallbackSmtp(prev => ({ ...prev, encryption: e.target.value }))}
+                                            className="w-full px-3 py-1.5 text-xs font-semibold border border-slate-300 rounded-xl bg-white"
+                                        >
+                                            <option value="tls">TLS (Port 587 - Recommended)</option>
+                                            <option value="ssl">SSL (Port 465)</option>
+                                            <option value="none">NONE (Port 25)</option>
+                                        </select>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Fallback User</label>
-                                    <input
-                                        type="text"
-                                        value={fallbackSmtp.username}
-                                        onChange={(e) => setFallbackSmtp(prev => ({ ...prev, username: e.target.value }))}
-                                        placeholder="apikey / user@gmail.com"
-                                        className="w-full px-3 py-1.5 text-xs font-semibold border border-slate-300 rounded-xl font-mono"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Fallback Password</label>
-                                    <input
-                                        type="password"
-                                        value={fallbackSmtp.password}
-                                        onChange={(e) => setFallbackSmtp(prev => ({ ...prev, password: e.target.value }))}
-                                        placeholder="API Key / App Password"
-                                        className="w-full px-3 py-1.5 text-xs font-semibold border border-slate-300 rounded-xl font-mono"
-                                    />
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Fallback User / SASL Account</label>
+                                        <input
+                                            type="text"
+                                            value={fallbackSmtp.username}
+                                            onChange={(e) => setFallbackSmtp(prev => ({ ...prev, username: e.target.value }))}
+                                            placeholder="apikey / user@gmail.com"
+                                            className="w-full px-3 py-1.5 text-xs font-semibold border border-slate-300 rounded-xl font-mono"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Fallback Password / API Key</label>
+                                        <input
+                                            type="password"
+                                            value={fallbackSmtp.password}
+                                            onChange={(e) => setFallbackSmtp(prev => ({ ...prev, password: e.target.value }))}
+                                            placeholder="API Key / App Password"
+                                            className="w-full px-3 py-1.5 text-xs font-semibold border border-slate-300 rounded-xl font-mono"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         )}
                     </div>
 
                     {/* Action Bar */}
-                    <div className="flex items-center justify-between pt-2">
-                        <button
-                            type="button"
-                            onClick={handleTestSmtp}
-                            disabled={testingSmtp}
-                            className="px-5 py-2.5 text-xs font-bold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-xs"
-                        >
-                            {testingSmtp ? <FaSpinner className="animate-spin text-indigo-600 w-4 h-4" /> : <FaPaperPlane className="text-indigo-600 w-4 h-4" />}
-                            <span>Test Primary Outbound Socket</span>
-                        </button>
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <button
+                                type="button"
+                                onClick={handleTestSmtp}
+                                disabled={testingSmtp}
+                                className="px-4 py-2.5 text-xs font-bold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-xs"
+                            >
+                                {testingSmtp ? <FaSpinner className="animate-spin text-indigo-600 w-4 h-4" /> : <FaPaperPlane className="text-indigo-600 w-4 h-4" />}
+                                <span>Test Primary Outbound Socket</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={handleTestFallbackSmtp}
+                                disabled={testingFallbackSmtp || !fallbackSmtp.enabled || !fallbackSmtp.username}
+                                className="px-4 py-2.5 text-xs font-bold text-indigo-700 bg-indigo-50/80 border border-indigo-200 hover:bg-indigo-100 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-xs disabled:opacity-40"
+                            >
+                                {testingFallbackSmtp ? <FaSpinner className="animate-spin text-indigo-600 w-4 h-4" /> : <FaShieldAlt className="text-indigo-600 w-4 h-4" />}
+                                <span>Test Secondary Failover Relay</span>
+                            </button>
+                        </div>
 
                         <button
                             type="submit"
