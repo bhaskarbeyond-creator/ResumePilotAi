@@ -795,9 +795,9 @@ async function dispatchMailWithFallback(config, mailOptions) {
             console.warn('⚡ Primary SMTP unavailable/bypassed. Activating Secondary Fallback Relay (Failover)...');
             const fallbackTransporter = createTransporter(config.fallbackSmtp);
 
-            // SASL Compliance: Rewrite 'from' header to authenticated fallback username to prevent 550 Sender Address Rejected
+            // SASL Compliance: Keep exact senderName, subject, and HTML template — only update sender email address
             const fallbackUser = config.fallbackSmtp.senderEmail || config.fallbackSmtp.username;
-            const senderName = config.smtp?.senderName || 'ResumePilot AI (Failover)';
+            const senderName = config.smtp?.senderName || 'ResumePilot AI';
             const fallbackMailOptions = {
                 ...mailOptions,
                 from: `"${senderName}" <${fallbackUser}>`,
