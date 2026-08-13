@@ -371,9 +371,9 @@ const EmailSmtpSettings = () => {
 
             setSmtpConfig(loadedSmtp);
             setFallbackSmtp({
-                enabled: fb.enabled || false,
+                enabled: fb.enabled === true || fb.enabled === 'true' || fb.enabled === 1,
                 host: fb.host || 'smtp.gmail.com',
-                port: fb.port || 587,
+                port: parseInt(fb.port, 10) || 587,
                 encryption: fb.encryption || 'tls',
                 username: fb.username || '',
                 password: fb.password || ''

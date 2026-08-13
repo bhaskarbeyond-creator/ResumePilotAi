@@ -6277,6 +6277,46 @@ export async function getSystemSettings() {
             senderName: config?.brand?.name || 'AI Resume Builder',
             adminEmail: config?.adminEmail || 'bhaskar.beyond@gmail.com',
         },
+        fallbackSmtp: {
+            enabled: false,
+            host: 'smtp.gmail.com',
+            port: 587,
+            encryption: 'tls',
+            username: '',
+            password: '',
+            senderEmail: ''
+        },
+        imap: {
+            enabled: true,
+            host: 'imap.hostinger.com',
+            port: 993,
+            encryption: 'ssl',
+            username: '',
+            password: '',
+            autoSync: true
+        },
+        enabledTemplates: {
+            tax_invoice: true,
+            welcome: true,
+            password_reset: true,
+            email_verification: true,
+            payment_failed: true,
+            subscription_renewal: true,
+            ai_resume_ready: true,
+            ai_cover_letter_ready: true,
+            portfolio_published: true,
+            job_application_received: true,
+            job_status_update: true,
+            job_posted_employer: true,
+            security_alert: true,
+            account_created_admin: true,
+            password_changed_confirm: true,
+            refund_processed: true,
+            subscription_cancelled: true,
+            admin_system_alert: true,
+            broadcast_announcement: true,
+            default: true
+        },
         exportPdf: {
             websiteDomain: config?.backendUrl || 'ai-resume-builder.local',
             backendExportUrl: 'http://localhost:8080',
@@ -6422,10 +6462,16 @@ export async function getSystemSettings() {
                     remoteData = snapshot.data() || {};
                 }
 
+                const allKeys = new Set([
+                    ...Object.keys(envDefaults),
+                    ...Object.keys(localCache || {}),
+                    ...Object.keys(remoteData || {})
+                ]);
+
                 const merged = {};
-                for (const key in envDefaults) {
+                for (const key of allKeys) {
                     merged[key] = {
-                        ...envDefaults[key],
+                        ...(envDefaults[key] || {}),
                         ...(localCache[key] || {}),
                         ...(remoteData[key] || {})
                     };
