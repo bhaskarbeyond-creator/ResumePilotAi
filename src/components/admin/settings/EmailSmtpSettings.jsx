@@ -376,7 +376,8 @@ const EmailSmtpSettings = () => {
                 port: parseInt(fb.port, 10) || 587,
                 encryption: fb.encryption || 'tls',
                 username: fb.username || '',
-                password: fb.password || ''
+                password: fb.password || '',
+                senderEmail: fb.senderEmail || ''
             });
 
             setImapConfig({
@@ -916,7 +917,7 @@ const EmailSmtpSettings = () => {
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                     <div>
                                         <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Fallback User / SASL Account</label>
                                         <input
@@ -934,6 +935,16 @@ const EmailSmtpSettings = () => {
                                             value={fallbackSmtp.password}
                                             onChange={(e) => setFallbackSmtp(prev => ({ ...prev, password: e.target.value }))}
                                             placeholder="API Key / App Password"
+                                            className="w-full px-3 py-1.5 text-xs font-semibold border border-slate-300 rounded-xl font-mono"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Fallback Sender Email (Verified)</label>
+                                        <input
+                                            type="email"
+                                            value={fallbackSmtp.senderEmail || ''}
+                                            onChange={(e) => setFallbackSmtp(prev => ({ ...prev, senderEmail: e.target.value }))}
+                                            placeholder="support@airesume.projectdemo.guru"
                                             className="w-full px-3 py-1.5 text-xs font-semibold border border-slate-300 rounded-xl font-mono"
                                         />
                                     </div>
