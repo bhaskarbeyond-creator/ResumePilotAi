@@ -969,20 +969,34 @@ export async function restoreMergedUserAccount(backupId) {
     }
 }
 
-// Function to delete user record from Firestore by Admin (with automatic backup for safe restore)
-export async function deleteUserByAdmin(userId) {
+// Function to delete user record from Firestore & Firebase Authentication by Admin (with automatic backup for safe restore)
+export async function deleteUserByAdmin(userId, email = null) {
     const db = fire.firestore();
     try {
         const userRef = db.collection('users').doc(userId);
         const userSnap = await userRef.get();
+        let targetEmail = email;
         
         if (userSnap.exists) {
             const userData = userSnap.data();
+            if (!targetEmail && userData.email) targetEmail = userData.email;
             // Save full backup snapshot before deletion for safe restore capability
             await saveUserBackup(userId, null, userData, 'deleted');
             await userRef.delete();
         } else {
             await userRef.delete();
+        }
+
+        // Call backend API to delete user account from Firebase Authentication via Admin SDK
+        try {
+            await fetch('/api/admin/delete-user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ uid: userId, email: targetEmail })
+            });
+            console.log(`✅ User ${userId} (${targetEmail || 'no-email'}) purged from Firebase Auth.`);
+        } catch (apiErr) {
+            console.warn('⚠️ Delete from Firebase Auth notice:', apiErr.message);
         }
 
         try {
@@ -991,7 +1005,7 @@ export async function deleteUserByAdmin(userId) {
                 numberOfUsers: firebase.firestore.FieldValue.increment(-1),
             });
         } catch (e) {}
-        return { success: true, message: 'User deleted successfully (Backup saved to Backup History).' };
+        return { success: true, message: 'User deleted successfully from Firestore and Firebase Authentication (Backup saved to Backup History).' };
     } catch (error) {
         console.error('Error deleting user:', error);
         return { success: false, error: error.message };

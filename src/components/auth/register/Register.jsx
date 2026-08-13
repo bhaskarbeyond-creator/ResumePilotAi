@@ -239,6 +239,37 @@ class Register extends Component {
         } catch (error) {
             let msg = error.message;
             if (error.code === 'auth/email-already-in-use') {
+                // Autonomous Orphaned Account Recovery:
+                // Check if an active Firestore user document actually exists for this email.
+                // If an Admin deleted the account from Firestore, the Firebase Auth record is an orphan.
+                try {
+                    const firestoreModule = await import('../../../conf/fire');
+                    const db = firestoreModule.default.firestore();
+                    const query = await db.collection('users').where('email', '==', this.state.email.toLowerCase().trim()).get();
+                    
+                    if (query.empty) {
+                        console.log(`⚡ Autonomous Recovery: Email '${this.state.email}' exists in Firebase Auth but user doc was deleted by Admin. Purging orphaned Auth record and retrying registration...`);
+                        const purgeRes = await fetch('/api/auth/purge-orphaned-auth', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email: this.state.email })
+                        });
+                        const purgeData = await purgeRes.json();
+                        
+                        if (purgeData.success) {
+                            // Retry registration automatically!
+                            console.log('⚡ Retrying createUserWithEmailAndPassword after purging orphan...');
+                            const retryUser = await fire.auth().createUserWithEmailAndPassword(this.state.email, this.state.password);
+                            const email = this.state.email;
+                            const userName = email.split('@')[0];
+                            await addUser(retryUser.user.uid, userName, '', email, { authProvider: 'email' });
+                            if (this.props.closeModal) this.props.closeModal();
+                            return;
+                        }
+                    }
+                } catch (recoveryErr) {
+                    console.warn('[Register Recovery Notice]:', recoveryErr.message);
+                }
                 msg = 'An account with this email already exists. Please click Login to sign in.';
             } else if (error.code === 'auth/weak-password') {
                 msg = 'Password should be at least 6 characters long.';

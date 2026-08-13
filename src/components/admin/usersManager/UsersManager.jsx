@@ -284,7 +284,7 @@ class UsersManager extends Component {
         }
         this.setState({ isDeleting: true });
         try {
-            const res = await deleteUserByAdmin(this.state.userToDelete.id);
+            const res = await deleteUserByAdmin(this.state.userToDelete.id, this.state.userToDelete.email);
             if (res.success) {
                 this.setState({
                     statusMessage: { type: 'success', text: `User ${this.state.userToDelete.email} deleted successfully.` },

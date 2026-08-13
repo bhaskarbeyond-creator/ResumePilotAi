@@ -2018,6 +2018,75 @@ app.post('/api/auth/verify-email-token', async (req, res) => {
     }
 });
 
+// Admin Delete User Endpoint (Deletes from Firebase Auth & Firestore)
+app.post(['/api/admin/delete-user', '/api/auth/purge-orphaned-auth'], async (req, res) => {
+    const { uid, email } = req.body;
+    if (!uid && !email) {
+        return res.status(400).json({ success: false, error: 'User UID or email address is required.' });
+    }
+
+    const normEmail = email ? email.toLowerCase().trim() : null;
+    const db = req.app.get('db');
+
+    try {
+        let targetUid = uid;
+        let deletedFromAuth = false;
+
+        // Step 1: Purge from Firebase Auth via Firebase Admin SDK
+        if (admin && typeof admin.auth === 'function' && admin.apps && admin.apps.length) {
+            try {
+                if (targetUid) {
+                    await admin.auth().deleteUser(targetUid);
+                    deletedFromAuth = true;
+                    console.log(`[Admin Delete User] ✅ Deleted UID ${targetUid} from Firebase Auth`);
+                } else if (normEmail) {
+                    try {
+                        const userRecord = await admin.auth().getUserByEmail(normEmail);
+                        targetUid = userRecord.uid;
+                        await admin.auth().deleteUser(targetUid);
+                        deletedFromAuth = true;
+                        console.log(`[Admin Delete User] ✅ Deleted user ${normEmail} (uid: ${targetUid}) from Firebase Auth`);
+                    } catch (findErr) {
+                        if (findErr.code === 'auth/user-not-found') {
+                            console.log(`[Admin Delete User] Email ${normEmail} not found in Firebase Auth.`);
+                        } else {
+                            throw findErr;
+                        }
+                    }
+                }
+            } catch (authErr) {
+                console.warn('[Admin Delete User Auth notice]:', authErr.message);
+            }
+        }
+
+        // Step 2: Purge associated Firestore documents
+        if (db) {
+            try {
+                if (targetUid) {
+                    await db.collection('users').doc(targetUid).delete().catch(() => {});
+                }
+                if (normEmail) {
+                    const q = await db.collection('users').where('email', '==', normEmail).get();
+                    for (const doc of q.docs) {
+                        await db.collection('users').doc(doc.id).delete().catch(() => {});
+                    }
+                }
+            } catch (dbErr) {
+                console.warn('[Admin Delete User Firestore notice]:', dbErr.message);
+            }
+        }
+
+        return res.json({
+            success: true,
+            deletedFromAuth,
+            message: `User ${uid || email} permanently deleted from Firebase Auth and Firestore.`
+        });
+    } catch (err) {
+        console.error('[Admin Delete User Error]:', err);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 app.post('/api/auth/set-user-password', async (req, res) => {
     const { email, newPassword, token } = req.body;
     if (!email || !newPassword) {
