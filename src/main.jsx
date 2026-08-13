@@ -49,6 +49,7 @@ const AuthWrapper = () => {
     const [authLoading, setAuthLoading] = useState(true);
     const [resetOobCode, setResetOobCode] = useState(null);
     const [directResetEmail, setDirectResetEmail] = useState(null);
+    const [verificationBanner, setVerificationBanner] = useState(null);
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -68,15 +69,18 @@ const AuthWrapper = () => {
                 body: JSON.stringify({ token, email })
             }).then(res => res.json()).then(data => {
                 if (data.success) {
-                    alert(`✅ ${data.message || 'Email verified successfully!'}`);
+                    setVerificationBanner({ type: 'success', title: 'Account Verified! 🔑', text: data.message || 'Email verified successfully! You now have full access.' });
                     if (fire.auth().currentUser && typeof fire.auth().currentUser.reload === 'function') {
                         fire.auth().currentUser.reload().catch(() => {});
                     }
                     window.history.replaceState({}, document.title, window.location.pathname);
                 } else {
-                    alert(`⚠️ Verification notice: ${data.error}`);
+                    setVerificationBanner({ type: 'error', title: 'Verification Notice', text: data.error || 'Token invalid or expired.' });
                 }
-            }).catch(e => console.error('[AuthWrapper] Token verification error:', e));
+            }).catch(e => {
+                console.error('[AuthWrapper] Token verification error:', e);
+                setVerificationBanner({ type: 'error', title: 'Verification Error', text: e.message });
+            });
         } else if (oobCode && (mode === 'resetPassword' || !mode)) {
             console.log('[AuthWrapper] Detected password reset token in URL:', oobCode);
             setResetOobCode(oobCode);
@@ -200,6 +204,42 @@ const AuthWrapper = () => {
 
     return (
         <AuthContext.Provider value={user}>
+            {verificationBanner && (
+                <div style={{
+                    position: 'fixed',
+                    top: '24px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    zIndex: 99999,
+                    background: verificationBanner.type === 'success' ? 'rgba(15, 23, 42, 0.92)' : 'rgba(15, 23, 42, 0.92)',
+                    backdropFilter: 'blur(16px)',
+                    WebkitBackdropFilter: 'blur(16px)',
+                    border: verificationBanner.type === 'success' ? '1px solid rgba(52, 211, 153, 0.4)' : '1px solid rgba(248, 113, 113, 0.4)',
+                    boxShadow: '0 20px 40px -15px rgba(0,0,0,0.5)',
+                    borderRadius: '16px',
+                    padding: '16px 24px',
+                    color: '#ffffff',
+                    maxWidth: '480px',
+                    width: '90%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '16px',
+                    animation: 'slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span style={{ fontSize: '22px' }}>{verificationBanner.type === 'success' ? '🔑' : '⚠️'}</span>
+                        <div>
+                            <div style={{ fontWeight: 800, fontSize: '14px', color: verificationBanner.type === 'success' ? '#34d399' : '#f87171' }}>{verificationBanner.title}</div>
+                            <div style={{ fontSize: '12px', color: '#cbd5e1', marginTop: '2px', lineHeight: 1.4 }}>{verificationBanner.text}</div>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => setVerificationBanner(null)}
+                        style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#94a3b8', borderRadius: '8px', padding: '6px 12px', cursor: 'pointer', fontSize: '12px', fontWeight: 700 }}
+                    >Dismiss</button>
+                </div>
+            )}
             {(resetOobCode || directResetEmail) && (
                 <ResetPasswordModal
                     oobCode={resetOobCode}

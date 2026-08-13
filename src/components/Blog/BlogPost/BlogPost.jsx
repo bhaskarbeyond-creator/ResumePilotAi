@@ -147,7 +147,15 @@ const BlogPost = () => {
         return `${readingTime} min read`;
     };
 
+    const [copiedToast, setCopiedToast] = useState(false);
+
     const handleShare = async () => {
+        const copyAction = async () => {
+            await navigator.clipboard.writeText(window.location.href);
+            setCopiedToast(true);
+            setTimeout(() => setCopiedToast(false), 2500);
+        };
+
         if (navigator.share) {
             try {
                 await navigator.share({
@@ -156,14 +164,10 @@ const BlogPost = () => {
                     url: window.location.href,
                 });
             } catch (error) {
-                // Fallback to clipboard
-                await navigator.clipboard.writeText(window.location.href);
-                alert('Link copied to clipboard!');
+                await copyAction();
             }
         } else {
-            // Fallback to clipboard
-            await navigator.clipboard.writeText(window.location.href);
-            alert('Link copied to clipboard!');
+            await copyAction();
         }
     };
 
@@ -267,6 +271,27 @@ const BlogPost = () => {
 
     return (
         <>
+            {copiedToast && (
+                <div style={{
+                    position: 'fixed',
+                    bottom: '24px',
+                    right: '24px',
+                    zIndex: 9999,
+                    background: '#0f172a',
+                    color: '#34d399',
+                    padding: '12px 20px',
+                    borderRadius: '12px',
+                    fontWeight: 700,
+                    fontSize: '13px',
+                    boxShadow: '0 10px 25px -5px rgba(0,0,0,0.3)',
+                    border: '1px solid rgba(52, 211, 153, 0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                }}>
+                    ✓ Link copied to clipboard!
+                </div>
+            )}
             <HomepageNavbar authBtnHandler={authBtnHandler} user={user} logout={logout} />
             <div className="min-h-screen bg-white pt-16">
 

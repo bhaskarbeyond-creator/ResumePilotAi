@@ -94,7 +94,10 @@ class Settings extends Component {
                 this.setState({ isPasswordChangedToastShowed: false })
             }, 2000);
         } else {
-            alert("Password must contain 6 or more letters")
+            this.setState({ isPasswordErrorToastShowed: true });
+            setTimeout(() => {
+                this.setState({ isPasswordErrorToastShowed: false });
+            }, 3000);
         }
     }
 
@@ -126,6 +129,18 @@ class Settings extends Component {
                             exit={{ opacity: 0, y: -50 }}
                         >
                             <Toasts type="Password Changed" />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+                <AnimatePresence>
+                    {this.state.isPasswordErrorToastShowed && (
+                        <motion.div
+                            className="toast-container"
+                            initial={{ opacity: 0, y: -50 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -50 }}
+                        >
+                            <Toasts type="Error" />
                         </motion.div>
                     )}
                 </AnimatePresence>
