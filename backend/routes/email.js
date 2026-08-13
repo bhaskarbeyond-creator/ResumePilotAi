@@ -728,27 +728,71 @@ async function logOutboundEmail(db, logEntry) {
     return entry;
 }
 
-// Helper: Dispatch Outbound Mail with Fallback Transport Support (10/10 Enterprise Failover)
+// Circuit Breaker State for High-Availability Primary SMTP Failover
+let primaryConsecutiveFailures = 0;
+let primaryCircuitBreakerUntil = 0;
+
+// Create Nodemailer Transporter instance with tight timeouts for instant failover
+function createTransporter(smtpConfig) {
+    const isSecure = smtpConfig.encryption === 'ssl' || smtpConfig.port === 465;
+    return nodemailer.createTransport({
+        host: smtpConfig.host,
+        port: smtpConfig.port,
+        secure: isSecure,
+        auth: (smtpConfig.username && smtpConfig.password) ? {
+            user: smtpConfig.username,
+            pass: smtpConfig.password,
+        } : undefined,
+        tls: {
+            rejectUnauthorized: false
+        },
+        connectionTimeout: 5000, // 5s fast connection timeout
+        greetingTimeout: 4000,   // 4s SMTP greeting timeout
+        socketTimeout: 8000      // 8s socket timeout to avoid hanging connections
+    });
+}
+
+// Helper: Dispatch Outbound Mail with Fallback Transport Support (10/10 High-Availability Circuit Breaker)
 async function dispatchMailWithFallback(config, mailOptions) {
     let primaryErr = null;
+    const now = Date.now();
+    const isCircuitOpen = primaryCircuitBreakerUntil > now;
 
-    // 1. Try Primary Transporter
-    if (config.smtp && config.smtp.username && config.smtp.password) {
+    if (isCircuitOpen) {
+        console.warn(`[Circuit Breaker Active] Primary SMTP is in 5-min cooldown (Failures: ${primaryConsecutiveFailures}). Routing directly to Secondary Fallback Relay...`);
+    }
+
+    // 1. Try Primary Transporter if circuit is closed and credentials exist
+    if (!isCircuitOpen && config.smtp && config.smtp.username && config.smtp.password) {
         try {
             const primaryTransporter = createTransporter(config.smtp);
             const info = await primaryTransporter.sendMail(mailOptions);
+            
+            // Reset Circuit Breaker on Primary success
+            if (primaryConsecutiveFailures > 0) {
+                console.log('✅ Primary SMTP recovered! Resetting circuit breaker counter.');
+            }
+            primaryConsecutiveFailures = 0;
+            primaryCircuitBreakerUntil = 0;
+
             return { success: true, messageId: info.messageId, transport: 'primary_smtp' };
         } catch (err) {
             primaryErr = err;
-            console.warn('⚠️ Primary SMTP Dispatch Failed:', err.message);
+            primaryConsecutiveFailures++;
+            console.warn(`⚠️ Primary SMTP Dispatch Failed (Attempt ${primaryConsecutiveFailures}):`, err.message);
+
+            if (primaryConsecutiveFailures >= 3) {
+                primaryCircuitBreakerUntil = now + 5 * 60 * 1000; // Open circuit breaker for 5 minutes
+                console.error(`🚨 Primary SMTP failed 3 consecutive times. Opening Circuit Breaker until ${new Date(primaryCircuitBreakerUntil).toLocaleTimeString()}`);
+            }
         }
     }
 
-    // 2. Try Fallback Transporter if enabled
+    // 2. Try Secondary Fallback Transporter if enabled
     const fallbackEnabled = config.fallbackSmtp && (config.fallbackSmtp.enabled === true || config.fallbackSmtp.enabled === 'true' || config.fallbackSmtp.enabled === 1);
     if (fallbackEnabled && config.fallbackSmtp.username && config.fallbackSmtp.password) {
         try {
-            console.warn('⚡ Primary SMTP unavailable. Activating Secondary Fallback Relay (Failover)...');
+            console.warn('⚡ Primary SMTP unavailable/bypassed. Activating Secondary Fallback Relay (Failover)...');
             const fallbackTransporter = createTransporter(config.fallbackSmtp);
 
             // SASL Compliance: Rewrite 'from' header to authenticated fallback username to prevent 550 Sender Address Rejected
@@ -765,7 +809,7 @@ async function dispatchMailWithFallback(config, mailOptions) {
             return { success: true, messageId: info.messageId, transport: 'fallback_smtp' };
         } catch (fallbackErr) {
             console.error('❌ Secondary Fallback SMTP Dispatch Failed:', fallbackErr.message);
-            throw new Error(`Primary SMTP Error: ${primaryErr ? primaryErr.message : 'Not configured'}. Fallback Error: ${fallbackErr.message}`);
+            throw new Error(`Primary SMTP Error: ${primaryErr ? primaryErr.message : (isCircuitOpen ? 'Circuit Breaker Open' : 'Not configured')}. Fallback Error: ${fallbackErr.message}`);
         }
     }
 
