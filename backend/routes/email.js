@@ -358,20 +358,34 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
             break;
 
         case 'email_verification':
-            subject = `${vars.otp_code || '849204'} is your ${brandName} Verification Code 🔑`;
+            subject = vars.verification_link
+                ? `Verify Your Email Address — ${brandName}`
+                : `${vars.otp_code || '849204'} is your ${brandName} Verification Code 🔑`;
             bodyHtml = buildEmailWrapper(
                 'Verify Your Account',
                 'ACCOUNT SECURITY 🔑',
                 `
                 <div style="text-align: center;">
                     <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">Confirm Your Email Address</h2>
-                    <p style="font-size: 14px; color: #475569;">Please enter the following 6-digit code to complete your verification:</p>
+                    <p style="font-size: 14px; color: #475569; line-height: 1.6;">
+                        Thank you for joining <strong>${brandName}</strong>! Please verify your email address to secure your account and unlock all platform features.
+                    </p>
                     
+                    ${vars.verification_link ? `
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="${vars.verification_link}" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #ffffff; padding: 14px 36px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 14px; display: inline-block; box-shadow: 0 10px 20px -5px rgba(79,70,229,0.4);">Verify Email Address &rarr;</a>
+                    </div>
+                    <p style="font-size: 12px; color: #64748b; line-height: 1.5; margin-top: 20px;">
+                        Or copy and paste this link into your browser:<br/>
+                        <a href="${vars.verification_link}" style="color: #4f46e5; word-break: break-all;">${vars.verification_link}</a>
+                    </p>
+                    ` : `
                     <div style="background: #f1f5f9; border: 2px dashed #cbd5e1; border-radius: 16px; padding: 20px; display: inline-block; margin: 20px 0;">
                         <span style="font-family: monospace; font-size: 36px; font-weight: 900; letter-spacing: 10px; color: #4f46e5;">${vars.otp_code || '849204'}</span>
                     </div>
+                    `}
 
-                    <p style="font-size: 12px; color: #64748b; margin-top: 10px;">This security code will expire in <strong>10 minutes</strong>. Do not share it with anyone.</p>
+                    <p style="font-size: 12px; color: #94a3b8; margin-top: 24px;">This security link is valid for 24 hours. If you did not create an account, you can safely ignore this email.</p>
                 </div>`
             );
             break;

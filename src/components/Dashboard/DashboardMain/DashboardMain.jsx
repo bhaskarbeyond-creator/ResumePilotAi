@@ -293,23 +293,38 @@ class DashboardMain extends Component {
         const { t } = this.props;
         const { showVerifyBanner, verifyBannerDismissed, verifyResending, verifyResendSuccess } = this.state;
 
-        // ─── Resend Verification Email Handler ──────────────────────────────────
+        // ─── Resend Branded Crypto Verification Email Handler ─────────────────
         const handleResendVerification = async () => {
             const currentUser = fire.auth().currentUser;
-            if (!currentUser || verifyResending) return;
+            const userEmail = currentUser?.email || this.state.profile?.email;
+            if (!userEmail || verifyResending) return;
             this.setState({ verifyResending: true, verifyResendSuccess: false });
             try {
-                await currentUser.sendEmailVerification();
-                this.setState({ verifyResendSuccess: true });
+                const res = await fetch('/api/auth/send-verification-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: userEmail,
+                        userName: currentUser?.displayName || this.state.firstname || userEmail.split('@')[0]
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.setState({ verifyResendSuccess: true });
+                } else {
+                    console.warn('[VerifyBanner] Resend notice:', data.error);
+                }
                 // Poll until emailVerified flips true (max 5 mins, every 10s)
                 let attempts = 0;
                 const poll = setInterval(async () => {
                     attempts++;
                     try {
-                        await currentUser.reload();
-                        if (fire.auth().currentUser?.emailVerified) {
-                            clearInterval(poll);
-                            if (this._isMounted) this.setState({ showVerifyBanner: false });
+                        if (currentUser && typeof currentUser.reload === 'function') {
+                            await currentUser.reload();
+                            if (fire.auth().currentUser?.emailVerified) {
+                                clearInterval(poll);
+                                if (this._isMounted) this.setState({ showVerifyBanner: false });
+                            }
                         }
                     } catch (e) { /* non-fatal */ }
                     if (attempts >= 30) clearInterval(poll);

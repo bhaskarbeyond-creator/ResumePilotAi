@@ -60,7 +60,24 @@ const AuthWrapper = () => {
         const oauthSession = params.get('oauth_session');
         const provider = params.get('provider');
 
-        if (oobCode && (mode === 'resetPassword' || !mode)) {
+        if (mode === 'verifyEmail' && token && email) {
+            console.log('[AuthWrapper] Verifying email token for:', email);
+            fetch('/api/auth/verify-email-token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token, email })
+            }).then(res => res.json()).then(data => {
+                if (data.success) {
+                    alert(`✅ ${data.message || 'Email verified successfully!'}`);
+                    if (fire.auth().currentUser && typeof fire.auth().currentUser.reload === 'function') {
+                        fire.auth().currentUser.reload().catch(() => {});
+                    }
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                } else {
+                    alert(`⚠️ Verification notice: ${data.error}`);
+                }
+            }).catch(e => console.error('[AuthWrapper] Token verification error:', e));
+        } else if (oobCode && (mode === 'resetPassword' || !mode)) {
             console.log('[AuthWrapper] Detected password reset token in URL:', oobCode);
             setResetOobCode(oobCode);
         } else if ((mode === 'resetPassword' || reset === 'true' || token) && email) {

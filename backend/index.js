@@ -10,6 +10,8 @@ global.fetch = fetch;
 const crypto = require('crypto');
 // Enterprise single-use password reset token registry (15-min expiry, in-memory)
 const resetTokens = new Map();
+// Enterprise single-use email verification token registry (24-hour expiry, in-memory + Firestore fallback)
+const verificationTokens = new Map();
 
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
@@ -1885,6 +1887,133 @@ app.post(['/api/auth/custom-password-reset', '/api/notify/password-reset'], asyn
         });
     } catch (err) {
         console.error('[Custom Password Reset Error]:', err);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Custom Branded Crypto Email Verification Link Dispatch (Configured SMTP Server)
+app.post(['/api/auth/send-verification-email', '/api/notify/send-verification-email'], async (req, res) => {
+    const email = req.body.email || req.body.userEmail;
+    const userName = req.body.userName || email?.split('@')[0] || 'User';
+    if (!email) return res.status(400).json({ success: false, error: 'Email address is required.' });
+
+    try {
+        const token = crypto.randomBytes(32).toString('hex');
+        const expiresAt = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+
+        verificationTokens.set(token, {
+            email: email.toLowerCase().trim(),
+            expiresAt,
+            used: false
+        });
+
+        // Persist token in Firestore if available for cross-restart validity
+        const db = req.app.get('db');
+        if (db) {
+            db.collection('email_verifications').doc(token).set({
+                email: email.toLowerCase().trim(),
+                expiresAt,
+                used: false,
+                createdAt: new Date().toISOString()
+            }).catch(e => console.warn('[Verification Store] Firestore persist notice:', e.message));
+        }
+
+        const verificationLink = `${protocol}://${websiteName}/login?mode=verifyEmail&token=${token}&email=${encodeURIComponent(email)}`;
+        console.log(`[Crypto Email Verification] Generated secure token for ${email}`);
+
+        await EmailNotifier.notifyEmailVerificationLink(db, {
+            userEmail: email,
+            userName,
+            verificationLink
+        });
+
+        return res.json({
+            success: true,
+            message: `Branded email verification link sent via custom SMTP server to ${email}`
+        });
+    } catch (err) {
+        console.error('[Send Verification Email Error]:', err);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Validate Crypto Email Verification Token & Update Firebase Admin SDK + Firestore
+app.post('/api/auth/verify-email-token', async (req, res) => {
+    const { email, token } = req.body;
+    if (!email || !token) {
+        return res.status(400).json({ success: false, error: 'Email and verification token are required.' });
+    }
+
+    const normEmail = email.toLowerCase().trim();
+    let tokenData = verificationTokens.get(token);
+
+    // Check Firestore fallback if token not found in memory
+    const db = req.app.get('db');
+    if (!tokenData && db) {
+        try {
+            const doc = await db.collection('email_verifications').doc(token).get();
+            if (doc.exists) tokenData = doc.data();
+        } catch (e) {
+            console.warn('[Verification Validation] Firestore lookup notice:', e.message);
+        }
+    }
+
+    if (!tokenData) {
+        return res.status(200).json({ success: false, error: 'Invalid or expired email verification link. Please request a new verification email.' });
+    }
+    if (tokenData.used) {
+        return res.status(200).json({ success: false, error: 'This email verification link has already been used.' });
+    }
+    if (Date.now() > tokenData.expiresAt) {
+        verificationTokens.delete(token);
+        return res.status(200).json({ success: false, error: 'Email verification link has expired (valid for 24 hours). Please request a new link.' });
+    }
+
+    if (tokenData.email !== normEmail) {
+        return res.status(200).json({ success: false, error: 'Token email mismatch. Please verify with the correct account.' });
+    }
+
+    tokenData.used = true;
+    verificationTokens.set(token, tokenData);
+    if (db) {
+        db.collection('email_verifications').doc(token).update({ used: true, verifiedAt: new Date().toISOString() }).catch(() => {});
+    }
+
+    try {
+        let updatedUid = null;
+        // Update Firebase Admin SDK emailVerified flag
+        if (admin && typeof admin.auth === 'function' && admin.apps && admin.apps.length) {
+            try {
+                const userRecord = await admin.auth().getUserByEmail(normEmail);
+                updatedUid = userRecord.uid;
+                await admin.auth().updateUser(updatedUid, { emailVerified: true });
+                console.log(`[Verify Email] ✅ Admin SDK set emailVerified=true for ${normEmail} (uid: ${updatedUid})`);
+            } catch (adminErr) {
+                console.warn('[Verify Email Admin SDK notice]:', adminErr.message);
+            }
+        }
+
+        // Update Firestore user document
+        if (db) {
+            try {
+                if (updatedUid) {
+                    await db.collection('users').doc(updatedUid).set({ emailVerified: true }, { merge: true });
+                }
+                const q = await db.collection('users').where('email', '==', normEmail).get();
+                for (const d of q.docs) {
+                    await db.collection('users').doc(d.id).set({ emailVerified: true }, { merge: true });
+                }
+            } catch (dbErr) {
+                console.warn('[Verify Email Firestore notice]:', dbErr.message);
+            }
+        }
+
+        return res.json({
+            success: true,
+            message: `Email address ${normEmail} has been successfully verified!`
+        });
+    } catch (err) {
+        console.error('[Verify Email Token Error]:', err);
         return res.status(500).json({ success: false, error: err.message });
     }
 });

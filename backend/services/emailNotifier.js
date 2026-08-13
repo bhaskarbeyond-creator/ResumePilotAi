@@ -147,6 +147,18 @@ class EmailNotifier {
     }
 
     /**
+     * 4b. Email Verification Link (Crypto Signed)
+     */
+    static async notifyEmailVerificationLink(db, { userEmail, userName = 'User', verificationLink }) {
+        if (!userEmail) return;
+        return sendNotification(db, {
+            to: userEmail,
+            templateType: 'email_verification',
+            vars: { candidate_name: userName, verification_link: verificationLink }
+        });
+    }
+
+    /**
      * 5. Payment Failure Alert
      */
     static async notifyPaymentFailed(db, { userEmail, userName = 'Customer', amount = '₹199.00', retryUrl }) {

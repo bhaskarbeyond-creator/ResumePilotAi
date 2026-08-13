@@ -216,17 +216,22 @@ class Register extends Component {
                 }).catch(e => console.warn('Signup email notice:', e.message));
             }
 
-            // Send email verification link if Admin has enabled the Email Verification Module
+            // Send branded crypto verification link email if Admin has enabled Email Verification Module
             try {
                 const { getSystemSettings } = await import('../../../firestore/dbOperations');
                 const settings = await getSystemSettings();
                 const emailVerificationEnabled = settings?.modules?.enableEmailVerification === true;
                 if (emailVerificationEnabled && u.user && !u.user.emailVerified) {
-                    await u.user.sendEmailVerification();
-                    console.log('[Register] Email verification sent to:', email);
+                    fetch('/api/auth/send-verification-email', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, userName })
+                    }).then(res => res.json()).then(data => {
+                        console.log('[Register] Branded crypto verification email dispatch result:', data);
+                    }).catch(e => console.warn('[Register] Verification email notice:', e.message));
                 }
             } catch (verifyErr) {
-                // Non-fatal — don't block registration if verification email fails
+                // Non-fatal — don't block registration
                 console.warn('[Register] Email verification notice:', verifyErr.message);
             }
 
