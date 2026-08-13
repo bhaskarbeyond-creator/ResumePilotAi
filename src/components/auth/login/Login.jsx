@@ -13,29 +13,51 @@ class Login extends Component {
         super(props);
         this.state = {
             email: "",
-            password: ""
+            password: "",
+            enableGoogle: true,
+            enableFacebook: true
         }
         this.handleInputs = this.handleInputs.bind(this);
         this.signInWithGoogle = this.signInWithGoogle.bind(this);
         this.signInWithFacebook = this.signInWithFacebook.bind(this);
         this.login = this.login.bind(this);
     }
+    componentDidMount() {
+        import('../../../firestore/dbOperations').then(({ getSystemSettings }) => {
+            getSystemSettings().then((settings) => {
+                const mods = settings?.modules || {};
+                this.setState({
+                    enableGoogle: mods.enableGoogleAuthModule !== false,
+                    enableFacebook: mods.enableFacebookAuthModule !== false
+                });
+            }).catch(() => {});
+        }).catch(() => {});
+    }
     login(event) {
         event.preventDefault();
-        fire.auth().signInWithEmailAndPassword(this.state.email, this.state.password).then((u) => {
+        const email = (this.state.email || '').trim();
+        const password = this.state.password || '';
 
-            // Succefully Logged in 
-            this.props.closeModal();  // To close  login  modal on success
+        if (!email) {
+            this.props.throwError('Please enter your email address.');
+            return;
+        }
 
+        fire.auth().signInWithEmailAndPassword(email, password).then((u) => {
+            // Successfully Logged in 
+            if (this.props.closeModal) this.props.closeModal();
         }).catch((error) => {
+            console.error('[Login Auth Error]:', error);
             let msg = error.message;
             if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-                msg = 'Invalid email or password. If you do not have an account yet, please click Sign Up below.';
+                msg = `Invalid password for ${email}. If you signed up via Google, please click Google Sign-In above, or click "Recover Password" below to reset your password.`;
             } else if (error.code === 'auth/invalid-email') {
                 msg = 'Please enter a valid email address.';
+            } else if (error.code === 'auth/too-many-requests') {
+                msg = 'Access to this account has been temporarily disabled due to many failed login attempts. You can immediately restore access by resetting your password.';
             }
-            this.props.throwError(msg);
-            console.log(error);
+            if (this.props.throwError) this.props.throwError(msg);
+            else alert(msg);
         });
     }
     handleInputs(title, value) {
@@ -51,46 +73,78 @@ class Login extends Component {
         }
     }
     signInWithGoogle() {
-
+        const self = this;
         fire.auth().signInWithPopup(googleProvider).then(function (result) {
-            // This gives you a Google Access Token. You can use it to access the Google API.
-            var token = result.credential.accessToken;
-            // The signed-in user info.
             var user = result.user;
-            addUser(user.uid, "Welcome", "back", user.email)
-            // ...
+            const nameParts = (user.displayName || '').trim().split(' ');
+            const firstName = nameParts[0] || 'User';
+            const lastName = nameParts.slice(1).join(' ') || '';
+            addUser(user.uid, firstName, lastName, user.email).then((userRes) => {
+                if (userRes && userRes.isNewUser) {
+                    try {
+                        fetch('/api/notify/user-signup', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ userEmail: user.email, userName: user.displayName || firstName })
+                        }).catch(e => {});
+                    } catch (e) {}
+                }
+            });
+            if (self.props.closeModal) self.props.closeModal();
         }).catch(function (error) {
-            // Handle Errors here.
-            var errorCode = error.code;
-            var errorMessage = error.message;
-            // The email of the user's account used.
-            var email = error.email;
-            // The firebase.auth.AuthCredential type that was used.
-            var credential = error.credential;
-            // ...
+            console.error("Google Auth Error:", error);
+            let msg = error.message;
+            if (error.code === 'auth/popup-blocked') {
+                msg = 'Popup was blocked by your browser. Attempting redirect login...';
+                fire.auth().signInWithRedirect(googleProvider);
+                return;
+            } else if (error.code === 'auth/operation-not-allowed' || error.code === 'auth/unauthorized-domain' || error.code === 'auth/configuration-not-found') {
+                console.log('[Google Fallback] Firebase Auth not configured. Attempting Direct Google GIS login...');
+                import('../../../utils/googleSdkAuth').then(({ directGoogleAuthFallback }) => {
+                    directGoogleAuthFallback(self.props.closeModal, self.props.throwError);
+                }).catch((e) => {
+                    if (self.props.throwError) self.props.throwError('Google login error: ' + e.message);
+                    else alert(e.message);
+                });
+                return;
+            } else if (error.code === 'auth/popup-closed-by-user') {
+                msg = 'Sign-in popup was closed before completing login.';
+            }
+            if (self.props.throwError) self.props.throwError(msg);
+            else alert(msg);
         });
-        this.props.closeModal();
     }
     signInWithFacebook() {
+        const self = this;
         fire.auth().signInWithPopup(facebookProvider).then(function (result) {
-            // This gives you a Google Access Token. You can use it to access the Google API.
-            var token = result.credential.accessToken;
-            // The signed-in user info.
             var user = result.user;
-            addUser(user.uid, "Welcome", "back", user.email)
-
-            // ...
+            const nameParts = (user.displayName || '').trim().split(' ');
+            const firstName = nameParts[0] || 'User';
+            const lastName = nameParts.slice(1).join(' ') || '';
+            addUser(user.uid, firstName, lastName, user.email);
+            if (self.props.closeModal) self.props.closeModal();
         }).catch(function (error) {
-            // Handle Errors here.
-            var errorCode = error.code;
-            var errorMessage = error.message;
-            // The email of the user's account used.
-            var email = error.email;
-            // The firebase.auth.AuthCredential type that was used.
-            var credential = error.credential;
-            // ...
+            console.error("Facebook Auth Error:", error);
+            let msg = error.message;
+            if (error.code === 'auth/popup-blocked') {
+                msg = 'Popup was blocked by your browser. Attempting redirect login...';
+                fire.auth().signInWithRedirect(facebookProvider);
+                return;
+            } else if (error.code === 'auth/operation-not-allowed' || error.code === 'auth/unauthorized-domain' || error.code === 'auth/configuration-not-found') {
+                console.log('[FB Fallback] Firebase Auth not configured. Attempting Direct Admin Facebook SDK login...');
+                import('../../../utils/facebookSdkAuth').then(({ directFacebookAuthFallback }) => {
+                    directFacebookAuthFallback(self.props.closeModal, self.props.throwError);
+                }).catch((e) => {
+                    if (self.props.throwError) self.props.throwError('Facebook login error: ' + e.message);
+                    else alert(e.message);
+                });
+                return;
+            } else if (error.code === 'auth/popup-closed-by-user') {
+                msg = 'Sign-in popup was closed before completing login.';
+            }
+            if (self.props.throwError) self.props.throwError(msg);
+            else alert(msg);
         });
-        this.props.closeModal();
     }
     render() {
         const { t } = this.props;
@@ -102,20 +156,26 @@ class Login extends Component {
                 <div className="body">
                     <div className="socialAuth">
                         {/* Google */}
-                        <div onClick={() => { this.signInWithGoogle() }} className="googleAuthItem">
-                            <img src={GoogleImage} />
-                            <span>{t("login.googleLogin")} Google</span>
-                        </div>
+                        {this.state.enableGoogle !== false && (
+                            <div onClick={() => { this.signInWithGoogle() }} className="googleAuthItem">
+                                <img src={GoogleImage} />
+                                <span>{t("login.googleLogin")} Google</span>
+                            </div>
+                        )}
                         {/* Facebook */}
-                        <div onClick={() => { this.signInWithFacebook() }} className="facebookAuthItem">
-                            <img src={FacebookImage} />
-                            <span>{t("login.facebookLogin")} Facebook</span>
-                        </div>
+                        {this.state.enableFacebook !== false && (
+                            <div onClick={() => { this.signInWithFacebook() }} className="facebookAuthItem">
+                                <img src={FacebookImage} />
+                                <span>{t("login.facebookLogin")} Facebook</span>
+                            </div>
+                        )}
                         {/* Devider */}
-                        <div className="devider">
-                            <hr />
-                            <span>{t("login.or")}</span>
-                        </div>
+                        {(this.state.enableGoogle !== false || this.state.enableFacebook !== false) && (
+                            <div className="devider">
+                                <hr />
+                                <span>{t("login.or")}</span>
+                            </div>
+                        )}
                         {/* Login Form  */}
                         <form onSubmit={this.login}>
                             <div>

@@ -584,6 +584,21 @@ const PortfolioBuilder = () => {
                 result = await publishPortfolio(user.uid, dataToPublish, 'default');
                 const portfolioUrl = `${window.location.origin}/portfolio/${result.slug}`;
 
+                // Automatically dispatch Web Portfolio Published Email to User
+                if (user && user.email) {
+                    try {
+                        fetch('/api/notify/portfolio-published', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                userEmail: user.email,
+                                userName: user.displayName || user.email.split('@')[0],
+                                portfolioSlug: result.slug || 'my-portfolio'
+                            })
+                        }).catch(e => console.warn('Portfolio email notice:', e.message));
+                    } catch (e) {}
+                }
+
                 // Show success modal instead of toast
                 setPublishSuccessModal({
                     show: true,

@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
-import { FaLinkedin, FaGithub, FaCheck, FaTimes, FaSpinner, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaLinkedin, FaGithub, FaFacebook, FaGoogle, FaCheck, FaTimes, FaSpinner, FaLock, FaEye, FaEyeSlash, FaInfoCircle, FaShieldAlt } from 'react-icons/fa';
 
 const SocialAuthSettings = () => {
     const [socialAuthConfig, setSocialAuthConfig] = useState({
+        googleClientId: '',
+        googleClientSecret: '',
+        facebookAppId: '',
+        facebookAppSecret: '',
+        facebookPixelId: '',
         linkedinClientId: '',
         linkedinClientSecret: '',
         enableLinkedinLogin: false,
@@ -11,6 +16,8 @@ const SocialAuthSettings = () => {
         githubClientSecret: '',
         enableGithubLogin: false,
     });
+    const [showGoogleSecret, setShowGoogleSecret] = useState(false);
+    const [showFbSecret, setShowFbSecret] = useState(false);
     const [showLinkedinSecret, setShowLinkedinSecret] = useState(false);
     const [showGithubSecret, setShowGithubSecret] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -19,21 +26,27 @@ const SocialAuthSettings = () => {
 
     useEffect(() => {
         getSystemSettings().then((settings) => {
-            if (settings && settings.socialAuth) {
-                const sa = settings.socialAuth;
-                const hasLinkedin = !!(sa.linkedinClientId && sa.linkedinClientId.trim());
-                const hasGithub = !!(sa.githubClientId && sa.githubClientId.trim());
-                setSocialAuthConfig({
-                    linkedinClientId: sa.linkedinClientId || '',
-                    linkedinClientSecret: sa.linkedinClientSecret || '',
-                    enableLinkedinLogin: sa.enableLinkedinLogin !== undefined ? sa.enableLinkedinLogin : hasLinkedin,
-                    githubClientId: sa.githubClientId || '',
-                    githubClientSecret: sa.githubClientSecret || '',
-                    enableGithubLogin: sa.enableGithubLogin !== undefined ? sa.enableGithubLogin : hasGithub,
-                });
-            }
+            const sa = (settings && settings.socialAuth) || {};
+            const fb = (settings && settings.facebook) || {};
+            const g = (settings && settings.google) || {};
+            const hasLinkedin = !!(sa.linkedinClientId && sa.linkedinClientId.trim());
+            const hasGithub = !!(sa.githubClientId && sa.githubClientId.trim());
+
+            setSocialAuthConfig({
+                googleClientId: g.googleClientId || sa.googleClientId || import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
+                googleClientSecret: g.googleClientSecret || sa.googleClientSecret || '',
+                facebookAppId: fb.facebookAppId || sa.facebookAppId || '',
+                facebookAppSecret: fb.facebookAppSecret || sa.facebookAppSecret || '',
+                facebookPixelId: fb.facebookPixelId || sa.facebookPixelId || '',
+                linkedinClientId: sa.linkedinClientId || '',
+                linkedinClientSecret: sa.linkedinClientSecret || '',
+                enableLinkedinLogin: sa.enableLinkedinLogin !== undefined ? sa.enableLinkedinLogin : hasLinkedin,
+                githubClientId: sa.githubClientId || '',
+                githubClientSecret: sa.githubClientSecret || '',
+                enableGithubLogin: sa.enableGithubLogin !== undefined ? sa.enableGithubLogin : hasGithub,
+            });
             setLoading(false);
-        });
+        }).catch(() => setLoading(false));
     }, []);
 
     const handleChange = (e) => {
@@ -58,7 +71,18 @@ const SocialAuthSettings = () => {
         setSaving(true);
         try {
             await saveSystemSettings('socialAuth', socialAuthConfig);
-            setStatusMessage({ type: 'success', text: 'LinkedIn & GitHub OAuth settings saved successfully!' });
+            await saveSystemSettings('google', {
+                googleClientId: socialAuthConfig.googleClientId,
+                googleClientSecret: socialAuthConfig.googleClientSecret,
+                enableGoogleLogin: !!(socialAuthConfig.googleClientId && socialAuthConfig.googleClientId.trim())
+            });
+            await saveSystemSettings('facebook', {
+                facebookAppId: socialAuthConfig.facebookAppId,
+                facebookAppSecret: socialAuthConfig.facebookAppSecret,
+                facebookPixelId: socialAuthConfig.facebookPixelId,
+                enableFacebookLogin: !!(socialAuthConfig.facebookAppId && socialAuthConfig.facebookAppId.trim())
+            });
+            setStatusMessage({ type: 'success', text: 'Google GIS & Social Sign-On settings saved successfully!' });
         } catch (error) {
             setStatusMessage({ type: 'error', text: `Failed to save settings: ${error.message}` });
         } finally {
@@ -88,6 +112,134 @@ const SocialAuthSettings = () => {
                     </div>
                 </div>
             )}
+
+            {/* Google & Facebook OAuth Architecture Banner */}
+            <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-5 rounded-xl border border-indigo-800/50 shadow-sm text-white">
+                <div className="flex items-start space-x-3">
+                    <div className="p-2.5 bg-indigo-600/30 rounded-xl border border-indigo-400/30 text-indigo-300 mt-0.5">
+                        <FaShieldAlt className="w-5 h-5" />
+                    </div>
+                    <div className="space-y-1">
+                        <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                            <span>Google &amp; Facebook OAuth Centralization</span>
+                            <span className="px-2 py-0.5 text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-full uppercase">Unified Firebase Broker</span>
+                        </h4>
+                        <p className="text-xs text-indigo-200/90 leading-relaxed">
+                            Google and Facebook Single Sign-On run through <strong>Firebase Auth SDK</strong>. Configure your OAuth Client Keys in <strong>Firebase Console → Authentication → Sign-in method</strong>, and toggle end-user visibility ON/OFF under <strong>Addon Modules</strong>.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Google Identity Services (GIS) Settings */}
+            <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                <h3 className="text-base font-semibold text-slate-800 flex items-center gap-2 mb-1">
+                    <FaGoogle className="text-red-500 text-xl" /> Google Identity Services (GIS) &amp; OAuth 2.0
+                </h3>
+                <p className="text-xs text-slate-500 mb-4">
+                    Configure your Google Web Client ID and Client Secret for direct Google Sign-In &amp; Scenario 3 fallback.
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                            Google Web Client ID
+                        </label>
+                        <input
+                            type="text"
+                            name="googleClientId"
+                            value={socialAuthConfig.googleClientId}
+                            onChange={handleChange}
+                            placeholder="e.g. 1234567890-abc123def456.apps.googleusercontent.com"
+                            className="w-full p-2.5 text-xs bg-white border border-slate-300 rounded-lg outline-none focus:border-indigo-500 font-mono"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                            Google Client Secret (Optional)
+                        </label>
+                        <div className="relative">
+                            <input
+                                type={showGoogleSecret ? "text" : "password"}
+                                name="googleClientSecret"
+                                value={socialAuthConfig.googleClientSecret}
+                                onChange={handleChange}
+                                placeholder="GOCSPX-..."
+                                className="w-full p-2.5 pr-10 text-xs bg-white border border-slate-300 rounded-lg outline-none focus:border-indigo-500 font-mono"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowGoogleSecret(!showGoogleSecret)}
+                                className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 text-xs"
+                            >
+                                {showGoogleSecret ? <FaEyeSlash /> : <FaEye />}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Facebook App & Pixel Settings */}
+            <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                <h3 className="text-base font-semibold text-slate-800 flex items-center gap-2 mb-1">
+                    <FaFacebook className="text-blue-600 text-xl" /> Facebook OAuth &amp; Pixel Integration
+                </h3>
+                <p className="text-xs text-slate-500 mb-4">
+                    Enter your Facebook App ID, App Secret, and Pixel ID for Facebook Ad Tracking &amp; SSO sync.
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                    <div>
+                        <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                            Facebook App ID
+                        </label>
+                        <input
+                            type="text"
+                            name="facebookAppId"
+                            value={socialAuthConfig.facebookAppId}
+                            onChange={handleChange}
+                            placeholder="e.g. 1029384756102938"
+                            className="w-full p-2.5 text-xs bg-white border border-slate-300 rounded-lg outline-none focus:border-indigo-500 font-mono"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                            Facebook App Secret
+                        </label>
+                        <div className="relative">
+                            <input
+                                type={showFbSecret ? "text" : "password"}
+                                name="facebookAppSecret"
+                                value={socialAuthConfig.facebookAppSecret}
+                                onChange={handleChange}
+                                placeholder="App Secret..."
+                                className="w-full p-2.5 pr-10 text-xs bg-white border border-slate-300 rounded-lg outline-none focus:border-indigo-500 font-mono"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowFbSecret(!showFbSecret)}
+                                className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 text-xs"
+                            >
+                                {showFbSecret ? <FaEyeSlash /> : <FaEye />}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                        Facebook Pixel ID (Ad Conversion Tracking)
+                    </label>
+                    <input
+                        type="text"
+                        name="facebookPixelId"
+                        value={socialAuthConfig.facebookPixelId}
+                        onChange={handleChange}
+                        placeholder="e.g. 987654321012345"
+                        className="w-full p-2.5 text-xs bg-white border border-slate-300 rounded-lg outline-none focus:border-indigo-500 font-mono"
+                    />
+                </div>
+            </div>
 
             {/* LinkedIn */}
             <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">

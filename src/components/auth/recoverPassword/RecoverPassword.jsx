@@ -26,16 +26,49 @@ class RecoverPassword extends Component {
                 break;
         }
     }
-    recoverPassword(event) {
+    async recoverPassword(event) {
         event.preventDefault();
-        alert(this.state.email)
-        var emailAddress = this.state.email;
-        fire.auth().sendPasswordResetEmail(emailAddress).then(function () {
-            alert("Password reset email sent");
-        }).catch(function (error) {
-            // An error happened.
-            console.log(error);
-        });
+        const emailAddress = (this.state.email || '').trim();
+        if (!emailAddress) {
+            if (this.props.throwError) this.props.throwError("Please enter your email address.");
+            else alert("Please enter your email address.");
+            return;
+        }
+
+        try {
+            // Primary: Dispatch branded password reset email via Hostinger SMTP server
+            const res = await fetch('/api/auth/custom-password-reset', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: emailAddress })
+            });
+
+            const data = await res.json();
+            if (!data.success) {
+                throw new Error(data.error || 'Failed to dispatch custom password reset email.');
+            }
+
+            const successMsg = `A password reset email has been sent to ${emailAddress} from your custom mail server! Please check your inbox.`;
+            if (this.props.throwSuccess) this.props.throwSuccess(successMsg);
+            else alert(successMsg);
+
+            if (this.props.closeModal) this.props.closeModal();
+        } catch (err) {
+            console.error('[Password Recovery Error]:', err);
+            
+            // Fallback: If custom SMTP server is unreachable, use Firebase client SDK
+            try {
+                await fire.auth().sendPasswordResetEmail(emailAddress);
+                const fallbackMsg = `Password reset link sent to ${emailAddress}! Please check your inbox.`;
+                if (this.props.throwSuccess) this.props.throwSuccess(fallbackMsg);
+                else alert(fallbackMsg);
+                if (this.props.closeModal) this.props.closeModal();
+            } catch (fbErr) {
+                const errMsg = fbErr.message || err.message;
+                if (this.props.throwError) this.props.throwError(errMsg);
+                else alert(errMsg);
+            }
+        }
     }
     render() {
         const { t } = this.props;

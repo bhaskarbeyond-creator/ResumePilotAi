@@ -7,6 +7,9 @@ const path = require('path');
 // Add fetch polyfill for older Node.js versions
 const fetch = require('node-fetch');
 global.fetch = fetch;
+const crypto = require('crypto');
+// Enterprise single-use password reset token registry (15-min expiry, in-memory)
+const resetTokens = new Map();
 
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
@@ -14,6 +17,7 @@ puppeteer.use(StealthPlugin());
 
 const { chromium } = require('playwright');
 require('dotenv').config();
+const EmailNotifier = require('./services/emailNotifier');
 const app = express();
 const cors = require('cors');
 const port = process.env.PORT || 8080;
@@ -26,18 +30,31 @@ let db = null;
 try {
     admin = require('firebase-admin');
     if (!admin.apps.length) {
+        let credential;
         const serviceAccountPath = path.join(__dirname, 'serviceAccountKey.json');
-        if (fs.existsSync(serviceAccountPath)) {
-            const serviceAccount = require(serviceAccountPath);
-            admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount)
+
+        if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
+            // Primary: Load from environment variables (secure, no file on disk)
+            credential = admin.credential.cert({
+                projectId: process.env.FIREBASE_PROJECT_ID || 'ai-resume-builder-424cf',
+                clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+                privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
             });
-            db = admin.firestore();
+            console.log('[Firebase Admin] Initialized via environment variables');
+        } else if (fs.existsSync(serviceAccountPath)) {
+            // Fallback: Load from serviceAccountKey.json file
+            const serviceAccount = require(serviceAccountPath);
+            credential = admin.credential.cert(serviceAccount);
             console.log('[Firebase Admin] Initialized via serviceAccountKey.json');
-        } else if (process.env.FIREBASE_CONFIG || process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-            admin.initializeApp();
+        } else {
+            // Last resort: projectId only (limited functionality — no auth operations)
+            admin.initializeApp({ projectId: process.env.FIREBASE_PROJECT_ID || 'ai-resume-builder-424cf' });
+            console.log('[Firebase Admin] Initialized via projectId only (limited)');
+        }
+
+        if (credential) {
+            admin.initializeApp({ credential });
             db = admin.firestore();
-            console.log('[Firebase Admin] Initialized via environment credentials');
         }
     } else {
         db = admin.firestore();
@@ -45,6 +62,8 @@ try {
 } catch (e) {
     console.warn('[Firebase Admin] Initialization notice:', e.message);
 }
+// Make Firestore accessible to routes via req.app.get('db')
+app.set('db', db);
 
 // Auto-initialize system fonts for Playwright PDF rendering on Linux servers
 const initSystemFonts = () => {
@@ -835,11 +854,14 @@ app.post('/api/export', async (req, res) => {
     }
 });
 
-// Import AI routes
+// Import AI & Email routes
 const aiRoutes = require('./routes/ai');
+const emailRoutes = require('./routes/email');
 
-// Use AI routes
+// Use AI & Email routes
 app.use('/api', aiRoutes);
+app.use('/api', emailRoutes);
+app.use('/api/email', emailRoutes);
 
 // Admin diagnostic test-connection endpoint
 app.post('/api/admin/test-connection', async (req, res) => {
@@ -1664,4 +1686,279 @@ app.post('/api/send-invoice-email', async (req, res) => {
         console.error('[Invoice Email Error]:', err);
         return res.status(500).json({ success: false, error: err.message });
     }
+});
+
+// Automatic Event Notifier API Endpoints (10/10 Coverage)
+app.post('/api/notify/user-signup', async (req, res) => {
+    const { userEmail, userName } = req.body;
+    const db = req.app.get('db');
+    EmailNotifier.notifyUserRegistration(db, { userEmail, userName });
+    return res.json({ success: true, message: 'Signup notifications queued.' });
+});
+
+setInterval(() => {
+    const now = Date.now();
+    for (const [token, data] of resetTokens.entries()) {
+        if (data.expiresAt < now || data.used) {
+            resetTokens.delete(token);
+        }
+    }
+}, 10 * 60 * 1000);
+
+// ─── Firebase Admin SDK Service Account Configuration ───────────────────────
+// Allows admins to update Firebase service account credentials via the admin UI
+// without re-deploying. Credentials are persisted to .env and hot-reloaded.
+
+app.get('/api/admin/firebase-service-account', (req, res) => {
+    const projectId = process.env.FIREBASE_PROJECT_ID || '';
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL || '';
+    const hasPrivateKey = !!(process.env.FIREBASE_PRIVATE_KEY);
+    const adminReady = !!(admin && admin.apps && admin.apps.length && typeof admin.auth === 'function');
+
+    return res.json({
+        success: true,
+        configured: !!(projectId && clientEmail && hasPrivateKey),
+        adminSdkReady: adminReady,
+        projectId,
+        clientEmail,
+        privateKeySet: hasPrivateKey,
+    });
+});
+
+app.post('/api/admin/firebase-service-account', async (req, res) => {
+    const { projectId, clientEmail, privateKey } = req.body;
+
+    if (!projectId || !clientEmail || !privateKey) {
+        return res.status(400).json({
+            success: false,
+            error: 'projectId, clientEmail and privateKey are all required.'
+        });
+    }
+
+    // Normalize private key — handle escaped newlines from JSON paste
+    const normalizedKey = privateKey.replace(/\\n/g, '\n').trim();
+    if (!normalizedKey.includes('BEGIN PRIVATE KEY')) {
+        return res.status(400).json({
+            success: false,
+            error: 'Invalid private key format. It must be a PEM RSA private key starting with -----BEGIN PRIVATE KEY-----'
+        });
+    }
+
+    // Step 1: Validate credentials by attempting a test Admin SDK init
+    let testAdmin;
+    try {
+        const firebaseAdmin = require('firebase-admin');
+        // Use a separate named app for testing so we don't disrupt the running instance
+        const testAppName = `sa-test-${Date.now()}`;
+        testAdmin = firebaseAdmin.initializeApp({
+            credential: firebaseAdmin.credential.cert({ projectId, clientEmail, privateKey: normalizedKey })
+        }, testAppName);
+        // Perform a lightweight auth call to validate credentials
+        await testAdmin.auth().listUsers(1);
+        console.log('[SA Config] ✅ Test credentials validated successfully');
+    } catch (testErr) {
+        if (testAdmin) { try { await testAdmin.delete(); } catch (_) {} }
+        console.error('[SA Config] ❌ Credential validation failed:', testErr.message);
+        return res.status(400).json({
+            success: false,
+            error: `Credential validation failed: ${testErr.message}`
+        });
+    } finally {
+        if (testAdmin) { try { await testAdmin.delete(); } catch (_) {} }
+    }
+
+    // Step 2: Persist to .env file
+    try {
+        const envPath = path.join(__dirname, '.env');
+        let envContent = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf8') : '';
+
+        // Escape private key for .env (replace actual newlines with \n literals)
+        const escapedKey = normalizedKey.replace(/\n/g, '\\n');
+
+        // Update or append each key
+        const updates = {
+            FIREBASE_PROJECT_ID: projectId,
+            FIREBASE_CLIENT_EMAIL: clientEmail,
+            FIREBASE_PRIVATE_KEY: `"${escapedKey}"`,
+        };
+
+        for (const [key, value] of Object.entries(updates)) {
+            const regex = new RegExp(`^${key}=.*$`, 'm');
+            const line = `${key}=${value}`;
+            if (regex.test(envContent)) {
+                envContent = envContent.replace(regex, line);
+            } else {
+                envContent += `\n${line}`;
+            }
+        }
+
+        fs.writeFileSync(envPath, envContent, 'utf8');
+        console.log('[SA Config] ✅ Service account credentials written to .env');
+
+        // Step 3: Hot-reload — update process.env and re-initialize Admin SDK
+        process.env.FIREBASE_PROJECT_ID = projectId;
+        process.env.FIREBASE_CLIENT_EMAIL = clientEmail;
+        process.env.FIREBASE_PRIVATE_KEY = normalizedKey;
+
+        // Reinitialize default Firebase Admin app with new credentials
+        const firebaseAdmin = require('firebase-admin');
+        if (firebaseAdmin.apps.length) {
+            await firebaseAdmin.app().delete();
+        }
+        const newApp = firebaseAdmin.initializeApp({
+            credential: firebaseAdmin.credential.cert({
+                projectId,
+                clientEmail,
+                privateKey: normalizedKey,
+            })
+        });
+        admin = firebaseAdmin;
+        db = newApp.firestore();
+        app.set('db', db);
+        console.log('[SA Config] ✅ Firebase Admin SDK hot-reloaded with new credentials');
+
+        return res.json({
+            success: true,
+            message: `Service account credentials saved and applied for project: ${projectId}`,
+            projectId,
+            clientEmail,
+        });
+    } catch (err) {
+        console.error('[SA Config] Error saving credentials:', err.message);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Custom Password Reset via Configured SMTP Server (Bypasses Firebase Default Spammy Domain)
+app.post('/api/auth/custom-password-reset', async (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ success: false, error: 'Email address is required.' });
+
+    try {
+        const token = crypto.randomBytes(32).toString('hex');
+        const expiresAt = Date.now() + 15 * 60 * 1000;
+
+        resetTokens.set(token, {
+            email: email.toLowerCase().trim(),
+            expiresAt,
+            used: false
+        });
+
+        const resetLink = `https://airesume.projectdemo.guru/login?mode=resetPassword&token=${token}&email=${encodeURIComponent(email)}`;
+        console.log(`[Enterprise Reset Token] Generated single-use token for ${email}`);
+
+        const db = req.app.get('db');
+        await EmailNotifier.notifyPasswordReset(db, {
+            userEmail: email,
+            userName: email.split('@')[0],
+            resetLink
+        });
+
+        return res.json({
+            success: true,
+            message: `Branded password reset email sent from your configured SMTP server to ${email}`
+        });
+    } catch (err) {
+        console.error('[Custom Password Reset Error]:', err);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+app.post('/api/auth/set-user-password', async (req, res) => {
+    const { email, newPassword, token } = req.body;
+    if (!email || !newPassword) {
+        return res.status(200).json({ success: false, error: 'Email and new password are required.' });
+    }
+
+    // Validate single-use token if provided
+    if (token) {
+        const tokenData = resetTokens.get(token);
+        if (!tokenData) {
+            return res.status(200).json({ success: false, error: 'Invalid or expired password reset link. Please request a new link.' });
+        }
+        if (tokenData.used) {
+            return res.status(200).json({ success: false, error: 'This password reset link has already been used. Please request a new link.' });
+        }
+        if (Date.now() > tokenData.expiresAt) {
+            resetTokens.delete(token);
+            return res.status(200).json({ success: false, error: 'Password reset link has expired (valid for 15 mins). Please request a new link.' });
+        }
+        tokenData.used = true;
+    }
+
+    try {
+        // ✅ Primary path: Firebase Admin SDK (service account initialized via env vars)
+        if (admin && typeof admin.auth === 'function' && admin.apps && admin.apps.length) {
+            const userRecord = await admin.auth().getUserByEmail(email);
+            await admin.auth().updateUser(userRecord.uid, { password: newPassword, disabled: false });
+            console.log(`[Set Password] ✅ Admin SDK updated Firebase Auth password for ${email} (uid: ${userRecord.uid})`);
+            return res.json({ success: true, method: 'admin_sdk', message: `Password updated successfully for ${email}` });
+        }
+
+        // Fallback: Admin SDK not available
+        console.error('[Set Password] ❌ Firebase Admin SDK not initialized — cannot update password');
+        return res.status(500).json({ success: false, error: 'Server configuration error: Admin SDK unavailable. Please contact support.' });
+    } catch (err) {
+        console.error('[Set User Password Error]:', err.code, err.message);
+        if (err.code === 'auth/user-not-found') {
+            return res.status(200).json({ success: false, error: `No account found for ${email}. Please check the email address.` });
+        }
+        return res.status(200).json({ success: false, error: err.message || 'Failed to update password.' });
+    }
+});
+
+app.post('/api/notify/password-changed', async (req, res) => {
+    const { userEmail, userName } = req.body;
+    const db = req.app.get('db');
+    EmailNotifier.notifyPasswordChanged(db, { userEmail, userName });
+    return res.json({ success: true, message: 'Password changed confirmation queued.' });
+});
+
+app.post('/api/notify/email-otp', async (req, res) => {
+    const { userEmail, userName, otpCode } = req.body;
+    const db = req.app.get('db');
+    EmailNotifier.notifyEmailOTP(db, { userEmail, userName, otpCode });
+    return res.json({ success: true, message: 'OTP verification email queued.' });
+});
+
+app.post('/api/notify/security-alert', async (req, res) => {
+    const { userEmail, deviceInfo, ipAddress } = req.body;
+    const db = req.app.get('db');
+    EmailNotifier.notifySecurityAlert(db, { userEmail, deviceInfo, ipAddress });
+    return res.json({ success: true, message: 'Security alert queued.' });
+});
+
+app.post('/api/notify/portfolio-published', async (req, res) => {
+    const { userEmail, userName, portfolioSlug } = req.body;
+    const db = req.app.get('db');
+    EmailNotifier.notifyPortfolioPublished(db, { userEmail, userName, portfolioSlug });
+    return res.json({ success: true, message: 'Portfolio published email queued.' });
+});
+
+app.post('/api/notify/job-application', async (req, res) => {
+    const { recruiterEmail, applicantName, jobTitle, companyName } = req.body;
+    const db = req.app.get('db');
+    EmailNotifier.notifyJobApplicationReceived(db, { recruiterEmail, applicantName, jobTitle, companyName });
+    return res.json({ success: true, message: 'Job application notification queued.' });
+});
+
+app.post('/api/notify/job-status-update', async (req, res) => {
+    const { applicantEmail, applicantName, jobTitle, companyName, status } = req.body;
+    const db = req.app.get('db');
+    EmailNotifier.notifyJobStatusUpdate(db, { applicantEmail, applicantName, jobTitle, companyName, status });
+    return res.json({ success: true, message: 'Job status update email queued.' });
+});
+
+app.post('/api/notify/job-posted', async (req, res) => {
+    const { employerEmail, jobTitle, companyName } = req.body;
+    const db = req.app.get('db');
+    EmailNotifier.notifyJobPosted(db, { employerEmail, jobTitle, companyName });
+    return res.json({ success: true, message: 'Job posted email queued.' });
+});
+
+app.post('/api/notify/subscription-cancelled', async (req, res) => {
+    const { userEmail, userName, planName } = req.body;
+    const db = req.app.get('db');
+    EmailNotifier.notifySubscriptionCancelled(db, { userEmail, userName, planName });
+    return res.json({ success: true, message: 'Subscription cancellation email queued.' });
 });

@@ -628,26 +628,36 @@ export async function getUserById(id) {
     //   return false
     // }
 }
-// Adding user to firstore
+// Adding user to firestore safely with merge protection for Social OAuth login
 export function addUser(userId, firstname, lastname, email) {
     const db = fire.firestore();
-    db.collection('users')
-        .doc(userId)
-        .set({
-            userId: userId,
-            firstname: firstname,
-            lastname: lastname,
-            resumes: '',
-            membership: 'Basic',
-            email: email,
-            membershipEnds: new Date('2017-05-05'),
-        })
-        .then((error) => console.log(error));
+    const userDocRef = db.collection('users').doc(userId);
 
-    var statsRef = db.collection('data').doc('stats');
-    statsRef.update({
-        numberOfUsers: firebase.firestore.FieldValue.increment(1),
-    });
+    userDocRef.get().then((doc) => {
+        if (!doc.exists) {
+            userDocRef.set({
+                userId: userId,
+                firstname: firstname || 'User',
+                lastname: lastname || '',
+                resumes: '',
+                membership: 'Basic',
+                email: email,
+                membershipEnds: new Date('2017-05-05'),
+                createdAt: new Date()
+            }, { merge: true }).then(() => console.log('User created successfully'));
+
+            var statsRef = db.collection('data').doc('stats');
+            statsRef.update({
+                numberOfUsers: firebase.firestore.FieldValue.increment(1),
+            }).catch(() => {});
+        } else {
+            userDocRef.set({
+                email: email,
+                ...(firstname && firstname !== 'Welcome' ? { firstname } : {}),
+                ...(lastname && lastname !== 'back' ? { lastname } : {})
+            }, { merge: true }).catch(() => {});
+        }
+    }).catch((error) => console.log('addUser error:', error));
 }
 export function editUser(userId, email, membership, membershipsEnds, isA = null, suspended = null) {
     const db = fire.firestore();

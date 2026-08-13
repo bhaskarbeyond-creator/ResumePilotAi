@@ -108,8 +108,7 @@ const SETTINGS_GROUPS = [
         { key: 'geoSeoSettings', label: 'Indian Geo-SEO', icon: FaGlobeAsia },
         { key: 'llmGeoSettings', label: 'LLM GEO (AI Search)', icon: FaBrain },
         { key: 'firebaseSettings', label: 'Firebase', icon: FaFire },
-        { key: 'facebookAuthSettings', label: 'Facebook OAuth', icon: FaFacebook },
-        { key: 'socialAuthSettings', label: 'LinkedIn & GitHub', icon: FaLinkedin },
+        { key: 'socialAuthSettings', label: 'Social Sign-On & OAuth', icon: FaFacebook },
         { key: 'emailSettings', label: 'Email & SMTP', icon: FaEnvelope },
     ]},
     { label: 'AI & Services', items: [

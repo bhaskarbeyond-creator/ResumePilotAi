@@ -1205,7 +1205,7 @@ class SubscriptionSetting extends Component {
         this.setState((prevState) => ({ checkedSubscriptions: !prevState.checkedSubscriptions }));
     }
 
-    previewTemplate(templateId) {
+    openWindowPrintPreview(templateId) {
         const printWindow = window.open('', '_blank');
         const activeTemplate = templateId || 'modern';
 

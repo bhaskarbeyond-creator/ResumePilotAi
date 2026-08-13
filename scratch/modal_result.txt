@@ -1,0 +1,8 @@
+Set New Account Password
+
+Resetting password for: bhaskar.beyond@gmail.com
+
+Password reset email dispatched to bhaskar.beyond@gmail.com! Please check your inbox.
+NEW PASSWORD
+CONFIRM NEW PASSWORD
+Set New Password & Log In →

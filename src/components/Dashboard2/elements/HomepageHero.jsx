@@ -24,6 +24,12 @@ const HomepageHero = ({ t, goToResumeSelectionStep, goToCoverSelection, goToStep
     const [isTyping, setIsTyping] = useState(true);
     const [cursorVisible, setCursorVisible] = useState(true);
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+    const [loadDemoIframe, setLoadDemoIframe] = useState(false);
+
+    useEffect(() => {
+        const timer = setTimeout(() => setLoadDemoIframe(true), 1200);
+        return () => clearTimeout(timer);
+    }, []);
 
     // Use translated sentences if available or fall back to defaults
     const sentences = [
@@ -279,22 +285,28 @@ const HomepageHero = ({ t, goToResumeSelectionStep, goToCoverSelection, goToStep
                                         aspectRatio: '1.9930795847750864',
                                         padding: '0px 0 0px 0px',
                                     }}>
-                                    <iframe
-                                        src="https://app.supademo.com/embed/cmbhuzzr76b1dsn1reikdvlaq?v_email=EMAIL&embed_v=2"
-                                        loading="lazy"
-                                        title="Supademo Demo"
-                                        allow="clipboard-write"
-                                        frameBorder="0"
-                                        webkitallowfullscreen="true"
-                                        mozallowfullscreen="true"
-                                        allowFullScreen
-                                        style={{
-                                            position: 'absolute',
-                                            top: '0',
-                                            left: '0',
-                                            width: '100%',
-                                            height: '100%',
-                                        }}></iframe>
+                                    {loadDemoIframe ? (
+                                        <iframe
+                                            src="https://app.supademo.com/embed/cmbhuzzr76b1dsn1reikdvlaq?v_email=EMAIL&embed_v=2"
+                                            loading="lazy"
+                                            title="Supademo Demo"
+                                            allow="clipboard-write"
+                                            frameBorder="0"
+                                            webkitallowfullscreen="true"
+                                            mozallowfullscreen="true"
+                                            allowFullScreen
+                                            style={{
+                                                position: 'absolute',
+                                                top: '0',
+                                                left: '0',
+                                                width: '100%',
+                                                height: '100%',
+                                            }}></iframe>
+                                    ) : (
+                                        <div className="absolute inset-0 flex items-center justify-center bg-slate-900/5 rounded-2xl text-slate-400 text-xs font-bold">
+                                            <span>Loading Interactive Demo...</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 

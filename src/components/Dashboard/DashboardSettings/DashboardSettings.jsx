@@ -562,10 +562,19 @@ function DashboardSettings(props) {
 
     const handleSendVerificationEmail = async () => {
         const user = fire.auth().currentUser;
-        if (user) {
+        if (user && user.email) {
             try {
-                await user.sendEmailVerification();
-                triggerNotification('Verification email sent to ' + user.email + '. Please check your inbox!');
+                const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+                await fetch('/api/notify/email-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userEmail: user.email,
+                        userName: user.displayName || user.email.split('@')[0],
+                        otpCode: otpCode
+                    })
+                });
+                triggerNotification('Branded verification email sent to ' + user.email + ' from your configured mail server!');
             } catch (err) {
                 triggerNotification(err.message || 'Failed to send verification email.', 'error');
             }

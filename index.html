@@ -40,14 +40,22 @@
   <body>
     <div id="root"></div>
     <script>
-      window.addEventListener('error', function (e) {
-        if (e.message && (e.message.indexOf('module script') !== -1 || e.message.indexOf('Loading chunk') !== -1 || e.message.indexOf('MIME type') !== -1)) {
-          if (!sessionStorage.getItem('chunk_reload')) {
-            sessionStorage.setItem('chunk_reload', 'true');
+      // Immediately unregister all legacy service workers to prevent stale cache white screens
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for (var r of registrations) { r.unregister(); }
+        });
+      }
+      function handleChunkError(msg) {
+        if (msg && (msg.indexOf('module script') !== -1 || msg.indexOf('Loading chunk') !== -1 || msg.indexOf('MIME type') !== -1 || msg.indexOf('dynamically imported module') !== -1 || msg.indexOf('Failed to fetch') !== -1)) {
+          if (!sessionStorage.getItem('chunk_reload_lock')) {
+            sessionStorage.setItem('chunk_reload_lock', 'true');
             window.location.reload(true);
           }
         }
-      }, true);
+      }
+      window.addEventListener('error', function (e) { handleChunkError(e.message || (e.error && e.error.message)); }, true);
+      window.addEventListener('unhandledrejection', function (e) { handleChunkError(e.reason && (e.reason.message || String(e.reason))); });
     </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>

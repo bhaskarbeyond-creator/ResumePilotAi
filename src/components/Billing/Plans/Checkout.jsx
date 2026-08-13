@@ -212,6 +212,23 @@ class Checkout extends Component {
         if (this._toastTimer) clearTimeout(this._toastTimer);
     }
 
+    triggerInvoiceEmail = async (invDetails = {}) => {
+        try {
+            const apiBase = window.location.origin.includes('localhost') ? 'http://localhost:8080' : '';
+            const user = this.getCurrentUser();
+            await axios.post(`${apiBase}/api/send-invoice-email`, {
+                customerEmail: user?.email || invDetails.email || '',
+                customerName: user?.displayName || this.state.CardHolder || invDetails.name || 'Candidate',
+                invoiceNumber: invDetails.invoiceNumber || `RPAI/26-27/${Math.floor(1000 + Math.random() * 9000)}`,
+                amount: `${invDetails.symbol || '₹'}${parseFloat(invDetails.amount || 199).toFixed(2)}`,
+                planName: invDetails.planName || this.props.selectedPlan || 'Pro Plan',
+                gstin: this.state.customerTaxId || invDetails.gstin || ''
+            });
+        } catch (e) {
+            console.warn('Auto invoice email dispatch notice:', e.message);
+        }
+    };
+
     componentDidUpdate(prevProps) {
         if (
             prevProps.stripeEnabled !== this.props.stripeEnabled ||
@@ -424,6 +441,7 @@ class Checkout extends Component {
                 customerTaxId: this.state.customerTaxId || '', currency: this.props.currencyCode || 'USD',
                 paymentIntentId: paymentIntent.id,
             });
+            this.triggerInvoiceEmail({ amount: taxCalc.totalPrice, symbol: this.props.currencyCode === 'INR' ? '₹' : '$', planName: this.props.selectedPlan });
             this.setState({ step: 3, isLoading: false });
         } catch (err) {
             console.error('Unexpected Submit Error:', err);

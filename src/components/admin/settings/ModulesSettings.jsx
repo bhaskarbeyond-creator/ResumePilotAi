@@ -12,12 +12,16 @@ import {
     FaSave,
     FaSpinner,
     FaInfoCircle,
-    FaTag
+    FaTag,
+    FaGoogle,
+    FaFacebook
 } from 'react-icons/fa';
 import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
 
 const ModulesSettings = () => {
     const [modulesConfig, setModulesConfig] = useState({
+        enableGoogleAuthModule: true,
+        enableFacebookAuthModule: true,
         enableImportModule: false, // Default OFF as requested
         enableJobScraperModule: true,
         enablePortfolioModule: true,
@@ -39,6 +43,8 @@ const ModulesSettings = () => {
             const ai = (settings && settings.ai) || {};
 
             setModulesConfig({
+                enableGoogleAuthModule: mods.enableGoogleAuthModule !== undefined ? mods.enableGoogleAuthModule : true,
+                enableFacebookAuthModule: mods.enableFacebookAuthModule !== undefined ? mods.enableFacebookAuthModule : true,
                 enableImportModule: mods.enableImportModule !== undefined
                     ? mods.enableImportModule
                     : (ai.enableImportModule !== undefined ? ai.enableImportModule : false),
@@ -109,6 +115,24 @@ const ModulesSettings = () => {
     }
 
     const moduleItems = [
+        {
+            key: 'enableGoogleAuthModule',
+            title: 'Google Single Sign-On (OAuth 2.0) Module',
+            subtitle: 'Social Authentication',
+            description: 'Enables 1-click Google Sign-in and Sign-up across login modals and auth forms. Turning this OFF hides the Google login button platform-wide.',
+            icon: FaGoogle,
+            badgeColor: modulesConfig.enableGoogleAuthModule ? 'indigo' : 'slate',
+            statusText: modulesConfig.enableGoogleAuthModule ? 'ENABLED' : 'DISABLED',
+        },
+        {
+            key: 'enableFacebookAuthModule',
+            title: 'Facebook Single Sign-On (OAuth 2.0) Module',
+            subtitle: 'Social Authentication',
+            description: 'Enables 1-click Facebook Sign-in and Sign-up across login modals and auth forms. Turning this OFF hides the Facebook login button platform-wide.',
+            icon: FaFacebook,
+            badgeColor: modulesConfig.enableFacebookAuthModule ? 'blue' : 'slate',
+            statusText: modulesConfig.enableFacebookAuthModule ? 'ENABLED' : 'DISABLED',
+        },
         {
             key: 'enableImportModule',
             title: 'AI Resume Import Module',

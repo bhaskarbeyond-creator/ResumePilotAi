@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const PreviewModal = ({ showPreview, setShowPreview, resumeData, onDownload, isDownloading, currentTemplate = 'Cv1', getTemplateComponent, getTemplateName }) => {
@@ -161,7 +161,11 @@ const PreviewModal = ({ showPreview, setShowPreview, resumeData, onDownload, isD
                                             );
                                         }
                                         const TemplateComponent = getTemplateComponent(currentTemplate);
-                                        return <TemplateComponent values={resumeData} language={i18n.language} />;
+                                        return (
+                                            <Suspense fallback={<div className="flex items-center justify-center p-12 text-slate-400 text-xs font-bold">Loading Template...</div>}>
+                                                <TemplateComponent values={resumeData} language={i18n.language} />
+                                            </Suspense>
+                                        );
                                     } catch (error) {
                                         console.error('Error rendering template in preview modal:', error);
                                         return (

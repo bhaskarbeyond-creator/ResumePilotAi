@@ -8,7 +8,7 @@ export default defineConfig({
     build: {
         rollupOptions: {
             output: {
-                entryFileNames: 'assets/index.js',
+                entryFileNames: 'assets/index-[hash].js',
                 chunkFileNames: 'assets/[name]-[hash].js',
                 assetFileNames: (assetInfo) => {
                     if (assetInfo.name && assetInfo.name.endsWith('.css')) {

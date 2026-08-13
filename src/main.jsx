@@ -42,13 +42,84 @@ const MainJobListings = lazy(() => import('./components/JobsListings/MainJobList
 const BlogList = lazy(() => import('./components/Blog/BlogList/BlogList'));
 const BlogPost = lazy(() => import('./components/Blog/BlogPost/BlogPost'));
 const BlogEditor = lazy(() => import('./components/Blog/BlogEditor/BlogEditor'));
+import ResetPasswordModal from './components/auth/resetPassword/ResetPasswordModal';
+
 const AuthWrapper = () => {         
     const [user, setUser] = useState(null);
     const [authLoading, setAuthLoading] = useState(true);
+    const [resetOobCode, setResetOobCode] = useState(null);
+    const [directResetEmail, setDirectResetEmail] = useState(null);
 
     useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const oobCode = params.get('oobCode');
+        const mode = params.get('mode');
+        const reset = params.get('reset');
+        const email = params.get('email');
+        const token = params.get('token');
+        if (oobCode && (mode === 'resetPassword' || !mode)) {
+            console.log('[AuthWrapper] Detected password reset token in URL:', oobCode);
+            setResetOobCode(oobCode);
+        } else if ((mode === 'resetPassword' || reset === 'true' || token) && email) {
+            console.log('[AuthWrapper] Detected tokenized custom reset link for:', email);
+            setDirectResetEmail(email);
+        }
+    }, []);
+
+    useEffect(() => {
+        // Handle OAuth Redirect Result (for Google/Facebook fallback redirect)
+        fire.auth().getRedirectResult().then((result) => {
+            if (result && result.user) {
+                const u = result.user;
+                const nameParts = (u.displayName || '').trim().split(' ');
+                const firstName = nameParts[0] || 'User';
+                const lastName = nameParts.slice(1).join(' ') || '';
+                import('./firestore/auth').then(({ default: addUser }) => {
+                    addUser(u.uid, firstName, lastName, u.email).then((userRes) => {
+                        if (userRes && userRes.isNewUser) {
+                            try {
+                                fetch('/api/notify/user-signup', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ userEmail: u.email, userName: u.displayName || firstName })
+                                }).catch(() => {});
+                            } catch (e) {}
+                        }
+                    });
+                }).catch(() => {});
+            }
+        }).catch((err) => {
+            console.error('[OAuth Redirect Error]:', err);
+        });
+
+        const makeMockFirebaseUser = (rawObj) => {
+            if (!rawObj) return null;
+            return {
+                uid: rawObj.uid || 'user',
+                email: rawObj.email || '',
+                displayName: rawObj.displayName || 'User',
+                photoURL: rawObj.photoURL || '',
+                getIdToken: async () => '',
+                getIdTokenResult: async () => ({ token: '' }),
+                reload: async () => {},
+                ...rawObj
+            };
+        };
+
         const unsubscribe = fire.auth().onAuthStateChanged((user) => {
-            setUser(user);
+            if (user) {
+                setUser(user);
+            } else {
+                const fbSession = localStorage.getItem('fb_user_session');
+                const googleSession = localStorage.getItem('google_user_session');
+                if (fbSession) {
+                    try { setUser(makeMockFirebaseUser(JSON.parse(fbSession))); } catch (e) { setUser(null); }
+                } else if (googleSession) {
+                    try { setUser(makeMockFirebaseUser(JSON.parse(googleSession))); } catch (e) { setUser(null); }
+                } else {
+                    setUser(null);
+                }
+            }
             setAuthLoading(false);
         });
 
@@ -78,12 +149,20 @@ const AuthWrapper = () => {
 
     return (
         <AuthContext.Provider value={user}>
+            {(resetOobCode || directResetEmail) && (
+                <ResetPasswordModal
+                    oobCode={resetOobCode}
+                    initialEmail={directResetEmail}
+                    onClose={() => { setResetOobCode(null); setDirectResetEmail(null); }}
+                />
+            )}
             <GoogleMapsProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || import.meta.env.VITE_APP_GOOGLE_MAPS_API_KEY}>
             <BrowserRouter>
                 <GA4Provider>
                     <Suspense fallback={<Spinner />}>
                         <Routes>
                             <Route path="/" element={<Welcome />} />
+                            <Route path="/login" element={<Welcome />} />
                             <Route path="/coverletter" element={<CoverLetter />} />
                             <Route path="/dashboard/*" element={<Dashboard />} />
                             <Route path="/contact" element={<Contact user={user} />} />

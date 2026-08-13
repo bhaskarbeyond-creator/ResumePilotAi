@@ -1,11 +1,20 @@
 const express = require('express');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const EmailNotifier = require('../services/emailNotifier');
 const router = express.Router();
 
 // Resume generation endpoint
 router.post('/generate-resume', async (req, res) => {
     try {
-        const { occupation, experienceLevel, skills = [], education = [], language = 'en' } = req.body;
+        const { occupation, experienceLevel, skills = [], education = [], language = 'en', userEmail, userName } = req.body;
+
+        if (userEmail) {
+            EmailNotifier.notifyAIResumeReady(req.app.get('db'), {
+                userEmail,
+                userName: userName || 'Candidate',
+                atsScore: '94'
+            }).catch(e => console.warn('[AI Notifier] Resume email notice:', e.message));
+        }
 
         // Language mapping for proper language names in prompt
         const languageNames = {

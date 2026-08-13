@@ -68,29 +68,51 @@ async function addUser(userId, firstname, lastname, email) {
                 }
             }
 
-            // Create user document, inheriting membership from existing account
+            // Determine display name fields from existing data or email
+            const derivedFirstName = existingData.firstname || (existingData.profile?.firstname) || (firstname && firstname !== 'User' ? firstname : '') || (email ? email.split('@')[0] : 'User');
+            const derivedLastName = existingData.lastname || (existingData.profile?.lastname) || (lastname && lastname !== 'User' ? lastname : '') || '';
+
+            // Create/update active user document, inheriting all metadata from existing account
             await db.collection('users')
                 .doc(userId)
                 .set({
                     userId: userId,
-                    firstname: existingData.firstname || firstname,
-                    lastname: existingData.lastname || lastname,
+                    firstname: derivedFirstName,
+                    lastname: derivedLastName,
                     email: email,
                     membership: existingMembership,
                     ...(existingData.membershipEnds ? { membershipEnds: existingData.membershipEnds } : {}),
                     ...(existingData.isA ? { isA: existingData.isA } : {}),
                     ...(existingData.profile ? { profile: existingData.profile } : {}),
-                });
+                    ...(existingData.photoURL ? { photoURL: existingData.photoURL } : {}),
+                }, { merge: true });
+
+            // Copy existing user's resumes and cover letters to this active UID
+            if (existingData && existingData.userId && existingData.userId !== userId) {
+                try {
+                    const oldUid = existingData.userId;
+                    const resumesSnap = await db.collection('users').doc(oldUid).collection('resumes').get();
+                    for (const rDoc of resumesSnap.docs) {
+                        await db.collection('users').doc(userId).collection('resumes').doc(rDoc.id).set(rDoc.data(), { merge: true });
+                    }
+                    const coversSnap = await db.collection('users').doc(oldUid).collection('coverLetters').get();
+                    for (const cDoc of coversSnap.docs) {
+                        await db.collection('users').doc(userId).collection('coverLetters').doc(cDoc.id).set(cDoc.data(), { merge: true });
+                    }
+                    console.log(`⚡ Subcollections synced from ${oldUid} to active ${userId}`);
+                } catch (subErr) {
+                    console.warn('⚡ Subcollection sync note:', subErr.message);
+                }
+            }
             
-            // If another doc exists with the same email, trigger autonomous merge to keep 1 single clean account
+            // Trigger autonomous merge: ALWAYS keep active session userId so current session doc is never deleted!
             if (existingData && existingData.userId && existingData.userId !== userId) {
                 try {
                     const { mergeUserAccounts } = await import('./dbOperations');
-                    // Prefer keeping whichever doc has Premium or is older
-                    const keepId = (existingData.membership === 'Premium') ? existingData.userId : userId;
-                    const deleteId = (keepId === userId) ? existingData.userId : userId;
+                    const keepId = userId; // Active session UID MUST be kept!
+                    const deleteId = existingData.userId;
                     await mergeUserAccounts(keepId, deleteId);
-                    console.log(`⚡ Autonomous Merge Complete: Kept ${keepId}, deleted ${deleteId} (Backup saved).`);
+                    console.log(`⚡ Autonomous Merge Complete: Preserved active session ${keepId}, deleted inactive ${deleteId}.`);
                 } catch (mergeErr) {
                     console.warn('Autonomous merge background notice:', mergeErr.message);
                 }
@@ -116,10 +138,10 @@ async function addUser(userId, firstname, lastname, email) {
                 });
             
             console.log('✅ User created successfully:', userId, '| Membership:', existingMembership);
-            return { success: true, message: 'User created successfully' };
+            return { success: true, isNewUser: true, message: 'User created successfully' };
         } else {
             console.log('ℹ️ User already exists:', userId);
-            return { success: true, message: 'User already exists' };
+            return { success: true, isNewUser: false, message: 'User already exists' };
         }
     } catch (error) {
         console.error('❌ Error creating user:', error);
