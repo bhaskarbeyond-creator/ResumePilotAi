@@ -1,7 +1,55 @@
 /**
- * Automatic Event-Driven Email Notifier Service (10/10 Enterprise Coverage)
+ * Enterprise Event-Driven Email Notifier Service (10/10 Grade)
  * Automatically triggers emails across Auth, Billing, AI, Jobs, Security & Portfolios.
+ * 
+ * FIX: Admin email is now resolved dynamically from DB/SMTP config — never hardcoded.
  */
+
+/**
+ * Resolve the admin email from Firestore SMTP settings.
+ * Falls back to a series of env vars if DB is unavailable.
+ */
+async function getAdminEmail(db) {
+    // Priority 1: Unified Email Config via backend/routes/email.js (reads local JSON + Firestore data/system_settings)
+    try {
+        const emailRoute = require('../routes/email');
+        if (emailRoute && typeof emailRoute.getEmailConfig === 'function') {
+            const cfg = await emailRoute.getEmailConfig(db);
+            if (cfg?.smtp?.adminEmail && cfg.smtp.adminEmail.includes('@')) {
+                return cfg.smtp.adminEmail;
+            }
+        }
+    } catch (e) {
+        // Non-fatal — proceed to fallback checks
+    }
+
+    // Priority 2: Direct Firestore fallback across all known namespaces
+    if (db) {
+        try {
+            const sysDoc = await db.collection('data').doc('system_settings').get();
+            if (sysDoc.exists) {
+                const data = sysDoc.data() || {};
+                const adminEmail = data.smtp?.adminEmail || data.adminEmail;
+                if (adminEmail && adminEmail.includes('@')) return adminEmail;
+            }
+        } catch (_) {}
+
+        try {
+            const doc = await db.collection('settings').doc('smtp').get();
+            if (doc.exists) {
+                const data = doc.data() || {};
+                const adminEmail = data.adminEmail || data.smtp?.adminEmail || data.username;
+                if (adminEmail && adminEmail.includes('@')) return adminEmail;
+            }
+        } catch (_) {}
+    }
+
+    // Priority 3: Environment variable fallback
+    const envAdmin = process.env.ADMIN_EMAIL || process.env.SMTP_ADMIN_EMAIL || process.env.SMTP_USERNAME;
+    if (envAdmin && envAdmin.includes('@')) return envAdmin;
+
+    return null;
+}
 
 const sendNotification = async (db, { to, templateType, vars, customSubject, customBody }) => {
     if (!to) return;
@@ -30,24 +78,36 @@ const sendNotification = async (db, { to, templateType, vars, customSubject, cus
 
 class EmailNotifier {
     /**
-     * 1. User Registration -> Trigger Welcome Email to User & Admin Alert
+     * 1. User Registration → Trigger Welcome Email to User & Admin Alert
      */
     static async notifyUserRegistration(db, { userEmail, userName = 'Valued User' }) {
         if (!userEmail) return;
 
-        // User Welcome
+        // User Welcome Email
         sendNotification(db, {
             to: userEmail,
             templateType: 'welcome',
-            vars: { candidate_name: userName, site_url: 'https://airesume.projectdemo.guru' }
+            vars: {
+                candidate_name: userName,
+                site_url: `${process.env.PROTOCOL || 'https'}://${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}`
+            }
         }).catch(err => console.error('[Notifier] Welcome trigger error:', err.message));
 
-        // Admin Notification
-        sendNotification(db, {
-            to: 'bhaskar.beyond@gmail.com',
-            templateType: 'account_created_admin',
-            vars: { candidate_name: `${userName} (${userEmail})`, date: new Date().toLocaleDateString('en-IN') }
-        }).catch(err => console.error('[Notifier] Account Admin Alert error:', err.message));
+        // Admin Notification — resolved dynamically from DB config
+        getAdminEmail(db).then(adminEmail => {
+            if (!adminEmail) {
+                console.warn('[EmailNotifier] Admin email not configured — skipping admin registration alert.');
+                return;
+            }
+            sendNotification(db, {
+                to: adminEmail,
+                templateType: 'account_created_admin',
+                vars: {
+                    candidate_name: `${userName} (${userEmail})`,
+                    date: new Date().toLocaleDateString('en-IN')
+                }
+            }).catch(err => console.error('[Notifier] Account Admin Alert error:', err.message));
+        }).catch(() => {});
     }
 
     /**
@@ -89,12 +149,13 @@ class EmailNotifier {
     /**
      * 5. Payment Failure Alert
      */
-    static async notifyPaymentFailed(db, { userEmail, userName = 'Customer', amount = '₹199.00', retryUrl = 'https://airesume.projectdemo.guru/pricing' }) {
+    static async notifyPaymentFailed(db, { userEmail, userName = 'Customer', amount = '₹199.00', retryUrl }) {
         if (!userEmail) return;
+        const siteUrl = `${process.env.PROTOCOL || 'https'}://${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}`;
         return sendNotification(db, {
             to: userEmail,
             templateType: 'payment_failed',
-            vars: { candidate_name: userName, amount, retry_url: retryUrl }
+            vars: { candidate_name: userName, amount, retry_url: retryUrl || `${siteUrl}/pricing` }
         });
     }
 
@@ -144,10 +205,11 @@ class EmailNotifier {
      */
     static async notifyAIResumeReady(db, { userEmail, userName = 'Candidate', atsScore = '94' }) {
         if (!userEmail) return;
+        const siteUrl = `${process.env.PROTOCOL || 'https'}://${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}`;
         return sendNotification(db, {
             to: userEmail,
             templateType: 'ai_resume_ready',
-            vars: { candidate_name: userName, ats_score: atsScore, site_url: 'https://airesume.projectdemo.guru' }
+            vars: { candidate_name: userName, ats_score: atsScore, site_url: siteUrl }
         });
     }
 
@@ -219,7 +281,7 @@ class EmailNotifier {
             templateType: 'security_alert',
             vars: {
                 device_info: deviceInfo || 'Chrome on Windows',
-                ip_address: ipAddress || '103.211.54.12',
+                ip_address: ipAddress || 'Unknown',
                 login_time: new Date().toUTCString()
             }
         });
@@ -238,14 +300,46 @@ class EmailNotifier {
     }
 
     /**
-     * 16. Admin Operational System Alert
+     * 16. Admin Operational System Alert — dynamically resolves admin email from DB config
      */
     static async notifyAdminSystemAlert(db, { alertTitle, alertMessage }) {
+        const adminEmail = await getAdminEmail(db);
+        if (!adminEmail) {
+            console.warn('[EmailNotifier] Admin email not configured — skipping system alert:', alertTitle);
+            return;
+        }
         return sendNotification(db, {
-            to: 'bhaskar.beyond@gmail.com',
+            to: adminEmail,
             templateType: 'admin_system_alert',
             vars: { alert_title: alertTitle, alert_message: alertMessage }
         });
+    }
+
+    /**
+     * 17. OAuth Social Login — new user via LinkedIn/GitHub
+     */
+    static async notifyOAuthNewUser(db, { userEmail, userName = 'User', provider = 'Social' }) {
+        if (!userEmail) return;
+        const siteUrl = `${process.env.PROTOCOL || 'https'}://${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}`;
+        // Send user welcome email
+        sendNotification(db, {
+            to: userEmail,
+            templateType: 'welcome',
+            vars: { candidate_name: userName, site_url: siteUrl }
+        }).catch(err => console.error('[Notifier] OAuth Welcome error:', err.message));
+
+        // Admin alert — dynamically resolved
+        getAdminEmail(db).then(adminEmail => {
+            if (!adminEmail) return;
+            sendNotification(db, {
+                to: adminEmail,
+                templateType: 'account_created_admin',
+                vars: {
+                    candidate_name: `${userName} (${userEmail}) via ${provider}`,
+                    date: new Date().toLocaleDateString('en-IN')
+                }
+            }).catch(() => {});
+        }).catch(() => {});
     }
 }
 

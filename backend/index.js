@@ -1577,6 +1577,13 @@ if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
     });
 } else {
     const httpServer = http.createServer(app);
+    httpServer.on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+            console.warn(`[HTTP Server] Port ${port} is already in use by another instance.`);
+        } else {
+            console.error('[HTTP Server Error]', err);
+        }
+    });
     httpServer.listen(port, () => {
         console.log('HTTP Server running on port ' + port);
     });
@@ -1830,8 +1837,8 @@ app.post('/api/admin/firebase-service-account', async (req, res) => {
 });
 
 // Custom Password Reset via Configured SMTP Server (Bypasses Firebase Default Spammy Domain)
-app.post('/api/auth/custom-password-reset', async (req, res) => {
-    const { email } = req.body;
+app.post(['/api/auth/custom-password-reset', '/api/notify/password-reset'], async (req, res) => {
+    const email = req.body.email || req.body.userEmail;
     if (!email) return res.status(400).json({ success: false, error: 'Email address is required.' });
 
     try {
@@ -1844,7 +1851,7 @@ app.post('/api/auth/custom-password-reset', async (req, res) => {
             used: false
         });
 
-        const resetLink = `https://airesume.projectdemo.guru/login?mode=resetPassword&token=${token}&email=${encodeURIComponent(email)}`;
+        const resetLink = `${protocol}://${websiteName}/login?mode=resetPassword&token=${token}&email=${encodeURIComponent(email)}`;
         console.log(`[Enterprise Reset Token] Generated single-use token for ${email}`);
 
         const db = req.app.get('db');
@@ -1962,3 +1969,372 @@ app.post('/api/notify/subscription-cancelled', async (req, res) => {
     EmailNotifier.notifySubscriptionCancelled(db, { userEmail, userName, planName });
     return res.json({ success: true, message: 'Subscription cancellation email queued.' });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LINKEDIN OAUTH 2.0 — Server-Side Authorization Code Flow
+// CSRF protection via single-use state token (5min TTL)
+// Secrets stay server-side — never exposed to client.
+// ─────────────────────────────────────────────────────────────────────────────
+const oauthStateTokens = new Map();
+
+/**
+ * Dynamic credentials resolver for LinkedIn and GitHub OAuth.
+ * Reads from Firestore data/system_settings (field 'socialAuth') first,
+ * falling back to system_settings/socialAuth and process.env.
+ */
+async function getSocialAuthCredentials(provider) {
+    let clientId = '';
+    let clientSecret = '';
+
+    try {
+        if (db) {
+            // Priority 1: data/system_settings document (written by React Admin UX saveSystemSettings)
+            const sysDoc = await db.collection('data').doc('system_settings').get();
+            if (sysDoc.exists) {
+                const sysData = sysDoc.data() || {};
+                const sa = sysData.socialAuth || sysData[provider] || {};
+                if (provider === 'linkedin') {
+                    clientId = sa.linkedinClientId || sa.linkedin_client_id || sa.LINKEDIN_CLIENT_ID || sa.clientId || '';
+                    clientSecret = sa.linkedinClientSecret || sa.linkedin_client_secret || sa.LINKEDIN_CLIENT_SECRET || sa.clientSecret || '';
+                } else if (provider === 'github') {
+                    clientId = sa.githubClientId || sa.github_client_id || sa.GITHUB_CLIENT_ID || sa.clientId || '';
+                    clientSecret = sa.githubClientSecret || sa.github_client_secret || sa.GITHUB_CLIENT_SECRET || sa.clientSecret || '';
+                }
+            }
+
+            // Priority 2: Legacy system_settings/socialAuth document
+            if (!clientId || !clientSecret) {
+                const saDoc = await db.collection('system_settings').doc('socialAuth').get();
+                if (saDoc.exists) {
+                    const saData = saDoc.data() || {};
+                    if (provider === 'linkedin') {
+                        clientId = clientId || saData.linkedinClientId || saData.linkedin_client_id || saData.LINKEDIN_CLIENT_ID || '';
+                        clientSecret = clientSecret || saData.linkedinClientSecret || saData.linkedin_client_secret || saData.LINKEDIN_CLIENT_SECRET || '';
+                    } else if (provider === 'github') {
+                        clientId = clientId || saData.githubClientId || saData.github_client_id || saData.GITHUB_CLIENT_ID || '';
+                        clientSecret = clientSecret || saData.githubClientSecret || saData.github_client_secret || saData.GITHUB_CLIENT_SECRET || '';
+                    }
+                }
+            }
+        }
+    } catch (err) {
+        console.warn(`[getSocialAuthCredentials] Firestore lookup error for ${provider}:`, err.message);
+    }
+
+    // Priority 3: Fallback to environment variables
+    if (!clientId && provider === 'linkedin') clientId = process.env.LINKEDIN_CLIENT_ID || '';
+    if (!clientSecret && provider === 'linkedin') clientSecret = process.env.LINKEDIN_CLIENT_SECRET || '';
+    if (!clientId && provider === 'github') clientId = process.env.GITHUB_CLIENT_ID || '';
+    if (!clientSecret && provider === 'github') clientSecret = process.env.GITHUB_CLIENT_SECRET || '';
+
+    return { clientId: (clientId || '').trim(), clientSecret: (clientSecret || '').trim() };
+}
+
+// Cleanup expired state tokens every 10 minutes
+setInterval(() => {
+    const now = Date.now();
+    for (const [key, data] of oauthStateTokens.entries()) {
+        if (data.expiresAt < now) oauthStateTokens.delete(key);
+    }
+}, 10 * 60 * 1000);
+
+/**
+ * GET /api/auth/linkedin — Initiate LinkedIn OAuth 2.0 flow
+ */
+app.get('/api/auth/linkedin', async (req, res) => {
+    const { clientId } = await getSocialAuthCredentials('linkedin');
+    if (!clientId) {
+        return res.status(400).send('LinkedIn OAuth not configured. Please add LINKEDIN_CLIENT_ID to your Admin Settings or .env file.');
+    }
+    const state = crypto.randomBytes(16).toString('hex');
+    oauthStateTokens.set(state, { provider: 'linkedin', expiresAt: Date.now() + 5 * 60 * 1000 });
+    const redirectUri = encodeURIComponent(`${protocol}://${websiteName}/api/auth/linkedin/callback`);
+    const scope = encodeURIComponent('openid profile email');
+    const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&state=${state}&scope=${scope}`;
+    res.redirect(authUrl);
+});
+
+/**
+ * GET /api/auth/linkedin/callback — LinkedIn OAuth 2.0 code exchange + Firestore user creation
+ */
+app.get('/api/auth/linkedin/callback', async (req, res) => {
+    const { code, state, error: oauthError } = req.query;
+    const { clientId, clientSecret } = await getSocialAuthCredentials('linkedin');
+    const redirectUri = `${protocol}://${websiteName}/api/auth/linkedin/callback`;
+
+    if (oauthError) {
+        console.warn('[LinkedIn Callback] User denied authorization:', oauthError);
+        return res.redirect(`${protocol}://${websiteName}/login?error=linkedin_denied`);
+    }
+
+    // CSRF validation
+    const stateData = oauthStateTokens.get(state);
+    if (!stateData || stateData.provider !== 'linkedin' || Date.now() > stateData.expiresAt) {
+        console.error('[LinkedIn Callback] Invalid or expired CSRF state token');
+        return res.redirect(`${protocol}://${websiteName}/login?error=linkedin_state_invalid`);
+    }
+    oauthStateTokens.delete(state);
+
+    if (!code) return res.redirect(`${protocol}://${websiteName}/login?error=linkedin_no_code`);
+
+    try {
+        // Step 1: Exchange authorization code for access token
+        const tokenRes = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                grant_type: 'authorization_code',
+                code,
+                redirect_uri: redirectUri,
+                client_id: clientId,
+                client_secret: clientSecret,
+            }).toString()
+        });
+        const tokenData = await tokenRes.json();
+        if (!tokenData.access_token) {
+            console.error('[LinkedIn Token Error]:', tokenData);
+            return res.redirect(`${protocol}://${websiteName}/login?error=linkedin_token_failed`);
+        }
+
+        // Step 2: Fetch user profile using OpenID Connect userinfo endpoint
+        const profileRes = await fetch('https://api.linkedin.com/v2/userinfo', {
+            headers: { Authorization: `Bearer ${tokenData.access_token}` }
+        });
+        const profile = await profileRes.json();
+
+        const linkedinId = profile.sub;
+        const email = profile.email || `${linkedinId}@linkedin.user`;
+        const displayName = profile.name || `${profile.given_name || ''} ${profile.family_name || ''}`.trim() || 'LinkedIn User';
+        const firstName = profile.given_name || displayName.split(' ')[0] || 'User';
+        const lastName = profile.family_name || displayName.split(' ').slice(1).join(' ') || '';
+        const photoURL = profile.picture || null;
+        const uid = `linkedin:${linkedinId}`;
+
+        // Step 3: Upsert user in Firestore with membership inheritance
+        let isNewUser = false;
+        if (db) {
+            try {
+                const userRef = db.collection('users').doc(uid);
+                const snap = await userRef.get();
+                const { FieldValue } = require('firebase-admin').firestore;
+                if (!snap.exists) {
+                    isNewUser = true;
+                    let existingMembership = 'Basic';
+                    if (email) {
+                        try {
+                            const existingQuery = await db.collection('users').where('email', '==', email.toLowerCase().trim()).get();
+                            if (!existingQuery.empty) {
+                                const match = existingQuery.docs.find(d => d.id !== uid) || existingQuery.docs[0];
+                                if (match && match.data()?.membership) {
+                                    existingMembership = match.data().membership;
+                                }
+                            }
+                        } catch (_) {}
+                    }
+                    await userRef.set({
+                        userId: uid, firstname: firstName, lastname: lastName,
+                        email, photoURL: photoURL || '',
+                        authProvider: 'linkedin',
+                        membership: existingMembership,
+                        createdAt: FieldValue.serverTimestamp(),
+                        lastLoginAt: FieldValue.serverTimestamp(),
+                    });
+                } else {
+                    await userRef.set({
+                        lastLoginAt: FieldValue.serverTimestamp(),
+                        authProvider: 'linkedin',
+                        ...(photoURL ? { photoURL } : {}),
+                    }, { merge: true });
+                }
+            } catch (dbErr) {
+                console.warn('[LinkedIn Callback] Firestore upsert notice:', dbErr.message);
+            }
+        }
+
+        // Step 4: Dispatch welcome email on first login
+        if (isNewUser) {
+            EmailNotifier.notifyOAuthNewUser(db, { userEmail: email, userName: displayName, provider: 'LinkedIn' });
+        }
+
+        // Step 5: Set session info in query params for client to pick up
+        const sessionPayload = Buffer.from(JSON.stringify({ uid, email, displayName, photoURL, provider: 'linkedin' })).toString('base64url');
+        console.log(`[LinkedIn OAuth] ✅ User ${isNewUser ? 'created' : 'signed in'}: ${uid}`);
+        return res.redirect(`${protocol}://${websiteName}/dashboard?oauth_session=${sessionPayload}&provider=linkedin`);
+
+    } catch (err) {
+        console.error('[LinkedIn Callback Error]:', err.message);
+        return res.redirect(`${protocol}://${websiteName}/login?error=linkedin_callback_failed`);
+    }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GITHUB OAUTH 2.0 — Server-Side Authorization Code Flow
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * GET /api/auth/github — Initiate GitHub OAuth 2.0 flow
+ */
+app.get('/api/auth/github', async (req, res) => {
+    const { clientId } = await getSocialAuthCredentials('github');
+    if (!clientId) {
+        return res.status(400).send('GitHub OAuth not configured. Please add GITHUB_CLIENT_ID to your Admin Settings or .env file.');
+    }
+    const state = crypto.randomBytes(16).toString('hex');
+    oauthStateTokens.set(state, { provider: 'github', expiresAt: Date.now() + 5 * 60 * 1000 });
+    const redirectUri = encodeURIComponent(`${protocol}://${websiteName}/api/auth/github/callback`);
+    const authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&state=${state}&scope=read:user,user:email`;
+    res.redirect(authUrl);
+});
+
+/**
+ * GET /api/auth/github/callback — GitHub OAuth 2.0 code exchange + Firestore user creation
+ */
+app.get('/api/auth/github/callback', async (req, res) => {
+    const { code, state, error: oauthError } = req.query;
+    const { clientId, clientSecret } = await getSocialAuthCredentials('github');
+
+    if (oauthError) {
+        console.warn('[GitHub Callback] User denied authorization:', oauthError);
+        return res.redirect(`${protocol}://${websiteName}/login?error=github_denied`);
+    }
+
+    // CSRF validation
+    const stateData = oauthStateTokens.get(state);
+    if (!stateData || stateData.provider !== 'github' || Date.now() > stateData.expiresAt) {
+        console.error('[GitHub Callback] Invalid or expired CSRF state token');
+        return res.redirect(`${protocol}://${websiteName}/login?error=github_state_invalid`);
+    }
+    oauthStateTokens.delete(state);
+
+    if (!code) return res.redirect(`${protocol}://${websiteName}/login?error=github_no_code`);
+
+    try {
+        // Step 1: Exchange code for access token
+        const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ client_id: clientId, client_secret: clientSecret, code })
+        });
+        const tokenData = await tokenRes.json();
+        if (!tokenData.access_token) {
+            console.error('[GitHub Token Error]:', tokenData);
+            return res.redirect(`${protocol}://${websiteName}/login?error=github_token_failed`);
+        }
+
+        // Step 2: Fetch user profile
+        const profileRes = await fetch('https://api.github.com/user', {
+            headers: { Authorization: `Bearer ${tokenData.access_token}`, 'User-Agent': `${websiteName}-OAuth` }
+        });
+        const profile = await profileRes.json();
+
+        // Step 3: Fetch verified primary email (GitHub may not include it in profile)
+        let email = profile.email;
+        if (!email) {
+            try {
+                const emailRes = await fetch('https://api.github.com/user/emails', {
+                    headers: { Authorization: `Bearer ${tokenData.access_token}`, 'User-Agent': `${websiteName}-OAuth` }
+                });
+                const emails = await emailRes.json();
+                const primary = emails.find(e => e.primary && e.verified);
+                email = primary?.email || emails[0]?.email || `${profile.id}@github.user`;
+            } catch (_) {
+                email = `${profile.id}@github.user`;
+            }
+        }
+
+        const githubId = profile.id;
+        const displayName = profile.name || profile.login || 'GitHub User';
+        const nameParts = displayName.trim().split(' ');
+        const firstName = nameParts[0] || 'User';
+        const lastName = nameParts.slice(1).join(' ') || '';
+        const photoURL = profile.avatar_url || null;
+        const uid = `github:${githubId}`;
+
+        // Step 4: Upsert user in Firestore with membership inheritance
+        let isNewUser = false;
+        if (db) {
+            try {
+                const userRef = db.collection('users').doc(uid);
+                const snap = await userRef.get();
+                const { FieldValue } = require('firebase-admin').firestore;
+                if (!snap.exists) {
+                    isNewUser = true;
+                    let existingMembership = 'Basic';
+                    if (email) {
+                        try {
+                            const existingQuery = await db.collection('users').where('email', '==', email.toLowerCase().trim()).get();
+                            if (!existingQuery.empty) {
+                                const match = existingQuery.docs.find(d => d.id !== uid) || existingQuery.docs[0];
+                                if (match && match.data()?.membership) {
+                                    existingMembership = match.data().membership;
+                                }
+                            }
+                        } catch (_) {}
+                    }
+                    await userRef.set({
+                        userId: uid, firstname: firstName, lastname: lastName,
+                        email, photoURL: photoURL || '',
+                        authProvider: 'github',
+                        membership: existingMembership,
+                        createdAt: FieldValue.serverTimestamp(),
+                        lastLoginAt: FieldValue.serverTimestamp(),
+                    });
+                } else {
+                    await userRef.set({
+                        lastLoginAt: FieldValue.serverTimestamp(),
+                        authProvider: 'github',
+                        ...(photoURL ? { photoURL } : {}),
+                    }, { merge: true });
+                }
+            } catch (dbErr) {
+                console.warn('[GitHub Callback] Firestore upsert notice:', dbErr.message);
+            }
+        }
+
+        // Step 5: Dispatch welcome email on first login
+        if (isNewUser) {
+            EmailNotifier.notifyOAuthNewUser(db, { userEmail: email, userName: displayName, provider: 'GitHub' });
+        }
+
+        // Step 6: Redirect to dashboard with session payload
+        const sessionPayload = Buffer.from(JSON.stringify({ uid, email, displayName, photoURL, provider: 'github' })).toString('base64url');
+        console.log(`[GitHub OAuth] ✅ User ${isNewUser ? 'created' : 'signed in'}: ${uid}`);
+        return res.redirect(`${protocol}://${websiteName}/dashboard?oauth_session=${sessionPayload}&provider=github`);
+
+    } catch (err) {
+        console.error('[GitHub Callback Error]:', err.message);
+        return res.redirect(`${protocol}://${websiteName}/login?error=github_callback_failed`);
+    }
+});
+
+/**
+ * GET /api/auth/linkedin/test-credentials — Verify LinkedIn credentials are configured
+ * Called by Admin OAuth panel to show live status badge.
+ */
+app.get('/api/auth/linkedin/test-credentials', async (req, res) => {
+    const { clientId, clientSecret } = await getSocialAuthCredentials('linkedin');
+    const configured = !!(clientId && clientSecret);
+    return res.json({
+        provider: 'linkedin',
+        configured,
+        callbackUrl: `${protocol}://${websiteName}/api/auth/linkedin/callback`,
+        note: configured ? 'LinkedIn credentials active in Admin Settings / Environment.' : 'LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET are not set in Admin Settings or .env.'
+    });
+});
+
+/**
+ * GET /api/auth/github/test-credentials — Verify GitHub credentials are configured
+ */
+app.get('/api/auth/github/test-credentials', async (req, res) => {
+    const { clientId, clientSecret } = await getSocialAuthCredentials('github');
+    const configured = !!(clientId && clientSecret);
+    return res.json({
+        provider: 'github',
+        configured,
+        callbackUrl: `${protocol}://${websiteName}/api/auth/github/callback`,
+        note: configured ? 'GitHub credentials active in Admin Settings / Environment.' : 'GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET are not set in Admin Settings or .env.'
+    });
+});
+
+module.exports = app;
+

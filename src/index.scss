@@ -432,7 +432,9 @@ body {
                             align-items: center;
                             width: 100%;
                             .googleAuthItem,
-                            .facebookAuthItem {
+                            .facebookAuthItem,
+                            .linkedinAuthItem,
+                            .githubAuthItem {
                                 width: 100%;
                                 padding: 5px 0px;
                                 span {

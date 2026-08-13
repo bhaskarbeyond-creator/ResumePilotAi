@@ -1,9 +1,12 @@
 import fire from '../conf/fire';
-import { getSystemSettings, addUser } from '../firestore/dbOperations';
+import { getSystemSettings } from '../firestore/dbOperations';
+import addUser from '../firestore/auth';
 
 /**
  * Direct Facebook SDK / OAuth Fallback Handler for Scenario 3
  * (Executes when Firebase Auth is not configured in Firebase Console, but Admin has valid Facebook App ID in Settings)
+ * 
+ * FIX: Signup notification is now gated behind isNewUser check — prevents welcome emails on every return login.
  */
 export async function directFacebookAuthFallback(closeModal, throwError) {
     try {
@@ -55,19 +58,28 @@ export async function directFacebookAuthFallback(closeModal, throwError) {
                         const email = userInfo.email || `${userInfo.id}@facebook.user`;
                         const firstName = userInfo.first_name || (userInfo.name || '').split(' ')[0] || 'User';
                         const lastName = userInfo.last_name || (userInfo.name || '').split(' ').slice(1).join(' ') || '';
-                        
+                        const photoURL = userInfo.picture?.data?.url || null;
+
                         const customUid = `facebook:${userInfo.id}`;
-                        
+
                         try {
-                            // Save profile to Firestore
-                            addUser(customUid, firstName, lastName, email);
-                            
-                            // Send welcome notification email
-                            fetch('/api/notify/user-signup', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ userEmail: email, userName: userInfo.name || firstName })
-                            }).catch(() => {});
+                            // Save profile to Firestore and get isNewUser status
+                            const result = await addUser(customUid, firstName, lastName, email, {
+                                authProvider: 'facebook',
+                                photoURL
+                            });
+
+                            // Gate welcome email dispatch on isNewUser — prevent duplicate emails for returning users
+                            if (result && result.isNewUser) {
+                                fetch('/api/notify/user-signup', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ userEmail: email, userName: userInfo.name || firstName })
+                                }).catch(() => {});
+                                console.log('[FB Fallback] New user — welcome email dispatched.');
+                            } else {
+                                console.log('[FB Fallback] Returning user — skipping welcome email.');
+                            }
 
                             if (closeModal) closeModal();
                             window.location.reload();

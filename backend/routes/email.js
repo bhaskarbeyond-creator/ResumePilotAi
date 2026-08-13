@@ -692,7 +692,8 @@ async function logOutboundEmail(db, logEntry) {
         recipient: logEntry.to,
         subject: logEntry.subject,
         templateType: logEntry.templateType || 'custom',
-        status: logEntry.status, // SENT, FAILED
+        status: logEntry.status, // SENT, FAILED, SKIPPED
+        html: logEntry.html || null,
         messageId: logEntry.messageId || null,
         error: logEntry.error || null,
         transport: logEntry.transport || 'primary_smtp',
@@ -1014,16 +1015,55 @@ router.get('/logs', async (req, res) => {
 // 6. Resend Dispatched Email
 router.post('/resend', async (req, res) => {
     const db = req.app.get('db');
-    const { logId } = req.body;
+    const { logId, id } = req.body;
+    const searchId = logId || id;
 
-    const targetLog = emailLogsStore.find(l => l.id === logId);
+    if (!searchId) {
+        return res.status(400).json({ success: false, error: 'logId is required.' });
+    }
+
+    // Tier 1: Search in-memory store
+    let targetLog = emailLogsStore.find(l => l.id === searchId || l.messageId === searchId);
+
+    // Tier 2: Fallback query to Firestore email_logs if not found in memory
+    if (!targetLog && db) {
+        try {
+            // Direct document lookup by ID
+            const docSnap = await db.collection('email_logs').doc(searchId).get();
+            if (docSnap.exists) {
+                targetLog = docSnap.data();
+            } else {
+                // Query by 'id' field
+                const querySnap = await db.collection('email_logs').where('id', '==', searchId).limit(1).get();
+                if (!querySnap.empty) {
+                    targetLog = querySnap.docs[0].data();
+                } else {
+                    // Query by 'messageId' field
+                    const msgSnap = await db.collection('email_logs').where('messageId', '==', searchId).limit(1).get();
+                    if (!msgSnap.empty) {
+                        targetLog = msgSnap.docs[0].data();
+                    }
+                }
+            }
+
+            // Cache retrieved log into memory store for fast subsequent access
+            if (targetLog) {
+                emailLogsStore.unshift(targetLog);
+            }
+        } catch (e) {
+            console.warn('[Resend Email] Firestore log lookup notice:', e.message);
+        }
+    }
+
     if (!targetLog) {
-        return res.status(404).json({ success: false, error: 'Email log entry not found.' });
+        return res.status(404).json({ success: false, error: `Email log entry '${searchId}' not found.` });
     }
 
     try {
         const config = await getEmailConfig(db);
-        const rendered = renderEmailTemplate(targetLog.templateType, { candidate_name: targetLog.recipient }, customTemplatesStore);
+        const rendered = targetLog.html
+            ? { subject: targetLog.subject, html: targetLog.html }
+            : renderEmailTemplate(targetLog.templateType, { candidate_name: targetLog.recipient }, customTemplatesStore);
 
         const mailOptions = {
             from: `"${config.smtp.senderName}" <${config.smtp.username}>`,
@@ -1038,6 +1078,7 @@ router.post('/resend', async (req, res) => {
             subject: `[RESENT] ${targetLog.subject}`,
             templateType: targetLog.templateType,
             status: 'SENT',
+            html: rendered.html,
             messageId: result.messageId,
             transport: result.transport
         });

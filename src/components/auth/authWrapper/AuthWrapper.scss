@@ -54,53 +54,103 @@
         }
         .body {
             margin: auto;
-            width: 59%;
+            width: 100%;
+            max-width: 350px;
             height: 100%;
             .socialAuth {
-                .googleAuthItem {
+                width: 100%;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+
+                .googleAuthItem,
+                .facebookAuthItem,
+                .linkedinAuthItem,
+                .githubAuthItem {
                     cursor: pointer;
-                    width: 350px;
-                    border: 1px solid #e8e6e6;
+                    width: 100%;
+                    max-width: 350px;
+                    box-sizing: border-box;
                     border-radius: 5px;
                     text-align: center;
-                    padding: 10px 0px;
+                    padding: 10px 16px;
+                    margin: 0 auto 10px auto;
                     display: flex;
+                    align-items: center;
                     justify-content: center;
-                    img {
+                    gap: 10px;
+                    transition: all 0.2s ease;
+
+                    img, svg {
                         width: 20px;
+                        height: 20px;
                         vertical-align: middle;
-                        margin-right: 10px;
+                        margin: 0;
+                        flex-shrink: 0;
                     }
+
                     span {
                         font-family: $font;
                         font-size: 14px;
                         font-weight: 600;
+                        line-height: 1.2;
                     }
-                    margin-bottom: 10px;
+
+                    &.is-loading,
+                    &.loading {
+                        opacity: 0.65;
+                        cursor: not-allowed;
+                        pointer-events: none;
+                    }
                 }
-                .facebookAuthItem {
-                    cursor: pointer;
-                    width: 350px;
-                    background-color: #4267b2;
-                    color: white;
+
+                .googleAuthItem {
+                    background-color: #ffffff;
+                    color: #333333;
                     border: 1px solid #e8e6e6;
-                    border-radius: 5px;
-                    text-align: center;
-                    padding: 10px 0px;
-                    display: flex;
-                    justify-content: center;
-                    img {
-                        width: 20px;
-                        vertical-align: middle;
-                        margin-right: 10px;
+                    &:hover {
+                        background-color: #f8f9fa;
+                        border-color: #dcdcdc;
                     }
                     span {
-                        font-family: $font;
-                        font-weight: 500;
-                        font-size: 14px;
-                        font-weight: 600;
+                        color: #333333;
                     }
-                    margin-bottom: 10px;
+                }
+
+                .facebookAuthItem {
+                    background-color: #4267b2;
+                    color: #ffffff;
+                    border: 1px solid #4267b2;
+                    &:hover {
+                        background-color: #365495;
+                    }
+                    span {
+                        color: #ffffff;
+                    }
+                }
+
+                .linkedinAuthItem {
+                    background-color: #0A66C2;
+                    color: #ffffff;
+                    border: 1px solid #0A66C2;
+                    &:hover {
+                        background-color: #0958a8;
+                    }
+                    span {
+                        color: #ffffff;
+                    }
+                }
+
+                .githubAuthItem {
+                    background-color: #24292e;
+                    color: #ffffff;
+                    border: 1px solid #24292e;
+                    &:hover {
+                        background-color: #1a1e22;
+                    }
+                    span {
+                        color: #ffffff;
+                    }
                 }
             }
             .registerForm {

@@ -17,6 +17,7 @@ import { IoClose } from 'react-icons/io5';
 import { RxHamburgerMenu } from 'react-icons/rx';
 // Firease
 import fire from '../../conf/fire';
+import signOutUser from '../../utils/signOut';
 import { InitialisationCheck, getPages, getWebsiteData, getSubscriptionStatus, checkSbs, makeBasicAccount, checkIfSuspended } from '../../firestore/dbOperations';
 import { getUserMembership } from '../../firestore/paidOperations';
 // Initialisation Component
@@ -245,8 +246,7 @@ class Welcome extends Component {
             if (user) {
                 const suspended = await checkIfSuspended(user.uid);
                 if (suspended) {
-                    fire.auth().signOut();
-                    localStorage.removeItem('user');
+                    signOutUser();
                     alert('Your account has been temporarily suspended by an administrator. Please contact support.');
                     this.setState({ user: null });
                     return;
@@ -288,10 +288,7 @@ class Welcome extends Component {
 
     // Logout functionality
     logout() {
-        fire.auth().signOut();
-        localStorage.removeItem('user');
-        localStorage.removeItem('currentResumeId');
-        localStorage.removeItem('currentResumeItem');
+        signOutUser();
         this.currentResume = null;
         this.setState({ user: null });
     }

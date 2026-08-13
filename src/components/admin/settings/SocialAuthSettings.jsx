@@ -82,7 +82,12 @@ const SocialAuthSettings = () => {
                 facebookPixelId: socialAuthConfig.facebookPixelId,
                 enableFacebookLogin: !!(socialAuthConfig.facebookAppId && socialAuthConfig.facebookAppId.trim())
             });
-            setStatusMessage({ type: 'success', text: 'Google GIS & Social Sign-On settings saved successfully!' });
+            // CRITICAL FIX: Also save enable flags to 'modules' namespace which Login/Register read
+            await saveSystemSettings('modules', {
+                enableLinkedinLogin: socialAuthConfig.enableLinkedinLogin,
+                enableGithubLogin: socialAuthConfig.enableGithubLogin,
+            });
+            setStatusMessage({ type: 'success', text: 'OAuth settings saved. LinkedIn/GitHub toggles are now live.' });
         } catch (error) {
             setStatusMessage({ type: 'error', text: `Failed to save settings: ${error.message}` });
         } finally {
@@ -283,6 +288,7 @@ const SocialAuthSettings = () => {
                                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 focus:outline-none"
                                 title={showLinkedinSecret ? "Hide Secret" : "Show Secret"}
                             >
+                                {showLinkedinSecret ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
                             </button>
                         </div>
                     </div>
@@ -314,6 +320,27 @@ const SocialAuthSettings = () => {
                         Enable "Log in with LinkedIn" button
                     </label>
                 </div>
+                {/* Live credential test badge */}
+                <div className="my-2 p-3 bg-slate-100 border border-slate-200 rounded-lg flex items-center gap-3 text-xs">
+                    <span className="text-slate-600">Live backend check:</span>
+                    <button
+                        type="button"
+                        className="px-3 py-1 bg-sky-100 hover:bg-sky-200 text-sky-800 border border-sky-300 rounded-md font-medium transition-colors"
+                        onClick={() => {
+                            fetch('/api/auth/linkedin/test-credentials')
+                                .then(r => r.json())
+                                .then(d => alert(d.configured
+                                    ? `✅ LinkedIn credentials detected in environment.\nCallback URL: ${d.callbackUrl}`
+                                    : `⚠️ ${d.note}\n\nPlease add LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET to your server .env file.`
+                                ))
+                                .catch(() => alert('Could not reach backend. Is the server running?'));
+                        }}
+                    >
+                        Test LinkedIn Config
+                    </button>
+                    <span className="text-slate-400 text-[10px]">Checks if .env keys are loaded on server</span>
+                </div>
+
             </div>
 
             {/* GitHub */}
@@ -362,6 +389,40 @@ const SocialAuthSettings = () => {
                             </button>
                         </div>
                     </div>
+                </div>
+
+                {/* GitHub Redirect URL Copy Box */}
+                <div className="my-3 p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 space-y-1">
+                    <p className="font-bold flex items-center gap-1.5">
+                        <span>📌 Authorized Callback URL for GitHub OAuth App:</span>
+                    </p>
+                    <code className="block p-2 bg-white border border-slate-200 rounded font-mono text-[11px] select-all text-slate-800 break-all">
+                        {`https://${window.location.host}/api/auth/github/callback`}
+                    </code>
+                    <p className="text-[11px] text-slate-600">
+                        Copy this URL to <strong>GitHub Developer Settings → OAuth Apps → Authorization callback URL</strong>.
+                    </p>
+                </div>
+
+                {/* Live credential test badge */}
+                <div className="my-2 p-3 bg-slate-100 border border-slate-200 rounded-lg flex items-center gap-3 text-xs">
+                    <span className="text-slate-600">Live backend check:</span>
+                    <button
+                        type="button"
+                        className="px-3 py-1 bg-slate-800 hover:bg-slate-900 text-white border border-slate-700 rounded-md font-medium transition-colors"
+                        onClick={() => {
+                            fetch('/api/auth/github/test-credentials')
+                                .then(r => r.json())
+                                .then(d => alert(d.configured
+                                    ? `✅ GitHub credentials detected in environment.\nCallback URL: ${d.callbackUrl}`
+                                    : `⚠️ ${d.note}\n\nPlease add GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET to your server .env file.`
+                                ))
+                                .catch(() => alert('Could not reach backend. Is the server running?'));
+                        }}
+                    >
+                        Test GitHub Config
+                    </button>
+                    <span className="text-slate-400 text-[10px]">Checks if .env keys are loaded on server</span>
                 </div>
 
                 <div className="flex items-center space-x-2 pt-1">

@@ -13,6 +13,7 @@ import { getFullName, getAds } from '../../../firestore/dbOperations';
 import { motion, AnimatePresence, transform } from 'framer-motion';
 import { withTranslation } from 'react-i18next';
 import { trackEvent, trackUserLogin, trackEngagement } from '../../../utils/ga4';
+import signOutUser from '../../../utils/signOut';
 
 import { getWebsiteData } from '../../../firestore/dbOperations';
 
@@ -173,9 +174,7 @@ class DashboardMain extends Component {
         // Track logout event
         trackEvent('logout', 'User', 'Dashboard logout');
 
-        fire.auth().signOut();
-        localStorage.removeItem('currentResumeId');
-        localStorage.removeItem('currentResumeItem');
+        signOutUser();
         this.currentResume = null;
     }
     // Handling cover letter click to show coming soon message

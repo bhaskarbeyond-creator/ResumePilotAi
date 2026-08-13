@@ -33,7 +33,33 @@ export async function testFirebaseRules() {
     console.log('🧪 Firebase rules test completed');
 }
 
-async function addUser(userId, firstname, lastname, email) {
+/**
+ * updateUserOnLogin — Called on EVERY successful login (not just new users).
+ * Keeps photoURL, displayName, lastLoginAt fresh for all auth providers.
+ */
+export async function updateUserOnLogin(userId, { photoURL, displayName, authProvider } = {}) {
+    if (!userId) return;
+    const db = fire.firestore();
+    try {
+        const updates = {
+            lastLoginAt: firebase.firestore.FieldValue.serverTimestamp(),
+        };
+        if (photoURL) updates.photoURL = photoURL;
+        if (displayName) {
+            const parts = displayName.trim().split(' ');
+            updates.firstname = parts[0] || '';
+            updates.lastname = parts.slice(1).join(' ') || '';
+        }
+        if (authProvider) updates.authProvider = authProvider;
+        await db.collection('users').doc(userId).set(updates, { merge: true });
+        console.log(`✅ User login record refreshed: ${userId} [${authProvider || 'unknown'}]`);
+    } catch (err) {
+        // Non-fatal — don't block auth flow
+        console.warn('⚠️ updateUserOnLogin note:', err.message);
+    }
+}
+
+async function addUser(userId, firstname, lastname, email, { authProvider = 'email', photoURL = null } = {}) {
     const db = fire.firestore();
     try {
         // Checking if user doc for this UID already exists
@@ -81,10 +107,13 @@ async function addUser(userId, firstname, lastname, email) {
                     lastname: derivedLastName,
                     email: email,
                     membership: existingMembership,
+                    authProvider: authProvider,
+                    ...(photoURL ? { photoURL } : (existingData.photoURL ? { photoURL: existingData.photoURL } : {})),
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    lastLoginAt: firebase.firestore.FieldValue.serverTimestamp(),
                     ...(existingData.membershipEnds ? { membershipEnds: existingData.membershipEnds } : {}),
                     ...(existingData.isA ? { isA: existingData.isA } : {}),
                     ...(existingData.profile ? { profile: existingData.profile } : {}),
-                    ...(existingData.photoURL ? { photoURL: existingData.photoURL } : {}),
                 }, { merge: true });
 
             // Copy existing user's resumes and cover letters to this active UID
@@ -137,10 +166,12 @@ async function addUser(userId, firstname, lastname, email) {
                     }
                 });
             
-            console.log('✅ User created successfully:', userId, '| Membership:', existingMembership);
+            console.log(`✅ User created: ${userId} | Provider: ${authProvider} | Membership: ${existingMembership}`);
             return { success: true, isNewUser: true, message: 'User created successfully' };
         } else {
-            console.log('ℹ️ User already exists:', userId);
+            // User exists — refresh login metadata (photo, lastLogin, provider tracking)
+            await updateUserOnLogin(userId, { photoURL, authProvider });
+            console.log(`ℹ️ User already exists: ${userId}`);
             return { success: true, isNewUser: false, message: 'User already exists' };
         }
     } catch (error) {
@@ -148,6 +179,7 @@ async function addUser(userId, firstname, lastname, email) {
         throw error;
     }
 }
+
 export async function setA(userId) {
     const db = fire.firestore();
     console.log('🔧 Starting setA for userId:', userId);
@@ -232,4 +264,5 @@ export async function setA(userId) {
     console.log('✅ Admin privileges set successfully for user:', userId);
     return { success: true, message: 'Admin privileges set successfully', results };
 }
+
 export default addUser;

@@ -14,7 +14,9 @@ import {
     FaInfoCircle,
     FaTag,
     FaGoogle,
-    FaFacebook
+    FaFacebook,
+    FaLinkedin,
+    FaGithub
 } from 'react-icons/fa';
 import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
 
@@ -22,6 +24,8 @@ const ModulesSettings = () => {
     const [modulesConfig, setModulesConfig] = useState({
         enableGoogleAuthModule: true,
         enableFacebookAuthModule: true,
+        enableLinkedinAuthModule: true,
+        enableGithubAuthModule: true,
         enableImportModule: false, // Default OFF as requested
         enableJobScraperModule: true,
         enablePortfolioModule: true,
@@ -41,10 +45,13 @@ const ModulesSettings = () => {
         getSystemSettings().then((settings) => {
             const mods = (settings && settings.modules) || {};
             const ai = (settings && settings.ai) || {};
+            const sa = (settings && settings.socialAuth) || {};
 
             setModulesConfig({
                 enableGoogleAuthModule: mods.enableGoogleAuthModule !== undefined ? mods.enableGoogleAuthModule : true,
                 enableFacebookAuthModule: mods.enableFacebookAuthModule !== undefined ? mods.enableFacebookAuthModule : true,
+                enableLinkedinAuthModule: mods.enableLinkedinAuthModule !== false && mods.enableLinkedinLogin !== false && sa.enableLinkedinLogin !== false,
+                enableGithubAuthModule: mods.enableGithubAuthModule !== false && mods.enableGithubLogin !== false && sa.enableGithubLogin !== false,
                 enableImportModule: mods.enableImportModule !== undefined
                     ? mods.enableImportModule
                     : (ai.enableImportModule !== undefined ? ai.enableImportModule : false),
@@ -77,20 +84,36 @@ const ModulesSettings = () => {
         setToastMessage(null);
 
         try {
-            // Save module settings under category 'modules'
-            await saveSystemSettings('modules', modulesConfig);
+            const updatedModules = {
+                ...modulesConfig,
+                enableLinkedinLogin: modulesConfig.enableLinkedinAuthModule,
+                enableGithubLogin: modulesConfig.enableGithubAuthModule,
+            };
 
-            // Also keep AI settings in sync for backwards compatibility
+            // Save module settings under category 'modules'
+            await saveSystemSettings('modules', updatedModules);
+
+            // Also sync socialAuth & AI settings for complete multi-tab compatibility
             const currentSettings = (await getSystemSettings()) || {};
             await saveSystemSettings('ai', {
                 ...(currentSettings.ai || {}),
                 enableImportModule: modulesConfig.enableImportModule,
             });
 
+            await saveSystemSettings('socialAuth', {
+                ...(currentSettings.socialAuth || {}),
+                enableLinkedinLogin: modulesConfig.enableLinkedinAuthModule,
+                enableGithubLogin: modulesConfig.enableGithubAuthModule,
+            });
+
             // Dispatch global event so all open tabs / components update state in real-time
             window.dispatchEvent(new CustomEvent('systemSettingsUpdated', {
                 detail: {
-                    modules: modulesConfig,
+                    modules: updatedModules,
+                    socialAuth: {
+                        enableLinkedinLogin: modulesConfig.enableLinkedinAuthModule,
+                        enableGithubLogin: modulesConfig.enableGithubAuthModule,
+                    },
                     ai: { enableImportModule: modulesConfig.enableImportModule }
                 }
             }));
@@ -132,6 +155,24 @@ const ModulesSettings = () => {
             icon: FaFacebook,
             badgeColor: modulesConfig.enableFacebookAuthModule ? 'blue' : 'slate',
             statusText: modulesConfig.enableFacebookAuthModule ? 'ENABLED' : 'DISABLED',
+        },
+        {
+            key: 'enableLinkedinAuthModule',
+            title: 'LinkedIn Single Sign-On (OAuth 2.0) Module',
+            subtitle: 'Social Authentication',
+            description: 'Enables 1-click LinkedIn Sign-in and Sign-up via server-side OAuth 2.0. Turning this OFF hides the LinkedIn login button platform-wide.',
+            icon: FaLinkedin,
+            badgeColor: modulesConfig.enableLinkedinAuthModule ? 'sky' : 'slate',
+            statusText: modulesConfig.enableLinkedinAuthModule ? 'ENABLED' : 'DISABLED',
+        },
+        {
+            key: 'enableGithubAuthModule',
+            title: 'GitHub Single Sign-On (OAuth 2.0) Module',
+            subtitle: 'Social Authentication',
+            description: 'Enables 1-click GitHub Sign-in and Sign-up via server-side OAuth 2.0. Turning this OFF hides the GitHub login button platform-wide.',
+            icon: FaGithub,
+            badgeColor: modulesConfig.enableGithubAuthModule ? 'slate' : 'slate',
+            statusText: modulesConfig.enableGithubAuthModule ? 'ENABLED' : 'DISABLED',
         },
         {
             key: 'enableImportModule',

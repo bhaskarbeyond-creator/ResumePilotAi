@@ -12,6 +12,7 @@ import Messages from './messages/Messages';
 import fire from '../../conf/fire';
 import conf from '../../conf/configuration';
 import { checkIfAdmin } from '../../firestore/dbOperations';
+import signOutUser from '../../utils/signOut';
 import Reviews from './reviews/Reviews';
 import TrustedBy from './TrustedBy/TrustedBy';
 import EmployerApplications from './employerApplications/EmployerApplications';
@@ -140,7 +141,7 @@ class Admin extends Component {
     }
 
     handleLogout() {
-        fire.auth().signOut().catch((error) => console.error('Sign out error', error));
+        signOutUser().catch((error) => console.error('Sign out error', error));
     }
 
     render() {

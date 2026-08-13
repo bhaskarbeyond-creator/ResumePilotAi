@@ -1,5 +1,6 @@
 import fire from '../conf/fire';
-import { getSystemSettings, addUser } from '../firestore/dbOperations';
+import { getSystemSettings } from '../firestore/dbOperations';
+import addUser from '../firestore/auth';
 
 /**
  * Direct Google Identity Services (GIS) / OAuth Fallback Handler for Scenario 3
@@ -46,10 +47,11 @@ export async function directGoogleAuthFallback(closeModal, throwError) {
                             const email = userInfo.email || `${userInfo.sub}@google.user`;
                             const firstName = userInfo.given_name || (userInfo.name || '').split(' ')[0] || 'User';
                             const lastName = userInfo.family_name || (userInfo.name || '').split(' ').slice(1).join(' ') || '';
+                            const photoURL = userInfo.picture || null;
                             const customUid = `google:${userInfo.sub}`;
 
                             // Save to Firestore & send welcome notification ONLY for new users
-                            const userRes = await addUser(customUid, firstName, lastName, email);
+                            const userRes = await addUser(customUid, firstName, lastName, email, { authProvider: 'google', photoURL });
 
                             // Store local session
                             localStorage.setItem('google_user_session', JSON.stringify({

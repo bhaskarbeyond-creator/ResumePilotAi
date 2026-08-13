@@ -57,6 +57,9 @@ const AuthWrapper = () => {
         const reset = params.get('reset');
         const email = params.get('email');
         const token = params.get('token');
+        const oauthSession = params.get('oauth_session');
+        const provider = params.get('provider');
+
         if (oobCode && (mode === 'resetPassword' || !mode)) {
             console.log('[AuthWrapper] Detected password reset token in URL:', oobCode);
             setResetOobCode(oobCode);
@@ -64,18 +67,41 @@ const AuthWrapper = () => {
             console.log('[AuthWrapper] Detected tokenized custom reset link for:', email);
             setDirectResetEmail(email);
         }
-    }, []);
 
-    useEffect(() => {
-        // Handle OAuth Redirect Result (for Google/Facebook fallback redirect)
+        // ── STEP 1: Hydrate OAuth session from URL SYNCHRONOUSLY before onAuthStateChanged ─
+        // LinkedIn / GitHub server-side OAuth redirects pass a base64url session payload in the
+        // URL. Writing it to localStorage HERE — synchronously before the subscription below —
+        // guarantees onAuthStateChanged always finds the mock-user session on its very first
+        // tick, eliminating the null → user flicker race condition.
+        if (oauthSession) {
+            try {
+                const decoded = JSON.parse(atob(oauthSession.replace(/-/g, '+').replace(/_/g, '/')));
+                if (decoded && decoded.uid && decoded.email) {
+                    const sessionKey = `${provider || 'oauth'}_user_session`;
+                    localStorage.setItem(sessionKey, JSON.stringify(decoded));
+                    // Generic key read by onAuthStateChanged fallback below
+                    localStorage.setItem('oauth_user_session', JSON.stringify(decoded));
+                    console.log(`[AuthWrapper] OAuth session stored: provider=${decoded.provider || provider}, uid=${decoded.uid}`);
+                    // Clean URL so payload is not re-processed on page refresh
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+            } catch (decodeErr) {
+                console.error('[AuthWrapper] Failed to decode oauth_session param:', decodeErr);
+            }
+        }
+
+        // ── STEP 2: Handle Google/Facebook Firebase Redirect Result ────────────────────────
         fire.auth().getRedirectResult().then((result) => {
             if (result && result.user) {
                 const u = result.user;
+                // Resolve actual provider (google.com → 'google', facebook.com → 'facebook')
+                const rawProvider = result.additionalUserInfo?.providerId || u.providerData?.[0]?.providerId || '';
+                const authProvider = rawProvider.replace('.com', '').split('.')[0] || 'google';
                 const nameParts = (u.displayName || '').trim().split(' ');
                 const firstName = nameParts[0] || 'User';
                 const lastName = nameParts.slice(1).join(' ') || '';
-                import('./firestore/auth').then(({ default: addUser }) => {
-                    addUser(u.uid, firstName, lastName, u.email).then((userRes) => {
+                import('./firestore/auth').then(({ default: addUser, updateUserOnLogin }) => {
+                    addUser(u.uid, firstName, lastName, u.email, { authProvider, photoURL: u.photoURL || null }).then((userRes) => {
                         if (userRes && userRes.isNewUser) {
                             try {
                                 fetch('/api/notify/user-signup', {
@@ -84,6 +110,9 @@ const AuthWrapper = () => {
                                     body: JSON.stringify({ userEmail: u.email, userName: u.displayName || firstName })
                                 }).catch(() => {});
                             } catch (e) {}
+                        } else {
+                            // Returning user — keep provider and avatar fresh
+                            updateUserOnLogin(u.uid, { photoURL: u.photoURL, displayName: u.displayName, authProvider }).catch(() => {});
                         }
                     });
                 }).catch(() => {});
@@ -92,6 +121,7 @@ const AuthWrapper = () => {
             console.error('[OAuth Redirect Error]:', err);
         });
 
+        // ── STEP 3: Subscribe to auth state (localStorage already hydrated above) ──────────
         const makeMockFirebaseUser = (rawObj) => {
             if (!rawObj) return null;
             return {
@@ -110,12 +140,16 @@ const AuthWrapper = () => {
             if (user) {
                 setUser(user);
             } else {
+                // Check all OAuth mock-user sessions — written before this subscription
                 const fbSession = localStorage.getItem('fb_user_session');
                 const googleSession = localStorage.getItem('google_user_session');
+                const linkedInGitHubSession = localStorage.getItem('oauth_user_session');
                 if (fbSession) {
                     try { setUser(makeMockFirebaseUser(JSON.parse(fbSession))); } catch (e) { setUser(null); }
                 } else if (googleSession) {
                     try { setUser(makeMockFirebaseUser(JSON.parse(googleSession))); } catch (e) { setUser(null); }
+                } else if (linkedInGitHubSession) {
+                    try { setUser(makeMockFirebaseUser(JSON.parse(linkedInGitHubSession))); } catch (e) { setUser(null); }
                 } else {
                     setUser(null);
                 }
@@ -123,7 +157,7 @@ const AuthWrapper = () => {
             setAuthLoading(false);
         });
 
-        // Cleanup subscription on unmount
+        // Cleanup auth subscription on unmount
         return () => unsubscribe();
     }, []);
 

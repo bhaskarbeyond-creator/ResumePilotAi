@@ -10,6 +10,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { checkIsEmployer, getSystemSettings } from '../../../firestore/dbOperations';
 import { AuthContext } from '../../../main';
 import fire from '../../../conf/fire';
+import signOutUser from '../../../utils/signOut';
 import NotificationPanel from './NotificationPanel';
 import { useUnreadMessages } from '../../../hooks/useUnreadMessages';
 import { useUnreadNotifications } from '../../../hooks/useUnreadNotifications';
@@ -736,9 +737,7 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
 
                         <div
                             onClick={() => {
-                                fire.auth().signOut().then(() => {
-                                    localStorage.removeItem('currentResumeId');
-                                    localStorage.removeItem('currentResumeItem');
+                                signOutUser().then(() => {
                                     window.location.href = '/';
                                 });
                             }}
