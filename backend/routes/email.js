@@ -359,21 +359,21 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
 
         case 'email_verification':
             subject = vars.verification_link
-                ? `Verify Your Email Address — ${brandName}`
+                ? `Confirm Your Email Address — ${brandName}`
                 : `${vars.otp_code || '849204'} is your ${brandName} Verification Code 🔑`;
             bodyHtml = buildEmailWrapper(
-                'Verify Your Account',
+                'Confirm Your Email Address',
                 'ACCOUNT SECURITY 🔑',
                 `
                 <div style="text-align: center;">
                     <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">Confirm Your Email Address</h2>
                     <p style="font-size: 14px; color: #475569; line-height: 1.6;">
-                        Thank you for joining <strong>${brandName}</strong>! Please verify your email address to secure your account and unlock all platform features.
+                        Thank you for joining <strong>${brandName}</strong>! Please confirm your email address to secure your account and unlock all platform features.
                     </p>
                     
                     ${vars.verification_link ? `
                     <div style="text-align: center; margin: 30px 0;">
-                        <a href="${vars.verification_link}" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #ffffff; padding: 14px 36px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 14px; display: inline-block; box-shadow: 0 10px 20px -5px rgba(79,70,229,0.4);">Verify Email Address &rarr;</a>
+                        <a href="${vars.verification_link}" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #ffffff; padding: 14px 36px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 14px; display: inline-block; box-shadow: 0 10px 20px -5px rgba(79,70,229,0.4);">Confirm Email Address &rarr;</a>
                     </div>
                     <p style="font-size: 12px; color: #64748b; line-height: 1.5; margin-top: 20px;">
                         Or copy and paste this link into your browser:<br/>
