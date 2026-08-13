@@ -16,7 +16,9 @@ import {
     FaGoogle,
     FaFacebook,
     FaLinkedin,
-    FaGithub
+    FaGithub,
+    FaEnvelope,
+    FaShieldAlt
 } from 'react-icons/fa';
 import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
 
@@ -27,6 +29,7 @@ const ModulesSettings = () => {
         enableLinkedinAuthModule: true,
         enableGithubAuthModule: true,
         enableImportModule: false, // Default OFF as requested
+        enableEmailVerification: false, // Default OFF — preserves current behavior
         enableJobScraperModule: true,
         enablePortfolioModule: true,
         enableCoverLetterModule: true,
@@ -55,6 +58,7 @@ const ModulesSettings = () => {
                 enableImportModule: mods.enableImportModule !== undefined
                     ? mods.enableImportModule
                     : (ai.enableImportModule !== undefined ? ai.enableImportModule : false),
+                enableEmailVerification: mods.enableEmailVerification !== undefined ? mods.enableEmailVerification : false,
                 enableJobScraperModule: mods.enableJobScraperModule !== undefined ? mods.enableJobScraperModule : true,
                 enablePortfolioModule: mods.enablePortfolioModule !== undefined ? mods.enablePortfolioModule : true,
                 enableCoverLetterModule: mods.enableCoverLetterModule !== undefined ? mods.enableCoverLetterModule : true,
@@ -92,6 +96,8 @@ const ModulesSettings = () => {
 
             // Save module settings under category 'modules'
             await saveSystemSettings('modules', updatedModules);
+            // Sync enableEmailVerification to auth namespace for cross-tab reads
+            await saveSystemSettings('auth', { enableEmailVerification: modulesConfig.enableEmailVerification });
 
             // Also sync socialAuth & AI settings for complete multi-tab compatibility
             const currentSettings = (await getSystemSettings()) || {};
@@ -182,6 +188,15 @@ const ModulesSettings = () => {
             icon: FaDownload,
             badgeColor: modulesConfig.enableImportModule ? 'purple' : 'slate',
             statusText: modulesConfig.enableImportModule ? 'ENABLED' : 'DISABLED (DEFAULT OFF)',
+        },
+        {
+            key: 'enableEmailVerification',
+            title: 'Email Address Verification Module',
+            subtitle: 'Security — Default: OFF',
+            description: 'Requires new users who register via email/password to verify their email address. A verification link is sent on sign-up. Users access the platform immediately, but a banner prompts them to verify. OAuth users (Google, Facebook, etc.) are always exempt.',
+            icon: FaEnvelope,
+            badgeColor: modulesConfig.enableEmailVerification ? 'indigo' : 'slate',
+            statusText: modulesConfig.enableEmailVerification ? 'ENABLED' : 'DISABLED (DEFAULT OFF)',
         },
         {
             key: 'enableCouponsModule',
@@ -359,7 +374,7 @@ const ModulesSettings = () => {
                 <div>
                     <p className="font-semibold mb-0.5">Note on Default Off State:</p>
                     <p>
-                        The <strong>AI Resume Import Module</strong> is set to <strong>OFF (Disabled) by default</strong>. Toggle it to <strong>ENABLED</strong> and click "Save Module Changes" below to activate resume file importing for all candidates on your platform.
+                        The <strong>AI Resume Import Module</strong> and <strong>Email Address Verification Module</strong> are <strong>OFF (Disabled) by default</strong>. Toggle them to <strong>ENABLED</strong> and click "Save Module Changes" to activate for your platform.
                     </p>
                 </div>
             </div>

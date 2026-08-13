@@ -6,7 +6,7 @@ import Toasts from '../../Toasts/Toats';
 import fire from '../../../conf/fire';
 import ProfileDisplay from '../ProfileDisplay/ProfileDisplay';
 import Spinner from '../../Spinner/Spinner';
-import { FaBars } from 'react-icons/fa';
+import { FaBars, FaEnvelope, FaCheckCircle, FaTimes, FaRedo } from 'react-icons/fa';
 
 import { getFullName, getAds } from '../../../firestore/dbOperations';
 // Animation Library
@@ -64,6 +64,11 @@ class DashboardMain extends Component {
             isAddPagesShowed: false,
             isFavoritesShowed: false,
             sidebarCollapsed: false,
+            // Email verification banner
+            showVerifyBanner: false,
+            verifyBannerDismissed: false,
+            verifyResending: false,
+            verifyResendSuccess: false,
             // Meta data
             metaDataFetched: false,
             websiteTitle: '',
@@ -88,7 +93,7 @@ class DashboardMain extends Component {
         const initialUser = localStorage.getItem('user') || 'active_user';
         this.setState({ user: initialUser });
 
-        this.unsubscribeAuth = fire.auth().onAuthStateChanged((user) => {
+        this.unsubscribeAuth = fire.auth().onAuthStateChanged(async (user) => {
             if (!this._isMounted) return; // Prevent state updates if component is unmounted
 
             if (user) {
@@ -123,6 +128,24 @@ class DashboardMain extends Component {
                     this.setState({ role: 'admin' });
                     getAds();
                 }
+
+                // ─── Email Verification Banner Logic ───────────────────────────────
+                // Only show for email/password users who haven't verified yet
+                const isEmailProvider = user.providerData && user.providerData.some(p => p.providerId === 'password');
+                if (isEmailProvider && !user.emailVerified && !this.state.verifyBannerDismissed) {
+                    try {
+                        const { getSystemSettings } = await import('../../../firestore/dbOperations');
+                        const settings = await getSystemSettings();
+                        const verificationEnabled = settings?.modules?.enableEmailVerification === true;
+                        if (verificationEnabled && this._isMounted) {
+                            this.setState({ showVerifyBanner: true });
+                        }
+                    } catch (e) {
+                        // Non-fatal — don't block dashboard load
+                    }
+                }
+                // ────────────────────────────────────────────────────────────────────
+
             } else {
                 const storedUser = localStorage.getItem('user');
                 if (storedUser) {
@@ -268,6 +291,36 @@ class DashboardMain extends Component {
 
     render() {
         const { t } = this.props;
+        const { showVerifyBanner, verifyBannerDismissed, verifyResending, verifyResendSuccess } = this.state;
+
+        // ─── Resend Verification Email Handler ──────────────────────────────────
+        const handleResendVerification = async () => {
+            const currentUser = fire.auth().currentUser;
+            if (!currentUser || verifyResending) return;
+            this.setState({ verifyResending: true, verifyResendSuccess: false });
+            try {
+                await currentUser.sendEmailVerification();
+                this.setState({ verifyResendSuccess: true });
+                // Poll until emailVerified flips true (max 5 mins, every 10s)
+                let attempts = 0;
+                const poll = setInterval(async () => {
+                    attempts++;
+                    try {
+                        await currentUser.reload();
+                        if (fire.auth().currentUser?.emailVerified) {
+                            clearInterval(poll);
+                            if (this._isMounted) this.setState({ showVerifyBanner: false });
+                        }
+                    } catch (e) { /* non-fatal */ }
+                    if (attempts >= 30) clearInterval(poll);
+                }, 10000);
+            } catch (e) {
+                console.warn('[VerifyBanner] Resend error:', e.message);
+            } finally {
+                this.setState({ verifyResending: false });
+            }
+        };
+        // ────────────────────────────────────────────────────────────────────────
 
         return this.state.user !== null ? (
             <div className="dashboardWrapper" style={{ overflow: 'hidden' }}>
@@ -303,6 +356,85 @@ class DashboardMain extends Component {
                     )}
                 </AnimatePresence>
                 <DashboardToast isShowed={this.state.toast.isShowed} type={this.state.toast.type} title={this.state.toast.title} text={this.state.toast.text} />
+
+                {/* ─── Email Verification Banner ────────────────────────────────────── */}
+                {showVerifyBanner && !verifyBannerDismissed && (
+                    <div style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        zIndex: 9999,
+                        background: 'linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%)',
+                        padding: '10px 20px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '12px',
+                        boxShadow: '0 4px 16px -2px rgba(79,70,229,0.4)',
+                        flexWrap: 'wrap',
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                            <FaEnvelope style={{ color: '#c7d2fe', flexShrink: 0, fontSize: '16px' }} />
+                            <span style={{
+                                color: '#ffffff',
+                                fontSize: '13px',
+                                fontWeight: 600,
+                                fontFamily: '\'Poppins\', sans-serif',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis'
+                            }}>
+                                {verifyResendSuccess
+                                    ? '✅ Verification email sent! Check your inbox and click the link to verify.'
+                                    : '⚠️ Your email address is not verified. Please check your inbox for a verification link.'}
+                            </span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                            <button
+                                onClick={handleResendVerification}
+                                disabled={verifyResending}
+                                style={{
+                                    background: 'rgba(255,255,255,0.18)',
+                                    border: '1px solid rgba(255,255,255,0.35)',
+                                    borderRadius: '6px',
+                                    color: '#ffffff',
+                                    fontSize: '12px',
+                                    fontWeight: 700,
+                                    padding: '5px 12px',
+                                    cursor: verifyResending ? 'wait' : 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '5px',
+                                    transition: 'background 0.2s',
+                                    opacity: verifyResending ? 0.7 : 1,
+                                    fontFamily: '\'Poppins\', sans-serif',
+                                }}
+                            >
+                                <FaRedo style={{ fontSize: '10px' }} />
+                                {verifyResending ? 'Sending...' : 'Resend Email'}
+                            </button>
+                            <button
+                                onClick={() => this.setState({ verifyBannerDismissed: true, showVerifyBanner: false })}
+                                style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: 'rgba(255,255,255,0.7)',
+                                    cursor: 'pointer',
+                                    padding: '4px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    borderRadius: '4px',
+                                    transition: 'color 0.2s',
+                                }}
+                                title="Dismiss"
+                            >
+                                <FaTimes style={{ fontSize: '14px' }} />
+                            </button>
+                        </div>
+                    </div>
+                )}
+                {/* ──────────────────────────────────────────────────────────────────── */}
 
                 <DashboardFavourites showFavorites={this.showFavorites} isFavoritesShowed={this.state.isFavoritesShowed} />
 

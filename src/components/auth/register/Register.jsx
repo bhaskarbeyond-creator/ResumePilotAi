@@ -216,6 +216,20 @@ class Register extends Component {
                 }).catch(e => console.warn('Signup email notice:', e.message));
             }
 
+            // Send email verification link if Admin has enabled the Email Verification Module
+            try {
+                const { getSystemSettings } = await import('../../../firestore/dbOperations');
+                const settings = await getSystemSettings();
+                const emailVerificationEnabled = settings?.modules?.enableEmailVerification === true;
+                if (emailVerificationEnabled && u.user && !u.user.emailVerified) {
+                    await u.user.sendEmailVerification();
+                    console.log('[Register] Email verification sent to:', email);
+                }
+            } catch (verifyErr) {
+                // Non-fatal — don't block registration if verification email fails
+                console.warn('[Register] Email verification notice:', verifyErr.message);
+            }
+
             if (this.props.closeModal) this.props.closeModal();
         } catch (error) {
             let msg = error.message;
