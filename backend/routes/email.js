@@ -757,9 +757,12 @@ async function dispatchMailWithFallback(config, mailOptions) {
     let primaryErr = null;
     const now = Date.now();
     const isCircuitOpen = primaryCircuitBreakerUntil > now;
+    const maxFailures = parseInt(config?.fallbackSmtp?.maxFailures || 3, 10);
+    const cooldownMinutes = parseInt(config?.fallbackSmtp?.cooldownMinutes || 5, 10);
 
     if (isCircuitOpen) {
-        console.warn(`[Circuit Breaker Active] Primary SMTP is in 5-min cooldown (Failures: ${primaryConsecutiveFailures}). Routing directly to Secondary Fallback Relay...`);
+        const remainingSec = Math.ceil((primaryCircuitBreakerUntil - now) / 1000);
+        console.warn(`[Circuit Breaker Active] Primary SMTP in ${cooldownMinutes}-min cooldown (${remainingSec}s left, Failures: ${primaryConsecutiveFailures}). Routing directly to Secondary Fallback Relay...`);
     }
 
     // 1. Try Primary Transporter if circuit is closed and credentials exist
@@ -779,11 +782,11 @@ async function dispatchMailWithFallback(config, mailOptions) {
         } catch (err) {
             primaryErr = err;
             primaryConsecutiveFailures++;
-            console.warn(`⚠️ Primary SMTP Dispatch Failed (Attempt ${primaryConsecutiveFailures}):`, err.message);
+            console.warn(`⚠️ Primary SMTP Dispatch Failed (Attempt ${primaryConsecutiveFailures}/${maxFailures}):`, err.message);
 
-            if (primaryConsecutiveFailures >= 3) {
-                primaryCircuitBreakerUntil = now + 5 * 60 * 1000; // Open circuit breaker for 5 minutes
-                console.error(`🚨 Primary SMTP failed 3 consecutive times. Opening Circuit Breaker until ${new Date(primaryCircuitBreakerUntil).toLocaleTimeString()}`);
+            if (primaryConsecutiveFailures >= maxFailures) {
+                primaryCircuitBreakerUntil = now + cooldownMinutes * 60 * 1000;
+                console.error(`🚨 Primary SMTP failed ${primaryConsecutiveFailures} consecutive times. Opening Circuit Breaker for ${cooldownMinutes} mins until ${new Date(primaryCircuitBreakerUntil).toLocaleTimeString()}`);
             }
         }
     }
@@ -795,7 +798,7 @@ async function dispatchMailWithFallback(config, mailOptions) {
             console.warn('⚡ Primary SMTP unavailable/bypassed. Activating Secondary Fallback Relay (Failover)...');
             const fallbackTransporter = createTransporter(config.fallbackSmtp);
 
-            // SASL Compliance: Use verified sender address (Fallback Sender Email -> Primary Username -> ReplyTo -> no-reply@airesume.projectdemo.guru)
+            // SASL Compliance: Use verified sender address (Fallback Sender Email -> Primary Username -> ReplyTo -> Dynamic System Domain)
             let fallbackUser = config.fallbackSmtp?.senderEmail;
             if (!fallbackUser || !fallbackUser.includes('@')) {
                 if (config.smtp?.username && config.smtp.username.includes('@')) {
@@ -803,7 +806,8 @@ async function dispatchMailWithFallback(config, mailOptions) {
                 } else if (config.smtp?.replyTo && config.smtp.replyTo.includes('@')) {
                     fallbackUser = config.smtp.replyTo;
                 } else {
-                    fallbackUser = 'no-reply@airesume.projectdemo.guru';
+                    const domain = process.env.WEBSITE_NAME || 'projectdemo.guru';
+                    fallbackUser = `no-reply@${domain}`;
                 }
             }
             const senderName = config.smtp?.senderName || 'ResumePilot AI';
@@ -827,6 +831,52 @@ async function dispatchMailWithFallback(config, mailOptions) {
 }
 
 // --- API ENDPOINTS ---
+
+// 0. Circuit Breaker Control & Status Endpoints
+router.get('/admin/circuit-breaker-status', (req, res) => {
+    const now = Date.now();
+    const isCircuitOpen = primaryCircuitBreakerUntil > now;
+    const remainingSeconds = isCircuitOpen ? Math.ceil((primaryCircuitBreakerUntil - now) / 1000) : 0;
+    res.json({
+        success: true,
+        isCircuitOpen,
+        consecutiveFailures: primaryConsecutiveFailures,
+        remainingSeconds,
+        breakerUntil: primaryCircuitBreakerUntil ? new Date(primaryCircuitBreakerUntil).toISOString() : null
+    });
+});
+
+router.post('/admin/reset-circuit-breaker', (req, res) => {
+    primaryConsecutiveFailures = 0;
+    primaryCircuitBreakerUntil = 0;
+    res.json({ success: true, message: 'Circuit breaker reset successfully! Primary SMTP restored to Operational state.' });
+});
+
+// 0b. Custom Template Customization Endpoints
+router.post('/admin/save-template-customization', async (req, res) => {
+    const db = req.app.get('db');
+    const { templateType, subject, html } = req.body;
+    if (!templateType || !html) {
+        return res.status(400).json({ success: false, error: 'templateType and html are required.' });
+    }
+    customTemplatesStore[templateType] = { subject: subject || '', html, updatedAt: new Date().toISOString() };
+    
+    try {
+        const local = readLocalConfig() || {};
+        local.customTemplates = customTemplatesStore;
+        writeLocalConfig(local);
+        if (db) {
+            await db.collection('data').doc('custom_email_templates').set(customTemplatesStore, { merge: true });
+        }
+        res.json({ success: true, message: `Template '${templateType}' customized successfully!` });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+router.get('/admin/custom-templates', (req, res) => {
+    res.json({ success: true, templates: customTemplatesStore });
+});
 
 // 1. Test Outbound SMTP Socket Connection (Supports type='smtp' and type='fallback_smtp')
 router.post('/admin/test-connection', async (req, res) => {

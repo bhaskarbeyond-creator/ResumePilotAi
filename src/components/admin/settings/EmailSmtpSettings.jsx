@@ -949,6 +949,29 @@ const EmailSmtpSettings = () => {
                                         />
                                     </div>
                                 </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-slate-100">
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Circuit Breaker Max Failures</label>
+                                        <input
+                                            type="number"
+                                            value={fallbackSmtp.maxFailures || 3}
+                                            onChange={(e) => setFallbackSmtp(prev => ({ ...prev, maxFailures: parseInt(e.target.value, 10) || 3 }))}
+                                            placeholder="3"
+                                            className="w-full px-3 py-1.5 text-xs font-semibold border border-slate-300 rounded-xl font-mono"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Circuit Breaker Cooldown (Mins)</label>
+                                        <input
+                                            type="number"
+                                            value={fallbackSmtp.cooldownMinutes || 5}
+                                            onChange={(e) => setFallbackSmtp(prev => ({ ...prev, cooldownMinutes: parseInt(e.target.value, 10) || 5 }))}
+                                            placeholder="5"
+                                            className="w-full px-3 py-1.5 text-xs font-semibold border border-slate-300 rounded-xl font-mono"
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </div>
@@ -974,6 +997,23 @@ const EmailSmtpSettings = () => {
                             >
                                 {testingFallbackSmtp ? <FaSpinner className="animate-spin text-indigo-600 w-4 h-4" /> : <FaShieldAlt className="text-indigo-600 w-4 h-4" />}
                                 <span>Test Secondary Failover Relay</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    try {
+                                        const res = await fetch('/api/email/admin/reset-circuit-breaker', { method: 'POST' });
+                                        const d = await res.json();
+                                        setStatusMessage({ type: 'success', text: d.message || 'Circuit breaker reset successfully!' });
+                                    } catch (e) {
+                                        setStatusMessage({ type: 'error', text: e.message });
+                                    }
+                                }}
+                                className="px-4 py-2.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-xs"
+                            >
+                                <FaCheckCircle className="text-emerald-600 w-4 h-4" />
+                                <span>Reset Circuit Breaker</span>
                             </button>
                         </div>
 
