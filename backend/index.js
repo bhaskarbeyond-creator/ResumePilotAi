@@ -121,6 +121,24 @@ app.use(cors({
         }
     }
 }));
+
+// ── Mount Modular Sub-Routers ────────────────────────────────────────────────
+try {
+    const emailRoutes = require('./routes/email');
+    app.use('/api/email', emailRoutes);
+    console.log('[Backend Routes] Mounted /api/email routes cleanly.');
+} catch (e) {
+    console.warn('[Backend Routes] Could not mount email routes:', e.message);
+}
+
+try {
+    const aiRoutes = require('./routes/ai');
+    app.use('/api/ai', aiRoutes);
+    console.log('[Backend Routes] Mounted /api/ai routes cleanly.');
+} catch (e) {
+    console.warn('[Backend Routes] Could not mount AI routes:', e.message);
+}
+
 const stripe = require('stripe')(process.env.STRIPE_SECRET);
 app.post('/api/pay', async (req, res) => {
     var price = req.body.price;
