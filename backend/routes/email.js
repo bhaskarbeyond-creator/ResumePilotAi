@@ -795,8 +795,17 @@ async function dispatchMailWithFallback(config, mailOptions) {
             console.warn('⚡ Primary SMTP unavailable/bypassed. Activating Secondary Fallback Relay (Failover)...');
             const fallbackTransporter = createTransporter(config.fallbackSmtp);
 
-            // SASL Compliance: Keep exact senderName, subject, and HTML template — only update sender email address
-            const fallbackUser = config.fallbackSmtp.senderEmail || config.fallbackSmtp.username;
+            // SASL Compliance: Use verified sender address (Fallback Sender Email -> Primary Username -> ReplyTo -> no-reply@airesume.projectdemo.guru)
+            let fallbackUser = config.fallbackSmtp?.senderEmail;
+            if (!fallbackUser || !fallbackUser.includes('@')) {
+                if (config.smtp?.username && config.smtp.username.includes('@')) {
+                    fallbackUser = config.smtp.username;
+                } else if (config.smtp?.replyTo && config.smtp.replyTo.includes('@')) {
+                    fallbackUser = config.smtp.replyTo;
+                } else {
+                    fallbackUser = 'no-reply@airesume.projectdemo.guru';
+                }
+            }
             const senderName = config.smtp?.senderName || 'ResumePilot AI';
             const fallbackMailOptions = {
                 ...mailOptions,
