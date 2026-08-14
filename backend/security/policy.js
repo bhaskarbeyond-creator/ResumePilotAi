@@ -13,7 +13,6 @@ const ADMIN_EXACT = new Set([
   '/auth/purge-orphaned-auth',
   '/auth/linkedin/test-credentials',
   '/auth/github/test-credentials',
-  '/test-ai-config', '/ai/test-ai-config',
   '/email/logs', '/logs',
   '/email/resend', '/resend',
   '/email/templates', '/templates',
@@ -27,7 +26,7 @@ const ADMIN_EXACT = new Set([
 const VERIFIED_PREFIXES = [
   '/generate-', '/check-grammar', '/ai/', '/pay', '/paypal/', '/razorpay/',
   '/paytm/', '/phonepe/', '/export', '/invoice', '/send-invoice-email',
-  '/linkedin-scraper', '/subscription/', '/account/', '/messages/', '/notify/'
+  '/linkedin-scraper', '/subscription/', '/account/', '/messages/', '/notify/', '/admin/ai'
 ];
 
 const RECENT_AUTH_PATHS = new Set([
@@ -55,7 +54,7 @@ function enforceApiPolicy(req, res, next) {
   const pathname = req.path;
   const elevatedPermission = pathname === '/admin/firebase-service-account'
     ? 'secrets.manage'
-    : (pathname.startsWith('/admin/payments/') || pathname === '/admin/payment-settings'
+    : (pathname.startsWith('/admin/payments/') || pathname === '/admin/payment-settings' || pathname === '/admin/payment/test-provider'
       ? 'payments.manage'
       : (pathname.startsWith('/admin/employer-applications/') ? 'users.update' : null));
   if (elevatedPermission && !hasPermission(req, elevatedPermission)) {
@@ -74,7 +73,8 @@ function enforceApiPolicy(req, res, next) {
       || pathname.startsWith('/admin/reviews') || pathname === '/admin/global-rating'
       || pathname.startsWith('/admin/trusted-by') || pathname === '/admin/landing-content'
       || pathname.startsWith('/email/admin/')
-      || ['/admin/ai-settings', '/admin/payment-settings', '/admin/save-smtp', '/admin/test-connection'].includes(pathname)) {
+      || (pathname === '/admin/ai-settings' && req.method !== 'GET')
+      || ['/admin/ai/test-provider', '/admin/payment/test-provider', '/admin/payment-settings', '/admin/save-smtp', '/admin/test-connection'].includes(pathname)) {
     const authTime = Number(req.user?.claims?.auth_time || 0) * 1000;
     const maxAgeMs = Number(process.env.SENSITIVE_AUTH_MAX_AGE_MS || 10 * 60 * 1000);
     if (!authTime || Date.now() - authTime > maxAgeMs) {

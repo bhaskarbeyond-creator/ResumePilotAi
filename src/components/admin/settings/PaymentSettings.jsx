@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
+import { normalizeAdminApiError } from '../../../services/adminAiSettings';
 import config from '../../../conf/configuration';
 import { FaCreditCard, FaCheck, FaTimes, FaSpinner, FaLock, FaPaypal, FaStripe, FaEye, FaEyeSlash, FaRupeeSign } from 'react-icons/fa';
 
@@ -72,12 +73,13 @@ const PaymentSettings = () => {
     const handleTestStripe = async () => {
         setTesting(true);
         try {
-            const response = await fetch('/api/admin/test-connection', {
+            const response = await fetch('/api/admin/payment/test-provider', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ type: 'stripe', secretKey: paymentsConfig.stripeSecretKey })
             });
-            const data = await response.json();
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw normalizeAdminApiError(response, data, 'Stripe provider test failed.');
             if (data.success) {
                 setStatusMessage({ type: 'success', text: `Stripe connection test succeeded! (${data.message})` });
             } else {

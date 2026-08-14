@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaCheck, FaExclamationTriangle, FaTimes, FaSpinner, FaArrowRight, FaArrowLeft } from 'react-icons/fa';
+import { normalizeResumeData } from '../../../utils/resumeData';
 
 const ValidationModal = ({ onClose, resumeData }) => {
     const [currentStep, setCurrentStep] = useState(0);
@@ -19,21 +20,20 @@ const ValidationModal = ({ onClose, resumeData }) => {
     });
     const [isProcessing, setIsProcessing] = useState(false);
 
-    // Define required fields to validate
+    const normalizedResume = normalizeResumeData(resumeData || {});
     const requiredFields = [
-        { name: 'firstName', label: 'First Name' },
-        { name: 'lastName', label: 'Last Name' },
-        { name: 'email', label: 'Email' },
-        { name: 'phone', label: 'Phone' },
-        { name: 'occupation', label: 'Occupation' },
-        { name: 'country', label: 'Country' },
-        { name: 'city', label: 'City' },
-        { name: 'address', label: 'Address' },
-        { name: 'professionalSummary', label: 'Professional Summary' },
-        { name: 'employmentHistory', label: 'Employment History' },
-        { name: 'education', label: 'Education' },
-        { name: 'languages', label: 'Languages' },
-        { name: 'skills', label: 'Skills' }
+        { label: 'First Name', present: () => Boolean(normalizedResume.firstname.trim()) },
+        { label: 'Last Name', present: () => Boolean(normalizedResume.lastname.trim()) },
+        { label: 'Email', present: () => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedResume.email) },
+        { label: 'Phone', present: () => Boolean(normalizedResume.phone.trim()) },
+        { label: 'Occupation', present: () => Boolean(normalizedResume.occupation.trim()) },
+        { label: 'Country', present: () => Boolean(normalizedResume.country.trim()) },
+        { label: 'City', present: () => Boolean(normalizedResume.city.trim()) },
+        { label: 'Professional Summary', present: () => Boolean(normalizedResume.summary.trim()) },
+        { label: 'Employment History', present: () => normalizedResume.employments.length > 0 },
+        { label: 'Education', present: () => normalizedResume.educations.length > 0 },
+        { label: 'Languages', present: () => normalizedResume.languages.length > 0 },
+        { label: 'Skills', present: () => normalizedResume.skills.length > 0 },
     ];
 
     // Steps for the validation modal
@@ -62,17 +62,10 @@ const ValidationModal = ({ onClose, resumeData }) => {
             }
         }));
         
-        // Mock data validation - replace with actual data validation logic
         setIsProcessing(true);
         
         setTimeout(() => {
-            // This would be replaced with actual validation logic using resumeData
-            const missing = requiredFields
-                .filter(field => {
-                    // Simple check to simulate missing fields (random for demo)
-                    return Math.random() > 0.7;
-                })
-                .map(field => field.label);
+            const missing = requiredFields.filter(field => !field.present()).map(field => field.label);
             
             setValidationResults(prev => ({
                 ...prev,
@@ -97,27 +90,22 @@ const ValidationModal = ({ onClose, resumeData }) => {
         
         setIsProcessing(true);
         
-        // Mock content quality validation - replace with actual AI validation
+        // Deterministic local heuristics. This does not claim to be an AI/provider result.
         setTimeout(() => {
-            const mockIssues = {
-                professionalSummary: [
-                    'Consider adding more specific achievements',
-                    'Avoid generic phrases like "team player"'
-                ],
-                employmentHistory: [
-                    'Use more action verbs in your descriptions',
-                    'Include quantifiable results where possible'
-                ],
-                education: [
-                    'Add relevant coursework to strengthen your profile'
-                ]
-            };
+            const issues = { professionalSummary: [], employmentHistory: [], education: [] };
+            const summary = normalizedResume.summary.trim();
+            if (summary.length < 80) issues.professionalSummary.push('Add a more detailed professional summary.');
+            if (summary && !/\d/.test(summary)) issues.professionalSummary.push('Consider including a measurable achievement where accurate.');
+            if (normalizedResume.employments.length === 0) issues.employmentHistory.push('Add employment or relevant project experience.');
+            else if (normalizedResume.employments.some(item => String(item.description || '').trim().length < 40)) issues.employmentHistory.push('Expand brief employment descriptions with responsibilities or outcomes.');
+            if (normalizedResume.educations.length === 0) issues.education.push('Add education details.');
+            else if (normalizedResume.educations.some(item => !String(item.degree || '').trim() || !String(item.school || '').trim())) issues.education.push('Complete the institution and degree for each education entry.');
             
             setValidationResults(prev => ({
                 ...prev,
                 contentQuality: {
                     status: 'success',
-                    issues: mockIssues
+                    issues
                 }
             }));
             setIsProcessing(false);
@@ -143,6 +131,8 @@ const ValidationModal = ({ onClose, resumeData }) => {
         } else if (currentStep === 1 && validationResults.contentQuality.status === 'pending') {
             validateContentQuality();
         }
+        // Validation intentionally snapshots resumeData when each wizard step starts.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentStep]);
 
     // Status indicator component
@@ -157,12 +147,17 @@ const ValidationModal = ({ onClose, resumeData }) => {
         return null;
     };
 
+    const issueCount = Object.values(validationResults.contentQuality.issues).flat().length;
+    const completenessScore = Math.max(0, 100 - validationResults.requiredFields.missingFields.length * 6 - issueCount * 3);
+
     return (
-        <div className="fixed z-50 inset-0 bg-black/50 flex items-center justify-center overflow-y-auto">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl mx-4 my-8 relative">
+        <div className="fixed z-50 inset-0 bg-black/50 flex items-center justify-center overflow-y-auto" role="presentation" onKeyDown={event => { if (event.key === 'Escape' && !isProcessing) onClose(); }}>
+            <div role="dialog" aria-modal="true" aria-labelledby="resume-validation-title" className="bg-white rounded-lg shadow-xl w-full max-w-3xl mx-4 my-8 relative">
                 {/* Close button */}
                 <button 
+                    type="button"
                     onClick={onClose}
+                    aria-label="Close resume validation"
                     className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors"
                 >
                     <FaTimes className="text-xl" />
@@ -170,9 +165,9 @@ const ValidationModal = ({ onClose, resumeData }) => {
                 
                 {/* Header */}
                 <div className="bg-[#4a6cf7] text-white p-6 rounded-t-lg">
-                    <h2 className="text-2xl font-bold">AI Resume Validation</h2>
+                    <h2 id="resume-validation-title" className="text-2xl font-bold">Resume Validation</h2>
                     <p className="opacity-90 mt-1">
-                        Let AI review your resume and provide professional improvement suggestions
+                        Check completeness and deterministic content-quality recommendations
                     </p>
                 </div>
                 
@@ -366,15 +361,15 @@ const ValidationModal = ({ onClose, resumeData }) => {
                                 
                                 {/* Overall Assessment */}
                                 <div className="p-6 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg shadow-lg">
-                                    <h4 className="text-xl font-bold mb-3">AI Resume Score</h4>
+                                    <h4 className="text-xl font-bold mb-3">Resume Completeness Score</h4>
                                     <div className="flex items-center justify-between">
                                         <div className="text-3xl font-bold">
-                                            {validationResults.requiredFields.status === 'success' ? '85%' : '70%'}
+                                            {completenessScore}%
                                         </div>
                                         <p className="text-white opacity-90">
-                                            {validationResults.requiredFields.status === 'success' 
-                                                ? 'Your resume is very strong!' 
-                                                : 'Complete missing fields to improve your score'}
+                                            {completenessScore >= 85
+                                                ? 'Your resume is structurally complete.'
+                                                : 'Address the listed fields and recommendations to improve completeness.'}
                                         </p>
                                     </div>
                                 </div>

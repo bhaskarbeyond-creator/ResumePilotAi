@@ -168,7 +168,7 @@ test('landing marketing content is honestly labelled, revisioned, confirmed, aud
   assert.match(view, /role="alertdialog"/);
   assert.match(operations, /expectedRevision/);
   assert.match(backend, /LANDING_CONTENT_UPDATED/);
-  assert.match(rules, /id != 'frontendstats'/);
+  assert.match(rules, /'frontendstats','public_config'/);
 });
 
 test('billing admin uses authoritative ledgers without inferred user/subscription payments or fabricated invoices', async () => {

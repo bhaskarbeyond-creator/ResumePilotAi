@@ -6,15 +6,18 @@ Date: 2026-08-15
 
 `npm run test:rc` completed successfully:
 
-- Product and cross-module suites: 73/73
+- Product, cross-module, forensic and AI-settings suites: 89/89
 - Template render suite: 1/1
 - Security/static: 22/22
-- Backend security/integration: 65/65
+- Backend security/integration: 75/75
+- Dedicated AI settings command: 12/12
 - Explicit template command: 8/8
-- Production build: passed in 4.18 seconds
-- ESLint: 0 errors, 494 warnings
-- Root production dependency audit: 0 vulnerabilities
-- Backend production dependency audit: 0 vulnerabilities
+- Production build: passed in 3.87 seconds
+- ESLint: 0 errors, 479 warnings
+- Root lockfile dry-run consistency: passed
+- Backend lockfile dry-run consistency: passed
+- Root production and full dependency audits: 0 vulnerabilities
+- Backend production and full dependency audits: 0 vulnerabilities
 - Firebase emulator: NOT EXECUTED — Java unavailable
 - Browser/live PDF: NOT EXECUTED — Chromium and authenticated staging fixtures unavailable
 
@@ -25,6 +28,11 @@ Date: 2026-08-15
 - Added public-route SEO metadata, private-route noindex, robots exclusions, static sitemap, and explicit unknown-route UI.
 - Added route-change keyboard focus restoration.
 - Added truthful `/readyz`; unprobed external services report `NOT_CHECKED`.
+- Removed browser-side cross-account discovery/merge attempts and checkout identity recovery from local storage.
+- Removed fabricated Resume validation, Naukri listings, featured employers, match percentages and notification business facts.
+- Removed browser production `console.log` data output and added a regression inventory.
+- Restored indexed employer-job/application ordering and removed collection-sampling diagnostics.
+- Centralized account-scoped legacy browser-state cleanup on every Firebase sign-out.
 - Preserved the no-authenticated-offline-cache decision and documented its privacy rationale.
 - Changed 15 non-English locale payloads from eager bundling to on-demand loading. Initial i18n JavaScript fell from 1,394.35 kB (403.70 kB gzip) to 116.42 kB (36.80 kB gzip), a 91.7% raw and 90.9% gzip reduction.
 

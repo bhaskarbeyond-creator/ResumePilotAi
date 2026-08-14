@@ -632,7 +632,6 @@ const BuildResume = () => {
 
         console.log('Download initiated. Global subscription status:', userData.subscriptionsStatus);
         console.log('User:', userData.user);
-        console.log('User membership:', userData.membership);
 
         const access = evaluateDownloadAccess({
             user: userData.user,
@@ -844,14 +843,12 @@ const BuildResume = () => {
                 getUserMembership(user.uid)
                     .then((value) => {
                         if (value && value.membership) {
-                            console.log('User membership data:', value);
                             setUserData((prevData) => ({
                                 ...prevData,
                                 membership: value.membership,
                                 membershipEnds: value.membershipEnds ? value.membershipEnds.toDate() : null,
                             }));
                         } else {
-                            console.log('No membership data found, defaulting to Basic');
                             setUserData((prevData) => ({
                                 ...prevData,
                                 membership: 'Basic',

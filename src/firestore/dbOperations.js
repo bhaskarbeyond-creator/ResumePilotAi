@@ -110,7 +110,6 @@ function addResume(userId) {
                 localStorage.setItem('currentResumeId', docRef.id);
             }, 400);
         })
-        .then((error) => console.log(error));
 }
 
 /// Add Cover Letter
@@ -129,7 +128,6 @@ export async function addCoverLetter(userId, values) {
                 .collection('covers')
                 .doc(localStorage.getItem('currentCoverId'))
                 .update({ ...values, created_at: firebase.firestore.Timestamp.now() });
-            console.log('Cover letter updated successfully');
         } catch (error) {
             console.error('Error updating cover letter:', error);
             throw error;
@@ -150,7 +148,6 @@ export async function addCoverLetter(userId, values) {
                 localStorage.setItem('currentCoverId', docRef.id);
             }, 400);
 
-            console.log('Cover letter created successfully with ID:', docRef.id);
         } catch (error) {
             console.error('Error creating cover letter:', error);
             throw error;
@@ -415,25 +412,9 @@ export async function getUserTransactions(uid) {
     return list;
 }
 // Check Sbs Date
-export async function checkSbs(accountType, expDate) {
-    const res = await axios.post(config.provider + '://' + config.backendUrl + '/api/check', {
-        accountType: accountType,
-        expDate: expDate,
-    });
-    var status = res.data['status'];
-    return status;
-}
-// Check Sbs Date
-export async function makeBasicAccount(userId) {
-    const db = fire.firestore();
-    await db
-        .collection('users')
-        .doc(userId)
-        .update({
-            membershipEnds: new Date('2017-05-05'),
-            membership: 'Basic',
-        })
-        .then((error) => console.log(error));
+export async function checkSbs() {
+    const res = await axios.post('/api/check', {});
+    return res.data.status;
 }
 
 // Get 7 Users
@@ -443,10 +424,8 @@ export async function get7Users() {
     if (!snapshot.empty) {
         var users = [];
         snapshot.forEach((doc) => users.push(doc.data()));
-        console.log(users);
         return users;
     } else {
-        console.log('makan walo');
         return null;
     }
 }
@@ -528,7 +507,7 @@ export function addUser(userId, firstname, lastname, email) {
                 email: email,
                 membershipEnds: new Date('2017-05-05'),
                 createdAt: new Date()
-            }, { merge: true }).then(() => console.log('User created successfully'));
+            }, { merge: true }).catch(() => {});
 
             var statsRef = db.collection('data').doc('stats');
             statsRef.update({
@@ -541,7 +520,7 @@ export function addUser(userId, firstname, lastname, email) {
                 ...(lastname && lastname !== 'back' ? { lastname } : {})
             }, { merge: true }).catch(() => {});
         }
-    }).catch((error) => console.log('addUser error:', error));
+    }).catch(() => {});
 }
 async function updateUserByAdminApi(userId, changes) {
     const response = await fetch(`/api/admin/users/${encodeURIComponent(userId)}`, {
@@ -670,7 +649,6 @@ export async function getCoupons() {
         const settings = await getSystemSettings();
         const mods = (settings && settings.modules) || {};
         if (mods.enableCouponsModule === false) {
-            console.log('ℹ️ Promo Coupons Module is DISABLED in Admin Module Settings.');
             return {};
         }
 
@@ -863,7 +841,6 @@ export function editPersonalInfo(userId, firstname, lastname) {
             firstname: firstname,
             lastname: lastname,
         })
-        .then((error) => console.log(error));
 }
 
 // ADD 1 to downloads
@@ -876,13 +853,11 @@ export async function IncrementDownloads() {
 }
 // ADD 1 to users
 export async function IncrementUsers(userid) {
-    console.log('in incrementing function  ' + userid);
 
     const db = fire.firestore();
     const userRef = db.collection('users').doc(userid);
     const snapshot = await userRef.get();
     if (!snapshot.exists) {
-        console.log('iNCREMENTING ONE ' + userid);
         var statsRef = db.collection('data').doc('stats');
         statsRef.update({
             numberOfUsers: firebase.firestore.FieldValue.increment(1),
@@ -905,9 +880,8 @@ export async function getFullName(userId) {
         membership = data.membership || 'Basic';
         profile = data.profile || {};
         return { firstname, lastname, membership, profile };
-    } else {
-        console.log('notfound');
     }
+    return null;
 }
 
 // Get user data including employer status
@@ -967,8 +941,6 @@ export async function submitEmployerApplication(userId, applicationData) {
     }
 
     try {
-        console.log('Submitting employer application for user:', userId);
-        console.log('Application data:', applicationData);
 
         // Store the application in a separate collection for review
         const applicationRef = db.collection('employerApplications').doc(userId);
@@ -979,7 +951,6 @@ export async function submitEmployerApplication(userId, applicationData) {
             submittedAt: new Date(),
         });
 
-        console.log('Application document created successfully');
         return { success: true };
     } catch (error) {
         console.error('Error submitting employer application:', error);
@@ -1054,10 +1025,6 @@ export async function reactivateEmployerApplication(userId, expectedStatus = und
 export async function createCompany(employerId, companyData) {
     const db = fire.firestore();
     try {
-        console.log('=== CREATING COMPANY ===');
-        console.log('Collection: companies');
-        console.log('Employer ID:', employerId);
-        console.log('Company data:', JSON.stringify(companyData, null, 2));
 
         const finalCompanyData = {
             employerId: employerId,
@@ -1075,13 +1042,9 @@ export async function createCompany(employerId, companyData) {
             updatedAt: new Date(),
         };
 
-        console.log('Final company data to be saved:', JSON.stringify(finalCompanyData, null, 2));
 
         const companyRef = await db.collection('companies').add(finalCompanyData);
 
-        console.log('✅ Company created successfully!');
-        console.log('Company ID:', companyRef.id);
-        console.log('Collection path: companies/' + companyRef.id);
 
         return { success: true, companyId: companyRef.id };
     } catch (error) {
@@ -1097,23 +1060,17 @@ export async function createCompany(employerId, companyData) {
 export async function getEmployerCompanies(employerId) {
     const db = fire.firestore();
     try {
-        console.log('=== GETTING EMPLOYER COMPANIES ===');
-        console.log('Employer ID:', employerId);
-        console.log('Query: companies collection where employerId ==', employerId);
 
         // First, let's try without orderBy to avoid composite index issues
         const snapshot = await db.collection('companies')
             .where('employerId', '==', employerId)
             .get();
 
-        console.log('Query executed. Snapshot empty?', snapshot.empty);
-        console.log('Snapshot size:', snapshot.size);
 
         if (!snapshot.empty) {
             const companies = [];
             snapshot.forEach((doc) => {
                 const data = doc.data();
-                console.log('Found company document:', doc.id, data);
                 companies.push({
                     id: doc.id,
                     ...data,
@@ -1127,22 +1084,9 @@ export async function getEmployerCompanies(employerId) {
                 return new Date(dateB) - new Date(dateA);
             });
 
-            console.log('✅ Found companies:', companies.length);
-            console.log('Companies data:', companies);
             return companies;
-        } else {
-            console.log('❌ No companies found for employer:', employerId);
-            
-            // Let's also check if there are ANY companies in the collection
-            const allCompaniesSnapshot = await db.collection('companies').limit(5).get();
-            console.log('Total companies in collection (first 5):');
-            allCompaniesSnapshot.forEach((doc) => {
-                const data = doc.data();
-                console.log('  Company ID:', doc.id, 'employerId:', data.employerId, 'name:', data.name);
-            });
-            
-            return [];
         }
+        return [];
     } catch (error) {
         console.error('❌ Error getting employer companies:', error);
         console.error('Error details:', error.message);
@@ -1186,18 +1130,8 @@ export async function getApprovedEmployerCompanies(employerId) {
 
       
             return companies;
-        } else {
-            console.log('❌ No companies found for employer:', employerId);
-            
-            // Let's also check if there are ANY companies in the collection
-            const allCompaniesSnapshot = await db.collection('companies').limit(5).get();
-            allCompaniesSnapshot.forEach((doc) => {
-                const data = doc.data();
-                console.log('  Company ID:', doc.id, 'employerId:', data.employerId, 'status:', data.status, 'name:', data.name);
-            });
-            
-            return [];
         }
+        return [];
     } catch (error) {
         console.error('❌ Error getting approved employer companies:', error);
         console.error('Error details:', error.message);
@@ -1210,9 +1144,6 @@ export async function getApprovedEmployerCompanies(employerId) {
 export async function updateCompany(companyId, companyData) {
     const db = fire.firestore();
     try {
-        console.log('=== UPDATING COMPANY ===');
-        console.log('Company ID:', companyId);
-        console.log('Update data:', JSON.stringify(companyData, null, 2));
 
         const updateData = {
             ...companyData,
@@ -1221,7 +1152,6 @@ export async function updateCompany(companyId, companyData) {
 
         await db.collection('companies').doc(companyId).update(updateData);
 
-        console.log('✅ Company updated successfully!');
         return { success: true };
     } catch (error) {
         console.error('❌ Error updating company:', error);
@@ -1233,12 +1163,9 @@ export async function updateCompany(companyId, companyData) {
 export async function deleteCompany(companyId) {
     const db = fire.firestore();
     try {
-        console.log('=== DELETING COMPANY ===');
-        console.log('Company ID:', companyId);
 
         await db.collection('companies').doc(companyId).delete();
 
-        console.log('✅ Company deleted successfully!');
         return { success: true };
     } catch (error) {
         console.error('❌ Error deleting company:', error);
@@ -1299,7 +1226,6 @@ export async function toggleCompanyFeatured(companyId, featured = true, expected
 export async function getFeaturedCompanies(limit = 8) {
     const db = fire.firestore();
     try {
-        console.log('🔍 Getting featured companies from Firestore...');
         
         // Try with orderBy first (requires composite index)
         let snapshot;
@@ -1310,26 +1236,20 @@ export async function getFeaturedCompanies(limit = 8) {
                 .orderBy('featuredAt', 'desc')
                 .limit(limit)
                 .get();
-            console.log('✅ Query with orderBy succeeded');
         } catch (indexError) {
-            console.log('⚠️ Composite index not available, trying without orderBy:', indexError.message);
             // Fallback: query without orderBy if composite index doesn't exist
             snapshot = await db.collection('companies')
                 .where('status', '==', 'approved')
                 .where('featured', '==', true)
                 .limit(limit)
                 .get();
-            console.log('✅ Query without orderBy succeeded');
         }
         
-        console.log('📊 Featured companies snapshot empty?', snapshot.empty);
-        console.log('📊 Featured companies snapshot size:', snapshot.size);
             
         if (!snapshot.empty) {
             const companies = [];
             snapshot.forEach((doc) => {
                 const data = doc.data();
-                console.log('📄 Featured company found:', doc.id, data.name, data.featured);
                 companies.push({
                     id: doc.id,
                     ...data,
@@ -1345,10 +1265,8 @@ export async function getFeaturedCompanies(limit = 8) {
                 });
             }
             
-            console.log('✅ Returning', companies.length, 'featured companies');
             return companies;
         } else {
-            console.log('❌ No featured companies found in Firestore');
             return [];
         }
     } catch (error) {
@@ -1365,10 +1283,6 @@ export async function getFeaturedCompanies(limit = 8) {
 export async function createJobPosting(employerId, jobData) {
     const db = fire.firestore();
     try {
-        console.log('=== CREATING JOB POSTING ===');
-        console.log('Collection: jobs');
-        console.log('Employer ID:', employerId);
-        console.log('Job data:', JSON.stringify(jobData, null, 2));
 
         const finalJobData = {
             employerId: employerId,
@@ -1381,13 +1295,9 @@ export async function createJobPosting(employerId, jobData) {
             viewsCount: 0,
         };
 
-        console.log('Final job data to be saved:', JSON.stringify(finalJobData, null, 2));
 
         const jobRef = await db.collection('jobs').add(finalJobData);
 
-        console.log('✅ Job created successfully!');
-        console.log('Job ID:', jobRef.id);
-        console.log('Collection path: jobs/' + jobRef.id);
 
         return { success: true, jobId: jobRef.id };
     } catch (error) {
@@ -1527,7 +1437,6 @@ export async function getActiveJobs(page = 1, itemsPerPage = 10, filters = {}) {
             return matchesSearch && matchesLocation && matchesJobType && matchesWorkMode && matchesExperienceLevel && matchesSalaryRange;
         });
 
-        console.log(`✅ Filtered ${filteredJobs.length} jobs from ${allJobs.length} total jobs`);
 
         // Sort by creation date (newest first)
         filteredJobs.sort((a, b) => {
@@ -1545,7 +1454,6 @@ export async function getActiveJobs(page = 1, itemsPerPage = 10, filters = {}) {
         const endIndex = startIndex + itemsPerPage;
         const paginatedJobs = filteredJobs.slice(startIndex, endIndex);
 
-        console.log(`✅ Fetched ${paginatedJobs.length} active jobs for page ${page} (${totalItems} total after filtering)`);
 
         return {
             success: true,
@@ -1567,61 +1475,9 @@ export async function getActiveJobs(page = 1, itemsPerPage = 10, filters = {}) {
 
 // Get all job postings for an employer
 export async function getEmployerJobs(employerId) {
-    const db = fire.firestore();
-    try {
-        console.log('🔍 getEmployerJobs called with employerId:', employerId);
-        console.log('🔍 Querying jobs collection where employerId ==', employerId);
-
-        // Temporarily remove orderBy to avoid index requirement
-        // TODO: Add back orderBy('createdAt', 'desc') after creating the composite index
-        const snapshot = await db.collection('jobs').where('employerId', '==', employerId).get();
-
-        console.log('📊 Query snapshot empty?', snapshot.empty);
-        console.log('📊 Query snapshot size:', snapshot.size);
-
-        if (!snapshot.empty) {
-            const jobs = [];
-            snapshot.forEach((doc) => {
-                const jobData = doc.data();
-                console.log('📄 Job document:', doc.id, jobData);
-                jobs.push({
-                    id: doc.id,
-                    ...jobData,
-                });
-            });
-
-            // Sort by createdAt descending (newest first) on client side
-            jobs.sort((a, b) => {
-                const dateA = a.createdAt?.toDate?.() || a.createdAt || new Date(0);
-                const dateB = b.createdAt?.toDate?.() || b.createdAt || new Date(0);
-                return new Date(dateB) - new Date(dateA);
-            });
-
-            console.log('✅ Returning sorted jobs:', jobs);
-            return jobs;
-        } else {
-            console.log('❌ No jobs found for employerId:', employerId);
-            console.log('❌ Possible issues:');
-            console.log('   1. No jobs exist with this employerId');
-            console.log('   2. employerId field name might be different');
-            console.log('   3. employerId value might be stored differently');
-
-            // Let's also check if there are any jobs at all in the collection
-            const allJobsSnapshot = await db.collection('jobs').limit(5).get();
-            console.log('🔍 Sample jobs in collection (first 5):');
-            allJobsSnapshot.forEach((doc) => {
-                const data = doc.data();
-                console.log('   Job ID:', doc.id, 'employerId:', data.employerId, 'title:', data.title);
-            });
-
-            return [];
-        }
-    } catch (error) {
-        console.error('❌ Error getting employer jobs:', error);
-        console.error('❌ Error details:', error.message);
-        console.error('❌ Error code:', error.code);
-        return [];
-    }
+    if (!employerId) throw new Error('Employer identity is required.');
+    const snapshot = await fire.firestore().collection('jobs').where('employerId', '==', employerId).orderBy('createdAt', 'desc').get();
+    return snapshot.docs.map(document => ({ id: document.id, ...document.data() }));
 }
 
 // Update job posting
@@ -1671,9 +1527,7 @@ export async function deleteJobByAdmin(jobId, expected = {}) {
 export async function getJobApplications(jobId) {
     const db = fire.firestore();
     try {
-        // Temporarily remove orderBy to avoid index requirement
-        // TODO: Add back orderBy('appliedAt', 'desc') after creating the composite index
-        const snapshot = await db.collection('jobApplications').where('jobId', '==', jobId).get();
+        const snapshot = await db.collection('jobApplications').where('jobId', '==', jobId).orderBy('appliedAt', 'desc').get();
 
         if (!snapshot.empty) {
             const applications = [];
@@ -1685,20 +1539,13 @@ export async function getJobApplications(jobId) {
                 });
             });
 
-            // Sort by appliedAt descending (newest first) on client side
-            applications.sort((a, b) => {
-                const dateA = a.appliedAt?.toDate?.() || a.appliedAt || new Date(0);
-                const dateB = b.appliedAt?.toDate?.() || b.appliedAt || new Date(0);
-                return new Date(dateB) - new Date(dateA);
-            });
-
             return applications;
         } else {
             return [];
         }
     } catch (error) {
-        console.error('Error getting job applications:', error);
-        return [];
+        console.error('Error getting job applications:', error.message);
+        throw error;
     }
 }
 
@@ -2102,7 +1949,6 @@ export async function updateApplicationStatus(applicationId, status, notes = '')
         // Send notification to the applicant
         await createNotification(applicationData.userId, notificationData);
         
-        console.log('✅ Application status updated and notification sent');
         return { success: true };
     } catch (error) {
         console.error('Error updating application status:', error);
@@ -2232,7 +2078,6 @@ export async function toggleJobFeatured(jobId, isFeatured, expected = {}) {
 export async function getJobById(jobId) {
     const db = fire.firestore();
     try {
-        console.log('🔍 Getting job by ID:', jobId);
         
         const doc = await db.collection('jobs').doc(jobId).get();
         
@@ -2240,7 +2085,6 @@ export async function getJobById(jobId) {
             const data = doc.data();
             const createdDate = data.createdAt?.toDate?.() || data.createdAt;
             
-            console.log('📄 Job found:', doc.id, data.title);
             
             const job = {
                 id: doc.id,
@@ -2273,10 +2117,8 @@ export async function getJobById(jobId) {
                 country: data.country,
             };
             
-            console.log('✅ Returning job details:', job);
             return job;
         } else {
-            console.log('❌ Job not found with ID:', jobId);
             return null;
         }
     } catch (error) {
@@ -2291,7 +2133,6 @@ export async function getJobById(jobId) {
 export async function getFeaturedJobs(limit = 6) {
     const db = fire.firestore();
     try {
-        console.log('🔍 Getting featured jobs from Firestore...');
         
         // Get active jobs that are featured
         const snapshot = await db.collection('jobs')
@@ -2301,8 +2142,6 @@ export async function getFeaturedJobs(limit = 6) {
             .limit(limit)
             .get();
         
-        console.log('📊 Featured jobs snapshot empty?', snapshot.empty);
-        console.log('📊 Featured jobs snapshot size:', snapshot.size);
             
         if (!snapshot.empty) {
             const jobs = [];
@@ -2310,7 +2149,6 @@ export async function getFeaturedJobs(limit = 6) {
                 const data = doc.data();
                 const createdDate = data.createdAt?.toDate?.() || data.createdAt;
                 
-                console.log('📄 Featured job found:', doc.id, data.title, data.isFeatured);
                 
                 const job = {
                     id: doc.id,
@@ -2338,10 +2176,8 @@ export async function getFeaturedJobs(limit = 6) {
                 jobs.push(job);
             });
             
-            console.log('✅ Returning', jobs.length, 'featured jobs');
             return jobs;
         } else {
-            console.log('❌ No featured jobs found in Firestore');
             return [];
         }
     } catch (error) {
@@ -2351,7 +2187,6 @@ export async function getFeaturedJobs(limit = 6) {
         
         // If there's a composite index error, try without orderBy
         if (error.code === 'failed-precondition' || error.message.includes('index')) {
-            console.log('⚠️ Composite index not available, trying without orderBy');
             try {
                 const fallbackSnapshot = await db.collection('jobs')
                     .where('status', '==', 'active')
@@ -2395,7 +2230,6 @@ export async function getFeaturedJobs(limit = 6) {
                         return new Date(dateB) - new Date(dateA);
                     });
                     
-                    console.log('✅ Fallback query succeeded, returning', jobs.length, 'featured jobs');
                     return jobs;
                 } else {
                     return [];
@@ -2518,7 +2352,7 @@ export async function setSubscriptionsData(state, month, quartarly, yearly, only
         body: JSON.stringify(subData)
     });
     const result = await response.json().catch(() => ({}));
-    if (!response.ok || !result.success) throw new Error(result.error || 'Unable to save payment settings.');
+    if (!response.ok || !result.success) throw new Error(result.error?.message || result.error || 'Unable to save payment settings.');
     return result;
 }
 
@@ -3047,7 +2881,6 @@ export async function getBlogPostByIdForAuthor(postId, userId) {
 export async function getBlogPostBySlug(slug, includeUnpublished = false) {
     const db = fire.firestore();
     try {
-        console.log('🔍 Getting blog post by slug:', slug);
         
         let query = db.collection('blog_posts').where('slug', '==', slug);
         
@@ -3061,7 +2894,6 @@ export async function getBlogPostBySlug(slug, includeUnpublished = false) {
             const doc = snapshot.docs[0];
             const data = doc.data();
             
-            console.log('📄 Blog post found:', doc.id, data.title);
             
             const post = {
                 id: doc.id,
@@ -3075,7 +2907,6 @@ export async function getBlogPostBySlug(slug, includeUnpublished = false) {
             // a public article can be read. Client-side writes are forbidden by Firestore rules.
             return post;
         } else {
-            console.log('❌ Blog post not found with slug:', slug);
             return null;
         }
     } catch (error) {
@@ -3093,7 +2924,6 @@ export async function getUserBlogPosts(authorUid, options = {}) {
             limit = 50
         } = options;
 
-        console.log('🔍 Getting user blog posts for:', authorUid);
         
         let query = db.collection('blog_posts').where('authorUid', '==', authorUid);
         
@@ -3128,7 +2958,6 @@ export async function getUserBlogPosts(authorUid, options = {}) {
             return bTime - aTime;
         });
         
-        console.log(`✅ Found ${posts.length} user blog posts`);
         
         return {
             success: true,
@@ -3155,7 +2984,6 @@ export async function listBlogPosts(options = {}) {
             includeStats = false
         } = options;
 
-        console.log('🔍 Listing blog posts with options:', options);
         
         let query = db.collection('blog_posts');
         
@@ -3219,7 +3047,6 @@ export async function listBlogPosts(options = {}) {
         
         const totalPages = Math.ceil(totalCount / limit);
         
-        console.log(`✅ Found ${posts.length} blog posts (page ${page}/${totalPages})`);
         
         const result = {
             success: true,
@@ -3293,8 +3120,6 @@ export async function deleteBlogPost(postId, userId = null, expectedRevision = n
 export async function createBlogCategory(categoryData) {
     const db = fire.firestore();
     try {
-        console.log('=== CREATING BLOG CATEGORY ===');
-        console.log('Category data:', JSON.stringify(categoryData, null, 2));
 
         const slug = generateSlug(categoryData.name);
         
@@ -3316,8 +3141,6 @@ export async function createBlogCategory(categoryData) {
 
         const categoryRef = await db.collection('blog_categories').add(finalCategoryData);
 
-        console.log('✅ Blog category created successfully!');
-        console.log('Category ID:', categoryRef.id);
 
         return { success: true, categoryId: categoryRef.id, slug: slug };
     } catch (error) {
@@ -3330,7 +3153,6 @@ export async function createBlogCategory(categoryData) {
 export async function listBlogCategories() {
     const db = fire.firestore();
     try {
-        console.log('🔍 Listing blog categories');
         
         const snapshot = await db.collection('blog_categories')
             .orderBy('name', 'asc')
@@ -3347,7 +3169,6 @@ export async function listBlogCategories() {
             });
         });
         
-        console.log(`✅ Found ${categories.length} blog categories`);
         return categories;
     } catch (error) {
         console.error('❌ Error listing blog categories:', error);
@@ -3359,9 +3180,6 @@ export async function listBlogCategories() {
 export async function updateBlogCategory(categoryId, updateData) {
     const db = fire.firestore();
     try {
-        console.log('=== UPDATING BLOG CATEGORY ===');
-        console.log('Category ID:', categoryId);
-        console.log('Update data:', JSON.stringify(updateData, null, 2));
 
         const finalUpdateData = {
             ...updateData,
@@ -3383,7 +3201,6 @@ export async function updateBlogCategory(categoryId, updateData) {
 
         await db.collection('blog_categories').doc(categoryId).update(finalUpdateData);
 
-        console.log('✅ Blog category updated successfully!');
         return { success: true };
     } catch (error) {
         console.error('❌ Error updating blog category:', error);
@@ -3395,8 +3212,6 @@ export async function updateBlogCategory(categoryId, updateData) {
 export async function deleteBlogCategory(categoryId) {
     const db = fire.firestore();
     try {
-        console.log('=== DELETING BLOG CATEGORY ===');
-        console.log('Category ID:', categoryId);
 
         // Check if category has posts
         const postsWithCategory = await db.collection('blog_posts')
@@ -3410,7 +3225,6 @@ export async function deleteBlogCategory(categoryId) {
 
         await db.collection('blog_categories').doc(categoryId).delete();
 
-        console.log('✅ Blog category deleted successfully!');
         return { success: true };
     } catch (error) {
         console.error('❌ Error deleting blog category:', error);
@@ -3447,7 +3261,6 @@ export async function getBlogSettings() {
 }
 
 export async function updateBlogSettings(settings) {
-    const db = fire.firestore();
     try {
         const clean = {
             blogTitle: String(settings?.blogTitle || DEFAULT_BLOG_SETTINGS.blogTitle).slice(0, 120),
@@ -3459,10 +3272,8 @@ export async function updateBlogSettings(settings) {
             featuredImage: settings?.featuredImage ? String(settings.featuredImage).slice(0, 2048) : null,
             seoTitle: String(settings?.seoTitle || settings?.blogTitle || DEFAULT_BLOG_SETTINGS.seoTitle).slice(0, 120),
             seoDescription: String(settings?.seoDescription || settings?.blogDescription || DEFAULT_BLOG_SETTINGS.seoDescription).slice(0, 320),
-            updatedAt: new Date(),
         };
-        await db.collection('data').doc('public_config').set({ blog: clean }, { merge: true });
-        return { success: true };
+        return await saveSystemSettings('blog', clean);
     } catch (error) {
         console.error('Error updating blog settings:', error);
         return { success: false, error: error.message };
@@ -3505,11 +3316,8 @@ function generateExcerpt(content, maxLength = 160) {
 export async function createNotification(userId, notificationData) {
     const db = fire.firestore();
     try {
-        console.log('🔔 Creating notification for user:', userId);
-        console.log('🔔 Notification data:', notificationData);
         
         const notificationRef = db.collection('notifications').doc(userId).collection('userNotifications').doc();
-        console.log('🔔 Notification ref path:', notificationRef.path);
 
         const finalNotificationData = {
             ...notificationData,
@@ -3518,11 +3326,8 @@ export async function createNotification(userId, notificationData) {
             updatedAt: new Date(),
         };
         
-        console.log('🔔 Final notification data:', finalNotificationData);
 
         await notificationRef.set(finalNotificationData);
-        console.log('✅ Notification created successfully for user:', userId);
-        console.log('✅ Notification ID:', notificationRef.id);
         return { success: true, notificationId: notificationRef.id };
     } catch (error) {
         console.error('❌ Error creating notification:', error);
@@ -3558,7 +3363,6 @@ export async function markNotificationAsRead(userId, notificationId) {
             read: true,
             updatedAt: new Date(),
         });
-        console.log('✅ Marked as read:', notificationId);
         return { success: true };
     } catch (error) {
         console.error('❌ Error marking notification as read:', error);
@@ -3568,7 +3372,6 @@ export async function markNotificationAsRead(userId, notificationId) {
 
 // Test function to create a sample notification (for debugging)
 export async function testCreateNotification(userId) {
-    console.log('🧪 Testing notification creation for user:', userId);
     
     const testNotification = {
         type: 'test',
@@ -3581,7 +3384,6 @@ export async function testCreateNotification(userId) {
     };
     
     const result = await createNotification(userId, testNotification);
-    console.log('🧪 Test notification result:', result);
     return result;
 }
 
@@ -3656,7 +3458,6 @@ export async function removePageByName(name) {
         .doc(name)
         .delete()
         .then((value) => {
-            console.log('Succefully delete');
             return true;
         });
 }
@@ -3743,7 +3544,6 @@ export async function addSocial(facebook, twitter, instagram, youtube, pinterest
             youtube: youtube,
             pinterest: pinterest,
         })
-        .then((value) => console.log('Succefully added Social Links'));
 }
 
 export async function addDetails(websitename, websitedescription) {
@@ -3754,7 +3554,6 @@ export async function addDetails(websitename, websitedescription) {
             websiteName: websitename,
             websitedescription: websitedescription,
         })
-        .then((value) => console.log('Succefully added webiste details'));
 }
 export async function getResumes(userId, page = 1, itemsPerPage = 5) {
     const db = fire.firestore();
@@ -3862,12 +3661,10 @@ export async function getResumes(userId, page = 1, itemsPerPage = 5) {
         const educationSnapshot = await educationRef.get();
         if (!educationSnapshot.empty) {
             // Looping throu resumes if found
-            //   console.log("Found employments in"+ resumes[index].id);
             educationSnapshot.forEach((value) => {
                 // assigning data into our resumes[using the index of the target resume] array
                 resumes[index].educations[educationIndex] = value.data();
                 resumes[index].educations[educationIndex].educationId = value.id;
-                // console.log( "The id of the employment is"+ resumes[index].employments[employmentIndex].employmentId)
                 educationIndex++;
             });
         }
@@ -3880,12 +3677,10 @@ export async function getResumes(userId, page = 1, itemsPerPage = 5) {
         const skillSnapshot = await skillRef.get();
         if (!skillSnapshot.empty) {
             // Looping throu resumes if found
-            //   console.log("Found employments in"+ resumes[index].id);
             skillSnapshot.forEach((value) => {
                 // assigning data into our resumes[using the index of the target resume] array
                 resumes[index].skills[skillIndex] = value.data();
                 resumes[index].skills[skillIndex].skillId = value.id;
-                // console.log( "The id of the employment is"+ resumes[index].employments[employmentIndex].employmentId)
                 skillIndex++;
             });
         }
@@ -3899,18 +3694,14 @@ export async function getResumes(userId, page = 1, itemsPerPage = 5) {
         const skillSnapshot = await skillRef.get();
         if (!skillSnapshot.empty) {
             // Looping throu resumes if found
-            //   console.log("Found employments in"+ resumes[index].id);
             skillSnapshot.forEach((value) => {
                 // assigning data into our resumes[using the index of the target resume] array
                 resumes[index].languages[languageIndex] = value.data();
                 resumes[index].languages[languageIndex].skillId = value.id;
-                // console.log( "The id of the employment is"+ resumes[index].employments[employmentIndex].employmentId)
                 languageIndex++;
             });
         }
     }
-    //  console.log("Resumes final result ");
-    //console.log(resumes);
     return {
         resumes,
         pagination: {
@@ -3934,7 +3725,6 @@ export async function addToFavourites(userId, documentId) {
         .set({
             documentId: documentId,
         })
-        .then((value) => console.log('Succefully added to favourites'));
     return true;
 }
 
@@ -3961,7 +3751,6 @@ export async function removeFromFavourites(userId, documentId) {
         .collection('favourites')
         .doc(documentId)
         .delete()
-        .then((value) => console.log('Succefully removed from favourites'));
     return true;
 }
 
@@ -4011,12 +3800,10 @@ export async function toggleJobFavourite(userId, jobId) {
             type: 'job',
             addedAt: new Date()
         });
-        console.log('Job added to favourites');
         return true; // Added
     } else {
         // Remove from favourites
         await docRef.delete();
-        console.log('Job removed from favourites');
         return false; // Removed
     }
 }
@@ -4086,11 +3873,10 @@ export async function addEmployments(userId, resumeId, employmentsToAdd) {
         db.collection('users').doc(userId).collection('resumes').doc(resumeId).collection('employments').doc(value).delete();
     });
     // Adding the new employments
-    var res;
     for (let index = 0; index < employmentsToAdd.length; index++) {
         const employmentRef = db.collection('users').doc(userId).collection('resumes').doc(resumeId).collection('employments');
-        employmentsToAdd[index] !== null
-            ? (res = await employmentRef.add({
+        if (employmentsToAdd[index] !== null) {
+            await employmentRef.add({
                   id: employmentsToAdd[index].id,
                   date: employmentsToAdd[index].date,
                   jobTitle: employmentsToAdd[index].jobTitle,
@@ -4098,8 +3884,8 @@ export async function addEmployments(userId, resumeId, employmentsToAdd) {
                   begin: employmentsToAdd[index].begin,
                   end: employmentsToAdd[index].end,
                   description: employmentsToAdd[index].description,
-              }))
-            : console.log('kk');
+              });
+        }
     }
 }
 // adding Educations
@@ -4121,11 +3907,10 @@ export async function addEducations(userId, resumeId, educatiionsToAdd) {
         db.collection('users').doc(userId).collection('resumes').doc(resumeId).collection('educations').doc(value).delete();
     });
     // Adding the new employments
-    var res;
     for (let index = 0; index < educatiionsToAdd.length; index++) {
         const educationRef = db.collection('users').doc(userId).collection('resumes').doc(resumeId).collection('educations');
-        educatiionsToAdd[index] !== null
-            ? (res = await educationRef.add({
+        if (educatiionsToAdd[index] !== null) {
+            await educationRef.add({
                   id: educatiionsToAdd[index].id,
                   date: educatiionsToAdd[index].date,
 
@@ -4134,8 +3919,8 @@ export async function addEducations(userId, resumeId, educatiionsToAdd) {
                   finished: educatiionsToAdd[index].finished,
                   degree: educatiionsToAdd[index].degree,
                   description: educatiionsToAdd[index].description,
-              }))
-            : console.log();
+              });
+        }
     }
 }
 // adding Educations
@@ -4972,17 +4757,13 @@ export async function sendMessage(conversationId, _senderId, text) {
 }
 
 export function getConversations(userId, callback) {
-    console.log('🔥 getConversations called with userId:', userId);
     
     return safeRealtimeDbOperation(() => {
         const db = fire.database();
         const conversationsRef = db.ref(`user-conversations/${userId}`);
-        console.log('🔥 Database reference created for path:', `user-conversations/${userId}`);
         
         // Add error handler for the database reference
         conversationsRef.on('value', async (snapshot) => {
-            console.log('🔥 Firebase callback triggered, snapshot exists:', snapshot.exists());
-            console.log('🔥 Snapshot value:', snapshot.val());
             
             const conversationIds = snapshot.val();
             if (!conversationIds) {
@@ -5039,7 +4820,6 @@ export function getConversations(userId, callback) {
         };
     }, () => {
         // Fallback when Realtime Database is not available
-        console.log('⚠️ Realtime Database not available, returning empty conversations');
         callback([]);
         return () => {}; // Return empty cleanup function
     });
@@ -5078,7 +4858,6 @@ export function getMessages(conversationId, callback, errorCallback) {
 // New function for paginated messages
 export async function getMessagesPaginated(conversationId, limit = 10, startAfter = null) {
     try {
-        console.log('🔍 getMessagesPaginated called:', { conversationId, limit, startAfter });
         
         const db = fire.database();
         let messagesRef = db.ref(`messages/${conversationId}`).orderByChild('timestamp');
@@ -5094,7 +4873,6 @@ export async function getMessagesPaginated(conversationId, limit = 10, startAfte
         const snapshot = await messagesRef.get();
         
         if (!snapshot.exists()) {
-            console.log('🔍 No messages found');
             return { messages: [], hasMore: false };
         }
         
@@ -5109,7 +4887,6 @@ export async function getMessagesPaginated(conversationId, limit = 10, startAfte
         // Check if there are more messages
         const hasMore = messages.length === limit && messages.length > 0;
         
-        console.log('🔍 Retrieved messages:', messages.length, 'hasMore:', hasMore);
         
         return { messages, hasMore };
     } catch (error) {
@@ -5627,7 +5404,6 @@ export async function getUserPortfolios(userId, includeUnpublished = true) {
             }
         } else {
             // Fallback: directly query portfolios collection by userId
-            console.log('No portfolios found in subcollection, trying direct query...');
             let directQuery = db.collection('portfolios').where('userId', '==', userId);
 
             if (!includeUnpublished) {

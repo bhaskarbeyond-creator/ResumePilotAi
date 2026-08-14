@@ -168,7 +168,6 @@ const EditJobModal = ({ isOpen, onClose, job, onJobUpdated, showToast, t }) => {
                 throw new Error('User not authenticated');
             }
 
-            console.log('Updating job with form data:', formData);
 
             // Validate that a company is selected
             if (!formData.selectedCompanyId) {
@@ -206,7 +205,6 @@ const EditJobModal = ({ isOpen, onClose, job, onJobUpdated, showToast, t }) => {
                 status: 'pending', // Set to pending when edited for re-approval
             };
 
-            console.log('Processed job data:', jobData);
 
             // Update job posting in database
             const result = await updateJobPosting(job.id, jobData);
@@ -250,7 +248,6 @@ const EditJobModal = ({ isOpen, onClose, job, onJobUpdated, showToast, t }) => {
         
         setLoadingCompanies(true);
         try {
-            console.log('Loading approved companies for employer:', user.uid);
             const approvedCompanies = await getApprovedEmployerCompanies(user.uid);
             console.log('Found approved companies:', approvedCompanies.length);
             setCompanies(approvedCompanies);

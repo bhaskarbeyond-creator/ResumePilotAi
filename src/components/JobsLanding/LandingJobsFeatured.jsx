@@ -3,6 +3,7 @@ import { withTranslation } from 'react-i18next';
 import { FiBriefcase, FiMapPin, FiClock, FiDollarSign, FiStar, FiTrendingUp, FiArrowRight } from 'react-icons/fi';
 import { BiBuilding, BiTime } from 'react-icons/bi';
 import { getFrontendStats, getFeaturedJobs } from '../../firestore/dbOperations';
+import { sanitizeImageUrl } from '../../utils/sanitizeHtml';
 
 
 const JobCard = ({ job, onApply, t }) => (
@@ -30,11 +31,12 @@ const JobCard = ({ job, onApply, t }) => (
         {/* Company Logo & Info */}
         <div className="flex items-start gap-4 mb-4">
             <div className="flex-shrink-0 w-12 h-12 bg-gray-50 rounded-lg flex items-center justify-center group-hover:bg-blue-50 transition-colors duration-300">
-                <img 
-                    src={job.companyLogo} 
-                    alt={job.company}
+                {sanitizeImageUrl(job.companyLogo) ? <img
+                    src={sanitizeImageUrl(job.companyLogo)}
+                    alt={`${job.company || 'Company'} logo`}
+                    loading="lazy"
                     className="h-8 w-auto object-contain filter group-hover:brightness-110 transition-all duration-300"
-                />
+                /> : <BiBuilding className="h-6 w-6 text-gray-400" aria-hidden="true" />}
             </div>
             <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-lg text-gray-900 group-hover:text-blue-600 transition-colors duration-300 truncate">
@@ -71,17 +73,17 @@ const JobCard = ({ job, onApply, t }) => (
 
         {/* Skills */}
         <div className="flex flex-wrap gap-2 mb-4">
-            {job.skills.slice(0, 3).map((skill, index) => (
-                <span 
+            {(job.skills || []).slice(0, 3).map((skill, index) => (
+                <span
                     key={index}
                     className="px-2 py-1 bg-blue-50 text-blue-600 text-xs font-medium rounded-md border border-blue-100"
                 >
                     {skill}
                 </span>
             ))}
-            {job.skills.length > 3 && (
+            {(job.skills || []).length > 3 && (
                 <span className="px-2 py-1 bg-gray-50 text-gray-500 text-xs font-medium rounded-md border border-gray-100">
-                    {t('JobsUpdate.LandingJobsFeatured.JobCard.skills.moreSkills', '+{0} more', { 0: job.skills.length - 3 })}
+                    {t('JobsUpdate.LandingJobsFeatured.JobCard.skills.moreSkills', '+{0} more', { 0: (job.skills || []).length - 3 })}
                 </span>
             )}
         </div>
@@ -110,30 +112,24 @@ const LandingJobsFeatured = ({ t }) => {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                console.log('🔍 Fetching featured jobs and stats...');
-                
-                // Fetch both stats and featured jobs
+                // Fetch both public marketing content and verified featured jobs
                 const [stats, jobs] = await Promise.all([
                     getFrontendStats(),
                     getFeaturedJobs(6) // Get 6 featured jobs
                 ]);
-                
-                console.log('✅ Fetched stats:', stats);
-                console.log('✅ Fetched featured jobs:', jobs);
-                
+
                 setFrontendStats(stats);
                 setFeaturedJobs(jobs);
                 setError(null);
             } catch (err) {
                 console.error('❌ Error fetching data:', err);
                 setError(err.message);
-                // Keep mock data as fallback
                 setFeaturedJobs([]);
             } finally {
                 setLoading(false);
             }
         };
-        
+
         fetchData();
     }, []);
 
@@ -187,7 +183,7 @@ const LandingJobsFeatured = ({ t }) => {
                 {error && !loading && (
                     <div className="text-center py-8 mb-8">
                         <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-50 text-orange-600 rounded-lg border border-orange-200">
-                            <span className="text-sm">⚠️ Using demo data (Firestore connection issue)</span>
+                            <span className="text-sm">Featured jobs are currently unavailable. Try again later.</span>
                         </div>
                     </div>
                 )}
@@ -197,8 +193,8 @@ const LandingJobsFeatured = ({ t }) => {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 mb-12 sm:mb-16">
                         {featuredJobs.map((job) => (
                             <JobCard
-                                key={job.id} 
-                                job={job} 
+                                key={job.id}
+                                job={job}
                                 onApply={handleApply}
                                 t={t}
                             />
@@ -225,7 +221,7 @@ const LandingJobsFeatured = ({ t }) => {
                             <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">{frontendStats.featuredJobs || '2,500+'}</div>
                             <div className="text-sm text-gray-600">{t('JobsUpdate.LandingJobsFeatured.stats.jobs', 'Featured Jobs')}</div>
                         </div>
-                        
+
                         <div className="group">
                             <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-full mx-auto mb-3 group-hover:bg-green-200 transition-colors duration-300">
                                 <FiTrendingUp className="w-6 h-6 text-green-600" />
@@ -233,7 +229,7 @@ const LandingJobsFeatured = ({ t }) => {
                             <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">{frontendStats.successRate || '95%'}</div>
                             <div className="text-sm text-gray-600">{t('JobsUpdate.LandingJobsFeatured.stats.success', 'Success Rate')}</div>
                         </div>
-                        
+
                         <div className="group">
                             <div className="flex items-center justify-center w-12 h-12 bg-purple-100 rounded-full mx-auto mb-3 group-hover:bg-purple-200 transition-colors duration-300">
                                 <BiBuilding className="w-6 h-6 text-purple-600" />

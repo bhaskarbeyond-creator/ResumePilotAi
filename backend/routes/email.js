@@ -950,7 +950,7 @@ router.post('/admin/test-connection', async (req, res) => {
     }
 
     if (type !== 'smtp') {
-        return res.json({ success: true, message: 'Non-SMTP test logged.' });
+        return res.status(400).json({ success: false, code: 'EMAIL_TEST_TYPE_UNSUPPORTED', error: 'This endpoint supports SMTP tests only.' });
     }
 
     try {

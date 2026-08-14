@@ -16,6 +16,9 @@ test('new-user journey keeps trusted auth, profile, Resume, AI, Portfolio and lo
   assert.match(ai, /\/api\//);
   assert.match(portfolio, /PORTFOLIO_CONFLICT/);
   assert.match(main, /serviceWorker\.unregister|onAuthStateChanged/);
+  const auth = await read('src/firestore/auth.js');
+  assert.doesNotMatch(auth, /where\('email'|mergeUserAccounts|existingMembership|collection\('resumes'\).*oldUid/s);
+  assert.match(auth, /membership: 'Basic'/);
 });
 
 test('billing journey remains server-authoritative from plan through entitlement, invoice and refund', async () => {

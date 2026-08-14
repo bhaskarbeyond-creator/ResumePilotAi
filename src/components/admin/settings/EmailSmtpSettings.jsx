@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { normalizeAdminApiError } from '../../../services/adminAiSettings';
 import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
 import config from '../../../conf/configuration';
 import { 
@@ -475,7 +476,7 @@ const EmailSmtpSettings = () => {
                 body: JSON.stringify({ smtp: smtpConfig, fallbackSmtp, imap: imapConfig, enabledTemplates })
             });
             const result = await response.json().catch(() => ({}));
-            if (!response.ok || !result.success) throw new Error(result.error || 'Runtime email configuration was not saved.');
+            if (!response.ok || !result.success) throw normalizeAdminApiError(response, result, 'Runtime email configuration was not saved.');
 
             setStatusMessage({ type: 'success', text: 'SMTP, fallback relay, IMAP, and template settings were saved to the trusted runtime.' });
         } catch (error) {
@@ -490,12 +491,13 @@ const EmailSmtpSettings = () => {
         setTestingSmtp(true);
         setStatusMessage(null);
         try {
-            const response = await fetch(`${API_BASE}/api/admin/test-connection`, {
+            const response = await fetch(`${API_BASE}/api/email/admin/test-connection`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ type: 'smtp', ...smtpConfig })
             });
-            const data = await response.json();
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw normalizeAdminApiError(response, data, 'Email operation failed.');
             if (data.success) {
                 setStatusMessage({ type: 'success', text: data.message });
             } else {
@@ -512,12 +514,13 @@ const EmailSmtpSettings = () => {
         setTestingFallbackSmtp(true);
         setStatusMessage(null);
         try {
-            const response = await fetch(`${API_BASE}/api/admin/test-connection`, {
+            const response = await fetch(`${API_BASE}/api/email/admin/test-connection`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ type: 'fallback_smtp', ...fallbackSmtp })
             });
-            const data = await response.json();
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw normalizeAdminApiError(response, data, 'Email operation failed.');
             if (data.success) {
                 setStatusMessage({ type: 'success', text: `🛡️ ${data.message}` });
             } else {
@@ -539,7 +542,8 @@ const EmailSmtpSettings = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(imapConfig)
             });
-            const data = await response.json();
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw normalizeAdminApiError(response, data, 'Email operation failed.');
             if (data.success) {
                 setStatusMessage({ type: 'success', text: data.message });
             } else {
@@ -567,7 +571,8 @@ const EmailSmtpSettings = () => {
                     vars: spec.sampleVars
                 })
             });
-            const data = await response.json();
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw normalizeAdminApiError(response, data, 'Email operation failed.');
             if (data.success) {
                 setStatusMessage({ type: 'success', text: `Test "${spec.name}" template queued for dispatch to ${testRecipientEmail || smtpConfig.adminEmail}!` });
                 loadSettingsAndLogs();

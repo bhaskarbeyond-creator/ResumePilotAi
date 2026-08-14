@@ -147,7 +147,7 @@ const JobDetailsModal = ({ job, isOpen, onClose, isSaved, onToggleSaved, onApply
             job?.requirements && job.requirements.length > 0
                 ? job.requirements.map((skill) => ({
                       skill: skill,
-                      match: Math.floor(Math.random() * 40) + 60, // Random for demo, would be calculated
+                      match: null, // No verified candidate/job comparison is available in this view.
                       required: true,
                   }))
                 : [],

@@ -599,8 +599,6 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
 
         try {
             console.log('🔍 Submitting application for job:', job.id);
-            console.log('🔍 User ID:', user.uid);
-            console.log('🔍 Raw application data:', applicationData);
 
             // Sanitize application data to remove undefined values
             const sanitizedApplicationData = {
@@ -618,7 +616,6 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
                 } : null,
             };
 
-            console.log('🔍 Sanitized application data:', sanitizedApplicationData);
 
             // Submit the application to the database
             const result = await submitJobApplication(user.uid, job.id, sanitizedApplicationData);

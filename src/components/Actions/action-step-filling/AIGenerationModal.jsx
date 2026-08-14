@@ -142,7 +142,6 @@ const AIGenerationModal = ({ closeModal, currentStep, handleStep, t, handleInput
         requestControllerRef.current = requestController;
 
         try {
-            console.log('Starting resume generation for:', formData.occupation);
             // Get current language from preferredLanguage in localStorage or i18n
             const currentLanguage = localStorage.getItem('preferredLanguage') || i18n.language || 'en';
             const aiData = await generateAIResumeData(formData.occupation, formData.experienceLevel, skillsList, educationList, currentLanguage, { signal: requestController.signal });

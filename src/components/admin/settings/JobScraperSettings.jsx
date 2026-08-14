@@ -9,7 +9,7 @@ const JobScraperSettings = () => {
         portal: 'all',
         maxJobs: 25,
         scrapeIntervalHours: 24,
-        naukriEnabled: true,
+        naukriEnabled: false,
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -18,7 +18,7 @@ const JobScraperSettings = () => {
     useEffect(() => {
         getSystemSettings().then((settings) => {
             if (settings && settings.jobScraper) {
-                setScraperConfig((prev) => ({ ...prev, ...settings.jobScraper }));
+                setScraperConfig((prev) => ({ ...prev, ...settings.jobScraper, naukriEnabled: false }));
             }
             setLoading(false);
         });
@@ -37,7 +37,7 @@ const JobScraperSettings = () => {
         setSaving(true);
         try {
             await saveSystemSettings('jobScraper', scraperConfig);
-            setStatusMessage({ type: 'success', text: 'Job Scraper & Naukri settings saved successfully!' });
+            setStatusMessage({ type: 'success', text: 'Ingestion preferences saved. No scraper runtime is configured or enabled.' });
         } catch (error) {
             setStatusMessage({ type: 'error', text: `Failed to save settings: ${error.message}` });
         } finally {
@@ -70,10 +70,10 @@ const JobScraperSettings = () => {
 
             <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
                 <h3 className="text-base font-semibold text-slate-800 flex items-center gap-2 mb-1">
-                    <FaBriefcase className="text-blue-600" /> Automated Job Scraper & Naukri.com Integration
+                    <FaBriefcase className="text-blue-600" /> Job Ingestion Configuration (Runtime Unavailable)
                 </h3>
                 <p className="text-xs text-slate-500 mb-4">
-                    Configure search parameters, Naukri.com scraper options, and location targeting for Indian tech hubs.
+                    Store proposed search parameters for a future trusted ingestion worker. This does not enable scraping or deploy a scheduler.
                 </p>
 
                 <div className="space-y-4">
@@ -82,12 +82,13 @@ const JobScraperSettings = () => {
                             type="checkbox"
                             id="naukriEnabled"
                             name="naukriEnabled"
-                            checked={scraperConfig.naukriEnabled}
+                            checked={false}
+                            disabled
                             onChange={handleChange}
                             className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
                         />
                         <label htmlFor="naukriEnabled" className="text-sm font-semibold text-slate-800">
-                            Enable Naukri.com Indian Job Market Scraper
+                            Scraper disabled — trusted runtime not configured
                         </label>
                     </div>
 

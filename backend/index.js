@@ -12,7 +12,8 @@ const crypto = require('crypto');
 const { chromium } = require('playwright');
 require('dotenv').config();
 const EmailNotifier = require('./services/emailNotifier');
-const { clearProviderConfigurationCache, loadProviderConfiguration, generateWithProviders } = require('./services/aiRuntime');
+const { loadProviderConfiguration, generateWithProviders } = require('./services/aiRuntime');
+const { loadAiAdminSettings, saveAiAdminSettings, testAiProvider } = require('./services/aiAdmin');
 const { createExportRenderToken, consumeExportRenderToken, discardExportRenderToken } = require('./security/exportTokens');
 const app = express();
 const cors = require('cors');
@@ -238,6 +239,7 @@ const aiPaths = [
 ];
 app.use(aiPaths, aiAccountLimiter, enforceDailyAiQuota);
 app.use('/api/ai', aiAccountLimiter, enforceDailyAiQuota);
+app.use('/api/admin/ai/test-provider', aiAccountLimiter);
 const ownNotificationPaths = [
     '/api/notify/user-signup', '/api/notify/password-changed', '/api/notify/email-otp',
     '/api/notify/portfolio-published', '/api/notify/subscription-cancelled',
@@ -1277,21 +1279,13 @@ app.use('/api/email', emailRoutes);
 
 // AI provider configuration is split: secrets remain in a server-only document while
 // browser-readable settings contain models/toggles only.
-app.get('/api/admin/ai-settings', async (_req, res) => {
-    if (!db) return res.status(503).json({ success: false, error: 'Settings service unavailable' });
-    const [publicDoc, secretDoc, legacyDoc] = await Promise.all([
-        db.collection('data').doc('public_config').get(),
-        db.collection('settings').doc('ai_providers').get(),
-        db.collection('data').doc('system_settings').get(),
-    ]);
-    const storedPublicAi = publicDoc.data()?.ai || {};
-    const ai = Object.fromEntries(Object.entries(storedPublicAi).filter(([key]) => !/(?:apiKey|secret|token|password)$/i.test(key)));
-    const secrets = secretDoc.data() || {};
-    const legacyAi = legacyDoc.data()?.ai || {};
-    const legacyFields = { gemini: 'geminiApiKey', nvidia: 'nvidiaApiKey', openai: 'openaiApiKey', groq: 'groqApiKey', openrouter: 'openrouterApiKey', deepseek: 'deepseekApiKey' };
-    const configuredProviders = Object.fromEntries(['gemini', 'nvidia', 'openai', 'groq', 'openrouter', 'deepseek']
-        .map(provider => [provider, Boolean(secrets[provider]?.apiKey || legacyAi[legacyFields[provider]] || process.env[`${provider.toUpperCase()}_API_KEY`])]));
-    return res.json({ success: true, settings: ai, configuredProviders });
+app.get('/api/admin/ai-settings', async (req, res) => {
+    try {
+        const result = await loadAiAdminSettings(req.app.get('db'));
+        return res.json({ success: true, ...result });
+    } catch (error) {
+        return res.status(error.status || 503).json({ success: false, code: error.code || 'AI_SETTINGS_UNAVAILABLE', error: error.message, requestId: res.locals.requestId });
+    }
 });
 
 async function publishDueBlogPosts(requestDb, { actorUid = 'cms-scheduler', requestId = null } = {}) {
@@ -1380,9 +1374,9 @@ app.post('/api/admin/system-health-settings', async (req, res) => {
 });
 
 const GENERIC_ADMIN_SETTING_CATEGORIES = new Set([
-    'modules', 'auth', 'ai', 'watermark', 'templateManager', 'security', 'jobScraper',
+    'modules', 'auth', 'blog', 'watermark', 'templateManager', 'security', 'jobScraper',
     'exportPdf', 'branding', 'geoSeo', 'llmGeo', 'enabledTemplates', 'integrations',
-    'socialAuth', 'google', 'facebook', 'payments', 'smtp', 'fallbackSmtp', 'imap',
+    'socialAuth', 'google', 'facebook', 'smtp', 'fallbackSmtp', 'imap',
     'twilio', 'storage', 'codeInjection'
 ]);
 
@@ -1480,48 +1474,28 @@ app.post('/api/admin/gdpr-settings', async (req, res) => {
 });
 
 app.post('/api/admin/ai-settings', async (req, res) => {
-    if (!db) return res.status(503).json({ success: false, error: 'Settings service unavailable' });
     try {
-        const input = req.body || {};
-        const providers = ['gemini', 'nvidia', 'openai', 'groq', 'openrouter', 'deepseek'];
-        const secretField = {
-            gemini: 'geminiApiKey', nvidia: 'nvidiaApiKey', openai: 'openaiApiKey',
-            groq: 'groqApiKey', openrouter: 'openrouterApiKey', deepseek: 'deepseekApiKey'
-        };
-        const modelField = {
-            gemini: 'model', nvidia: 'nvidiaModel', openai: 'openaiModel', groq: 'groqModel',
-            openrouter: 'openrouterModel', deepseek: 'deepseekModel'
-        };
-        const secrets = {};
-        for (const provider of providers) {
-            const apiKey = String(input[secretField[provider]] || '').trim();
-            const model = String(input[modelField[provider]] || '').trim();
-            if (apiKey && (apiKey.length < 12 || apiKey.length > 512)) return res.status(400).json({ success: false, error: `Invalid ${provider} API key format` });
-            if (model && !/^[A-Za-z0-9._:/-]{1,150}$/.test(model)) return res.status(400).json({ success: false, error: `Invalid ${provider} model` });
-            secrets[provider] = { ...(apiKey ? { apiKey } : {}), ...(model ? { model } : {}) };
-        }
-        const publicAi = {
-            provider: providers.includes(input.provider) ? input.provider : 'gemini',
-            ...Object.fromEntries(Object.entries(input).filter(([key, value]) =>
-                /^(enable[A-Z]|temperature$|maxTokens$|model$|[a-z]+Model$)/.test(key)
-                && (typeof value === 'boolean' || typeof value === 'number' || (typeof value === 'string' && value.length <= 150))
-            ))
-        };
-        const batch = db.batch();
-        batch.set(db.collection('settings').doc('ai_providers'), secrets, { merge: true });
-        batch.set(db.collection('data').doc('public_config'), { ai: publicAi }, { merge: true });
-        if (admin) {
-            batch.set(db.collection('security_audit_logs').doc(), {
-                action: 'AI_PROVIDER_SETTINGS_UPDATED', actorUid: req.user?.uid || 'admin_console',
-                requestId: res.locals?.requestId || 'req_ai_settings', createdAt: admin.firestore.FieldValue.serverTimestamp()
-            });
-        }
-        await batch.commit();
-        clearProviderConfigurationCache(db);
-        return res.json({ success: true, message: 'AI provider settings saved securely.' });
-    } catch (err) {
-        console.error('Error saving AI settings:', err);
-        return res.status(500).json({ success: false, error: err.message || 'Internal server error while saving AI settings.' });
+        const result = await saveAiAdminSettings({
+            db: req.app.get('db'), admin, input: req.body || {},
+            expectedRevision: req.body?.expectedRevision ?? 0,
+            actorUid: req.user?.uid || 'admin_console', requestId: res.locals.requestId,
+        });
+        return res.json({ success: true, ...result, message: 'AI settings saved securely.' });
+    } catch (error) {
+        return res.status(error.status || 400).json({ success: false, code: error.code || 'AI_SETTINGS_SAVE_FAILED', error: error.message, requestId: res.locals.requestId });
+    }
+});
+
+app.post('/api/admin/ai/test-provider', async (req, res) => {
+    try {
+        const result = await testAiProvider({
+            db: req.app.get('db'), environment: process.env,
+            provider: String(req.body?.provider || ''), model: req.body?.model,
+            apiKey: req.body?.apiKey, fetchImpl: global.fetch, timeoutMs: 10000,
+        });
+        return res.json({ success: true, ...result });
+    } catch (error) {
+        return res.status(error.status || 500).json({ success: false, code: error.code || 'AI_PROVIDER_TEST_FAILED', error: error.message, requestId: res.locals.requestId });
     }
 });
 
@@ -1588,7 +1562,7 @@ app.post('/api/admin/payment-settings', async (req, res) => {
         batch.set(db.collection('settings').doc('payment_providers'), providerSecrets, { merge: true });
         batch.set(db.collection('data').doc('public_config'), { subscriptions: publicSettings }, { merge: true });
         batch.set(db.collection('security_audit_logs').doc(), {
-            action: 'PAYMENT_SETTINGS_UPDATED', actorUid: req.user.uid,
+            action: 'PAYMENT_SETTINGS_UPDATED', actorUid: req.user?.uid || 'admin_console',
             requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp()
         });
         await batch.commit();
@@ -1599,51 +1573,11 @@ app.post('/api/admin/payment-settings', async (req, res) => {
 });
 
 // Admin diagnostic test-connection endpoint
-app.post('/api/admin/test-connection', async (req, res) => {
-    const { type, apiKey, secretKey, model } = req.body;
+app.post('/api/admin/payment/test-provider', async (req, res) => {
+    const { type, secretKey } = req.body;
+    if (!['stripe', 'razorpay', 'paytm', 'phonepe'].includes(type)) return res.status(400).json({ success: false, code: 'PAYMENT_PROVIDER_VALIDATION_ERROR', error: 'Unsupported payment provider test.' });
     try {
-        let storedAi = {};
-        if (db && ['gemini', 'nvidia', 'openai', 'groq', 'openrouter', 'deepseek'].includes(type)) {
-            storedAi = (await db.collection('settings').doc('ai_providers').get()).data() || {};
-        }
-        if (type === 'gemini') {
-            const keyToUse = apiKey || process.env.GEMINI_API_KEY || storedAi.gemini?.apiKey;
-            if (!keyToUse) {
-                return res.json({ success: false, error: 'No Gemini API Key provided or configured.' });
-            }
-            const { GoogleGenerativeAI } = require('@google/generative-ai');
-            const genAI = new GoogleGenerativeAI(keyToUse);
-            const aiModel = genAI.getGenerativeModel({ model: model || storedAi.gemini?.model || 'gemini-2.0-flash' });
-            const result = await aiModel.generateContent('Say hello in 3 words');
-            const text = result.response.text();
-            return res.json({ success: true, message: `Response: "${text.trim()}"` });
-        } else if (['openai', 'groq', 'openrouter', 'deepseek', 'nvidia'].includes(type)) {
-            const providerConfig = {
-                openai: { url: 'https://api.openai.com/v1/chat/completions', key: process.env.OPENAI_API_KEY, model: process.env.OPENAI_MODEL || 'gpt-4o-mini' },
-                groq: { url: 'https://api.groq.com/openai/v1/chat/completions', key: process.env.GROQ_API_KEY, model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile' },
-                openrouter: { url: 'https://openrouter.ai/api/v1/chat/completions', key: process.env.OPENROUTER_API_KEY, model: process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct:free' },
-                deepseek: { url: 'https://api.deepseek.com/chat/completions', key: process.env.DEEPSEEK_API_KEY, model: process.env.DEEPSEEK_MODEL || 'deepseek-chat' },
-                nvidia: { url: 'https://integrate.api.nvidia.com/v1/chat/completions', key: process.env.NVIDIA_API_KEY, model: process.env.NVIDIA_MODEL || 'meta/llama-3.1-8b-instruct' }
-            }[type];
-            const providerKey = apiKey || providerConfig.key || storedAi[type]?.apiKey;
-            const selectedModel = String(model || storedAi[type]?.model || providerConfig.model);
-            if (!providerKey || !/^[A-Za-z0-9._:/-]{1,150}$/.test(selectedModel)) {
-                return res.status(400).json({ success: false, error: 'A provider key and valid model are required.' });
-            }
-            const providerRes = await fetch(providerConfig.url, {
-                method: 'POST', timeout: 10_000,
-                headers: { 'Authorization': `Bearer ${providerKey}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ model: selectedModel, messages: [{ role: 'user', content: 'Reply with OK.' }], max_tokens: 10, temperature: 0 })
-            });
-            const providerData = await providerRes.json().catch(() => ({}));
-            if (!providerRes.ok) {
-                const errMsg = providerData.error?.message || providerData.detail || providerData.message || (typeof providerData.error === 'string' ? providerData.error : null) || `${type} authentication test failed (HTTP ${providerRes.status}).`;
-                return res.status(400).json({ success: false, error: errMsg });
-            }
-            return res.json({ success: true, message: `${type} provider connection verified.` });
-        } else if (type === 'ollama') {
-            return res.status(400).json({ success: false, error: 'Ollama connectivity must be configured and validated on the server; browser-supplied endpoints are not accepted.' });
-        } else if (type === 'stripe') {
+        if (type === 'stripe') {
             const stripeKey = secretKey || process.env.STRIPE_SECRET;
             if (!stripeKey) {
                 return res.json({ success: false, error: 'No Stripe Secret Key provided.' });
@@ -1714,28 +1648,9 @@ app.post('/api/admin/test-connection', async (req, res) => {
             } catch (ppErr) {
                 return res.json({ success: false, error: `PhonePe connection error: ${ppErr.message}` });
             }
-        } else if (type === 'smtp') {
-            return res.json({ success: true, message: 'SMTP settings logged and verified.' });
-        } else if (type === 'twilio') {
-            const sid = req.body.accountSid || process.env.TWILIO_ACCOUNT_SID;
-            const token = req.body.authToken || process.env.TWILIO_AUTH_TOKEN;
-            const from = req.body.fromPhoneNumber || process.env.TWILIO_FROM_PHONE;
-            if (!sid || !token || !from) {
-                return res.json({ success: false, error: 'Twilio Account SID, Auth Token, and From Phone Number are required.' });
-            }
-            return res.json({ success: true, message: `Twilio gateway credentials configured for ${from}.` });
-        } else if (type === 'diagnostics') {
-            return res.json({
-                firebase: 'Connected',
-                backend: 'Online (Port ' + port + ')',
-                gemini: process.env.GEMINI_API_KEY ? 'Key Configured' : 'Missing Key',
-                stripe: process.env.STRIPE_SECRET ? 'Key Configured' : 'Missing Key',
-                razorpay: process.env.RAZORPAY_KEY_ID ? 'Key Configured' : 'Missing Key',
-                paytm: process.env.PAYTM_MID ? 'Key Configured' : 'Missing Key',
-                phonepe: process.env.PHONEPE_MERCHANT_ID ? 'Key Configured' : 'Missing Key',
-            });
         }
-        res.json({ success: true, message: 'Diagnostic check complete.' });
+        return res.status(400).json({ success: false, code: 'PAYMENT_PROVIDER_VALIDATION_ERROR', error: 'Unsupported payment provider test.' });
+
     } catch (err) {
         res.json({ success: false, error: err.message });
     }
@@ -2213,58 +2128,12 @@ Write a compelling, tailored, 3-paragraph ATS cover letter addressed to ${recipi
 });
 
 // Naukri.com Scraper Endpoint
-app.post('/api/jobs/naukri', async (req, res) => {
-    try {
-        const { keywords = 'software engineer', location = 'Bengaluru', maxJobs = 10 } = req.body;
-
-        // Mock sample scraped Naukri jobs for Indian market
-        const mockNaukriJobs = [
-            {
-                id: 'naukri_1',
-                title: 'Senior Full Stack Developer (React & Node)',
-                company: 'TechMahindra / Infosys',
-                location: location,
-                experience: '3-6 yrs',
-                salary: '₹14,000 - ₹22,000 LPA',
-                source: 'Naukri.com',
-                applyUrl: 'https://naukri.com',
-                posted: '1 day ago'
-            },
-            {
-                id: 'naukri_2',
-                title: 'Frontend Engineer (React.js)',
-                company: 'TCS Innovation Labs',
-                location: location,
-                experience: '1-3 yrs',
-                salary: '₹8,000 - ₹12,000 LPA',
-                source: 'Naukri.com',
-                applyUrl: 'https://naukri.com',
-                posted: '2 days ago'
-            },
-            {
-                id: 'naukri_3',
-                title: 'AI Prompt & Software Engineer',
-                company: 'Wipro AI Tech',
-                location: location,
-                experience: '2-5 yrs',
-                salary: '₹10,000 - ₹18,000 LPA',
-                source: 'Naukri.com',
-                applyUrl: 'https://naukri.com',
-                posted: 'Just now'
-            }
-        ];
-
-        res.json({
-            success: true,
-            portal: 'Naukri.com India',
-            location: location,
-            keywords: keywords,
-            count: mockNaukriJobs.length,
-            jobs: mockNaukriJobs
-        });
-    } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
-    }
+app.post('/api/jobs/naukri', async (_req, res) => {
+    return res.status(501).json({
+        success: false,
+        code: 'SCRAPER_NOT_CONFIGURED',
+        error: 'Naukri ingestion is not configured. No demo or fabricated listings are returned.',
+    });
 });
 
 app.get('/healthz', (req, res) => {

@@ -80,6 +80,7 @@ const NotFound = () => <main className="flex min-h-screen items-center justify-c
 import ResetPasswordModal from './components/auth/resetPassword/ResetPasswordModal';
 import RouteSeo from './components/RouteSeo';
 import RouteFocus from './components/RouteFocus';
+import { clearAccountScopedBrowserState } from './utils/signOut';
 
 const AuthWrapper = () => {         
     const [user, setUser] = useState(null);
@@ -101,7 +102,6 @@ const AuthWrapper = () => {
         const oauthCode = hashParams.get('oauth_code');
 
         if (mode === 'verifyEmail' && token && email) {
-            console.log('[AuthWrapper] Verifying email token for:', email);
             fetch('/api/auth/verify-email-token', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -123,7 +123,6 @@ const AuthWrapper = () => {
         } else if (oobCode && (mode === 'resetPassword' || !mode)) {
             setResetOobCode(oobCode);
         } else if ((mode === 'resetPassword' || reset === 'true' || token) && email) {
-            console.log('[AuthWrapper] Detected tokenized custom reset link for:', email);
             setDirectResetEmail(email);
         }
 
@@ -177,6 +176,7 @@ const AuthWrapper = () => {
 
         // ── STEP 3: Subscribe only to cryptographically verified Firebase sessions. ───────
         const unsubscribe = fire.auth().onAuthStateChanged((authenticatedUser) => {
+            if (!authenticatedUser) clearAccountScopedBrowserState();
             setUser(authenticatedUser || null);
             setAuthLoading(false);
         });

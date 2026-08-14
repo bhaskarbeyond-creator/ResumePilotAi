@@ -18,7 +18,7 @@ import JCBLogo from '../../../assets/payment/JCB_logo.svg';
 import DropdownInput from '../../Form/dropdown-input/DropdownInput';
 import SimpleInput from '../../Form/simple-input/SimpleInput';
 import axios from 'axios';
-import { getSubscriptionStatus, getSystemSettings } from '../../../firestore/dbOperations';
+import { getSubscriptionStatus } from '../../../firestore/dbOperations';
 import SuccessAnimation from '../../../assets/animations/50049-nfc-successful.json';
 import { withTranslation } from 'react-i18next';
 import Lottie from 'lottie-react';
@@ -44,7 +44,7 @@ const PayPalButtonWrapper = ({ amount, currency, onSuccess, onError, selectedPla
     const paymentOrderIdRef = React.useRef(null);
 
     const createOrder = async () => {
-        const apiBase = `${conf.provider || 'http'}://${conf.backendUrl}`;
+        const apiBase = '';
         const response = await axios.post(`${apiBase}/api/paypal/create-order`, { planId: selectedPlan, couponCode });
         paymentOrderIdRef.current = response.data.paymentOrderId;
         return response.data.orderId;
@@ -186,7 +186,7 @@ class Checkout extends Component {
                     // Clean URL params without reload
                     const cleanUrl = window.location.origin + window.location.pathname;
                     window.history.replaceState({}, '', cleanUrl);
-                    const apiBase = `${conf.provider || 'http'}://${conf.backendUrl}`;
+                    const apiBase = '';
                     axios.post(`${apiBase}/api/phonepe/status`, { orderId: pending.orderId })
                         .then((verification) => {
                             if (!verification.data?.verified || verification.data?.status !== 'ACTIVE') {
@@ -331,26 +331,11 @@ class Checkout extends Component {
             return fire.auth().currentUser;
         }
 
-        // 4. Fallback to localStorage session cache
-        try {
-            const rawUser = localStorage.getItem('user') || localStorage.getItem('firebase_user') || localStorage.getItem('user_session');
-            if (rawUser) {
-                const parsed = JSON.parse(rawUser);
-                if (parsed && (parsed.uid || parsed.id)) {
-                    return {
-                        uid: parsed.uid || parsed.id,
-                        email: parsed.email || '',
-                        displayName: parsed.displayName || parsed.name || 'Candidate Subscriber'
-                    };
-                }
-            }
-        } catch (e) {}
-
         return null;
     }
 
     async awaitServerPaymentConfirmation(orderId) {
-        const apiBase = `${conf.provider || 'http'}://${conf.backendUrl}`;
+        const apiBase = '';
         for (let attempt = 0; attempt < 20; attempt += 1) {
             const response = await axios.get(`${apiBase}/api/payment-orders/${encodeURIComponent(orderId)}`);
             if (response.data.status === 'ACTIVE') return response.data;
@@ -371,7 +356,6 @@ class Checkout extends Component {
             this.showToast('error', 'Session expired. Please sign in and try again.');
             return;
         }
-        const uid = currentUser.uid;
 
         this.setState({ isLoading: true });
 
@@ -404,7 +388,7 @@ class Checkout extends Component {
                 : this.props.selectedPlan == 'yearly' ? this.props.yearly : 0;
 
             const taxCalc = this.getTaxCalculations(basePrice);
-            const apiBase = `${conf.provider || 'http'}://${conf.backendUrl}`;
+            const apiBase = '';
 
             // Step 1: Create Stripe Payment Intent on backend (with idempotency key)
             const payRes = await axios.post(`${apiBase}/api/pay`, {
@@ -461,7 +445,6 @@ class Checkout extends Component {
     handlePayPalSuccess = async (details) => {
         const currentUser = this.getCurrentUser();
         if (!currentUser || !currentUser.uid) { this.showToast('error', 'Session expired. Please refresh and try again.'); return; }
-        const uid = currentUser.uid;
         const basePrice = this.props.selectedPlan == 'monthly' ? this.props.monthly
             : this.props.selectedPlan == 'halfYear' ? this.props.quartarly
             : this.props.selectedPlan == 'yearly' ? this.props.yearly : 0;
@@ -470,7 +453,7 @@ class Checkout extends Component {
 
         // Verification and entitlement activation are server-authoritative.
         try {
-            const apiBase = `${conf.provider || 'http'}://${conf.backendUrl}`;
+            const apiBase = '';
             const verification = await axios.post(`${apiBase}/api/paypal/verify`, {
                 orderId: details.id,
                 paymentOrderId: details.paymentOrderId,
@@ -485,7 +468,7 @@ class Checkout extends Component {
 
         trackSubscription(this.props.selectedPlan, taxCalc.totalPrice);
         trackEvent('subscription_purchase', 'Billing', this.props.selectedPlan, taxCalc.totalPrice);
-        trackEngagement('purchase_completed', { plan_type: this.props.selectedPlan, payment_method: 'PayPal', amount: taxCalc.totalPrice, user_id: uid });
+        trackEngagement('purchase_completed', { plan_type: this.props.selectedPlan, payment_method: 'PayPal', amount: taxCalc.totalPrice });
         this.triggerInvoiceEmail({ paymentOrderId: details.paymentOrderId });
 
         this.setState({ step: 3, serverPaymentStatus: 'ENTITLEMENT_ACTIVE' });
@@ -499,7 +482,6 @@ class Checkout extends Component {
     handleRazorpayPayment = async () => {
         const currentUser = this.getCurrentUser();
         if (!currentUser || !currentUser.uid) { this.showToast('error', 'Session expired. Please refresh and try again.'); return; }
-        const uid = currentUser.uid;
         this.setState({ isLoading: true });
 
         try {
@@ -508,7 +490,7 @@ class Checkout extends Component {
                 : this.props.selectedPlan == 'yearly' ? this.props.yearly : 0;
             const taxCalc = this.getTaxCalculations(basePrice);
 
-            const apiBase = `${conf.provider || 'http'}://${conf.backendUrl}`;
+            const apiBase = '';
             const orderRes = await axios.post(`${apiBase}/api/razorpay/create-order`, {
                 planId: this.props.selectedPlan,
                 couponCode: this.props.couponCode || null,
@@ -551,7 +533,7 @@ class Checkout extends Component {
                         }
                         trackSubscription(this.props.selectedPlan, taxCalc.totalPrice);
                         trackEvent('subscription_purchase', 'Billing', this.props.selectedPlan, taxCalc.totalPrice);
-                        trackEngagement('purchase_completed', { plan_type: this.props.selectedPlan, payment_method: 'Razorpay', amount: taxCalc.totalPrice, user_id: uid });
+                        trackEngagement('purchase_completed', { plan_type: this.props.selectedPlan, payment_method: 'Razorpay', amount: taxCalc.totalPrice });
                         this.triggerInvoiceEmail({ paymentOrderId: orderData.paymentOrderId });
 
                         this.setState({ step: 3, serverPaymentStatus: 'ENTITLEMENT_ACTIVE', isLoading: false });
@@ -585,7 +567,6 @@ class Checkout extends Component {
     handlePaytmPayment = async () => {
         const currentUser = this.getCurrentUser();
         if (!currentUser || !currentUser.uid) { this.showToast('error', 'Session expired. Please refresh and try again.'); return; }
-        const uid = currentUser.uid;
         this.setState({ isLoading: true });
 
         try {
@@ -593,7 +574,7 @@ class Checkout extends Component {
                 : this.props.selectedPlan === 'halfYear' ? this.props.quartarly
                 : this.props.yearly;
             const taxCalc = this.getTaxCalculations(basePrice);
-            const apiBase = `${conf.provider || 'http'}://${conf.backendUrl}`;
+            const apiBase = '';
             const txnRes = await axios.post(`${apiBase}/api/paytm/initiate-transaction`, {
                 planId: this.props.selectedPlan,
                 couponCode: this.props.couponCode || null,
@@ -642,7 +623,7 @@ class Checkout extends Component {
                             }
                             trackSubscription(this.props.selectedPlan, taxCalc.totalPrice);
                             trackEvent('subscription_purchase', 'Billing', this.props.selectedPlan, taxCalc.totalPrice);
-                            trackEngagement('purchase_completed', { plan_type: this.props.selectedPlan, payment_method: 'Paytm', amount: taxCalc.totalPrice, user_id: uid });
+                            trackEngagement('purchase_completed', { plan_type: this.props.selectedPlan, payment_method: 'Paytm', amount: taxCalc.totalPrice });
                             this.triggerInvoiceEmail({ paymentOrderId: txnData.paymentOrderId });
                             this.setState({ step: 3, serverPaymentStatus: 'ENTITLEMENT_ACTIVE', isLoading: false });
                         } catch (err) {
@@ -670,7 +651,6 @@ class Checkout extends Component {
     handlePhonePePayment = async () => {
         const currentUser = this.getCurrentUser();
         if (!currentUser || !currentUser.uid) { this.showToast('error', 'Session expired. Please refresh and try again.'); return; }
-        const uid = currentUser.uid;
         this.setState({ isLoading: true });
 
         try {
@@ -678,7 +658,7 @@ class Checkout extends Component {
                 : this.props.selectedPlan === 'halfYear' ? this.props.quartarly
                 : this.props.yearly;
             const taxCalc = this.getTaxCalculations(basePrice);
-            const apiBase = `${conf.provider || 'http'}://${conf.backendUrl}`;
+            const apiBase = '';
             const ppRes = await axios.post(`${apiBase}/api/phonepe/initiate`, {
                 planId: this.props.selectedPlan,
                 couponCode: this.props.couponCode || null,
