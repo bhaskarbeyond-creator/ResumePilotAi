@@ -1,6 +1,5 @@
 import React, { Component, Suspense, lazy } from 'react';
 import './DashboardMain.scss';
-import conf from '../../../conf/configuration';
 import { Link, Route, Routes } from 'react-router-dom';
 import Toasts from '../../Toasts/Toats';
 import fire from '../../../conf/fire';
@@ -103,13 +102,14 @@ class DashboardMain extends Component {
                 trackUserLogin('firebase');
                 trackEngagement('dashboard_access', { user_id: user.uid });
 
+                const idToken = await user.getIdTokenResult();
+                const isAdminUser = ['ADMIN', 'SUPER_ADMIN'].includes(String(idToken.claims.role || '').toUpperCase());
                 getFullName(user.uid).then((value) => {
                     if (!this._isMounted) return; // Prevent state updates if component is unmounted
                     if (value !== undefined) {
-                        const isAdminUser = user.email === conf.adminEmail;
                         const resolvedMembership = isAdminUser
                             ? 'Admin Tier'
-                            : (value.membership && value.membership !== ';' && value.membership !== 'Basic' ? value.membership : (value.profile?.membership || 'Premium Member'));
+                            : (value.membership && value.membership !== ';' ? value.membership : 'Basic');
 
                         this.setState({
                             firstname: value.firstname,
@@ -124,7 +124,7 @@ class DashboardMain extends Component {
                 });
                 localStorage.setItem('user', user.uid);
                 /// Checking if user ad
-                if (user.email === conf.adminEmail) {
+                if (isAdminUser) {
                     this.setState({ role: 'admin' });
                     getAds();
                 }

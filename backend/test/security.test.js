@@ -59,6 +59,15 @@ test('route policy blocks normal user from admin alias', () => {
   assert.equal(res.body.error.code, 'FORBIDDEN');
 });
 
+test('ordinary ADMIN cannot grant roles or rotate Firebase credentials', () => {
+  for (const path of ['/test-grant-admin', '/admin/firebase-service-account']) {
+    const req = { path, user: { claims: { role: 'ADMIN', auth_time: Math.floor(Date.now() / 1000) }, emailVerified: true } };
+    const res = responseHarness();
+    enforceApiPolicy(req, res, () => assert.fail('must not call next'));
+    assert.equal(res.statusCode, 403, path);
+  }
+});
+
 test('route policy requires verified email for paid AI and payments', () => {
   const req = { path: '/generate-summary', user: { claims: {}, emailVerified: false } };
   const res = responseHarness();

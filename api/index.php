@@ -27,11 +27,15 @@ $headers = [];
 $incomingHost = $_SERVER['HTTP_HOST'] ?? 'airesume.projectdemo.guru';
 $headers[] = "X-Forwarded-Host: $incomingHost";
 $headers[] = "X-Forwarded-Proto: https";
+$remoteAddress = $_SERVER['REMOTE_ADDR'] ?? '';
+if (filter_var($remoteAddress, FILTER_VALIDATE_IP)) {
+    $headers[] = "X-Forwarded-For: $remoteAddress";
+}
 
 if (function_exists('getallheaders')) {
     foreach (getallheaders() as $name => $value) {
         $lname = strtolower($name);
-        if ($lname !== 'host' && $lname !== 'connection' && $lname !== 'x-forwarded-host' && $lname !== 'x-forwarded-proto') {
+        if ($lname !== 'host' && $lname !== 'connection' && $lname !== 'x-forwarded-host' && $lname !== 'x-forwarded-proto' && $lname !== 'x-forwarded-for') {
             $headers[] = "$name: $value";
         }
     }
@@ -61,9 +65,10 @@ $curlError = curl_error($ch);
 curl_close($ch);
 
 if ($curlError) {
+    error_log('Backend proxy connection failed: ' . $curlError);
     http_response_code(502);
     header('Content-Type: application/json');
-    echo json_encode(['error' => 'Backend connection failed: ' . $curlError]);
+    echo json_encode(['error' => ['code' => 'BACKEND_UNAVAILABLE', 'message' => 'Backend service unavailable']]);
     exit();
 }
 

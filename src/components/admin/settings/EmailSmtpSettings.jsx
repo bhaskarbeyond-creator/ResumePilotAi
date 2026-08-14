@@ -90,7 +90,7 @@ const EmailSmtpSettings = () => {
     const [resendingLogId, setResendingLogId] = useState(null);
     const [statusMessage, setStatusMessage] = useState(null);
 
-    const API_BASE = window.location.origin.includes('localhost') ? 'http://localhost:8080' : '';
+    const API_BASE = '';
 
     const PRESETS = [
         { name: 'Hostinger Webmail (Recommended)', host: 'smtp.hostinger.com', port: 465, encryption: 'ssl', imapHost: 'imap.hostinger.com', imapPort: 993 },

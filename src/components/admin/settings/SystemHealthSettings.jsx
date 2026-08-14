@@ -48,7 +48,7 @@ const SystemHealthSettings = () => {
         setRunningDiagnostics(true);
         setDiagnosticsResult(null);
         try {
-            const response = await fetch('http://localhost:8080/api/admin/test-connection', {
+            const response = await fetch('/api/admin/test-connection', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ type: 'diagnostics' })

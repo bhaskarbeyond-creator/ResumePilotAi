@@ -140,12 +140,12 @@ const PlansPage = (props) => {
                         }
 
                         // Resolve membership tier
-                        const rawMembership = data.membership || data.profile?.membership || 'Basic';
+                        const rawMembership = data.membership || 'Basic';
                         let resolvedTier = rawMembership;
 
                         // Check if membership has expired
                         let isExpired = false;
-                        const membershipEndsRaw = data.membershipEnds || data.profile?.membershipEnds;
+                        const membershipEndsRaw = data.membershipEnds;
                         if (membershipEndsRaw) {
                             try {
                                 const expiryDate = membershipEndsRaw.toDate

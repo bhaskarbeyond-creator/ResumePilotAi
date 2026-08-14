@@ -14,7 +14,6 @@ import signOutUser from '../../../utils/signOut';
 import NotificationPanel from './NotificationPanel';
 import { useUnreadMessages } from '../../../hooks/useUnreadMessages';
 import { useUnreadNotifications } from '../../../hooks/useUnreadNotifications';
-import conf from '../../../conf/configuration';
 
 const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapsed }) => {
     const { t } = useTranslation('common');
@@ -33,6 +32,16 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
     const { unreadNotificationCount, refreshCount } = useUnreadNotifications(); // Get unread notifications count
     const [liveProfileImage, setLiveProfileImage] = useState(null);
     const [liveProfileName, setLiveProfileName] = useState(null);
+    const [isAdmin, setIsAdmin] = useState(false);
+
+    useEffect(() => {
+        let active = true;
+        if (!authUser?.getIdTokenResult) { setIsAdmin(false); return () => { active = false; }; }
+        authUser.getIdTokenResult().then(result => {
+            if (active) setIsAdmin(['ADMIN', 'SUPER_ADMIN'].includes(String(result.claims.role || '').toUpperCase()));
+        }).catch(() => { if (active) setIsAdmin(false); });
+        return () => { active = false; };
+    }, [authUser]);
 
     // CM360 / DV360 Categorized Navigation Accordion State
     const [openGroups, setOpenGroups] = useState({
@@ -90,14 +99,7 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
         'Master User'
     ).replace(/\s+/g, ' ').trim();
 
-    // Check if current user is admin — must be declared BEFORE userMembershipTier uses it
-    const isAdmin = authUser?.email === conf.adminEmail;
-
-    const userMembershipTier =
-        (isAdmin ? 'Admin Tier' : null) ||
-        (profile?.membership && profile.membership !== ';' && profile.membership !== 'Basic' ? profile.membership : null) ||
-        (image?.membership && image.membership !== ';' && image.membership !== 'Basic' ? image.membership : null) ||
-        'Pro Tier';
+    const userMembershipTier = isAdmin ? 'Admin Tier' : (profile?.membership || 'Basic');
 
     // Check system modules settings
     useEffect(() => {

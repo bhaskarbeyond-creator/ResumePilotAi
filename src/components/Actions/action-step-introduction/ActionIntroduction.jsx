@@ -84,12 +84,6 @@ class ActionIntroduction extends Component {
                                 {t('intro.login')}{' '}
                             </a>
                         )}
-                        {this.props.values.email === conf.adminEmail && (
-                            <Link style={{ textDecoration: 'none' }} to={{ pathname: './adm/dashboard' }} className="authenticationButton">
-                                {' '}
-                                {t('selectionAction.admin')}
-                            </Link>
-                        )}
                         {/* {this.props.user != null && <a onClick={() => this.props.logout()} className="authenticationButton">Logout</a>} */}
                     </div>
                 </div>
@@ -107,12 +101,6 @@ class ActionIntroduction extends Component {
                                     {' '}
                                     {t('intro.login')}{' '}
                                 </a>
-                            )}
-                            {this.props.values.email === conf.adminEmail && (
-                                <Link style={{ textDecoration: 'none' }} to={{ pathname: './adm/dashboard' }} className="authenticationButton">
-                                    {' '}
-                                    {t('selectionAction.admin')}
-                                </Link>
                             )}
                             {/* {this.props.user != null && <a onClick={() => this.props.logout()} className="authenticationButton">Logout</a>} */}
                         </div>

@@ -62,18 +62,9 @@ const sendNotification = async (db, { to, templateType, vars, customSubject, cus
         console.warn(`[EmailNotifier Direct Error] Template '${templateType}' fallback:`, e.message);
     }
 
-    // HTTP Fallback to /api/email/send-email endpoint
-    try {
-        const fetch = global.fetch || require('node-fetch');
-        const port = process.env.PORT || 8080;
-        await fetch(`http://localhost:${port}/api/email/send-email`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ to, templateType, customSubject, customBody, vars })
-        });
-    } catch (httpErr) {
-        console.error(`[EmailNotifier HTTP Error] Template '${templateType}' failed:`, httpErr.message);
-    }
+    // Fail closed. Internal notifications call the dispatcher as code; they never loop back
+    // through an HTTP endpoint that would need a synthetic privileged identity.
+    return { success: false, error: 'Email dispatcher unavailable' };
 };
 
 class EmailNotifier {

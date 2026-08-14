@@ -15,13 +15,14 @@ const EmailNotifier = require('./services/emailNotifier');
 const app = express();
 const cors = require('cors');
 const cryptoRandom = require('crypto');
-const { requireAuth, requirePermission } = require('./security/auth');
+const { requireAuth, requirePermission, permissionsFor } = require('./security/auth');
 const { enforceApiPolicy } = require('./security/policy');
 const {
     aiAccountLimiter,
     notificationAccountLimiter,
     exportAccountLimiter,
     scraperAccountLimiter,
+    contactAccountLimiter,
     enforceDailyAiQuota,
     bindNotificationRecipient
 } = require('./security/abuse');
@@ -36,29 +37,27 @@ try {
     admin = require('./services/firebaseAdmin');
     if (!admin.apps.length) {
         let credential;
-        const serviceAccountPath = path.join(__dirname, 'serviceAccountKey.json');
+        const projectId = process.env.FIREBASE_PROJECT_ID || 'ai-resume-builder-424cf';
 
         if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
-            // Primary: Load from environment variables (secure, no file on disk)
             credential = admin.credential.cert({
-                projectId: process.env.FIREBASE_PROJECT_ID || 'ai-resume-builder-424cf',
+                projectId,
                 clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
                 privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
             });
             console.log('[Firebase Admin] Initialized via environment variables');
-        } else if (fs.existsSync(serviceAccountPath)) {
-            // Fallback: Load from serviceAccountKey.json file
-            const serviceAccount = require(serviceAccountPath);
-            credential = admin.credential.cert(serviceAccount);
-            console.log('[Firebase Admin] Initialized via serviceAccountKey.json');
+        } else if (process.env.NODE_ENV === 'production' || process.env.FIREBASE_USE_ADC === 'true' || process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+            // Workload Identity / Application Default Credentials avoid long-lived key files.
+            credential = admin.credential.applicationDefault();
+            console.log('[Firebase Admin] Initialized via Application Default Credentials');
         } else {
-            // Last resort: projectId only (limited functionality — no auth operations)
-            admin.initializeApp({ projectId: process.env.FIREBASE_PROJECT_ID || 'ai-resume-builder-424cf' });
-            console.log('[Firebase Admin] Initialized via projectId only (limited)');
+            // Local builds without credentials can serve non-Firebase diagnostics only.
+            admin.initializeApp({ projectId });
+            console.log('[Firebase Admin] Initialized without credentials (limited local mode)');
         }
 
         if (credential) {
-            admin.initializeApp({ credential });
+            admin.initializeApp({ credential, projectId });
             db = admin.firestore();
         }
     } else {
@@ -105,12 +104,6 @@ const initSystemFonts = () => {
 };
 initSystemFonts();
 
-// Stripe must receive the exact raw payload; install this before JSON parsing.
-app.use('/api/stripe-webhook', express.raw({ type: 'application/json', limit: '1mb' }));
-app.use(express.json({ limit: '256kb', type: req => req.originalUrl !== '/api/stripe-webhook' }));
-app.use(express.urlencoded({ extended: false, limit: '64kb' }));
-app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS || 0));
-app.disable('x-powered-by');
 app.use((req, res, next) => {
     const suppliedRequestId = req.get('x-request-id') || '';
     res.locals.requestId = /^[A-Za-z0-9._-]{1,80}$/.test(suppliedRequestId)
@@ -119,6 +112,16 @@ app.use((req, res, next) => {
     res.setHeader('X-Request-Id', res.locals.requestId);
     next();
 });
+
+// Stripe must receive the exact raw payload; install this before JSON parsing.
+app.use('/api/stripe-webhook', express.raw({ type: 'application/json', limit: '1mb' }));
+app.use(express.json({ limit: '256kb', type: req => req.originalUrl !== '/api/stripe-webhook' }));
+app.use(express.urlencoded({ extended: false, limit: '64kb' }));
+const configuredProxyHops = Number(process.env.TRUST_PROXY_HOPS || 0);
+app.set('trust proxy', configuredProxyHops > 0
+    ? configuredProxyHops
+    : address => address === '127.0.0.1' || address === '::1' || address.startsWith('::ffff:127.'));
+app.disable('x-powered-by');
 const configuredOrigins = String(process.env.CORS_ALLOWED_ORIGINS || '')
     .split(',').map(value => value.trim()).filter(Boolean);
 const allowedOrigins = new Set([
@@ -172,7 +175,7 @@ app.use('/api/auth', authLimiter);
 // Zero-trust API boundary. Requests are authenticated unless they are explicitly
 // public protocol endpoints. Route handlers must still enforce their own role/ownership policy.
 const publicApiPaths = new Set([
-    '/stripe-webhook', '/public-export', '/auth/custom-password-reset',
+    '/stripe-webhook', '/public-export', '/contact', '/auth/custom-password-reset',
     '/auth/verify-email-token', '/auth/set-user-password', '/auth/linkedin', '/auth/linkedin/callback',
     '/auth/github', '/auth/github/callback', '/auth/oauth/exchange'
 ]);
@@ -202,6 +205,7 @@ const ownNotificationPaths = [
 app.use(ownNotificationPaths, notificationAccountLimiter, bindNotificationRecipient);
 app.use(['/api/export', '/api/public-export', '/api/export-docx'], exportAccountLimiter);
 app.use('/api/linkedin-scraper', scraperAccountLimiter);
+app.use('/api/contact', contactAccountLimiter);
 // Defense in depth for administrative namespaces. The route policy also protects aliases
 // such as /api/auth/purge-orphaned-auth and modular email routes mounted under /api.
 app.use(['/api/admin', '/api/test-grant-admin', '/api/test-create-candidate-subscription', '/api/email/admin'], requirePermission('system.config.write'));
@@ -607,6 +611,11 @@ async function getRazorpayKeys() {
             const data = doc.data()?.razorpay || {};
             keyId = keyId || data.keyId || '';
             keySecret = keySecret || data.keySecret || '';
+            if (!keyId || !keySecret) {
+                const legacy = (await db.collection('data').doc('subscriptions').get()).data() || {};
+                keyId = keyId || legacy.razorpayKeyId || '';
+                keySecret = keySecret || legacy.razorpayKeySecret || '';
+            }
         } catch (error) {
             console.warn('[Razorpay config]', error.message);
         }
@@ -700,6 +709,12 @@ async function getPaytmConfig() {
                 if (!key && d.merchantKey) key = d.merchantKey;
                 if (d.website) website = d.website;
             }
+            if (!mid || !key) {
+                const legacy = (await db.collection('data').doc('subscriptions').get()).data() || {};
+                mid = mid || legacy.paytmMid || '';
+                key = key || legacy.paytmMerchantKey || '';
+                website = legacy.paytmWebsite || website;
+            }
         } catch (e) {
             console.warn('[Paytm Config] Firestore lookup notice:', e.message);
         }
@@ -726,6 +741,12 @@ async function getPhonePeConfig() {
                 if (!merchantId && d.merchantId) merchantId = d.merchantId;
                 if (!saltKey && d.saltKey) saltKey = d.saltKey;
                 if (d.saltIndex) saltIndex = parseInt(d.saltIndex) || 1;
+            }
+            if (!merchantId || !saltKey) {
+                const legacy = (await db.collection('data').doc('subscriptions').get()).data() || {};
+                merchantId = merchantId || legacy.phonepeId || '';
+                saltKey = saltKey || legacy.phonepeSaltKey || '';
+                saltIndex = parseInt(legacy.phonepeSaltIndex || saltIndex) || 1;
             }
         } catch (e) {
             console.warn('[PhonePe Config] Firestore lookup notice:', e.message);
@@ -881,13 +902,30 @@ app.post('/api/phonepe/status', async (req, res) => {
     }
 });
 
+app.post('/api/subscription/preferences', async (req, res) => {
+    if (!db) return res.status(503).json({ success: false, error: 'Subscription service unavailable.' });
+    const updates = {};
+    if (typeof req.body.autoRenew === 'boolean') updates.autoRenew = req.body.autoRenew;
+    if (req.body.cancel === true) {
+        updates.autoRenew = false;
+        updates.cancellationRequested = true;
+        updates.cancellationReason = String(req.body.reason || 'User requested cancellation').trim().slice(0, 500);
+        updates.cancellationDate = admin.firestore.FieldValue.serverTimestamp();
+    }
+    if (!Object.keys(updates).length) return res.status(400).json({ success: false, error: 'No supported preference supplied.' });
+    await db.collection('users').doc(req.user.uid).set(updates, { merge: true });
+    return res.json({ success: true, message: req.body.cancel === true
+        ? 'Cancellation request recorded. Access remains active through the paid term.'
+        : `Auto-renew ${updates.autoRenew ? 'enabled' : 'disabled'}.` });
+});
+
 app.post('/api/check', async (req, res) => {
     if (!db) return res.status(503).json({ status: 'false', error: 'Entitlement service unavailable' });
     try {
         const userSnap = await db.collection('users').doc(req.user.uid).get();
         const user = userSnap.data() || {};
         const expiry = user.membershipEnds?.toDate?.() || new Date(user.membershipEnds || 0);
-        const entitled = user.membership === 'Premium' && user.paymentStatus === 'ACTIVE' && expiry > new Date();
+        const entitled = user.membership === 'Premium' && ['ACTIVE', 'ADMIN_GRANTED'].includes(user.paymentStatus) && expiry > new Date();
         return res.json({ status: entitled ? 'true' : 'false', membershipEnds: entitled ? expiry.toISOString() : null });
     } catch (error) {
         console.error('[Entitlement check]', error.message);
@@ -898,6 +936,25 @@ app.post('/api/check', async (req, res) => {
 app.post('/api/date', async (req, res) => {
     var current_date = new Date();
     res.json({ date: current_date });
+});
+
+app.post('/api/contact', async (req, res) => {
+    // Hidden honeypot field: bots that populate every field receive a generic success.
+    if (req.body.website) return res.status(202).json({ success: true, message: 'Message accepted.' });
+    const email = String(req.body.email || '').trim().toLowerCase();
+    const name = String(req.body.name || '').trim();
+    const message = String(req.body.message || '').trim();
+    if (!/^[^\s@,;<>]{1,64}@[^\s@,;<>]{1,190}$/.test(email) || email.length > 254
+        || name.length < 2 || name.length > 100 || message.length < 10 || message.length > 5000) {
+        return res.status(400).json({ success: false, error: 'Valid name, email, and message are required.' });
+    }
+    if (!db || !admin) return res.status(503).json({ success: false, error: 'Contact service unavailable.' });
+    await db.collection('contact').add({
+        email, name, message, status: 'new',
+        userAgent: String(req.get('user-agent') || '').slice(0, 300),
+        createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    return res.status(202).json({ success: true, message: 'Message accepted.' });
 });
 
 let activeExports = 0;
@@ -925,6 +982,15 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
             || (req.path !== '/public-export' && published.ownerUid !== req.user?.uid)) {
             return res.status(404).json({ error: 'Resume not found' });
         }
+        const ownerSnap = await db.collection('users').doc(published.ownerUid).get();
+        const owner = ownerSnap.data() || {};
+        const membershipEnd = owner.membershipEnds?.toDate?.() || new Date(owner.membershipEnds || 0);
+        const entitled = owner.membership === 'Premium'
+            && ['ACTIVE', 'ADMIN_GRANTED'].includes(owner.paymentStatus)
+            && membershipEnd > new Date();
+        if (!entitled) {
+            return res.status(402).json({ error: { code: 'ACTIVE_SUBSCRIPTION_REQUIRED', message: 'An active subscription is required for PDF export', requestId: res.locals.requestId } });
+        }
         let stored;
         try { stored = JSON.parse(published.object); } catch (_) { return res.status(422).json({ error: 'Resume data is invalid' }); }
         if (stored?.template && stored.template !== resumeName) return res.status(400).json({ error: 'Template mismatch' });
@@ -936,6 +1002,18 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
         };
         browser = await chromium.launch(launchOptions);
         const context = await browser.newContext({ viewport: { width: 794, height: 1123 }, deviceScaleFactor: 1 });
+        const allowedRenderOrigin = new URL(`${protocol}://${websiteName}`).origin;
+        // A resume can contain remote image/font URLs. Prevent the renderer from becoming
+        // a blind SSRF client into cloud metadata or internal services.
+        await context.route('**/*', async route => {
+            const requestUrl = route.request().url();
+            if (requestUrl.startsWith('data:') || requestUrl.startsWith('blob:')) return route.continue();
+            try {
+                const parsed = new URL(requestUrl);
+                if (parsed.origin === allowedRenderOrigin) return route.continue();
+            } catch (_) {}
+            return route.abort('blockedbyclient');
+        });
         const page = await context.newPage();
         const targetUrl = `${protocol}://${websiteName}/export/${encodeURIComponent(resumeName)}/${encodeURIComponent(resumeId)}/${encodeURIComponent(language)}`;
         console.log('Playwright exporting PDF, navigating to: ', targetUrl);
@@ -1548,7 +1626,13 @@ app.post('/api/export-docx', async (req, res) => {
     if (!db || !/^[A-Za-z0-9_-]{10,128}$/.test(String(resumeId || ''))) return res.status(400).json({ error: 'Invalid resume' });
     const publishedSnap = await db.collection('pb').doc(String(resumeId)).get();
     if (!publishedSnap.exists || publishedSnap.data().ownerUid !== req.user.uid) return res.status(404).json({ error: 'Resume not found' });
-    // Compatibility representation; ownership is enforced even while full DOCX rendering is pending.
+    const ownerSnap = await db.collection('users').doc(req.user.uid).get();
+    const owner = ownerSnap.data() || {};
+    const membershipEnd = owner.membershipEnds?.toDate?.() || new Date(owner.membershipEnds || 0);
+    if (owner.membership !== 'Premium' || !['ACTIVE', 'ADMIN_GRANTED'].includes(owner.paymentStatus) || membershipEnd <= new Date()) {
+        return res.status(402).json({ error: { code: 'ACTIVE_SUBSCRIPTION_REQUIRED', message: 'An active subscription is required for DOCX export', requestId: res.locals.requestId } });
+    }
+    // Compatibility representation; ownership and entitlement are enforced even while full DOCX rendering is pending.
     const safeName = String(resumeName || 'Resume').replace(/[^A-Za-z0-9 _-]/g, '').slice(0, 80);
     const safeLanguage = /^[a-z]{2}(?:-[A-Z]{2})?$/.test(String(language || '')) ? language : 'en';
     const docxContent = `FILE: ${safeName}\nID: ${resumeId}\nLANGUAGE: ${safeLanguage}\nSTATUS: DOCX Export Generated Successfully`;
@@ -1800,6 +1884,7 @@ app.post('/api/test-grant-admin', async (req, res) => {
         const target = await admin.auth().getUser(uid);
         const existingClaims = target.customClaims || {};
         await admin.auth().setCustomUserClaims(uid, { ...existingClaims, role: 'ADMIN' });
+        await admin.auth().revokeRefreshTokens(uid);
         const batch = db.batch();
         batch.set(db.collection('users').doc(uid), { role: 'ADMIN', updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
         batch.set(db.collection('security_audit_logs').doc(), {
@@ -1928,8 +2013,11 @@ app.post('/api/admin/firebase-service-account', async (req, res) => {
             }
         }
 
-        fs.writeFileSync(envPath, envContent, 'utf8');
-        console.log('[SA Config] ✅ Service account credentials written to .env');
+        const tempEnvPath = `${envPath}.${process.pid}.tmp`;
+        fs.writeFileSync(tempEnvPath, envContent, { encoding: 'utf8', mode: 0o600 });
+        fs.renameSync(tempEnvPath, envPath);
+        fs.chmodSync(envPath, 0o600);
+        console.log('[SA Config] Service account credentials written with owner-only permissions');
 
         // Step 3: Hot-reload — update process.env and re-initialize Admin SDK
         process.env.FIREBASE_PROJECT_ID = projectId;
@@ -1970,14 +2058,20 @@ const RESET_TOKEN_TTL_MS = 15 * 60 * 1000;
 const hashResetToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 app.post(['/api/auth/custom-password-reset', '/api/notify/password-reset'], async (req, res) => {
     const email = String(req.body.email || req.body.userEmail || '').trim().toLowerCase();
-    // Keep response enumeration-resistant. The request is still rate limited by authLimiter.
+    const startedAt = Date.now();
+    // Equalize observable responses for malformed, missing and existing accounts.
     const genericResponse = { success: true, message: 'If an account exists, a password reset email will be sent shortly.' };
-    if (!email || !/^\S+@\S+\.\S+$/.test(email)) return res.json(genericResponse);
+    const respond = async () => {
+        const minimumMs = 300 + crypto.randomInt(0, 100);
+        if (Date.now() - startedAt < minimumMs) await new Promise(resolve => setTimeout(resolve, minimumMs - (Date.now() - startedAt)));
+        return res.json(genericResponse);
+    };
+    if (!email || !/^\S+@\S+\.\S+$/.test(email)) return respond();
     try {
         if (!db || !admin?.auth) throw new Error('Password reset service unavailable');
         let user;
         try { user = await admin.auth().getUserByEmail(email); }
-        catch (err) { if (err.code === 'auth/user-not-found') return res.json(genericResponse); throw err; }
+        catch (err) { if (err.code === 'auth/user-not-found') return respond(); throw err; }
         const token = crypto.randomBytes(32).toString('base64url');
         const tokenHash = hashResetToken(token);
         const expiresAt = Date.now() + RESET_TOKEN_TTL_MS;
@@ -1991,10 +2085,10 @@ app.post(['/api/auth/custom-password-reset', '/api/notify/password-reset'], asyn
         await batch.commit();
         const resetLink = `${protocol}://${websiteName}/login?mode=resetPassword&token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
         await EmailNotifier.notifyPasswordReset(db, { userEmail: email, userName: email.split('@')[0], resetLink });
-        return res.json(genericResponse);
+        return respond();
     } catch (err) {
         console.error('[Password reset request]', err.message);
-        return res.status(503).json({ success: false, error: 'Password reset is temporarily unavailable.' });
+        return respond();
     }
 });
 
@@ -2078,6 +2172,71 @@ app.post('/api/auth/verify-email-token', async (req, res) => {
             }
         } catch (_) {}
         return res.status(400).json({ success: false, error: 'Invalid or expired email verification link.' });
+    }
+});
+
+// Audited server-authoritative user administration. Firestore rules never permit these
+// identity/entitlement fields to be changed directly by a browser.
+app.patch('/api/admin/users/:uid', async (req, res) => {
+    const uid = String(req.params.uid || '');
+    if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid) || !db || !admin?.auth) {
+        return res.status(400).json({ success: false, error: 'Valid user UID and Firebase services are required.' });
+    }
+    const callerPermissions = permissionsFor(req.user);
+    const allowed = permission => callerPermissions.has('*') || callerPermissions.has(permission);
+    const updates = {};
+    const auditChanges = [];
+    try {
+        const target = await admin.auth().getUser(uid);
+        if (typeof req.body.suspended === 'boolean') {
+            if (!allowed('users.update')) return res.status(403).json({ success: false, error: 'Insufficient permission.' });
+            if (uid === req.user.uid && req.body.suspended) return res.status(400).json({ success: false, error: 'Self-suspension is prohibited.' });
+            await admin.auth().updateUser(uid, { disabled: req.body.suspended });
+            if (req.body.suspended) await admin.auth().revokeRefreshTokens(uid);
+            updates.suspended = req.body.suspended;
+            auditChanges.push('suspended');
+        }
+        if (req.body.membership !== undefined) {
+            if (!allowed('payments.manage')) return res.status(403).json({ success: false, error: 'Insufficient permission.' });
+            if (!['Basic', 'Premium'].includes(req.body.membership)) return res.status(400).json({ success: false, error: 'Invalid membership.' });
+            updates.membership = req.body.membership;
+            updates.paymentStatus = req.body.membership === 'Premium' ? 'ADMIN_GRANTED' : 'INACTIVE';
+            let durationMonths = Number(req.body.durationMonths || 12);
+            if (!Number.isInteger(durationMonths) || durationMonths < 1 || durationMonths > 600) {
+                return res.status(400).json({ success: false, error: 'Invalid membership duration.' });
+            }
+            if (durationMonths > 60 && !allowed('users.roles.manage')) {
+                return res.status(403).json({ success: false, error: 'Long-lived grants require SUPER_ADMIN.' });
+            }
+            const membershipEnds = new Date();
+            membershipEnds.setMonth(membershipEnds.getMonth() + (req.body.membership === 'Premium' ? durationMonths : 0));
+            updates.membershipEnds = membershipEnds;
+            auditChanges.push('membership');
+        }
+        if (req.body.role !== undefined) {
+            if (!allowed('users.roles.manage')) return res.status(403).json({ success: false, error: 'Insufficient permission.' });
+            if (!['ADMIN', 'USER'].includes(req.body.role)) return res.status(400).json({ success: false, error: 'Invalid role.' });
+            if (uid === req.user.uid && req.body.role !== 'ADMIN') return res.status(400).json({ success: false, error: 'Self-demotion is prohibited.' });
+            await admin.auth().setCustomUserClaims(uid, { ...(target.customClaims || {}), role: req.body.role });
+            await admin.auth().revokeRefreshTokens(uid);
+            updates.role = req.body.role;
+            auditChanges.push('role');
+        }
+        if (!auditChanges.length) return res.status(400).json({ success: false, error: 'No supported changes supplied.' });
+        updates.updatedAt = admin.firestore.FieldValue.serverTimestamp();
+        const batch = db.batch();
+        batch.set(db.collection('users').doc(uid), updates, { merge: true });
+        batch.set(db.collection('security_audit_logs').doc(), {
+            action: 'USER_ADMIN_UPDATE', actorUid: req.user.uid, targetUid: uid,
+            changedFields: auditChanges, requestId: res.locals.requestId,
+            createdAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+        await batch.commit();
+        return res.json({ success: true, uid, changedFields: auditChanges });
+    } catch (error) {
+        console.error('[User admin update]', error.message);
+        const status = error.code === 'auth/user-not-found' ? 404 : 500;
+        return res.status(status).json({ success: false, error: status === 404 ? 'User not found.' : 'Unable to update user.' });
     }
 });
 
@@ -2206,11 +2365,8 @@ app.post('/api/notify/password-changed', async (req, res) => {
     return res.json({ success: true, message: 'Password changed confirmation queued.' });
 });
 
-app.post('/api/notify/email-otp', async (req, res) => {
-    const { userEmail, userName, otpCode } = req.body;
-    const db = req.app.get('db');
-    EmailNotifier.notifyEmailOTP(db, { userEmail, userName, otpCode });
-    return res.json({ success: true, message: 'OTP verification email queued.' });
+app.post('/api/notify/email-otp', (req, res) => {
+    return res.status(410).json({ error: { code: 'CLIENT_OTP_RETIRED', message: 'Use the account-bound email verification link flow', requestId: res.locals.requestId } });
 });
 
 app.post('/api/notify/security-alert', async (req, res) => {
@@ -2341,17 +2497,26 @@ async function upsertFederatedIdentity({ provider, providerId, email, emailVerif
     const normalizedEmail = email.trim().toLowerCase();
     let user;
     let isNew = false;
+    const providerUid = `${provider}:${String(providerId)}`.slice(0, 128);
     try {
-        user = await admin.auth().getUserByEmail(normalizedEmail);
-    } catch (error) {
-        if (error.code !== 'auth/user-not-found') throw error;
-        const providerUid = `${provider}:${String(providerId)}`.slice(0, 128);
-        try { user = await admin.auth().getUser(providerUid); }
-        catch (uidError) {
-            if (uidError.code !== 'auth/user-not-found') throw uidError;
-            user = await admin.auth().createUser({ uid: providerUid, email: normalizedEmail, emailVerified: true, displayName: displayName.slice(0, 100), photoURL: photoURL || undefined });
-            isNew = true;
+        user = await admin.auth().getUser(providerUid);
+        if (String(user.email || '').toLowerCase() !== normalizedEmail) throw new Error('OAUTH_IDENTITY_CONFLICT');
+    } catch (uidError) {
+        if (uidError.code !== 'auth/user-not-found') throw uidError;
+        // Never auto-link by email: that would let a custom-token social flow bypass an
+        // existing account's password/MFA policy. Linking requires an authenticated flow.
+        try {
+            await admin.auth().getUserByEmail(normalizedEmail);
+            throw new Error('OAUTH_ACCOUNT_LINK_REQUIRED');
+        } catch (emailError) {
+            if (emailError.message === 'OAUTH_ACCOUNT_LINK_REQUIRED') throw emailError;
+            if (emailError.code !== 'auth/user-not-found') throw emailError;
         }
+        user = await admin.auth().createUser({ uid: providerUid, email: normalizedEmail, emailVerified: true, displayName: displayName.slice(0, 100), photoURL: photoURL || undefined });
+        isNew = true;
+    }
+    if (user.multiFactor?.enrolledFactors?.length) {
+        throw new Error('OAUTH_MFA_REQUIRES_PRIMARY_SIGN_IN');
     }
     if (!user.emailVerified) await admin.auth().updateUser(user.uid, { emailVerified: true });
     const parts = String(displayName || 'User').trim().split(/\s+/);
@@ -2495,6 +2660,18 @@ app.get('/api/auth/github/test-credentials', async (req, res) => {
         configured,
         callbackUrl: `${protocol}://${websiteName}/api/auth/github/callback`,
         note: configured ? 'GitHub credentials active in Admin Settings / Environment.' : 'GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET are not set in Admin Settings or .env.'
+    });
+});
+
+app.use('/api', (req, res) => {
+    return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'API route not found', requestId: res.locals.requestId } });
+});
+app.use((error, req, res, _next) => {
+    console.error('[Unhandled request error]', res.locals.requestId, error.message);
+    if (res.headersSent) return;
+    const status = Number(error.status || error.statusCode || 500);
+    return res.status(status >= 400 && status < 600 ? status : 500).json({
+        error: { code: status === 413 ? 'PAYLOAD_TOO_LARGE' : 'INTERNAL_ERROR', message: status === 413 ? 'Request payload is too large' : 'Request failed', requestId: res.locals.requestId }
     });
 });
 

@@ -82,7 +82,7 @@ class UsersManager extends Component {
                         element.userId,
                         element.email !== undefined ? element.email : 'Not Provided',
                         element.membership !== undefined ? element.membership : 'Basic',
-                        Boolean(element.isA),
+                        Boolean(element.isA || ['ADMIN', 'SUPER_ADMIN'].includes(String(element.role || '').toUpperCase())),
                         Boolean(element.suspended),
                         element
                     )
@@ -105,7 +105,7 @@ class UsersManager extends Component {
                                             el.userId,
                                             el.email !== undefined ? el.email : 'Not Provided',
                                             el.membership !== undefined ? el.membership : 'Basic',
-                                            Boolean(el.isA),
+                                            Boolean(el.isA || ['ADMIN', 'SUPER_ADMIN'].includes(String(el.role || '').toUpperCase())),
                                             Boolean(el.suspended),
                                             el
                                         )
@@ -164,7 +164,7 @@ class UsersManager extends Component {
                         element.userId,
                         element.email !== undefined ? element.email : 'Not Provided',
                         element.membership || 'Basic',
-                        Boolean(element.isA),
+                        Boolean(element.isA || ['ADMIN', 'SUPER_ADMIN'].includes(String(element.role || '').toUpperCase())),
                         Boolean(element.suspended),
                         element
                     )

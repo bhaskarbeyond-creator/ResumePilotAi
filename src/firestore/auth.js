@@ -106,13 +106,11 @@ async function addUser(userId, firstname, lastname, email, { authProvider = 'ema
                     firstname: derivedFirstName,
                     lastname: derivedLastName,
                     email: email,
-                    membership: existingMembership,
+                    membership: 'Basic',
                     authProvider: authProvider,
                     ...(photoURL ? { photoURL } : (existingData.photoURL ? { photoURL: existingData.photoURL } : {})),
                     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                     lastLoginAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    ...(existingData.membershipEnds ? { membershipEnds: existingData.membershipEnds } : {}),
-                    ...(existingData.isA ? { isA: existingData.isA } : {}),
                     ...(existingData.profile ? { profile: existingData.profile } : {}),
                 }, { merge: true });
 
@@ -162,7 +160,9 @@ async function addUser(userId, firstname, lastname, email, { authProvider = 'ema
                             numberOfResumesCreated: 0,
                         });
                     } else {
-                        throw error;
+                        // Aggregate statistics are server-owned; profile creation must not fail
+                        // when a normal client is correctly denied permission to mutate them.
+                        console.warn('User statistics update skipped:', error.code || error.message);
                     }
                 });
             
@@ -180,89 +180,8 @@ async function addUser(userId, firstname, lastname, email, { authProvider = 'ema
     }
 }
 
-export async function setA(userId) {
-    const db = fire.firestore();
-    console.log('🔧 Starting setA for userId:', userId);
-    
-    const results = {
-        userUpdate: false,
-        initData: false, 
-        statsInit: false
-    };
-    
-    // Step 1: Update user to have admin privileges FIRST (this should work since user doc exists)
-    try {
-        console.log('👤 Updating user document with admin privileges...');
-        await db.collection('users')
-            .doc(userId)
-            .set({
-                isA: true,
-            }, { merge: true }); // Use merge to avoid overwriting existing data
-        console.log('✅ User admin privileges updated successfully');
-        results.userUpdate = true;
-        
-        // Add a small delay to ensure the user update is committed
-        console.log('⏳ Waiting for user admin privileges to be committed...');
-        await new Promise(resolve => setTimeout(resolve, 500));
-    } catch (error) {
-        console.error('❌ Step 1 failed - Updating user privileges:', error.code, error.message);
-        throw new Error(`Failed to update user privileges: ${error.message}`);
-    }
-    
-    // Step 2: Set initialization data (now user has isA=true, so isA() should work)
-    try {
-        console.log('📝 Setting initialization data in data/id...');
-        await db.collection('data')
-            .doc('id')
-            .set({
-                userId: userId,
-                firstname: 'Welcome',
-                lastname: 'Back',
-                isA: true,
-            });
-        console.log('✅ Initialization data set successfully');
-        results.initData = true;
-    } catch (error) {
-        console.error('❌ Step 2 failed - Setting initialization data:', error.code, error.message);
-        
-        // Try a fallback approach - maybe the issue is with timing
-        console.log('⚠️ Trying fallback approach for initialization data...');
-        try {
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait longer
-            await db.collection('data')
-                .doc('id')
-                .set({
-                    userId: userId,
-                    firstname: 'Welcome',
-                    lastname: 'Back',
-                    isA: true,
-                });
-            console.log('✅ Initialization data set successfully (fallback)');
-            results.initData = true;
-        } catch (fallbackError) {
-            console.error('❌ Fallback also failed:', fallbackError.code, fallbackError.message);
-            throw new Error(`Failed to set initialization data: ${error.message}`);
-        }
-    }
-    
-    // Step 3: Initialize stats
-    try {
-        console.log('📊 Initializing stats document...');
-        await db.collection('data').doc('stats').set({
-            numberOfResumesDownloaded: 0,
-            numberOfUsers: 1, // Set to 1 since we have the admin user
-            numberOfResumesCreated: 0,
-        });
-        console.log('✅ Stats document initialized successfully');
-        results.statsInit = true;
-    } catch (error) {
-        console.error('❌ Step 3 failed - Initializing stats:', error.code, error.message);
-        throw new Error(`Failed to initialize stats: ${error.message}`);
-    }
-    
-    console.log('✅ All steps completed successfully:', results);
-    console.log('✅ Admin privileges set successfully for user:', userId);
-    return { success: true, message: 'Admin privileges set successfully', results };
+export async function setA() {
+    throw new Error('Client-side role assignment is disabled. Provision SUPER_ADMIN out-of-band or use the audited server role endpoint.');
 }
 
 export default addUser;

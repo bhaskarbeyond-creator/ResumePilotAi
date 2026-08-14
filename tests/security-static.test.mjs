@@ -53,6 +53,22 @@ test('backend contains no soft-verified/demo payment success or disabled TLS ver
   }
 });
 
+test('browser code has no email, hostname, UID-pattern, or Firestore-field admin backdoor', () => {
+  const sensitiveFiles = [
+    'src/firestore/dbOperations.js',
+    'src/components/auth/login/Login.jsx',
+    'src/components/auth/register/Register.jsx',
+    'src/components/admin/Admin.jsx',
+    'src/components/Dashboard/DashboardMain/DashboardMain.jsx',
+    'src/components/Dashboard/ProfileDisplay/ProfileDisplay.jsx',
+    'src/components/initailisation/initialisationSetup/initialisationSetup.jsx',
+    'src/utils/adminSetup.js'
+  ].map(read).join('\n');
+  assert.doesNotMatch(sensitiveFiles, /email\s*===?\s*(?:conf|config)\.adminEmail|admin@admin\.com|admin_test_uid|UID_TEST_|uid\.includes\(['\"]admin/i);
+  assert.doesNotMatch(read('src/components/initailisation/initialisationSetup/initialisationSetup.jsx'), /createUserWithEmailAndPassword|setA\s*\(/);
+  assert.match(read('src/firestore/dbOperations.js'), /getIdTokenResult/);
+});
+
 test('OAuth never creates unsigned local browser sessions', () => {
   const main = read('src/main.jsx');
   const backend = read('backend/index.js');
@@ -60,6 +76,17 @@ test('OAuth never creates unsigned local browser sessions', () => {
   assert.doesNotMatch(backend, /oauth_session|Buffer\.from\(JSON\.stringify\(\{ uid/);
   assert.match(backend, /createCustomToken/);
   assert.match(backend, /rp_oauth_state/);
+});
+
+test('static entry point has an enforcing CSP without inline-script escape hatches', () => {
+  const html = read('index.html');
+  const apache = read('public/.htaccess');
+  assert.doesNotMatch(html, /<script(?![^>]*\bsrc=)[^>]*>/i);
+  const csp = apache.match(/Content-Security-Policy \"([^\"]+)/)?.[1] || '';
+  assert.match(csp, /default-src 'self'/);
+  assert.match(csp, /object-src 'none'/);
+  assert.match(csp, /frame-ancestors 'none'/);
+  assert.doesNotMatch(csp, /script-src[^;]*(?:'unsafe-inline'|'unsafe-eval')/);
 });
 
 test('Firestore deploy config includes both deny-by-default stores', () => {

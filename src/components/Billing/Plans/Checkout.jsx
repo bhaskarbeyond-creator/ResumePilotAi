@@ -207,7 +207,7 @@ class Checkout extends Component {
 
     triggerInvoiceEmail = async (invDetails = {}) => {
         try {
-            const apiBase = window.location.origin.includes('localhost') ? 'http://localhost:8080' : '';
+            const apiBase = '';
             const user = this.getCurrentUser();
             await axios.post(`${apiBase}/api/send-invoice-email`, {
                 customerEmail: user?.email || invDetails.email || '',

@@ -3,51 +3,17 @@ import fire from '../conf/fire';
 // Function to check current user's admin status
 export async function checkCurrentUserAdminStatus() {
     const user = fire.auth().currentUser;
-    if (!user) {
-        console.log('❌ No user is currently logged in');
-        return false;
-    }
-
-    console.log('👤 Current user ID:', user.uid);
-    console.log('📧 Current user email:', user.email);
-
-    const db = fire.firestore();
+    if (!user) return false;
     try {
-        const snapshot = await db.collection('users').doc(user.uid).get();
-        if (snapshot.exists) {
-            const userData = snapshot.data();
-            console.log('📊 User data:', userData);
-            console.log('🔐 Admin status (isA):', userData.isA);
-            return userData.isA === true;
-        } else {
-            console.log('❌ User document does not exist in Firestore');
-            return false;
-        }
-    } catch (error) {
-        console.error('❌ Error checking admin status:', error);
+        const token = await user.getIdTokenResult();
+        return ['ADMIN', 'SUPER_ADMIN'].includes(String(token.claims.role || '').toUpperCase());
+    } catch (_) {
         return false;
     }
 }
 
-// Function to make current user an admin (use with caution!)
 export async function makeCurrentUserAdmin() {
-    const user = fire.auth().currentUser;
-    if (!user) {
-        console.log('❌ No user is currently logged in');
-        return false;
-    }
-
-    const db = fire.firestore();
-    try {
-        await db.collection('users').doc(user.uid).update({
-            isA: true
-        });
-        console.log('✅ Successfully made user admin:', user.email);
-        return true;
-    } catch (error) {
-        console.error('❌ Error making user admin:', error);
-        return false;
-    }
+    throw new Error('Client-side role assignment is disabled.');
 }
 
 // Function to test frontend stats permissions
@@ -140,7 +106,7 @@ export async function runAdminDiagnostics() {
         await testFrontendStatsPermissions();
     } else {
         console.log('❌ User does not have admin permissions');
-        console.log('💡 You can run makeCurrentUserAdmin() to fix this');
+        console.log('Role claims must be provisioned by an authorized deployment operator.');
     }
     
     console.log('================================');

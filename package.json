@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "npm run test:security",
-    "test:security": "node --test tests/security-static.test.mjs && node --test backend/test/*.test.js",
+    "test:security": "node --test tests/security-static.test.mjs tests/xss.test.mjs && node --test backend/test/*.test.js",
     "test:firestore": "firebase emulators:exec --only firestore --project demo-resumepilot-security \"node --test tests/firestore.rules.test.mjs\"",
     "audit:production": "npm audit --omit=dev --audit-level=high && npm --prefix backend audit --omit=dev --audit-level=high",
     "ci:security": "npm run lint && npm run test:security && npm run build && npm run audit:production"
@@ -73,6 +73,7 @@
     "eslint-plugin-react-refresh": "^0.4.19",
     "firebase-tools": "^15.27.0",
     "globals": "^16.0.0",
+    "jsdom": "^26.1.0",
     "playwright": "^1.62.1",
     "sass": "^1.89.2",
     "sass-embedded": "^1.89.2",

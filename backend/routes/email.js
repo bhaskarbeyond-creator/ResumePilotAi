@@ -132,10 +132,11 @@ async function getEmailConfig(db) {
 }
 
 // Verify IMAP Connection via direct Socket
-function verifyImapConnection(imapConfig) {
+function verifyImapConnection(imapConfig, resolvedAddress = null) {
     return new Promise((resolve, reject) => {
         const isSsl = imapConfig.encryption === 'ssl' || imapConfig.port === 993;
         const host = imapConfig.host || 'imap.hostinger.com';
+        const connectHost = resolvedAddress || host;
         const port = parseInt(imapConfig.port || (isSsl ? 993 : 143), 10);
 
         let socket;
@@ -154,9 +155,9 @@ function verifyImapConnection(imapConfig) {
         };
 
         if (isSsl) {
-            socket = tls.connect(port, host, { rejectUnauthorized: true }, onConnect);
+            socket = tls.connect(port, connectHost, { rejectUnauthorized: true, servername: host }, onConnect);
         } else {
-            socket = net.connect(port, host, onConnect);
+            socket = net.connect(port, connectHost, onConnect);
         }
 
         socket.on('error', (err) => {
@@ -166,9 +167,26 @@ function verifyImapConnection(imapConfig) {
     });
 }
 
-// Enterprise Dynamic HTML Template Generator (10/10 WordPress & SaaS Standard Suite)
+function escapeEmailHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[char]);
+}
+function safeEmailUrl(value, fallback = '#') {
+    try {
+        const parsed = new URL(String(value));
+        return ['https:', 'http:'].includes(parsed.protocol) ? escapeEmailHtml(parsed.href) : fallback;
+    } catch (_) { return fallback; }
+}
+
+// Enterprise Dynamic HTML Template Generator
 function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
-    const brandName = vars.brand_name || process.env.SMTP_SENDER_NAME || 'ResumePilot AI';
+    const rawVars = vars || {};
+    vars = Object.fromEntries(Object.entries(rawVars).map(([key, value]) => [
+        key,
+        ['site_url', 'reset_link', 'retry_url'].includes(key) ? safeEmailUrl(value) : escapeEmailHtml(value)
+    ]));
+    const brandName = vars.brand_name || escapeEmailHtml(process.env.SMTP_SENDER_NAME || 'ResumePilot AI');
     const siteUrl = vars.site_url || `${process.env.PROTOCOL || 'https'}://${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}`;
     const supportEmail = vars.support_email || process.env.SMTP_REPLY_TO || `support@${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}`;
 
@@ -718,10 +736,11 @@ let primaryConsecutiveFailures = 0;
 let primaryCircuitBreakerUntil = 0;
 
 // Create Nodemailer Transporter instance with tight timeouts for instant failover
-function createTransporter(smtpConfig) {
+function createTransporter(smtpConfig, resolvedAddress = null) {
     const isSecure = smtpConfig.encryption === 'ssl' || smtpConfig.port === 465;
     return nodemailer.createTransport({
-        host: smtpConfig.host,
+        // Pin the already-classified DNS result to close the validation/connect rebinding gap.
+        host: resolvedAddress || smtpConfig.host,
         port: smtpConfig.port,
         secure: isSecure,
         auth: (smtpConfig.username && smtpConfig.password) ? {
@@ -729,7 +748,8 @@ function createTransporter(smtpConfig) {
             pass: smtpConfig.password,
         } : undefined,
         tls: {
-            rejectUnauthorized: true
+            rejectUnauthorized: true,
+            servername: smtpConfig.host
         },
         connectionTimeout: 5000, // 5s fast connection timeout
         greetingTimeout: 4000,   // 4s SMTP greeting timeout
@@ -741,13 +761,15 @@ function createTransporter(smtpConfig) {
 async function dispatchMailWithFallback(config, mailOptions) {
     let primaryErr = null;
     const allowedEncryption = new Set(['ssl', 'tls', 'starttls']);
+    let primaryTarget = null;
+    let fallbackTarget = null;
     if (config.smtp?.host) {
         if (!allowedEncryption.has(String(config.smtp.encryption || '').toLowerCase())) throw new Error('Encrypted SMTP transport is required');
-        await assertPublicNetworkTarget(config.smtp.host);
+        primaryTarget = await assertPublicNetworkTarget(config.smtp.host);
     }
     if (config.fallbackSmtp?.enabled && config.fallbackSmtp?.host) {
         if (!allowedEncryption.has(String(config.fallbackSmtp.encryption || '').toLowerCase())) throw new Error('Encrypted fallback SMTP transport is required');
-        await assertPublicNetworkTarget(config.fallbackSmtp.host);
+        fallbackTarget = await assertPublicNetworkTarget(config.fallbackSmtp.host);
     }
     const now = Date.now();
     const isCircuitOpen = primaryCircuitBreakerUntil > now;
@@ -762,7 +784,7 @@ async function dispatchMailWithFallback(config, mailOptions) {
     // 1. Try Primary Transporter if circuit is closed and credentials exist
     if (!isCircuitOpen && config.smtp && config.smtp.username && config.smtp.password) {
         try {
-            const primaryTransporter = createTransporter(config.smtp);
+            const primaryTransporter = createTransporter(config.smtp, primaryTarget?.addresses?.[0]);
             const info = await primaryTransporter.sendMail(mailOptions);
             
             // Reset Circuit Breaker on Primary success
@@ -790,7 +812,7 @@ async function dispatchMailWithFallback(config, mailOptions) {
     if (fallbackEnabled && config.fallbackSmtp.username && config.fallbackSmtp.password) {
         try {
             console.warn('⚡ Primary SMTP unavailable/bypassed. Activating Secondary Fallback Relay (Failover)...');
-            const fallbackTransporter = createTransporter(config.fallbackSmtp);
+            const fallbackTransporter = createTransporter(config.fallbackSmtp, fallbackTarget?.addresses?.[0]);
 
             // SASL Compliance: Use verified sender address (Fallback Sender Email -> Primary Username -> ReplyTo -> Dynamic System Domain)
             let fallbackUser = config.fallbackSmtp?.senderEmail;
@@ -892,8 +914,11 @@ router.post('/admin/test-connection', async (req, res) => {
                 return res.status(400).json({ success: false, error: 'Secondary Fallback Relay Username and Password are required.' });
             }
 
-            await assertPublicNetworkTarget(fallbackConfig.host);
-            const transporter = createTransporter(fallbackConfig);
+            if (!['ssl', 'tls', 'starttls'].includes(String(fallbackConfig.encryption).toLowerCase())) {
+                return res.status(400).json({ success: false, error: 'Encrypted SMTP transport is required.' });
+            }
+            const fallbackTarget = await assertPublicNetworkTarget(fallbackConfig.host);
+            const transporter = createTransporter(fallbackConfig, fallbackTarget.addresses[0]);
             await transporter.verify();
 
             const mailOptions = {
@@ -943,7 +968,11 @@ router.post('/admin/test-connection', async (req, res) => {
             return res.status(400).json({ success: false, error: 'SMTP Username and Password are required.' });
         }
 
-        const transporter = createTransporter(smtpConfig);
+        if (!['ssl', 'tls', 'starttls'].includes(String(smtpConfig.encryption).toLowerCase())) {
+            return res.status(400).json({ success: false, error: 'Encrypted SMTP transport is required.' });
+        }
+        const smtpTarget = await assertPublicNetworkTarget(smtpConfig.host);
+        const transporter = createTransporter(smtpConfig, smtpTarget.addresses[0]);
         await transporter.verify();
 
         const mailOptions = {
@@ -1013,8 +1042,8 @@ router.post('/admin/test-imap', async (req, res) => {
         if (imapConfig.encryption !== 'ssl' || imapConfig.port !== 993) {
             return res.status(400).json({ success: false, error: 'IMAP requires TLS on port 993.' });
         }
-        await assertPublicNetworkTarget(imapConfig.host);
-        const result = await verifyImapConnection(imapConfig);
+        const imapTarget = await assertPublicNetworkTarget(imapConfig.host);
+        const result = await verifyImapConnection(imapConfig, imapTarget.addresses[0]);
         return res.json({ success: true, message: `IMAP Socket Verified! Connected to ${imapConfig.host}:${imapConfig.port}` });
     } catch (err) {
         console.error('IMAP Test Error:', err);
@@ -1027,8 +1056,8 @@ router.post('/send-email', async (req, res) => {
     const db = req.app.get('db');
     const { to, templateType, customSubject, customBody, vars } = req.body;
 
-    if (!to) {
-        return res.status(400).json({ success: false, error: 'Recipient email address (to) is required.' });
+    if (!/^[^\s@,;<>]{1,64}@[^\s@,;<>]{1,190}$/.test(String(to || '').trim()) || String(to || '').length > 254) {
+        return res.status(400).json({ success: false, error: 'A single valid recipient email address is required.' });
     }
 
     // Process dispatch asynchronously in background
@@ -1294,7 +1323,11 @@ router.post('/templates', async (req, res) => {
 });
 
 async function dispatchNotification(db, { to, templateType, vars = {}, customSubject, customBody }) {
-    if (!to) return { success: false, error: 'Recipient address required' };
+    const recipient = String(to || '').trim().toLowerCase();
+    if (!/^[^\s@,;<>]{1,64}@[^\s@,;<>]{1,190}$/.test(recipient) || recipient.length > 254) {
+        return { success: false, error: 'A single valid recipient address is required' };
+    }
+    to = recipient;
     try {
         const config = await getEmailConfig(db);
         
@@ -1348,3 +1381,4 @@ router.dispatchNotification = dispatchNotification;
 
 module.exports = router;
 module.exports.dispatchNotification = dispatchNotification;
+module.exports.getEmailConfig = getEmailConfig;

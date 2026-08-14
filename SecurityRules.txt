@@ -153,7 +153,7 @@ service cloud.firestore {
     match /ads/{id} { allow read: if true; allow write: if admin(); }
     match /reviews/{id} { allow read: if resource.data.status == 'approved' || admin(); allow write: if admin(); }
     match /trustedBy/{id} { allow read: if true; allow write: if admin(); }
-    match /contact/{id} { allow create: if signedIn(); allow read, update, delete: if admin(); }
+    match /contact/{id} { allow read, update, delete: if admin(); allow create: if false; }
     match /notifications/{uid}/{document=**} {
       allow read, update, delete: if owner(uid);
       allow create: if owner(uid);

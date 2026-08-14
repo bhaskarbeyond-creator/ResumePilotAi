@@ -21,7 +21,7 @@ const PRINT_PROFILE = Object.freeze({
 
 /** Sanitizes user-authored rich text before browser or PDF rendering. */
 export function sanitizeRichText(value) {
-  return DOMPurify.sanitize(String(value || ''), RICH_TEXT_PROFILE);
+  return hardenSanitizedFragment(DOMPurify.sanitize(String(value || ''), RICH_TEXT_PROFILE));
 }
 
 /** Sanitizes CMS pages with the conservative rich-text policy. */
@@ -29,9 +29,31 @@ export function sanitizePublicHtml(value) {
   return sanitizeRichText(value);
 }
 
+function hardenSanitizedFragment(html, { allowImages = false } = {}) {
+  if (typeof document === 'undefined') return html;
+  const template = document.createElement('template');
+  // Security-reviewed internal sink: `html` must already be DOMPurify output.
+  template.innerHTML = html;
+  for (const anchor of template.content.querySelectorAll('a')) {
+    const safe = sanitizeUrl(anchor.getAttribute('href') || '');
+    if (!safe) anchor.removeAttribute('href');
+    else anchor.setAttribute('href', safe);
+    if (anchor.getAttribute('target') === '_blank') anchor.setAttribute('rel', 'noopener noreferrer');
+  }
+  for (const image of template.content.querySelectorAll('img')) {
+    const source = String(image.getAttribute('src') || '').trim();
+    const safeRelative = source.startsWith('/') && !source.startsWith('//');
+    let safeHttps = false;
+    try { safeHttps = new URL(source).protocol === 'https:'; } catch (_) {}
+    if (!allowImages || (!safeRelative && !safeHttps)) image.removeAttribute('src');
+    image.setAttribute('loading', 'lazy');
+  }
+  return template.innerHTML;
+}
+
 /** Blog profile preserves tables and HTTPS images, but forbids inline CSS and active media. */
 export function sanitizeBlogHtml(value) {
-  return DOMPurify.sanitize(String(value || ''), {
+  const clean = DOMPurify.sanitize(String(value || ''), {
     ALLOWED_TAGS: [
       'p', 'br', 'strong', 'b', 'em', 'i', 'u', 'mark', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
       'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'a', 'img',
@@ -41,9 +63,10 @@ export function sanitizeBlogHtml(value) {
     ALLOW_DATA_ATTR: false,
     FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'svg', 'math', 'form', 'input', 'button', 'style', 'template'],
     FORBID_ATTR: ['style', 'onerror', 'onload', 'onclick', 'onmouseover', 'srcset'],
-    ALLOWED_URI_REGEXP: /^(?:https?:|mailto:|tel:|#)/i,
+    ALLOWED_URI_REGEXP: /^(?:https?:|mailto:|tel:|#|\/)/i,
     KEEP_CONTENT: true
   });
+  return hardenSanitizedFragment(clean, { allowImages: true });
 }
 
 export function sanitizePlainText(value) {
@@ -53,11 +76,12 @@ export function sanitizePlainText(value) {
 /** Returns a safe navigable URL or an empty string. */
 export function sanitizeUrl(value) {
   const raw = String(value || '').trim();
-  if (!raw || /[\u0000-\u001f\u007f]/.test(raw)) return '';
+  if (!raw || /[\u0000-\u001f\u007f]/.test(raw) || /%(?:0a|0d|00)/i.test(raw)) return '';
   if (raw.startsWith('/') && !raw.startsWith('//')) return raw;
   if (raw.startsWith('#')) return raw;
   try {
     const parsed = new URL(raw);
+    if (parsed.username || parsed.password) return '';
     return ['http:', 'https:', 'mailto:', 'tel:'].includes(parsed.protocol) ? parsed.href : '';
   } catch {
     return '';

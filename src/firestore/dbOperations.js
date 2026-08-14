@@ -74,15 +74,17 @@ export async function getAllMessages() {
     }
 }
 
-// Add new Contact us message
-export function addContactMessage(email, name, message) {
-    const db = fire.firestore();
-    db.collection('contact').add({
-        name: name,
-        email: email,
-        message: message,
-        created_at: firebase.firestore.Timestamp.now(),
+// Contact submissions cross the rate-limited server boundary; clients cannot write the
+// moderation collection directly.
+export async function addContactMessage(email, name, message) {
+    const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, name, message, website: '' })
     });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || 'Unable to submit contact message.');
+    return result;
 }
 
 // Edit Google track code. needs to bo with analytics
@@ -480,31 +482,15 @@ export async function getAllSubscriptions() {
 }
 
 export async function checkIfAdmin(uid) {
-    if (!uid) return false;
-    if (uid.includes('UID_TEST_') || uid.includes('playwright') || uid.includes('admin')) {
-        return true;
-    }
     const authUser = fire.auth().currentUser;
-    if (authUser && (authUser.email === config.adminEmail || authUser.email === 'admin@admin.com')) {
-        try {
-            const db = fire.firestore();
-            await db.collection('users').doc(uid).set({ isA: true, email: authUser.email }, { merge: true });
-        } catch (err) {
-            console.warn('Auto-set admin error:', err.message);
-        }
-        return true;
-    }
+    if (!authUser || authUser.uid !== uid) return false;
     try {
-        const db = fire.firestore();
-        const snapshot = await db.collection('users').doc(uid).get();
-        if (snapshot.exists) {
-            const user = snapshot.data();
-            return user.isA === true || user.isAdmin === true;
-        }
-    } catch (err) {
-        console.warn('checkIfAdmin error:', err.message);
+        const token = await authUser.getIdTokenResult();
+        return ['ADMIN', 'SUPER_ADMIN'].includes(String(token.claims.role || '').toUpperCase());
+    } catch (error) {
+        console.warn('Unable to verify admin claim:', error.message);
+        return false;
     }
-    return false;
 }
 // Get User by id
 export async function getUserById(id) {
@@ -570,41 +556,24 @@ export function addUser(userId, firstname, lastname, email) {
         }
     }).catch((error) => console.log('addUser error:', error));
 }
-export function editUser(userId, email, membership, membershipsEnds, isA = null, suspended = null) {
-    const db = fire.firestore();
-    const updateData = {
-        membership: membership,
-        email: email,
-        membershipEnds: new Date(membershipsEnds),
-    };
-    if (isA !== null) {
-        updateData.isA = Boolean(isA);
-    }
-    if (suspended !== null) {
-        updateData.suspended = Boolean(suspended);
-    }
-    db.collection('users')
-        .doc(userId)
-        .update(updateData)
-        .catch((error) => console.log('Error updating user:', error));
+async function updateUserByAdminApi(userId, changes) {
+    const response = await fetch(`/api/admin/users/${encodeURIComponent(userId)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(changes)
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || 'Administrative user update failed.');
+    return result;
+}
 
-    if (membership && (membership.toLowerCase().includes('premium') || membership.toLowerCase().includes('pro'))) {
-        db.collection('transactions').add({
-            userId: userId,
-            email: email,
-            transactionId: `ADMIN-GRANT-${Date.now().toString(36).toUpperCase()}`,
-            planType: `${membership} Membership (Admin License Grant)`,
-            paimentType: 'Admin Complementary Grant',
-            amount: 0,
-            price: 0,
-            subtotal: 0,
-            taxAmount: 0,
-            currency: 'USD',
-            status: 'COMPLETED',
-            created_at: firebase.firestore.Timestamp.now(),
-            createdDateString: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-        }).catch(err => console.log('Error logging admin grant txn:', err));
-    }
+export async function editUser(userId, _email, membership, _membershipsEnds, _isA = null, suspended = null) {
+    const changes = {};
+    if (membership) changes.membership = membership;
+    // Role changes use setUserAdminStatus and require SUPER_ADMIN; ordinary profile edits
+    // cannot smuggle a role mutation alongside billing/suspension fields.
+    if (suspended !== null) changes.suspended = Boolean(suspended);
+    return updateUserByAdminApi(userId, changes);
 }
 
 // Function to check if user is suspended
@@ -625,47 +594,30 @@ export async function checkIfSuspended(uid) {
 
 // Function to suspend or activate a user account by Admin
 export async function toggleUserSuspension(userId, suspend) {
-    const db = fire.firestore();
     try {
-        await db.collection('users').doc(userId).set({ suspended: Boolean(suspend) }, { merge: true });
-        return {
-            success: true,
-            message: `User account ${suspend ? 'suspended (disabled)' : 'reactivated'} successfully.`
-        };
+        await updateUserByAdminApi(userId, { suspended: Boolean(suspend) });
+        return { success: true, message: `User account ${suspend ? 'suspended' : 'reactivated'} successfully.` };
     } catch (error) {
-        console.error('Error toggling suspension:', error);
         return { success: false, error: error.message };
     }
 }
 
-// Function to set or revoke admin status for a user by ID
-export async function setUserAdminStatus(userId, isA) {
-    const db = fire.firestore();
+export async function setUserAdminStatus(userId, isAdmin) {
     try {
-        await db.collection('users').doc(userId).set({ isA: Boolean(isA) }, { merge: true });
-        return { success: true, message: `Admin status set to ${Boolean(isA)}` };
+        await updateUserByAdminApi(userId, { role: isAdmin ? 'ADMIN' : 'USER' });
+        return { success: true, message: `Admin status set to ${Boolean(isAdmin)}` };
     } catch (error) {
-        console.error('Error setting admin status:', error);
         return { success: false, error: error.message };
     }
 }
 
-// Function to grant admin status to a user by Email
 export async function makeUserAdminByEmail(email) {
     const db = fire.firestore();
     try {
-        const query = await db.collection('users').where('email', '==', email.trim()).get();
-        if (query.empty) {
-            return { success: false, error: `User with email ${email} not found.` };
-        }
-        let updatedCount = 0;
-        for (const doc of query.docs) {
-            await db.collection('users').doc(doc.id).set({ isA: true }, { merge: true });
-            updatedCount++;
-        }
-        return { success: true, message: `Successfully granted Admin privileges to ${email}` };
+        const query = await db.collection('users').where('email', '==', email.trim().toLowerCase()).limit(1).get();
+        if (query.empty) return { success: false, error: `User with email ${email} not found.` };
+        return setUserAdminStatus(query.docs[0].id, true);
     } catch (error) {
-        console.error('Error granting admin by email:', error);
         return { success: false, error: error.message };
     }
 }
@@ -1081,48 +1033,37 @@ export async function recordTransaction(userId, details) {
 }
 
 
-// Update user auto-renew status
-export async function updateUserAutoRenew(userId, autoRenew) {
-    const db = fire.firestore();
+// Subscription preferences are owner-bound by the verified backend token.
+export async function updateUserAutoRenew(_userId, autoRenew) {
     try {
-        await db.collection('users').doc(userId).set({
-            autoRenew: Boolean(autoRenew),
-        }, { merge: true });
-        return { success: true, message: `Auto-renew ${autoRenew ? 'enabled' : 'disabled'}.` };
-    } catch (err) {
-        return { success: false, error: err.message };
-    }
+        const response = await fetch('/api/subscription/preferences', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ autoRenew: Boolean(autoRenew) })
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || 'Unable to update auto-renew.');
+        return result;
+    } catch (error) { return { success: false, error: error.message }; }
 }
 
-// Cancel user subscription
-export async function cancelUserSubscription(userId, reason) {
-    const db = fire.firestore();
+export async function cancelUserSubscription(_userId, reason) {
     try {
-        await db.collection('users').doc(userId).set({
-            autoRenew: false,
-            cancellationRequested: true,
-            cancellationReason: reason || 'User requested cancellation',
-            cancellationDate: firebase.firestore.FieldValue.serverTimestamp(),
-        }, { merge: true });
-        return { success: true, message: 'Subscription cancellation request processed. Your PRO access remains active until the end of your billing cycle.' };
-    } catch (err) {
-        return { success: false, error: err.message };
-    }
+        const response = await fetch('/api/subscription/preferences', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cancel: true, reason })
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || 'Unable to cancel subscription.');
+        return result;
+    } catch (error) { return { success: false, error: error.message }; }
 }
 
 // Function to quickly toggle user membership plan
 export async function updateUserSubscription(userId, membership) {
-    const db = fire.firestore();
     try {
-        const nextYear = new Date();
-        nextYear.setFullYear(nextYear.getFullYear() + 1);
-        await db.collection('users').doc(userId).set({
-            membership: membership,
-            membershipEnds: nextYear,
-        }, { merge: true });
+        await updateUserByAdminApi(userId, { membership });
         return { success: true, message: `Subscription plan updated to ${membership}.` };
     } catch (error) {
-        console.error('Error updating subscription:', error);
         return { success: false, error: error.message };
     }
 }
@@ -1167,7 +1108,7 @@ export async function IncrementUsers(userid) {
 export async function getFullName(userId) {
     var firstname = '';
     var lastname = '';
-    var membership = 'Premium';
+    var membership = 'Basic';
     var profile = {};
     const db = fire.firestore();
     const userRef = db.collection('users').doc(userId);
@@ -1176,7 +1117,7 @@ export async function getFullName(userId) {
         const data = snapshot.data();
         firstname = data.firstname || data.profile?.firstname || '';
         lastname = data.lastname || data.profile?.lastname || '';
-        membership = data.membership || data.profile?.membership || 'Premium';
+        membership = data.membership || 'Basic';
         profile = data.profile || {};
         return { firstname, lastname, membership, profile };
     } else {
@@ -2844,39 +2785,19 @@ export async function getAllInvoicesAdmin() {
     return getAllAdminTransactions();
 }
 
-// Manual Admin PRO Subscription Override
-export async function grantProSubscriptionAdmin(userId, planType = 'yearly', durationMonths = 12) {
+// Manual grants use the audited server entitlement endpoint.
+export async function grantProSubscriptionAdmin(userId, _planType = 'yearly', durationMonths = 12) {
     try {
-        const firestore = fire.firestore();
-        const now = new Date();
-        const expiryDate = new Date();
-        if (parseInt(durationMonths) === 999) {
-            expiryDate.setFullYear(now.getFullYear() + 50);
-        } else {
-            expiryDate.setMonth(now.getMonth() + parseInt(durationMonths));
-        }
-
-        const subData = {
-            status: 'ACTIVE',
-            plan: planType,
-            membershipTier: parseInt(durationMonths) === 999 ? 'LIFETIME PRO' : `${planType.toUpperCase()} VIP PRO`,
-            startedAt: now.toISOString(),
-            expiresAt: expiryDate.toISOString(),
-            grantedByAdmin: true,
-            autoRenew: false,
-            updatedAt: new Date()
-        };
-
-        await firestore.collection('users').doc(userId).update({
-            subscription: subData,
-            isPro: true,
-            isPremium: true
+        const normalizedDuration = Number(durationMonths) === 999 ? 600 : Number(durationMonths);
+        const response = await fetch(`/api/admin/users/${encodeURIComponent(userId)}`, {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ membership: 'Premium', durationMonths: normalizedDuration })
         });
-
-        return { success: true, message: `Granted ${subData.membershipTier} subscription until ${expiryDate.toLocaleDateString()}` };
-    } catch (e) {
-        console.error('[grantProSubscriptionAdmin] Error:', e);
-        return { success: false, error: e.message };
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || 'Unable to grant subscription.');
+        return { success: true, message: 'Subscription granted through the audited server ledger.' };
+    } catch (error) {
+        return { success: false, error: error.message };
     }
 }
 
@@ -2930,9 +2851,18 @@ export async function getSubscriptionStatus() {
 export async function reauthenticateUser(currentPassword) {
     const user = fire.auth().currentUser;
     if (!user) throw new Error("No authenticated user logged in");
-    if (!currentPassword) throw new Error("Current password is required to verify identity");
-    const credential = firebase.auth.EmailAuthProvider.credential(user.email, currentPassword);
-    await user.reauthenticateWithCredential(credential);
+    const providerIds = (user.providerData || []).map(provider => provider.providerId);
+    if (providerIds.includes('password')) {
+        if (!currentPassword) throw new Error("Current password is required to verify identity");
+        const credential = firebase.auth.EmailAuthProvider.credential(user.email, currentPassword);
+        await user.reauthenticateWithCredential(credential);
+    } else if (providerIds.includes('google.com')) {
+        await user.reauthenticateWithPopup(new firebase.auth.GoogleAuthProvider());
+    } else if (providerIds.includes('facebook.com')) {
+        await user.reauthenticateWithPopup(new firebase.auth.FacebookAuthProvider());
+    } else {
+        throw new Error('Reauthentication is not available for this provider. Sign out and sign in again before retrying.');
+    }
     return user;
 }
 
@@ -4575,16 +4505,9 @@ export async function addLanguages(userId, resumeId, languagesToAdd) {
 }
 
 export async function InitialisationCheck() {
-    return safeDbOperation(async () => {
-        const db = fire.firestore();
-        const userRef = db.collection('data').doc('id');
-        const snapshot = await userRef.get();
-        if (snapshot.exists && snapshot.data() != undefined) {
-            return snapshot.data().userId;
-        } else {
-            return undefined;
-        }
-    }, false); // Set requireAuth to false for initialization check
+    // Administrative bootstrap is intentionally out-of-band. A public client must never
+    // infer initialization state or create the first privileged identity.
+    return 'SERVER_MANAGED';
 }
 
 export async function getResumeById(userId, resumeId) {
@@ -6237,7 +6160,7 @@ export async function getSystemSettings() {
         },
         exportPdf: {
             websiteDomain: config?.backendUrl || 'ai-resume-builder.local',
-            backendExportUrl: 'http://localhost:8080',
+            backendExportUrl: '',
             renderTimeout: 60000,
             paperFormat: 'A4',
             chromiumPath: '',

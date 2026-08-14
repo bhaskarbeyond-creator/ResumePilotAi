@@ -83,7 +83,7 @@ class Register extends Component {
         try {
             const { checkIfAdmin } = await import('../../../firestore/dbOperations');
             const isAdmin = await checkIfAdmin(uid);
-            if (isAdmin || window.location.hostname === 'localhost' || uid === 'admin_test_uid') {
+            if (isAdmin) {
                 window.location.href = '/adm/dashboard';
             } else if (!window.location.pathname.startsWith('/dashboard') && !window.location.pathname.startsWith('/build')) {
                 window.location.href = '/dashboard';

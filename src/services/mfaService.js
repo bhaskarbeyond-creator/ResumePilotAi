@@ -13,6 +13,10 @@ export async function beginTotpEnrollment() {
     const user = modularAuth().currentUser;
     if (!user) throw new Error('Authentication required');
     if (!user.emailVerified) throw new Error('Verify your email before enabling two-factor authentication.');
+    const token = await user.getIdTokenResult();
+    if (['linkedin', 'github'].includes(token.claims.signInProvider)) {
+        throw new Error('Authenticator MFA for LinkedIn/GitHub requires configuring that provider as native Firebase OIDC. Use an email/password or native Firebase provider account for MFA.');
+    }
     const session = await multiFactor(user).getSession();
     const secret = await TotpMultiFactorGenerator.generateSecret(session);
     const otpauthUrl = secret.generateQrCodeUrl(user.email || user.uid, 'ResumePilot AI');

@@ -5,7 +5,7 @@ import { FaFilePdf, FaCheck, FaTimes, FaSpinner } from 'react-icons/fa';
 const ExportPdfSettings = () => {
     const [exportConfig, setExportConfig] = useState({
         websiteDomain: 'ai-resume-builder.local',
-        backendExportUrl: 'http://localhost:8080',
+        backendExportUrl: '',
         renderTimeout: 60000,
         paperFormat: 'A4',
         chromiumPath: '',
@@ -95,7 +95,7 @@ const ExportPdfSettings = () => {
                             name="backendExportUrl"
                             value={exportConfig.backendExportUrl}
                             onChange={handleChange}
-                            placeholder="http://localhost:8080"
+                            placeholder="Same-origin /api"
                             className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
                         />
                     </div>

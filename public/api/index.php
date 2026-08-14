@@ -1,15 +1,15 @@
 <?php
 /**
  * PHP proxy for Node.js backend API (port 8080)
- * Handles all /api/* requests including payment gateways, PDF export, AI service
+ * Handles all /api/* requests including long-running Playwright PDF export
  */
 
-// Allow large timeouts for PDF generation & external API calls
+// Allow large timeouts for PDF generation (Playwright takes ~30-40s)
 set_time_limit(120);
 
 // Same-origin proxy: CORS is enforced by the application gateway; never reflect arbitrary origins.
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE');
-header('Access-Control-Allow-Headers: Content-Type, Authorization, Accept, X-Requested-With');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, Accept');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -20,18 +20,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 $requestUri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
 // Strip /api prefix to get the path, then re-add it for the backend
 $path = preg_replace('/^(\/[^\/]+)?\/api/', '/api', $requestUri);
-$targetUrl = 'http://127.0.0.1:8080' . $path;
+$targetUrl = 'http://localhost:8080' . $path;
 
 // Collect request headers and inject X-Forwarded-Host / X-Forwarded-Proto for backend domain resolution
 $headers = [];
 $incomingHost = $_SERVER['HTTP_HOST'] ?? 'airesume.projectdemo.guru';
 $headers[] = "X-Forwarded-Host: $incomingHost";
 $headers[] = "X-Forwarded-Proto: https";
+$remoteAddress = $_SERVER['REMOTE_ADDR'] ?? '';
+if (filter_var($remoteAddress, FILTER_VALIDATE_IP)) {
+    $headers[] = "X-Forwarded-For: $remoteAddress";
+}
 
 if (function_exists('getallheaders')) {
     foreach (getallheaders() as $name => $value) {
         $lname = strtolower($name);
-        if ($lname !== 'host' && $lname !== 'connection' && $lname !== 'x-forwarded-host' && $lname !== 'x-forwarded-proto') {
+        if ($lname !== 'host' && $lname !== 'connection' && $lname !== 'x-forwarded-host' && $lname !== 'x-forwarded-proto' && $lname !== 'x-forwarded-for') {
             $headers[] = "$name: $value";
         }
     }
@@ -61,9 +65,10 @@ $curlError = curl_error($ch);
 curl_close($ch);
 
 if ($curlError) {
+    error_log('Backend proxy connection failed: ' . $curlError);
     http_response_code(502);
     header('Content-Type: application/json');
-    echo json_encode(['error' => 'Backend connection failed: ' . $curlError]);
+    echo json_encode(['error' => ['code' => 'BACKEND_UNAVAILABLE', 'message' => 'Backend service unavailable']]);
     exit();
 }
 

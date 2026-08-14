@@ -86,8 +86,8 @@ function DashboardSettings(props) {
     const [totpVerificationCode, setTotpVerificationCode] = useState('');
     const [totpDisableModalOpen, setTotpDisableModalOpen] = useState(false);
     const [totpDisablePassword, setTotpDisablePassword] = useState('');
-    const [totpDisableCode, setTotpDisableCode] = useState('');
     const [loginHistory, setLoginHistory] = useState([]);
+    const usesPasswordProvider = fire.auth().currentUser?.providerData?.some(provider => provider.providerId === 'password') !== false;
 
     // Master Profile State matching ALL Resume & Cover Letter fields
     const [profile, setProfile] = useState({
@@ -240,7 +240,7 @@ function DashboardSettings(props) {
                     if (accInfo) {
                         setDatabaseAccountSettings({
                             email: accInfo.email || currentUser.email || '',
-                            membership: accInfo.membership || 'Pro Tier',
+                            membership: accInfo.membership || 'Basic',
                             membershipEnds: accInfo.membershipEnds || '',
                         });
                     }
@@ -563,17 +563,16 @@ function DashboardSettings(props) {
         const user = fire.auth().currentUser;
         if (user && user.email) {
             try {
-                const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-                await fetch('/api/notify/email-otp', {
+                const response = await fetch('/api/auth/send-verification-email', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        userEmail: user.email,
-                        userName: user.displayName || user.email.split('@')[0],
-                        otpCode: otpCode
+                        email: user.email,
+                        userName: user.displayName || user.email.split('@')[0]
                     })
                 });
-                triggerNotification('Branded verification email sent to ' + user.email + ' from your configured mail server!');
+                if (!response.ok) throw new Error('Verification email request failed.');
+                triggerNotification('Verification link sent to ' + user.email + '.');
             } catch (err) {
                 triggerNotification(err.message || 'Failed to send verification email.', 'error');
             }
@@ -658,7 +657,7 @@ function DashboardSettings(props) {
     };
 
     const handleDisableTotpConfirmed = async () => {
-        if (!totpDisablePassword) {
+        if (usesPasswordProvider && !totpDisablePassword) {
             triggerNotification('Current password is required to disable 2FA.', 'error');
             return;
         }
@@ -670,7 +669,6 @@ function DashboardSettings(props) {
             setTotpStatus(status);
             setTotpDisableModalOpen(false);
             setTotpDisablePassword('');
-            setTotpDisableCode('');
             triggerNotification('TOTP 2FA has been disabled for your account.');
         } catch (err) {
             console.error('Disable 2FA error:', err);
@@ -1159,7 +1157,7 @@ function DashboardSettings(props) {
 
     const passwordStrength = getPasswordStrength(accountSettings.password);
     const candidateFullName = `${profile.firstname} ${profile.lastname}`.trim() || profile.name;
-    const effectiveMembership = (databaseAccountSettings.membership && databaseAccountSettings.membership !== 'Basic' ? databaseAccountSettings.membership : null) || (profile?.membership && profile.membership !== 'Basic' ? profile.membership : null) || 'Pro Tier';
+    const effectiveMembership = databaseAccountSettings.membership || 'Basic';
 
     return (
         <>
@@ -2704,41 +2702,28 @@ function DashboardSettings(props) {
                         <h3 className="text-base font-bold text-slate-900">Disable Two-Factor Authentication</h3>
                     </div>
                     <p className="text-xs text-slate-600 leading-relaxed">
-                        Disabling 2FA reduces your account security. Please verify your current password to confirm.
+                        Disabling 2FA reduces your account security. Reauthenticate with your account provider to confirm.
                     </p>
                     <div className="space-y-3">
-                        <div>
-                            <label className="block text-xs font-bold text-slate-700 mb-1">Current Account Password (Required):</label>
-                            <input
-                                type="password"
-                                value={totpDisablePassword}
-                                onChange={(e) => setTotpDisablePassword(e.target.value)}
-                                placeholder="Enter current password"
-                                className="w-full text-xs p-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-red-500 outline-none"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-slate-700 mb-1">6-Digit 2FA Code (Optional):</label>
-                            <input
-                                type="text"
-                                maxLength={6}
-                                value={totpDisableCode}
-                                onChange={(e) => setTotpDisableCode(e.target.value.replace(/\D/g, ''))}
-                                placeholder="123456"
-                                className="w-full text-xs p-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-mono font-bold focus:border-red-500 outline-none text-center tracking-widest"
-                            />
-                        </div>
+                        {usesPasswordProvider ? (
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1">Current Account Password (Required):</label>
+                                <input type="password" value={totpDisablePassword} onChange={(e) => setTotpDisablePassword(e.target.value)} placeholder="Enter current password" className="w-full text-xs p-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-red-500 outline-none" />
+                            </div>
+                        ) : (
+                            <p className="text-xs text-slate-600">Your identity provider will open a secure reauthentication popup.</p>
+                        )}
                     </div>
                     <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
                         <button
                             type="button"
-                            onClick={() => { setTotpDisableModalOpen(false); setTotpDisablePassword(''); setTotpDisableCode(''); }}
+                            onClick={() => { setTotpDisableModalOpen(false); setTotpDisablePassword(''); }}
                             className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl">
                             Cancel
                         </button>
                         <button
                             type="button"
-                            disabled={!totpDisablePassword || isSubmitting}
+                            disabled={(usesPasswordProvider && !totpDisablePassword) || isSubmitting}
                             onClick={handleDisableTotpConfirmed}
                             className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white font-bold text-xs rounded-xl shadow-xs">
                             {isSubmitting ? 'Disabling...' : 'Confirm Disable 2FA'}

@@ -70,6 +70,17 @@ test('CORS grants only exact configured origins', async () => {
   assert.equal(denied.headers['access-control-allow-origin'], undefined);
 });
 
+test('public contact endpoint uses validation, honeypot and per-source throttling', async () => {
+  const bot = await request(app).post('/api/contact').send({ website: 'https://spam.test', email: 'x@y.test', name: 'Bot', message: 'buy now spam' });
+  assert.equal(bot.status, 202);
+  const invalid1 = await request(app).post('/api/contact').send({ email: 'bad', name: 'x', message: 'short' });
+  assert.equal(invalid1.status, 400);
+  const invalid2 = await request(app).post('/api/contact').send({ email: 'bad', name: 'x', message: 'short' });
+  assert.equal(invalid2.status, 400);
+  const limited = await request(app).post('/api/contact').send({ email: 'bad', name: 'x', message: 'short' });
+  assert.equal(limited.status, 429);
+});
+
 test('Stripe webhook fails closed without a configured signature secret', async () => {
   const response = await request(app).post('/api/stripe-webhook')
     .set('Content-Type', 'application/json')

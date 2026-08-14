@@ -108,4 +108,5 @@ test('billing, provider secrets and token registries are server-only', async () 
   await assertSucceeds(getDoc(doc(admin(), 'data/system_settings')));
   await assertFails(getDoc(doc(admin(), 'password_reset_tokens/token')));
   await assertFails(deleteDoc(doc(admin(), 'password_reset_tokens/token')));
+  await assertFails(setDoc(doc(alice(), 'contact/direct-client-write'), { email: 'alice@example.com', message: 'bypass' }));
 });

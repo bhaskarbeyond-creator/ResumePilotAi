@@ -128,7 +128,7 @@ class Admin extends Component {
             if (uid) {
                 this.setState({ user: uid });
                 const isAdmin = await checkIfAdmin(uid);
-                if (isAdmin || window.location.hostname === 'localhost' || uid === 'admin_test_uid') {
+                if (isAdmin) {
                     this.setState({ showAdm: true });
                     return;
                 }

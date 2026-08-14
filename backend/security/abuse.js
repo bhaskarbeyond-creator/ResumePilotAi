@@ -50,6 +50,12 @@ const scraperAccountLimiter = accountRateLimit({
   windowMs: 60 * 60 * 1000
 });
 
+const contactAccountLimiter = accountRateLimit({
+  namespace: 'contact',
+  limit: Number(process.env.CONTACT_HOURLY_LIMIT || 3),
+  windowMs: 60 * 60 * 1000
+});
+
 function dayKey(now = new Date()) {
   return now.toISOString().slice(0, 10);
 }
@@ -123,6 +129,7 @@ module.exports = {
   notificationAccountLimiter,
   exportAccountLimiter,
   scraperAccountLimiter,
+  contactAccountLimiter,
   enforceDailyAiQuota,
   bindNotificationRecipient,
   _buckets: buckets

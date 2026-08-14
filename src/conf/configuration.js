@@ -10,7 +10,9 @@ var config = {
     // Legacy PayPal config (remove this after updating)
 
     stripe_publishable_key: '', // Make sure its th publishable key
-    backendUrl: typeof window !== 'undefined' ? (window.location.port === '5173' || window.location.hostname === 'ai-resume-builder.local' || window.location.hostname === 'localhost' ? window.location.hostname + ':8080' : window.location.host) : 'localhost:8080',
-    provider: 'http',
+    // Browser traffic is always same-origin. Vite/Apache proxies /api to the backend,
+    // preventing HTTPS mixed content and browser-side localhost routing failures.
+    backendUrl: typeof window !== 'undefined' ? window.location.host : 'localhost:8080',
+    provider: typeof window !== 'undefined' ? window.location.protocol.replace(':', '') : 'http',
 };
 export default config;

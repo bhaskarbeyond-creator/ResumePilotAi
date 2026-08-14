@@ -32,10 +32,9 @@ export default defineConfig({
         strictPort: false,   // Allow fallback to other ports if 5173 is busy
         historyApiFallback: true,
         proxy: {
-            '/api/nvidia': {
-                target: 'https://integrate.api.nvidia.com',
-                changeOrigin: true,
-                rewrite: (path) => path.replace(/^\/api\/nvidia/, ''),
+            '/api': {
+                target: process.env.VITE_DEV_BACKEND_URL || 'http://localhost:8080',
+                changeOrigin: false,
             },
         },
     },
