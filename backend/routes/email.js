@@ -97,28 +97,29 @@ async function getEmailConfig(db) {
         }
     };
 
-    // 1. Try local JSON config file (primary — written by Admin Dashboard save endpoint)
+    // Blank credentials in a lower-precedence source never erase a configured credential.
+    const mergeSection = (current, incoming) => {
+        if (!incoming || typeof incoming !== 'object' || Array.isArray(incoming)) return current;
+        const merged = { ...current, ...incoming };
+        // Across env, local file and legacy Firestore, blank means "no replacement".
+        // Credential removal requires a separate deliberate workflow.
+        if (!String(incoming.password || '').trim()) merged.password = current.password;
+        return merged;
+    };
     const localConfig = readLocalConfig();
-    if (localConfig) {
-        if (localConfig.smtp) config.smtp = { ...config.smtp, ...localConfig.smtp };
-        if (localConfig.fallbackSmtp) config.fallbackSmtp = { ...config.fallbackSmtp, ...localConfig.fallbackSmtp };
-        if (localConfig.imap) config.imap = { ...config.imap, ...localConfig.imap };
-        if (localConfig.enabledTemplates) config.enabledTemplates = { ...config.enabledTemplates, ...localConfig.enabledTemplates };
-    }
 
-    // 2. Try Firestore if available (optional fallback)
+    // 1. Try legacy Firestore configuration as a fallback over environment defaults.
     if (db) {
         try {
             const doc = await db.collection('data').doc('system_settings').get();
             if (doc.exists && doc.data()?.smtp) {
-                const s = doc.data().smtp;
-                config.smtp = { ...config.smtp, ...s };
+                config.smtp = mergeSection(config.smtp, doc.data().smtp);
             }
             if (doc.exists && doc.data()?.fallbackSmtp) {
-                config.fallbackSmtp = { ...config.fallbackSmtp, ...doc.data().fallbackSmtp };
+                config.fallbackSmtp = mergeSection(config.fallbackSmtp, doc.data().fallbackSmtp);
             }
             if (doc.exists && doc.data()?.imap) {
-                config.imap = { ...config.imap, ...doc.data().imap };
+                config.imap = mergeSection(config.imap, doc.data().imap);
             }
             if (doc.exists && doc.data()?.enabledTemplates) {
                 config.enabledTemplates = { ...config.enabledTemplates, ...doc.data().enabledTemplates };
@@ -128,7 +129,89 @@ async function getEmailConfig(db) {
         }
     }
 
+    // 2. The Admin-managed local file is authoritative on this instance. This order
+    // matches the original "local primary, Firestore fallback" contract and ensures a
+    // confirmed credential replacement is the credential the runtime actually uses.
+    if (localConfig) {
+        if (localConfig.smtp) config.smtp = mergeSection(config.smtp, localConfig.smtp);
+        if (localConfig.fallbackSmtp) config.fallbackSmtp = mergeSection(config.fallbackSmtp, localConfig.fallbackSmtp);
+        if (localConfig.imap) config.imap = mergeSection(config.imap, localConfig.imap);
+        if (localConfig.enabledTemplates) config.enabledTemplates = { ...config.enabledTemplates, ...localConfig.enabledTemplates };
+    }
+
     return config;
+}
+
+const MAIL_SECTION_FIELDS = Object.freeze({
+    smtp: ['host', 'port', 'encryption', 'username', 'password', 'senderName', 'replyTo', 'adminEmail', 'authStrategy'],
+    fallbackSmtp: ['enabled', 'host', 'port', 'encryption', 'username', 'password', 'senderEmail', 'senderName', 'adminEmail', 'maxFailures', 'cooldownMinutes'],
+    imap: ['enabled', 'host', 'port', 'encryption', 'username', 'password', 'autoSync'],
+});
+
+function normalizedMailSection(section, input, localCurrent = {}) {
+    if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error(`Invalid ${section} settings.`);
+    const output = {};
+    const combined = { ...localCurrent, ...input };
+    for (const field of MAIL_SECTION_FIELDS[section]) {
+        if (field === 'password') continue;
+        if (combined[field] !== undefined) output[field] = combined[field];
+    }
+    const host = String(output.host || '').trim();
+    if (!host || host.length > 253 || (!net.isIP(host) && !/^(?=.{1,253}$)(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)*[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$/.test(host))) {
+        throw new Error(`Invalid ${section} host.`);
+    }
+    output.host = host;
+    const port = Number(output.port);
+    if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error(`Invalid ${section} port.`);
+    output.port = port;
+    const encryption = String(output.encryption || '').toLowerCase();
+    const allowedEncryption = section === 'imap' ? new Set(['ssl']) : new Set(['ssl', 'tls', 'starttls']);
+    if (!allowedEncryption.has(encryption)) throw new Error(`Encrypted ${section} transport is required.`);
+    output.encryption = encryption;
+    for (const field of ['username', 'senderEmail', 'replyTo', 'adminEmail']) {
+        if (output[field] !== undefined) {
+            output[field] = String(output[field]).replace(/\p{Cc}/gu, '').trim().slice(0, 320);
+        }
+    }
+    if (output.senderName !== undefined) output.senderName = String(output.senderName).replace(/\p{Cc}/gu, ' ').trim().slice(0, 200);
+    for (const field of ['enabled', 'autoSync']) {
+        if (output[field] !== undefined) output[field] = output[field] === true;
+    }
+    if (output.authStrategy !== undefined) {
+        const strategy = String(output.authStrategy).toUpperCase();
+        if (!['PLAIN', 'LOGIN', 'OAUTH2', 'API_KEY'].includes(strategy)) throw new Error('Invalid SMTP authentication strategy.');
+        output.authStrategy = strategy;
+    }
+    for (const [field, maximum] of [['maxFailures', 20], ['cooldownMinutes', 1440]]) {
+        if (output[field] !== undefined) {
+            const number = Number(output[field]);
+            if (!Number.isInteger(number) || number < 1 || number > maximum) throw new Error(`Invalid ${field}.`);
+            output[field] = number;
+        }
+    }
+    const replacementPassword = String(input.password || '');
+    const localPassword = String(localCurrent.password || '');
+    if (replacementPassword.trim()) output.password = replacementPassword.slice(0, 4096);
+    else if (localPassword.trim()) output.password = localPassword;
+    return output;
+}
+
+function normalizeTemplateToggles(input) {
+    if (!input || typeof input !== 'object' || Array.isArray(input) || Object.keys(input).length > 100) throw new Error('Invalid email template settings.');
+    const toggles = {};
+    for (const [key, value] of Object.entries(input)) {
+        if (!/^[A-Za-z][A-Za-z0-9_-]{0,79}$/.test(key) || typeof value !== 'boolean') throw new Error('Invalid email template setting.');
+        toggles[key] = value;
+    }
+    return toggles;
+}
+
+function projectMailSection(section, value = {}) {
+    const safe = {};
+    for (const field of MAIL_SECTION_FIELDS[section]) {
+        if (field !== 'password' && value[field] !== undefined) safe[field] = value[field];
+    }
+    return { ...safe, passwordConfigured: Boolean(String(value.password || '').trim()) };
 }
 
 // Verify IMAP Connection via direct Socket
@@ -900,14 +983,15 @@ router.post('/admin/test-connection', async (req, res) => {
 
     if (type === 'fallback_smtp') {
         try {
+            const stored = (await getEmailConfig(req.app.get('db'))).fallbackSmtp || {};
             const fallbackConfig = {
-                host: req.body.host || 'smtp.gmail.com',
-                port: parseInt(req.body.port || '587', 10),
-                encryption: req.body.encryption || 'tls',
-                username: req.body.username || '',
-                password: req.body.password || '',
-                senderName: req.body.senderName || 'ResumePilot AI Failover',
-                adminEmail: req.body.adminEmail || req.body.username || 'bhaskar.beyond@gmail.com',
+                host: req.body.host || stored.host || 'smtp.gmail.com',
+                port: parseInt(req.body.port || stored.port || '587', 10),
+                encryption: req.body.encryption || stored.encryption || 'tls',
+                username: req.body.username || stored.username || '',
+                password: req.body.password || stored.password || '',
+                senderName: req.body.senderName || stored.senderName || 'ResumePilot AI Failover',
+                adminEmail: req.body.adminEmail || stored.adminEmail || req.body.username || stored.username || 'bhaskar.beyond@gmail.com',
             };
 
             if (!fallbackConfig.username || !fallbackConfig.password) {
@@ -954,14 +1038,15 @@ router.post('/admin/test-connection', async (req, res) => {
     }
 
     try {
+        const stored = (await getEmailConfig(req.app.get('db'))).smtp || {};
         const smtpConfig = {
-            host: req.body.host || 'smtp.hostinger.com',
-            port: parseInt(req.body.port || '465', 10),
-            encryption: req.body.encryption || 'ssl',
-            username: req.body.username || '',
-            password: req.body.password || '',
-            senderName: req.body.senderName || 'ResumePilot AI',
-            adminEmail: req.body.adminEmail || 'bhaskar.beyond@gmail.com',
+            host: req.body.host || stored.host || 'smtp.hostinger.com',
+            port: parseInt(req.body.port || stored.port || '465', 10),
+            encryption: req.body.encryption || stored.encryption || 'ssl',
+            username: req.body.username || stored.username || '',
+            password: req.body.password || stored.password || '',
+            senderName: req.body.senderName || stored.senderName || 'ResumePilot AI',
+            adminEmail: req.body.adminEmail || stored.adminEmail || 'bhaskar.beyond@gmail.com',
         };
 
         if (!smtpConfig.username || !smtpConfig.password) {
@@ -1006,15 +1091,28 @@ router.post('/admin/test-connection', async (req, res) => {
     }
 });
 
-// 1b. Save SMTP/IMAP Settings & Template Toggles (persists to local JSON file on server)
-router.post('/admin/save-smtp', (req, res) => {
+// Admin-safe runtime projection: allowlisted metadata and configured booleans, never credentials.
+router.get('/admin/settings', async (req, res) => {
+    const config = await getEmailConfig(req.app.get('db'));
+    return res.json({ success: true, settings: {
+        smtp: projectMailSection('smtp', config.smtp),
+        fallbackSmtp: projectMailSection('fallbackSmtp', config.fallbackSmtp),
+        imap: projectMailSection('imap', config.imap),
+        enabledTemplates: config.enabledTemplates || {},
+    } });
+});
+
+// Save validated SMTP/IMAP settings while blank secret fields preserve every configured source.
+router.post('/admin/save-smtp', async (req, res) => {
     try {
-        const { smtp, fallbackSmtp, imap, enabledTemplates } = req.body;
+        const { smtp, fallbackSmtp, imap, enabledTemplates } = req.body || {};
+        if (!smtp && !fallbackSmtp && !imap && !enabledTemplates) return res.status(400).json({ success: false, error: 'Email settings are required.' });
+        const local = readLocalConfig() || {};
         const data = {};
-        if (smtp) data.smtp = smtp;
-        if (fallbackSmtp) data.fallbackSmtp = fallbackSmtp;
-        if (imap) data.imap = imap;
-        if (enabledTemplates) data.enabledTemplates = enabledTemplates;
+        if (smtp) data.smtp = normalizedMailSection('smtp', smtp, local.smtp);
+        if (fallbackSmtp) data.fallbackSmtp = normalizedMailSection('fallbackSmtp', fallbackSmtp, local.fallbackSmtp);
+        if (imap) data.imap = normalizedMailSection('imap', imap, local.imap);
+        if (enabledTemplates) data.enabledTemplates = normalizeTemplateToggles(enabledTemplates);
 
         const success = writeLocalConfig(data);
         if (success) {
@@ -1023,20 +1121,21 @@ router.post('/admin/save-smtp', (req, res) => {
         }
         return res.status(500).json({ success: false, error: 'Failed to write config file.' });
     } catch (err) {
-        console.error('Save SMTP Error:', err);
-        return res.status(500).json({ success: false, error: err.message });
+        console.error('Save SMTP Error:', err.message);
+        return res.status(400).json({ success: false, error: err.message || 'Invalid email settings.' });
     }
 });
 
 // 2. Test Inbound IMAP Connection Socket
 router.post('/admin/test-imap', async (req, res) => {
     try {
+        const stored = (await getEmailConfig(req.app.get('db'))).imap || {};
         const imapConfig = {
-            host: req.body.host || 'imap.hostinger.com',
-            port: parseInt(req.body.port || '993', 10),
-            encryption: req.body.encryption || 'ssl',
-            username: req.body.username || '',
-            password: req.body.password || ''
+            host: req.body.host || stored.host || 'imap.hostinger.com',
+            port: parseInt(req.body.port || stored.port || '993', 10),
+            encryption: req.body.encryption || stored.encryption || 'ssl',
+            username: req.body.username || stored.username || '',
+            password: req.body.password || stored.password || ''
         };
 
         if (imapConfig.encryption !== 'ssl' || imapConfig.port !== 993) {
@@ -1389,3 +1488,4 @@ router.dispatchNotification = dispatchNotification;
 module.exports = router;
 module.exports.dispatchNotification = dispatchNotification;
 module.exports.getEmailConfig = getEmailConfig;
+module.exports._test = { normalizedMailSection, normalizeTemplateToggles, projectMailSection };

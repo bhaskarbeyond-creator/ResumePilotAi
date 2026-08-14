@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { FaHeartbeat, FaCheck, FaTimes, FaSpinner, FaTools, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa';
+import { fetchAdminWithReauth } from '../../../services/adminReauth';
 
 const DEFAULT_CONFIG = { maintenanceMode: false, maintenanceMessage: 'System is under scheduled maintenance. Please check back shortly.' };
 
@@ -35,10 +36,9 @@ const SystemHealthSettings = () => {
         setSaving(true);
         setStatusMessage(null);
         try {
-            const response = await fetch('/api/admin/system-health-settings', {
+            const { response, data: result } = await fetchAdminWithReauth('/api/admin/system-health-settings', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(healthConfig),
             });
-            const result = await response.json().catch(() => ({}));
             if (!response.ok || !result.success) throw new Error(result.error?.message || result.error || 'Unable to save settings.');
             setHealthConfig(result.settings);
             setStatusMessage({ type: 'success', text: 'Maintenance configuration saved and audited.' });

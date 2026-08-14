@@ -1377,7 +1377,7 @@ const GENERIC_ADMIN_SETTING_CATEGORIES = new Set([
     'modules', 'auth', 'blog', 'watermark', 'templateManager', 'security', 'jobScraper',
     'exportPdf', 'branding', 'geoSeo', 'llmGeo', 'enabledTemplates', 'integrations',
     'socialAuth', 'google', 'facebook', 'smtp', 'fallbackSmtp', 'imap',
-    'twilio', 'storage', 'codeInjection'
+    'storage', 'codeInjection'
 ]);
 
 function normalizeAdminSettingValue(value, depth = 0) {
@@ -1401,37 +1401,70 @@ function normalizeAdminSettingValue(value, depth = 0) {
     throw new Error('Settings contain an unsupported value.');
 }
 
+function isPrivateAdminSettingKey(category, key) {
+    const publicApiKeys = new Set(['apiKey', 'googleMapsApiKey', 'cloudinaryApiKey']);
+    return /(?:secret|password|privateKey|authToken|clientToken|accessToken|refreshToken|serviceAccount|merchantKey|saltKey|keySecret|s3AccessKeyId)/i.test(key)
+        || (/apiKey$/i.test(key) && !publicApiKeys.has(key))
+        || (category === 'exportPdf' && ['chromiumPath', 'backendExportUrl'].includes(key));
+}
+
+function preserveAdminSettingSecrets(category, current, next) {
+    if (Array.isArray(next)) {
+        const previousItems = Array.isArray(current) ? current : [];
+        return next.map((item, index) => preserveAdminSettingSecrets(category, previousItems[index], item));
+    }
+    if (!next || typeof next !== 'object') return next;
+    const previous = current && typeof current === 'object' && !Array.isArray(current) ? current : {};
+    const output = {};
+    for (const [key, value] of Object.entries(next)) {
+        if (isPrivateAdminSettingKey(category, key)) {
+            output[key] = typeof value === 'string' && !value.trim() && previous[key] !== undefined ? previous[key] : value;
+        } else if (value && typeof value === 'object') {
+            output[key] = preserveAdminSettingSecrets(category, previous[key], value);
+        } else {
+            output[key] = value;
+        }
+    }
+    // Secret fields are intentionally absent from browser projections. Preserve them
+    // even when the submitted public form therefore cannot include the field at all.
+    for (const [key, value] of Object.entries(previous)) {
+        if (Object.hasOwn(output, key)) continue;
+        if (isPrivateAdminSettingKey(category, key)) output[key] = value;
+        else if (value && typeof value === 'object' && !Array.isArray(value)) {
+            const fragment = preserveAdminSettingSecrets(category, value, {});
+            if (Object.keys(fragment).length) output[key] = fragment;
+        }
+    }
+    return output;
+}
+
 function publicAdminSettings(category, data) {
     if (category === 'codeInjection') return {};
     if (['smtp', 'fallbackSmtp', 'imap'].includes(category)) return { enabled: data.enabled === true };
-    if (category === 'twilio') return { enableSmsAlerts: data.enableSmsAlerts === true };
-    const publicApiKeys = new Set(['apiKey', 'googleMapsApiKey', 'cloudinaryApiKey']);
-    const hideKey = key => /(?:secret|password|privateKey|authToken|clientToken|accessToken|refreshToken|serviceAccount|merchantKey|saltKey|keySecret|s3AccessKeyId)/i.test(key)
-        || (/apiKey$/i.test(key) && !publicApiKeys.has(key))
-        || (category === 'exportPdf' && ['chromiumPath', 'backendExportUrl'].includes(key));
     const redact = value => {
         if (Array.isArray(value)) return value.map(redact);
         if (!value || typeof value !== 'object') return value;
-        return Object.fromEntries(Object.entries(value).filter(([key]) => !hideKey(key)).map(([key, item]) => [key, redact(item)]));
+        return Object.fromEntries(Object.entries(value).filter(([key]) => !isPrivateAdminSettingKey(category, key)).map(([key, item]) => [key, redact(item)]));
     };
     return redact(data);
 }
 
 app.post('/api/admin/settings/:category', async (req, res) => {
-    if (!db || !admin) return res.status(503).json({ success: false, error: 'Settings service unavailable.' });
     const category = String(req.params.category || '');
     if (!GENERIC_ADMIN_SETTING_CATEGORIES.has(category) || !req.body?.data || typeof req.body.data !== 'object' || Array.isArray(req.body.data)) {
         return res.status(400).json({ success: false, error: 'Unsupported settings category or payload.' });
     }
+    const requestDb = req.app.get('db');
+    if (!requestDb || !admin) return res.status(503).json({ success: false, error: 'Settings service unavailable.' });
     try {
         if (Buffer.byteLength(JSON.stringify(req.body.data), 'utf8') > 100_000) throw new Error('Settings payload is too large.');
         const normalized = normalizeAdminSettingValue(req.body.data);
-        const publicSettings = publicAdminSettings(category, normalized);
+        let publicSettings;
         const expectedRevision = Number(req.body.expectedRevision || 0);
         if (!Number.isInteger(expectedRevision) || expectedRevision < 0) throw new Error('Invalid settings revision.');
-        const secretRef = db.collection('settings').doc('admin_configuration');
-        const publicRef = db.collection('data').doc('public_config');
-        const revision = await db.runTransaction(async transaction => {
+        const secretRef = requestDb.collection('settings').doc('admin_configuration');
+        const publicRef = requestDb.collection('data').doc('public_config');
+        const revision = await requestDb.runTransaction(async transaction => {
             const snapshot = await transaction.get(secretRef);
             const currentRevision = Number(snapshot.data()?._revisions?.[category] || 0);
             if (expectedRevision !== currentRevision) {
@@ -1440,9 +1473,11 @@ app.post('/api/admin/settings/:category', async (req, res) => {
                 throw stale;
             }
             const nextRevision = currentRevision + 1;
-            transaction.set(secretRef, { [category]: normalized, _revisions: { [category]: nextRevision } }, { merge: true });
+            const persisted = preserveAdminSettingSecrets(category, snapshot.data()?.[category], normalized);
+            publicSettings = publicAdminSettings(category, persisted);
+            transaction.set(secretRef, { [category]: persisted, _revisions: { [category]: nextRevision } }, { merge: true });
             transaction.set(publicRef, { [category]: publicSettings, _settingsRevisions: { [category]: nextRevision } }, { merge: true });
-            transaction.set(db.collection('security_audit_logs').doc(), {
+            transaction.set(requestDb.collection('security_audit_logs').doc(), {
                 action: 'ADMIN_SETTINGS_UPDATED', actorUid: req.user.uid, category, revision: nextRevision,
                 changedFields: Object.keys(normalized).slice(0, 200), requestId: res.locals.requestId,
                 createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -1656,6 +1691,86 @@ app.post('/api/admin/payment/test-provider', async (req, res) => {
     }
 });
 
+async function loadTwilioRuntimeConfig(database) {
+    let canonical = {};
+    let legacy = {};
+    if (database) {
+        const [canonicalSnapshot, legacySnapshot] = await Promise.all([
+            database.collection('settings').doc('admin_configuration').get(),
+            database.collection('settings').doc('system').get(),
+        ]);
+        canonical = canonicalSnapshot.data()?.twilio || {};
+        legacy = legacySnapshot.data()?.twilio || {};
+    }
+    return {
+        accountSid: canonical.accountSid || process.env.TWILIO_ACCOUNT_SID || legacy.accountSid || '',
+        authToken: canonical.authToken || process.env.TWILIO_AUTH_TOKEN || legacy.authToken || '',
+        fromPhoneNumber: canonical.fromPhoneNumber || process.env.TWILIO_FROM_PHONE || legacy.fromPhoneNumber || '',
+        enableSmsAlerts: canonical.enableSmsAlerts !== undefined ? canonical.enableSmsAlerts === true : legacy.enableSmsAlerts === true,
+        revision: Number(canonical._revision || 0),
+    };
+}
+
+app.get('/api/admin/twilio-settings', async (req, res) => {
+    try {
+        const config = await loadTwilioRuntimeConfig(req.app.get('db'));
+        return res.json({
+            success: true,
+            settings: {
+                accountSidConfigured: Boolean(config.accountSid),
+                authTokenConfigured: Boolean(config.authToken),
+                accountSidSuffix: config.accountSid ? String(config.accountSid).slice(-4) : '',
+                fromPhoneNumber: config.fromPhoneNumber,
+                enableSmsAlerts: config.enableSmsAlerts,
+            },
+            revision: config.revision,
+        });
+    } catch (error) {
+        return res.status(503).json({ success: false, error: 'SMS configuration is unavailable.' });
+    }
+});
+
+app.post('/api/admin/twilio-settings', async (req, res) => {
+    const requestDb = req.app.get('db');
+    if (!requestDb || !admin) return res.status(503).json({ success: false, error: 'SMS configuration service unavailable.' });
+    const accountSid = String(req.body?.accountSid || '').trim();
+    const authToken = String(req.body?.authToken || '').trim();
+    const fromPhoneNumber = String(req.body?.fromPhoneNumber || '').trim();
+    const enableSmsAlerts = req.body?.enableSmsAlerts === true;
+    const expectedRevision = Number(req.body?.expectedRevision || 0);
+    if (!Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid SMS settings revision.' });
+    if (Boolean(accountSid) !== Boolean(authToken)) return res.status(400).json({ success: false, error: 'Enter both the Twilio Account SID and Auth Token when rotating credentials.' });
+    if (accountSid && !/^AC[a-f0-9]{32}$/i.test(accountSid)) return res.status(400).json({ success: false, error: 'Invalid Twilio Account SID.' });
+    if (authToken && (authToken.length < 16 || authToken.length > 256 || /\p{Cc}/u.test(authToken))) return res.status(400).json({ success: false, error: 'Invalid Twilio Auth Token.' });
+    if (fromPhoneNumber && !/^\+[1-9]\d{7,14}$/.test(fromPhoneNumber)) return res.status(400).json({ success: false, error: 'The Twilio sender must be a valid E.164 phone number.' });
+    try {
+        const configuredFallback = await loadTwilioRuntimeConfig(requestDb);
+        const reference = requestDb.collection('settings').doc('admin_configuration');
+        const publicReference = requestDb.collection('data').doc('public_config');
+        const revision = await requestDb.runTransaction(async transaction => {
+            const snapshot = await transaction.get(reference);
+            const current = snapshot.data()?.twilio || {};
+            const currentRevision = Number(current._revision || 0);
+            if (currentRevision !== expectedRevision) { const conflict = new Error('SMS settings changed after this panel loaded. Refresh before saving.'); conflict.code = 'ADMIN_SETTINGS_CONFLICT'; throw conflict; }
+            const resolvedAccountSid = accountSid || current.accountSid || configuredFallback.accountSid || '';
+            const resolvedAuthToken = authToken || current.authToken || configuredFallback.authToken || '';
+            const resolvedFrom = fromPhoneNumber || current.fromPhoneNumber || configuredFallback.fromPhoneNumber || '';
+            if (enableSmsAlerts && (!resolvedAccountSid || !resolvedAuthToken || !resolvedFrom)) { const invalid = new Error('Configure the Account SID, Auth Token, and sender number before enabling SMS alerts.'); invalid.code = 'TWILIO_CONFIGURATION_INCOMPLETE'; throw invalid; }
+            const nextRevision = currentRevision + 1;
+            const next = { ...current, ...(accountSid ? { accountSid, authToken } : {}), ...(fromPhoneNumber ? { fromPhoneNumber } : {}), enableSmsAlerts, _revision: nextRevision };
+            transaction.set(reference, { twilio: next }, { merge: true });
+            transaction.set(publicReference, { twilio: { enableSmsAlerts }, _settingsRevisions: { twilio: nextRevision } }, { merge: true });
+            transaction.set(requestDb.collection('security_audit_logs').doc(), { action: 'TWILIO_SETTINGS_UPDATED', actorUid: req.user.uid, revision: nextRevision, credentialsRotated: Boolean(accountSid), requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+            return nextRevision;
+        });
+        const config = await loadTwilioRuntimeConfig(requestDb);
+        return res.json({ success: true, revision, settings: { accountSidConfigured: Boolean(config.accountSid), authTokenConfigured: Boolean(config.authToken), accountSidSuffix: config.accountSid ? String(config.accountSid).slice(-4) : '', fromPhoneNumber: config.fromPhoneNumber, enableSmsAlerts: config.enableSmsAlerts } });
+    } catch (error) {
+        const status = error.code === 'ADMIN_SETTINGS_CONFLICT' ? 409 : error.code === 'TWILIO_CONFIGURATION_INCOMPLETE' ? 400 : 500;
+        return res.status(status).json({ success: false, code: error.code, error: status === 500 ? 'Unable to save SMS settings.' : error.message });
+    }
+});
+
 // Twilio SMS Dispatcher Endpoint
 app.post('/api/send-sms', async (req, res) => {
     const { toPhone, messageBody } = req.body;
@@ -1664,20 +1779,9 @@ app.post('/api/send-sms', async (req, res) => {
     }
 
     try {
-        let accountSid = process.env.TWILIO_ACCOUNT_SID;
-        let authToken = process.env.TWILIO_AUTH_TOKEN;
-        let fromPhoneNumber = process.env.TWILIO_FROM_PHONE;
-
-        // Try loading from Firestore settings if db is initialized
-        if (!accountSid && db) {
-            const doc = await db.collection('settings').doc('system').get();
-            if (doc.exists && doc.data()?.twilio) {
-                const tw = doc.data().twilio;
-                accountSid = tw.accountSid;
-                authToken = tw.authToken;
-                fromPhoneNumber = tw.fromPhoneNumber;
-            }
-        }
+        const requestDb = req.app.get('db');
+        if (!requestDb || !admin) return res.status(503).json({ success: false, error: 'SMS audit service unavailable.' });
+        const { accountSid, authToken, fromPhoneNumber } = await loadTwilioRuntimeConfig(requestDb);
 
         if (!accountSid || !authToken || !fromPhoneNumber) {
             return res.status(400).json({
@@ -1689,6 +1793,12 @@ app.post('/api/send-sms', async (req, res) => {
             || !/^\+[1-9]\d{7,14}$/.test(String(fromPhoneNumber)) || String(messageBody).length > 1600) {
             return res.status(400).json({ success: false, error: 'Invalid SMS gateway or message parameters.' });
         }
+
+        await requestDb.collection('security_audit_logs').doc().set({
+            action: 'TWILIO_SMS_TEST_REQUESTED', actorUid: req.user.uid,
+            targetHash: crypto.createHash('sha256').update(String(toPhone)).digest('hex'),
+            requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
 
         const authString = Buffer.from(`${accountSid}:${authToken}`).toString('base64');
         const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
@@ -2240,9 +2350,10 @@ app.post('/api/notify/user-signup', async (req, res) => {
     return res.json({ success: true, message: 'Signup notifications queued.' });
 });
 
-// ─── Firebase Admin SDK Service Account Configuration ───────────────────────
-// Allows admins to update Firebase service account credentials via the admin UI
-// without re-deploying. Credentials are persisted to .env and hot-reloaded.
+// ─── Firebase Admin SDK Service Account Status ──────────────────────────────
+// Production credentials belong in Workload Identity or the deployment Secret Manager.
+// A legacy single-instance .env rotation path remains available only when explicitly
+// enabled outside production for backwards-compatible local operations.
 
 app.get('/api/admin/firebase-service-account', (req, res) => {
     const projectId = process.env.FIREBASE_PROJECT_ID || '';
@@ -2257,10 +2368,14 @@ app.get('/api/admin/firebase-service-account', (req, res) => {
         projectId,
         clientEmail,
         privateKeySet: hasPrivateKey,
+        runtimeRotationEnabled: process.env.ALLOW_RUNTIME_FIREBASE_CREDENTIAL_ROTATION === 'true' && process.env.NODE_ENV !== 'production',
     });
 });
 
 app.post('/api/admin/firebase-service-account', async (req, res) => {
+    if (process.env.ALLOW_RUNTIME_FIREBASE_CREDENTIAL_ROTATION !== 'true' || process.env.NODE_ENV === 'production') {
+        return res.status(501).json({ success: false, code: 'RUNTIME_SECRET_ROTATION_DISABLED', error: 'Runtime Firebase credential rotation is disabled. Use Workload Identity or the deployment Secret Manager.' });
+    }
     const { projectId, clientEmail, privateKey } = req.body;
 
     if (!projectId || !clientEmail || !privateKey) {
@@ -2617,6 +2732,50 @@ function firestoreTimeMillis(value) {
     const date = value?.toDate?.() || (value ? new Date(value) : null);
     return date && Number.isFinite(date.getTime()) ? date.getTime() : null;
 }
+
+function safePublicUrl(value) {
+    const raw = String(value || '').trim().slice(0, 2048);
+    if (!raw || /[\u0000-\u001f\u007f]/.test(raw) || /%(?:0a|0d|00)/i.test(raw)) return '';
+    if (raw.startsWith('/') && !raw.startsWith('//')) return raw;
+    try { const parsed = new URL(raw); return parsed.protocol === 'https:' && !parsed.username && !parsed.password ? parsed.href : ''; }
+    catch { return ''; }
+}
+
+app.post('/api/admin/ads', async (req, res) => {
+    const requestDb = req.app.get('db');
+    if (!requestDb || !admin) return res.status(503).json({ success: false, error: 'Advertisement service unavailable.' });
+    const name = String(req.body?.name || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, 120);
+    const imageLink = safePublicUrl(req.body?.imageLink);
+    const destinationLink = safePublicUrl(req.body?.destinationLink);
+    if (!name || !imageLink || !destinationLink) return res.status(400).json({ success: false, error: 'Name, safe image URL, and safe destination URL are required.' });
+    const reference = requestDb.collection('ads').doc();
+    const batch = requestDb.batch();
+    batch.set(reference, { id: reference.id, name, imageLink, destinationLink, revision: 1, createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+    batch.set(requestDb.collection('security_audit_logs').doc(), { action: 'ADVERTISEMENT_CREATED', actorUid: req.user.uid, adId: reference.id, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+    await batch.commit();
+    return res.json({ success: true, item: { id: reference.id, name, imageLink, destinationLink, revision: 1 } });
+});
+
+app.delete('/api/admin/ads/:adId', async (req, res) => {
+    const requestDb = req.app.get('db');
+    if (!requestDb || !admin) return res.status(503).json({ success: false, error: 'Advertisement service unavailable.' });
+    const adId = String(req.params.adId || '');
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(adId)) return res.status(400).json({ success: false, error: 'Invalid advertisement ID.' });
+    try {
+        await requestDb.runTransaction(async transaction => {
+            const reference = requestDb.collection('ads').doc(adId);
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists) { const error = new Error('Advertisement not found.'); error.code = 'NOT_FOUND'; throw error; }
+            if (Number(req.body?.expectedRevision || 0) !== Number(snapshot.data()?.revision || 0)) { const error = new Error('Advertisement changed after this page loaded. Refresh before deleting.'); error.code = 'ADMIN_TARGET_CHANGED'; throw error; }
+            transaction.delete(reference);
+            transaction.set(requestDb.collection('security_audit_logs').doc(), { action: 'ADVERTISEMENT_DELETED', actorUid: req.user.uid, adId, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        });
+        return res.json({ success: true });
+    } catch (error) {
+        const status = error.code === 'ADMIN_TARGET_CHANGED' ? 409 : error.code === 'NOT_FOUND' ? 404 : 500;
+        return res.status(status).json({ success: false, code: error.code, error: status === 500 ? 'Unable to delete advertisement.' : error.message });
+    }
+});
 
 function normalizeTrustedLogo(input = {}) {
     const name = String(input.name || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, 120);
@@ -3193,20 +3352,25 @@ const oauthCookie = (state, clear = false) => {
 };
 const safeRedirect = (res, value) => res.redirect(`${protocol}://${websiteName}${value}`);
 
-async function getSocialAuthCredentials(provider) {
+async function getSocialAuthCredentials(provider, database = db) {
     let config = {};
+    const legacyPrefix = provider === 'linkedin' ? 'linkedin' : 'github';
+    const fillMissing = candidate => {
+        if (!config.clientId && candidate?.clientId) config.clientId = candidate.clientId;
+        if (!config.clientSecret && candidate?.clientSecret) config.clientSecret = candidate.clientSecret;
+    };
     try {
-        if (db) {
-            const secretDoc = await db.collection('settings').doc('oauth_providers').get();
-            config = secretDoc.data()?.[provider] || {};
-            // Temporary migration fallback for existing installations.
-            if (!config.clientId || !config.clientSecret) {
-                const legacyDoc = await db.collection('data').doc('system_settings').get();
-                const legacy = legacyDoc.data()?.socialAuth || {};
-                config = provider === 'linkedin'
-                    ? { clientId: legacy.linkedinClientId, clientSecret: legacy.linkedinClientSecret }
-                    : { clientId: legacy.githubClientId, clientSecret: legacy.githubClientSecret };
-            }
+        if (database) {
+            const [providerSecrets, adminConfiguration, legacySettings] = await Promise.all([
+                database.collection('settings').doc('oauth_providers').get(),
+                database.collection('settings').doc('admin_configuration').get(),
+                database.collection('data').doc('system_settings').get(),
+            ]);
+            fillMissing(providerSecrets.data()?.[provider]);
+            const canonical = adminConfiguration.data()?.socialAuth || {};
+            fillMissing({ clientId: canonical[`${legacyPrefix}ClientId`], clientSecret: canonical[`${legacyPrefix}ClientSecret`] });
+            const legacy = legacySettings.data()?.socialAuth || {};
+            fillMissing({ clientId: legacy[`${legacyPrefix}ClientId`], clientSecret: legacy[`${legacyPrefix}ClientSecret`] });
         }
     } catch (error) {
         console.warn(`[OAuth config ${provider}]`, error.message);
@@ -3402,7 +3566,7 @@ app.post('/api/auth/oauth/exchange', async (req, res) => {
  * Called by Admin OAuth panel to show live status badge.
  */
 app.get('/api/auth/linkedin/test-credentials', async (req, res) => {
-    const { clientId, clientSecret } = await getSocialAuthCredentials('linkedin');
+    const { clientId, clientSecret } = await getSocialAuthCredentials('linkedin', req.app.get('db'));
     const configured = !!(clientId && clientSecret);
     return res.json({
         provider: 'linkedin',
@@ -3416,7 +3580,7 @@ app.get('/api/auth/linkedin/test-credentials', async (req, res) => {
  * GET /api/auth/github/test-credentials — Verify GitHub credentials are configured
  */
 app.get('/api/auth/github/test-credentials', async (req, res) => {
-    const { clientId, clientSecret } = await getSocialAuthCredentials('github');
+    const { clientId, clientSecret } = await getSocialAuthCredentials('github', req.app.get('db'));
     const configured = !!(clientId && clientSecret);
     return res.json({
         provider: 'github',

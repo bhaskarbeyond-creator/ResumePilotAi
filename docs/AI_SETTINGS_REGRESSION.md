@@ -74,6 +74,20 @@ The protected runtime provider set remains NVIDIA, Gemini, OpenAI, Groq, OpenRou
 - Save success is rendered only after the transaction and audit write complete.
 - Provider test failure does not alter persisted settings.
 
+## Shared settings regressions checked
+
+- Generic, payment, maintenance, Firebase web, email, SMTP/IMAP, module, Blog, Ads, notification and privacy settings were traced through their active endpoints.
+- Generic backend settings now preserve blank or projection-omitted secret fields recursively, so editing non-secret OAuth, integration, storage or mail metadata cannot silently erase configured backend credentials.
+- LinkedIn/GitHub runtime credential lookup now consumes the canonical backend settings namespace (while retaining protected and legacy fallbacks); provider-status checks are verified-admin, recent-authenticated, and use the shared retry flow.
+- A shared Admin reauthentication coordinator now retries generic settings, payment settings, maintenance settings, email runtime saves/tests, Firebase credential operations and Admin SMS tests after verified reauthentication.
+- Email runtime configuration now loads an allowlisted server projection, preserves configured credentials across environment, legacy Firestore and local-file sources when fields are left blank, validates encrypted transport settings, clears typed passwords after confirmed save, and does not optimistically toggle templates before the runtime save succeeds.
+- Canonical `/api/email/admin/*` routes and retained `/api/admin/*` email compatibility aliases receive identical verified-email and recent-auth policy, preventing namespace-based middleware bypass.
+- Twilio settings now use a dedicated secret-free, revisioned, audited Admin route; blank credential fields preserve configured secrets, the generic settings bypass is closed, and SMS dispatch reads the same canonical backend namespace.
+- Ads create/delete moved from direct Firestore writes to recent-auth, revision-checked, validated and audited backend routes with accessible confirmation.
+- Direct browser writes to Ads, AI provider secrets and curated public configuration remain denied.
+- Firebase service-account status can load without the recent-auth timer for authorized secret managers. Runtime private-key rotation is disabled by default and always disabled in production; the UI directs operators to Workload Identity/Secret Manager instead of implying a deployment-level secret changed.
+- The dead duplicate PaymentSettings import and generic `payments`/`ai` category bypasses were removed; canonical subscription/payment settings remain on `/api/admin/payment-settings`.
+
 ## External validation
 
 Live provider credentials and outbound provider networks are unavailable here. Deterministic fixtures validate all six request/response contracts, authentication rejection, missing configuration, invalid models, outage, empty response and timeout. Live provider validation remains a staging requirement and is not claimed.

@@ -13576,7 +13576,7 @@
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
       "line": 629,
       "kind": "jsx-text",
-      "text": "Enterprise Email &amp; SMTP Subsystem (10/10)",
+      "text": "Enterprise Email &amp; SMTP Subsystem",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
@@ -14878,14 +14878,14 @@
       "file": "src/components/admin/settings/LlmGeoSettings.jsx",
       "line": 151,
       "kind": "jsx-text",
-      "text": "10/10 Standard",
+      "text": "Recommended preset",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/LlmGeoSettings.jsx",
       "line": 164,
       "kind": "jsx-text",
-      "text": "Apply 10/10 AI Search Preset",
+      "text": "Apply Recommended AI Search Preset",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
@@ -14934,7 +14934,7 @@
       "file": "src/components/admin/settings/LlmGeoSettings.jsx",
       "line": 380,
       "kind": "jsx-text",
-      "text": "Save 10/10 LLM GEO Settings",
+      "text": "Save LLM GEO Settings",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {

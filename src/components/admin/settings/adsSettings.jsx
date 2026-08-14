@@ -1,8 +1,7 @@
-import { sanitizeUrl } from '../../../utils/sanitizeHtml';
+import { sanitizeImageUrl, sanitizeUrl } from '../../../utils/sanitizeHtml';
 import React, { Component } from 'react';
-import { addPages, getPages, removePageByName, getAds, addAds, removeAd } from '../../../firestore/dbOperations';
+import { getAds, addAds, removeAd } from '../../../firestore/dbOperations';
 import { FaCheck, FaTimes, FaBullhorn, FaTrash, FaPlus, FaImage, FaLink, FaEye, FaExternalLinkAlt } from 'react-icons/fa';
-import { m } from 'framer-motion';
 
 class AdsSettings extends Component {
     constructor(props) {
@@ -12,8 +11,10 @@ class AdsSettings extends Component {
             imageLink: '',
             destinationLink: '',
             isSuccesShowed: false,
-            pages: null,
-            // ads
+            error: '',
+            loading: true,
+            saving: false,
+            deleteTarget: null,
             ads: null,
         };
         this.handleChange = this.handleChange.bind(this);
@@ -46,27 +47,39 @@ class AdsSettings extends Component {
         this.setState({ text: value });
     }
     // Handling addition of page
-    saveNewPage() {
-        addAds(this.state.imageLink, this.state.bannerName, this.state.destinationLink).then((value) => {
-            this.setState({ isSuccesShowed: true });
-            this.getAllAds();
-            // Auto-hide success message after 3 seconds
-            setTimeout(() => {
-                this.setState({ isSuccesShowed: false });
-            }, 3000);
-        });
+    async saveNewPage() {
+        const imageLink = sanitizeImageUrl(this.state.imageLink);
+        const destinationLink = sanitizeUrl(this.state.destinationLink);
+        if (!imageLink || !destinationLink || !this.state.bannerName.trim()) { this.setState({ error: 'Enter a name, safe image URL, and safe destination URL.' }); return; }
+        this.setState({ saving: true, error: '' });
+        try {
+            const result = await addAds(imageLink, this.state.bannerName.trim(), destinationLink);
+            if (!result.success) throw new Error(result.error || 'Advertisement could not be created.');
+            this.setState({ isSuccesShowed: true, bannerName: '', imageLink: '', destinationLink: '' });
+            await this.getAllAds();
+            setTimeout(() => this.setState({ isSuccesShowed: false }), 3000);
+        } catch (error) { this.setState({ error: error.message || 'Advertisement could not be created.' }); }
+        finally { this.setState({ saving: false }); }
     }
-    // getPages
-    getAllAds() {
-        getAds().then((value) => {
-            value !== null ? this.setState({ ads: value }) : this.setState({ ads: null });
-        });
+    async getAllAds() {
+        this.setState({ loading: true });
+        try { this.setState({ ads: await getAds(), error: '' }); }
+        catch (error) { this.setState({ ads: [], error: error.message || 'Advertisements could not be loaded.' }); }
+        finally { this.setState({ loading: false }); }
     }
-    // handling removal of page
-    removeAddHandler(id) {
-        removeAd(id).then((value) => {
-            this.getAllAds();
-        });
+    async removeAddHandler() {
+        const target = this.state.deleteTarget;
+        if (!target) return;
+        this.setState({ saving: true, error: '' });
+        try {
+            const result = await removeAd(target.id, target.revision);
+            if (!result.success) throw Object.assign(new Error(result.error || 'Advertisement could not be deleted.'), { code: result.code });
+            this.setState({ deleteTarget: null });
+            await this.getAllAds();
+        } catch (error) {
+            this.setState({ error: error.message, ...(error.code === 'ADMIN_TARGET_CHANGED' ? { deleteTarget: null } : {}) });
+            if (error.code === 'ADMIN_TARGET_CHANGED') await this.getAllAds();
+        } finally { this.setState({ saving: false }); }
     }
     render() {
         const totalAds = this.state.ads ? this.state.ads.length : 0;
@@ -74,9 +87,11 @@ class AdsSettings extends Component {
 
         return (
             <div className="space-y-6">
+                {this.state.deleteTarget && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="presentation" onKeyDown={event => { if (event.key === 'Escape' && !this.state.saving) this.setState({ deleteTarget: null }); }}><div role="alertdialog" aria-modal="true" aria-labelledby="delete-ad-title" className="w-full max-w-md rounded-xl bg-white p-6"><h2 id="delete-ad-title" className="text-lg font-bold">Delete advertisement?</h2><p className="mt-2 text-sm text-slate-600">Delete “{this.state.deleteTarget.name}”? The target revision will be verified and the action audited.</p><div className="mt-6 flex justify-end gap-3"><button type="button" autoFocus onClick={() => this.setState({ deleteTarget: null })} disabled={this.state.saving} className="rounded border px-4 py-2">Cancel</button><button type="button" onClick={this.removeAddHandler} disabled={this.state.saving} className="rounded bg-red-700 px-4 py-2 text-white">{this.state.saving ? 'Deleting…' : 'Delete'}</button></div></div></div>}
+                {this.state.error && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">{this.state.error}<button type="button" className="ml-3 underline" onClick={() => this.setState({ error: '' })}>Dismiss</button></div>}
                 {/* Success Alert */}
                 {this.state.isSuccesShowed && (
-                    <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 flex items-center justify-between">
+                    <div role="status" className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 flex items-center justify-between">
                         <div className="flex items-center space-x-3">
                             <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
                                 <FaCheck className="w-4 h-4 text-emerald-600" />
@@ -110,14 +125,14 @@ class AdsSettings extends Component {
                         <div className="flex items-center space-x-4 text-sm">
                             <div className="text-center">
                                 <p className="text-2xl font-bold text-slate-900">{totalAds}</p>
-                                <p className="text-xs text-slate-500">Active Ads</p>
+                                <p className="text-xs text-slate-500">Stored Ads</p>
                             </div>
                         </div>
                     </div>
 
                     {/* Current Ads List */}
                     <div className="pt-4 border-t border-slate-100">
-                        {this.state.ads === null || this.state.ads.length === 0 ? (
+                        {this.state.loading ? <div className="py-8 text-center text-sm text-slate-500" role="status">Loading advertisements…</div> : this.state.ads === null || this.state.ads.length === 0 ? (
                             <div className="text-center py-8 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
                                 <FaBullhorn className="w-8 h-8 text-slate-400 mx-auto mb-3" />
                                 <p className="text-slate-600 font-medium mb-1">No advertisements created yet</p>
@@ -129,9 +144,9 @@ class AdsSettings extends Component {
                                     <div key={index} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors">
                                         <div className="flex items-center space-x-3">
                                             <div className="w-12 h-8 bg-white rounded border border-slate-200 flex items-center justify-center overflow-hidden">
-                                                {ad.imageLink ? (
+                                                {sanitizeImageUrl(ad.imageLink) ? (
                                                     <img
-                                                        src={ad.imageLink}
+                                                        src={sanitizeImageUrl(ad.imageLink)}
                                                         alt={ad.name}
                                                         className="w-full h-full object-cover"
                                                         onError={(e) => {
@@ -140,19 +155,19 @@ class AdsSettings extends Component {
                                                         }}
                                                     />
                                                 ) : null}
-                                                <FaImage className="w-3 h-3 text-slate-400" style={{display: ad.imageLink ? 'none' : 'block'}} />
+                                                <FaImage className="w-3 h-3 text-slate-400" style={{display: sanitizeImageUrl(ad.imageLink) ? 'none' : 'block'}} />
                                             </div>
                                             <div>
                                                 <p className="font-medium text-slate-900">{ad.name}</p>
                                                 <p className="text-xs text-slate-500 flex items-center">
                                                     <FaExternalLinkAlt className="w-2 h-2 mr-1" />
-                                                    {ad.destinationLink ? new URL(ad.destinationLink).hostname : 'No link'}
+                                                    {sanitizeUrl(ad.destinationLink) ? new URL(sanitizeUrl(ad.destinationLink), window.location.origin).hostname : 'No safe link'}
                                                 </p>
                                             </div>
                                         </div>
 
                                         <div className="flex items-center space-x-2">
-                                            {ad.imageLink && (
+                                            {sanitizeImageUrl(ad.imageLink) && (
                                                 <a
                                                     href={sanitizeUrl(ad.imageLink)}
                                                     target="_blank"
@@ -164,7 +179,7 @@ class AdsSettings extends Component {
                                                 </a>
                                             )}
                                             <button
-                                                onClick={() => this.removeAddHandler(ad.id)}
+                                                onClick={() => this.setState({ deleteTarget: ad })}
                                                 className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                                 title="Delete ad"
                                             >
@@ -252,11 +267,11 @@ class AdsSettings extends Component {
                                     <span className="text-sm font-medium text-slate-700">Preview</span>
                                 </div>
 
-                                {this.state.imageLink ? (
+                                {sanitizeImageUrl(this.state.imageLink) ? (
                                     <div className="space-y-3">
                                         <div className="bg-white rounded-lg border border-slate-200 p-3">
                                             <img
-                                                src={this.state.imageLink}
+                                                src={sanitizeImageUrl(this.state.imageLink)}
                                                 alt={this.state.bannerName || 'Banner preview'}
                                                 className="w-full h-24 object-cover rounded border border-slate-200"
                                                 onError={(e) => {
@@ -315,7 +330,7 @@ class AdsSettings extends Component {
                         <button
                             type="button"
                             onClick={() => this.saveNewPage()}
-                            disabled={!isFormValid}
+                            disabled={!isFormValid || this.state.saving}
                             className={`px-6 py-2 text-sm font-medium rounded-lg transition-colors flex items-center space-x-2 ${
                                 isFormValid
                                     ? 'text-white bg-slate-800 hover:bg-slate-700'
@@ -323,7 +338,7 @@ class AdsSettings extends Component {
                             }`}
                         >
                             <FaPlus className="w-4 h-4" />
-                            <span>Create Ad</span>
+                            <span>{this.state.saving ? 'Creating…' : 'Create Ad'}</span>
                         </button>
                     </div>
                 </div>

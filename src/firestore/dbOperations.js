@@ -5,6 +5,7 @@ import firebase from 'firebase/compat/app';
 import { JOB_TRACKER_STATUSES, normalizeTrackedJob, validateTrackedJob } from '../utils/jobTracker';
 import { blogPostFitsFirestore, normalizeBlogPost } from '../utils/blogData';
 import { normalizeProfileData, profileFitsFirestore } from '../utils/profileData';
+import { fetchAdminWithReauth } from '../services/adminReauth';
 
 // Utility function to wait for authentication state
 export const waitForAuth = () => {
@@ -2347,11 +2348,10 @@ export async function setSubscriptionsData(state, month, quartarly, yearly, only
         receiptTemplate: options.receiptTemplate || 'modern',
         reverseCharge: options.reverseCharge || 'No',
     };
-    const response = await fetch('/api/admin/payment-settings', {
+    const { response, data: result } = await fetchAdminWithReauth('/api/admin/payment-settings', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(subData)
     });
-    const result = await response.json().catch(() => ({}));
     if (!response.ok || !result.success) throw new Error(result.error?.message || result.error || 'Unable to save payment settings.');
     return result;
 }
@@ -2615,13 +2615,10 @@ export async function sendSmsNotification(toPhone, messageBody, _twilioOverride 
     if (!toPhone || !messageBody) return { success: false, error: 'Phone number and message are required' };
     try {
         const payload = { toPhone, messageBody };
-        const res = await fetch('/api/send-sms', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
+        const { response, data } = await fetchAdminWithReauth('/api/send-sms', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
         });
-        const data = await res.json();
-        return data;
+        return response.ok ? data : { success: false, error: data.error?.message || data.error || 'SMS request failed.' };
     } catch (err) {
         console.warn('Error sending SMS notification:', err);
         return { success: false, error: err.message };
@@ -2734,19 +2731,8 @@ export async function setFrontendStats(stats, expectedRevision = 0) {
 }
 // Get ads
 export async function getAds() {
-    const db = fire.firestore();
-    const adsRef = db.collection('ads');
-    var allDocs = [];
-    await adsRef.get().then((snapshot) => {
-        snapshot.forEach((item) => {
-            allDocs.push(item.data());
-        });
-    });
-    if (allDocs.length > 0) {
-        return allDocs;
-    } else {
-        return null;
-    }
+    const snapshot = await fire.firestore().collection('ads').get();
+    return snapshot.docs.map(document => ({ id: document.id, ...document.data(), revision: Number(document.data()?.revision || 0) }));
 }
 
 // ==================== BLOG MANAGEMENT FUNCTIONS ====================
@@ -3389,43 +3375,11 @@ export async function testCreateNotification(userId) {
 
 //  add Ads
 export async function addAds(link, name, destinationLink) {
-    var id = makeid(5);
-    const db = fire.firestore();
-    const adsRef = db.collection('ads');
-    //  Getting the date
-    let date = new Date();
-
-    let day = date.getDate();
-    let month = date.getMonth() + 1;
-    let year = date.getFullYear();
-
-    if (month < 10) {
-        await adsRef
-            .doc(id)
-            .set({
-                id: id,
-                name: name,
-                imageLink: link,
-                date: `${day}-0${month}-${year}`,
-                destinationLink: destinationLink,
-            })
-            .then((value) => {
-                return true;
-            });
-    } else {
-        await adsRef
-            .doc(id)
-            .set({
-                id: id,
-                name: name,
-                imageLink: link,
-                date: `${day}-${month}-${year}`,
-                destinationLink: destinationLink,
-            })
-            .then((value) => {
-                return true;
-            });
-    }
+    const { response, data } = await fetchAdminWithReauth('/api/admin/ads', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageLink: link, name, destinationLink }),
+    });
+    return response.ok && data.success ? data : { success: false, error: data.error?.message || data.error || 'Unable to create advertisement.', code: data.code };
 }
 // Get pages
 export async function getPages() {
@@ -3501,15 +3455,11 @@ export async function getEarnings() {
 }
 
 // Remove add
-export async function removeAd(id) {
-    const db = fire.firestore();
-    await db
-        .collection('ads')
-        .doc(id)
-        .delete()
-        .then((value) => {
-            return true;
-        });
+export async function removeAd(id, expectedRevision = 0) {
+    const { response, data } = await fetchAdminWithReauth(`/api/admin/ads/${encodeURIComponent(id)}`, {
+        method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expectedRevision }),
+    });
+    return response.ok && data.success ? data : { success: false, error: data.error?.message || data.error || 'Unable to delete advertisement.', code: data.code };
 }
 
 // Get  website details
@@ -5844,11 +5794,10 @@ export async function getSystemSettings() {
 }
 
 export async function saveSystemSettings(category, data) {
-    const response = await fetch(`/api/admin/settings/${encodeURIComponent(category)}`, {
+    const { response, data: result } = await fetchAdminWithReauth(`/api/admin/settings/${encodeURIComponent(category)}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ data, expectedRevision: Number(systemSettingsRevisions[category] || 0) }),
     });
-    const result = await response.json().catch(() => ({}));
     if (!response.ok || !result.success) throw new Error(result.error?.message || result.error || 'Unable to save settings.');
     systemSettingsRevisions = { ...systemSettingsRevisions, [category]: result.revision };
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('systemSettingsUpdated', { detail: { category, revision: result.revision } }));

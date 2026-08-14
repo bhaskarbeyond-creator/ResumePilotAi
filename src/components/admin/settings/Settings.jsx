@@ -38,7 +38,7 @@ const ALL_SETTINGS = [
     { key: 'llmGeoSettings', label: 'LLM GEO (AI Search)', group: 'General', description: 'ChatGPT, Perplexity & llms.txt' },
     { key: 'firebaseSettings', label: 'Firebase', group: 'General', description: 'Firestore & Auth Keys' },
     { key: 'socialAuthSettings', label: 'Social Sign-On & OAuth', group: 'General', description: 'Facebook, LinkedIn & GitHub OAuth' },
-    { key: 'emailSettings', label: 'Email & SMTP (10/10)', group: 'General', description: 'Outbound SMTP, Inbound IMAP & Dynamic Templates' },
+    { key: 'emailSettings', label: 'Email & SMTP', group: 'General', description: 'Outbound SMTP, Inbound IMAP & Dynamic Templates' },
     { key: 'storageSettings', label: 'Cloud Storage', group: 'AI & Services', description: 'S3 & Cloudinary CDN' },
     { key: 'aiSettings', label: 'AI & Gemini', group: 'AI & Services', description: 'AI model & API key' },
     { key: 'exportPdfSettings', label: 'PDF Exporter', group: 'AI & Services', description: 'Puppeteer render engine' },

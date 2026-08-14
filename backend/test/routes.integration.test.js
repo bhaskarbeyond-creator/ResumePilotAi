@@ -1,5 +1,6 @@
 process.env.NODE_ENV = 'test';
 process.env.CORS_ALLOWED_ORIGINS = 'https://app.example.com';
+process.env.SMTP_PASS = 'fixture-mail-password';
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -12,7 +13,9 @@ setTokenVerifierForTests(async token => {
   if (token === 'unverified') return { uid: 'user-2', email: 'pending@example.com', email_verified: false, role: 'USER', auth_time: now };
   if (token === 'admin') return { uid: 'admin-1', email: 'admin@example.com', email_verified: true, role: 'ADMIN', auth_time: now };
   if (token === 'unverified-admin') return { uid: 'admin-2', email: 'admin2@example.com', email_verified: false, role: 'ADMIN', auth_time: now };
+  if (token === 'super-admin') return { uid: 'super-1', email: 'super@example.com', email_verified: true, role: 'SUPER_ADMIN', auth_time: now };
   if (token === 'stale-admin') return { uid: 'admin-1', email: 'admin@example.com', email_verified: true, role: 'ADMIN', auth_time: now - 3600 };
+  if (token === 'stale-super-admin') return { uid: 'super-1', email: 'super@example.com', email_verified: true, role: 'SUPER_ADMIN', auth_time: now - 3600 };
   throw new Error('invalid token');
 });
 
@@ -73,16 +76,23 @@ test('stale admin sessions cannot perform sensitive administration or provider t
     ['patch', '/api/admin/users/victim'],
     ['patch', '/api/admin/employer-applications/victim'],
     ['post', '/api/admin/system-health-settings'],
+    ['post', '/api/admin/twilio-settings'],
+    ['get', '/api/email/admin/settings'],
+    ['get', '/api/admin/settings'],
+    ['post', '/api/admin/test-imap'],
     ['post', '/api/admin/settings/modules'],
     ['patch', '/api/admin/jobs/job-1'],
     ['patch', '/api/admin/companies/company-1'],
     ['post', '/api/admin/reviews'],
     ['post', '/api/admin/global-rating'],
     ['post', '/api/admin/trusted-by'],
+    ['post', '/api/admin/ads'],
     ['post', '/api/admin/landing-content'],
     ['post', '/api/admin/ai-settings'],
     ['post', '/api/admin/ai/test-provider'],
     ['post', '/api/admin/payment/test-provider'],
+    ['get', '/api/auth/linkedin/test-credentials'],
+    ['get', '/api/auth/github/test-credentials'],
     ['post', '/api/account/delete']
   ]) {
     const response = await request(app)[method](route).set(bearer('stale-admin')).send({ paymentOrderId: 'order', suspended: true });
@@ -91,12 +101,153 @@ test('stale admin sessions cannot perform sensitive administration or provider t
   }
 });
 
-test('unverified admin cannot load, save, or test AI configuration', async () => {
-  for (const [method, route] of [['get', '/api/admin/ai-settings'], ['post', '/api/admin/ai-settings'], ['post', '/api/admin/ai/test-provider']]) {
+test('unverified admin cannot load or mutate protected configuration', async () => {
+  for (const [method, route] of [['get', '/api/admin/ai-settings'], ['post', '/api/admin/ai-settings'], ['post', '/api/admin/ai/test-provider'], ['get', '/api/email/admin/settings'], ['get', '/api/admin/twilio-settings'], ['post', '/api/admin/settings/modules']]) {
     const response = await request(app)[method](route).set(bearer('unverified-admin')).send({});
     assert.equal(response.status, 403, route);
     assert.equal(response.body.error.code, 'EMAIL_VERIFICATION_REQUIRED', route);
   }
+});
+
+test('email settings projection exposes configured state but no runtime credential', async () => {
+  for (const route of ['/api/email/admin/settings', '/api/admin/settings']) {
+    const response = await request(app).get(route).set(bearer('admin'));
+    assert.equal(response.status, 200, route);
+    assert.equal(response.body.settings.smtp.passwordConfigured, true, route);
+    assert.equal(Object.hasOwn(response.body.settings.smtp, 'password'), false, route);
+    assert.doesNotMatch(JSON.stringify(response.body), /fixture-mail-password/, route);
+  }
+});
+
+test('Twilio settings persist in the canonical secret namespace without response disclosure', async () => {
+  const store = new Map();
+  const merge = (left, right) => {
+    const output = { ...(left || {}) };
+    for (const [key, value] of Object.entries(right || {})) output[key] = value && typeof value === 'object' && !Array.isArray(value) ? merge(output[key], value) : value;
+    return output;
+  };
+  let automaticId = 0;
+  const ref = path => ({ path, async get() { const data = store.get(path); return { exists: data !== undefined, data: () => data }; } });
+  const fakeDb = {
+    collection(name) { return { doc(id = `auto-${automaticId++}`) { return ref(`${name}/${id}`); } }; },
+    runTransaction: callback => callback({ get: reference => reference.get(), set(reference, value, options) { store.set(reference.path, options?.merge ? merge(store.get(reference.path), value) : value); } }),
+  };
+  const originalDb = app.get('db');
+  app.set('db', fakeDb);
+  try {
+    const authToken = 'fixture-twilio-auth-token-1234';
+    const saved = await request(app).post('/api/admin/twilio-settings').set(bearer('admin')).send({
+      accountSid: `AC${'a'.repeat(32)}`, authToken, fromPhoneNumber: '+14155552671', enableSmsAlerts: true, expectedRevision: 0,
+    });
+    assert.equal(saved.status, 200);
+    assert.equal(saved.body.revision, 1);
+    assert.doesNotMatch(JSON.stringify(saved.body), /fixture-twilio-auth-token/);
+    assert.equal(store.get('settings/admin_configuration').twilio.authToken, authToken);
+    const loaded = await request(app).get('/api/admin/twilio-settings').set(bearer('admin'));
+    assert.equal(loaded.status, 200);
+    assert.equal(loaded.body.settings.accountSidConfigured, true);
+    assert.equal(Object.hasOwn(loaded.body.settings, 'authToken'), false);
+    const bypass = await request(app).post('/api/admin/settings/twilio').set(bearer('admin')).send({ data: { authToken }, expectedRevision: 0 });
+    assert.equal(bypass.status, 400);
+  } finally {
+    app.set('db', originalDb);
+  }
+});
+
+test('Ads create and revision-safe delete persist through audited backend routes', async () => {
+  const store = new Map();
+  let automaticId = 0;
+  const ref = (path, id) => ({ id, path, async get() { const data = store.get(path); return { exists: data !== undefined, data: () => data }; } });
+  const collection = name => ({ doc(id = `auto-${automaticId++}`) { return ref(`${name}/${id}`, id); } });
+  const fakeDb = {
+    collection,
+    batch() {
+      const operations = [];
+      return { set(reference, value) { operations.push(() => store.set(reference.path, value)); }, async commit() { for (const operation of operations) operation(); } };
+    },
+    runTransaction: callback => callback({
+      get: reference => reference.get(),
+      set(reference, value) { store.set(reference.path, value); },
+      delete(reference) { store.delete(reference.path); },
+    }),
+  };
+  const originalDb = app.get('db');
+  app.set('db', fakeDb);
+  try {
+    const created = await request(app).post('/api/admin/ads').set(bearer('admin')).send({ name: 'Release banner', imageLink: 'https://cdn.example.com/banner.png', destinationLink: '/pricing' });
+    assert.equal(created.status, 200);
+    assert.equal(created.body.item.revision, 1);
+    const adId = created.body.item.id;
+    assert.equal(store.get(`ads/${adId}`).name, 'Release banner');
+    const stale = await request(app).delete(`/api/admin/ads/${adId}`).set(bearer('admin')).send({ expectedRevision: 0 });
+    assert.equal(stale.status, 409);
+    assert.equal(stale.body.code, 'ADMIN_TARGET_CHANGED');
+    assert.equal(store.has(`ads/${adId}`), true);
+    const removed = await request(app).delete(`/api/admin/ads/${adId}`).set(bearer('admin')).send({ expectedRevision: 1 });
+    assert.equal(removed.status, 200);
+    assert.equal(store.has(`ads/${adId}`), false);
+    assert.ok([...store.keys()].some(key => key.startsWith('security_audit_logs/')));
+  } finally {
+    app.set('db', originalDb);
+  }
+});
+
+test('generic settings preserve omitted and blank backend secrets without browser disclosure', async () => {
+  const store = new Map([['settings/admin_configuration', {
+    socialAuth: { linkedinClientId: 'existing-client', linkedinClientSecret: 'fixture-existing-client-secret', nested: { accessToken: 'fixture-existing-access-token' } },
+    _revisions: { socialAuth: 2 },
+  }]]);
+  const merge = (left, right) => {
+    const output = { ...(left || {}) };
+    for (const [key, value] of Object.entries(right || {})) output[key] = value && typeof value === 'object' && !Array.isArray(value) ? merge(output[key], value) : value;
+    return output;
+  };
+  let automaticId = 0;
+  const ref = path => ({ path, async get() { const data = store.get(path); return { exists: data !== undefined, data: () => data }; } });
+  const fakeDb = {
+    collection(name) { return { doc(id = `auto-${automaticId++}`) { return ref(`${name}/${id}`); } }; },
+    runTransaction: callback => callback({ get: reference => reference.get(), set(reference, value, options) { store.set(reference.path, options?.merge ? merge(store.get(reference.path), value) : value); } }),
+  };
+  const originalDb = app.get('db');
+  app.set('db', fakeDb);
+  try {
+    const response = await request(app).post('/api/admin/settings/socialAuth').set(bearer('admin')).send({
+      data: { linkedinClientId: 'updated-client', linkedinClientSecret: '' }, expectedRevision: 2,
+    });
+    assert.equal(response.status, 200);
+    assert.equal(response.body.revision, 3);
+    assert.doesNotMatch(JSON.stringify(response.body), /fixture-existing/);
+    const persisted = store.get('settings/admin_configuration').socialAuth;
+    assert.equal(persisted.linkedinClientSecret, 'fixture-existing-client-secret');
+    assert.equal(persisted.nested.accessToken, 'fixture-existing-access-token');
+    assert.equal(store.get('data/public_config').socialAuth.linkedinClientSecret, undefined);
+    const providerStatus = await request(app).get('/api/auth/linkedin/test-credentials').set(bearer('admin'));
+    assert.equal(providerStatus.status, 200);
+    assert.equal(providerStatus.body.configured, true);
+    assert.doesNotMatch(JSON.stringify(providerStatus.body), /fixture-existing-client-secret/);
+  } finally {
+    app.set('db', originalDb);
+  }
+});
+
+test('email runtime save rejects unencrypted or malformed transport configuration', async () => {
+  const response = await request(app).post('/api/email/admin/save-smtp').set(bearer('admin')).send({
+    smtp: { host: 'smtp.example.com', port: 25, encryption: 'none', username: 'mailer@example.com', password: 'replacement' },
+  });
+  assert.equal(response.status, 400);
+  assert.match(response.body.error, /Encrypted smtp transport is required/);
+});
+
+test('Firebase credential status loads without recent auth but runtime rotation remains recent-auth protected', async () => {
+  const loaded = await request(app).get('/api/admin/firebase-service-account').set(bearer('stale-super-admin'));
+  assert.equal(loaded.status, 200);
+  assert.equal(loaded.body.runtimeRotationEnabled, false);
+  const changed = await request(app).post('/api/admin/firebase-service-account').set(bearer('stale-super-admin')).send({});
+  assert.equal(changed.status, 403);
+  assert.equal(changed.body.error.code, 'RECENT_AUTH_REQUIRED');
+  const disabled = await request(app).post('/api/admin/firebase-service-account').set(bearer('super-admin')).send({ projectId: 'p', clientEmail: 'x@example.com', privateKey: 'secret' });
+  assert.equal(disabled.status, 501);
+  assert.equal(disabled.body.code, 'RUNTIME_SECRET_ROTATION_DISABLED');
 });
 
 test('loading non-secret AI settings does not require recent authentication', async () => {
