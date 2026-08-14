@@ -53,7 +53,11 @@ service cloud.firestore {
       match /coverLetters/{coverId} { allow read, create, update, delete: if owner(uid); }
       match /favourites/{id} { allow read, create, update, delete: if owner(uid); }
       match /portfolios/{id} { allow read, create, update, delete: if owner(uid); }
-      match /jobTracker/{id} { allow read, create, update, delete: if owner(uid); }
+      match /jobTracker/{id} {
+        allow read, delete: if owner(uid);
+        allow create: if owner(uid) && request.resource.data.revision == 1;
+        allow update: if owner(uid) && request.resource.data.revision == resource.data.get('revision', 0) + 1;
+      }
       match /invoices/{id} { allow read: if owner(uid) || admin(); allow write: if false; }
       match /transactions/{id} { allow read: if owner(uid) || admin(); allow write: if false; }
     }

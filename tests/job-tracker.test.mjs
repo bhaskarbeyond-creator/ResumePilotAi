@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
 import { filterAndSortTrackedJobs, normalizeTrackedJob, validateTrackedJob } from '../src/utils/jobTracker.js';
 
 test('tracked jobs normalize malformed fields and reject required or dangerous values', () => {
@@ -21,4 +22,17 @@ test('tracked job search handles missing and Unicode fields without mutating boa
   assert.deepEqual(filterAndSortTrackedJobs(jobs, 'équipe').map((job) => job.id), ['2']);
   assert.deepEqual(filterAndSortTrackedJobs(jobs, 'తెలుగు').map((job) => job.id), ['1']);
   assert.deepEqual(jobs, snapshot);
+});
+
+test('job tracker persistence is revisioned and destructive actions use an accessible confirmation', async () => {
+  const [operations, tracker, rules] = await Promise.all([
+    fs.readFile('src/firestore/dbOperations.js', 'utf8'),
+    fs.readFile('src/components/AppliedJobs/JobTracker.jsx', 'utf8'),
+    fs.readFile('SecurityRules.txt', 'utf8'),
+  ]);
+  assert.match(operations, /TRACKER_CONFLICT/);
+  assert.match(operations, /revision: 1/);
+  assert.match(tracker, /role="alertdialog"/);
+  assert.doesNotMatch(tracker, /window\.confirm/);
+  assert.match(rules, /jobTracker[\s\S]*revision.*\+ 1/);
 });

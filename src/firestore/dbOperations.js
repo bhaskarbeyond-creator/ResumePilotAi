@@ -1874,28 +1874,42 @@ export async function createTrackedJob(userId, input) {
     if (!valid) throw new Error(Object.values(errors)[0]);
     const now = firebase.firestore.Timestamp.now();
     const reference = fire.firestore().collection('users').doc(userId).collection('jobTracker').doc();
-    await reference.set({ ...job, createdAt: now, updatedAt: now });
-    return { id: reference.id, ...job, createdAt: now.toDate(), updatedAt: now.toDate() };
+    await reference.set({ ...job, revision: 1, createdAt: now, updatedAt: now });
+    return { id: reference.id, ...job, revision: 1, createdAt: now.toDate(), updatedAt: now.toDate() };
 }
 
-export async function updateTrackedJob(userId, jobId, patch) {
+export async function updateTrackedJob(userId, jobId, patch, expectedRevision = null) {
     if (!userId || !jobId) throw new Error('A tracked job and authenticated user are required');
-    const allowed = Object.fromEntries(Object.entries(patch || {}).filter(([key]) =>
-        ['title', 'company', 'location', 'url', 'notes', 'deadline', 'status', 'order'].includes(key)));
+    const allowed = Object.fromEntries(Object.entries(patch || {}).filter(([key]) => ['title','company','location','url','notes','deadline','status','order'].includes(key)));
     if (allowed.status && !JOB_TRACKER_STATUSES.includes(allowed.status)) throw new Error('Invalid tracker status');
     const normalized = normalizeTrackedJob(allowed);
     if (Object.hasOwn(allowed, 'title') && !normalized.title) throw new Error('Job title is required');
     if (Object.hasOwn(allowed, 'company') && !normalized.company) throw new Error('Company is required');
     if (allowed.url && !normalized.url) throw new Error('Use a valid web address');
-    const update = Object.fromEntries(Object.keys(allowed).map((key) => [key, normalized[key]]));
-    update.updatedAt = firebase.firestore.Timestamp.now();
-    await fire.firestore().collection('users').doc(userId).collection('jobTracker').doc(jobId).update(update);
-    return update;
+    const reference = fire.firestore().collection('users').doc(userId).collection('jobTracker').doc(jobId);
+    let result;
+    await fire.firestore().runTransaction(async transaction => {
+        const snapshot = await transaction.get(reference);
+        if (!snapshot.exists) throw new Error('Tracked job not found.');
+        const revision = Number(snapshot.data()?.revision || 0);
+        if (expectedRevision !== null && Number(expectedRevision) !== revision) { const error = new Error('This tracked job changed elsewhere. Refresh before saving.'); error.code = 'TRACKER_CONFLICT'; throw error; }
+        const update = Object.fromEntries(Object.keys(allowed).map(key => [key, normalized[key]]));
+        update.revision = revision + 1; update.updatedAt = firebase.firestore.Timestamp.now();
+        transaction.update(reference, update); result = update;
+    });
+    return result;
 }
 
-export async function deleteTrackedJob(userId, jobId) {
+export async function deleteTrackedJob(userId, jobId, expectedRevision = null) {
     if (!userId || !jobId) throw new Error('A tracked job and authenticated user are required');
-    await fire.firestore().collection('users').doc(userId).collection('jobTracker').doc(jobId).delete();
+    const reference = fire.firestore().collection('users').doc(userId).collection('jobTracker').doc(jobId);
+    await fire.firestore().runTransaction(async transaction => {
+        const snapshot = await transaction.get(reference);
+        if (!snapshot.exists) throw new Error('Tracked job not found.');
+        const revision = Number(snapshot.data()?.revision || 0);
+        if (expectedRevision !== null && Number(expectedRevision) !== revision) { const error = new Error('This tracked job changed elsewhere. Refresh before deleting.'); error.code = 'TRACKER_CONFLICT'; throw error; }
+        transaction.delete(reference);
+    });
     return true;
 }
 

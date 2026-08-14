@@ -25,6 +25,7 @@ export default function JobTracker({ showToast }) {
     const [loadError, setLoadError] = useState('');
     const [retryCount, setRetryCount] = useState(0);
     const [draggedId, setDraggedId] = useState(null);
+    const [deleteTarget, setDeleteTarget] = useState(null);
 
     useEffect(() => {
         let active = true;
@@ -78,8 +79,9 @@ export default function JobTracker({ showToast }) {
         setSaving(true);
         try {
             if (editingId) {
-                await updateTrackedJob(user.uid, editingId, validation.job);
-                setJobs((current) => current.map((job) => job.id === editingId ? { ...job, ...validation.job, updatedAt: new Date() } : job));
+                const existing = jobs.find(job => job.id === editingId);
+                const update = await updateTrackedJob(user.uid, editingId, validation.job, existing?.revision ?? null);
+                setJobs((current) => current.map((job) => job.id === editingId ? { ...job, ...validation.job, ...update, updatedAt: update.updatedAt?.toDate?.() || new Date() } : job));
             } else {
                 const created = await createTrackedJob(user.uid, { ...validation.job, order: jobs.filter((job) => job.status === validation.job.status).length });
                 setJobs((current) => [...current, created]);
@@ -88,6 +90,7 @@ export default function JobTracker({ showToast }) {
             closeForm();
         } catch (error) {
             setErrors({ form: error.message || 'The job could not be saved' });
+            if (error.code === 'TRACKER_CONFLICT') setRetryCount(count => count + 1);
         } finally {
             setSaving(false);
         }
@@ -112,22 +115,26 @@ export default function JobTracker({ showToast }) {
         const order = jobs.filter((job) => job.status === status).length;
         setJobs((current) => current.map((job) => job.id === jobId ? { ...job, status, order, updatedAt: new Date() } : job));
         try {
-            await updateTrackedJob(user.uid, jobId, { status, order });
+            const update = await updateTrackedJob(user.uid, jobId, { status, order }, existing.revision ?? null);
+            setJobs(current => current.map(job => job.id === jobId ? { ...job, revision: update.revision, updatedAt: update.updatedAt?.toDate?.() || new Date() } : job));
             showToast?.(`Moved to ${COLUMNS.find((column) => column.id === status)?.label}`, 'success');
         } catch (error) {
             setJobs(previous);
             showToast?.(error.message || 'Unable to move job', 'error');
+            if (error.code === 'TRACKER_CONFLICT') setRetryCount(count => count + 1);
         }
     };
 
-    const removeJob = async (job) => {
-        if (!user?.uid || !window.confirm(`Delete ${job.title} at ${job.company}?`)) return;
+    const removeJob = async () => {
+        if (!user?.uid || !deleteTarget) return;
         try {
-            await deleteTrackedJob(user.uid, job.id);
-            setJobs((current) => current.filter((item) => item.id !== job.id));
+            await deleteTrackedJob(user.uid, deleteTarget.id, deleteTarget.revision ?? null);
+            setJobs((current) => current.filter((item) => item.id !== deleteTarget.id));
+            setDeleteTarget(null);
             showToast?.('Tracked job deleted', 'success');
         } catch (error) {
             showToast?.(error.message || 'Unable to delete job', 'error');
+            if (error.code === 'TRACKER_CONFLICT') { setDeleteTarget(null); setRetryCount(count => count + 1); }
         }
     };
 
@@ -144,6 +151,7 @@ export default function JobTracker({ showToast }) {
 
     return (
         <main className="min-h-screen bg-slate-50 p-4 sm:p-6">
+            {deleteTarget && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="presentation" onKeyDown={event => { if (event.key === 'Escape') setDeleteTarget(null); }}><div role="alertdialog" aria-modal="true" aria-labelledby="tracker-delete-title" className="w-full max-w-md rounded-xl bg-white p-6"><h2 id="tracker-delete-title" className="text-lg font-semibold">Delete tracked job?</h2><p className="mt-2 text-sm text-slate-600">Delete {deleteTarget.title} at {deleteTarget.company}? This action cannot be undone.</p><div className="mt-6 flex justify-end gap-2"><button type="button" autoFocus onClick={() => setDeleteTarget(null)} className="rounded border px-4 py-2">Cancel</button><button type="button" onClick={removeJob} className="rounded bg-red-700 px-4 py-2 text-white">Delete</button></div></div></div>}
             <div className="mx-auto max-w-[1600px]">
                 <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -221,7 +229,7 @@ export default function JobTracker({ showToast }) {
                                             <div className="mt-3 flex flex-wrap gap-2 text-xs">
                                                 {job.url && <a href={job.url} target="_blank" rel="noopener noreferrer" className="font-medium text-blue-700 hover:underline">Open job</a>}
                                                 <button type="button" onClick={() => startEditing(job)} className="font-medium text-slate-700 hover:underline">Edit</button>
-                                                <button type="button" onClick={() => removeJob(job)} className="font-medium text-red-700 hover:underline">Delete</button>
+                                                <button type="button" onClick={() => setDeleteTarget(job)} className="font-medium text-red-700 hover:underline">Delete</button>
                                             </div>
                                         </article>
                                     ))}

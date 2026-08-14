@@ -122,6 +122,15 @@ test('company moderation is backend-only while employer-owned pending edits rema
   await assertFails(deleteDoc(doc(admin(), 'companies/draft-company')));
 });
 
+test('private job tracker requires monotonic revisions', async () => {
+  const reference = doc(alice(), 'users/alice/jobTracker/tracked-1');
+  await assertFails(setDoc(reference, { title: 'Role', company: 'ACME', revision: 0 }));
+  await assertSucceeds(setDoc(reference, { title: 'Role', company: 'ACME', revision: 1 }));
+  await assertFails(updateDoc(reference, { title: 'Stale', revision: 1 }));
+  await assertSucceeds(updateDoc(reference, { title: 'Updated', revision: 2 }));
+  await assertFails(getDoc(doc(bob(), 'users/alice/jobTracker/tracked-1')));
+});
+
 test('jobs expose active listings only and employer edits cannot self-approve', async () => {
   await assertSucceeds(getDoc(doc(anonymous(), 'jobs/active-job')));
   await assertFails(getDoc(doc(anonymous(), 'jobs/draft-job')));
