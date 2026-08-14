@@ -1,38 +1,47 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { initGA, trackPageView } from '../utils/ga4';
+import { applyAnalyticsConsent, initGA, trackPageView } from '../utils/ga4';
+import { CONSENT_EVENT, getAnalyticsConsent } from '../utils/privacyConsent';
 import { getWebsiteData } from '../firestore/dbOperations';
 
 const GA4Provider = ({ children }) => {
     const location = useLocation();
+    const trackingIdRef = useRef('');
+    const locationRef = useRef(location);
+    locationRef.current = location;
 
     useEffect(() => {
-        // Initialize GA4 with tracking code from Firestore
-        const initializeGA4 = async () => {
-            try {
-                const websiteData = await getWebsiteData();
-                if (websiteData && websiteData.trackingCode) {
-                    const trackingCode = websiteData.trackingCode.trim();
+        let active = true;
+        getWebsiteData().then((websiteData) => {
+            if (!active) return;
+            const trackingCode = String(websiteData?.trackingCode || '').trim();
+            if (!/^(G-[A-Z0-9]{10}|UA-[0-9]+-[0-9]+)$/.test(trackingCode)) return;
+            trackingIdRef.current = trackingCode;
+            initGA(trackingCode);
+            if (getAnalyticsConsent() === 'granted') {
+                const current = locationRef.current;
+                trackPageView(current.pathname + current.search, document.title);
+            }
+        }).catch((error) => console.error('Failed to load analytics configuration:', error));
 
-                    // Check if it's a valid GA4 tracking ID format (G-XXXXXXXXXX) or Universal Analytics (UA-XXXXXXXXX-X)
-                    if (trackingCode.match(/^(G-[A-Z0-9]{10}|UA-[0-9]+-[0-9]+)$/)) {
-                        initGA(trackingCode);
-                    } else {
-                        console.warn('Invalid Google Analytics tracking code format:', trackingCode);
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to initialize GA4:', error);
+        const handleConsent = (event) => {
+            const consent = event.detail?.analytics;
+            applyAnalyticsConsent(consent);
+            if (consent === 'granted' && trackingIdRef.current) {
+                initGA(trackingIdRef.current);
+                const current = locationRef.current;
+                trackPageView(current.pathname + current.search, document.title);
             }
         };
-
-        initializeGA4();
+        window.addEventListener(CONSENT_EVENT, handleConsent);
+        return () => {
+            active = false;
+            window.removeEventListener(CONSENT_EVENT, handleConsent);
+        };
     }, []);
 
     useEffect(() => {
-        // Track page views on route change
-        const page = location.pathname + location.search;
-        trackPageView(page, document.title);
+        trackPageView(location.pathname + location.search, document.title);
     }, [location]);
 
     return <>{children}</>;

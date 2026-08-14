@@ -1266,6 +1266,24 @@ app.get('/api/admin/ai-settings', async (_req, res) => {
     return res.json({ success: true, settings: ai, configuredProviders });
 });
 
+app.post('/api/admin/gdpr-settings', async (req, res) => {
+    if (!db) return res.status(503).json({ success: false, error: 'Settings service unavailable' });
+    const input = req.body || {};
+    const safePath = (value, fallback) => {
+        const pathValue = String(value || fallback).trim();
+        return /^\/[A-Za-z0-9/_-]{1,200}$/.test(pathValue) ? pathValue : fallback;
+    };
+    const gdpr = {
+        enableCookieBanner: input.enableCookieBanner !== false,
+        cookieMessage: String(input.cookieMessage || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 500),
+        buttonText: String(input.buttonText || 'Allow analytics').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 80),
+        privacyPolicyUrl: safePath(input.privacyPolicyUrl, '/p/privacy-policy'),
+        termsOfServiceUrl: safePath(input.termsOfServiceUrl, '/p/terms-of-service'),
+    };
+    await db.collection('data').doc('public_config').set({ gdpr }, { merge: true });
+    return res.json({ success: true, settings: gdpr });
+});
+
 app.post('/api/admin/ai-settings', async (req, res) => {
     if (!db) return res.status(503).json({ success: false, error: 'Settings service unavailable' });
     const input = req.body || {};
