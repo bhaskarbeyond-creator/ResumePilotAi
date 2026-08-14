@@ -2,6 +2,7 @@ import fire from '../conf/fire';
 import axios from 'axios';
 import config from '../conf/configuration';
 import firebase from 'firebase/compat/app';
+import { JOB_TRACKER_STATUSES, normalizeTrackedJob, validateTrackedJob } from '../utils/jobTracker';
 
 // Utility function to wait for authentication state
 export const waitForAuth = () => {
@@ -1700,20 +1701,14 @@ export async function deleteJobPosting(jobId) {
 export async function getJobApplications(jobId) {
     const db = fire.firestore();
     try {
-        console.log('🔍 getJobApplications called with jobId:', jobId);
-
         // Temporarily remove orderBy to avoid index requirement
         // TODO: Add back orderBy('appliedAt', 'desc') after creating the composite index
         const snapshot = await db.collection('jobApplications').where('jobId', '==', jobId).get();
-
-        console.log('📊 Applications query snapshot empty?', snapshot.empty);
-        console.log('📊 Applications query snapshot size:', snapshot.size);
 
         if (!snapshot.empty) {
             const applications = [];
             snapshot.forEach((doc) => {
                 const applicationData = doc.data();
-                console.log('📄 Application document:', doc.id, applicationData);
                 applications.push({
                     id: doc.id,
                     ...applicationData,
@@ -1727,25 +1722,12 @@ export async function getJobApplications(jobId) {
                 return new Date(dateB) - new Date(dateA);
             });
 
-            console.log('✅ Returning sorted applications:', applications);
             return applications;
         } else {
-            console.log('❌ No applications found for jobId:', jobId);
-
-            // Let's also check if there are any applications at all in the collection
-            const allApplicationsSnapshot = await db.collection('jobApplications').limit(5).get();
-            console.log('🔍 Sample applications in collection (first 5):');
-            allApplicationsSnapshot.forEach((doc) => {
-                const data = doc.data();
-                console.log('   Application ID:', doc.id, 'jobId:', data.jobId, 'userId:', data.userId);
-            });
-
             return [];
         }
     } catch (error) {
-        console.error('❌ Error getting job applications:', error);
-        console.error('❌ Error details:', error.message);
-        console.error('❌ Error code:', error.code);
+        console.error('Error getting job applications:', error);
         return [];
     }
 }
@@ -1847,7 +1829,7 @@ export async function submitJobApplication(userId, jobId, applicationData) {
 
         // Deterministic ownership-bound IDs plus a transaction prevent simultaneous tabs
         // from creating duplicate applications or double-incrementing the job counter.
-        const applicationRef = db.collection('jobApplications').doc(`${jobId}_${userId}`);
+        const applicationRef = db.collection('jobApplications').doc(`${userId}_${jobId}`);
         const jobRef = db.collection('jobs').doc(jobId);
         await db.runTransaction(async (transaction) => {
             const existing = await transaction.get(applicationRef);
@@ -1898,6 +1880,53 @@ export async function submitJobApplication(userId, jobId, applicationData) {
 
         return { success: false, error: errorMessage };
     }
+}
+
+// Personal job tracker operations. These records are distinct from employer-controlled
+// jobApplications statuses and live under the authenticated user's document.
+export async function getTrackedJobs(userId) {
+    if (!userId) throw new Error('Authentication is required');
+    const snapshot = await fire.firestore().collection('users').doc(userId).collection('jobTracker').get();
+    return snapshot.docs.map((document) => {
+        const data = document.data();
+        return {
+            id: document.id,
+            ...data,
+            createdAt: data.createdAt?.toDate?.() || data.createdAt,
+            updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
+        };
+    });
+}
+
+export async function createTrackedJob(userId, input) {
+    if (!userId) throw new Error('Authentication is required');
+    const { job, errors, valid } = validateTrackedJob(input);
+    if (!valid) throw new Error(Object.values(errors)[0]);
+    const now = firebase.firestore.Timestamp.now();
+    const reference = fire.firestore().collection('users').doc(userId).collection('jobTracker').doc();
+    await reference.set({ ...job, createdAt: now, updatedAt: now });
+    return { id: reference.id, ...job, createdAt: now.toDate(), updatedAt: now.toDate() };
+}
+
+export async function updateTrackedJob(userId, jobId, patch) {
+    if (!userId || !jobId) throw new Error('A tracked job and authenticated user are required');
+    const allowed = Object.fromEntries(Object.entries(patch || {}).filter(([key]) =>
+        ['title', 'company', 'location', 'url', 'notes', 'deadline', 'status', 'order'].includes(key)));
+    if (allowed.status && !JOB_TRACKER_STATUSES.includes(allowed.status)) throw new Error('Invalid tracker status');
+    const normalized = normalizeTrackedJob(allowed);
+    if (Object.hasOwn(allowed, 'title') && !normalized.title) throw new Error('Job title is required');
+    if (Object.hasOwn(allowed, 'company') && !normalized.company) throw new Error('Company is required');
+    if (allowed.url && !normalized.url) throw new Error('Use a valid web address');
+    const update = Object.fromEntries(Object.keys(allowed).map((key) => [key, normalized[key]]));
+    update.updatedAt = firebase.firestore.Timestamp.now();
+    await fire.firestore().collection('users').doc(userId).collection('jobTracker').doc(jobId).update(update);
+    return update;
+}
+
+export async function deleteTrackedJob(userId, jobId) {
+    if (!userId || !jobId) throw new Error('A tracked job and authenticated user are required');
+    await fire.firestore().collection('users').doc(userId).collection('jobTracker').doc(jobId).delete();
+    return true;
 }
 
 // Check if user has already applied to a job

@@ -26,6 +26,7 @@ const DashboardInterviews = lazy(() => import('../DashboardInterviews/DashboardI
 const DashboardPortfolios = lazy(() => import('../DashboardPortfolios/DashboardPortfolios'));
 const DashboardJobMatching = lazy(() => import('../DashbaordJobMatching/DashboardJobMatching'));
 const AppliedJobs = lazy(() => import('../../AppliedJobs/AppliedJobs'));
+const JobTracker = lazy(() => import('../../AppliedJobs/JobTracker'));
 const EmployerDashboard = lazy(() => import('../EmployerDashboard/EmployerDashboard'));
 const CompaniesManagement = lazy(() => import('../EmployerDashboard/CompaniesManagement'));
 const DashboardMessages = lazy(() => import('../DashboardMessages/DashboardMessages'));
@@ -505,6 +506,7 @@ class DashboardMain extends Component {
                                 <Route path="cover-letters" element={<CoverLetter />} />
                                 <Route path="portfolios" element={<DashboardPortfolios showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
                                 <Route path="applied-jobs" element={<AppliedJobs showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
+                                <Route path="job-tracker" element={<JobTracker showToast={this.showToast} />} />
                                 <Route path="my-employments" element={<EmployerDashboard showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
                                 <Route path="my-companies" element={<CompaniesManagement showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} />} />
                                 <Route path="job-matching" element={<DashboardJobMatching showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} />} />

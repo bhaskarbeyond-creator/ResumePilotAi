@@ -1,114 +1,89 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { withTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
     FaBriefcase,
     FaSearch,
-    FaFilter,
     FaCalendar,
     FaMapMarkerAlt,
     FaDollarSign,
-    FaEye,
     FaClock,
     FaCheckCircle,
     FaTimesCircle,
     FaHourglass,
     FaInfoCircle,
-    FaSortAmountDown,
     FaBuilding,
     FaChevronDown,
     FaChevronUp,
-    FaUser,
-    FaEnvelope,
-    FaPhone,
-    FaGlobeAmericas,
 } from 'react-icons/fa';
 import { AuthContext } from '../../main';
 import { getUserJobApplications } from '../../firestore/dbOperations';
 
 
-const AppliedJobs = ({ showToast, sidebarCollapsed, t }) => {
+const AppliedJobs = ({ showToast, t }) => {
     const user = useContext(AuthContext);
     const [appliedJobs, setAppliedJobs] = useState([]);
-    const [filteredJobs, setFilteredJobs] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [sortBy, setSortBy] = useState('date');
     const [loading, setLoading] = useState(true);
-    const [selectedJob, setSelectedJob] = useState(null);
+    const [loadError, setLoadError] = useState('');
+    const [retryCount, setRetryCount] = useState(0);
     const [expandedJobId, setExpandedJobId] = useState(null);
     const navigate = useNavigate();
-    // Fetch user's job applications
+    // Fetch user's job applications without allowing a stale account request to win.
     useEffect(() => {
+        let active = true;
         const fetchApplications = async () => {
             if (!user?.uid) {
+                setAppliedJobs([]);
                 setLoading(false);
                 return;
             }
-
+            setLoading(true);
+            setLoadError('');
             try {
-                console.log('Fetching applications for user:', user.uid);
                 const applications = await getUserJobApplications(user.uid);
-                console.log('Fetched applications:', applications);
-
-                setAppliedJobs(applications);
-                setFilteredJobs(applications);
+                if (active) setAppliedJobs(applications);
             } catch (error) {
+                if (!active) return;
                 console.error('Error fetching applications:', error);
-                if (showToast) {
-                    showToast('Error loading applications', 'error');
-                }
+                setLoadError('Your applications could not be loaded. Please try again.');
+                showToast?.('Error loading applications', 'error');
             } finally {
-                setLoading(false);
+                if (active) setLoading(false);
             }
         };
-
         fetchApplications();
-    }, [user?.uid, showToast]);
+        return () => {
+            active = false;
+        };
+    }, [user?.uid, showToast, retryCount]);
 
-    useEffect(() => {
-        let filtered = appliedJobs;
-
-        // Filter by search term
-        if (searchTerm) {
-            filtered = filtered.filter(
-                (job) =>
-                    job.jobTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    job.location.toLowerCase().includes(searchTerm.toLowerCase())
-            );
-        }
-
-        // Filter by status
-        if (statusFilter !== 'all') {
-            filtered = filtered.filter((job) => job.status === statusFilter);
-        }
-
-        // Sort jobs
-        filtered.sort((a, b) => {
-            if (sortBy === 'date') {
-                return new Date(b.appliedDate) - new Date(a.appliedDate);
-            } else if (sortBy === 'company') {
-                return a.company.localeCompare(b.company);
-            } else if (sortBy === 'status') {
-                return a.status.localeCompare(b.status);
-            }
+    const filteredJobs = useMemo(() => {
+        const query = searchTerm.trim().toLocaleLowerCase();
+        const filtered = appliedJobs.filter((job) => {
+            const matchesSearch = !query || [job.jobTitle, job.company, job.location]
+                .some((value) => String(value || '').toLocaleLowerCase().includes(query));
+            const matchesStatus = statusFilter === 'all' || job.status === statusFilter;
+            return matchesSearch && matchesStatus;
+        });
+        return filtered.sort((a, b) => {
+            if (sortBy === 'date') return new Date(b.appliedDate || 0) - new Date(a.appliedDate || 0);
+            if (sortBy === 'company') return String(a.company || '').localeCompare(String(b.company || ''));
+            if (sortBy === 'status') return String(a.status || '').localeCompare(String(b.status || ''));
             return 0;
         });
-
-        setFilteredJobs(filtered);
     }, [appliedJobs, searchTerm, statusFilter, sortBy]);
 
     const handleViewDetails = (job) => {
         if (expandedJobId === job.id) {
             // If the same job is clicked, collapse it
             setExpandedJobId(null);
-            setSelectedJob(null);
         } else {
             // Expand the clicked job
             setExpandedJobId(job.id);
-            setSelectedJob(job);
         }
     };
 
@@ -157,26 +132,11 @@ const AppliedJobs = ({ showToast, sidebarCollapsed, t }) => {
         }
     };
 
-    const getCardAccentColor = (status) => {
-        switch (status) {
-            case 'pending':
-                return 'border-l-orange-400';
-            case 'interview':
-                return 'border-l-indigo-400';
-            case 'accepted':
-                return 'border-l-teal-400';
-            case 'rejected':
-                return 'border-l-stone-400';
-            default:
-                return 'border-l-stone-400';
-        }
-    };
-
     const formatDate = (date) => {
         if (!date) return 'Date not available';
 
-        // Handle both Date objects and date strings/timestamps
-        const dateObj = date instanceof Date ? date : new Date(date);
+        const converted = date?.toDate?.() || date;
+        const dateObj = converted instanceof Date ? converted : new Date(converted);
 
         // Check if date is valid
         if (isNaN(dateObj.getTime())) {
@@ -198,9 +158,9 @@ const AppliedJobs = ({ showToast, sidebarCollapsed, t }) => {
         return (
             <div className="min-h-screen bg-slate-50">
                 <div className="mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-4 sm:py-6 max-w-none w-full" style={{maxWidth: '1600px'}}>
-                    <div className="flex items-center justify-center h-64">
-                        <div className="text-center">
-                            <div className="animate-spin rounded-full h-10 w-10 border-2 border-slate-200 border-t-slate-600 mx-auto mb-3"></div>
+                    <div className="flex items-center justify-center h-64" aria-busy="true">
+                        <div className="text-center" role="status" aria-live="polite">
+                            <div aria-hidden="true" className="animate-spin rounded-full h-10 w-10 border-2 border-slate-200 border-t-slate-600 mx-auto mb-3"></div>
                             <p className="text-slate-600 text-sm font-medium">{t('JobsUpdate.AppliedJobs.loading', 'Loading your applications...')}</p>
                         </div>
                     </div>
@@ -228,9 +188,24 @@ const AppliedJobs = ({ showToast, sidebarCollapsed, t }) => {
         );
     }
 
-    const  redirectToJobs = () => {
-        navigate('/jobs');
+    if (loadError) {
+        return (
+            <main className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
+                <div className="max-w-md text-center" role="alert">
+                    <FaInfoCircle aria-hidden="true" className="w-10 h-10 text-amber-600 mx-auto mb-3" />
+                    <h1 className="text-lg font-semibold text-slate-900 mb-2">Applications unavailable</h1>
+                    <p className="text-sm text-slate-600 mb-4">{loadError}</p>
+                    <button type="button" onClick={() => setRetryCount((count) => count + 1)} className="px-4 py-2 rounded-md bg-slate-900 text-white text-sm font-medium hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900">
+                        Try again
+                    </button>
+                </div>
+            </main>
+        );
     }
+
+    const redirectToJobs = () => {
+        navigate('/jobs');
+    };
     return (
         <div className="min-h-screen bg-slate-50">
             <div className="mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-4 sm:py-6 max-w-none w-full" style={{maxWidth: '1600px'}}>
@@ -305,10 +280,12 @@ const AppliedJobs = ({ showToast, sidebarCollapsed, t }) => {
                     <div className="flex flex-col sm:flex-row gap-3">
                         {/* Search */}
                         <div className="flex-1">
+                            <label htmlFor="application-search" className="sr-only">Search applications</label>
                             <div className="relative">
-                                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-3.5 h-3.5" />
+                                <FaSearch aria-hidden="true" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-3.5 h-3.5" />
                                 <input
-                                    type="text"
+                                    id="application-search"
+                                    type="search"
                                     placeholder={t('JobsUpdate.AppliedJobs.search.placeholder', 'Search jobs, companies, or locations...')}
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -319,7 +296,9 @@ const AppliedJobs = ({ showToast, sidebarCollapsed, t }) => {
 
                         {/* Status Filter */}
                         <div className="sm:w-40">
+                            <label htmlFor="application-status-filter" className="sr-only">Filter by status</label>
                             <select
+                                id="application-status-filter"
                                 value={statusFilter}
                                 onChange={(e) => setStatusFilter(e.target.value)}
                                 className="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 bg-white">
@@ -333,7 +312,9 @@ const AppliedJobs = ({ showToast, sidebarCollapsed, t }) => {
 
                         {/* Sort */}
                         <div className="sm:w-40">
+                            <label htmlFor="application-sort" className="sr-only">Sort applications</label>
                             <select
+                                id="application-sort"
                                 value={sortBy}
                                 onChange={(e) => setSortBy(e.target.value)}
                                 className="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 bg-white">
@@ -414,8 +395,14 @@ const AppliedJobs = ({ showToast, sidebarCollapsed, t }) => {
                                         </div>
 
                                         <div className="flex items-center gap-2 ml-3 flex-shrink-0">
-                                            <button onClick={() => handleViewDetails(job)} className="p-2 text-slate-400 hover:text-slate-600 transition-colors rounded-md hover:bg-slate-50">
-                                                {expandedJobId === job.id ? <FaChevronUp className="w-3 h-3" /> : <FaChevronDown className="w-3 h-3" />}
+                                            <button
+                                                type="button"
+                                                onClick={() => handleViewDetails(job)}
+                                                aria-expanded={expandedJobId === job.id}
+                                                aria-controls={`application-details-${job.id}`}
+                                                aria-label={`${expandedJobId === job.id ? 'Hide' : 'Show'} details for ${job.jobTitle || 'application'}`}
+                                                className="p-2 text-slate-500 hover:text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-700 transition-colors rounded-md hover:bg-slate-50">
+                                                {expandedJobId === job.id ? <FaChevronUp aria-hidden="true" className="w-3 h-3" /> : <FaChevronDown aria-hidden="true" className="w-3 h-3" />}
                                             </button>
                                         </div>
                                     </div>
@@ -424,6 +411,7 @@ const AppliedJobs = ({ showToast, sidebarCollapsed, t }) => {
                                     <AnimatePresence>
                                         {expandedJobId === job.id && (
                                             <motion.div
+                                                id={`application-details-${job.id}`}
                                                 initial={{ opacity: 0, height: 0 }}
                                                 animate={{ opacity: 1, height: 'auto' }}
                                                 exit={{ opacity: 0, height: 0 }}
@@ -437,7 +425,7 @@ const AppliedJobs = ({ showToast, sidebarCollapsed, t }) => {
 
                                                         <h4 className="text-sm font-medium text-slate-900 mb-2">{t('JobsUpdate.AppliedJobs.jobDetails.requirements', 'Requirements')}</h4>
                                                         <div className="flex flex-wrap gap-1.5">
-                                                            {job.requirements && job.requirements.length > 0 ? (
+                                                            {Array.isArray(job.requirements) && job.requirements.length > 0 ? (
                                                                 job.requirements.slice(0, 6).map((req, index) => (
                                                                     <span key={index} className="px-2 py-1 bg-slate-100 text-slate-700 rounded text-xs font-medium">
                                                                         {req}
@@ -446,7 +434,7 @@ const AppliedJobs = ({ showToast, sidebarCollapsed, t }) => {
                                                             ) : (
                                                                 <span className="text-xs text-slate-500">{t('JobsUpdate.AppliedJobs.jobDetails.noRequirements', 'No specific requirements listed')}</span>
                                                             )}
-                                                            {job.requirements && job.requirements.length > 6 && (
+                                                            {Array.isArray(job.requirements) && job.requirements.length > 6 && (
                                                                 <span className="px-2 py-1 bg-slate-100 text-slate-500 rounded text-xs">+{job.requirements.length - 6} more</span>
                                                             )}
                                                         </div>

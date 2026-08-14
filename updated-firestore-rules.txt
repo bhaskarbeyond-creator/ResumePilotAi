@@ -42,6 +42,7 @@ service cloud.firestore {
       match /coverLetters/{coverId} { allow read, create, update, delete: if owner(uid); }
       match /favourites/{id} { allow read, create, update, delete: if owner(uid); }
       match /portfolios/{id} { allow read, create, update, delete: if owner(uid); }
+      match /jobTracker/{id} { allow read, create, update, delete: if owner(uid); }
       match /invoices/{id} { allow read: if owner(uid) || admin(); allow write: if false; }
       match /transactions/{id} { allow read: if owner(uid) || admin(); allow write: if false; }
     }
@@ -104,7 +105,11 @@ service cloud.firestore {
     }
 
     match /jobApplications/{id} {
+      // Allows an applicant transaction to check its deterministic, ownership-bound
+      // document before creation without granting collection/list access.
+      allow get: if signedIn() && id.matches('^' + request.auth.uid + '_.*$');
       allow create: if signedIn()
+        && id.matches('^' + request.auth.uid + '_.*$')
         && request.resource.data.userId == request.auth.uid
         && ownEmail(request.resource.data.applicantEmail)
         && request.resource.data.email == request.auth.token.email
