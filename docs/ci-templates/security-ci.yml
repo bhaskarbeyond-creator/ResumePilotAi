@@ -52,8 +52,11 @@ jobs:
       - name: Production build
         run: npm run build
 
-      - name: Block high and critical production dependency findings
+      - name: Block production dependency findings
         run: npm run audit:production
+
+      - name: Audit development and CI tooling
+        run: npm run audit:all
 
       - name: Detect accidentally committed private keys and provider tokens
         shell: bash

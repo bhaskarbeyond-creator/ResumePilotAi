@@ -85,8 +85,9 @@ This document deliberately does **not** certify the application for production. 
 - `npm run test:security`: PASS (XSS/static security tests plus backend unit/integration tests).
 - `npm --prefix backend test`: PASS (21 tests at the time of this report).
 - `npm run build`: PASS.
-- `npm run lint`: PASS with **0 errors and 544 legacy warnings**; warnings remain technical debt.
+- `npm run lint`: PASS with **0 errors and 545 legacy warnings**; warnings remain technical debt.
 - `npm run audit:production`: PASS.
+- Full root and backend audits (including development tooling): Critical 0, High 0, Moderate 0. Firebase CLI transitive packages are constrained to patched versions; `firebase --version` passes, while full Emulator compatibility still requires Java-enabled CI validation.
 - Frontend production audit: Critical 0, High 0, Moderate 0 (migrated deprecated `@measured/puck` to `@puckeditor/core`).
 - Backend production audit: Critical 0, High 0, Moderate 0 (Firebase transitive UUID advisory constrained to patched `uuid` 11.1.1 and backend tests pass).
 
@@ -104,14 +105,16 @@ This document deliberately does **not** certify the application for production. 
 10. Deploy the CSP in report-only mode first, exercise Firebase, Google/Facebook auth, PayPal, Razorpay, Paytm, Maps, exports, and admin pages, then enforce after resolving any legitimate blocked origins.
 11. Configure `TRUST_PROXY_HOPS` only if the backend is not reached through the checked-in loopback PHP/Apache proxy; verify real client IP and spoofed `X-Forwarded-For` behavior at the load balancer.
 12. Validate Workload Identity/ADC, IAM least privilege, Firestore TTL policies for token/state/quota documents, secret rotation, backups, alerting, centralized logs, and incident response.
-13. Run CodeQL and the security CI templates from `docs/ci-templates/`. Arena's GitHub App could push source code but lacked GitHub's `workflows` permission, so workflow files could not be installed under `.github/workflows` in this session.
-14. Perform DAST/SAST, malware/file-upload testing, dependency license review, browser compatibility, accessibility, load/DoS testing, and an independent penetration test in a production-equivalent environment.
+13. Rotate the SSH password that existed in historical `scratch/setup_ssh.py` revisions and remove it from reachable Git history with an approved history-rewrite procedure. The current tree no longer contains the credential and now has a tracked-secret regression test, but source removal does not revoke a leaked credential.
+14. Restrict or rotate the historical Firebase web API key found in old scratch-script revisions; although Firebase web keys are public identifiers, provider restrictions and quotas must be verified.
+15. Run CodeQL and the security CI templates from `docs/ci-templates/`. Arena's GitHub App could push source code but lacked GitHub's `workflows` permission, so workflow files could not be installed under `.github/workflows` in this session.
+16. Perform DAST/SAST, malware/file-upload testing, dependency license review, browser compatibility, accessibility, load/DoS testing, and an independent penetration test in a production-equivalent environment.
 
 ## Known remaining risks / not yet complete
 
-- 544 lint warnings remain; many are unused legacy code and hook dependency warnings. Lint has no errors, but warnings should be burned down rather than hidden indefinitely.
+- 545 lint warnings remain; many are unused legacy code and hook dependency warnings. Lint has no errors, but warnings should be burned down rather than hidden indefinitely.
 - Frontend bundles remain very large; this is primarily performance/availability debt.
-- Production dependency audits are currently clean, but forced transitive overrides and upstream Firebase/Google releases require continuous compatibility and advisory monitoring.
+- Dependency audits are currently clean, but forced transitive overrides (including Firebase CLI development tooling) and upstream Firebase/Google releases require continuous compatibility and advisory monitoring.
 - The PDF renderer uses Chromium `--no-sandbox` for container compatibility. Egress is blocked at the browser context and HTML is sanitized, but production should run the renderer in a dedicated locked-down sandboxed worker/container.
 - Firebase custom-token OAuth is intentionally blocked from auto-linking existing email/MFA accounts. A separate authenticated account-linking flow is not implemented.
 - Native LinkedIn/GitHub MFA requires configuring those providers through Firebase/Identity Platform OIDC. The custom-token compatibility flow refuses accounts with enrolled MFA instead of bypassing the second factor.
