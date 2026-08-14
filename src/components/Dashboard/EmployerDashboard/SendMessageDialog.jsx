@@ -2,10 +2,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaPaperPlane, FaTimes } from 'react-icons/fa';
-import { createConversation, sendMessage, findExistingConversation } from '../../../firestore/dbOperations';
+import { createConversation, sendMessage } from '../../../firestore/dbOperations';
 import fire from '../../../conf/fire';
 
-const SendMessageDialog = ({ isOpen, onClose, applicantId, applicantName, showToast }) => {
+const SendMessageDialog = ({ isOpen, onClose, applicationId, applicantName, showToast }) => {
     const [message, setMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
 
@@ -20,32 +20,10 @@ const SendMessageDialog = ({ isOpen, onClose, applicantId, applicantName, showTo
                 throw new Error('You must be logged in to send messages.');
             }
             const employerId = currentUser.uid;
+            const convResult = await createConversation(applicationId);
+            if (!convResult.success) throw new Error(convResult.error || 'Failed to create conversation.');
+            const conversationId = convResult.conversationId;
 
-            // 1. Check if conversation already exists
-            const participantIds = [employerId, applicantId];
-            console.log('🔍 Looking for existing conversation between:', participantIds);
-            let conversationId = await findExistingConversation(participantIds);
-            console.log('🔍 Found existing conversation ID:', conversationId);
-            
-            if (!conversationId) {
-                console.log('✨ No existing conversation found, creating new one');
-                // Create new conversation if none exists
-                const participants = {
-                    [employerId]: true,
-                    [applicantId]: true,
-                };
-                const convResult = await createConversation(participants);
-                
-                if (!convResult.success) {
-                    throw new Error(convResult.error || 'Failed to create conversation.');
-                }
-                
-                conversationId = convResult.conversationId;
-                console.log('✨ Created new conversation with ID:', conversationId);
-            } else {
-                console.log('♻️ Using existing conversation:', conversationId);
-            }
-            
             // 2. Send the message to existing or new conversation
             const messageResult = await sendMessage(conversationId, employerId, message.trim());
 

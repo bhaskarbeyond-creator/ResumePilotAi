@@ -23,6 +23,7 @@ const {
     exportAccountLimiter,
     scraperAccountLimiter,
     contactAccountLimiter,
+    messagingAccountLimiter,
     enforceDailyAiQuota,
     bindNotificationRecipient
 } = require('./security/abuse');
@@ -38,6 +39,7 @@ try {
     if (!admin.apps.length) {
         let credential;
         const projectId = process.env.FIREBASE_PROJECT_ID || 'ai-resume-builder-424cf';
+        const databaseURL = process.env.FIREBASE_DATABASE_URL || undefined;
 
         if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
             credential = admin.credential.cert({
@@ -52,12 +54,12 @@ try {
             console.log('[Firebase Admin] Initialized via Application Default Credentials');
         } else {
             // Local builds without credentials can serve non-Firebase diagnostics only.
-            admin.initializeApp({ projectId });
+            admin.initializeApp({ projectId, databaseURL });
             console.log('[Firebase Admin] Initialized without credentials (limited local mode)');
         }
 
         if (credential) {
-            admin.initializeApp({ credential, projectId });
+            admin.initializeApp({ credential, projectId, databaseURL });
             db = admin.firestore();
         }
     } else {
@@ -206,6 +208,7 @@ app.use(ownNotificationPaths, notificationAccountLimiter, bindNotificationRecipi
 app.use(['/api/export', '/api/public-export', '/api/export-docx'], exportAccountLimiter);
 app.use('/api/linkedin-scraper', scraperAccountLimiter);
 app.use('/api/contact', contactAccountLimiter);
+app.use('/api/messages', messagingAccountLimiter);
 // Defense in depth for administrative namespaces. The route policy also protects aliases
 // such as /api/auth/purge-orphaned-auth and modular email routes mounted under /api.
 app.use(['/api/admin', '/api/test-grant-admin', '/api/test-create-candidate-subscription', '/api/email/admin'], requirePermission('system.config.write'));
@@ -971,6 +974,67 @@ app.post('/api/check', async (req, res) => {
 app.post('/api/date', async (req, res) => {
     var current_date = new Date();
     res.json({ date: current_date });
+});
+
+app.post('/api/messages/conversations', async (req, res) => {
+    const applicationId = String(req.body.applicationId || '');
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(applicationId) || !db || !admin?.database) {
+        return res.status(400).json({ success: false, error: 'Valid job application is required.' });
+    }
+    try {
+        const application = await db.collection('jobApplications').doc(applicationId).get();
+        if (!application.exists) return res.status(404).json({ success: false, error: 'Job application not found.' });
+        const applicationData = application.data();
+        const job = await db.collection('jobs').doc(applicationData.jobId).get();
+        const applicantUid = applicationData.userId;
+        const employerUid = job.data()?.employerId;
+        if (!applicantUid || !employerUid || ![applicantUid, employerUid].includes(req.user.uid)) {
+            return res.status(403).json({ success: false, error: 'Conversation is not available to this account.' });
+        }
+        const participants = [applicantUid, employerUid].sort();
+        const lookupKey = crypto.createHash('sha256').update(participants.join('\0')).digest('hex');
+        const realtime = admin.database();
+        const lookupRef = realtime.ref(`conversation-participants/${lookupKey}`);
+        const existing = await lookupRef.get();
+        if (existing.exists()) return res.json({ success: true, conversationId: existing.val(), existing: true });
+        const conversationId = realtime.ref('conversations').push().key;
+        const timestamp = { '.sv': 'timestamp' };
+        await realtime.ref().update({
+            [`conversations/${conversationId}`]: {
+                participants: { [applicantUid]: true, [employerUid]: true },
+                applicationId,
+                createdAt: timestamp
+            },
+            [`user-conversations/${applicantUid}/${conversationId}`]: true,
+            [`user-conversations/${employerUid}/${conversationId}`]: true,
+            [`conversation-participants/${lookupKey}`]: conversationId
+        });
+        return res.status(201).json({ success: true, conversationId });
+    } catch (error) {
+        console.error('[Create conversation]', error.message);
+        return res.status(503).json({ success: false, error: 'Messaging service unavailable.' });
+    }
+});
+
+app.post('/api/messages/send', async (req, res) => {
+    const conversationId = String(req.body.conversationId || '');
+    const text = String(req.body.text || '').trim();
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(conversationId) || !text || text.length > 10_000 || !admin?.database) {
+        return res.status(400).json({ success: false, error: 'Valid conversation and message are required.' });
+    }
+    try {
+        const realtime = admin.database();
+        const conversation = await realtime.ref(`conversations/${conversationId}`).get();
+        if (!conversation.exists() || conversation.child(`participants/${req.user.uid}`).val() !== true) {
+            return res.status(404).json({ success: false, error: 'Conversation not found.' });
+        }
+        const messageRef = realtime.ref(`messages/${conversationId}`).push();
+        await messageRef.set({ senderId: req.user.uid, text, timestamp: { '.sv': 'timestamp' } });
+        return res.status(201).json({ success: true, messageId: messageRef.key });
+    } catch (error) {
+        console.error('[Send message]', error.message);
+        return res.status(503).json({ success: false, error: 'Messaging service unavailable.' });
+    }
 });
 
 app.post('/api/contact', async (req, res) => {
@@ -2124,7 +2188,8 @@ app.post('/api/admin/firebase-service-account', async (req, res) => {
                 projectId,
                 clientEmail,
                 privateKey: normalizedKey,
-            })
+            }),
+            databaseURL: process.env.FIREBASE_DATABASE_URL || undefined
         });
         admin = firebaseAdmin;
         db = newApp.firestore();

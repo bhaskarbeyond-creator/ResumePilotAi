@@ -4937,91 +4937,29 @@ function safeRealtimeDbOperation(operation, fallbackReturn = null) {
     }
 }
 
-export async function findExistingConversation(participantIds) {
-    if (!isRealtimeDatabaseAvailable()) {
-        console.warn('⚠️ Realtime Database not available for findExistingConversation');
-        return null;
-    }
-    
+export async function createConversation(applicationId) {
     try {
-        console.log('🔍 findExistingConversation called with:', participantIds);
-        
-        // Check if user is authenticated
-        const currentUser = fire.auth().currentUser;
-        if (!currentUser) {
-            console.error('🔍 User not authenticated');
-            return null;
-        }
-        console.log('🔍 User authenticated:', currentUser.uid);
-
-        // Sort participant IDs to ensure consistent key generation
-        const sortedParticipantIds = [...participantIds].sort();
-        const conversationLookupKey = sortedParticipantIds.join('_');
-        
-        const db = fire.database();
-        const conversationLookupRef = db.ref(`conversation-participants/${conversationLookupKey}`);
-
-        const snapshot = await conversationLookupRef.get();
-        if (snapshot.exists()) {
-            const conversationId = snapshot.val();
-            console.log('✅ Found existing conversation:', conversationId);
-            return conversationId;
-        } else {
-            console.log('❌ No existing conversation found');
-            return null;
-        }
-    } catch (error) {
-        console.error('❌ Error in findExistingConversation:', error);
-        console.error('❌ Error code:', error.code);
-        console.error('❌ Error message:', error.message);
-        return null;
-    }
-}
-
-export async function createConversation(participants) {
-    try {
-        const db = fire.database();
-        const conversationRef = db.ref('conversations').push();
-        const conversationId = conversationRef.key;
-
-        const conversationData = {
-            participants,
-            createdAt: firebase.database.ServerValue.TIMESTAMP,
-        };
-
-        await conversationRef.set(conversationData);
-
-        // Add conversation to each participant's user-conversations list
-        const participantIds = Object.keys(participants);
-        for (const userId of participantIds) {
-            await db.ref(`user-conversations/${userId}/${conversationId}`).set(true);
-        }
-
-        // Add to the conversation-participants lookup table
-        const sortedParticipantIds = [...participantIds].sort();
-        const conversationLookupKey = sortedParticipantIds.join('_');
-        await db.ref(`conversation-participants/${conversationLookupKey}`).set(conversationId);
-
-        return { success: true, conversationId };
+        const response = await fetch('/api/messages/conversations', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ applicationId })
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || 'Unable to create conversation.');
+        return result;
     } catch (error) {
         return { success: false, error: error.message };
     }
 }
 
-export async function sendMessage(conversationId, senderId, text) {
+export async function sendMessage(conversationId, _senderId, text) {
     try {
-        
-        const db = fire.database();
-        const messagesRef = db.ref(`messages/${conversationId}`).push();
-
-        const messageData = {
-            senderId,
-            text,
-            timestamp: firebase.database.ServerValue.TIMESTAMP,
-        };
-
-        await messagesRef.set(messageData);
-        return { success: true };
+        const response = await fetch('/api/messages/send', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ conversationId, text })
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || 'Unable to send message.');
+        return result;
     } catch (error) {
         return { success: false, error: error.message };
     }

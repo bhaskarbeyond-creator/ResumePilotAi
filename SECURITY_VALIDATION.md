@@ -35,8 +35,8 @@ This document deliberately does **not** certify the application for production. 
 - Firestore rules separate owner data, public approved content, employer-owned jobs, applicant-owned applications, admin data, billing state, secrets, reset tokens, and webhook/order ledgers.
 - Client writes cannot set role, Premium membership, payment status, suspension, verification, or provider order state.
 - Shared resumes carry an immutable owner and explicit publication marker.
-- Realtime messages bind sender identity; participants are immutable after conversation creation; lookup/index writes are participant-bound.
-- An adversarial Firestore Emulator suite is present in `tests/firestore.rules.test.mjs`.
+- Conversation creation, participant indexes, and message sends are server-authorized against job applications and account-limited. Realtime Database clients are read-only and participant-scoped, eliminating sender overwrite and participant/index injection.
+- Adversarial Firestore and Realtime Database Emulator suites are present in `tests/firestore.rules.test.mjs` and `tests/database.rules.test.mjs`.
 
 ### Authentication, OAuth, reset, and MFA
 
@@ -91,7 +91,7 @@ This document deliberately does **not** certify the application for production. 
 
 ## Implemented but requiring external validation
 
-1. Run `npm run test:firestore` with Java 21 and the Firebase Emulator. The local sandbox had no Java runtime and blocked JRE download, so the suite was implemented but could not be executed here.
+1. Run `npm run test:firebase-rules` with Java 21 and the Firebase Emulators. The local sandbox had no Java runtime and blocked JRE download, so both Firestore and Realtime Database suites were implemented but could not be executed here.
 2. Deploy Firestore and Realtime Database rules to a non-production Firebase project; run real client query/index tests and confirm existing documents match the new owner/status fields.
 3. Enable Firebase Identity Platform TOTP MFA and test enrollment, reauthentication, recovery/support policy, multi-device behavior, and every Firebase sign-in provider.
 4. Configure GitHub and LinkedIn production callback allowlists; validate PKCE/state/cookie behavior, denied consent, verified-email absence, duplicate email, and multi-instance state storage.

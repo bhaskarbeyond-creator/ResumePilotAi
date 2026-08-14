@@ -4,20 +4,16 @@
     ".write": false,
     "conversations": {
       "$conversationId": {
-        ".read": "auth != null && data.child('participants').child(auth.uid).exists()",
-        ".write": "auth != null && ((!data.exists() && newData.child('participants').child(auth.uid).exists() && newData.child('participants').numChildren() >= 2 && newData.child('participants').numChildren() <= 10) || (data.exists() && data.child('participants').child(auth.uid).exists() && newData.child('participants').val() === data.child('participants').val()))",
-        "participants": {
-          "$uid": { ".validate": "newData.val() === true || newData.hasChildren()" }
-        }
+        ".read": "auth != null && data.child('participants').child(auth.uid).val() === true",
+        ".write": false
       }
     },
     "messages": {
       "$conversationId": {
-        ".read": "auth != null && root.child('conversations').child($conversationId).child('participants').child(auth.uid).exists()",
+        ".read": "auth != null && root.child('conversations').child($conversationId).child('participants').child(auth.uid).val() === true",
         ".indexOn": "timestamp",
         "$messageId": {
-          ".write": "auth != null && root.child('conversations').child($conversationId).child('participants').child(auth.uid).exists() && ((!data.exists() && newData.child('senderId').val() === auth.uid) || (data.exists() && data.child('senderId').val() === auth.uid && newData.child('senderId').val() === auth.uid))",
-          ".validate": "newData.hasChildren(['senderId','text','timestamp']) && newData.child('text').isString() && newData.child('text').val().length <= 10000"
+          ".write": false
         }
       }
     },
@@ -25,14 +21,14 @@
       "$userId": {
         ".read": "auth != null && $userId === auth.uid",
         "$conversationId": {
-          ".write": "auth != null && $userId === auth.uid && root.child('conversations').child($conversationId).child('participants').child(auth.uid).exists() && (newData.val() === true || !newData.exists())"
+          ".write": false
         }
       }
     },
     "conversation-participants": {
       "$lookupKey": {
-        ".read": "auth != null && data.isString() && root.child('conversations').child(data.val()).child('participants').child(auth.uid).exists()",
-        ".write": "auth != null && !data.exists() && newData.isString() && root.child('conversations').child(newData.val()).child('participants').child(auth.uid).exists()"
+        ".read": "auth != null && data.isString() && root.child('conversations').child(data.val()).child('participants').child(auth.uid).val() === true",
+        ".write": false
       }
     }
   }

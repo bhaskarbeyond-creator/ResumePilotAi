@@ -420,7 +420,7 @@ const [selectedApplication, setSelectedApplication] = useState(null);
                 <SendMessageDialog 
                     isOpen={!!messageApplicant}
                     onClose={() => setMessageApplicant(null)}
-                    applicantId={messageApplicant.userId}
+                    applicationId={messageApplicant.id}
                     applicantName={messageApplicant.applicantName}
                     showToast={showToast}
                 />

@@ -127,4 +127,6 @@ test('Firestore deploy config includes both deny-by-default stores', () => {
   const realtime = JSON.parse(read('Realtime_database_Security_rules.txt'));
   assert.equal(realtime.rules['.read'], false);
   assert.equal(realtime.rules['.write'], false);
+  assert.equal(realtime.rules.messages.$conversationId.$messageId['.write'], false);
+  assert.equal(realtime.rules.conversations.$conversationId['.write'], false);
 });

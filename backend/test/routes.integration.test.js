@@ -63,6 +63,9 @@ test('unverified users cannot consume paid AI or payment endpoints', async () =>
   const payment = await request(app).post('/api/pay').set(bearer('unverified')).send({ planId: 'monthly' });
   assert.equal(payment.status, 403);
   assert.equal(payment.body.error.code, 'EMAIL_VERIFICATION_REQUIRED');
+  const message = await request(app).post('/api/messages/send').set(bearer('unverified')).send({ conversationId: 'conversation', text: 'hello' });
+  assert.equal(message.status, 403);
+  assert.equal(message.body.error.code, 'EMAIL_VERIFICATION_REQUIRED');
 });
 
 test('password reset request is generic and timing-equalized for malformed accounts', async () => {
