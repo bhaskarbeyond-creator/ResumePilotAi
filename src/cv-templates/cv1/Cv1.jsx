@@ -9,9 +9,6 @@ import { formatLocation, formatDateRange, getTemplateColors, formatLanguages } f
 class Cv1 extends Component {
     constructor(props) {
         super(props);
-        if (typeof document !== 'undefined' && document.body) {
-            document.body.style.overflow = 'auto';
-        }
         i18n.changeLanguage(this.props.language);
         this.returnLanguages = this.returnLanguages.bind(this);
         this.returnSkills = this.returnSkills.bind(this);

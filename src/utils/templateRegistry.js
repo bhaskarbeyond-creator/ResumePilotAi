@@ -1,62 +1,49 @@
 import React, { lazy } from 'react';
-import Cv1 from '../cv-templates/cv1/Cv1';
+import Cv1Base from '../cv-templates/cv1/Cv1';
+import { getTemplateDirection, normalizeTemplateData } from '../cv-templates/templateUtils';
 
-// Static import for default Cv1 for 0-latency instant initial load
-// Lazy imports for Cv2-Cv51 to prevent bundle saturation and ensure lightning-fast page loads
+export const CV_TEMPLATE_IDS = Object.freeze(Array.from({ length: 51 }, (_, index) => `Cv${index + 1}`));
+export const COVER_TEMPLATE_IDS = Object.freeze(Array.from({ length: 4 }, (_, index) => `Cover${index + 1}`));
+export const ALL_TEMPLATE_IDS = Object.freeze([...CV_TEMPLATE_IDS, ...COVER_TEMPLATE_IDS]);
+
+/** Applies the shared immutable view-model contract at every registry render boundary. */
+export const withNormalizedTemplateData = (TemplateComponent) => {
+    const NormalizedTemplate = (props) => {
+        const language = props.language || 'en';
+        return React.createElement(
+            'div',
+            { dir: getTemplateDirection(language), 'data-template-direction': getTemplateDirection(language) },
+            React.createElement(TemplateComponent, { ...props, language, values: normalizeTemplateData(props.values) })
+        );
+    };
+    NormalizedTemplate.displayName = `Normalized${TemplateComponent.displayName || TemplateComponent.name || 'Template'}`;
+    return NormalizedTemplate;
+};
+
+const normalizedLazy = (loader) => lazy(async () => {
+    const module = await loader();
+    return { default: withNormalizedTemplateData(module.default) };
+});
+
+const Cv1 = withNormalizedTemplateData(Cv1Base);
+const cvModules = import.meta.glob('../cv-templates/cv*/Cv*.jsx');
+const coverModules = import.meta.glob('../cv-templates/cover*/Cover*.jsx');
+
+const cvLoader = (number) => cvModules[`../cv-templates/cv${number}/Cv${number}.jsx`];
+const coverLoader = (number) => coverModules[`../cv-templates/cover${number}/Cover${number}.jsx`];
+
+// Static default plus route-level chunks for the other templates.
 export const templateMap = {
-    Cv1: Cv1,
-    Cv2: lazy(() => import('../cv-templates/cv2/Cv2')),
-    Cv3: lazy(() => import('../cv-templates/cv3/Cv3')),
-    Cv4: lazy(() => import('../cv-templates/cv4/Cv4')),
-    Cv5: lazy(() => import('../cv-templates/cv5/Cv5')),
-    Cv6: lazy(() => import('../cv-templates/cv6/Cv6')),
-    Cv7: lazy(() => import('../cv-templates/cv7/Cv7')),
-    Cv8: lazy(() => import('../cv-templates/cv8/Cv8')),
-    Cv9: lazy(() => import('../cv-templates/cv9/Cv9')),
-    Cv10: lazy(() => import('../cv-templates/cv10/Cv10')),
-    Cv11: lazy(() => import('../cv-templates/cv11/Cv11')),
-    Cv12: lazy(() => import('../cv-templates/cv12/Cv12')),
-    Cv13: lazy(() => import('../cv-templates/cv13/Cv13')),
-    Cv14: lazy(() => import('../cv-templates/cv14/Cv14')),
-    Cv15: lazy(() => import('../cv-templates/cv15/Cv15')),
-    Cv16: lazy(() => import('../cv-templates/cv16/Cv16')),
-    Cv17: lazy(() => import('../cv-templates/cv17/Cv17')),
-    Cv18: lazy(() => import('../cv-templates/cv18/Cv18')),
-    Cv19: lazy(() => import('../cv-templates/cv19/Cv19')),
-    Cv20: lazy(() => import('../cv-templates/cv20/Cv20')),
-    Cv21: lazy(() => import('../cv-templates/cv21/Cv21')),
-    Cv22: lazy(() => import('../cv-templates/cv22/Cv22')),
-    Cv23: lazy(() => import('../cv-templates/cv23/Cv23')),
-    Cv24: lazy(() => import('../cv-templates/cv24/Cv24')),
-    Cv25: lazy(() => import('../cv-templates/cv25/Cv25')),
-    Cv26: lazy(() => import('../cv-templates/cv26/Cv26')),
-    Cv27: lazy(() => import('../cv-templates/cv27/Cv27')),
-    Cv28: lazy(() => import('../cv-templates/cv28/Cv28')),
-    Cv29: lazy(() => import('../cv-templates/cv29/Cv29')),
-    Cv30: lazy(() => import('../cv-templates/cv30/Cv30')),
-    Cv31: lazy(() => import('../cv-templates/cv31/Cv31')),
-    Cv32: lazy(() => import('../cv-templates/cv32/Cv32')),
-    Cv33: lazy(() => import('../cv-templates/cv33/Cv33')),
-    Cv34: lazy(() => import('../cv-templates/cv34/Cv34')),
-    Cv35: lazy(() => import('../cv-templates/cv35/Cv35')),
-    Cv36: lazy(() => import('../cv-templates/cv36/Cv36')),
-    Cv37: lazy(() => import('../cv-templates/cv37/Cv37')),
-    Cv38: lazy(() => import('../cv-templates/cv38/Cv38')),
-    Cv39: lazy(() => import('../cv-templates/cv39/Cv39')),
-    Cv40: lazy(() => import('../cv-templates/cv40/Cv40')),
-    Cv41: lazy(() => import('../cv-templates/cv41/Cv41')),
-    Cv42: lazy(() => import('../cv-templates/cv42/Cv42')),
-    Cv43: lazy(() => import('../cv-templates/cv43/Cv43')),
-    Cv44: lazy(() => import('../cv-templates/cv44/Cv44')),
-    Cv45: lazy(() => import('../cv-templates/cv45/Cv45')),
-    Cv46: lazy(() => import('../cv-templates/cv46/Cv46')),
-    Cv47: lazy(() => import('../cv-templates/cv47/Cv47')),
-    Cv48: lazy(() => import('../cv-templates/cv48/Cv48')),
-    Cv49: lazy(() => import('../cv-templates/cv49/Cv49')),
-    Cv50: lazy(() => import('../cv-templates/cv50/Cv50')),
-    Cv51: lazy(() => import('../cv-templates/cv51/Cv51'))
+    Cv1,
+    ...Object.fromEntries(CV_TEMPLATE_IDS.slice(1).map((id) => {
+        const number = id.slice(2);
+        return [id, normalizedLazy(cvLoader(number))];
+    })),
+    ...Object.fromEntries(COVER_TEMPLATE_IDS.map((id) => {
+        const number = id.slice(5);
+        return [id, normalizedLazy(coverLoader(number))];
+    })),
 };
 
-export const getTemplateComponent = (templateId) => {
-    return templateMap[templateId] || Cv1;
-};
+export const getTemplateComponent = (templateId) => templateMap[templateId] || Cv1;
+export const isKnownTemplate = (templateId) => ALL_TEMPLATE_IDS.includes(templateId);

@@ -1190,15 +1190,19 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
             waitUntil: 'domcontentloaded',
             timeout: 60000,
         });
-        // Wait for the Exporter component to signal that Firestore data is loaded
+        // Wait for the normalized lazy template to commit. Export errors fail closed instead
+        // of silently producing an empty/corrupt PDF.
         await page.waitForFunction(
-            'document.documentElement.getAttribute("data-export-ready") === "true"',
+            'document.documentElement.getAttribute("data-export-ready") === "true" || document.documentElement.hasAttribute("data-export-error")',
             { timeout: 25000 }
-        ).catch(err => console.log('data-export-ready timeout, proceeding anyway:', err.message));
-        // Wait for all fonts (Google Fonts) to finish loading
-        await page.evaluate(() => globalThis.document.fonts.ready).catch(() => {});
-        // Extra buffer for images and final paint
-        await page.waitForTimeout(3000);
+        );
+        const exportError = await page.evaluate(() => globalThis.document.documentElement.getAttribute('data-export-error'));
+        if (exportError) throw new Error(`EXPORT_RENDER_FAILED:${exportError}`);
+        await page.evaluate(async () => {
+            await globalThis.document.fonts?.ready;
+            await Promise.all([...globalThis.document.images].map(image => image.complete || !image.decode ? Promise.resolve() : image.decode().catch(() => {})));
+        }).catch(() => {});
+        await page.waitForTimeout(250);
 
         const pdfPath = path.join(__dirname, `resume_${Date.now()}.pdf`);
         await page.pdf({

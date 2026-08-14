@@ -8,13 +8,15 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "npm run test:security",
+    "test": "npm run test:security && npm run test:product",
     "test:security": "node --test tests/security-static.test.mjs tests/xss.test.mjs tests/mfa-static.test.mjs && node --test backend/test/*.test.js",
     "test:firestore": "firebase emulators:exec --only firestore,database --project demo-resumepilot-security \"node --test tests/firestore.rules.test.mjs tests/database.rules.test.mjs\"",
     "audit:production": "npm audit --omit=dev --audit-level=high && npm --prefix backend audit --omit=dev --audit-level=high",
-    "ci:security": "npm run lint && npm run test:security && npm run build && npm run audit:production && npm run audit:all",
+    "ci:security": "npm run lint && npm run test:security && npm run test:product && npm run build && npm run audit:production && npm run audit:all",
     "test:firebase-rules": "firebase emulators:exec --only firestore,database --project demo-resumepilot-security \"node --test tests/firestore.rules.test.mjs tests/database.rules.test.mjs\"",
-    "audit:all": "npm audit --audit-level=moderate && npm --prefix backend audit --audit-level=moderate"
+    "audit:all": "npm audit --audit-level=moderate && npm --prefix backend audit --audit-level=moderate",
+    "test:templates": "node --test tests/template-data.test.mjs tests/template-render.test.mjs",
+    "test:product": "node --test tests/template-data.test.mjs tests/portfolio-sanitization.test.mjs tests/i18n.test.mjs && node --test tests/template-render.test.mjs"
   },
   "dependencies": {
     "@lexical/react": "^0.32.1",

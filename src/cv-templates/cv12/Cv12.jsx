@@ -50,7 +50,7 @@ class Cv12 extends Component {
 
         for (let index = 0; index < tempEducations.length; index++) {
             elements.push(
-                <div className="cv12-employment-item">
+                <div key={`education-${index}`} className="cv12-employment-item">
                     {/* Left */}
                     <div className="cv12-employment-item-left">
                         <p>
@@ -75,7 +75,7 @@ class Cv12 extends Component {
             return a.date - b.date;
         });
         for (let index = 0; index < tempSkills.length; index++) {
-            elements.push(<p>{this.props.values.skills[index].name}</p>);
+            elements.push(<p key={`skill-${index}`}>{this.props.values.skills[index].name}</p>);
         }
         return elements;
     }
@@ -87,7 +87,7 @@ class Cv12 extends Component {
         });
         for (let index = 0; index < tempLanguages.length; index++) {
             elements.push(
-                <div className="cv12-languages-item">
+                <div key={`language-${index}`} className="cv12-languages-item">
                     <p>{tempLanguages[index].name}</p>
                     <p>{tempLanguages[index].level}</p>
                 </div>

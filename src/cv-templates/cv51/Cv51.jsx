@@ -11,7 +11,6 @@ import { IoMail } from "react-icons/io5";
 class Cv51 extends Component {
     constructor(props) {
         super(props);
-        document.getElementsByTagName('body')[0].style.overflow = 'none';
         i18n.changeLanguage(this.props.language);
         this.returnMotherTongues = this.returnMotherTongues.bind(this);
         this.returnOtherLanguageNames = this.returnOtherLanguageNames.bind(this);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { sanitizeBlogHtml } from '../../../utils/sanitizeHtml';
+import { sanitizeBlogHtml, sanitizeImageUrl } from '../../../utils/sanitizeHtml';
 import { 
     getBlogPostBySlug, 
     listBlogPosts, 
@@ -35,7 +35,7 @@ const BlogPost = () => {
     const [category, setCategory] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [canEdit, setCanEdit] = useState(false);
+    const canEdit = Boolean(user?.uid && post?.authorUid === user.uid);
 
     // Auth handlers for navbar
     const authBtnHandler = () => {
@@ -52,76 +52,96 @@ const BlogPost = () => {
     };
 
     useEffect(() => {
-        if (slug) {
-            fetchPost();
+        let active = true;
+        const fetchPost = async () => {
+            setLoading(true);
+            setError(null);
+            setPost(null);
+            setRelatedPosts([]);
+            setCategory(null);
+            try {
+                const postData = await getBlogPostBySlug(slug);
+                if (!active) return;
+                if (!postData) {
+                    setError('Post not found');
+                    return;
+                }
+                setPost(postData);
+
+                // Taxonomy and recommendations are optional enhancements: their failure must
+                // never hide an otherwise readable article.
+                const [categoriesResult, relatedResult] = await Promise.allSettled([
+                    listBlogCategories(),
+                    listBlogPosts({ status: 'approved', limit: 10 }),
+                ]);
+                if (!active) return;
+                if (categoriesResult.status === 'fulfilled') {
+                    setCategory(categoriesResult.value.find((item) => item.id === postData.categoryId) || null);
+                }
+                if (relatedResult.status === 'fulfilled' && relatedResult.value.success) {
+                    const candidates = relatedResult.value.posts.filter((item) => item.id !== postData.id);
+                    const sameCategory = candidates.filter((item) => item.categoryId === postData.categoryId);
+                    const other = candidates.filter((item) => item.categoryId !== postData.categoryId);
+                    setRelatedPosts([...sameCategory, ...other].slice(0, 3));
+                }
+            } catch (fetchError) {
+                if (!active) return;
+                console.error('Error fetching blog post:', fetchError);
+                setError('Failed to load post. Please try again later.');
+            } finally {
+                if (active) setLoading(false);
+            }
+        };
+
+        if (slug) fetchPost();
+        else {
+            setError('Post not found');
+            setLoading(false);
         }
+        return () => {
+            active = false;
+        };
     }, [slug]);
 
     useEffect(() => {
-        // Update document title when post loads
-        if (post) {
-            document.title = post.title;
-        }
-    }, [post]);
-
-    const fetchPost = async () => {
-        setLoading(true);
-        setError(null);
-        
-        try {
-            // Fetch the blog post
-            const postData = await getBlogPostBySlug(slug);
-            
-            if (!postData) {
-                setError('Post not found');
-                return;
+        if (!post) return undefined;
+        const previousTitle = document.title;
+        const changed = [];
+        const setMeta = (selector, attributes) => {
+            let element = document.head.querySelector(selector);
+            const created = !element;
+            if (!element) {
+                element = document.createElement(selector.startsWith('link') ? 'link' : 'meta');
+                document.head.appendChild(element);
             }
-            
-            setPost(postData);
-            
-            // Check if current user can edit this post
-            if (user && (user.uid === postData.authorUid)) {
-                setCanEdit(true);
-            }
+            const previous = Object.fromEntries(Object.keys(attributes).map((key) => [key, element.getAttribute(key)]));
+            for (const [key, value] of Object.entries(attributes)) element.setAttribute(key, value);
+            changed.push({ element, created, previous });
+        };
+        const title = post.seoTitle || post.title || 'Article';
+        const description = post.seoDescription || post.excerpt || '';
+        const canonical = `${window.location.origin}/blog/${encodeURIComponent(slug)}`;
+        document.title = title;
+        setMeta('meta[name="description"]', { name: 'description', content: description });
+        setMeta('meta[property="og:title"]', { property: 'og:title', content: title });
+        setMeta('meta[property="og:description"]', { property: 'og:description', content: description });
+        setMeta('meta[property="og:type"]', { property: 'og:type', content: 'article' });
+        setMeta('meta[property="og:url"]', { property: 'og:url', content: canonical });
+        setMeta('link[rel="canonical"]', { rel: 'canonical', href: canonical });
+        const image = sanitizeImageUrl(post.featuredImage);
+        if (image) setMeta('meta[property="og:image"]', { property: 'og:image', content: image });
 
-            // Fetch categories
-            const categoriesResult = await listBlogCategories();
-            
-            // Fetch related posts separately to avoid composite index issues
-            const relatedResult = await listBlogPosts({
-                status: 'approved',
-                limit: 10 // Get more posts to filter out current post
-            });
-            
-            // Find the category
-            const postCategory = categoriesResult.find(cat => cat.id === postData.categoryId);
-            setCategory(postCategory);
-            
-            // Set related posts (excluding current post)
-            if (relatedResult.success) {
-                // First try to find posts from the same category
-                let filtered = relatedResult.posts.filter(p => 
-                    p.id !== postData.id && p.categoryId === postData.categoryId
-                );
-                
-                // If not enough posts from same category, add other posts
-                if (filtered.length < 3) {
-                    const otherPosts = relatedResult.posts.filter(p => 
-                        p.id !== postData.id && p.categoryId !== postData.categoryId
-                    );
-                    filtered = [...filtered, ...otherPosts];
+        return () => {
+            document.title = previousTitle;
+            for (const { element, created, previous } of changed) {
+                if (created) element.remove();
+                else for (const [key, value] of Object.entries(previous)) {
+                    if (value === null) element.removeAttribute(key);
+                    else element.setAttribute(key, value);
                 }
-                
-                setRelatedPosts(filtered.slice(0, 3));
             }
-            
-        } catch (error) {
-            console.error('Error fetching blog post:', error);
-            setError('Failed to load post');
-        } finally {
-            setLoading(false);
-        }
-    };
+        };
+    }, [post, slug]);
 
     const formatDate = (date) => {
         if (!date) return 'Recently';
@@ -147,13 +167,17 @@ const BlogPost = () => {
         return `${readingTime} min read`;
     };
 
-    const [copiedToast, setCopiedToast] = useState(false);
+    const [shareMessage, setShareMessage] = useState('');
 
     const handleShare = async () => {
         const copyAction = async () => {
-            await navigator.clipboard.writeText(window.location.href);
-            setCopiedToast(true);
-            setTimeout(() => setCopiedToast(false), 2500);
+            try {
+                await navigator.clipboard.writeText(window.location.href);
+                setShareMessage('Link copied to clipboard!');
+            } catch {
+                setShareMessage('Unable to copy the link. Please copy it from the address bar.');
+            }
+            setTimeout(() => setShareMessage(''), 2500);
         };
 
         if (navigator.share) {
@@ -163,8 +187,8 @@ const BlogPost = () => {
                     text: post.excerpt,
                     url: window.location.href,
                 });
-            } catch (error) {
-                await copyAction();
+            } catch (shareError) {
+                if (shareError?.name !== 'AbortError') await copyAction();
             }
         } else {
             await copyAction();
@@ -180,6 +204,7 @@ const BlogPost = () => {
     };
 
     const sanitizeHtmlContent = sanitizeBlogHtml;
+    const featuredImage = sanitizeImageUrl(post?.featuredImage);
 
     if (loading) {
         return (
@@ -226,8 +251,8 @@ const BlogPost = () => {
 
     return (
         <>
-            {copiedToast && (
-                <div style={{
+            {shareMessage && (
+                <div role="status" aria-live="polite" style={{
                     position: 'fixed',
                     bottom: '24px',
                     right: '24px',
@@ -244,7 +269,7 @@ const BlogPost = () => {
                     alignItems: 'center',
                     gap: '8px'
                 }}>
-                    ✓ Link copied to clipboard!
+                    {shareMessage}
                 </div>
             )}
             <HomepageNavbar authBtnHandler={authBtnHandler} user={user} logout={logout} />
@@ -295,11 +320,14 @@ const BlogPost = () => {
                         </div>
 
                         {/* Featured Image */}
-                        {post.featuredImage && (
+                        {featuredImage && (
                             <div className="mb-8">
                                 <img
-                                    src={post.featuredImage}
+                                    src={featuredImage}
                                     alt={post.title}
+                                    width="896"
+                                    height="320"
+                                    decoding="async"
                                     className="w-full h-64 md:h-80 object-cover rounded-xl"
                                 />
                             </div>
@@ -403,10 +431,14 @@ const BlogPost = () => {
                                             to={`/blog/${relatedPost.slug}`}
                                             className="flex items-start gap-4 p-4 rounded-lg hover:bg-slate-50 transition-colors duration-200"
                                         >
-                                            {relatedPost.featuredImage ? (
+                                            {sanitizeImageUrl(relatedPost.featuredImage) ? (
                                                 <img
-                                                    src={relatedPost.featuredImage}
-                                                    alt={relatedPost.title}
+                                                    src={sanitizeImageUrl(relatedPost.featuredImage)}
+                                                    alt=""
+                                                    width="80"
+                                                    height="80"
+                                                    loading="lazy"
+                                                    decoding="async"
                                                     className="w-20 h-20 object-cover rounded-lg flex-shrink-0"
                                                 />
                                             ) : (

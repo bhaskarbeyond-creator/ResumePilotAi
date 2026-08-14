@@ -228,6 +228,9 @@ const PortfolioBuilder = () => {
     const [userPortfolios, setUserPortfolios] = useState([]);
     const [isPublishing, setIsPublishing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const debounceTimeoutRef = useRef(null);
+    const lastDataRef = useRef(portfolioData);
     const [showManageModal, setShowManageModal] = useState(false);
     const [loadingPortfolios, setLoadingPortfolios] = useState(false);
     const [showWelcomeGuide, setShowWelcomeGuide] = useState(false);
@@ -369,6 +372,16 @@ const PortfolioBuilder = () => {
         };
     }, []);
 
+    useEffect(() => {
+        const warnAboutUnsavedChanges = (event) => {
+            if (!hasUnsavedChanges) return;
+            event.preventDefault();
+            event.returnValue = '';
+        };
+        window.addEventListener('beforeunload', warnAboutUnsavedChanges);
+        return () => window.removeEventListener('beforeunload', warnAboutUnsavedChanges);
+    }, [hasUnsavedChanges]);
+
     const checkShowWelcomeGuide = async () => {
         try {
             // Don't show welcome guide if we're loading a portfolio from URL
@@ -415,8 +428,8 @@ const PortfolioBuilder = () => {
 
         setIsSaving(true);
         try {
-            // Create a deep copy of portfolioData to avoid mutations
-            const portfolioDataToSave = JSON.parse(JSON.stringify(portfolioData));
+            // Capture Puck's latest edit even if the UI debounce has not committed React state yet.
+            const portfolioDataToSave = JSON.parse(JSON.stringify(lastDataRef.current || portfolioData));
 
             // Sanitize all component data before saving
             if (portfolioDataToSave.content) {
@@ -461,6 +474,7 @@ const PortfolioBuilder = () => {
             }
 
             await loadUserPortfolios();
+            setHasUnsavedChanges(false);
             showToast('Success');
         } catch (error) {
             showToast('Error', 'Error saving portfolio draft: ' + error.message);
@@ -469,14 +483,14 @@ const PortfolioBuilder = () => {
         }
     };
 
-    const handlePublish = async () => {
+    const handlePublish = async (sourceData = portfolioData) => {
         if (!user) {
             showToast('Error', 'Please log in to publish your portfolio');
             return;
         }
 
         // Extract title from root props
-        const rootTitle = portfolioData.root?.props?.title || 'My Portfolio';
+        const rootTitle = sourceData.root?.props?.title || 'My Portfolio';
         const sanitizedTitle = SecurityUtils.sanitizeText(rootTitle);
         if (!sanitizedTitle.trim()) {
             showToast('Error', 'Please enter a valid title for your portfolio');
@@ -486,7 +500,7 @@ const PortfolioBuilder = () => {
         setIsPublishing(true);
         try {
             // Create a deep copy of portfolioData to avoid mutations
-            const portfolioDataToPublish = JSON.parse(JSON.stringify(portfolioData));
+            const portfolioDataToPublish = JSON.parse(JSON.stringify(sourceData));
 
             // 🔒 SECURITY: Sanitize all component data before publishing
             if (portfolioDataToPublish.content) {
@@ -606,6 +620,7 @@ const PortfolioBuilder = () => {
             }
 
             await loadUserPortfolios();
+            setHasUnsavedChanges(false);
         } catch (error) {
             showToast('Error', error.message || 'Error publishing portfolio');
         } finally {
@@ -617,9 +632,9 @@ const PortfolioBuilder = () => {
         try {
             const portfolio = await getPortfolioById(portfolioId);
 
-            if (portfolio) {
-                // Ensure the portfolio data has the correct structure for Puck
-                let newPortfolioData = portfolio.data || initialData;
+            if (portfolio?.userId === user.uid) {
+                // Owners resume unpublished edits without replacing the currently published snapshot.
+                let newPortfolioData = portfolio.draftData || portfolio.data || initialData;
 
                 // Deep clone to avoid reference issues
                 newPortfolioData = JSON.parse(JSON.stringify(newPortfolioData));
@@ -652,21 +667,24 @@ const PortfolioBuilder = () => {
                     };
                 }
 
-                // Ensure root props are updated with portfolio title and description
+                const editableMetadata = portfolio.draftMetadata || portfolio.metadata || {};
+                const editableTitle = portfolio.draftTitle || portfolio.title || 'My Portfolio';
                 if (newPortfolioData.root && newPortfolioData.root.props) {
-                    newPortfolioData.root.props.title = portfolio.title || 'My Portfolio';
-                    newPortfolioData.root.props.description = portfolio.metadata?.description || portfolio.description || '';
+                    newPortfolioData.root.props.title = editableTitle;
+                    newPortfolioData.root.props.description = editableMetadata.description || '';
                 }
 
+                lastDataRef.current = newPortfolioData;
                 setPortfolioData(newPortfolioData);
                 setCurrentPortfolioId(portfolioId);
                 setPortfolioSettings({
-                    title: portfolio.title || 'My Portfolio',
-                    description: portfolio.metadata?.description || portfolio.description || '',
-                    tags: portfolio.metadata?.tags || portfolio.tags || [],
-                    seoTitle: portfolio.metadata?.seoTitle || portfolio.seoTitle || '',
-                    seoDescription: portfolio.metadata?.seoDescription || portfolio.seoDescription || '',
+                    title: editableTitle,
+                    description: editableMetadata.description || '',
+                    tags: editableMetadata.tags || [],
+                    seoTitle: editableMetadata.seoTitle || '',
+                    seoDescription: editableMetadata.seoDescription || '',
                 });
+                setHasUnsavedChanges(false);
 
                 // Only close modal if it's open (when called from manage modal)
                 if (showManageModal) {
@@ -698,6 +716,7 @@ const PortfolioBuilder = () => {
                             seoTitle: '',
                             seoDescription: '',
                         });
+                        setHasUnsavedChanges(false);
                     }
                     showToast('Delete');
                     hideConfirmModal();
@@ -713,7 +732,7 @@ const PortfolioBuilder = () => {
 
     const handleToggleVisibility = async (portfolioId, currentVisibility) => {
         try {
-            await updatePortfolioVisibility(portfolioId, !currentVisibility);
+            await updatePortfolioVisibility(user.uid, portfolioId, !currentVisibility);
             await loadUserPortfolios();
             showToast('Success');
         } catch (error) {
@@ -729,6 +748,7 @@ const PortfolioBuilder = () => {
                 () => {
                     const newPortfolioData = JSON.parse(JSON.stringify(initialData));
                     setCurrentPortfolioId(null);
+                    lastDataRef.current = newPortfolioData;
                     setPortfolioData(newPortfolioData);
                     setRenderKey((prev) => prev + 1); // Force Puck to re-render
                     setPortfolioSettings({
@@ -738,6 +758,7 @@ const PortfolioBuilder = () => {
                         seoTitle: '',
                         seoDescription: '',
                     });
+                    setHasUnsavedChanges(false);
 
                     showToast('Success');
                     hideConfirmModal();
@@ -748,6 +769,7 @@ const PortfolioBuilder = () => {
         } else {
             const newPortfolioData = JSON.parse(JSON.stringify(initialData));
             setCurrentPortfolioId(null);
+            lastDataRef.current = newPortfolioData;
             setPortfolioData(newPortfolioData);
             setRenderKey((prev) => prev + 1);
             setPortfolioSettings({
@@ -757,9 +779,24 @@ const PortfolioBuilder = () => {
                 seoTitle: '',
                 seoDescription: '',
             });
+            setHasUnsavedChanges(false);
 
             showToast('Success');
         }
+    };
+
+    const handleLeaveBuilder = () => {
+        if (!hasUnsavedChanges) {
+            navigate('/');
+            return;
+        }
+        showConfirmModal(
+            'Leave Portfolio Builder?',
+            'You have unsaved changes. Save your draft before leaving if you want to keep them.',
+            () => navigate('/'),
+            'Leave',
+            'Stay'
+        );
     };
 
     // Memoized values to prevent expensive recalculations
@@ -781,8 +818,8 @@ const PortfolioBuilder = () => {
                     {user && (
                         <div className="flex items-center space-x-2">
                             <button
-                                onClick={() => navigate('/')}
-                                className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                                onClick={handleLeaveBuilder}
+                                className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-colors"
                                 title="Back to Homepage">
                                 <svg className="w-4 h-4 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path
@@ -802,6 +839,9 @@ const PortfolioBuilder = () => {
                                     </span>
                                 )}
                             </div>
+                            <span className={`text-xs font-medium ${hasUnsavedChanges ? 'text-amber-700' : 'text-green-700'}`} role="status">
+                                {hasUnsavedChanges ? 'Unsaved' : 'Saved'}
+                            </span>
                             <button
                                 onClick={() => setShowTemplateSelector(true)}
                                 className="px-3 py-1.5 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 border border-transparent rounded-md hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-sm"
@@ -878,7 +918,7 @@ const PortfolioBuilder = () => {
                 </>
             );
         },
-        [headerActionProps, currentPortfolioId, isSaving]
+        [headerActionProps, currentPortfolioId, isSaving, hasUnsavedChanges]
     );
 
     // Template Selection Functions
@@ -891,6 +931,7 @@ const PortfolioBuilder = () => {
 
             // Use the utility function to load the template
             const result = await loadTemplate(templateKey, initialData, setPortfolioData, setCurrentPortfolioId, setPortfolioSettings, setRenderKey);
+            setHasUnsavedChanges(true);
 
             // Show success notification
             setTemplateNotification({
@@ -925,12 +966,9 @@ const PortfolioBuilder = () => {
     // Template selection now uses the imported TemplateSelector component
 
     // Create optimized onChange handler with smart debouncing
-    const debounceTimeoutRef = useRef(null);
-    const lastLogTimeRef = useRef(0);
-    const lastDataRef = useRef(portfolioData);
-    const isTypingRef = useRef(false);
-
     const handlePuckChange = useCallback((data) => {
+        setHasUnsavedChanges(true);
+        lastDataRef.current = data;
         // Simple heuristic to detect typing vs structural changes
         const currentContentLength = data?.content?.length || 0;
         const lastContentLength = lastDataRef.current?.content?.length || 0;
@@ -982,7 +1020,7 @@ const PortfolioBuilder = () => {
                     onPublish={async (data) => {
                         if (data && data.content) {
                             setPortfolioData(data);
-                            await handlePublish();
+                            await handlePublish(data);
                         }
                     }}
                     onChange={handlePuckChange}

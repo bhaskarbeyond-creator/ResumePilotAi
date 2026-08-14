@@ -27,7 +27,8 @@ export default defineConfig({
         extensions: ['.js', '.jsx', '.ts', '.tsx', '.json', '.scss', '.css'],
     },
     server: {
-        host: true,  // Allow all hostnames including ai-resume-builder.local and localhost
+        host: true,
+        allowedHosts: true, // Arena/live-preview hosts are dynamic; this affects the development server only.
         port: 3000,
         strictPort: false,   // Allow fallback to other ports if 5173 is busy
         historyApiFallback: true,

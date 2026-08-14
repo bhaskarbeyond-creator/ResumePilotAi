@@ -1,125 +1,122 @@
 @use '../variables' as *;
 
 .public-resume {
-    height: 100%;
+    min-height: 100vh;
     font-family: $font;
+    background: rgb(73, 81, 99);
 
     .head {
-        position: fixed;
+        position: sticky;
+        top: 0;
         display: flex;
         width: 100%;
-        flex-flow: row nowrap;
-        -webkit-box-align: center;
         align-items: center;
-        -webkit-box-pack: justify;
         justify-content: space-between;
-        height: 64px;
-        padding: 0px 32px;
+        min-height: 64px;
+        padding: 10px 24px;
         background-color: rgb(15, 20, 30);
-        color: rgb(255, 255, 255);
-        z-index: 20000;
+        color: #fff;
+        z-index: 100;
+        gap: 16px;
+
+        .head-left,
+        .font-controller {
+            display: flex;
+            align-items: center;
+        }
 
         .head-left {
-            display: flex;
-            justify-content: center;
-            .home-icon {
-                width: 20px;
-                height: 20px;
-            }
-          a {
-                font-size: 1, 2em;
-                font-weight: 500;
+            .home-icon { width: 20px; height: 20px; flex: 0 0 auto; }
+            a {
                 margin-left: 8px;
-                cursor: pointer;
-                line-height: 24px;
-            text-decoration: none;
-            color: white;
-            // visited keep same
-            &:visited {
-                color: white;
-            }
-        }
-
-        }
-        .head-middle {
-            .plus-icon {
-                width: 20px;
-                height: 20px;
-                cursor: pointer;
-                padding: 5px;
-                border-radius: 50%;
-
-                transition: all 0.3s ease-in-out;
-
-                // on hover circle background effect  opacity 0.1
-                &:hover {
-                    background-color: rgba(255, 255, 255, 0.1);
-                }
-            }
-
-            .minus-icon {
-                width: 20px;
-                height: 20px;
-                cursor: pointer;
-                padding: 5px;
-                border-radius: 50%;
-                transition: all 0.3s ease-in-out;
-                // on hover circle background effect  opacity 0.1
-                &:hover {
-                    background-color: rgba(255, 255, 255, 0.1);
-                }
-            }
-            .letter-case {
-                width: 25px;
-                height: 25px;
-                cursor: pointer;
-                margin: 0px 10px;
-            }
-        }
-        .head-right {
-            padding-right: 50px;
-            .download-btn {
-                padding: 8px 20px;
-                font-weight: 500;
-                font-size: 1.1em;
-                color: #fff0ff;
-                border-radius: 8px;
-                background-color: #426ae0;
+                color: #fff;
+                font-size: 0.95rem;
+                font-weight: 600;
+                line-height: 1.5;
                 text-decoration: none;
-                cursor: pointer;
             }
+        }
+
+        .head-middle {
+            button {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                min-width: 36px;
+                min-height: 36px;
+                padding: 0;
+                border: 0;
+                border-radius: 999px;
+                color: #fff;
+                background: transparent;
+                cursor: pointer;
+                transition: background-color 0.2s ease, opacity 0.2s ease;
+                &:hover:not(:disabled) { background-color: rgba(255, 255, 255, 0.12); }
+                &:disabled { cursor: not-allowed; opacity: 0.4; }
+            }
+            .plus-icon, .minus-icon { width: 20px; height: 20px; }
+            .letter-case { width: 25px; height: 25px; margin: 0 8px; }
+        }
+
+        .head-right .download-btn {
+            min-height: 40px;
+            padding: 8px 18px;
+            border: 0;
+            border-radius: 8px;
+            color: #fff;
+            background-color: #426ae0;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            &:hover:not(:disabled) { background-color: #3157c7; }
+            &:disabled { cursor: not-allowed; opacity: 0.55; }
+        }
+
+        a:focus-visible,
+        button:focus-visible {
+            outline: 3px solid #93c5fd;
+            outline-offset: 3px;
         }
     }
-    .body {
-        min-height: 100%;
-        width: 100%;
-        background-color: rgb(73, 81, 99);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 60px 0px;
-        overflow-x: hidden;
-        overflow-y: scroll;
-        // hide scrollbar
-        padding-top: 180px;
 
-        &::-webkit-scrollbar {
-            display: none;
+    .body {
+        min-height: calc(100vh - 64px);
+        width: 100%;
+        padding: 40px 16px 80px;
+        overflow: auto;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        color: #fff;
+
+        .resume-frame {
+            flex: 0 0 auto;
+            overflow: visible;
         }
 
         .resume {
-            width: fit;
-            height: 1050px;
-            overflow-y: scroll;
-            // hide scrollbar
-            &::-webkit-scrollbar {
-                display: none;
-            }
-            // scale 1.2
-            transform: scale(1.02);
-            background-color: white;
-            border-radius: 10px;
-            transition: all 0.2s ease-in-out;
+            width: 794px;
+            min-height: 1123px;
+            overflow: visible;
+            background: #fff;
+            color: #0f172a;
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
+            transition: transform 0.2s ease-in-out;
         }
+    }
+
+    @media (max-width: 640px) {
+        .head {
+            min-height: 58px;
+            padding: 8px 10px;
+            gap: 8px;
+            .head-left a { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+            .head-right .download-btn { padding: 7px 10px; font-size: 0.8rem; }
+        }
+        .body { min-height: calc(100vh - 58px); padding: 24px 8px 60px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { transition-duration: 0.01ms !important; }
     }
 }

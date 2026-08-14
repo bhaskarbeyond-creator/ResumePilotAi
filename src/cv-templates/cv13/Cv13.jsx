@@ -51,7 +51,7 @@ class Cv13 extends Component {
 
         for (let index = 0; index < tempEducations.length; index++) {
             elements.push(
-                <div className="cv13-employment-item">
+                <div key={`education-${index}`} className="cv13-employment-item">
                     {/* Left */}
                     <div className="cv13-employment-item-left">
                         <p>
@@ -76,7 +76,7 @@ class Cv13 extends Component {
             return a.date - b.date;
         });
         for (let index = 0; index < tempSkills.length; index++) {
-            elements.push(<p>{this.props.values.skills[index].name}</p>);
+            elements.push(<p key={`skill-${index}`}>{this.props.values.skills[index].name}</p>);
         }
         return elements;
     }
@@ -88,7 +88,7 @@ class Cv13 extends Component {
         });
         for (let index = 0; index < tempLanguages.length; index++) {
             elements.push(
-                <div className="cv13-languages-item">
+                <div key={`language-${index}`} className="cv13-languages-item">
                     <p>{tempLanguages[index].name}</p>
                     <p>{tempLanguages[index].level}</p>
                 </div>

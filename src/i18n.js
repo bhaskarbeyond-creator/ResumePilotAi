@@ -17,17 +17,25 @@ import common_ro from './locales/ro/ro.json';
 import common_hi from './locales/hi/hi.json';
 import common_nl from './locales/nl/nl.json';
 
-import Backend from 'i18next-http-backend';
+export const SUPPORTED_LANGUAGES = Object.freeze(['en', 'hi', 'es', 'fr', 'ru', 'se', 'dk', 'pt', 'de', 'it', 'gk', 'is', 'no', 'pl', 'ro', 'nl']);
 
-// Get saved language from localStorage
-const savedLanguage = localStorage.getItem('preferredLanguage');
+let savedLanguage = 'en';
+try {
+   const stored = globalThis.localStorage?.getItem('preferredLanguage');
+   if (SUPPORTED_LANGUAGES.includes(stored)) savedLanguage = stored;
+} catch {
+   // Storage may be blocked by the browser; English remains the deterministic fallback.
+}
 
 i18n
-   .use(Backend)
    .use(initReactI18next)
    .init({
-      lng: savedLanguage || 'en',
+      lng: savedLanguage,
       fallbackLng: 'en',
+      supportedLngs: SUPPORTED_LANGUAGES,
+      load: 'languageOnly',
+      cleanCode: true,
+      returnEmptyString: false,
       defaultNS: 'common',
       ns: ['common'],
       debug: false,

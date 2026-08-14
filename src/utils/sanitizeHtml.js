@@ -41,11 +41,9 @@ function hardenSanitizedFragment(html, { allowImages = false } = {}) {
     if (anchor.getAttribute('target') === '_blank') anchor.setAttribute('rel', 'noopener noreferrer');
   }
   for (const image of template.content.querySelectorAll('img')) {
-    const source = String(image.getAttribute('src') || '').trim();
-    const safeRelative = source.startsWith('/') && !source.startsWith('//');
-    let safeHttps = false;
-    try { safeHttps = new URL(source).protocol === 'https:'; } catch (_) {}
-    if (!allowImages || (!safeRelative && !safeHttps)) image.removeAttribute('src');
+    const source = sanitizeImageUrl(image.getAttribute('src') || '');
+    if (!allowImages || !source) image.removeAttribute('src');
+    else image.setAttribute('src', source);
     image.setAttribute('loading', 'lazy');
   }
   return template.innerHTML;
@@ -71,6 +69,20 @@ export function sanitizeBlogHtml(value) {
 
 export function sanitizePlainText(value) {
   return DOMPurify.sanitize(String(value || ''), { ALLOWED_TAGS: [], ALLOWED_ATTR: [], KEEP_CONTENT: true });
+}
+
+/** Returns a safe HTTPS or same-origin-relative image URL, or an empty string. */
+export function sanitizeImageUrl(value) {
+  const raw = String(value || '').trim();
+  if (!raw || /[\u0000-\u001f\u007f]/.test(raw) || raw.length > 2048) return '';
+  if (raw.startsWith('/') && !raw.startsWith('//')) return raw;
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol !== 'https:' || parsed.username || parsed.password) return '';
+    return parsed.href;
+  } catch {
+    return '';
+  }
 }
 
 /** Returns a safe navigable URL or an empty string. */

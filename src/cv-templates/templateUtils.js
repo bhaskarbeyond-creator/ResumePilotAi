@@ -2,6 +2,135 @@
  * Shared utility functions for CV Templates
  */
 
+const EMPTY_COLORS = Object.freeze({ primary: '#1E40AF', secondary: '#F8FAFC' });
+const ARRAY_FIELDS = ['employments', 'educations', 'skills', 'languages', 'projects', 'certifications', 'components'];
+
+const text = (value, fallback = '') => {
+    if (value === null || value === undefined) return fallback;
+    if (typeof value === 'string') return value.slice(0, 100_000);
+    if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+    return fallback;
+};
+
+const normalizeCollection = (field, value) => {
+    if (!Array.isArray(value)) return [];
+    return value.filter(item => item !== null && item !== undefined).map((item, index) => {
+        const source = typeof item === 'object' ? { ...item } : { name: String(item), value: String(item) };
+        const base = { ...source, date: source.date ?? index + 1 };
+        if (field === 'employments') {
+            const jobTitle = text(source.jobTitle || source.title || source.position);
+            const employer = text(source.employer || source.company || source.organization);
+            return {
+                ...base, jobTitle, title: jobTitle, position: jobTitle,
+                employer, company: employer,
+                begin: text(source.begin || source.startDate || source.started),
+                end: text(source.end || source.endDate || source.finished),
+                description: text(source.description || source.summary),
+                currentWork: Boolean(source.currentWork || source.current)
+            };
+        }
+        if (field === 'educations') {
+            const school = text(source.school || source.institution || source.organization);
+            const degree = text(source.degree || source.qualification || source.title);
+            return {
+                ...base, school, institution: school, degree,
+                started: text(source.started || source.startDate || source.begin),
+                finished: text(source.finished || source.endDate || source.end),
+                description: text(source.description || source.summary)
+            };
+        }
+        if (field === 'skills') {
+            const name = text(source.name || source.skillName || source.skill || source.title || source.value);
+            const numericRating = Number(source.rating ?? source.level ?? 50);
+            return { ...base, name, skillName: name, value: name, rating: Number.isFinite(numericRating) ? Math.max(0, Math.min(100, numericRating)) : 50 };
+        }
+        if (field === 'languages') {
+            const name = text(source.name || source.language || source.title || source.value);
+            const level = text(source.level || source.proficiency || source.rating);
+            return { ...base, name, language: name, value: name, level, proficiency: level };
+        }
+        if (field === 'projects') {
+            const name = text(source.name || source.title);
+            return { ...base, name, title: name, description: text(source.description || source.summary), url: text(source.url || source.link) };
+        }
+        if (field === 'certifications') {
+            const title = text(source.title || source.name);
+            return { ...base, title, name: title, issuer: text(source.issuer || source.organization) };
+        }
+        if (field === 'components') {
+            const type = text(source.type || 'Paragraph');
+            const rawContent = source.content ?? '';
+            const content = type === 'List'
+                ? (Array.isArray(rawContent) ? rawContent.map(value => text(value)).filter(Boolean) : text(rawContent).split(/\n|;/).map(value => value.trim()).filter(Boolean))
+                : (Array.isArray(rawContent) ? rawContent.map(value => text(value)).join('\n') : text(rawContent));
+            return { ...base, type, content, name: text(source.name || source.title) };
+        }
+        return base;
+    });
+};
+
+/**
+ * Creates a non-mutating, complete view model accepted by all 51 CV templates and all
+ * cover templates. Legacy templates sort their arrays in place; each array is therefore
+ * cloned so rendering can never reorder builder state.
+ */
+export function normalizeTemplateData(input = {}) {
+    const raw = input && typeof input === 'object' ? input : {};
+    const employments = raw.employments || raw.workExperiences || raw.experience;
+    const educations = raw.educations || raw.education;
+    const normalized = {
+        ...raw,
+        firstname: text(raw.firstname || raw.firstName),
+        lastname: text(raw.lastname || raw.lastName),
+        name: text(raw.name || `${text(raw.firstname || raw.firstName)} ${text(raw.lastname || raw.lastName)}`.trim()),
+        occupation: text(raw.occupation || raw.jobTitle || raw.title),
+        summary: text(raw.summary),
+        email: text(raw.email),
+        phone: text(raw.phone),
+        address: text(raw.address),
+        city: text(raw.city),
+        country: text(raw.country),
+        postalcode: text(raw.postalcode || raw.postalCode || raw.zip),
+        website: text(raw.website || raw.websiteUrl),
+        linkedin: text(raw.linkedin || raw.linkedinUrl),
+        github: text(raw.github || raw.githubUrl),
+        photo: typeof raw.photo === 'string' && raw.photo.trim() ? raw.photo : null,
+        employments: normalizeCollection('employments', employments),
+        educations: normalizeCollection('educations', educations),
+        skills: normalizeCollection('skills', raw.skills),
+        languages: normalizeCollection('languages', raw.languages),
+        projects: normalizeCollection('projects', raw.projects),
+        certifications: normalizeCollection('certifications', raw.certifications),
+        components: normalizeCollection('components', raw.components),
+        colors: {
+            ...EMPTY_COLORS,
+            ...(raw.colors && typeof raw.colors === 'object' ? raw.colors : {})
+        }
+    };
+    // Preserve every known array contract even when a future caller supplies null.
+    for (const field of ARRAY_FIELDS) if (!Array.isArray(normalized[field])) normalized[field] = [];
+    return normalized;
+}
+
+/** Returns diagnostics without mutating or rejecting user content. */
+export function validateTemplateData(input = {}) {
+    const value = normalizeTemplateData(input);
+    const warnings = [];
+    if (!value.firstname && !value.lastname && !value.name) warnings.push('missing-name');
+    if (!value.email && !value.phone) warnings.push('missing-contact');
+    if (value.summary.length > 4_000) warnings.push('long-summary');
+    if (value.employments.length > 20) warnings.push('large-employment-history');
+    if (value.skills.length > 50) warnings.push('large-skills-list');
+    if (value.projects.length > 20) warnings.push('large-projects-list');
+    const longUrlFields = ['website', 'linkedin', 'github'];
+    for (const field of longUrlFields) if (value[field].length > 2_048) warnings.push(`long-${field}-url`);
+    return { value, warnings, valid: true };
+}
+
+export function getTemplateDirection(language) {
+    return ['ar', 'fa', 'he', 'ur'].includes(String(language || '').toLowerCase().split('-')[0]) ? 'rtl' : 'ltr';
+}
+
 // Curated harmonious color palettes for premium 10/10 template presentation
 const CURATED_PALETTES = [
     { primary: '#1E40AF', secondary: '#F1F5F9' }, // Royal Sapphire

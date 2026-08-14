@@ -1754,8 +1754,6 @@ export async function getJobApplications(jobId) {
 export async function submitJobApplication(userId, jobId, applicationData) {
     const db = fire.firestore();
     try {
-        console.log('🔍 Submitting job application:', { userId, jobId, applicationData });
-
         // Validate required fields
         if (!userId) {
             return { success: false, error: 'User ID is required' };
@@ -1802,6 +1800,18 @@ export async function submitJobApplication(userId, jobId, applicationData) {
             appliedAt: new Date(),
             createdAt: new Date(),
             updatedAt: new Date(),
+            jobSnapshot: jobData ? {
+                title: jobData.title || '',
+                company: jobData.company || '',
+                location: jobData.location || '',
+                country: jobData.country || '',
+                minSalary: jobData.minSalary ?? null,
+                maxSalary: jobData.maxSalary ?? null,
+                jobType: jobData.jobType || jobData.type || '',
+                workMode: jobData.workMode || '',
+                description: String(jobData.description || '').slice(0, 10000),
+                requirements: Array.isArray(jobData.requirements) ? jobData.requirements.slice(0, 50) : [],
+            } : null,
             // Add fields that might be missing to prevent undefined values
             skills: [], // Initialize as empty array
             experience: '', // Initialize as empty string
@@ -1835,36 +1845,42 @@ export async function submitJobApplication(userId, jobId, applicationData) {
         // Apply deep sanitization
         const sanitizedApplicationData = sanitizeObject(finalApplicationData);
 
-        console.log('📄 Final application data:', sanitizedApplicationData);
-
-        // Submit the application
-        const applicationRef = await db.collection('jobApplications').add(sanitizedApplicationData);
-
-        console.log('✅ Application submitted with ID:', applicationRef.id);
-
-        // Update job's application count
+        // Deterministic ownership-bound IDs plus a transaction prevent simultaneous tabs
+        // from creating duplicate applications or double-incrementing the job counter.
+        const applicationRef = db.collection('jobApplications').doc(`${jobId}_${userId}`);
         const jobRef = db.collection('jobs').doc(jobId);
-        await jobRef.update({
-            applicationsCount: firebase.firestore.FieldValue.increment(1),
-            updatedAt: new Date(),
+        await db.runTransaction(async (transaction) => {
+            const existing = await transaction.get(applicationRef);
+            if (existing.exists) {
+                const duplicateError = new Error('You have already applied to this job');
+                duplicateError.code = 'already-exists';
+                throw duplicateError;
+            }
+            transaction.set(applicationRef, sanitizedApplicationData);
+            transaction.update(jobRef, {
+                applicationsCount: firebase.firestore.FieldValue.increment(1),
+                updatedAt: new Date(),
+            });
         });
-
-        console.log('✅ Job application count updated');
 
         // Create notification for job application
         const jobTitle = jobData?.title || 'Unknown Job';
         const companyName = jobData?.company || 'Unknown Company';
-        await createNotification(userId, {
-            type: 'job_application',
-            title: 'Application Submitted',
-            message: `Your application for ${jobTitle} at ${companyName} has been submitted successfully.`,
-            data: {
-                jobId: jobId,
-                applicationId: applicationRef.id,
-                jobTitle: jobTitle,
-                company: companyName
-            }
-        });
+        try {
+            await createNotification(userId, {
+                type: 'job_application',
+                title: 'Application Submitted',
+                message: `Your application for ${jobTitle} at ${companyName} has been submitted successfully.`,
+                data: {
+                    jobId: jobId,
+                    applicationId: applicationRef.id,
+                    jobTitle: jobTitle,
+                    company: companyName
+                }
+            });
+        } catch (notificationError) {
+            console.warn('Application saved but confirmation notification failed', notificationError);
+        }
 
         return { success: true, applicationId: applicationRef.id };
     } catch (error) {
@@ -1911,13 +1927,8 @@ export async function checkUserApplicationStatus(userId, jobId) {
 export async function getUserJobApplications(userId) {
     const db = fire.firestore();
     try {
-        console.log('🔍 getUserJobApplications called with userId:', userId);
-
         // Get all applications for this user
         const snapshot = await db.collection('jobApplications').where('userId', '==', userId).get();
-
-        console.log('📊 User applications query snapshot empty?', snapshot.empty);
-        console.log('📊 User applications query snapshot size:', snapshot.size);
 
         if (!snapshot.empty) {
             const applications = [];
@@ -1926,8 +1937,6 @@ export async function getUserJobApplications(userId) {
             // First, collect all applications and job IDs
             snapshot.forEach((doc) => {
                 const applicationData = doc.data();
-                console.log('📄 Application document:', doc.id, applicationData);
-
                 applications.push({
                     id: doc.id,
                     ...applicationData,
@@ -1938,32 +1947,37 @@ export async function getUserJobApplications(userId) {
                 }
             });
 
-            // Now fetch job details for all unique job IDs
+            // New applications carry a safe job snapshot so closed/removed jobs remain
+            // visible. Fetch legacy snapshots individually so one unreadable closed job does
+            // not make every application disappear.
             const jobDetails = {};
-            if (jobIds.size > 0) {
-                console.log('🔍 Fetching job details for job IDs:', Array.from(jobIds));
-
-                // Fetch jobs in batches (Firestore 'in' query limit is 10)
-                const jobIdArray = Array.from(jobIds);
-                const batchSize = 10;
-
-                for (let i = 0; i < jobIdArray.length; i += batchSize) {
-                    const batch = jobIdArray.slice(i, i + batchSize);
-                    const jobsSnapshot = await db.collection('jobs').where(firebase.firestore.FieldPath.documentId(), 'in', batch).get();
-
-                    jobsSnapshot.forEach((jobDoc) => {
-                        const jobData = jobDoc.data();
-                        jobDetails[jobDoc.id] = {
-                            id: jobDoc.id,
-                            ...jobData,
-                            // Format for compatibility with AppliedJobs component
-                            jobTitle: jobData.title,
-                            postedDate: formatTimeAgo(jobData.createdAt?.toDate?.() || jobData.createdAt),
-                            salary: formatSalaryRange(jobData.minSalary, jobData.maxSalary),
-                        };
-                    });
+            for (const application of applications) {
+                if (application.jobId && application.jobSnapshot) {
+                    const snapshot = application.jobSnapshot;
+                    jobDetails[application.jobId] = {
+                        ...snapshot,
+                        jobTitle: snapshot.title,
+                        salary: formatSalaryRange(snapshot.minSalary, snapshot.maxSalary),
+                    };
                 }
             }
+            const missingJobIds = Array.from(jobIds).filter((jobId) => !jobDetails[jobId]);
+            await Promise.all(missingJobIds.map(async (jobId) => {
+                try {
+                    const jobDoc = await db.collection('jobs').doc(jobId).get();
+                    if (!jobDoc.exists) return;
+                    const jobData = jobDoc.data();
+                    jobDetails[jobId] = {
+                        id: jobDoc.id,
+                        ...jobData,
+                        jobTitle: jobData.title,
+                        postedDate: formatTimeAgo(jobData.createdAt?.toDate?.() || jobData.createdAt),
+                        salary: formatSalaryRange(jobData.minSalary, jobData.maxSalary),
+                    };
+                } catch {
+                    // The application itself remains useful when a job is no longer public.
+                }
+            }));
 
             // Combine application data with job details
             const enrichedApplications = applications.map((application) => {
@@ -1994,17 +2008,13 @@ export async function getUserJobApplications(userId) {
                 return dateB - dateA;
             });
 
-            console.log('✅ Returning enriched applications:', enrichedApplications);
             return enrichedApplications;
         } else {
-            console.log('❌ No applications found for userId:', userId);
             return [];
         }
     } catch (error) {
-        console.error('❌ Error getting user job applications:', error);
-        console.error('❌ Error details:', error.message);
-        console.error('❌ Error code:', error.code);
-        return [];
+        console.error('Error getting user job applications:', error);
+        throw error;
     }
 }
 
@@ -2912,7 +2922,8 @@ export async function getFrontendStats() {
             successRate: '95',
             topCompanies: '500+',
         };
-        await statsRef.set(defaultStats);
+        // Public readers cannot initialize configuration documents; deployment/admin
+        // provisioning owns persistence and the UI can safely use these defaults.
         return defaultStats;
     }
 }
@@ -2951,18 +2962,11 @@ export async function getAds() {
 export async function createBlogPost(userId, postData) {
     const db = fire.firestore();
     try {
-        console.log('=== CREATING BLOG POST ===');
-        console.log('User ID:', userId);
-        console.log('Post data:', JSON.stringify(postData, null, 2));
-
-        // Generate slug from title if not provided
-        const slug = postData.slug || generateSlug(postData.title);
-        
-        // Check if slug already exists
-        const existingPost = await db.collection('blog_posts').where('slug', '==', slug).get();
-        if (!existingPost.empty) {
-            return { success: false, error: 'A post with this title already exists. Please choose a different title.' };
-        }
+        const postRef = db.collection('blog_posts').doc();
+        // A document-derived suffix avoids a collection-wide uniqueness query that members
+        // are not authorized to run against other authors' pending posts.
+        const slugBase = generateSlug(postData.slug || postData.title) || 'article';
+        const slug = `${slugBase}-${postRef.id.slice(0, 8).toLowerCase()}`;
 
         const finalPostData = {
             title: postData.title,
@@ -2980,12 +2984,7 @@ export async function createBlogPost(userId, postData) {
             featuredImage: postData.featuredImage || null,
         };
 
-        console.log('Final post data to be saved:', JSON.stringify(finalPostData, null, 2));
-
-        const postRef = await db.collection('blog_posts').add(finalPostData);
-
-        console.log('✅ Blog post created successfully!');
-        console.log('Post ID:', postRef.id);
+        await postRef.set(finalPostData);
 
         return { success: true, postId: postRef.id, slug: slug };
     } catch (error) {
@@ -2998,11 +2997,17 @@ export async function createBlogPost(userId, postData) {
 export async function updateBlogPost(postId, updateData, userId = null) {
     const db = fire.firestore();
     try {
-        console.log('=== UPDATING BLOG POST ===');
-        console.log('Post ID:', postId);
-        console.log('Update data:', JSON.stringify(updateData, null, 2));
+        if (userId) {
+            const existing = await db.collection('blog_posts').doc(postId).get();
+            if (!existing.exists || existing.data().authorUid !== userId) {
+                return { success: false, error: 'Post not found or access denied.' };
+            }
+            const allowedFields = ['title', 'content', 'excerpt', 'categoryId', 'tags', 'featuredImage'];
+            updateData = Object.fromEntries(Object.entries(updateData).filter(([key]) => allowedFields.includes(key)));
+            updateData.status = 'pending';
+        }
 
-        // If slug is being updated, check for conflicts
+        // If slug is being updated, check for conflicts (admin-managed slugs only).
         if (updateData.slug) {
             const existingPost = await db.collection('blog_posts')
                 .where('slug', '==', updateData.slug)
@@ -3065,22 +3070,16 @@ export async function getBlogPostBySlug(slug, includeUnpublished = false) {
                 publishedAt: data.publishedAt?.toDate?.() || data.publishedAt,
             };
             
-            // Increment view count for published posts
-            if (data.status === 'approved' && !includeUnpublished) {
-                await db.collection('blog_posts').doc(doc.id).update({
-                    viewCount: firebase.firestore.FieldValue.increment(1)
-                });
-                post.viewCount = (post.viewCount || 0) + 1;
-            }
-            
+            // View analytics are deliberately best-effort and must never determine whether
+            // a public article can be read. Client-side writes are forbidden by Firestore rules.
             return post;
         } else {
             console.log('❌ Blog post not found with slug:', slug);
             return null;
         }
     } catch (error) {
-        console.error('🚨 Error getting blog post by slug:', error);
-        return null;
+        console.error('Error getting blog post by slug:', error);
+        throw error;
     }
 }
 
@@ -3409,74 +3408,52 @@ export async function deleteBlogCategory(categoryId) {
 
 // ==================== BLOG SETTINGS FUNCTIONS ====================
 
-// Get blog settings
-export async function getBlogSettings() {
-    let localCache = null;
-    try {
-        const raw = typeof window !== 'undefined' ? localStorage.getItem('blog_settings_cache') : null;
-        if (raw) localCache = JSON.parse(raw);
-    } catch (e) {}
+// Get public blog settings. They intentionally live in the curated public_config
+// document rather than an account-local cache or a privileged settings document.
+const DEFAULT_BLOG_SETTINGS = Object.freeze({
+    blogTitle: 'Blog',
+    blogDescription: 'Latest news and articles',
+    postsPerPage: 10,
+    enableComments: false,
+    moderateComments: true,
+    allowGuestPosts: true,
+    featuredImage: null,
+    seoTitle: 'Blog',
+    seoDescription: 'Read our latest blog posts and articles',
+});
 
+export async function getBlogSettings() {
     const db = fire.firestore();
     try {
-        const doc = await db.collection('data').doc('blog_settings').get();
-        
-        if (doc.exists) {
-            const data = doc.data();
-            return {
-                ...data,
-                ...(localCache || {}),
-                createdAt: data.createdAt?.toDate?.() || data.createdAt,
-                updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
-            };
-        } else if (localCache) {
-            return localCache;
-        } else {
-            // Create default settings
-            const defaultSettings = {
-                blogTitle: 'Blog',
-                blogDescription: 'Latest news and articles',
-                postsPerPage: 10,
-                enableComments: false,
-                moderateComments: true,
-                allowGuestPosts: true,
-                featuredImage: null,
-                seoTitle: 'Blog',
-                seoDescription: 'Read our latest blog posts and articles',
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            };
-            
-            await db.collection('data').doc('blog_settings').set(defaultSettings).catch(() => {});
-            return defaultSettings;
-        }
+        const doc = await db.collection('data').doc('public_config').get();
+        const settings = doc.exists && doc.data()?.blog && typeof doc.data().blog === 'object' ? doc.data().blog : {};
+        return { ...DEFAULT_BLOG_SETTINGS, ...settings };
     } catch (error) {
-        if (localCache) return localCache;
-        console.error('❌ Error getting blog settings:', error);
-        return null;
+        console.warn('Unable to load blog settings; using defaults', error);
+        return { ...DEFAULT_BLOG_SETTINGS };
     }
 }
 
-// Update blog settings
 export async function updateBlogSettings(settings) {
-    try {
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('blog_settings_cache', JSON.stringify(settings));
-        }
-    } catch (e) {}
-
     const db = fire.firestore();
     try {
-        const finalSettings = {
-            ...settings,
+        const clean = {
+            blogTitle: String(settings?.blogTitle || DEFAULT_BLOG_SETTINGS.blogTitle).slice(0, 120),
+            blogDescription: String(settings?.blogDescription || DEFAULT_BLOG_SETTINGS.blogDescription).slice(0, 500),
+            postsPerPage: Math.min(50, Math.max(1, Number(settings?.postsPerPage) || DEFAULT_BLOG_SETTINGS.postsPerPage)),
+            enableComments: Boolean(settings?.enableComments),
+            moderateComments: settings?.moderateComments !== false,
+            allowGuestPosts: settings?.allowGuestPosts !== false,
+            featuredImage: settings?.featuredImage ? String(settings.featuredImage).slice(0, 2048) : null,
+            seoTitle: String(settings?.seoTitle || settings?.blogTitle || DEFAULT_BLOG_SETTINGS.seoTitle).slice(0, 120),
+            seoDescription: String(settings?.seoDescription || settings?.blogDescription || DEFAULT_BLOG_SETTINGS.seoDescription).slice(0, 320),
             updatedAt: new Date(),
         };
-
-        await db.collection('data').doc('blog_settings').set(finalSettings, { merge: true });
+        await db.collection('data').doc('public_config').set({ blog: clean }, { merge: true });
         return { success: true };
     } catch (error) {
-        console.error('❌ Error updating blog settings:', error);
-        return { success: true };
+        console.error('Error updating blog settings:', error);
+        return { success: false, error: error.message };
     }
 }
 
@@ -3484,12 +3461,13 @@ export async function updateBlogSettings(settings) {
 
 // Generate URL-friendly slug from title
 function generateSlug(title) {
-    return title
-        .toLowerCase()
-        .replace(/[^a-z0-9 -]/g, '') // Remove special characters
-        .replace(/\s+/g, '-') // Replace spaces with dashes
-        .replace(/-+/g, '-') // Replace multiple dashes with single dash
-        .trim('-'); // Remove leading/trailing dashes
+    return String(title || '')
+        .normalize('NFKC')
+        .toLocaleLowerCase('en')
+        .replace(/[^\p{L}\p{M}\p{N}]+/gu, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '')
+        .slice(0, 120);
 }
 
 // Generate excerpt from content
@@ -5241,8 +5219,6 @@ export async function publishPortfolio(userId, portfolioData, theme = 'default')
             return component;
         });
 
-        console.log('Storing portfolio data:', JSON.stringify(cleanPortfolioData, null, 2));
-
         const portfolioDoc = {
             userId: userId,
             slug: slug,
@@ -5261,30 +5237,19 @@ export async function publishPortfolio(userId, portfolioData, theme = 'default')
             },
         };
 
-        const docRef = await db.collection('portfolios').add(portfolioDoc);
-
-        // Update user's portfolio count
-        await db
-            .collection('users')
-            .doc(userId)
-            .update({
-                portfolioCount: firebase.firestore.FieldValue.increment(1),
-            });
-
-        // Add to user's portfolios subcollection for easy retrieval
-        await db
-            .collection('users')
-            .doc(userId)
-            .collection('portfolios')
-            .doc(docRef.id)
-            .set({
-                portfolioId: docRef.id,
-                slug: slug,
-                title: portfolioData.title || 'My Portfolio',
-                theme: theme,
-                publishedAt: firebase.firestore.Timestamp.now(),
-                isPublished: true,
-            });
+        const docRef = db.collection('portfolios').doc();
+        const userPortfolioRef = db.collection('users').doc(userId).collection('portfolios').doc(docRef.id);
+        const batch = db.batch();
+        batch.set(docRef, portfolioDoc);
+        batch.set(userPortfolioRef, {
+            portfolioId: docRef.id,
+            slug: slug,
+            title: portfolioData.title || 'My Portfolio',
+            theme: theme,
+            publishedAt: portfolioDoc.publishedAt,
+            isPublished: true,
+        });
+        await batch.commit();
 
         return { id: docRef.id, slug: slug };
     } catch (error) {
@@ -5301,6 +5266,9 @@ export async function updateExistingPortfolio(portfolioId, userId, portfolioData
         const existingPortfolio = await getPortfolioById(portfolioId);
         if (!existingPortfolio) {
             throw new Error('Portfolio not found');
+        }
+        if (existingPortfolio.userId !== userId) {
+            throw new Error('You do not have permission to update this portfolio');
         }
 
         // Create a clean copy of portfolio data for storage
@@ -5330,8 +5298,6 @@ export async function updateExistingPortfolio(portfolioId, userId, portfolioData
             }
             return component;
         });
-
-        console.log('Updating existing portfolio data:', JSON.stringify(cleanPortfolioData, null, 2));
 
         let updateData = {
             title: portfolioData.title || 'My Portfolio',
@@ -5364,15 +5330,16 @@ export async function updateExistingPortfolio(portfolioId, userId, portfolioData
             updateData.isPublished = true;
             // Don't update publishedAt to preserve original publish date
         }
+        updateData.draftData = firebase.firestore.FieldValue.delete();
+        updateData.draftMetadata = firebase.firestore.FieldValue.delete();
+        updateData.draftTitle = firebase.firestore.FieldValue.delete();
+        updateData.hasUnpublishedChanges = firebase.firestore.FieldValue.delete();
 
-        // Update the main portfolio document
-        await db.collection('portfolios').doc(portfolioId).update(updateData);
-
-        // Update the user's portfolios subcollection
         const subCollectionUpdate = {
             title: portfolioData.title || 'My Portfolio',
             theme: theme,
             isPublished: true,
+            hasUnpublishedChanges: false,
         };
 
         if (!existingPortfolio.isPublished) {
@@ -5380,7 +5347,10 @@ export async function updateExistingPortfolio(portfolioId, userId, portfolioData
             subCollectionUpdate.slug = updateData.slug;
         }
 
-        await db.collection('users').doc(userId).collection('portfolios').doc(portfolioId).update(subCollectionUpdate);
+        const batch = db.batch();
+        batch.update(db.collection('portfolios').doc(portfolioId), updateData);
+        batch.set(db.collection('users').doc(userId).collection('portfolios').doc(portfolioId), subCollectionUpdate, { merge: true });
+        await batch.commit();
 
         return {
             id: portfolioId,
@@ -5425,8 +5395,6 @@ export async function savePortfolioDraft(userId, portfolioData, portfolioId = nu
             return component;
         });
 
-        console.log('Storing draft portfolio data:', JSON.stringify(cleanPortfolioData, null, 2));
-
         const portfolioDoc = {
             userId: userId,
             title: portfolioData.title || 'Untitled Portfolio',
@@ -5443,30 +5411,45 @@ export async function savePortfolioDraft(userId, portfolioData, portfolioId = nu
         };
 
         if (portfolioId) {
-            // Update existing draft
-            await db.collection('portfolios').doc(portfolioId).update(portfolioDoc);
-            return { id: portfolioId };
-        } else {
-            // Create new draft
-            portfolioDoc.createdAt = firebase.firestore.Timestamp.now();
-            const docRef = await db.collection('portfolios').add(portfolioDoc);
-
-            // Add to user's portfolios subcollection
-            await db
-                .collection('users')
-                .doc(userId)
-                .collection('portfolios')
-                .doc(docRef.id)
-                .set({
-                    portfolioId: docRef.id,
-                    title: portfolioData.title || 'Untitled Portfolio',
-                    theme: theme,
-                    createdAt: firebase.firestore.Timestamp.now(),
-                    isPublished: false,
-                });
-
-            return { id: docRef.id };
+            const existingPortfolio = await getPortfolioById(portfolioId);
+            if (!existingPortfolio || existingPortfolio.userId !== userId) {
+                throw new Error('Portfolio not found or access denied');
+            }
+            const updateData = existingPortfolio.isPublished ? {
+                draftData: cleanPortfolioData,
+                draftTitle: portfolioDoc.title,
+                draftMetadata: portfolioDoc.metadata,
+                hasUnpublishedChanges: true,
+                updatedAt: portfolioDoc.updatedAt,
+            } : portfolioDoc;
+            const batch = db.batch();
+            batch.update(db.collection('portfolios').doc(portfolioId), updateData);
+            batch.set(db.collection('users').doc(userId).collection('portfolios').doc(portfolioId), {
+                portfolioId,
+                title: portfolioDoc.title,
+                theme,
+                isPublished: Boolean(existingPortfolio.isPublished),
+                hasUnpublishedChanges: Boolean(existingPortfolio.isPublished),
+                updatedAt: portfolioDoc.updatedAt,
+            }, { merge: true });
+            await batch.commit();
+            return { id: portfolioId, hasUnpublishedChanges: Boolean(existingPortfolio.isPublished) };
         }
+
+        portfolioDoc.createdAt = firebase.firestore.Timestamp.now();
+        const docRef = db.collection('portfolios').doc();
+        const batch = db.batch();
+        batch.set(docRef, portfolioDoc);
+        batch.set(db.collection('users').doc(userId).collection('portfolios').doc(docRef.id), {
+            portfolioId: docRef.id,
+            title: portfolioData.title || 'Untitled Portfolio',
+            theme: theme,
+            createdAt: portfolioDoc.createdAt,
+            updatedAt: portfolioDoc.updatedAt,
+            isPublished: false,
+        });
+        await batch.commit();
+        return { id: docRef.id };
     } catch (error) {
         console.error('Error saving portfolio draft:', error);
         throw error;
@@ -5524,7 +5507,7 @@ export async function getUserPortfolios(userId, includeUnpublished = true) {
             for (const doc of snapshot.docs) {
                 const portfolioRef = doc.data();
                 const fullPortfolio = await getPortfolioById(portfolioRef.portfolioId);
-                if (fullPortfolio) {
+                if (fullPortfolio?.userId === userId) {
                     portfolios.push(fullPortfolio);
                 }
             }
@@ -5560,10 +5543,14 @@ export async function getUserPortfolios(userId, includeUnpublished = true) {
     }
 }
 
-export async function updatePortfolioVisibility(portfolioId, isPublished) {
+export async function updatePortfolioVisibility(userId, portfolioId, isPublished) {
     const db = fire.firestore();
 
     try {
+        const portfolio = await getPortfolioById(portfolioId);
+        if (!portfolio || portfolio.userId !== userId) {
+            throw new Error('Portfolio not found or access denied');
+        }
         const updateData = {
             isPublished: isPublished,
             updatedAt: firebase.firestore.Timestamp.now(),
@@ -5573,21 +5560,14 @@ export async function updatePortfolioVisibility(portfolioId, isPublished) {
             updateData.publishedAt = firebase.firestore.Timestamp.now();
         }
 
-        await db.collection('portfolios').doc(portfolioId).update(updateData);
-
-        // Update in user's portfolios subcollection
-        const portfolio = await getPortfolioById(portfolioId);
-        if (portfolio) {
-            await db
-                .collection('users')
-                .doc(portfolio.userId)
-                .collection('portfolios')
-                .doc(portfolioId)
-                .update({
-                    isPublished: isPublished,
-                    ...(isPublished ? { publishedAt: firebase.firestore.Timestamp.now() } : {}),
-                });
-        }
+        const batch = db.batch();
+        batch.update(db.collection('portfolios').doc(portfolioId), updateData);
+        batch.set(db.collection('users').doc(userId).collection('portfolios').doc(portfolioId), {
+            isPublished: isPublished,
+            updatedAt: updateData.updatedAt,
+            ...(isPublished ? { publishedAt: updateData.publishedAt } : {}),
+        }, { merge: true });
+        await batch.commit();
 
         return true;
     } catch (error) {
@@ -5600,19 +5580,14 @@ export async function deletePortfolio(userId, portfolioId) {
     const db = fire.firestore();
 
     try {
-        // Delete from main portfolios collection
-        await db.collection('portfolios').doc(portfolioId).delete();
-
-        // Delete from user's portfolios subcollection
-        await db.collection('users').doc(userId).collection('portfolios').doc(portfolioId).delete();
-
-        // Update user's portfolio count
-        await db
-            .collection('users')
-            .doc(userId)
-            .update({
-                portfolioCount: firebase.firestore.FieldValue.increment(-1),
-            });
+        const portfolio = await getPortfolioById(portfolioId);
+        if (!portfolio || portfolio.userId !== userId) {
+            throw new Error('Portfolio not found or access denied');
+        }
+        const batch = db.batch();
+        batch.delete(db.collection('portfolios').doc(portfolioId));
+        batch.delete(db.collection('users').doc(userId).collection('portfolios').doc(portfolioId));
+        await batch.commit();
 
         return true;
     } catch (error) {
