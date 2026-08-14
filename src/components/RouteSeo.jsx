@@ -25,7 +25,8 @@ export default function RouteSeo() {
     const privatePage = PRIVATE_PREFIXES.some(prefix => path.startsWith(prefix)) || path === '/login' || !definition;
     const title = definition?.[0] || 'Page not found — ResumePilot AI';
     const description = definition?.[1] || 'The requested page is unavailable.';
-    const canonical = `${window.location.origin}${path}`;
+    const canonicalPath = path === '/billing/plans' ? '/pricing' : path;
+    const canonical = `${window.location.origin}${canonicalPath}`;
     document.title = title;
     const setMeta = (selector, attributes) => {
       let element = document.head.querySelector(selector);

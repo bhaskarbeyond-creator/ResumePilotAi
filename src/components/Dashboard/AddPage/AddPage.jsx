@@ -58,7 +58,7 @@ class AddPage extends Component {
                     <h4>{t("dashboard.currentPages")}</h4>
                     <ul className="add-page-links">
                         {this.state.pages.map((value, index) => {
-                            return <li key={index}><a href={"/p/" + value.id}>{value.id}</a> <img onClick={() => this.removePageHandler(value.id)} className="remove-image" src={RemoveImage} /> </li>
+                            return <li key={index}><a href={"/p/" + value.id}>{value.id}</a> <button type="button" onClick={() => this.removePageHandler(value.id)} aria-label={`Remove ${value.id}`}><img className="remove-image" src={RemoveImage} alt="" /></button> </li>
                         })}
                     </ul>
                     <h4>{t("dashboard.addPages")}</h4>

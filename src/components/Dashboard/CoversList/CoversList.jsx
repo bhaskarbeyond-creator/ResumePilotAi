@@ -134,7 +134,7 @@ class CoversList extends Component {
                                     display: 'flex',
                                     flexDirection: 'column',
                                 }}>
-                                <img className="noResumesImage" src={addResumesImage} />
+                                <img className="noResumesImage" src={addResumesImage} alt="" />
                             </div>
                         ) : (
                             <ul>

@@ -3,6 +3,7 @@ import './AddAds.scss'
 import SimpleInput from '../Form/simple-input/SimpleInput';
 import { getAds, addAds, removeAd } from '../../firestore/dbOperations'
 import { withTranslation } from 'react-i18next';
+import { sanitizeImageUrl } from '../../utils/sanitizeHtml';
 class AddAds extends Component {
     constructor(props) {
         super(props);
@@ -61,7 +62,7 @@ class AddAds extends Component {
                         {this.state.ads.length > 0 ?
                             this.state.ads.map((value, index) => {
                                 return <li key={index} className="ads-item">
-                                    <div className="ads-item__image"><img src={value.imageLink} /></div>
+                                    <div className="ads-item__image">{sanitizeImageUrl(value.imageLink) && <img src={sanitizeImageUrl(value.imageLink)} alt={value.name || 'Advertisement'} />}</div>
                                     <div className="ads-item__details">
                                         <div className="ads-item__name"><span>{t("dashboard.name")}:</span> {value.name}</div>
                                         <div className="ads-item__date"> <span>{t("dashboard.date")}:</span> {value.date}</div>

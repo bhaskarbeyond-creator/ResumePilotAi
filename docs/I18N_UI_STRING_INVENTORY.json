@@ -4,13 +4,13 @@
     "src/components"
   ],
   "method": "Deterministic single-line JSX text and literal user-facing attribute inventory; dynamic expressions and multiline text require professional source review.",
-  "filesScanned": 280,
-  "occurrences": 2896,
+  "filesScanned": 281,
+  "occurrences": 2901,
   "summary": {
     "INTENTIONAL_BRAND_PROVIDER": 26,
-    "TECHNICAL_OR_IDENTIFIER": 199,
-    "USER_FACING_ACCESSIBILITY": 302,
-    "USER_FACING_ENGLISH_CANDIDATE": 2369
+    "TECHNICAL_OR_IDENTIFIER": 196,
+    "USER_FACING_ACCESSIBILITY": 306,
+    "USER_FACING_ENGLISH_CANDIDATE": 2373
   },
   "inventory": [
     {
@@ -3347,49 +3347,49 @@
     },
     {
       "file": "src/components/Boards/board-step-filling/BoardFilling.jsx",
-      "line": 508,
+      "line": 506,
       "kind": "jsx-text",
       "text": "Primary Color",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Boards/board-step-filling/BoardFilling.jsx",
-      "line": 530,
+      "line": 528,
       "kind": "jsx-text",
       "text": "Secondary Color",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Boards/board-step-filling/BoardFilling.jsx",
-      "line": 544,
+      "line": 542,
       "kind": "placeholder",
       "text": "#3d3e42",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Boards/board-step-filling/BoardFilling.jsx",
-      "line": 552,
+      "line": 550,
       "kind": "jsx-text",
       "text": "Popular Colors",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Boards/board-step-filling/BoardFilling.jsx",
-      "line": 569,
+      "line": 567,
       "kind": "jsx-text",
       "text": "Changes are applied in real-time to your resume preview.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Boards/board-step-filling/BoardFilling.jsx",
-      "line": 655,
+      "line": 653,
       "kind": "jsx-text",
       "text": "Colors",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Boards/board-step-filling/BoardFilling.jsx",
-      "line": 677,
+      "line": 675,
       "kind": "jsx-text",
       "text": "Saving...",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
@@ -4327,7 +4327,7 @@
     },
     {
       "file": "src/components/Dashboard/CoversList/CoversList.jsx",
-      "line": 118,
+      "line": 116,
       "kind": "jsx-text",
       "text": "Cover Letters",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
@@ -4341,7 +4341,7 @@
     },
     {
       "file": "src/components/Dashboard/DashboardFavourites/DashboardFavourites.jsx",
-      "line": 132,
+      "line": 128,
       "kind": "jsx-text",
       "text": "Action",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
@@ -4474,14 +4474,14 @@
     },
     {
       "file": "src/components/Dashboard/DashboardMain/DashboardMain.jsx",
-      "line": 362,
+      "line": 347,
       "kind": "aria-label",
       "text": "Toggle sidebar",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/Dashboard/DashboardMain/DashboardMain.jsx",
-      "line": 446,
+      "line": 431,
       "kind": "title",
       "text": "Dismiss",
       "classification": "USER_FACING_ACCESSIBILITY"
@@ -6049,42 +6049,63 @@
     },
     {
       "file": "src/components/Dashboard/EmployerDashboard/JobApplicationsModal.jsx",
-      "line": 296,
+      "line": 185,
+      "kind": "aria-label",
+      "text": "Close applications dialog",
+      "classification": "USER_FACING_ACCESSIBILITY"
+    },
+    {
+      "file": "src/components/Dashboard/EmployerDashboard/JobApplicationsModal.jsx",
+      "line": 195,
+      "kind": "jsx-text",
+      "text": "Search applications",
+      "classification": "USER_FACING_ENGLISH_CANDIDATE"
+    },
+    {
+      "file": "src/components/Dashboard/EmployerDashboard/JobApplicationsModal.jsx",
+      "line": 211,
+      "kind": "jsx-text",
+      "text": "Filter by status",
+      "classification": "USER_FACING_ENGLISH_CANDIDATE"
+    },
+    {
+      "file": "src/components/Dashboard/EmployerDashboard/JobApplicationsModal.jsx",
+      "line": 294,
       "kind": "title",
       "text": "Send Message",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/Dashboard/EmployerDashboard/JobApplicationsModal.jsx",
-      "line": 353,
+      "line": 354,
       "kind": "jsx-text",
       "text": "Cover Letter",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/EmployerDashboard/JobApplicationsModal.jsx",
-      "line": 363,
+      "line": 364,
       "kind": "jsx-text",
       "text": "Additional Information",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/EmployerDashboard/JobApplicationsModal.jsx",
-      "line": 366,
+      "line": 367,
       "kind": "jsx-text",
       "text": "Experience:",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/EmployerDashboard/JobApplicationsModal.jsx",
-      "line": 370,
+      "line": 371,
       "kind": "jsx-text",
       "text": "Applied:",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/EmployerDashboard/JobApplicationsModal.jsx",
-      "line": 374,
+      "line": 375,
       "kind": "jsx-text",
       "text": "Resume:",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
@@ -6147,7 +6168,14 @@
     },
     {
       "file": "src/components/Dashboard/EmployerDashboard/SendMessageDialog.jsx",
-      "line": 73,
+      "line": 80,
+      "kind": "aria-label",
+      "text": "Close message dialog",
+      "classification": "USER_FACING_ACCESSIBILITY"
+    },
+    {
+      "file": "src/components/Dashboard/EmployerDashboard/SendMessageDialog.jsx",
+      "line": 91,
       "kind": "placeholder",
       "text": "Type your message...",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
@@ -8149,49 +8177,63 @@
     },
     {
       "file": "src/components/JobsListings/JobApplicationModal.jsx",
-      "line": 553,
+      "line": 562,
       "kind": "jsx-text",
       "text": "Loading...",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/JobsListings/JobApplicationModal.jsx",
-      "line": 564,
+      "line": 573,
       "kind": "jsx-text",
       "text": "Preview Error",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/JobsListings/JobApplicationModal.jsx",
-      "line": 797,
+      "line": 681,
+      "kind": "aria-label",
+      "text": "Close job application",
+      "classification": "USER_FACING_ACCESSIBILITY"
+    },
+    {
+      "file": "src/components/JobsListings/JobApplicationModal.jsx",
+      "line": 711,
+      "kind": "title",
+      "text": "Applications use your verified account email",
+      "classification": "USER_FACING_ACCESSIBILITY"
+    },
+    {
+      "file": "src/components/JobsListings/JobApplicationModal.jsx",
+      "line": 799,
       "kind": "jsx-text",
       "text": "Cover Letter *",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/JobsListings/JobApplicationModal.jsx",
-      "line": 997,
+      "line": 999,
       "kind": "jsx-text",
       "text": "Preview",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/JobsListings/JobApplicationModal.jsx",
-      "line": 1011,
+      "line": 1013,
       "kind": "jsx-text",
       "text": "No resumes found",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/JobsListings/JobApplicationModal.jsx",
-      "line": 1012,
+      "line": 1014,
       "kind": "jsx-text",
       "text": "Create a resume first to apply for jobs",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/JobsListings/JobApplicationModal.jsx",
-      "line": 1068,
+      "line": 1070,
       "kind": "jsx-text",
       "text": "Resume Preview",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
@@ -11187,58 +11229,93 @@
     },
     {
       "file": "src/components/addAds/AddAds.jsx",
-      "line": 84,
+      "line": 85,
       "kind": "jsx-text",
       "text": "Add",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/Admin.jsx",
-      "line": 47,
+      "line": 48,
       "kind": "aria-label",
       "text": "Admin breadcrumbs",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/admin/Admin.jsx",
-      "line": 48,
+      "line": 49,
       "kind": "jsx-text",
       "text": "Admin Console",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/Admin.jsx",
-      "line": 64,
+      "line": 65,
       "kind": "jsx-text",
       "text": "Live site",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/Admin.jsx",
-      "line": 67,
+      "line": 68,
       "kind": "jsx-text",
       "text": "Administrator",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/Admin.jsx",
-      "line": 70,
+      "line": 71,
       "kind": "aria-label",
       "text": "Sign out of admin console",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/admin/Admin.jsx",
-      "line": 71,
+      "line": 72,
       "kind": "jsx-text",
       "text": "Sign out",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/Admin.jsx",
-      "line": 97,
+      "line": 98,
       "kind": "jsx-text",
       "text": "Verifying administrator access…",
+      "classification": "USER_FACING_ENGLISH_CANDIDATE"
+    },
+    {
+      "file": "src/components/admin/AdminReauthPrompt.jsx",
+      "line": 71,
+      "kind": "jsx-text",
+      "text": "Reauthenticate administrator",
+      "classification": "USER_FACING_ENGLISH_CANDIDATE"
+    },
+    {
+      "file": "src/components/admin/AdminReauthPrompt.jsx",
+      "line": 72,
+      "kind": "jsx-text",
+      "text": "This sensitive settings change requires a recent verified sign-in. The pending operation will retry only after successful reauthentication.",
+      "classification": "USER_FACING_ENGLISH_CANDIDATE"
+    },
+    {
+      "file": "src/components/admin/AdminReauthPrompt.jsx",
+      "line": 74,
+      "kind": "jsx-text",
+      "text": "Current password",
+      "classification": "USER_FACING_ENGLISH_CANDIDATE"
+    },
+    {
+      "file": "src/components/admin/AdminReauthPrompt.jsx",
+      "line": 74,
+      "kind": "jsx-text",
+      "text": "Your identity provider will open its secure reauthentication flow.",
+      "classification": "USER_FACING_ENGLISH_CANDIDATE"
+    },
+    {
+      "file": "src/components/admin/AdminReauthPrompt.jsx",
+      "line": 76,
+      "kind": "jsx-text",
+      "text": "Cancel",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
@@ -12986,434 +13063,420 @@
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 282,
+      "line": 313,
       "kind": "jsx-text",
       "text": "Loading AI settings...",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 311,
+      "line": 331,
+      "kind": "jsx-text",
+      "text": "Reload settings",
+      "classification": "USER_FACING_ENGLISH_CANDIDATE"
+    },
+    {
+      "file": "src/components/admin/settings/AiSettings.jsx",
+      "line": 337,
+      "kind": "jsx-text",
+      "text": "Reauthentication is required for this sensitive AI settings operation.",
+      "classification": "USER_FACING_ENGLISH_CANDIDATE"
+    },
+    {
+      "file": "src/components/admin/settings/AiSettings.jsx",
+      "line": 338,
+      "kind": "jsx-text",
+      "text": "Your unsaved settings remain in this panel. Reauthenticate to retry the exact operation.",
+      "classification": "USER_FACING_ENGLISH_CANDIDATE"
+    },
+    {
+      "file": "src/components/admin/settings/AiSettings.jsx",
+      "line": 339,
+      "kind": "jsx-text",
+      "text": "Current password",
+      "classification": "USER_FACING_ENGLISH_CANDIDATE"
+    },
+    {
+      "file": "src/components/admin/settings/AiSettings.jsx",
+      "line": 352,
       "kind": "jsx-text",
       "text": "Active AI Engine & Multi-Provider Switcher",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 312,
+      "line": 353,
       "kind": "jsx-text",
       "text": "Select primary AI generation provider for resume building & bullet optimization",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 328,
+      "line": 375,
       "kind": "jsx-text",
       "text": "Google Gemini (Default)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 329,
+      "line": 376,
       "kind": "jsx-text",
       "text": "NVIDIA NIM (OpenAI Compatible - Free High-Perm API)",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 330,
+      "line": 377,
       "kind": "jsx-text",
       "text": "OpenAI / OpenAI Compatible",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 331,
+      "line": 378,
       "kind": "jsx-text",
       "text": "Groq Cloud (Free Tier & Fast)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 332,
+      "line": 379,
       "kind": "jsx-text",
       "text": "OpenRouter (Free Open-Source Models)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 333,
+      "line": 380,
       "kind": "jsx-text",
       "text": "DeepSeek AI",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 334,
-      "kind": "jsx-text",
-      "text": "Ollama / LocalAI (Self-Hosted)",
-      "classification": "USER_FACING_ENGLISH_CANDIDATE"
-    },
-    {
-      "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 347,
+      "line": 393,
       "kind": "placeholder",
       "text": "e.g. meta/llama-3.3-70b-instruct, gemini-2.0-flash",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 385,
+      "line": 431,
       "kind": "jsx-text",
       "text": "AI Resume Import Module",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 423,
+      "line": 469,
       "kind": "jsx-text",
       "text": "NVIDIA NIM API (OpenAI Compatible)",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 425,
+      "line": 471,
       "kind": "jsx-text",
       "text": "PRIMARY",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 450,
+      "line": 496,
       "kind": "jsx-text",
       "text": "NVIDIA API Key",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 472,
+      "line": 518,
       "kind": "jsx-text",
       "text": "NVIDIA Target Model",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 480,
+      "line": 526,
       "kind": "jsx-text",
       "text": "Fetch Available Models",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 499,
+      "line": 545,
       "kind": "jsx-text",
       "text": "https://integrate.api.nvidia.com/v1",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 507,
+      "line": 553,
       "kind": "jsx-text",
       "text": "Test NVIDIA Live API",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 532,
+      "line": 578,
       "kind": "jsx-text",
       "text": "Google Gemini API",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 534,
+      "line": 580,
       "kind": "jsx-text",
       "text": "PRIMARY",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 555,
+      "line": 601,
       "kind": "jsx-text",
       "text": "Gemini API Key",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 575,
+      "line": 621,
       "kind": "jsx-text",
       "text": "Gemini Model Target",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 582,
+      "line": 628,
       "kind": "jsx-text",
       "text": "Gemini 2.0 Flash (Fastest)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 583,
+      "line": 629,
       "kind": "jsx-text",
       "text": "Gemini 1.5 Pro (High Reasoning)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 584,
+      "line": 630,
       "kind": "jsx-text",
       "text": "Gemini 1.5 Flash",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 590,
+      "line": 636,
       "kind": "jsx-text",
       "text": "v1beta.generativelanguage.googleapis.com",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 598,
+      "line": 644,
       "kind": "jsx-text",
       "text": "Test Gemini Live API",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 623,
+      "line": 669,
       "kind": "jsx-text",
       "text": "OpenAI / OpenAI-Compatible Endpoint",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 625,
+      "line": 671,
       "kind": "jsx-text",
       "text": "PRIMARY",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 646,
+      "line": 692,
       "kind": "jsx-text",
       "text": "OpenAI API Key",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 666,
+      "line": 712,
       "kind": "jsx-text",
       "text": "Model Name",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 672,
+      "line": 718,
       "kind": "placeholder",
       "text": "gpt-4o-mini, gpt-4o, etc.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 677,
+      "line": 723,
       "kind": "jsx-text",
       "text": "Custom Base URL (Optional)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 683,
+      "line": 729,
       "kind": "placeholder",
       "text": "https://api.openai.com/v1",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 698,
+      "line": 744,
       "kind": "jsx-text",
       "text": "Test OpenAI Live API",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 725,
+      "line": 771,
       "kind": "jsx-text",
       "text": "Groq Cloud (Free Tier)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 745,
+      "line": 791,
       "kind": "jsx-text",
       "text": "Groq API Key",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 765,
+      "line": 811,
       "kind": "jsx-text",
       "text": "Groq Model",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 771,
+      "line": 817,
       "kind": "placeholder",
       "text": "llama-3.3-70b-versatile",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 778,
+      "line": 824,
       "kind": "jsx-text",
       "text": "api.groq.com",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 786,
+      "line": 832,
       "kind": "jsx-text",
       "text": "Test Groq API",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 811,
+      "line": 857,
       "kind": "jsx-text",
       "text": "OpenRouter (Free Models)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 831,
+      "line": 877,
       "kind": "jsx-text",
       "text": "OpenRouter API Key",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 851,
+      "line": 897,
       "kind": "jsx-text",
       "text": "OpenRouter Model",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 857,
+      "line": 903,
       "kind": "placeholder",
       "text": "meta-llama/llama-3.3-70b-instruct:free",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 864,
+      "line": 910,
       "kind": "jsx-text",
       "text": "openrouter.ai/api/v1",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 872,
+      "line": 918,
       "kind": "jsx-text",
       "text": "Test OpenRouter",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 899,
+      "line": 945,
       "kind": "jsx-text",
       "text": "DeepSeek AI",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 919,
+      "line": 965,
       "kind": "jsx-text",
       "text": "DeepSeek API Key",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 939,
+      "line": 985,
       "kind": "jsx-text",
       "text": "DeepSeek Model",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 945,
+      "line": 991,
       "kind": "placeholder",
       "text": "deepseek-chat",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 952,
+      "line": 998,
       "kind": "jsx-text",
       "text": "api.deepseek.com",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 960,
+      "line": 1006,
       "kind": "jsx-text",
       "text": "Test DeepSeek",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 984,
+      "line": 1024,
       "kind": "jsx-text",
-      "text": "Ollama / LocalAI (Self-Hosted)",
+      "text": "Ollama / LocalAI",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 1004,
+      "line": 1025,
       "kind": "jsx-text",
-      "text": "Local Endpoint Base URL",
+      "text": "Not supported by the trusted multi-provider runtime. Browser-supplied self-hosted endpoints remain disabled by SSRF policy.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 1010,
-      "kind": "placeholder",
-      "text": "http://localhost:11434/v1",
-      "classification": "TECHNICAL_OR_IDENTIFIER"
-    },
-    {
-      "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 1015,
-      "kind": "jsx-text",
-      "text": "Ollama Model",
-      "classification": "USER_FACING_ENGLISH_CANDIDATE"
-    },
-    {
-      "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 1021,
-      "kind": "placeholder",
-      "text": "llama3",
-      "classification": "USER_FACING_ENGLISH_CANDIDATE"
-    },
-    {
-      "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 1028,
-      "kind": "jsx-text",
-      "text": "localhost:11434",
-      "classification": "USER_FACING_ENGLISH_CANDIDATE"
-    },
-    {
-      "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 1036,
-      "kind": "jsx-text",
-      "text": "Test Local Ollama",
-      "classification": "USER_FACING_ENGLISH_CANDIDATE"
-    },
-    {
-      "file": "src/components/admin/settings/AiSettings.jsx",
-      "line": 1078,
+      "line": 1053,
       "kind": "jsx-text",
       "text": "Save AI Settings",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
@@ -13567,553 +13630,511 @@
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 610,
+      "line": 636,
       "kind": "jsx-text",
       "text": "Loading Enterprise Mail System...",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 629,
+      "line": 655,
       "kind": "jsx-text",
       "text": "Enterprise Email &amp; SMTP Subsystem",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 631,
+      "line": 657,
       "kind": "jsx-text",
       "text": "Outbound SMTP, Inbound IMAP, Fallback Relay, Dynamic HTML Templates &amp; Audit Outbox.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 645,
+      "line": 671,
       "kind": "jsx-text",
       "text": "Outbound SMTP",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 656,
+      "line": 682,
       "kind": "jsx-text",
       "text": "Inbound IMAP",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 667,
+      "line": 693,
       "kind": "jsx-text",
       "text": "Dynamic Templates",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 689,
+      "line": 715,
       "kind": "jsx-text",
       "text": "Deliverability &amp; DNS",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 712,
+      "line": 738,
       "kind": "jsx-text",
       "text": "1-Click Mailer Presets",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 744,
+      "line": 770,
       "kind": "placeholder",
       "text": "smtp.hostinger.com / smtp.gmail.com",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 775,
+      "line": 801,
       "kind": "jsx-text",
       "text": "SSL (Port 465 - Recommended)",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 776,
+      "line": 802,
       "kind": "jsx-text",
       "text": "TLS (STARTTLS - Port 587)",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 777,
-      "kind": "jsx-text",
-      "text": "None (Plaintext - Port 25)",
-      "classification": "USER_FACING_ENGLISH_CANDIDATE"
-    },
-    {
-      "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 790,
+      "line": 815,
       "kind": "placeholder",
       "text": "admin@projectdemo.guru",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 805,
-      "kind": "placeholder",
-      "text": "Account Password / API Key",
-      "classification": "USER_FACING_ENGLISH_CANDIDATE"
-    },
-    {
-      "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 829,
+      "line": 854,
       "kind": "placeholder",
       "text": "ResumePilot AI Team",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 843,
+      "line": 868,
       "kind": "placeholder",
       "text": "support@airesume.projectdemo.guru",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 857,
+      "line": 882,
       "kind": "placeholder",
       "text": "admin@domain.com",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 877,
+      "line": 902,
       "kind": "jsx-text",
       "text": "Enable Fallback Failover",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 885,
+      "line": 910,
       "kind": "jsx-text",
       "text": "Fallback Host",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 890,
+      "line": 915,
       "kind": "placeholder",
       "text": "smtp.gmail.com / smtp.sendgrid.net",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 895,
+      "line": 920,
       "kind": "jsx-text",
       "text": "Fallback Port",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 905,
+      "line": 930,
       "kind": "jsx-text",
       "text": "Fallback Encryption",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 911,
+      "line": 936,
       "kind": "jsx-text",
       "text": "TLS (Port 587 - Recommended)",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 912,
+      "line": 937,
       "kind": "jsx-text",
       "text": "SSL (Port 465)",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 913,
-      "kind": "jsx-text",
-      "text": "NONE (Port 25)",
-      "classification": "TECHNICAL_OR_IDENTIFIER"
-    },
-    {
-      "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 920,
+      "line": 944,
       "kind": "jsx-text",
       "text": "Fallback User / SASL Account",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 925,
+      "line": 949,
       "kind": "placeholder",
       "text": "apikey / user@gmail.com",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 930,
+      "line": 954,
       "kind": "jsx-text",
       "text": "Fallback Password / API Key",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 935,
-      "kind": "placeholder",
-      "text": "API Key / App Password",
-      "classification": "TECHNICAL_OR_IDENTIFIER"
-    },
-    {
-      "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 940,
+      "line": 964,
       "kind": "jsx-text",
       "text": "Fallback Sender Email (Verified)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 945,
+      "line": 969,
       "kind": "placeholder",
       "text": "support@airesume.projectdemo.guru",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 953,
+      "line": 977,
       "kind": "jsx-text",
       "text": "Circuit Breaker Max Failures",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 963,
+      "line": 987,
       "kind": "jsx-text",
       "text": "Circuit Breaker Cooldown (Mins)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 987,
+      "line": 1011,
       "kind": "jsx-text",
       "text": "Test Primary Outbound Socket",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 997,
+      "line": 1021,
       "kind": "jsx-text",
       "text": "Test Secondary Failover Relay",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1014,
+      "line": 1038,
       "kind": "jsx-text",
       "text": "Reset Circuit Breaker",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1024,
+      "line": 1048,
       "kind": "jsx-text",
       "text": "Save All Email Settings",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1053,
+      "line": 1077,
       "kind": "placeholder",
       "text": "imap.hostinger.com / imap.gmail.com",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1084,
+      "line": 1108,
       "kind": "jsx-text",
       "text": "SSL/TLS (Port 993 - Recommended)",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1085,
-      "kind": "jsx-text",
-      "text": "Plaintext (Port 143)",
-      "classification": "USER_FACING_ENGLISH_CANDIDATE"
-    },
-    {
-      "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1098,
+      "line": 1121,
       "kind": "placeholder",
       "text": "admin@projectdemo.guru",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1112,
-      "kind": "placeholder",
-      "text": "Account Password",
-      "classification": "USER_FACING_ENGLISH_CANDIDATE"
-    },
-    {
-      "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1127,
+      "line": 1150,
       "kind": "jsx-text",
       "text": "Test Inbound IMAP Socket",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1136,
+      "line": 1159,
       "kind": "jsx-text",
       "text": "Save IMAP Settings",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1158,
+      "line": 1181,
       "kind": "jsx-text",
       "text": "Click",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1158,
+      "line": 1181,
       "kind": "jsx-text",
       "text": "\"View\"",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1158,
+      "line": 1181,
       "kind": "jsx-text",
       "text": "on any card to preview full rendered HTML email with live device toggle.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1210,
+      "line": 1233,
       "kind": "placeholder",
       "text": "Search templates...",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1280,
+      "line": 1303,
       "kind": "jsx-text",
       "text": "View",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1312,
+      "line": 1335,
       "kind": "jsx-text",
       "text": "Notification Dispatch:",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1368,
+      "line": 1391,
       "kind": "jsx-text",
       "text": "Your recent transaction has been confirmed. Below are your tax receipt details:",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1373,
+      "line": 1396,
       "kind": "jsx-text",
       "text": "Invoice:",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1377,
+      "line": 1400,
       "kind": "jsx-text",
       "text": "Total Paid:",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1402,
+      "line": 1425,
       "kind": "placeholder",
       "text": "Test recipient email address",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1414,
+      "line": 1437,
       "kind": "jsx-text",
       "text": "Dispatch Live Template Email",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1431,
+      "line": 1454,
       "kind": "placeholder",
       "text": "Search by recipient or subject...",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1449,
+      "line": 1472,
       "kind": "jsx-text",
       "text": "Status",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1450,
+      "line": 1473,
       "kind": "jsx-text",
       "text": "Recipient",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1451,
+      "line": 1474,
       "kind": "jsx-text",
       "text": "Subject &amp; Template",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1452,
+      "line": 1475,
       "kind": "jsx-text",
       "text": "Sent Timestamp",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1453,
+      "line": 1476,
       "kind": "jsx-text",
       "text": "Action",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1493,
+      "line": 1516,
       "kind": "jsx-text",
       "text": "Resend",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1519,
+      "line": 1542,
       "kind": "jsx-text",
       "text": "SPF Record",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1520,
+      "line": 1543,
       "kind": "jsx-text",
       "text": "VERIFIED ACTIVE",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1521,
+      "line": 1544,
       "kind": "jsx-text",
       "text": "v=spf1 include:_spf.mail.hostinger.com ~all",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1525,
+      "line": 1548,
       "kind": "jsx-text",
       "text": "DKIM Authentication",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1526,
+      "line": 1549,
       "kind": "jsx-text",
       "text": "3 KEYS ALIGNED",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1527,
+      "line": 1550,
       "kind": "jsx-text",
       "text": "hostingermail-a/b/c._domainkey",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1531,
+      "line": 1554,
       "kind": "jsx-text",
       "text": "DMARC Policy",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1532,
+      "line": 1555,
       "kind": "jsx-text",
       "text": "ENFORCED (sp=none)",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1533,
+      "line": 1556,
       "kind": "jsx-text",
       "text": "v=DMARC1; p=none; rua=mailto:admin",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1537,
+      "line": 1560,
       "kind": "jsx-text",
       "text": "MX Mail Routing",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1538,
+      "line": 1561,
       "kind": "jsx-text",
       "text": "DUAL CLUSTER",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1539,
+      "line": 1562,
       "kind": "jsx-text",
       "text": "mx1 &amp; mx2.hostinger.com",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1569,
+      "line": 1592,
       "kind": "jsx-text",
       "text": "HTML Cross-Client Template Preview & Live Test Dispatcher",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1620,
+      "line": 1643,
       "kind": "jsx-text",
       "text": "ResumePilot AI",
       "classification": "INTENTIONAL_BRAND_PROVIDER"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1645,
+      "line": 1668,
       "kind": "jsx-text",
       "text": "ATS Optimization Score",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1673,
+      "line": 1696,
       "kind": "placeholder",
       "text": "Enter email to test send this template...",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "line": 1690,
+      "line": 1713,
       "kind": "jsx-text",
       "text": "Send Test Email Now",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
@@ -14204,238 +14225,245 @@
     },
     {
       "file": "src/components/admin/settings/FirebaseSettings.jsx",
-      "line": 239,
+      "line": 238,
       "kind": "jsx-text",
       "text": "Loading Firebase settings...",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/FirebaseSettings.jsx",
-      "line": 264,
+      "line": 263,
       "kind": "jsx-text",
       "text": "Client-side credentials used by the browser (Firestore, Auth, Realtime DB).",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/FirebaseSettings.jsx",
-      "line": 268,
+      "line": 267,
       "kind": "jsx-text",
       "text": "Firebase Web API Key",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/FirebaseSettings.jsx",
-      "line": 272,
+      "line": 271,
       "kind": "placeholder",
       "text": "AIzaSy...",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/FirebaseSettings.jsx",
-      "line": 280,
+      "line": 279,
       "kind": "jsx-text",
       "text": "Auth Domain",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/FirebaseSettings.jsx",
-      "line": 282,
+      "line": 281,
       "kind": "placeholder",
       "text": "my-project.firebaseapp.com",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/FirebaseSettings.jsx",
-      "line": 288,
+      "line": 287,
       "kind": "jsx-text",
       "text": "Project ID",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/FirebaseSettings.jsx",
-      "line": 290,
+      "line": 289,
       "kind": "placeholder",
       "text": "my-project-id",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/FirebaseSettings.jsx",
-      "line": 293,
+      "line": 292,
       "kind": "jsx-text",
       "text": "Database URL (Realtime DB)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/FirebaseSettings.jsx",
-      "line": 295,
+      "line": 294,
       "kind": "placeholder",
       "text": "https://my-project-default-rtdb.firebaseio.com",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/admin/settings/FirebaseSettings.jsx",
-      "line": 301,
+      "line": 300,
       "kind": "jsx-text",
       "text": "Storage Bucket",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/FirebaseSettings.jsx",
-      "line": 303,
+      "line": 302,
       "kind": "placeholder",
       "text": "my-project.appspot.com",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/FirebaseSettings.jsx",
-      "line": 306,
+      "line": 305,
       "kind": "jsx-text",
       "text": "Messaging Sender ID",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/FirebaseSettings.jsx",
-      "line": 311,
+      "line": 310,
       "kind": "jsx-text",
       "text": "App ID",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/FirebaseSettings.jsx",
-      "line": 313,
+      "line": 312,
       "kind": "placeholder",
       "text": "1:123456789012:web:abcdef",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/FirebaseSettings.jsx",
-      "line": 321,
+      "line": 320,
       "kind": "jsx-text",
       "text": "Google &amp; Facebook Sign-In toggles are managed under",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/FirebaseSettings.jsx",
-      "line": 321,
+      "line": 320,
       "kind": "jsx-text",
       "text": "Addon Modules Manager",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/FirebaseSettings.jsx",
-      "line": 334,
+      "line": 333,
       "kind": "jsx-text",
       "text": "Save Web Credentials",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/FirebaseSettings.jsx",
-      "line": 351,
+      "line": 350,
       "kind": "jsx-text",
       "text": "Firebase Service Account (Admin SDK)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/FirebaseSettings.jsx",
-      "line": 352,
+      "line": 351,
       "kind": "jsx-text",
       "text": "Required for server-side auth: password resets, user management, email change",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/FirebaseSettings.jsx",
-      "line": 457,
+      "line": 360,
       "kind": "jsx-text",
-      "text": "How to get this:",
-      "classification": "USER_FACING_ENGLISH_CANDIDATE"
-    },
-    {
-      "file": "src/components/admin/settings/FirebaseSettings.jsx",
-      "line": 457,
-      "kind": "jsx-text",
-      "text": "Firebase Console → Project Settings → Service Accounts → Generate new private key.",
+      "text": "Runtime private-key changes are disabled. Configure Workload Identity or the deployment Secret Manager; this browser does not change deployment credentials.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/FirebaseSettings.jsx",
       "line": 458,
       "kind": "jsx-text",
-      "text": ".env",
+      "text": "How to get this:",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/FirebaseSettings.jsx",
-      "line": 467,
+      "line": 458,
       "kind": "jsx-text",
-      "text": "Key Rotation Mode:",
+      "text": "Firebase Console → Project Settings → Service Accounts → Generate new private key.",
+      "classification": "USER_FACING_ENGLISH_CANDIDATE"
+    },
+    {
+      "file": "src/components/admin/settings/FirebaseSettings.jsx",
+      "line": 459,
+      "kind": "jsx-text",
+      "text": ".env",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/FirebaseSettings.jsx",
       "line": 468,
       "kind": "jsx-text",
+      "text": "Key Rotation Mode:",
+      "classification": "USER_FACING_ENGLISH_CANDIDATE"
+    },
+    {
+      "file": "src/components/admin/settings/FirebaseSettings.jsx",
+      "line": 469,
+      "kind": "jsx-text",
       "text": "new private key",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/FirebaseSettings.jsx",
-      "line": 505,
+      "line": 506,
       "kind": "jsx-text",
       "text": "(pre-filled)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/FirebaseSettings.jsx",
-      "line": 509,
+      "line": 510,
       "kind": "placeholder",
       "text": "my-project-424cf",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/FirebaseSettings.jsx",
-      "line": 515,
+      "line": 516,
       "kind": "jsx-text",
       "text": "(pre-filled)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/FirebaseSettings.jsx",
-      "line": 519,
+      "line": 520,
       "kind": "placeholder",
       "text": "firebase-adminsdk-xxx@my-project.iam.gserviceaccount.com",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/FirebaseSettings.jsx",
-      "line": 528,
+      "line": 529,
       "kind": "jsx-text",
       "text": "— paste new key to replace existing",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/FirebaseSettings.jsx",
-      "line": 531,
+      "line": 532,
       "kind": "jsx-text",
       "text": "— leave blank to keep existing key",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/FirebaseSettings.jsx",
-      "line": 551,
+      "line": 552,
       "kind": "jsx-text",
       "text": "Paste as-is. Escaped",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/FirebaseSettings.jsx",
-      "line": 551,
+      "line": 552,
       "kind": "jsx-text",
       "text": "sequences are normalised automatically.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/FirebaseSettings.jsx",
-      "line": 558,
+      "line": 559,
       "kind": "jsx-text",
       "text": "Cancel",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
@@ -14939,182 +14967,182 @@
     },
     {
       "file": "src/components/admin/settings/ModulesSettings.jsx",
-      "line": 141,
+      "line": 136,
       "kind": "jsx-text",
       "text": "Loading Addon Module Settings...",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/ModulesSettings.jsx",
-      "line": 284,
+      "line": 279,
       "kind": "jsx-text",
       "text": "Addon & Feature Modules Manager",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/ModulesSettings.jsx",
-      "line": 375,
+      "line": 370,
       "kind": "jsx-text",
       "text": "Note on Default Off State:",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/ModulesSettings.jsx",
-      "line": 377,
+      "line": 372,
       "kind": "jsx-text",
       "text": "AI Resume Import Module",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/ModulesSettings.jsx",
-      "line": 377,
+      "line": 372,
       "kind": "jsx-text",
       "text": "and",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/ModulesSettings.jsx",
-      "line": 377,
+      "line": 372,
       "kind": "jsx-text",
       "text": "Email Address Verification Module",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/ModulesSettings.jsx",
-      "line": 377,
+      "line": 372,
       "kind": "jsx-text",
       "text": "are",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/ModulesSettings.jsx",
-      "line": 377,
+      "line": 372,
       "kind": "jsx-text",
       "text": "OFF (Disabled) by default",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/admin/settings/ModulesSettings.jsx",
-      "line": 377,
+      "line": 372,
       "kind": "jsx-text",
       "text": ". Toggle them to",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/ModulesSettings.jsx",
-      "line": 377,
+      "line": 372,
       "kind": "jsx-text",
       "text": "ENABLED",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/admin/settings/ModulesSettings.jsx",
-      "line": 392,
+      "line": 387,
       "kind": "jsx-text",
       "text": "Saving Changes...",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/ModulesSettings.jsx",
-      "line": 397,
+      "line": 392,
       "kind": "jsx-text",
       "text": "Save Module Changes",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/PaymentSettings.jsx",
-      "line": 97,
+      "line": 99,
       "kind": "jsx-text",
       "text": "Loading payment settings...",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/PaymentSettings.jsx",
-      "line": 149,
+      "line": 151,
       "kind": "placeholder",
       "text": "rzp_live_...",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/PaymentSettings.jsx",
-      "line": 163,
+      "line": 165,
       "kind": "placeholder",
       "text": "Secret Key",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/PaymentSettings.jsx",
-      "line": 199,
+      "line": 201,
       "kind": "placeholder",
       "text": "pk_test_...",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/PaymentSettings.jsx",
-      "line": 213,
+      "line": 215,
       "kind": "placeholder",
       "text": "sk_test_...",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/PaymentSettings.jsx",
-      "line": 248,
+      "line": 250,
       "kind": "placeholder",
       "text": "Client ID (or 'sb' for sandbox)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/PaymentSettings.jsx",
-      "line": 262,
+      "line": 264,
       "kind": "jsx-text",
       "text": "Sandbox (Testing Mode)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/PaymentSettings.jsx",
-      "line": 263,
+      "line": 265,
       "kind": "jsx-text",
       "text": "Live (Production Environment)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/PaymentSettings.jsx",
-      "line": 281,
+      "line": 283,
       "kind": "jsx-text",
       "text": "INR (₹ - Indian Rupee)",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/admin/settings/PaymentSettings.jsx",
-      "line": 282,
+      "line": 284,
       "kind": "jsx-text",
       "text": "USD ($ - US Dollar)",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/admin/settings/PaymentSettings.jsx",
-      "line": 283,
+      "line": 285,
       "kind": "jsx-text",
       "text": "EUR (€ - Euro)",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/admin/settings/PaymentSettings.jsx",
-      "line": 284,
+      "line": 286,
       "kind": "jsx-text",
       "text": "GBP (£ - British Pound)",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/admin/settings/PaymentSettings.jsx",
-      "line": 297,
+      "line": 299,
       "kind": "jsx-text",
       "text": "Test Stripe API Connection",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/PaymentSettings.jsx",
-      "line": 306,
+      "line": 308,
       "kind": "jsx-text",
       "text": "Save Payment Settings",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
@@ -15142,175 +15170,175 @@
     },
     {
       "file": "src/components/admin/settings/SocialAuthSettings.jsx",
-      "line": 103,
+      "line": 120,
       "kind": "jsx-text",
       "text": "Loading OAuth settings...",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/SocialAuthSettings.jsx",
-      "line": 129,
+      "line": 146,
       "kind": "jsx-text",
       "text": "Google &amp; Facebook OAuth Centralization",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/SocialAuthSettings.jsx",
-      "line": 130,
+      "line": 147,
       "kind": "jsx-text",
       "text": "Unified Firebase Broker",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/SocialAuthSettings.jsx",
-      "line": 133,
+      "line": 150,
       "kind": "jsx-text",
       "text": "Firebase Auth SDK",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/SocialAuthSettings.jsx",
-      "line": 133,
+      "line": 150,
       "kind": "jsx-text",
       "text": ". Configure your OAuth Client Keys in",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/SocialAuthSettings.jsx",
-      "line": 133,
+      "line": 150,
       "kind": "jsx-text",
       "text": "Firebase Console → Authentication → Sign-in method",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/SocialAuthSettings.jsx",
-      "line": 133,
+      "line": 150,
       "kind": "jsx-text",
       "text": ", and toggle end-user visibility ON/OFF under",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/SocialAuthSettings.jsx",
-      "line": 133,
+      "line": 150,
       "kind": "jsx-text",
       "text": "Addon Modules",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/SocialAuthSettings.jsx",
-      "line": 158,
+      "line": 175,
       "kind": "placeholder",
       "text": "e.g. 1234567890-abc123def456.apps.googleusercontent.com",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/SocialAuthSettings.jsx",
-      "line": 172,
+      "line": 189,
       "kind": "placeholder",
       "text": "GOCSPX-...",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/admin/settings/SocialAuthSettings.jsx",
-      "line": 206,
+      "line": 223,
       "kind": "placeholder",
       "text": "e.g. 1029384756102938",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/SocialAuthSettings.jsx",
-      "line": 220,
+      "line": 237,
       "kind": "placeholder",
       "text": "App Secret...",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/SocialAuthSettings.jsx",
-      "line": 243,
+      "line": 260,
       "kind": "placeholder",
       "text": "e.g. 987654321012345",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/SocialAuthSettings.jsx",
-      "line": 282,
+      "line": 299,
       "kind": "placeholder",
       "text": "Secret...",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/SocialAuthSettings.jsx",
-      "line": 300,
+      "line": 317,
       "kind": "jsx-text",
       "text": "📌 Authorized Redirect URL for LinkedIn Developer Portal:",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/SocialAuthSettings.jsx",
-      "line": 306,
+      "line": 323,
       "kind": "jsx-text",
       "text": "LinkedIn Developer Portal ➔ Auth ➔ OAuth 2.0 settings ➔ Authorized redirect URLs",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/SocialAuthSettings.jsx",
-      "line": 325,
+      "line": 342,
       "kind": "jsx-text",
       "text": "Live backend check:",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/SocialAuthSettings.jsx",
-      "line": 341,
+      "line": 350,
       "kind": "jsx-text",
-      "text": "Checks if .env keys are loaded on server",
+      "text": "Checks the active backend-only credential source",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/SocialAuthSettings.jsx",
-      "line": 365,
+      "line": 374,
       "kind": "placeholder",
       "text": "Ov23...",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/SocialAuthSettings.jsx",
-      "line": 379,
+      "line": 388,
       "kind": "placeholder",
       "text": "Secret...",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/SocialAuthSettings.jsx",
-      "line": 397,
+      "line": 406,
       "kind": "jsx-text",
       "text": "📌 Authorized Callback URL for GitHub OAuth App:",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/SocialAuthSettings.jsx",
-      "line": 403,
+      "line": 412,
       "kind": "jsx-text",
       "text": "GitHub Developer Settings → OAuth Apps → Authorization callback URL",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/SocialAuthSettings.jsx",
-      "line": 409,
+      "line": 418,
       "kind": "jsx-text",
       "text": "Live backend check:",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/SocialAuthSettings.jsx",
-      "line": 425,
+      "line": 426,
       "kind": "jsx-text",
-      "text": "Checks if .env keys are loaded on server",
+      "text": "Checks the active backend-only credential source",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/SocialAuthSettings.jsx",
-      "line": 450,
+      "line": 451,
       "kind": "jsx-text",
       "text": "Save OAuth Settings",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
@@ -15618,35 +15646,21 @@
     },
     {
       "file": "src/components/admin/settings/TwilioSmsSettings.jsx",
-      "line": 66,
+      "line": 81,
       "kind": "jsx-text",
       "text": "Loading SMS settings...",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/TwilioSmsSettings.jsx",
-      "line": 102,
-      "kind": "placeholder",
-      "text": "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-      "classification": "USER_FACING_ENGLISH_CANDIDATE"
-    },
-    {
-      "file": "src/components/admin/settings/TwilioSmsSettings.jsx",
-      "line": 116,
-      "kind": "placeholder",
-      "text": "auth_token...",
-      "classification": "USER_FACING_ENGLISH_CANDIDATE"
-    },
-    {
-      "file": "src/components/admin/settings/TwilioSmsSettings.jsx",
-      "line": 185,
+      "line": 203,
       "kind": "jsx-text",
       "text": "Send Test SMS",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/TwilioSmsSettings.jsx",
-      "line": 193,
+      "line": 211,
       "kind": "jsx-text",
       "text": "Save SMS Settings",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
@@ -15695,191 +15709,212 @@
     },
     {
       "file": "src/components/admin/settings/adsSettings.jsx",
-      "line": 85,
+      "line": 90,
+      "kind": "jsx-text",
+      "text": "Delete advertisement?",
+      "classification": "USER_FACING_ENGLISH_CANDIDATE"
+    },
+    {
+      "file": "src/components/admin/settings/adsSettings.jsx",
+      "line": 90,
+      "kind": "jsx-text",
+      "text": "Cancel",
+      "classification": "USER_FACING_ENGLISH_CANDIDATE"
+    },
+    {
+      "file": "src/components/admin/settings/adsSettings.jsx",
+      "line": 91,
+      "kind": "jsx-text",
+      "text": "Dismiss",
+      "classification": "USER_FACING_ENGLISH_CANDIDATE"
+    },
+    {
+      "file": "src/components/admin/settings/adsSettings.jsx",
+      "line": 100,
       "kind": "jsx-text",
       "text": "Ad created!",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/adsSettings.jsx",
-      "line": 86,
+      "line": 101,
       "kind": "jsx-text",
       "text": "New advertising banner has been added to your website.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/adsSettings.jsx",
-      "line": 105,
+      "line": 120,
       "kind": "jsx-text",
       "text": "Advertisement Manager",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/adsSettings.jsx",
-      "line": 106,
+      "line": 121,
       "kind": "jsx-text",
       "text": "Manage banner ads displayed on your website",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/adsSettings.jsx",
-      "line": 113,
+      "line": 128,
       "kind": "jsx-text",
-      "text": "Active Ads",
+      "text": "Stored Ads",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/adsSettings.jsx",
-      "line": 123,
+      "line": 135,
+      "kind": "jsx-text",
+      "text": "Loading advertisements…",
+      "classification": "USER_FACING_ENGLISH_CANDIDATE"
+    },
+    {
+      "file": "src/components/admin/settings/adsSettings.jsx",
+      "line": 138,
       "kind": "jsx-text",
       "text": "No advertisements created yet",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/adsSettings.jsx",
-      "line": 124,
+      "line": 139,
       "kind": "jsx-text",
       "text": "Create your first banner ad below",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/adsSettings.jsx",
-      "line": 161,
+      "line": 176,
       "kind": "title",
       "text": "View image",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/admin/settings/adsSettings.jsx",
-      "line": 169,
+      "line": 184,
       "kind": "title",
       "text": "Delete ad",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/admin/settings/adsSettings.jsx",
-      "line": 188,
+      "line": 203,
       "kind": "jsx-text",
       "text": "Create Advertisement",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/adsSettings.jsx",
-      "line": 189,
+      "line": 204,
       "kind": "jsx-text",
       "text": "Add a new banner ad to your website",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/adsSettings.jsx",
-      "line": 200,
+      "line": 215,
       "kind": "jsx-text",
       "text": "Banner Name",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/adsSettings.jsx",
-      "line": 205,
+      "line": 220,
       "kind": "placeholder",
       "text": "e.g., Summer Sale Banner, Product Promotion",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/adsSettings.jsx",
-      "line": 216,
+      "line": 231,
       "kind": "jsx-text",
       "text": "Image URL",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/adsSettings.jsx",
-      "line": 221,
+      "line": 236,
       "kind": "placeholder",
       "text": "https://example.com/banner-image.jpg",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/admin/settings/adsSettings.jsx",
-      "line": 226,
+      "line": 241,
       "kind": "jsx-text",
       "text": "Link to the banner image file (JPG, PNG, GIF)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/adsSettings.jsx",
-      "line": 233,
+      "line": 248,
       "kind": "jsx-text",
       "text": "Destination URL",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/adsSettings.jsx",
-      "line": 238,
+      "line": 253,
       "kind": "placeholder",
       "text": "https://example.com/landing-page",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/admin/settings/adsSettings.jsx",
-      "line": 243,
+      "line": 258,
       "kind": "jsx-text",
       "text": "Where users will go when they click the banner",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/adsSettings.jsx",
-      "line": 252,
+      "line": 267,
       "kind": "jsx-text",
       "text": "Preview",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/adsSettings.jsx",
-      "line": 273,
+      "line": 288,
       "kind": "jsx-text",
       "text": "Invalid image URL",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/adsSettings.jsx",
-      "line": 280,
+      "line": 295,
       "kind": "jsx-text",
       "text": "Name:",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/adsSettings.jsx",
-      "line": 283,
+      "line": 298,
       "kind": "jsx-text",
       "text": "Links to:",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/adsSettings.jsx",
-      "line": 291,
+      "line": 306,
       "kind": "jsx-text",
       "text": "Banner Preview",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/adsSettings.jsx",
-      "line": 292,
+      "line": 307,
       "kind": "jsx-text",
       "text": "Add an image URL to see preview",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/adsSettings.jsx",
-      "line": 305,
+      "line": 320,
       "kind": "jsx-text",
       "text": "Ads will be displayed throughout your website",
-      "classification": "USER_FACING_ENGLISH_CANDIDATE"
-    },
-    {
-      "file": "src/components/admin/settings/adsSettings.jsx",
-      "line": 326,
-      "kind": "jsx-text",
-      "text": "Create Ad",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
@@ -20273,14 +20308,14 @@
     },
     {
       "file": "src/components/welcome/Welcome.jsx",
-      "line": 1336,
+      "line": 1375,
       "kind": "jsx-text",
       "text": "Contact Us",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/welcome/Welcome.jsx",
-      "line": 1441,
+      "line": 1480,
       "kind": "alt",
       "text": "Preview",
       "classification": "USER_FACING_ACCESSIBILITY"

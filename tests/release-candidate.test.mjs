@@ -22,6 +22,7 @@ test('public SEO has canonical, descriptions, Open Graph, robots and sitemap inv
     fs.readFile('public/sitemap.xml', 'utf8'),
   ]);
   assert.match(seo, /link\[rel="canonical"\]/);
+  assert.match(seo, /path === '\/billing\/plans' \? '\/pricing' : path/);
   assert.match(seo, /og:title/);
   assert.match(seo, /index,follow/);
   assert.match(sitemap, /<loc>https:\/\/airesume\.projectdemo\.guru\/blog<\/loc>/);
@@ -38,13 +39,13 @@ test('non-English locale payloads are loaded on demand instead of bundled into t
 
 test('i18n literal inventory is reproducible and classifies UI, accessibility, technical and brand strings', async () => {
   const inventory = JSON.parse(await fs.readFile('docs/I18N_UI_STRING_INVENTORY.json', 'utf8'));
-  assert.equal(inventory.filesScanned, 280);
-  assert.equal(inventory.occurrences, 2896);
-  assert.equal(inventory.summary.USER_FACING_ENGLISH_CANDIDATE, 2369);
-  assert.equal(inventory.summary.USER_FACING_ACCESSIBILITY, 302);
+  assert.equal(inventory.filesScanned, 281);
+  assert.equal(inventory.occurrences, 2901);
+  assert.equal(inventory.summary.USER_FACING_ENGLISH_CANDIDATE, 2373);
+  assert.equal(inventory.summary.USER_FACING_ACCESSIBILITY, 306);
 });
 
-test('PWA remains installable but authenticated offline caching is explicitly disabled', async () => {
+test('PWA manifest readiness is static while authenticated offline caching stays disabled', async () => {
   const [worker, bootstrap, manifest] = await Promise.all([
     fs.readFile('src/serviceWorker.js', 'utf8'), fs.readFile('src/bootstrap.js', 'utf8'), fs.readFile('public/manifest.json', 'utf8'),
   ]);
@@ -54,6 +55,25 @@ test('PWA remains installable but authenticated offline caching is explicitly di
   const parsed = JSON.parse(manifest);
   assert.equal(parsed.scope, '/');
   assert.equal(parsed.id, '/');
+  assert.ok(parsed.icons.some(icon => icon.sizes === '192x192'));
+  assert.ok(parsed.icons.some(icon => icon.sizes === '512x512'));
+  await fs.access('public/android-icon-512x512.png');
+});
+
+test('static image elements expose explicit alternative-text intent', async () => {
+  const missing = [];
+  async function walk(directory) {
+    for (const entry of await fs.readdir(directory, { withFileTypes: true })) {
+      const path = `${directory}/${entry.name}`;
+      if (entry.isDirectory()) await walk(path);
+      else if (entry.name.endsWith('.jsx')) {
+        const source = await fs.readFile(path, 'utf8');
+        for (const image of source.match(/<img\b[^>]*>/gs) || []) if (!/\balt=/.test(image)) missing.push(path);
+      }
+    }
+  }
+  await walk('src/components');
+  assert.deepEqual([...new Set(missing)], []);
 });
 
 test('route transitions restore keyboard focus without redesigning page layouts', async () => {
