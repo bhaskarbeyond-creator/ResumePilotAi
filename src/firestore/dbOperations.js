@@ -3071,79 +3071,36 @@ function generateExcerpt(content, maxLength = 160) {
     return plainText.substring(0, maxLength).replace(/\s+\w*$/, '') + '...';
 }
 
-// Create a notification in the notifications collection
-export async function createNotification(userId, notificationData) {
-    const db = fire.firestore();
-    try {
-        
-        const notificationRef = db.collection('notifications').doc(userId).collection('userNotifications').doc();
-
-        const finalNotificationData = {
-            ...notificationData,
-            read: false,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        };
-        
-
-        await notificationRef.set(finalNotificationData);
-        return { success: true, notificationId: notificationRef.id };
-    } catch (error) {
-        console.error('❌ Error creating notification:', error);
-        console.error('❌ Error code:', error.code);
-        console.error('❌ Error message:', error.message);
-        return { success: false, error: error.message };
-    }
+function ownNotificationQuery(userId) {
+    const user = fire.auth().currentUser;
+    if (!user || user.uid !== userId) throw new Error('Notification account changed.');
+    return fire.firestore().collection('notifications').doc(userId).collection('userNotifications').where('read', '==', false);
 }
 
-// Get unread notifications for a user
 export async function getUnreadNotifications(userId) {
-    const db = fire.firestore();
-    try {
-        const snapshot = await db.collection('notifications').doc(userId).collection('userNotifications').where('read', '==', false).get();
-
-        const notifications = [];
-        snapshot.forEach((doc) => {
-            notifications.push({ id: doc.id, ...doc.data() });
-        });
-
-        return notifications;
-    } catch (error) {
-        console.error('❌ Error getting notifications:', error);
-        return [];
-    }
+    const snapshot = await ownNotificationQuery(userId).get();
+    return snapshot.docs.map(document => ({ id: document.id, ...document.data() }));
 }
 
-// Mark notification as read
+export function subscribeUnreadNotifications(userId, callback, errorCallback = () => {}) {
+    let active = true;
+    const query = ownNotificationQuery(userId);
+    const unsubscribe = query.onSnapshot(snapshot => {
+        if (!active || fire.auth().currentUser?.uid !== userId) return;
+        callback(snapshot.docs.map(document => ({ id: document.id, ...document.data() })));
+    }, error => {
+        if (active && fire.auth().currentUser?.uid === userId) errorCallback(error);
+    });
+    return () => { active = false; unsubscribe(); };
+}
+
 export async function markNotificationAsRead(userId, notificationId) {
-    const db = fire.firestore();
+    const user = fire.auth().currentUser;
+    if (!user || user.uid !== userId || !/^[A-Za-z0-9_-]{1,128}$/.test(String(notificationId || ''))) return { success: false, error: 'Notification account changed.' };
     try {
-        await db.collection('notifications').doc(userId).collection('userNotifications').doc(notificationId).update({
-            read: true,
-            updatedAt: new Date(),
-        });
+        await fire.firestore().collection('notifications').doc(userId).collection('userNotifications').doc(notificationId).update({ read: true, updatedAt: new Date() });
         return { success: true };
-    } catch (error) {
-        console.error('❌ Error marking notification as read:', error);
-        return { success: false, error: error.message };
-    }
-}
-
-// Test function to create a sample notification (for debugging)
-export async function testCreateNotification(userId) {
-    
-    const testNotification = {
-        type: 'test',
-        title: 'Test Notification',
-        message: 'This is a test notification to verify the system is working.',
-        data: {
-            testId: 'test-123',
-            timestamp: new Date().toISOString()
-        }
-    };
-    
-    const result = await createNotification(userId, testNotification);
-    return result;
+    } catch (error) { return { success: false, error: error.message }; }
 }
 
 //  add Ads

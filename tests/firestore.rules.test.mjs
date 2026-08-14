@@ -25,6 +25,7 @@ before(async () => {
     await setDoc(doc(db, 'jobApplications/application-1'), {
       userId: 'alice', jobId: 'active-job', applicantEmail: 'alice@example.com', email: 'alice@example.com', status: 'pending'
     });
+    await setDoc(doc(db, 'notifications/alice/userNotifications/notice-1'), { title: 'Notice', message: 'Created by backend', read: false });
     await setDoc(doc(db, 'pb/public-resume'), { id: 'public-resume', ownerUid: 'alice', isPublished: true, publicationMode: 'explicit', object: '{}' });
     await setDoc(doc(db, 'pb/legacy-autosave'), { id: 'legacy-autosave', ownerUid: 'alice', isPublished: true, object: '{"email":"private@example.com"}' });
     await setDoc(doc(db, 'payment_orders/order-a'), { uid: 'alice', status: 'ACTIVE', planId: 'monthly' });
@@ -156,6 +157,13 @@ test('job applications are readable only by participants while every lifecycle w
   await assertFails(updateDoc(doc(admin(), 'jobApplications/application-1'), { status: 'accepted' }));
   await assertFails(deleteDoc(doc(alice(), 'jobApplications/application-1')));
   await assertFails(updateDoc(doc(alice(), 'jobs/active-job'), { applicationsCount: 1, updatedAt: new Date() }));
+});
+
+test('notification reads are owner-only and browser producers cannot forge notifications', async () => {
+  await assertSucceeds(getDoc(doc(alice(), 'notifications/alice/userNotifications/notice-1')));
+  await assertFails(getDoc(doc(bob(), 'notifications/alice/userNotifications/notice-1')));
+  await assertSucceeds(updateDoc(doc(alice(), 'notifications/alice/userNotifications/notice-1'), { read: true }));
+  await assertFails(setDoc(doc(alice(), 'notifications/alice/userNotifications/forged'), { title: 'Forged', message: 'Browser authored', read: false }));
 });
 
 test('blog drafts are private and direct writes enforce revisions, fields, bounds, and trusted publication', async () => {

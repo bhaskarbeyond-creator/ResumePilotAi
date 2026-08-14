@@ -227,10 +227,12 @@ test('job application submission and employer status transitions are atomic, aud
     assert.equal(application.selectedResume.data.summary, 'Owned candidate resume');
     assert.equal(store.get('jobs/active-job').applicationsCount, 1);
     assert.ok([...store.keys()].some(key => key.startsWith('security_audit_logs/')));
+    const notificationCount = [...store.keys()].filter(key => key.includes('/userNotifications/')).length;
     const duplicate = await request(app).post('/api/jobs/active-job/applications').set(bearer('user')).send({
       fullName: 'Candidate One', phone: '+14155552671', coverLetter: `<p>${'A'.repeat(80)}</p>`,
     });
     assert.equal(duplicate.status, 409);
+    assert.equal([...store.keys()].filter(key => key.includes('/userNotifications/')).length, notificationCount);
 
     const updated = await request(app).patch(`/api/job-applications/${encodeURIComponent(applicationId)}/status`).set(bearer('employer')).send({ status: 'interview', expectedStatus: 'pending', expectedRevision: 1 });
     assert.equal(updated.status, 200);

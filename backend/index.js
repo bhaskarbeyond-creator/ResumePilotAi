@@ -356,7 +356,12 @@ async function activateVerifiedOrder(orderRef, gatewayLabel, providerPaymentId) 
         const orderSnap = await tx.get(orderRef);
         if (!orderSnap.exists) throw Object.assign(new Error('ORDER_NOT_FOUND'), { status: 404 });
         const order = orderSnap.data();
-        if (order.status === 'ACTIVE') return;
+        const paymentEventId = notificationEventId('payment_active', orderRef.id);
+        const paymentNotificationRef = db.collection('notifications').doc(order.uid).collection('userNotifications').doc(paymentEventId);
+        if (order.status === 'ACTIVE') {
+            tx.set(paymentNotificationRef, { eventId: paymentEventId, state: 'NOTIFICATION_CREATED', deliveryState: 'NOT_REQUESTED', type: 'payment_active', title: 'Payment confirmed', message: 'Your payment was confirmed and premium access is active.', data: { paymentOrderId: orderRef.id, planId: order.planId }, read: false, createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+            return;
+        }
         if (!['PAYMENT_CREATED', 'PENDING_PAYMENT', 'PROVIDER_CONFIRMED'].includes(order.status)) {
             throw Object.assign(new Error('INVALID_ORDER_STATE'), { status: 409 });
         }
@@ -374,6 +379,7 @@ async function activateVerifiedOrder(orderRef, gatewayLabel, providerPaymentId) 
             status: 'ACTIVE', membershipEnds, providerPaymentId: providerPaymentId || null,
             activatedAt: admin.firestore.FieldValue.serverTimestamp()
         });
+        tx.set(paymentNotificationRef, { eventId: paymentEventId, state: 'NOTIFICATION_CREATED', deliveryState: 'NOT_REQUESTED', type: 'payment_active', title: 'Payment confirmed', message: 'Your payment was confirmed and premium access is active.', data: { paymentOrderId: orderRef.id, planId: order.planId }, read: false, createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() });
     });
     const activatedOrder = (await orderRef.get()).data();
     await consumeCouponRedemption(orderRef.id, activatedOrder);
@@ -1050,6 +1056,8 @@ app.post('/api/check', async (req, res) => {
     }
 });
 
+function notificationEventId(...parts) { return crypto.createHash('sha256').update(parts.join('\0')).digest('hex'); }
+
 function jobApplicationNotification(status, jobTitle, companyName, notes = '') {
     const suffix = notes ? ` ${notes}` : '';
     if (status === 'interview') return { type: 'application_interview', title: 'Interview invitation', message: `You have been invited to interview for ${jobTitle} at ${companyName}.${suffix}` };
@@ -1114,12 +1122,15 @@ app.post('/api/jobs/:jobId/applications', async (req, res) => {
             };
             transaction.set(applicationRef, application);
             transaction.update(jobRef, { applicationsCount: Number(job.applicationsCount || 0) + 1, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
-            transaction.set(requestDb.collection('notifications').doc(req.user.uid).collection('userNotifications').doc(), {
+            const submittedEventId = notificationEventId('job_application_submitted', applicationId);
+            transaction.set(requestDb.collection('notifications').doc(req.user.uid).collection('userNotifications').doc(submittedEventId), {
+                eventId: submittedEventId, state: 'NOTIFICATION_CREATED', deliveryState: 'NOT_REQUESTED',
                 type: 'job_application', title: 'Application submitted', message: `Your application for ${jobTitle} at ${companyName} was submitted.`,
                 data: { jobId, applicationId, jobTitle, company: companyName }, read: false,
                 createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp(),
             });
-            if (job.employerId) transaction.set(requestDb.collection('notifications').doc(job.employerId).collection('userNotifications').doc(), {
+            if (job.employerId) transaction.set(requestDb.collection('notifications').doc(job.employerId).collection('userNotifications').doc(submittedEventId), {
+                eventId: submittedEventId, state: 'NOTIFICATION_CREATED', deliveryState: 'NOT_REQUESTED',
                 type: 'job_application_received', title: 'New job application', message: `${fullName} applied for ${jobTitle}.`,
                 data: { jobId, applicationId, jobTitle }, read: false,
                 createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -1167,7 +1178,9 @@ app.patch('/api/job-applications/:applicationId/status', async (req, res) => {
             const nextRevision = currentRevision + 1;
             transaction.update(applicationRef, { status, employerNotes: notes, revision: nextRevision, statusUpdatedAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() });
             const notification = jobApplicationNotification(status, jobTitle, companyName, notes);
-            transaction.set(requestDb.collection('notifications').doc(application.userId).collection('userNotifications').doc(), {
+            const statusEventId = notificationEventId('job_application_status', applicationId, String(nextRevision));
+            transaction.set(requestDb.collection('notifications').doc(application.userId).collection('userNotifications').doc(statusEventId), {
+                eventId: statusEventId, state: 'NOTIFICATION_CREATED', deliveryState: 'NOT_REQUESTED',
                 ...notification, data: { jobId: application.jobId, applicationId, jobTitle, company: companyName, status }, read: false,
                 createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp(),
             });
@@ -1469,7 +1482,19 @@ app.post('/api/messages/send', async (req, res) => {
         }
         const messageRef = realtime.ref(`messages/${conversationId}`).push();
         await messageRef.set({ senderId: req.user.uid, text, timestamp: { '.sv': 'timestamp' } });
-        return res.status(201).json({ success: true, messageId: messageRef.key });
+        let notificationState = 'NOTIFICATION_CREATED';
+        const recipientUid = Object.keys(conversation.child('participants').val() || {}).find(uid => uid !== req.user.uid && !uid.startsWith('deleted_'));
+        if (recipientUid && req.app.get('db')) {
+            try {
+                const eventId = notificationEventId('message', conversationId, messageRef.key);
+                await req.app.get('db').collection('notifications').doc(recipientUid).collection('userNotifications').doc(eventId).set({
+                    eventId, state: 'NOTIFICATION_CREATED', deliveryState: 'NOT_REQUESTED', type: 'message', title: 'New message', message: 'You have a new message.',
+                    data: { conversationId }, read: false,
+                    createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                });
+            } catch { notificationState = 'NOTIFICATION_CREATION_FAILED'; }
+        } else notificationState = 'NOTIFICATION_CREATION_FAILED';
+        return res.status(201).json({ success: true, messageId: messageRef.key, notificationState });
     } catch (error) {
         console.error('[Send message]', error.message);
         return res.status(503).json({ success: false, error: 'Messaging service unavailable.' });
@@ -2710,9 +2735,9 @@ app.get('/api/linkedin-scraper', async (req, res) => {
 // Automatic Event Notifier API Endpoints (10/10 Coverage)
 app.post('/api/notify/user-signup', async (req, res) => {
     const { userEmail, userName } = req.body;
-    const db = req.app.get('db');
-    EmailNotifier.notifyUserRegistration(db, { userEmail, userName });
-    return res.json({ success: true, message: 'Signup notifications queued.' });
+    const result = await EmailNotifier.notifyUserRegistration(req.app.get('db'), { userEmail, userName });
+    const attempted = result?.userDelivery?.deliveryState === 'DELIVERY_ATTEMPTED';
+    return res.status(attempted ? 202 : 502).json({ success: attempted, deliveryState: result?.userDelivery?.deliveryState || 'DELIVERY_FAILED', providerAccepted: result?.userDelivery?.providerAccepted === true, message: attempted ? 'Welcome email delivery was attempted and accepted by the configured provider.' : 'Welcome email delivery failed.', adminDeliveryState: result?.adminDelivery?.deliveryState || 'DELIVERY_FAILED' });
 });
 
 // ─── Firebase Admin SDK Service Account Status ──────────────────────────────
@@ -3034,6 +3059,11 @@ app.post('/api/admin/payments/refund', async (req, res) => {
             if (userSnap.exists && shouldReverseEntitlement(userSnap.data(), paymentOrderId)) {
                 tx.update(userRef, { membership: 'Basic', paymentStatus: 'REFUNDED', autoRenew: false, membershipEnds: new Date() });
             }
+            const refundEventId = notificationEventId('payment_refunded', paymentOrderId);
+            tx.set(db.collection('notifications').doc(order.uid).collection('userNotifications').doc(refundEventId), {
+                eventId: refundEventId, state: 'NOTIFICATION_CREATED', deliveryState: 'NOT_REQUESTED', type: 'payment_refunded', title: 'Refund confirmed', message: 'Your payment refund was confirmed by the provider.', data: { paymentOrderId, refundId }, read: false,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
             tx.set(db.collection('security_audit_logs').doc(), {
                 action: 'PAYMENT_REFUNDED', actorUid: req.user.uid, targetUid: order.uid,
                 paymentOrderId, provider: order.provider, reason, requestId: res.locals.requestId,
@@ -3713,11 +3743,15 @@ app.post('/api/auth/set-user-password', async (req, res) => {
     }
 });
 
+function respondToDeliveryAttempt(res, delivery, label) {
+    const attempted = delivery?.deliveryState === 'DELIVERY_ATTEMPTED';
+    return res.status(attempted ? 202 : 502).json({ success: attempted, deliveryState: delivery?.deliveryState || 'DELIVERY_FAILED', providerAccepted: delivery?.providerAccepted === true, message: attempted ? `${label} delivery was attempted and accepted by the configured provider.` : `${label} delivery failed.` });
+}
+
 app.post('/api/notify/password-changed', async (req, res) => {
     const { userEmail, userName } = req.body;
-    const db = req.app.get('db');
-    EmailNotifier.notifyPasswordChanged(db, { userEmail, userName });
-    return res.json({ success: true, message: 'Password changed confirmation queued.' });
+    const delivery = await EmailNotifier.notifyPasswordChanged(req.app.get('db'), { userEmail, userName });
+    return respondToDeliveryAttempt(res, delivery, 'Password-change email');
 });
 
 app.post('/api/notify/email-otp', (req, res) => {
@@ -3726,44 +3760,39 @@ app.post('/api/notify/email-otp', (req, res) => {
 
 app.post('/api/notify/security-alert', async (req, res) => {
     const { userEmail, deviceInfo, ipAddress } = req.body;
-    const db = req.app.get('db');
-    EmailNotifier.notifySecurityAlert(db, { userEmail, deviceInfo, ipAddress });
-    return res.json({ success: true, message: 'Security alert queued.' });
+    const delivery = await EmailNotifier.notifySecurityAlert(req.app.get('db'), { userEmail, deviceInfo, ipAddress });
+    return respondToDeliveryAttempt(res, delivery, 'Security alert');
 });
 
 app.post('/api/notify/portfolio-published', async (req, res) => {
     const { userEmail, userName, portfolioSlug } = req.body;
-    const db = req.app.get('db');
-    EmailNotifier.notifyPortfolioPublished(db, { userEmail, userName, portfolioSlug });
-    return res.json({ success: true, message: 'Portfolio published email queued.' });
+    const delivery = await EmailNotifier.notifyPortfolioPublished(req.app.get('db'), { userEmail, userName, portfolioSlug });
+    const attempted = delivery?.deliveryState === 'DELIVERY_ATTEMPTED';
+    return res.status(attempted ? 202 : 502).json({ success: attempted, deliveryState: delivery?.deliveryState || 'DELIVERY_FAILED', providerAccepted: delivery?.providerAccepted === true, message: attempted ? 'Portfolio email delivery was attempted and accepted by the configured provider.' : 'Portfolio email delivery failed.' });
 });
 
 app.post('/api/notify/job-application', async (req, res) => {
     const { recruiterEmail, applicantName, jobTitle, companyName } = req.body;
-    const db = req.app.get('db');
-    EmailNotifier.notifyJobApplicationReceived(db, { recruiterEmail, applicantName, jobTitle, companyName });
-    return res.json({ success: true, message: 'Job application notification queued.' });
+    const delivery = await EmailNotifier.notifyJobApplicationReceived(req.app.get('db'), { recruiterEmail, applicantName, jobTitle, companyName });
+    return respondToDeliveryAttempt(res, delivery, 'Job-application email');
 });
 
 app.post('/api/notify/job-status-update', async (req, res) => {
     const { applicantEmail, applicantName, jobTitle, companyName, status } = req.body;
-    const db = req.app.get('db');
-    EmailNotifier.notifyJobStatusUpdate(db, { applicantEmail, applicantName, jobTitle, companyName, status });
-    return res.json({ success: true, message: 'Job status update email queued.' });
+    const delivery = await EmailNotifier.notifyJobStatusUpdate(req.app.get('db'), { applicantEmail, applicantName, jobTitle, companyName, status });
+    return respondToDeliveryAttempt(res, delivery, 'Job-status email');
 });
 
 app.post('/api/notify/job-posted', async (req, res) => {
     const { employerEmail, jobTitle, companyName } = req.body;
-    const db = req.app.get('db');
-    EmailNotifier.notifyJobPosted(db, { employerEmail, jobTitle, companyName });
-    return res.json({ success: true, message: 'Job posted email queued.' });
+    const delivery = await EmailNotifier.notifyJobPosted(req.app.get('db'), { employerEmail, jobTitle, companyName });
+    return respondToDeliveryAttempt(res, delivery, 'Job-posted email');
 });
 
 app.post('/api/notify/subscription-cancelled', async (req, res) => {
     const { userEmail, userName, planName } = req.body;
-    const db = req.app.get('db');
-    EmailNotifier.notifySubscriptionCancelled(db, { userEmail, userName, planName });
-    return res.json({ success: true, message: 'Subscription cancellation email queued.' });
+    const delivery = await EmailNotifier.notifySubscriptionCancelled(req.app.get('db'), { userEmail, userName, planName });
+    return respondToDeliveryAttempt(res, delivery, 'Subscription-cancellation email');
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

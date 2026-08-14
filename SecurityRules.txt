@@ -231,7 +231,7 @@ service cloud.firestore {
     match /contact/{id} { allow read, update, delete: if admin(); allow create: if false; }
     match /notifications/{uid}/{document=**} {
       allow read, update, delete: if owner(uid);
-      allow create: if owner(uid);
+      allow create: if false;
     }
 
     // Public settings must live in the explicitly curated public_config document.
