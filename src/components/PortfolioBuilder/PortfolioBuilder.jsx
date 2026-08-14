@@ -225,10 +225,12 @@ const PortfolioBuilder = () => {
     const navigate = useNavigate();
     const [portfolioData, setPortfolioData] = useState(initialData);
     const [currentPortfolioId, setCurrentPortfolioId] = useState(null);
+    const [currentPortfolioRevision, setCurrentPortfolioRevision] = useState(null);
     const [userPortfolios, setUserPortfolios] = useState([]);
     const [isPublishing, setIsPublishing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const [portfolioConflict, setPortfolioConflict] = useState(false);
     const debounceTimeoutRef = useRef(null);
     const lastDataRef = useRef(portfolioData);
     const [showManageModal, setShowManageModal] = useState(false);
@@ -467,17 +469,20 @@ const PortfolioBuilder = () => {
                 ...sanitizedSettings,
             };
 
-            const result = await savePortfolioDraft(user.uid, dataToSave, currentPortfolioId, 'default');
+            const result = await savePortfolioDraft(user.uid, dataToSave, currentPortfolioId, 'default', currentPortfolioRevision);
 
-            if (!currentPortfolioId) {
-                setCurrentPortfolioId(result.id);
-            }
+            if (!currentPortfolioId) setCurrentPortfolioId(result.id);
+            setCurrentPortfolioRevision(result.revision);
 
             await loadUserPortfolios();
+            setPortfolioConflict(false);
             setHasUnsavedChanges(false);
             showToast('Success');
         } catch (error) {
-            showToast('Error', 'Error saving portfolio draft: ' + error.message);
+            if (error.code === 'PORTFOLIO_CONFLICT') setPortfolioConflict(true);
+            showToast('Error', error.code === 'PORTFOLIO_CONFLICT'
+                ? 'This portfolio changed in another tab. Reload it before saving to avoid overwriting newer work.'
+                : 'Error saving portfolio draft: ' + error.message);
         } finally {
             setIsSaving(false);
         }
@@ -677,6 +682,7 @@ const PortfolioBuilder = () => {
                 lastDataRef.current = newPortfolioData;
                 setPortfolioData(newPortfolioData);
                 setCurrentPortfolioId(portfolioId);
+                setCurrentPortfolioRevision(Number(portfolio.revision) || 0);
                 setPortfolioSettings({
                     title: editableTitle,
                     description: editableMetadata.description || '',
@@ -684,6 +690,7 @@ const PortfolioBuilder = () => {
                     seoTitle: editableMetadata.seoTitle || '',
                     seoDescription: editableMetadata.seoDescription || '',
                 });
+                setPortfolioConflict(false);
                 setHasUnsavedChanges(false);
 
                 // Only close modal if it's open (when called from manage modal)
@@ -708,6 +715,8 @@ const PortfolioBuilder = () => {
                     await loadUserPortfolios();
                     if (currentPortfolioId === portfolioId) {
                         setCurrentPortfolioId(null);
+
+                        setCurrentPortfolioRevision(null);
                         setPortfolioData(initialData);
                         setPortfolioSettings({
                             title: 'My Portfolio',
@@ -748,6 +757,8 @@ const PortfolioBuilder = () => {
                 () => {
                     const newPortfolioData = JSON.parse(JSON.stringify(initialData));
                     setCurrentPortfolioId(null);
+
+                    setCurrentPortfolioRevision(null);
                     lastDataRef.current = newPortfolioData;
                     setPortfolioData(newPortfolioData);
                     setRenderKey((prev) => prev + 1); // Force Puck to re-render
@@ -769,6 +780,8 @@ const PortfolioBuilder = () => {
         } else {
             const newPortfolioData = JSON.parse(JSON.stringify(initialData));
             setCurrentPortfolioId(null);
+
+            setCurrentPortfolioRevision(null);
             lastDataRef.current = newPortfolioData;
             setPortfolioData(newPortfolioData);
             setRenderKey((prev) => prev + 1);
@@ -931,6 +944,7 @@ const PortfolioBuilder = () => {
 
             // Use the utility function to load the template
             const result = await loadTemplate(templateKey, initialData, setPortfolioData, setCurrentPortfolioId, setPortfolioSettings, setRenderKey);
+            setCurrentPortfolioRevision(null);
             setHasUnsavedChanges(true);
 
             // Show success notification
@@ -968,11 +982,11 @@ const PortfolioBuilder = () => {
     // Create optimized onChange handler with smart debouncing
     const handlePuckChange = useCallback((data) => {
         setHasUnsavedChanges(true);
-        lastDataRef.current = data;
-        // Simple heuristic to detect typing vs structural changes
+        // Compare before replacing the latest ref so drag/drop changes update immediately.
         const currentContentLength = data?.content?.length || 0;
         const lastContentLength = lastDataRef.current?.content?.length || 0;
         const isStructuralChange = currentContentLength !== lastContentLength;
+        lastDataRef.current = data;
 
         if (isStructuralChange) {
             // Structural changes (drag/drop, add/remove components) - update immediately
@@ -993,6 +1007,12 @@ const PortfolioBuilder = () => {
             }, 100); // Short debounce for better responsiveness
         }
     }, []);
+
+    useEffect(() => {
+        if (!hasUnsavedChanges || !currentPortfolioId || !user?.uid || isSaving || isPublishing || portfolioConflict) return undefined;
+        const timer = setTimeout(() => handleSaveDraft(), 2500);
+        return () => clearTimeout(timer);
+    }, [hasUnsavedChanges, currentPortfolioId, currentPortfolioRevision, portfolioData, user?.uid, isSaving, isPublishing, portfolioConflict]);
 
     if (user === null) {
         return (

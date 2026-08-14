@@ -5399,7 +5399,7 @@ export async function updateExistingPortfolio(portfolioId, userId, portfolioData
     }
 }
 
-export async function savePortfolioDraft(userId, portfolioData, portfolioId = null, theme = 'default') {
+export async function savePortfolioDraft(userId, portfolioData, portfolioId = null, theme = 'default', expectedRevision = null) {
     const db = fire.firestore();
 
     try {
@@ -5447,32 +5447,38 @@ export async function savePortfolioDraft(userId, portfolioData, portfolioId = nu
         };
 
         if (portfolioId) {
-            const existingPortfolio = await getPortfolioById(portfolioId);
-            if (!existingPortfolio || existingPortfolio.userId !== userId) {
-                throw new Error('Portfolio not found or access denied');
-            }
-            const updateData = existingPortfolio.isPublished ? {
-                draftData: cleanPortfolioData,
-                draftTitle: portfolioDoc.title,
-                draftMetadata: portfolioDoc.metadata,
-                hasUnpublishedChanges: true,
-                updatedAt: portfolioDoc.updatedAt,
-            } : portfolioDoc;
-            const batch = db.batch();
-            batch.update(db.collection('portfolios').doc(portfolioId), updateData);
-            batch.set(db.collection('users').doc(userId).collection('portfolios').doc(portfolioId), {
-                portfolioId,
-                title: portfolioDoc.title,
-                theme,
-                isPublished: Boolean(existingPortfolio.isPublished),
-                hasUnpublishedChanges: Boolean(existingPortfolio.isPublished),
-                updatedAt: portfolioDoc.updatedAt,
-            }, { merge: true });
-            await batch.commit();
-            return { id: portfolioId, hasUnpublishedChanges: Boolean(existingPortfolio.isPublished) };
+            const mainReference = db.collection('portfolios').doc(portfolioId);
+            const userReference = db.collection('users').doc(userId).collection('portfolios').doc(portfolioId);
+            let nextRevision = 0;
+            let published = false;
+            await db.runTransaction(async transaction => {
+                const snapshot = await transaction.get(mainReference);
+                if (!snapshot.exists || snapshot.data()?.userId !== userId) throw new Error('Portfolio not found or access denied');
+                const existingPortfolio = snapshot.data() || {};
+                const currentRevision = Number(existingPortfolio.revision) || 0;
+                if (expectedRevision !== null && Number(expectedRevision) !== currentRevision) {
+                    const conflict = new Error('This portfolio changed in another tab or device. Reload before saving.');
+                    conflict.code = 'PORTFOLIO_CONFLICT';
+                    conflict.remoteRevision = currentRevision;
+                    throw conflict;
+                }
+                published = existingPortfolio.isPublished === true;
+                nextRevision = currentRevision + 1;
+                const updateData = published ? {
+                    draftData: cleanPortfolioData, draftTitle: portfolioDoc.title, draftMetadata: portfolioDoc.metadata,
+                    hasUnpublishedChanges: true, updatedAt: portfolioDoc.updatedAt, revision: nextRevision,
+                } : { ...portfolioDoc, revision: nextRevision };
+                transaction.update(mainReference, updateData);
+                transaction.set(userReference, {
+                    portfolioId, title: portfolioDoc.title, theme, isPublished: published,
+                    hasUnpublishedChanges: published, updatedAt: portfolioDoc.updatedAt, revision: nextRevision,
+                }, { merge: true });
+            });
+            return { id: portfolioId, revision: nextRevision, hasUnpublishedChanges: published };
         }
 
         portfolioDoc.createdAt = firebase.firestore.Timestamp.now();
+        portfolioDoc.revision = 1;
         const docRef = db.collection('portfolios').doc();
         const batch = db.batch();
         batch.set(docRef, portfolioDoc);
@@ -5483,9 +5489,10 @@ export async function savePortfolioDraft(userId, portfolioData, portfolioId = nu
             createdAt: portfolioDoc.createdAt,
             updatedAt: portfolioDoc.updatedAt,
             isPublished: false,
+            revision: 1,
         });
         await batch.commit();
-        return { id: docRef.id };
+        return { id: docRef.id, revision: 1 };
     } catch (error) {
         console.error('Error saving portfolio draft:', error);
         throw error;
