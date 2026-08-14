@@ -66,9 +66,15 @@ class Login extends Component {
                     ? !!socialAuth.enableGithubLogin 
                     : (modules.enableGitHub !== undefined ? !!modules.enableGitHub : true)));
 
+        let savedEmail = '';
+        try {
+            savedEmail = localStorage.getItem('remember_email') || '';
+        } catch (e) {}
+
         this.state = {
-            email: "",
+            email: savedEmail,
             password: "",
+            rememberMe: !!savedEmail,
             enableGoogle,
             enableFacebook,
             enableLinkedIn,
@@ -76,12 +82,17 @@ class Login extends Component {
             oauthLoading: null, // tracks which provider is loading
         };
         this.handleInputs = this.handleInputs.bind(this);
+        this.toggleRememberMe = this.toggleRememberMe.bind(this);
         this.signInWithGoogle = this.signInWithGoogle.bind(this);
         this.signInWithFacebook = this.signInWithFacebook.bind(this);
         this.signInWithLinkedIn = this.signInWithLinkedIn.bind(this);
         this.signInWithGitHub = this.signInWithGitHub.bind(this);
         this.login = this.login.bind(this);
         this._postAuth = this._postAuth.bind(this);
+    }
+
+    toggleRememberMe(e) {
+        this.setState({ rememberMe: e.target.checked });
     }
 
     componentDidMount() {
@@ -148,7 +159,18 @@ class Login extends Component {
             return;
         }
 
-        fire.auth().signInWithEmailAndPassword(email, password).then((u) => {
+        const persistence = this.state.rememberMe 
+            ? fire.auth.Auth.Persistence.LOCAL 
+            : fire.auth.Auth.Persistence.SESSION;
+
+        fire.auth().setPersistence(persistence).then(() => {
+            return fire.auth().signInWithEmailAndPassword(email, password);
+        }).then((u) => {
+            if (this.state.rememberMe) {
+                try { localStorage.setItem('remember_email', email); } catch(e) {}
+            } else {
+                try { localStorage.removeItem('remember_email'); } catch(e) {}
+            }
             if (this.props.closeModal) this.props.closeModal();
         }).catch((error) => {
             console.error('[Login Auth Error]:', error);
@@ -312,9 +334,29 @@ class Login extends Component {
                     )}
                         {/* Login Form */}
                         <form onSubmit={this.login} className="w-full flex flex-col">
-                            <Input name="Email" title={t("login.email")} handleInputs={this.handleInputs} />
-                            <Input name="Password" type="Password" title={t("login.password")} handleInputs={this.handleInputs} />
-                            <input className="inputSubmit" value={t("login.login")} type="submit" />
+                            <Input name="Email" title={t("login.email")} value={this.state.email} handleInputs={this.handleInputs} />
+                            <Input name="Password" type="Password" title={t("login.password")} value={this.state.password} handleInputs={this.handleInputs} />
+                            
+                            {/* Remember Me & Recover Password Row */}
+                            <div className="flex items-center justify-between my-2 text-[13px] text-[#475569]">
+                                <label className="flex items-center gap-2 cursor-pointer select-none font-medium">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={this.state.rememberMe} 
+                                        onChange={this.toggleRememberMe}
+                                        className="w-4 h-4 rounded border-slate-300 text-[#6366f1] focus:ring-[#6366f1]/20 accent-[#6366f1] cursor-pointer"
+                                    />
+                                    <span>Remember me</span>
+                                </label>
+                                <a 
+                                    onClick={() => this.props.showPasswordRecovery && this.props.showPasswordRecovery()}
+                                    className="text-[#6366f1] hover:text-[#4f46e5] font-semibold cursor-pointer transition-colors"
+                                >
+                                    {t("login.recoverPassword")}
+                                </a>
+                            </div>
+
+                            <input className="inputSubmit mt-2" value={t("login.login")} type="submit" />
                         </form>
                     </div>
                 {/* Modal Footer */}
