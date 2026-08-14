@@ -50,7 +50,7 @@ test('valid authenticated user reaches an ordinary route', async () => {
 });
 
 test('admin aliases and mail logs reject an ordinary authenticated user', async () => {
-  for (const route of ['/api/auth/purge-orphaned-auth', '/api/email/logs', '/api/email/admin/test-imap', '/api/send-sms']) {
+  for (const route of ['/api/auth/purge-orphaned-auth', '/api/email/logs', '/api/email/admin/test-imap', '/api/send-sms', '/api/admin/blog/publish-due']) {
     const method = route.includes('logs') ? 'get' : 'post';
     const response = await request(app)[method](route).set(bearer('user')).send({});
     assert.equal(response.status, 403, route);

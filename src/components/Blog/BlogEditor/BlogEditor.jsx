@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -18,12 +18,14 @@ import {
     updateBlogPost,
     listBlogCategories,
     getUserBlogPosts,
+    getBlogPostByIdForAuthor,
     deleteBlogPost
 } from '../../../firestore/dbOperations';
 import { AuthContext } from '../../../main';
 import Spinner from '../../Spinner/Spinner';
 import HomepageNavbar from '../../Dashboard2/elements/HomepageNavbar';
 import HomepageFooter from '../../Dashboard2/elements/HomepageFooter';
+import BlogPreviewModal from '../../admin/blogManagement/BlogPreviewModal';
 import fire from '../../../conf/fire';
 import { sanitizeBlogHtml, sanitizeImageUrl, sanitizePlainText, sanitizeUrl } from '../../../utils/sanitizeHtml';
 import './TiptapEditor.css';
@@ -69,7 +71,12 @@ const BlogEditor = () => {
         excerpt: '',
         categoryId: '',
         tags: [],
-        featuredImage: ''
+        featuredImage: '',
+        seoTitle: '',
+        seoDescription: '',
+        status: 'draft',
+        revision: null,
+        updatedAt: null,
     });
     
     const [categories, setCategories] = useState([]);
@@ -78,13 +85,17 @@ const BlogEditor = () => {
     const [saving, setSaving] = useState(false);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [showPreview, setShowPreview] = useState(false);
     const [errors, setErrors] = useState({});
     const [tagInput, setTagInput] = useState('');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [saveConflict, setSaveConflict] = useState(null);
+    const handleSaveRef = useRef(null);
     const [notification, setNotification] = useState(null);
     const [showImageModal, setShowImageModal] = useState(false);
     const [showLinkModal, setShowLinkModal] = useState(false);
     const [imageUrl, setImageUrl] = useState('');
+    const [imageAlt, setImageAlt] = useState('');
     const [linkUrl, setLinkUrl] = useState('');
     const [linkText, setLinkText] = useState('');
 
@@ -131,6 +142,7 @@ const BlogEditor = () => {
         editorProps: {
             attributes: {
                 class: 'prose prose-lg max-w-none focus:outline-none min-h-[500px] p-4',
+                'aria-label': 'Post content',
             },
         },
     });
@@ -183,7 +195,7 @@ const BlogEditor = () => {
     // Sync editor content when post content changes
     useEffect(() => {
         if (editor && editor.getHTML() !== post.content) {
-            editor.commands.setContent(post.content);
+            editor.commands.setContent(post.content, { emitUpdate: false });
         }
     }, [editor, post.content]);
 
@@ -206,28 +218,33 @@ const BlogEditor = () => {
 
             // If editing existing post
             if (postId) {
-                // Try to fetch by ID first, then by slug if not found
-                let postData = null;
-                
-                // First try to get user's posts to find the post
-                const userPostsResult = await getUserBlogPosts(user.uid, {
-                    status: 'all',
-                    limit: 100
-                });
-                
-                if (userPostsResult.success) {
-                    setUserPosts(userPostsResult.posts);
-                    postData = userPostsResult.posts.find(p => p.id === postId);
-                }
+                // Load the target directly and only the small recent-post sidebar set.
+                const [postResult, userPostsResult] = await Promise.all([
+                    getBlogPostByIdForAuthor(postId, user.uid),
+                    getUserBlogPosts(user.uid, { status: 'all', limit: 6 }),
+                ]);
+                const postData = postResult.success ? postResult.post : null;
+                if (userPostsResult.success) setUserPosts(userPostsResult.posts);
                 
                 if (postData && postData.authorUid === user.uid) {
+                    if (postData.status === 'approved' || postData.status === 'scheduled') {
+                        showNotification('Published or scheduled posts are managed through moderation. Create a new draft for revisions.', 'error');
+                        navigate(postData.slug ? `/blog/${postData.slug}` : '/blog-editor');
+                        return;
+                    }
                     setPost({
                         title: postData.title || '',
                         content: postData.content || '',
                         excerpt: postData.excerpt || '',
                         categoryId: postData.categoryId || '',
                         tags: postData.tags || [],
-                        featuredImage: postData.featuredImage || ''
+                        featuredImage: postData.featuredImage || '',
+                        seoTitle: postData.seoTitle || '',
+                        seoDescription: postData.seoDescription || '',
+                        slug: postData.slug || '',
+                        status: postData.status || 'draft',
+                        revision: Number(postData.revision) || 0,
+                        updatedAt: postData.updatedAt || null,
                     });
                     setIsEditing(true);
                 } else {
@@ -238,7 +255,7 @@ const BlogEditor = () => {
                 // Load user's posts for the dashboard
                 const userPostsResult = await getUserBlogPosts(user.uid, {
                     status: 'all',
-                    limit: 50
+                    limit: 6
                 });
                 
                 if (userPostsResult.success) {
@@ -259,7 +276,7 @@ const BlogEditor = () => {
         setTimeout(() => setNotification(null), 5000);
     };
 
-    const validateForm = () => {
+    const validateForm = (submitForReview = true) => {
         const newErrors = {};
         
         if (!post.title.trim()) {
@@ -273,20 +290,24 @@ const BlogEditor = () => {
         const hasContent = editorContent.trim().length > 0 && 
                           editorContent.replace(/<[^>]*>/g, '').trim().length > 0; // Remove HTML tags to check actual text content
         
-        if (!hasContent) {
-            newErrors.content = 'Content is required';
+        if (submitForReview && !hasContent) {
+            newErrors.content = 'Content is required before review';
         }
         
-        if (!post.categoryId) {
-            newErrors.categoryId = 'Category is required';
+        if (submitForReview && !post.categoryId) {
+            newErrors.categoryId = 'Category is required before review';
         }
         
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSave = async () => {
-        if (!validateForm()) {
+    const handleSave = async (submitForReview = true) => {
+        if (saveConflict) {
+            showNotification('Resolve the newer-revision conflict before saving.', 'error');
+            return;
+        }
+        if (!validateForm(submitForReview)) {
             showNotification('Please fix the errors before saving.', 'error');
             return;
         }
@@ -329,29 +350,34 @@ const BlogEditor = () => {
                 content: sanitizedContent,
                 excerpt: sanitizedExcerpt,
                 tags: sanitizedTags,
-                featuredImage: sanitizedFeaturedImage
+                featuredImage: sanitizedFeaturedImage,
+                seoTitle: sanitizeText(post.seoTitle || sanitizedTitle),
+                seoDescription: sanitizeText(post.seoDescription || sanitizedExcerpt),
+                status: submitForReview ? 'pending' : 'draft',
             };
 
             let result;
             if (isEditing && postId) {
-                result = await updateBlogPost(postId, postData, user.uid);
+                result = await updateBlogPost(postId, postData, user.uid, post.revision);
             } else {
                 result = await createBlogPost(user.uid, postData);
             }
 
             if (result.success) {
+                setPost(current => ({ ...current, revision: result.revision ?? current.revision, status: result.status || postData.status, slug: result.slug || current.slug, updatedAt: new Date() }));
+                setSaveConflict(null);
                 setHasUnsavedChanges(false);
                 showNotification(
-                    isEditing 
-                        ? 'Post updated successfully! Changes are pending approval.'
-                        : 'Post created successfully! It will be reviewed before publishing.', 
+                    submitForReview
+                        ? (isEditing ? 'Post updated and submitted for review.' : 'Post created and submitted for review.')
+                        : (isEditing ? 'Draft saved.' : 'Draft created.'),
                     'success'
                 );
                 
                 // Refresh user posts
                 const userPostsResult = await getUserBlogPosts(user.uid, {
                     status: 'all',
-                    limit: 50
+                    limit: 6
                 });
                 
                 if (userPostsResult.success) {
@@ -363,7 +389,8 @@ const BlogEditor = () => {
                     navigate(`/blog-editor/${result.postId}`);
                 }
             } else {
-                showNotification(result.error || 'Failed to save post. Please try again.', 'error');
+                if (result.code === 'BLOG_CONFLICT') setSaveConflict({ revision: result.remoteRevision, status: result.remoteStatus });
+                showNotification(result.code === 'BLOG_CONFLICT' ? 'This post changed in another tab. Autosave is paused; choose a recovery action below.' : result.error || 'Failed to save post. Please try again.', 'error');
             }
         } catch (error) {
             console.error('Error saving post:', error);
@@ -373,13 +400,38 @@ const BlogEditor = () => {
         }
     };
 
+    handleSaveRef.current = handleSave;
+
+    useEffect(() => {
+        if (!isEditing || !hasUnsavedChanges || saving || saveConflict || post.status === 'approved' || post.status === 'scheduled') return undefined;
+        const timer = setTimeout(() => handleSaveRef.current?.(false), 3000);
+        return () => clearTimeout(timer);
+    }, [isEditing, hasUnsavedChanges, saving, post, saveConflict]);
+
+    const reloadAfterConflict = async () => {
+        setSaveConflict(null);
+        await initializeEditor();
+        showNotification('Latest saved version loaded.', 'success');
+    };
+
+    const overwriteAfterConflict = () => {
+        if (saveConflict?.status === 'approved' || saveConflict?.status === 'scheduled') {
+            showNotification('The remote post is now published or scheduled and cannot be overwritten from the author editor.', 'error');
+            return;
+        }
+        setPost(current => ({ ...current, revision: saveConflict.revision, status: saveConflict.status || current.status }));
+        setSaveConflict(null);
+        setHasUnsavedChanges(true);
+        showNotification('Conflict acknowledged. Your local draft will be saved as the next revision.', 'success');
+    };
+
     const handleDelete = async () => {
         if (!isEditing || !postId) return;
 
         setSaving(true);
         
         try {
-            const result = await deleteBlogPost(postId);
+            const result = await deleteBlogPost(postId, user.uid, post.revision);
             
             if (result.success) {
                 setHasUnsavedChanges(false);
@@ -434,10 +486,11 @@ const BlogEditor = () => {
 
             editor.chain().focus().setImage({
                 src: safeImageUrl,
-                alt: 'Inserted image',
+                alt: sanitizeText(imageAlt) || 'Article image',
                 loading: 'lazy'
             }).run();
             setImageUrl('');
+            setImageAlt('');
             setShowImageModal(false);
         }
     };
@@ -497,12 +550,14 @@ const BlogEditor = () => {
 
     const getStatusBadge = (status) => {
         const badges = {
+            draft: { color: 'bg-slate-100 text-slate-800', text: 'Private Draft' },
             pending: { color: 'bg-yellow-100 text-yellow-800', text: 'Pending Review' },
             approved: { color: 'bg-green-100 text-green-800', text: 'Published' },
+            scheduled: { color: 'bg-purple-100 text-purple-800', text: 'Scheduled' },
             rejected: { color: 'bg-red-100 text-red-800', text: 'Rejected' }
         };
         
-        const badge = badges[status] || badges.pending;
+        const badge = badges[status] || badges.draft;
         
         return (
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.color}`}>
@@ -548,7 +603,7 @@ const BlogEditor = () => {
             <div className="min-h-screen bg-gray-50 pt-16">
                 {/* Professional Notification */}
                 {notification && (
-                    <div className={`fixed top-20 left-1/2 transform -translate-x-1/2 z-50 px-6 py-4 rounded-lg shadow-xl border ${
+                    <div role={notification.type === 'success' ? 'status' : 'alert'} aria-live="polite" className={`fixed top-20 left-1/2 transform -translate-x-1/2 z-50 px-6 py-4 rounded-lg shadow-xl border ${
                         notification.type === 'success' 
                             ? 'bg-green-50 border-green-200 text-green-800' 
                             : 'bg-red-50 border-red-200 text-red-800'
@@ -568,9 +623,19 @@ const BlogEditor = () => {
                 )}
 
                 <div className="max-w-7xl mx-auto px-6 py-8">
-                    <div className="flex gap-8">
+                    {saveConflict && (
+                        <div role="alert" className="mb-6 rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-950">
+                            <h2 className="font-semibold">A newer revision was saved elsewhere</h2>
+                            <p className="mt-1 text-sm">Your unsaved local content remains in this editor and autosave is paused. Choose whether to discard it or explicitly replace revision {saveConflict.revision}.</p>
+                            <div className="mt-3 flex flex-wrap gap-3">
+                                <button type="button" onClick={reloadAfterConflict} className="rounded-md border border-amber-400 bg-white px-3 py-2 text-sm font-medium">Discard local changes and load latest</button>
+                                <button type="button" onClick={overwriteAfterConflict} className="rounded-md bg-amber-800 px-3 py-2 text-sm font-medium text-white">Overwrite latest with this local draft</button>
+                            </div>
+                        </div>
+                    )}
+                    <div className="flex flex-col gap-8 lg:flex-row">
                         {/* Main Editor */}
-                        <div className="flex-1 max-w-4xl space-y-6">
+                        <div className="min-w-0 flex-1 max-w-4xl space-y-6">
                             {/* Navigation and Title Section */}
                             <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
                                 {/* Navigation */}
@@ -588,16 +653,17 @@ const BlogEditor = () => {
                                     </span>
                                     
                                     {/* Preview Button (moved here) */}
-                                    {isEditing && post.slug && (
+                                    {(post.title || post.content) && (
                                         <>
                                             <span className="text-gray-300">•</span>
-                                            <Link
-                                                to={`/blog/${post.slug}`}
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPreview(true)}
                                                 className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700 transition-colors duration-200"
                                             >
                                                 <FiEye className="w-4 h-4 mr-1" />
-                                                Preview Post
-                                            </Link>
+                                                Preview Draft
+                                            </button>
                                         </>
                                     )}
                                 </div>
@@ -607,6 +673,7 @@ const BlogEditor = () => {
                                     <input
                                         type="text"
                                         id="title"
+                                        aria-label="Post title"
                                         value={post.title}
                                         onChange={(e) => { setPost(prev => ({ ...prev, title: e.target.value })); setHasUnsavedChanges(true); }}
                                         placeholder="Enter your post title here..."
@@ -645,7 +712,7 @@ const BlogEditor = () => {
 
                                 {/* Professional Multi-Row Toolbar */}
                                 {editor && (
-                                    <div className="border-b border-gray-100 bg-gray-50/80">
+                                    <div className="overflow-x-auto border-b border-gray-100 bg-gray-50/80">
                                         {/* Main Toolbar Row */}
                                         <div className="px-6 py-3 flex items-center justify-between">
                                             <div className="flex items-center space-x-1">
@@ -655,6 +722,7 @@ const BlogEditor = () => {
                                                         onClick={() => editor.chain().focus().undo().run()}
                                                         disabled={!editor.can().undo()}
                                                         className="p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed"
+                                                        aria-label="Undo (Ctrl+Z)"
                                                         title="Undo (Ctrl+Z)"
                                                     >
                                                         <FiRotateCcw className="w-4 h-4" />
@@ -663,6 +731,7 @@ const BlogEditor = () => {
                                                         onClick={() => editor.chain().focus().redo().run()}
                                                         disabled={!editor.can().redo()}
                                                         className="p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed"
+                                                        aria-label="Redo (Ctrl+Y)"
                                                         title="Redo (Ctrl+Y)"
                                                     >
                                                         <FiRotateCw className="w-4 h-4" />
@@ -676,6 +745,7 @@ const BlogEditor = () => {
                                                         className={`p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
                                                             editor.isActive('bold') ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
                                                         }`}
+                                                        aria-label="Bold (Ctrl+B)"
                                                         title="Bold (Ctrl+B)"
                                                     >
                                                         <FiBold className="w-4 h-4" />
@@ -685,6 +755,7 @@ const BlogEditor = () => {
                                                         className={`p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
                                                             editor.isActive('italic') ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
                                                         }`}
+                                                        aria-label="Italic (Ctrl+I)"
                                                         title="Italic (Ctrl+I)"
                                                     >
                                                         <FiItalic className="w-4 h-4" />
@@ -694,6 +765,7 @@ const BlogEditor = () => {
                                                         className={`p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
                                                             editor.isActive('underline') ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
                                                         }`}
+                                                        aria-label="Underline (Ctrl+U)"
                                                         title="Underline (Ctrl+U)"
                                                     >
                                                         <FiUnderline className="w-4 h-4" />
@@ -703,6 +775,7 @@ const BlogEditor = () => {
                                                         className={`p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
                                                             editor.isActive('highlight') ? 'bg-yellow-100 text-yellow-700 shadow-sm' : 'text-gray-600'
                                                         }`}
+                                                        aria-label="Highlight"
                                                         title="Highlight"
                                                     >
                                                         <div className="w-4 h-4 bg-current rounded-sm opacity-60"></div>
@@ -716,6 +789,7 @@ const BlogEditor = () => {
                                                         className={`px-2 py-1 text-xs font-semibold rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
                                                             editor.isActive('paragraph') ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
                                                         }`}
+                                                        aria-label="Normal Text"
                                                         title="Normal Text"
                                                     >
                                                         P
@@ -725,6 +799,7 @@ const BlogEditor = () => {
                                                         className={`px-2 py-1 text-xs font-bold rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
                                                             editor.isActive('heading', { level: 1 }) ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
                                                         }`}
+                                                        aria-label="Heading 1"
                                                         title="Heading 1"
                                                     >
                                                         H1
@@ -734,6 +809,7 @@ const BlogEditor = () => {
                                                         className={`px-2 py-1 text-xs font-bold rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
                                                             editor.isActive('heading', { level: 2 }) ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
                                                         }`}
+                                                        aria-label="Heading 2"
                                                         title="Heading 2"
                                                     >
                                                         H2
@@ -743,6 +819,7 @@ const BlogEditor = () => {
                                                         className={`px-2 py-1 text-xs font-bold rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
                                                             editor.isActive('heading', { level: 3 }) ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
                                                         }`}
+                                                        aria-label="Heading 3"
                                                         title="Heading 3"
                                                     >
                                                         H3
@@ -756,6 +833,7 @@ const BlogEditor = () => {
                                                         className={`p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
                                                             editor.isActive({ textAlign: 'left' }) ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
                                                         }`}
+                                                        aria-label="Align Left"
                                                         title="Align Left"
                                                     >
                                                         <FiAlignLeft className="w-4 h-4" />
@@ -765,6 +843,7 @@ const BlogEditor = () => {
                                                         className={`p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
                                                             editor.isActive({ textAlign: 'center' }) ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
                                                         }`}
+                                                        aria-label="Align Center"
                                                         title="Align Center"
                                                     >
                                                         <FiAlignCenter className="w-4 h-4" />
@@ -774,6 +853,7 @@ const BlogEditor = () => {
                                                         className={`p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
                                                             editor.isActive({ textAlign: 'right' }) ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
                                                         }`}
+                                                        aria-label="Align Right"
                                                         title="Align Right"
                                                     >
                                                         <FiAlignRight className="w-4 h-4" />
@@ -783,6 +863,7 @@ const BlogEditor = () => {
                                                         className={`p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
                                                             editor.isActive({ textAlign: 'justify' }) ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
                                                         }`}
+                                                        aria-label="Justify"
                                                         title="Justify"
                                                     >
                                                         <FiAlignJustify className="w-4 h-4" />
@@ -796,6 +877,7 @@ const BlogEditor = () => {
                                                         className={`p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
                                                             editor.isActive('bulletList') ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
                                                         }`}
+                                                        aria-label="Bullet List"
                                                         title="Bullet List"
                                                     >
                                                         <FiList className="w-4 h-4" />
@@ -805,6 +887,7 @@ const BlogEditor = () => {
                                                         className={`p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
                                                             editor.isActive('orderedList') ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
                                                         }`}
+                                                        aria-label="Numbered List"
                                                         title="Numbered List"
                                                     >
                                                         <span className="text-xs font-bold">1.</span>
@@ -816,6 +899,7 @@ const BlogEditor = () => {
                                                     <button
                                                         onClick={() => setShowImageModal(true)}
                                                         className="p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 text-gray-600"
+                                                        aria-label="Insert Image"
                                                         title="Insert Image"
                                                     >
                                                         <FiImage className="w-4 h-4" />
@@ -825,6 +909,7 @@ const BlogEditor = () => {
                                                         className={`p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
                                                             editor.isActive('link') ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
                                                         }`}
+                                                        aria-label="Insert Link"
                                                         title="Insert Link"
                                                     >
                                                         <FiLink className="w-4 h-4" />
@@ -832,6 +917,7 @@ const BlogEditor = () => {
                                                     <button
                                                         onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
                                                         className="p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 text-gray-600"
+                                                        aria-label="Insert Table"
                                                         title="Insert Table"
                                                     >
                                                         <FiGrid className="w-4 h-4" />
@@ -846,6 +932,7 @@ const BlogEditor = () => {
                                                     className={`p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
                                                         editor.isActive('blockquote') ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
                                                     }`}
+                                                    aria-label="Quote"
                                                     title="Quote"
                                                 >
                                                     <span className="text-sm font-bold">&ldquo;&rdquo;</span>
@@ -855,6 +942,7 @@ const BlogEditor = () => {
                                                     className={`p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
                                                         editor.isActive('code') ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
                                                     }`}
+                                                    aria-label="Inline Code"
                                                     title="Inline Code"
                                                 >
                                                     <FiCode className="w-4 h-4" />
@@ -864,6 +952,7 @@ const BlogEditor = () => {
                                                     className={`p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
                                                         editor.isActive('codeBlock') ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
                                                     }`}
+                                                    aria-label="Code Block"
                                                     title="Code Block"
                                                 >
                                                     <span className="text-xs font-mono">&lt;/&gt;</span>
@@ -918,6 +1007,7 @@ const BlogEditor = () => {
                                 <div className="p-6">
                                     <textarea
                                         id="excerpt"
+                                        aria-label="Post excerpt"
                                         value={post.excerpt}
                                         onChange={(e) => { setPost(prev => ({ ...prev, excerpt: e.target.value })); setHasUnsavedChanges(true); }}
                                         placeholder="Write a compelling excerpt that summarizes your post and entices readers..."
@@ -934,6 +1024,14 @@ const BlogEditor = () => {
                                         </span>
                                     </div>
                                 </div>
+                            </div>
+
+                            <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+                                <h3 className="text-sm font-semibold text-gray-900">Search & Social Metadata</h3>
+                                <label className="mt-4 block text-xs font-medium text-gray-700" htmlFor="seoTitle">SEO title</label>
+                                <input id="seoTitle" value={post.seoTitle || ''} onChange={event => { setPost(current => ({ ...current, seoTitle: event.target.value })); setHasUnsavedChanges(true); }} maxLength={120} placeholder={post.title || 'Article title'} className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm" />
+                                <label className="mt-3 block text-xs font-medium text-gray-700" htmlFor="seoDescription">SEO description</label>
+                                <textarea id="seoDescription" value={post.seoDescription || ''} onChange={event => { setPost(current => ({ ...current, seoDescription: event.target.value })); setHasUnsavedChanges(true); }} maxLength={320} rows={3} placeholder={post.excerpt || 'Article description'} className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm" />
                             </div>
 
                             {/* Security Notice */}
@@ -954,7 +1052,7 @@ const BlogEditor = () => {
                         </div>
 
                         {/* Professional Sidebar */}
-                        <div className="w-80 space-y-6">
+                        <div className="w-full space-y-6 lg:w-80 lg:flex-none">
                             {/* Post Status Panel */}
                             <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
                                 <div className="border-b border-gray-100 px-6 py-4 bg-gray-50/50">
@@ -967,21 +1065,29 @@ const BlogEditor = () => {
                                     <div className="space-y-3">
                                         <div className="flex items-center justify-between">
                                             <span className="text-sm text-gray-600">Status</span>
-                                            <span className="text-sm font-medium text-gray-900 bg-gray-100 px-2 py-1 rounded">
-                                                {isEditing ? 'Draft' : 'New Post'}
-                                            </span>
+                                            {isEditing ? getStatusBadge(post.status) : (
+                                                <span className="text-sm font-medium text-gray-900 bg-gray-100 px-2 py-1 rounded">New Post</span>
+                                            )}
                                         </div>
                                         
                                         <div className="flex items-center justify-between">
                                             <span className="text-sm text-gray-600">Visibility</span>
-                                            <span className="text-sm font-medium text-gray-900">Public</span>
+                                            <span className="text-sm font-medium text-gray-900">
+                                                {post.status === 'approved' ? 'Public' : post.status === 'scheduled' ? 'Private until scheduled' : 'Private'}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between" aria-live="polite">
+                                            <span className="text-sm text-gray-600">Save state</span>
+                                            <span className={`text-sm font-medium ${saveConflict ? 'text-amber-700' : saving || hasUnsavedChanges ? 'text-blue-700' : post.revision ? 'text-green-700' : 'text-gray-600'}`}>
+                                                {saveConflict ? 'Conflict—action required' : saving ? 'Saving…' : hasUnsavedChanges ? (isEditing ? 'Pending autosave' : 'Unsaved') : post.revision ? 'Saved' : 'Not saved'}
+                                            </span>
                                         </div>
                                         
                                         {isEditing && (
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm text-gray-600">Last Modified</span>
                                                 <span className="text-sm text-gray-500">
-                                                    {new Date().toLocaleDateString()}
+                                                    {post.updatedAt ? new Date(post.updatedAt).toLocaleDateString() : 'Not saved yet'}
                                                 </span>
                                             </div>
                                         )}
@@ -990,8 +1096,8 @@ const BlogEditor = () => {
                                     <div className="pt-4 border-t border-gray-100 space-y-3">
                                         {/* Primary Action Button */}
                                         <button
-                                            onClick={handleSave}
-                                            disabled={saving}
+                                            onClick={() => handleSave(true)}
+                                            disabled={saving || Boolean(saveConflict)}
                                             className="w-full px-4 py-3 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg flex items-center justify-center"
                                         >
                                             {saving ? (
@@ -1002,19 +1108,16 @@ const BlogEditor = () => {
                                             ) : (
                                                 <>
                                                     <FiSave className="w-4 h-4 mr-2" />
-                                                    {isEditing ? 'Update Post' : 'Publish Post'}
+                                                    {isEditing ? 'Save & Submit for Review' : 'Create & Submit for Review'}
                                                 </>
                                             )}
                                         </button>
                                         
                                         {/* Save as Draft Option for new posts */}
-                                        {!isEditing && (
+                                        {(
                                             <button
-                                                onClick={() => {
-                                                    // Save as draft logic could be added here
-                                                    handleSave();
-                                                }}
-                                                disabled={saving}
+                                                onClick={() => handleSave(false)}
+                                                disabled={saving || Boolean(saveConflict)}
                                                 className="w-full px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-all duration-200 flex items-center justify-center"
                                             >
                                                 <FiFileText className="w-4 h-4 mr-2" />
@@ -1048,6 +1151,7 @@ const BlogEditor = () => {
                                 <div className="p-6">
                                     <select
                                         id="category"
+                                        aria-label="Post category"
                                         value={post.categoryId}
                                         onChange={(e) => { setPost(prev => ({ ...prev, categoryId: e.target.value })); setHasUnsavedChanges(true); }}
                                         className={`w-full px-4 py-3 border text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
@@ -1082,6 +1186,7 @@ const BlogEditor = () => {
                                     <div className="flex gap-2">
                                         <input
                                             type="text"
+                                            aria-label="Add a tag"
                                             value={tagInput}
                                             onChange={(e) => setTagInput(e.target.value)}
                                             onKeyPress={handleTagInputKeyPress}
@@ -1113,6 +1218,7 @@ const BlogEditor = () => {
                                                         <button
                                                             type="button"
                                                             onClick={() => handleTagRemove(tag)}
+                                                            aria-label={`Remove tag ${tag}`}
                                                             className="ml-2 text-blue-500 hover:text-blue-700 transition-colors duration-200"
                                                         >
                                                             <FiX className="w-3 h-3" />
@@ -1134,6 +1240,7 @@ const BlogEditor = () => {
                                     </h3>
                                 </div>
                                 <div className="p-6 space-y-4">
+                                    <label htmlFor="featuredImage" className="block text-xs font-medium text-gray-700">HTTPS or site image URL</label>
                                     <input
                                         type="url"
                                         id="featuredImage"
@@ -1142,10 +1249,10 @@ const BlogEditor = () => {
                                         placeholder="https://example.com/image.jpg"
                                         className="w-full px-4 py-3 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent hover:border-gray-300 transition-all duration-200"
                                     />
-                                    {post.featuredImage && (
+                                    {sanitizeImageUrl(post.featuredImage) && (
                                         <div className="space-y-2">
                                             <img 
-                                                src={post.featuredImage} 
+                                                src={sanitizeImageUrl(post.featuredImage)}
                                                 alt="Featured preview" 
                                                 className="w-full h-40 object-cover rounded-lg border border-gray-200 shadow-sm"
                                                 onError={(e) => {
@@ -1205,15 +1312,17 @@ const BlogEditor = () => {
 
                 {/* Image Insert Modal */}
                 {showImageModal && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="insert-image-title" onKeyDown={event => { if (event.key === 'Escape') setShowImageModal(false); }}>
                         <div className="bg-white rounded-xl p-6 max-w-lg w-full mx-4 shadow-2xl">
                             <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-xl font-semibold text-gray-900 flex items-center">
+                                <h3 id="insert-image-title" className="text-xl font-semibold text-gray-900 flex items-center">
                                     <FiImage className="w-5 h-5 mr-2 text-blue-600" />
                                     Insert Image
                                 </h3>
                                 <button
+                                    type="button"
                                     onClick={() => setShowImageModal(false)}
+                                    aria-label="Close image dialog"
                                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
                                 >
                                     <FiX className="w-5 h-5 text-gray-500" />
@@ -1222,11 +1331,13 @@ const BlogEditor = () => {
                             
                             <div className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label htmlFor="insert-image-url" className="block text-sm font-medium text-gray-700 mb-2">
                                         Image URL
                                     </label>
                                     <input
+                                        id="insert-image-url"
                                         type="url"
+                                        autoFocus
                                         value={imageUrl}
                                         onChange={(e) => setImageUrl(e.target.value)}
                                         placeholder="https://example.com/image.jpg"
@@ -1238,12 +1349,16 @@ const BlogEditor = () => {
                                         }}
                                     />
                                 </div>
+                                <div>
+                                    <label htmlFor="insert-image-alt" className="block text-sm font-medium text-gray-700 mb-2">Image description</label>
+                                    <input id="insert-image-alt" type="text" value={imageAlt} onChange={event => setImageAlt(event.target.value)} maxLength={200} placeholder="Describe the image for screen readers" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                                </div>
                                 
-                                {imageUrl && (
+                                {sanitizeImageUrl(imageUrl) && (
                                     <div className="border border-gray-200 rounded-lg p-4">
                                         <p className="text-sm text-gray-600 mb-2">Preview:</p>
                                         <img 
-                                            src={imageUrl} 
+                                            src={sanitizeImageUrl(imageUrl)}
                                             alt="Preview" 
                                             className="max-w-full h-32 object-cover rounded-lg"
                                             onError={(e) => {
@@ -1276,15 +1391,17 @@ const BlogEditor = () => {
 
                 {/* Link Insert Modal */}
                 {showLinkModal && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="insert-link-title" onKeyDown={event => { if (event.key === 'Escape') setShowLinkModal(false); }}>
                         <div className="bg-white rounded-xl p-6 max-w-lg w-full mx-4 shadow-2xl">
                             <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-xl font-semibold text-gray-900 flex items-center">
+                                <h3 id="insert-link-title" className="text-xl font-semibold text-gray-900 flex items-center">
                                     <FiLink className="w-5 h-5 mr-2 text-blue-600" />
                                     Insert Link
                                 </h3>
                                 <button
+                                    type="button"
                                     onClick={() => setShowLinkModal(false)}
+                                    aria-label="Close link dialog"
                                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
                                 >
                                     <FiX className="w-5 h-5 text-gray-500" />
@@ -1293,11 +1410,13 @@ const BlogEditor = () => {
                             
                             <div className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label htmlFor="insert-link-url" className="block text-sm font-medium text-gray-700 mb-2">
                                         Link URL
                                     </label>
                                     <input
+                                        id="insert-link-url"
                                         type="url"
+                                        autoFocus
                                         value={linkUrl}
                                         onChange={(e) => setLinkUrl(e.target.value)}
                                         placeholder="https://example.com"
@@ -1306,10 +1425,11 @@ const BlogEditor = () => {
                                 </div>
                                 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label htmlFor="insert-link-text" className="block text-sm font-medium text-gray-700 mb-2">
                                         Link Text (optional)
                                     </label>
                                     <input
+                                        id="insert-link-text"
                                         type="text"
                                         value={linkText}
                                         onChange={(e) => setLinkText(e.target.value)}
@@ -1358,21 +1478,25 @@ const BlogEditor = () => {
                     </div>
                 )}
 
+                <BlogPreviewModal isOpen={showPreview} onClose={() => setShowPreview(false)} post={{ ...post, content: editor?.getHTML() || post.content, status: post.status || 'draft' }} />
+
                 {/* Delete Confirmation Modal */}
                 {showDeleteConfirm && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="alertdialog" aria-modal="true" aria-labelledby="delete-post-title" aria-describedby="delete-post-description" onKeyDown={event => { if (event.key === 'Escape' && !saving) setShowDeleteConfirm(false); }}>
                         <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
                             <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-xl font-semibold text-gray-900 flex items-center">
+                                <h3 id="delete-post-title" className="text-xl font-semibold text-gray-900 flex items-center">
                                     <FiTrash2 className="w-5 h-5 mr-2 text-red-600" />
                                     Delete Post
                                 </h3>
                             </div>
-                            <p className="text-gray-600 mb-6">
+                            <p id="delete-post-description" className="text-gray-600 mb-6">
                                 Are you sure you want to delete this post? This action cannot be undone.
                             </p>
                             <div className="flex justify-end space-x-3">
                                 <button
+                                    type="button"
+                                    autoFocus
                                     onClick={() => setShowDeleteConfirm(false)}
                                     className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors duration-200"
                                 >

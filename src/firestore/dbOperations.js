@@ -3,6 +3,7 @@ import axios from 'axios';
 import config from '../conf/configuration';
 import firebase from 'firebase/compat/app';
 import { JOB_TRACKER_STATUSES, normalizeTrackedJob, validateTrackedJob } from '../utils/jobTracker';
+import { blogPostFitsFirestore, normalizeBlogPost } from '../utils/blogData';
 
 // Utility function to wait for authentication state
 export const waitForAuth = () => {
@@ -2992,30 +2993,37 @@ export async function createBlogPost(userId, postData) {
     const db = fire.firestore();
     try {
         const postRef = db.collection('blog_posts').doc();
+        if (!blogPostFitsFirestore(postData)) return { success: false, error: 'Post is too large to save.' };
+        const normalized = normalizeBlogPost(postData);
+        if (!normalized.title) return { success: false, error: 'Post title is required.' };
         // A document-derived suffix avoids a collection-wide uniqueness query that members
         // are not authorized to run against other authors' pending posts.
-        const slugBase = generateSlug(postData.slug || postData.title) || 'article';
-        const slug = `${slugBase}-${postRef.id.slice(0, 8).toLowerCase()}`;
+        const slugSuffix = `-${postRef.id.slice(0, 8).toLowerCase()}`;
+        const slugBase = (generateSlug(postData.slug || normalized.title) || 'article').slice(0, 180 - slugSuffix.length);
+        const slug = `${slugBase}${slugSuffix}`;
 
         const finalPostData = {
-            title: postData.title,
+            title: normalized.title,
             slug: slug,
-            content: postData.content,
-            excerpt: postData.excerpt || generateExcerpt(postData.content),
-            categoryId: postData.categoryId,
+            content: normalized.content,
+            excerpt: normalized.excerpt || generateExcerpt(normalized.content),
+            categoryId: normalized.categoryId,
             authorUid: userId,
-            status: 'pending', // Always pending for new posts from members
+            status: normalized.status === 'pending' ? 'pending' : 'draft',
+            revision: 1,
+            seoTitle: normalized.seoTitle || normalized.title,
+            seoDescription: normalized.seoDescription || normalized.excerpt || generateExcerpt(normalized.content),
             createdAt: new Date(),
             updatedAt: new Date(),
             publishedAt: null,
             viewCount: 0,
-            tags: postData.tags || [],
-            featuredImage: postData.featuredImage || null,
+            tags: normalized.tags || [],
+            featuredImage: normalized.featuredImage || null,
         };
 
         await postRef.set(finalPostData);
 
-        return { success: true, postId: postRef.id, slug: slug };
+        return { success: true, postId: postRef.id, slug, revision: 1, status: finalPostData.status };
     } catch (error) {
         console.error('❌ Error creating blog post:', error);
         return { success: false, error: error.message };
@@ -3023,50 +3031,85 @@ export async function createBlogPost(userId, postData) {
 }
 
 // Update a blog post
-export async function updateBlogPost(postId, updateData, userId = null) {
+export async function updateBlogPost(postId, updateData, userId = null, expectedRevision = null) {
     const db = fire.firestore();
     try {
-        if (userId) {
-            const existing = await db.collection('blog_posts').doc(postId).get();
-            if (!existing.exists || existing.data().authorUid !== userId) {
-                return { success: false, error: 'Post not found or access denied.' };
-            }
-            const allowedFields = ['title', 'content', 'excerpt', 'categoryId', 'tags', 'featuredImage'];
-            updateData = Object.fromEntries(Object.entries(updateData).filter(([key]) => allowedFields.includes(key)));
-            updateData.status = 'pending';
-        }
-
-        // If slug is being updated, check for conflicts (admin-managed slugs only).
-        if (updateData.slug) {
-            const existingPost = await db.collection('blog_posts')
-                .where('slug', '==', updateData.slug)
-                .where(firebase.firestore.FieldPath.documentId(), '!=', postId)
-                .get();
-            if (!existingPost.empty) {
-                return { success: false, error: 'A post with this slug already exists.' };
-            }
-        }
-
-        const finalUpdateData = {
-            ...updateData,
-            updatedAt: new Date(),
-        };
-
-        // Set publishedAt when status changes to approved
-        if (updateData.status === 'approved') {
-            const postDoc = await db.collection('blog_posts').doc(postId).get();
-            const currentPost = postDoc.data();
-            if (currentPost && currentPost.status !== 'approved') {
-                finalUpdateData.publishedAt = new Date();
+        if (!blogPostFitsFirestore(updateData)) return { success: false, error: 'Post update is too large to save.' };
+        const reference = db.collection('blog_posts').doc(postId);
+        if (!userId && updateData.slug) {
+            const candidateSlug = generateSlug(updateData.slug).slice(0, 180);
+            if (!candidateSlug) return { success: false, error: 'A valid post slug is required.' };
+            const duplicates = await db.collection('blog_posts').where('slug', '==', candidateSlug).get();
+            if (duplicates.docs.some(document => document.id !== postId)) return { success: false, error: 'A post with this slug already exists.' };
+            updateData = { ...updateData, slug: candidateSlug };
+        } else if (!userId && ['approved', 'scheduled'].includes(updateData.status)) {
+            const currentSnapshot = await reference.get();
+            if (!currentSnapshot.exists) return { success: false, error: 'Blog post not found.' };
+            const currentSlug = currentSnapshot.data()?.slug;
+            if (currentSlug) {
+                const duplicates = await db.collection('blog_posts').where('slug', '==', currentSlug).get();
+                if (duplicates.docs.some(document => document.id !== postId)) {
+                    const suffix = `-${postId.toLowerCase()}`;
+                    updateData = { ...updateData, slug: `${generateSlug(currentSlug).slice(0, 180 - suffix.length)}${suffix}` };
+                }
             }
         }
-
-        await db.collection('blog_posts').doc(postId).update(finalUpdateData);
-
-        console.log('✅ Blog post updated successfully!');
-        return { success: true };
+        const allowedMemberFields = ['title', 'content', 'excerpt', 'categoryId', 'tags', 'featuredImage', 'seoTitle', 'seoDescription'];
+        let result;
+        await db.runTransaction(async transaction => {
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists) throw new Error('Post not found.');
+            const existing = snapshot.data() || {};
+            const currentRevision = Number(existing.revision) || 0;
+            if (expectedRevision !== null && expectedRevision !== undefined && Number(expectedRevision) !== currentRevision) {
+                const conflict = new Error('This post changed in another tab or device.');
+                conflict.code = 'BLOG_CONFLICT';
+                conflict.remoteRevision = currentRevision;
+                conflict.remoteStatus = existing.status;
+                throw conflict;
+            }
+            let changes = { ...updateData };
+            if (userId) {
+                if (existing.authorUid !== userId) throw new Error('Post not found or access denied.');
+                if (existing.status === 'approved') throw new Error('Published posts must be revised through the moderation workflow.');
+                if (!blogPostFitsFirestore(changes)) throw new Error('Post is too large to save.');
+                const normalized = normalizeBlogPost(changes);
+                changes = Object.fromEntries(allowedMemberFields.filter(key => Object.hasOwn(updateData, key)).map(key => [key, normalized[key]]));
+                changes.status = updateData.status === 'pending' ? 'pending' : 'draft';
+            } else {
+                const statuses = ['draft', 'pending', 'approved', 'rejected', 'scheduled'];
+                if (changes.status && !statuses.includes(changes.status)) throw new Error('Invalid post status.');
+                if (changes.slug) changes.slug = generateSlug(changes.slug) || existing.slug;
+                if (['approved', 'scheduled'].includes(changes.status)) changes.featuredImage = normalizeBlogPost(existing).featuredImage || null;
+                if (changes.status === 'approved' && existing.status !== 'approved') changes.publishedAt = new Date();
+                if (changes.status !== 'scheduled') changes.scheduledAt = null;
+            }
+            const revision = currentRevision + 1;
+            changes = { ...changes, authorUid: existing.authorUid, revision, updatedAt: new Date() };
+            transaction.update(reference, changes);
+            result = { success: true, revision, status: changes.status || existing.status };
+        });
+        return result;
     } catch (error) {
-        console.error('❌ Error updating blog post:', error);
+        console.error('Error updating blog post:', error);
+        return { success: false, error: error.message, code: error.code, remoteRevision: error.remoteRevision, remoteStatus: error.remoteStatus };
+    }
+}
+
+// Fetch one author-owned post without scanning the user's full CMS history.
+export async function getBlogPostByIdForAuthor(postId, userId) {
+    try {
+        const snapshot = await fire.firestore().collection('blog_posts').doc(postId).get();
+        if (!snapshot.exists || snapshot.data()?.authorUid !== userId) return { success: false, error: 'Post not found or access denied.' };
+        const data = snapshot.data();
+        return { success: true, post: {
+            id: snapshot.id, ...data,
+            createdAt: data.createdAt?.toDate?.() || data.createdAt,
+            updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
+            publishedAt: data.publishedAt?.toDate?.() || data.publishedAt,
+            scheduledAt: data.scheduledAt?.toDate?.() || data.scheduledAt,
+        } };
+    } catch (error) {
         return { success: false, error: error.message };
     }
 }
@@ -3266,9 +3309,11 @@ export async function listBlogPosts(options = {}) {
             const statsSnapshot = await db.collection('blog_posts').get();
             const stats = {
                 total: 0,
+                draft: 0,
                 approved: 0,
                 pending: 0,
-                rejected: 0
+                rejected: 0,
+                scheduled: 0,
             };
             
             statsSnapshot.forEach((doc) => {
@@ -3288,19 +3333,28 @@ export async function listBlogPosts(options = {}) {
 }
 
 // Delete a blog post
-export async function deleteBlogPost(postId) {
+export async function deleteBlogPost(postId, userId = null, expectedRevision = null) {
     const db = fire.firestore();
     try {
-        console.log('=== DELETING BLOG POST ===');
-        console.log('Post ID:', postId);
-
-        await db.collection('blog_posts').doc(postId).delete();
-
-        console.log('✅ Blog post deleted successfully!');
+        const reference = db.collection('blog_posts').doc(postId);
+        await db.runTransaction(async transaction => {
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists) throw new Error('Post not found.');
+            const existing = snapshot.data() || {};
+            if (expectedRevision !== null && expectedRevision !== undefined && Number(expectedRevision) !== (Number(existing.revision) || 0)) {
+                const conflict = new Error('This post changed before deletion. Reload and confirm again.');
+                conflict.code = 'BLOG_CONFLICT';
+                throw conflict;
+            }
+            if (userId && (existing.authorUid !== userId || existing.status === 'approved' || existing.status === 'scheduled')) {
+                throw new Error('Only private drafts or review submissions can be deleted by their author.');
+            }
+            transaction.delete(reference);
+        });
         return { success: true };
     } catch (error) {
-        console.error('❌ Error deleting blog post:', error);
-        return { success: false, error: error.message };
+        console.error('Error deleting blog post:', error);
+        return { success: false, error: error.message, code: error.code };
     }
 }
 

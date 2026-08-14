@@ -140,6 +140,31 @@ test('job applications bind applicant identity and only job owner may change sta
   await assertFails(updateDoc(doc(employer(), 'jobApplications/application-1'), { userId: 'bob', status: 'accepted' }));
 });
 
+test('blog drafts are private and direct writes enforce revisions, fields, bounds, and trusted publication', async () => {
+  const basePost = (status, title) => ({
+    authorUid: 'alice', status, title, slug: title.toLowerCase(), content: '', excerpt: '', categoryId: '', revision: 1,
+    createdAt: new Date(), updatedAt: new Date(), publishedAt: null, viewCount: 0, tags: [], featuredImage: null,
+  });
+  await assertSucceeds(setDoc(doc(alice(), 'blog_posts/alice_draft'), basePost('draft', 'Draft')));
+  await assertFails(getDoc(doc(bob(), 'blog_posts/alice_draft')));
+  await assertFails(setDoc(doc(alice(), 'blog_posts/extra_field'), { ...basePost('draft', 'Extra'), injected: true }));
+  await assertFails(setDoc(doc(alice(), 'blog_posts/too_large'), { ...basePost('draft', 'Large'), title: 'x'.repeat(201) }));
+  await assertFails(setDoc(doc(alice(), 'blog_posts/unsafe_media'), { ...basePost('draft', 'Media'), featuredImage: 'data:image/svg+xml,<svg/>' }));
+  await assertFails(updateDoc(doc(alice(), 'blog_posts/alice_draft'), { status: 'pending', content: 'Ready', revision: 1, updatedAt: new Date() }));
+  await assertFails(updateDoc(doc(alice(), 'blog_posts/alice_draft'), { status: 'approved', revision: 2, updatedAt: new Date() }));
+  await assertSucceeds(updateDoc(doc(alice(), 'blog_posts/alice_draft'), { status: 'pending', content: 'Ready', revision: 2, updatedAt: new Date() }));
+  await assertFails(updateDoc(doc(bob(), 'blog_posts/alice_draft'), { status: 'draft', content: 'Stolen', revision: 3, updatedAt: new Date() }));
+  await assertSucceeds(deleteDoc(doc(alice(), 'blog_posts/alice_draft')));
+
+  await assertSucceeds(setDoc(doc(alice(), 'blog_posts/alice_review'), basePost('pending', 'Review')));
+  await assertFails(updateDoc(doc(alice(), 'blog_posts/alice_review'), { status: 'scheduled', scheduledAt: new Date(Date.now() + 60000), revision: 2, updatedAt: new Date() }));
+  await assertSucceeds(updateDoc(doc(admin(), 'blog_posts/alice_review'), { status: 'scheduled', scheduledAt: new Date(Date.now() + 60000), publishedAt: null, revision: 2, updatedAt: new Date() }));
+  await assertFails(getDoc(doc(anonymous(), 'blog_posts/alice_review')));
+  await assertSucceeds(updateDoc(doc(admin(), 'blog_posts/alice_review'), { status: 'approved', scheduledAt: null, publishedAt: new Date(), revision: 3, updatedAt: new Date() }));
+  await assertFails(deleteDoc(doc(alice(), 'blog_posts/alice_review')));
+  await assertSucceeds(getDoc(doc(anonymous(), 'blog_posts/alice_review')));
+});
+
 test('billing, provider secrets and token registries are server-only', async () => {
   await assertSucceeds(getDoc(doc(alice(), 'payment_orders/order-a')));
   await assertFails(getDoc(doc(bob(), 'payment_orders/order-a')));

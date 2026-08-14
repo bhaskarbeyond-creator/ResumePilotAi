@@ -1,6 +1,7 @@
 {
   "firestore": {
-    "rules": "SecurityRules.txt"
+    "rules": "SecurityRules.txt",
+    "indexes": "firestore.indexes.json"
   },
   "database": {
     "rules": "Realtime_database_Security_rules.txt"

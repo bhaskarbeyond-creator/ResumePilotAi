@@ -1294,6 +1294,46 @@ app.get('/api/admin/ai-settings', async (_req, res) => {
     return res.json({ success: true, settings: ai, configuredProviders });
 });
 
+async function publishDueBlogPosts(requestDb, { actorUid = 'cms-scheduler', requestId = null } = {}) {
+    if (!requestDb || !admin) throw new Error('CMS scheduler unavailable');
+    const now = new Date();
+    const snapshot = await requestDb.collection('blog_posts')
+        .where('status', '==', 'scheduled').where('scheduledAt', '<=', now).orderBy('scheduledAt', 'asc').limit(100).get();
+    const due = snapshot.docs.filter(document => {
+        const value = document.data()?.scheduledAt;
+        const date = value?.toDate?.() || new Date(value || 0);
+        return Number.isFinite(date.getTime()) && date <= now;
+    });
+    if (!due.length) return 0;
+    return requestDb.runTransaction(async transaction => {
+        const freshSnapshots = await Promise.all(due.map(document => transaction.get(document.ref)));
+        const stillDue = freshSnapshots.filter(document => {
+            if (!document.exists || document.data()?.status !== 'scheduled') return false;
+            const value = document.data()?.scheduledAt;
+            const date = value?.toDate?.() || new Date(value || 0);
+            return Number.isFinite(date.getTime()) && date <= now;
+        });
+        for (const document of stillDue) transaction.update(document.ref, {
+            status: 'approved', publishedAt: admin.firestore.FieldValue.serverTimestamp(), scheduledAt: null,
+            revision: Number(document.data()?.revision || 0) + 1, updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        if (stillDue.length) transaction.set(requestDb.collection('security_audit_logs').doc(), {
+            action: 'CMS_SCHEDULED_POSTS_PUBLISHED', actorUid, count: stillDue.length, requestId,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        return stillDue.length;
+    });
+}
+
+app.post('/api/admin/blog/publish-due', async (req, res) => {
+    try {
+        const published = await publishDueBlogPosts(req.app.get('db'), { actorUid: req.user.uid, requestId: res.locals.requestId });
+        return res.json({ success: true, published });
+    } catch {
+        return res.status(503).json({ success: false, error: 'CMS scheduler unavailable' });
+    }
+});
+
 app.post('/api/admin/gdpr-settings', async (req, res) => {
     if (!db) return res.status(503).json({ success: false, error: 'Settings service unavailable' });
     const input = req.body || {};
@@ -2098,6 +2138,28 @@ app.get('/healthz', (req, res) => {
 
 // Start a listener only for the executable entry point; integration tests import the Express app.
 if (require.main === module) {
+    // Publication is executed only by this trusted backend. Production enables the
+    // worker explicitly; no browser clock or client write can make a post public.
+    if (process.env.CMS_SCHEDULER_ENABLED === 'true' && db && admin) {
+        const intervalMs = Math.max(60_000, Math.min(Number(process.env.CMS_SCHEDULER_INTERVAL_MS) || 300_000, 3_600_000));
+        let schedulerRunning = false;
+        const runScheduler = async () => {
+            if (schedulerRunning) return;
+            schedulerRunning = true;
+            try {
+                const count = await publishDueBlogPosts(db);
+                if (count) console.info(`[CMS scheduler] Published ${count} due post(s).`);
+            } catch (error) {
+                console.error('[CMS scheduler] Publication check failed:', error?.message || error);
+            } finally {
+                schedulerRunning = false;
+            }
+        };
+        const scheduler = setInterval(runScheduler, intervalMs);
+        scheduler.unref?.();
+        setTimeout(runScheduler, 10_000).unref?.();
+    }
+
     // Listen HTTP/HTTPS port safely
     const keyPath = '/etc/letsencrypt/live/' + websiteName + '/privkey.pem';
     const certPath = '/etc/letsencrypt/live/' + websiteName + '/fullchain.pem';
@@ -3035,4 +3097,5 @@ app.use((error, req, res, _next) => {
 });
 
 module.exports = app;
+module.exports.publishDueBlogPosts = publishDueBlogPosts;
 

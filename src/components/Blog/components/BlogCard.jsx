@@ -2,9 +2,11 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { FiCalendar, FiUser, FiEye, FiClock, FiArrowUpRight, FiBookmark } from 'react-icons/fi';
+import { sanitizeImageUrl } from '../../../utils/sanitizeHtml';
 
 const BlogCard = ({ post, viewMode = 'grid' }) => {
     const { t } = useTranslation('common');
+    const featuredImage = sanitizeImageUrl(post.featuredImage);
     const formatDate = (date) => {
         if (!date) return t('blog.recently', 'Recently');
         const postDate = date instanceof Date ? date : new Date(date);
@@ -29,9 +31,9 @@ const BlogCard = ({ post, viewMode = 'grid' }) => {
             <article className="group bg-white rounded-3xl overflow-hidden border-0">
             {/* Featured Image */}
             <div className="relative bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-10">
-                {post.featuredImage ? (
+                {featuredImage ? (
                     <img
-                        src={post.featuredImage}
+                        src={featuredImage}
                         alt={post.title}
                         className="w-full h-64 object-cover rounded-2xl"
                     />
@@ -93,9 +95,9 @@ const BlogCard = ({ post, viewMode = 'grid' }) => {
             <div className="flex flex-col lg:flex-row">
                 {/* Image Section */}
                 <div className="relative lg:w-[28rem] lg:flex-shrink-0 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-10 flex items-center justify-center">
-                    {post.featuredImage ? (
+                    {featuredImage ? (
                         <img
-                            src={post.featuredImage}
+                            src={featuredImage}
                             alt={post.title}
                             className="w-full h-56 object-cover rounded-xl"
                         />
