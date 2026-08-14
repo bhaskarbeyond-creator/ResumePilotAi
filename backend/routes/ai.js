@@ -2267,9 +2267,48 @@ router.post('/generate-content', async (req, res) => {
     const operation = String(req.body.operation || '');
     const payload = req.body.payload || {};
     const key = await getGeminiApiKey(req);
-    if (!key) return res.status(503).json({ error: { code: 'AI_PROVIDER_UNAVAILABLE', message: 'AI provider is not configured', requestId: res.locals.requestId } });
     const compact = value => String(value || '').replace(/[\u0000-\u001f]/g, ' ').slice(0, 4000);
     let prompt;
+    if (!key) {
+        if (operation === 'generate-certifications') {
+            const role = String(payload.jobTitle || payload.occupation || '').toLowerCase();
+            let fallbackCerts = [
+                { title: 'Google Professional Cloud Architect', issuer: 'Google Cloud' },
+                { title: 'AWS Certified Solutions Architect', issuer: 'Amazon Web Services' },
+                { title: 'Project Management Professional (PMP)', issuer: 'PMI' },
+                { title: 'Certified ScrumMaster (CSM)', issuer: 'Scrum Alliance' },
+                { title: 'Certified Information Systems Security Professional (CISSP)', issuer: '(ISC)²' },
+                { title: 'Certified Data Privacy Solutions Engineer (CDPSE)', issuer: 'ISACA' }
+            ];
+            if (role.includes('developer') || role.includes('software') || role.includes('engineer') || role.includes('coder')) {
+                fallbackCerts = [
+                    { title: 'AWS Certified Developer - Associate', issuer: 'Amazon Web Services' },
+                    { title: 'Meta Certified Front-End Developer', issuer: 'Meta' },
+                    { title: 'Google Professional Software Engineer', issuer: 'Google' },
+                    { title: 'Oracle Certified Professional: Java SE Developer', issuer: 'Oracle' },
+                    { title: 'Microsoft Certified: Azure Developer Associate', issuer: 'Microsoft' },
+                    { title: 'Certified Kubernetes Application Developer (CKAD)', issuer: 'CNCF' }
+                ];
+            } else if (role.includes('manager') || role.includes('lead') || role.includes('director') || role.includes('scrum')) {
+                fallbackCerts = [
+                    { title: 'Project Management Professional (PMP)', issuer: 'Project Management Institute' },
+                    { title: 'Certified ScrumMaster (CSM)', issuer: 'Scrum Alliance' },
+                    { title: 'PRINCE2 Practitioner', issuer: 'AXELOS' },
+                    { title: 'Certified Agile Leadership (CAL)', issuer: 'Scrum Alliance' },
+                    { title: 'Six Sigma Green Belt', issuer: 'ASQ' }
+                ];
+            } else if (role.includes('data') || role.includes('analyst') || role.includes('ai') || role.includes('machine')) {
+                fallbackCerts = [
+                    { title: 'Google Data Analytics Professional Certificate', issuer: 'Google' },
+                    { title: 'IBM Data Science Professional Certificate', issuer: 'IBM' },
+                    { title: 'AWS Certified Machine Learning - Specialty', issuer: 'Amazon Web Services' },
+                    { title: 'Microsoft Certified: Azure Data Scientist Associate', issuer: 'Microsoft' }
+                ];
+            }
+            return res.json({ certifications: fallbackCerts });
+        }
+        return res.status(503).json({ error: { code: 'AI_PROVIDER_UNAVAILABLE', message: 'AI provider is not configured', requestId: res.locals.requestId } });
+    }
     if (operation === 'enhance-single-bullet') {
         prompt = `Improve this resume bullet without inventing facts. Return JSON only: {"enhancedBullet":"..."}. Bullet: ${compact(payload.bullet)}`;
     } else if (operation === 'generate-certifications') {
