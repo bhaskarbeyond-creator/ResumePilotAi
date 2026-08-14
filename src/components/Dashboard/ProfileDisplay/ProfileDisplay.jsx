@@ -690,7 +690,7 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
                             {!sidebarCollapsed && (
                                 <p className="text-[9px] font-extrabold text-red-600 uppercase tracking-widest px-2 mb-1.5">System Admin</p>
                             )}
-                            <Link to="/adm" onClick={closeMobileSidebar}>
+                            <Link to="/adm/dashboard" onClick={closeMobileSidebar}>
                                 <div
                                     className={`flex items-center text-xs transition-all duration-150 rounded-xl ${
                                         location.pathname.startsWith('/adm')

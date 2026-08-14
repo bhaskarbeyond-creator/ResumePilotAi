@@ -7,6 +7,8 @@ import { chromium } from 'playwright';
 
     page.on('console', msg => console.log(' [PAGE LOG]:', msg.text()));
     page.on('pageerror', err => console.error(' ❌ [PAGE UNCAUGHT ERROR]:', err.message));
+    page.on('requestfailed', request => console.error(' ❌ [FAILED REQUEST]:', request.url(), request.failure().errorText));
+
 
     try {
         console.log('1. Navigating to live site...');

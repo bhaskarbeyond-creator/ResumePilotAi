@@ -120,9 +120,34 @@ app.use(cors({
             callback(null, true);
         } else {
             callback(null, true);
-        }
     }
 }));
+
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+
+// Security Headers
+app.use(helmet());
+app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" })); // Allow cross-origin image/resource loading if needed
+
+// Global API Rate Limiter (200 requests per 15 minutes)
+const globalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 200,
+    message: 'Too many requests from this IP, please try again after 15 minutes',
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+app.use('/api', globalLimiter);
+
+// Strict Auth/Email Rate Limiter (20 requests per hour)
+const authLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 20,
+    message: 'Too many sensitive requests from this IP, please try again after an hour'
+});
+app.use('/api/email', authLimiter);
+app.use('/api/auth', authLimiter);
 
 // ── Mount Modular Sub-Routers ────────────────────────────────────────────────
 try {

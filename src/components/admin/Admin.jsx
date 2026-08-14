@@ -3,7 +3,7 @@ import Sidebar from './sidebar/sidebar';
 import './Admin.scss';
 import Dashboard from './dashboard/dashboard';
 import ProfileImage from '../../assets/user.png';
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import Settings from './settings/Settings';
 import UserEdit from './userEdit/UserEdit';
 import UsersManager from './usersManager/UsersManager';
@@ -167,6 +167,7 @@ class Admin extends Component {
                             {/* View Content Routing Container */}
                             <main className="flex-1 p-6 max-w-7xl w-full mx-auto">
                                 <Routes>
+                                    <Route path="/" element={<Navigate to="dashboard" replace />} />
                                     <Route path="dashboard" element={<Dashboard />} />
                                     <Route path="settings" element={<Settings />} />
                                     <Route path="user/ss" element={<UserEdit />} />

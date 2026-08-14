@@ -35,7 +35,6 @@ const PlansPage = (props) => {
     const [activeTab, setActiveTab] = useState('plans'); // 'plans', 'invoices', 'manage'
     const [step, setStep] = useState(1); // 1 = Cart & Plan Selection, 2 = Native Checkout
     const [selectedDuration, setSelectedDuration] = useState('12'); // '1', '6', '12' months
-    const [selectedCurrency, setSelectedCurrency] = useState('INR'); // 'INR', 'USD', 'EUR', 'GBP'
     const [couponInput, setCouponInput] = useState('');
     const [appliedCoupon, setAppliedCoupon] = useState(null);
     const [couponError, setCouponError] = useState('');
@@ -200,7 +199,8 @@ const PlansPage = (props) => {
         // Global Subscription Config
         getSubscriptionStatus().then((data) => {
             if (data) {
-                const currSymbol = selectedCurrency === 'INR' ? '₹' : (selectedCurrency === 'EUR' ? '€' : (selectedCurrency === 'GBP' ? '£' : '$'));
+                const baseCurr = data.currency || 'USD';
+                const currSymbol = baseCurr === 'INR' ? '₹' : (baseCurr === 'EUR' ? '€' : (baseCurr === 'GBP' ? '£' : '$'));
                 setSubscriptionConfig({
                     monthlyPrice: Number(data.monthlyPrice) || 199,
                     quartarlyPrice: Number(data.quartarlyPrice) || 399,
@@ -217,6 +217,24 @@ const PlansPage = (props) => {
                     receiptTemplate: data.receiptTemplate || 'modern',
                     reverseCharge: data.reverseCharge || 'No',
                     sandboxMode: Boolean(data.sandboxMode),
+                    supplierLegalName: data.supplierLegalName || 'ResumePilot Technologies Private Limited',
+                    supplierTradeName: data.supplierTradeName || 'ResumePilot AI',
+                    supplierAddress: data.supplierAddress || 'Unit 402, Apex Business Park, Bandra Kurla Complex, Bandra East',
+                    supplierCity: data.supplierCity || 'Mumbai',
+                    supplierState: data.supplierState || 'Maharashtra',
+                    supplierStateCode: data.supplierStateCode || '27',
+                    supplierPincode: data.supplierPincode || '400051',
+                    supplierPan: data.supplierPan || 'AABCU9603R',
+                    supplierGstin: data.supplierGstin || data.companyTaxId || '27AABCU9603R1ZM',
+                    sacCode: data.sacCode || '998313',
+                    invoicePrefix: data.invoicePrefix || 'RPAI',
+                    financialYear: data.financialYear || '26-27',
+                    taxRate: parseFloat(data.taxRate !== undefined ? data.taxRate : 18) || 18,
+                    enableTax: data.enableTax !== undefined ? Boolean(data.enableTax) : true,
+                    taxName: data.taxName || 'GST',
+                    taxInclusive: Boolean(data.taxInclusive),
+                    companyTaxId: data.companyTaxId || '',
+                    requireCustomerTaxId: Boolean(data.requireCustomerTaxId),
                     isLoading: false
                 });
             }
@@ -654,7 +672,7 @@ const PlansPage = (props) => {
                             </div>
                             <div class="comp-item">
                                 <div class="c-label">Place of Supply</div>
-                                <div class="c-val">${customerState ? `${customerState}${customerStateCode ? ` (${customerStateCode})` : ''}` : (currency === 'INR' ? `${supplierState} (${supplierStateCode})` : 'International / Overseas')}</div>
+                                <div class="c-val">${customerState ? `${customerState}${customerStateCode ? ` (${customerStateCode})` : ''}` : (currency === 'INR' ? (supplierState ? `${supplierState}${supplierStateCode ? ` (${supplierStateCode})` : ''}` : 'Not Specified') : 'International / Overseas')}</div>
                             </div>
                             <div class="comp-item">
                                 <div class="c-label">Reverse Charge</div>
@@ -671,7 +689,7 @@ const PlansPage = (props) => {
                             <div class="meta-box">
                                 <div class="label">Supplier / Business Details</div>
                                 <div class="val-bold">${supplierLegalName}</div>
-                                ${(supplierAddress || supplierCity) ? `<div class="val-sub">${[supplierAddress, supplierCity, supplierState, supplierPincode].filter(Boolean).join(', ')}</div>` : `<div class="val-sub">${supplierState} (${supplierStateCode})</div>`}
+                                ${(supplierAddress || supplierCity) ? `<div class="val-sub">${[supplierAddress, supplierCity, supplierState, supplierPincode].filter(Boolean).join(', ')}</div>` : (supplierState ? `<div class="val-sub">${supplierState}${supplierStateCode ? ` (${supplierStateCode})` : ''}</div>` : '')}
                                 ${supplierGstin ? `<div class="val-sub"><strong style="color:#0f172a">GSTIN:</strong> <span class="val-code">${supplierGstin}</span></div>` : ''}
                                 <div class="val-sub">
                                     ${supplierPan ? `<strong style="color:#0f172a">PAN:</strong> ${supplierPan} | ` : ''}
@@ -684,7 +702,7 @@ const PlansPage = (props) => {
                                 <div class="label">Billed To (Customer)</div>
                                 <div class="val-bold">${billedCustomerName}</div>
                                 ${customerCompany ? `<div class="val-sub" style="font-weight:700; color:#4f46e5;">${customerCompany}</div>` : ''}
-                                ${(customerAddress || customerCity) ? `<div class="val-sub">${[customerAddress, customerCity, customerState, customerCountry].filter(Boolean).join(', ')}</div>` : `<div class="val-sub">${customerState} (${customerStateCode}), ${customerCountry}</div>`}
+                                ${(customerAddress || customerCity) ? `<div class="val-sub">${[customerAddress, customerCity, customerState, customerCountry].filter(Boolean).join(', ')}</div>` : (customerState ? `<div class="val-sub">${customerState}${customerStateCode ? ` (${customerStateCode})` : ''}, ${customerCountry}</div>` : `<div class="val-sub">${customerCountry}</div>`)}
                                 ${customerEmail ? `<div class="val-sub"><strong style="color:#0f172a">Email:</strong> ${customerEmail}</div>` : ''}
                                 ${customerGstin ? `<div class="val-sub" style="margin-top:4px; background:#eef2ff; padding:3px 6px; border-radius:4px;"><strong style="color:#4338ca">Customer GSTIN:</strong> <span class="val-code">${customerGstin}</span></div>` : ''}
                             </div>
@@ -949,29 +967,6 @@ const PlansPage = (props) => {
                             <FaShieldAlt className="w-3.5 h-3.5" />
                             <span>Subscription Controls</span>
                         </button>
-
-                        {/* Multi-Currency Switcher Pill Selector */}
-                        <div className="ml-auto flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200">
-                            <span className="text-[10px] font-extrabold text-slate-500 uppercase px-2">Currency:</span>
-                            {[
-                                { code: 'INR', symbol: '₹' },
-                                { code: 'USD', symbol: '$' },
-                                { code: 'EUR', symbol: '€' },
-                                { code: 'GBP', symbol: '£' },
-                            ].map((c) => (
-                                <button
-                                    key={c.code}
-                                    type="button"
-                                    onClick={() => setSelectedCurrency(c.code)}
-                                    className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${
-                                        selectedCurrency === c.code
-                                            ? 'bg-white text-indigo-700 shadow-xs border border-indigo-200'
-                                            : 'text-slate-600 hover:text-slate-900 font-bold'
-                                    }`}>
-                                    {c.symbol} {c.code}
-                                </button>
-                            ))}
-                        </div>
                     </div>
 
                     {/* TAB 1: PLANS & UPGRADES */}

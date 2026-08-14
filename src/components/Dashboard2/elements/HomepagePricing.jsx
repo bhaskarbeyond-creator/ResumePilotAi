@@ -36,7 +36,7 @@ const HomepagePricing = ({ nextStep, t }) => {
                 monthly: data.monthlyPrice || 199,
                 quartarly: data.quartarlyPrice || 399,
                 yearly: data.yearlyPrice || 499,
-                currency: data.currency === 'USD' ? '$' : '₹',
+                currency: data.currency === 'USD' ? '$' : (data.currency === 'EUR' ? '€' : (data.currency === 'GBP' ? '£' : '₹')),
                 isLoading: false,
             });
         });

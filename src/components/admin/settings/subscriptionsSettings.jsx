@@ -976,7 +976,9 @@ class SubscriptionSetting extends Component {
             'E-Commerce GSTIN',
             'Rate',
             'Taxable Value',
-            'Cess Amount'
+            'Cess Amount',
+            'HSN/SAC',
+            'Item Description'
         ];
 
         const rows = invoices.map((inv, idx) => {
@@ -988,8 +990,17 @@ class SubscriptionSetting extends Component {
             const taxRate = parseFloat(inv.taxRate || this.state.taxRate || 18);
             const taxAmt = parseFloat(inv.totalTax !== undefined ? inv.totalTax : (inv.taxAmount || (priceVal * (taxRate / (100 + taxRate)))));
             const taxableVal = (parseFloat(priceVal) - taxAmt).toFixed(2);
-            const stateCode = this.state.supplierStateCode || '27';
+            
+            const supplierStateCode = this.state.supplierStateCode || '27';
+            const supplierStateName = this.state.supplierState || 'Maharashtra';
+            
+            const custStateCode = inv.customerStateCode ? String(inv.customerStateCode).padStart(2, '0') : (gstin.length === 15 ? gstin.substring(0, 2) : supplierStateCode);
+            const custStateName = inv.customerState || (custStateCode === supplierStateCode ? supplierStateName : 'Other State');
+            const placeOfSupply = `${custStateCode}-${custStateName}`;
+            
             const invType = gstin.length === 15 ? 'Regular' : 'B2C';
+            const sacCode = this.state.sacCode || '998313';
+            const itemDesc = 'AI Resume Builder Subscription';
 
             return [
                 `"${gstin}"`,
@@ -997,14 +1008,16 @@ class SubscriptionSetting extends Component {
                 `"${invNo}"`,
                 `"${invDate}"`,
                 priceVal,
-                `"${stateCode}-Maharashtra"`,
+                `"${placeOfSupply}"`,
                 '"N"',
                 `"${taxRate}%"`,
                 `"${invType}"`,
                 '""',
                 taxRate,
                 taxableVal,
-                '0.00'
+                '0.00',
+                `"${sacCode}"`,
+                `"${itemDesc}"`
             ].join(',');
         });
 
@@ -2493,6 +2506,110 @@ class SubscriptionSetting extends Component {
                                             value={this.state.supplierLegalName}
                                             onChange={(e) => this.setState({ supplierLegalName: e.target.value })}
                                             placeholder="ResumePilot Technologies Pvt Ltd"
+                                            className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-indigo-500 outline-none"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                            Supplier Trade Name (Display Name)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={this.state.supplierTradeName}
+                                            onChange={(e) => this.setState({ supplierTradeName: e.target.value })}
+                                            placeholder="ResumePilot AI"
+                                            className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-indigo-500 outline-none"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                            Supplier Address
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={this.state.supplierAddress}
+                                            onChange={(e) => this.setState({ supplierAddress: e.target.value })}
+                                            placeholder="Unit 402, Apex Business Park"
+                                            className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-indigo-500 outline-none"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                            Supplier City
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={this.state.supplierCity}
+                                            onChange={(e) => this.setState({ supplierCity: e.target.value })}
+                                            placeholder="Mumbai"
+                                            className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-indigo-500 outline-none"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                            Supplier State
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={this.state.supplierState}
+                                            onChange={(e) => this.setState({ supplierState: e.target.value })}
+                                            placeholder="Maharashtra"
+                                            className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-indigo-500 outline-none"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                            Supplier State Code
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={this.state.supplierStateCode}
+                                            onChange={(e) => this.setState({ supplierStateCode: e.target.value })}
+                                            placeholder="27"
+                                            className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-indigo-500 outline-none"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                            Supplier Pincode / Zip Code
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={this.state.supplierPincode}
+                                            onChange={(e) => this.setState({ supplierPincode: e.target.value })}
+                                            placeholder="400051"
+                                            className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-indigo-500 outline-none"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                            Supplier PAN Number
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={this.state.supplierPan}
+                                            onChange={(e) => this.setState({ supplierPan: e.target.value })}
+                                            placeholder="AABCU9603R"
+                                            className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-indigo-500 outline-none"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                            Services Accounting Code (SAC)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={this.state.sacCode}
+                                            onChange={(e) => this.setState({ sacCode: e.target.value })}
+                                            placeholder="998313"
                                             className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-indigo-500 outline-none"
                                         />
                                     </div>

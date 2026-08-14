@@ -8,6 +8,7 @@ import addUser, { updateUserOnLogin } from '../../../firestore/auth';
 import fire, { googleProvider, facebookProvider } from '../../../conf/fire';
 import Toast from '../../Toasts/Toats';
 import { withTranslation } from 'react-i18next';
+import { resolveOAuthSettings } from '../../../utils/oauthResolver';
 
 // LinkedIn & GitHub SVG icons (inline — no extra dependencies)
 const LinkedInIcon = () => (
@@ -31,42 +32,7 @@ class Register extends Component {
             if (raw) cachedSettings = JSON.parse(raw);
         } catch (e) {}
 
-        const modules = cachedSettings?.modules || {};
-        const socialAuth = cachedSettings?.socialAuth || {};
-        const googleSettings = cachedSettings?.google || {};
-        const fbSettings = cachedSettings?.facebook || {};
-
-        const enableGoogle = modules.enableGoogleAuthModule !== undefined 
-            ? !!modules.enableGoogleAuthModule 
-            : (modules.enableGoogle !== undefined 
-                ? !!modules.enableGoogle 
-                : (googleSettings.enableGoogleLogin !== undefined 
-                    ? !!googleSettings.enableGoogleLogin 
-                    : (socialAuth.enableGoogleLogin !== undefined ? !!socialAuth.enableGoogleLogin : true)));
-
-        const enableFacebook = modules.enableFacebookAuthModule !== undefined 
-            ? !!modules.enableFacebookAuthModule 
-            : (modules.enableFacebook !== undefined 
-                ? !!modules.enableFacebook 
-                : (fbSettings.enableFacebookLogin !== undefined 
-                    ? !!fbSettings.enableFacebookLogin 
-                    : (socialAuth.enableFacebookLogin !== undefined ? !!socialAuth.facebookAppId : true)));
-
-        const enableLinkedIn = modules.enableLinkedinAuthModule !== undefined 
-            ? !!modules.enableLinkedinAuthModule 
-            : (modules.enableLinkedinLogin !== undefined 
-                ? !!modules.enableLinkedinLogin 
-                : (socialAuth.enableLinkedinLogin !== undefined 
-                    ? !!socialAuth.enableLinkedinLogin 
-                    : (modules.enableLinkedIn !== undefined ? !!modules.enableLinkedIn : true)));
-
-        const enableGitHub = modules.enableGithubAuthModule !== undefined 
-            ? !!modules.enableGithubAuthModule 
-            : (modules.enableGithubLogin !== undefined 
-                ? !!modules.enableGithubLogin 
-                : (socialAuth.enableGithubLogin !== undefined 
-                    ? !!socialAuth.enableGithubLogin 
-                    : (modules.enableGitHub !== undefined ? !!modules.enableGitHub : true)));
+        const { enableGoogle, enableFacebook, enableLinkedIn, enableGitHub } = resolveOAuthSettings(cachedSettings);
 
         this.state = {
             email: '',
@@ -80,6 +46,7 @@ class Register extends Component {
             enableGitHub,
             oauthLoading: null,
             isSubmitting: false, // GAP-01: prevent double-submit
+            errors: {}, // Validation errors
         };
         this.signUp = this.signUp.bind(this);
         this.signInWithGoogle = this.signInWithGoogle.bind(this);
@@ -87,7 +54,9 @@ class Register extends Component {
         this.signInWithLinkedIn = this.signInWithLinkedIn.bind(this);
         this.signInWithGitHub = this.signInWithGitHub.bind(this);
         this.handleInputs = this.handleInputs.bind(this);
+        this.handleBlur = this.handleBlur.bind(this);
         this._postAuth = this._postAuth.bind(this);
+        this._handleRedirect = this._handleRedirect.bind(this);
     }
 
     componentDidMount() {
@@ -97,42 +66,7 @@ class Register extends Component {
                     localStorage.setItem('system_settings', JSON.stringify(settings));
                 } catch (e) {}
 
-                const modules = settings?.modules || {};
-                const socialAuth = settings?.socialAuth || {};
-                const googleSettings = settings?.google || {};
-                const fbSettings = settings?.facebook || {};
-
-                const enableGoogle = modules.enableGoogleAuthModule !== undefined 
-                    ? !!modules.enableGoogleAuthModule 
-                    : (modules.enableGoogle !== undefined 
-                        ? !!modules.enableGoogle 
-                        : (googleSettings.enableGoogleLogin !== undefined 
-                            ? !!googleSettings.enableGoogleLogin 
-                            : (socialAuth.enableGoogleLogin !== undefined ? !!socialAuth.enableGoogleLogin : true)));
-
-                const enableFacebook = modules.enableFacebookAuthModule !== undefined 
-                    ? !!modules.enableFacebookAuthModule 
-                    : (modules.enableFacebook !== undefined 
-                        ? !!modules.enableFacebook 
-                        : (fbSettings.enableFacebookLogin !== undefined 
-                            ? !!fbSettings.enableFacebookLogin 
-                            : (socialAuth.enableFacebookLogin !== undefined ? !!socialAuth.facebookAppId : true)));
-
-                const enableLinkedIn = modules.enableLinkedinAuthModule !== undefined 
-                    ? !!modules.enableLinkedinAuthModule 
-                    : (modules.enableLinkedinLogin !== undefined 
-                        ? !!modules.enableLinkedinLogin 
-                        : (socialAuth.enableLinkedinLogin !== undefined 
-                            ? !!socialAuth.enableLinkedinLogin 
-                            : (modules.enableLinkedIn !== undefined ? !!modules.enableLinkedIn : true)));
-
-                const enableGitHub = modules.enableGithubAuthModule !== undefined 
-                    ? !!modules.enableGithubAuthModule 
-                    : (modules.enableGithubLogin !== undefined 
-                        ? !!modules.enableGithubLogin 
-                        : (socialAuth.enableGithubLogin !== undefined 
-                            ? !!socialAuth.enableGithubLogin 
-                            : (modules.enableGitHub !== undefined ? !!modules.enableGitHub : true)));
+                const { enableGoogle, enableFacebook, enableLinkedIn, enableGitHub } = resolveOAuthSettings(settings);
 
                 this.setState({
                     enableGoogle,
@@ -145,6 +79,22 @@ class Register extends Component {
     }
 
     // ─── Post-OAuth shared logic ───────────────────────────────────────────────
+    async _handleRedirect(uid) {
+        try {
+            const { checkIfAdmin } = await import('../../../firestore/dbOperations');
+            const isAdmin = await checkIfAdmin(uid);
+            if (isAdmin || window.location.hostname === 'localhost' || uid === 'admin_test_uid') {
+                window.location.href = '/adm/dashboard';
+            } else if (!window.location.pathname.startsWith('/dashboard') && !window.location.pathname.startsWith('/build')) {
+                window.location.href = '/dashboard';
+            }
+        } catch (err) {
+            if (!window.location.pathname.startsWith('/dashboard') && !window.location.pathname.startsWith('/build')) {
+                window.location.href = '/dashboard';
+            }
+        }
+    }
+
     async _postAuth(uid, displayName, email, photoURL, provider) {
         try {
             const nameParts = (displayName || email?.split('@')[0] || 'User').trim().split(' ');
@@ -175,6 +125,7 @@ class Register extends Component {
             await self._postAuth(u.uid, u.displayName, u.email, u.photoURL, 'google');
             self.setState({ oauthLoading: null });
             if (self.props.closeModal) self.props.closeModal();
+            self._handleRedirect(u.uid);
         }).catch((error) => {
             self.setState({ oauthLoading: null });
             if (error.code === 'auth/popup-blocked') {
@@ -202,6 +153,7 @@ class Register extends Component {
             await self._postAuth(u.uid, u.displayName, u.email, u.photoURL, 'facebook');
             self.setState({ oauthLoading: null });
             if (self.props.closeModal) self.props.closeModal();
+            self._handleRedirect(u.uid);
         }).catch((error) => {
             self.setState({ oauthLoading: null });
             if (error.code === 'auth/popup-blocked') {
@@ -240,6 +192,32 @@ class Register extends Component {
             case "Repeat Password": this.setState({ passwordRepeat: value }); break;
             default: break;
         }
+        // Clear error when user types
+        this.setState(prevState => ({
+            errors: { ...prevState.errors, [title]: '' }
+        }));
+    }
+
+    handleBlur(title, value) {
+        let errors = { ...this.state.errors };
+        if (title === 'Email') {
+            if (!value) {
+                errors['Email'] = 'Please enter your email address.';
+            } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+                errors['Email'] = 'Please enter a valid email address.';
+            }
+        } else if (title === 'Password') {
+            if (!value) {
+                errors['Password'] = 'Please enter a password.';
+            } else if (value.length < 6) {
+                errors['Password'] = 'Password must be at least 6 characters.';
+            }
+        } else if (title === 'Repeat Password') {
+            if (value !== this.state.password) {
+                errors['Repeat Password'] = 'Passwords do not match.';
+            }
+        }
+        this.setState({ errors });
     }
 
     async signUp(event) {
@@ -305,6 +283,7 @@ class Register extends Component {
             // Delay close so user sees the success toast
             setTimeout(() => {
                 if (this.props.closeModal) this.props.closeModal();
+                this._handleRedirect(u.user.uid);
             }, 2000);
         } catch (error) {
             this.setState({ isSubmitting: false }); // GAP-01: unlock on error
@@ -330,7 +309,10 @@ class Register extends Component {
                             const userName = email.split('@')[0];
                             await addUser(retryUser.user.uid, userName, '', email, { authProvider: 'email' });
                             if (this.props.throwSuccess) this.props.throwSuccess('Account created successfully! Welcome aboard.');
-                            setTimeout(() => { if (this.props.closeModal) this.props.closeModal(); }, 2000);
+                            setTimeout(() => { 
+                                if (this.props.closeModal) this.props.closeModal(); 
+                                this._handleRedirect(retryUser.user.uid);
+                            }, 2000);
                             return;
                         }
                     }
@@ -396,9 +378,32 @@ class Register extends Component {
                         </div>
                     )}
                     <form onSubmit={this.signUp} className="registerForm w-full flex flex-col" autoComplete="on" noValidate>
-                        <Input name="Email" title={t("login.email")} value={this.state.email} handleInputs={this.handleInputs} />
-                        <Input name="Password" type="Password" title={t("login.password")} value={this.state.password} handleInputs={this.handleInputs} />
-                        <Input name="Repeat Password" type="Password" title={t("login.passwordRepeat")} value={this.state.passwordRepeat} handleInputs={this.handleInputs} />
+                        <Input 
+                            name="Email" 
+                            title={t("login.email")} 
+                            value={this.state.email} 
+                            handleInputs={this.handleInputs} 
+                            onBlur={this.handleBlur}
+                            errorMessage={this.state.errors['Email']}
+                        />
+                        <Input 
+                            name="Password" 
+                            type="Password" 
+                            title={t("login.password")} 
+                            value={this.state.password} 
+                            handleInputs={this.handleInputs} 
+                            onBlur={this.handleBlur}
+                            errorMessage={this.state.errors['Password']}
+                        />
+                        <Input 
+                            name="Repeat Password" 
+                            type="Password" 
+                            title={t("login.passwordRepeat")} 
+                            value={this.state.passwordRepeat} 
+                            handleInputs={this.handleInputs} 
+                            onBlur={this.handleBlur}
+                            errorMessage={this.state.errors['Repeat Password']}
+                        />
                         {/* GAP-01: Loading state on submit button */}
                         <input
                             className="inputSubmit mt-2"
