@@ -96,7 +96,7 @@ class AuthWrapper extends Component {
                         {
                             this.state.isLoggedInShowed &&
                             <motion.div key="login" className="motionDivAuth" initial={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}>
-                                <Login showPasswordRecovery={this.showPasswordRecovery} throwError={this.throwError} closeModal={this.props.closeModal} handleNavigationClick={this.handleNavigationClick} />
+                                <Login showPasswordRecovery={this.showPasswordRecovery} throwError={this.throwError} throwSuccess={this.throwSuccess} closeModal={this.props.closeModal} handleNavigationClick={this.handleNavigationClick} />
                             </motion.div>
                         }
                         {

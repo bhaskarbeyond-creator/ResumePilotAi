@@ -3,6 +3,7 @@ import './Login.scss'
 import GoogleImage from '../../../assets/google.png'
 import FacebookImage from '../../../assets/facebook.png'
 import Input from '../../Form/simple-input/SimpleInput'
+import firebase from 'firebase/compat/app';
 import fire, { googleProvider, facebookProvider } from '../../../conf/fire';
 import addUser from '../../../firestore/auth'
 import { withTranslation } from 'react-i18next';
@@ -155,36 +156,53 @@ class Login extends Component {
         const password = this.state.password || '';
 
         if (!email) {
-            this.props.throwError('Please enter your email address.');
+            if (this.props.throwError) this.props.throwError('Please enter your email address.');
+            else alert('Please enter your email address.');
             return;
         }
 
-        const persistence = this.state.rememberMe 
-            ? fire.auth.Auth.Persistence.LOCAL 
-            : fire.auth.Auth.Persistence.SESSION;
+        if (!password) {
+            if (this.props.throwError) this.props.throwError('Please enter your password.');
+            else alert('Please enter your password.');
+            return;
+        }
 
-        fire.auth().setPersistence(persistence).then(() => {
-            return fire.auth().signInWithEmailAndPassword(email, password);
-        }).then((u) => {
-            if (this.state.rememberMe) {
-                try { localStorage.setItem('remember_email', email); } catch(e) {}
-            } else {
-                try { localStorage.removeItem('remember_email'); } catch(e) {}
-            }
-            if (this.props.closeModal) this.props.closeModal();
-        }).catch((error) => {
-            console.error('[Login Auth Error]:', error);
-            let msg = error.message;
-            if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-                msg = `Invalid password for ${email}. If you signed up via Google or another provider, please use that sign-in button, or click "Recover Password" below to reset your password.`;
-            } else if (error.code === 'auth/invalid-email') {
-                msg = 'Please enter a valid email address.';
-            } else if (error.code === 'auth/too-many-requests') {
-                msg = 'Access to this account has been temporarily disabled due to many failed login attempts. You can immediately restore it by resetting your password.';
-            }
-            if (this.props.throwError) this.props.throwError(msg);
-            else alert(msg);
-        });
+        const persistenceType = this.state.rememberMe 
+            ? (firebase?.auth?.Auth?.Persistence?.LOCAL || 'local')
+            : (firebase?.auth?.Auth?.Persistence?.SESSION || 'session');
+
+        const executeLogin = () => {
+            return fire.auth().signInWithEmailAndPassword(email, password).then((u) => {
+                if (this.state.rememberMe) {
+                    try { localStorage.setItem('remember_email', email); } catch(e) {}
+                } else {
+                    try { localStorage.removeItem('remember_email'); } catch(e) {}
+                }
+                if (this.props.throwSuccess) {
+                    this.props.throwSuccess(`Welcome back, ${u.user.displayName || email.split('@')[0]}!`);
+                }
+                setTimeout(() => {
+                    if (this.props.closeModal) this.props.closeModal();
+                }, 1000);
+            });
+        };
+
+        fire.auth().setPersistence(persistenceType)
+            .then(() => executeLogin())
+            .catch(() => executeLogin())
+            .catch((error) => {
+                console.error('[Login Auth Error]:', error);
+                let msg = error.message;
+                if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                    msg = `Invalid credentials for ${email}. Please check your password or click "Forgot password?" to reset it.`;
+                } else if (error.code === 'auth/invalid-email') {
+                    msg = 'Please enter a valid email address.';
+                } else if (error.code === 'auth/too-many-requests') {
+                    msg = 'Access to this account has been temporarily disabled due to many failed login attempts. You can immediately restore it by resetting your password.';
+                }
+                if (this.props.throwError) this.props.throwError(msg);
+                else alert(msg);
+            });
     }
 
     handleInputs(title, value) {
