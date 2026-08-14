@@ -479,7 +479,7 @@ const PortfolioBuilder = () => {
             setHasUnsavedChanges(false);
             showToast('Success');
         } catch (error) {
-            if (error.code === 'PORTFOLIO_CONFLICT') setPortfolioConflict(true);
+            if (error.code === 'PORTFOLIO_CONFLICT') setPortfolioConflict({ remoteRevision: error.remoteRevision });
             showToast('Error', error.code === 'PORTFOLIO_CONFLICT'
                 ? 'This portfolio changed in another tab. Reload it before saving to avoid overwriting newer work.'
                 : 'Error saving portfolio draft: ' + error.message);
@@ -705,6 +705,43 @@ const PortfolioBuilder = () => {
         }
     };
 
+    const handleReloadPortfolioConflict = async () => {
+        if (!currentPortfolioId || !window.confirm('Reload the newer saved portfolio? Your unsaved local changes will be discarded.')) return;
+        setPortfolioConflict(false);
+        await handleLoadPortfolio(currentPortfolioId);
+    };
+
+    const handleSaveConflictAsCopy = async () => {
+        if (!user?.uid) return;
+        setIsSaving(true);
+        try {
+            const localData = JSON.parse(JSON.stringify(lastDataRef.current || portfolioData));
+            localData.content = (localData.content || []).map(component => SecurityUtils.sanitizeComponentProps(component));
+            const originalTitle = localData.root?.props?.title || portfolioSettings.title || 'My Portfolio';
+            const copyTitle = `${SecurityUtils.sanitizeText(originalTitle)} (Recovered Copy)`;
+            localData.root = localData.root || { props: {} };
+            localData.root.props = { ...(localData.root.props || {}), title: copyTitle };
+            const result = await savePortfolioDraft(user.uid, {
+                ...localData,
+                title: copyTitle,
+                description: SecurityUtils.sanitizeText(localData.root.props.description || portfolioSettings.description),
+                tags: Array.isArray(portfolioSettings.tags) ? portfolioSettings.tags.map(tag => SecurityUtils.sanitizeText(tag)).filter(Boolean) : [],
+                seoTitle: SecurityUtils.sanitizeText(portfolioSettings.seoTitle || copyTitle),
+                seoDescription: SecurityUtils.sanitizeText(portfolioSettings.seoDescription || portfolioSettings.description),
+            }, null, 'default', null);
+            setCurrentPortfolioId(result.id);
+            setCurrentPortfolioRevision(result.revision);
+            setPortfolioConflict(false);
+            setHasUnsavedChanges(false);
+            await loadUserPortfolios();
+            showToast('Success', 'Recovered changes were saved as a separate portfolio.');
+        } catch (error) {
+            showToast('Error', error.message || 'Unable to save a recovered copy.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     const handleDeletePortfolio = async (portfolioId) => {
         showConfirmModal(
             'Delete Portfolio',
@@ -852,8 +889,8 @@ const PortfolioBuilder = () => {
                                     </span>
                                 )}
                             </div>
-                            <span className={`text-xs font-medium ${hasUnsavedChanges ? 'text-amber-700' : 'text-green-700'}`} role="status">
-                                {hasUnsavedChanges ? 'Unsaved' : 'Saved'}
+                            <span className={`text-xs font-medium ${portfolioConflict ? 'text-red-700' : hasUnsavedChanges ? 'text-amber-700' : 'text-green-700'}`} role="status">
+                                {portfolioConflict ? 'Conflict' : hasUnsavedChanges ? 'Unsaved' : 'Saved'}
                             </span>
                             <button
                                 onClick={() => setShowTemplateSelector(true)}
@@ -931,7 +968,7 @@ const PortfolioBuilder = () => {
                 </>
             );
         },
-        [headerActionProps, currentPortfolioId, isSaving, hasUnsavedChanges]
+        [headerActionProps, currentPortfolioId, isSaving, hasUnsavedChanges, portfolioConflict]
     );
 
     // Template Selection Functions
@@ -1028,6 +1065,16 @@ const PortfolioBuilder = () => {
     return (
         <>
             <div className="min-h-screen bg-gray-50">
+                {portfolioConflict && (
+                    <div role="alert" className="fixed left-1/2 top-4 z-[100001] w-[calc(100%_-_2rem)] max-w-xl -translate-x-1/2 rounded-lg border border-amber-300 bg-white p-4 shadow-xl">
+                        <p className="text-sm font-semibold text-amber-900">This portfolio was updated in another tab or device.</p>
+                        <p className="mt-1 text-xs text-slate-600">Reload revision {portfolioConflict.remoteRevision}, or preserve this tab’s changes as a separate draft.</p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                            <button type="button" onClick={handleReloadPortfolioConflict} className="rounded-md bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white">Reload newer version</button>
+                            <button type="button" onClick={handleSaveConflictAsCopy} disabled={isSaving} className="rounded-md border border-amber-400 px-3 py-1.5 text-xs font-semibold text-amber-900 disabled:opacity-60">Save my changes as a copy</button>
+                        </div>
+                    </div>
+                )}
                 {/* Portfolio Builder */}
                 <Puck
                     key={`portfolio-${currentPortfolioId || 'new'}-${renderKey}`}
