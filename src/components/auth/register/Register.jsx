@@ -290,7 +290,9 @@ class Register extends Component {
         return (
             <div className="auth">
                 <div className="head">
+                    <div className="brandBadge">Get Started Free ✨</div>
                     <span>{t("login.register")}</span>
+                    <p>Build ATS-friendly resumes & portfolios in minutes</p>
                 </div>
                 <div className="body">
                     <div className="socialAuth">

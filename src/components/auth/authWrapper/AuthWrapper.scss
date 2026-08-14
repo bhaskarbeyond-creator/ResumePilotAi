@@ -1,67 +1,140 @@
 @use '../../variables' as *;
 @use 'sass:color';
+
 .wrapper {
     .authWrapper {
         position: fixed;
-        background-color: rgba(0, 0, 0, 0.3) !important;
+        background: rgba(15, 23, 42, 0.75) !important;
+        backdrop-filter: blur(16px) saturate(180%);
+        -webkit-backdrop-filter: blur(16px) saturate(180%);
         width: 100%;
         height: 100%;
         display: flex;
         justify-content: center;
         align-items: center;
-        z-index: 1000;
+        z-index: 9999;
         top: 0px;
         left: 0px;
+        padding: 20px;
+        box-sizing: border-box;
     }
+
     .motionDivAuth {
         width: 100%;
-        position: absolute;
+        position: relative;
         height: fit-content;
     }
-    .authModal {
-        width: 550px;
-        min-height: 600px;
 
+    .authModal {
+        width: 100%;
+        max-width: 480px;
+        min-height: auto;
         height: fit-content;
-        background-color: white;
+        background-color: #ffffff;
         opacity: 1 !important;
-        border-radius: 9px;
-        padding: 40px;
+        border-radius: 24px;
+        padding: 36px 32px 32px 32px;
         overflow: hidden;
         position: relative;
         display: flex;
+        flex-direction: column;
         justify-content: center;
         align-items: center;
+        border: 1px solid rgba(226, 232, 240, 0.9);
+        box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.3), 0 0 0 1px rgba(99, 102, 241, 0.08);
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 
-        // add border with a border shadow
-        border: 1px solid rgba(0, 0, 0, 0.1);
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        &::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+        }
+
+        .closeModalBtn {
+            position: absolute;
+            top: 16px;
+            right: 18px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            z-index: 10;
+
+            &:hover {
+                background: #f1f5f9;
+                color: #0f172a;
+                transform: scale(1.08);
+            }
+        }
     }
+
     .auth {
         margin: auto;
         width: 100%;
         height: fit-content;
+
         .head {
             text-align: center;
+            margin-bottom: 24px;
+
+            .brandBadge {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 5px 14px;
+                background: rgba(99, 102, 241, 0.08);
+                border: 1px solid rgba(99, 102, 241, 0.2);
+                border-radius: 9999px;
+                font-size: 11px;
+                font-weight: 700;
+                color: #4f46e5;
+                letter-spacing: 0.5px;
+                text-transform: uppercase;
+                margin-bottom: 10px;
+            }
+
             span {
+                display: block;
                 margin: auto;
                 font-family: $font;
-                color: $btn-default;
-                font-size: 34px;
-                font-weight: 600;
+                color: #0f172a;
+                font-size: 26px;
+                font-weight: 800;
+                letter-spacing: -0.5px;
             }
-            margin-bottom: 20px;
+
+            p {
+                margin: 4px 0 0 0;
+                font-size: 13px;
+                color: #64748b;
+                font-weight: 500;
+            }
         }
+
         .body {
             margin: auto;
             width: 100%;
-            max-width: 350px;
             height: 100%;
+
             .socialAuth {
                 width: 100%;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
+                gap: 10px;
 
                 .googleAuthItem,
                 .facebookAuthItem,
@@ -69,21 +142,33 @@
                 .githubAuthItem {
                     cursor: pointer;
                     width: 100%;
-                    max-width: 350px;
+                    height: 44px;
                     box-sizing: border-box;
-                    border-radius: 5px;
+                    border-radius: 12px;
                     text-align: center;
-                    padding: 10px 16px;
-                    margin: 0 auto 10px auto;
+                    padding: 0 16px;
+                    margin: 0;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     gap: 10px;
-                    transition: all 0.2s ease;
+                    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+                    font-size: 13px;
+                    font-weight: 700;
+                    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+
+                    &:hover {
+                        transform: translateY(-1.5px);
+                        box-shadow: 0 6px 16px -4px rgba(0, 0, 0, 0.1);
+                    }
+
+                    &:active {
+                        transform: translateY(0);
+                    }
 
                     img, svg {
-                        width: 20px;
-                        height: 20px;
+                        width: 18px;
+                        height: 18px;
                         vertical-align: middle;
                         margin: 0;
                         flex-shrink: 0;
@@ -91,14 +176,14 @@
 
                     span {
                         font-family: $font;
-                        font-size: 14px;
+                        font-size: 13.5px;
                         font-weight: 600;
-                        line-height: 1.2;
+                        line-height: 1;
                     }
 
                     &.is-loading,
                     &.loading {
-                        opacity: 0.65;
+                        opacity: 0.7;
                         cursor: not-allowed;
                         pointer-events: none;
                     }
@@ -106,106 +191,155 @@
 
                 .googleAuthItem {
                     background-color: #ffffff;
-                    color: #333333;
-                    border: 1px solid #e8e6e6;
+                    color: #1e293b;
+                    border: 1px solid #e2e8f0;
+
                     &:hover {
-                        background-color: #f8f9fa;
-                        border-color: #dcdcdc;
+                        background-color: #f8fafc;
+                        border-color: #cbd5e1;
                     }
+
                     span {
-                        color: #333333;
+                        color: #1e293b;
                     }
                 }
 
                 .facebookAuthItem {
-                    background-color: #4267b2;
+                    background-color: #1877f2;
                     color: #ffffff;
-                    border: 1px solid #4267b2;
+                    border: 1px solid #1877f2;
+
                     &:hover {
-                        background-color: #365495;
+                        background-color: #166fe5;
                     }
+
                     span {
                         color: #ffffff;
                     }
                 }
 
                 .linkedinAuthItem {
-                    background-color: #0A66C2;
+                    background-color: #0a66c2;
                     color: #ffffff;
-                    border: 1px solid #0A66C2;
+                    border: 1px solid #0a66c2;
+
                     &:hover {
-                        background-color: #0958a8;
+                        background-color: #0855a3;
                     }
+
                     span {
                         color: #ffffff;
                     }
                 }
 
                 .githubAuthItem {
-                    background-color: #24292e;
+                    background-color: #0f172a;
                     color: #ffffff;
-                    border: 1px solid #24292e;
+                    border: 1px solid #0f172a;
+
                     &:hover {
-                        background-color: #1a1e22;
+                        background-color: #1e293b;
                     }
+
                     span {
                         color: #ffffff;
                     }
                 }
             }
+
             .registerForm {
                 width: 100%;
                 height: fit-content;
             }
+
             .devider {
                 position: relative;
                 text-align: center;
-                margin-top: 40px;
-                text-align: center;
+                margin: 20px 0;
+                width: 100%;
+
                 hr {
-                    background-color: #f0f0f0;
-                    height: 2px;
+                    background-color: #e2e8f0;
+                    height: 1px;
                     border: 0px;
+                    margin: 0;
                 }
+
                 span {
-                    background-color: white;
+                    background-color: #ffffff;
                     position: absolute;
-                    top: -10px;
-                    width: 80px;
-                    transform: translateX(-40px);
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    padding: 0 12px;
                     font-family: $font;
-                    font-weight: 600;
+                    font-weight: 700;
+                    font-size: 11px;
+                    color: #94a3b8;
+                    letter-spacing: 1px;
+                    text-transform: uppercase;
                 }
             }
+
             .inputSubmit {
                 width: 100%;
-                height: 40px;
-                margin-top: 10px;
-                background-color: white;
-                color: $btn-default;
+                height: 46px;
+                margin-top: 16px;
+                background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+                color: #ffffff;
                 font-family: $font;
-                font-weight: 600;
-                border: 0px;
-                border-top-left-radius: 20px;
-                border-bottom-left-radius: 20px;
-                border-bottom-right-radius: 20px;
+                font-size: 14px;
+                font-weight: 700;
+                border: none;
+                border-radius: 12px;
                 cursor: pointer;
-                border: 1px solid $btn-default;
-            }
-            .inputSubmit:focus {
-                outline: none;
+                box-shadow: 0 8px 20px -4px rgba(79, 70, 229, 0.4);
+                transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+                &:hover {
+                    transform: translateY(-1.5px);
+                    box-shadow: 0 12px 24px -4px rgba(79, 70, 229, 0.5);
+                    background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
+                }
+
+                &:active {
+                    transform: translateY(0);
+                }
+
+                &:focus {
+                    outline: none;
+                }
             }
         }
+
         .modalFooter {
-            margin-top: 20px;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid #f1f5f9;
             display: flex;
             flex-direction: column;
+            gap: 8px;
             text-align: center;
             font-family: $font;
-            font-size: 14px;
+            font-size: 13px;
+            color: #64748b;
+
+            span {
+                display: block;
+            }
+
             a {
-                color: $btn-default;
+                color: #4f46e5;
+                font-weight: 700;
                 cursor: pointer;
+                text-decoration: none;
+                margin-left: 4px;
+                transition: color 0.15s ease;
+
+                &:hover {
+                    color: #3730a3;
+                    text-decoration: underline;
+                }
             }
         }
     }

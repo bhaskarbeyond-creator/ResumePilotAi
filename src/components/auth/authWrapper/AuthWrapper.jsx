@@ -87,26 +87,23 @@ class AuthWrapper extends Component {
                     )}
                 </AnimatePresence>
                 <div className="authModal">
-                    <AnimatePresence>
+                    <button className="closeModalBtn" onClick={this.props.closeModal} title="Close Modal">✕</button>
+                    <AnimatePresence mode="wait">
                         {
                             this.state.isLoggedInShowed &&
-                            <motion.div className="motionDivAuth" initial={{ translateX: 500 }} transition={{ duration: 0.4 }} animate={{ translateX: 0 }} exit={{ translateX: -500 }}        >
+                            <motion.div key="login" className="motionDivAuth" initial={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}>
                                 <Login showPasswordRecovery={this.showPasswordRecovery} throwError={this.throwError} closeModal={this.props.closeModal} handleNavigationClick={this.handleNavigationClick} />
                             </motion.div>
                         }
-                    </AnimatePresence>
-                    <AnimatePresence>
                         {
                             this.state.isLoggedInShowed === false && this.state.isRecoverPasswordShowed === false &&
-                            <motion.div className="motionDivAuth" initial={{ translateX: 500 }} transition={{ duration: 0.4 }} animate={{ translateX: 0, }} exit={{ translateX: -500 }}>
+                            <motion.div key="register" className="motionDivAuth" initial={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}>
                                 <Register closeModal={this.props.closeModal} throwError={this.throwError} handleNavigationClick={this.handleNavigationClick} />
                             </motion.div>
                         }
-                    </AnimatePresence>
-                    <AnimatePresence>
                         {
                             this.state.isRecoverPasswordShowed === true &&
-                            <motion.div style={{ display: "flex", justifyContent: "center" }} className="motionDivAuth" initial={{ translateX: 500 }} transition={{ duration: 0.4 }} animate={{ translateX: 0, }} exit={{ translateX: -500 }}>
+                            <motion.div key="recover" style={{ display: "flex", justifyContent: "center" }} className="motionDivAuth" initial={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}>
                                 <RecoverPassword throwSuccess={this.throwSuccess} closeModal={this.props.closeModal} throwError={this.throwError} handleNavigationClick={this.handleNavigationClick} />
                             </motion.div>
                         }
