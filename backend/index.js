@@ -1481,41 +1481,48 @@ app.post('/api/admin/gdpr-settings', async (req, res) => {
 
 app.post('/api/admin/ai-settings', async (req, res) => {
     if (!db) return res.status(503).json({ success: false, error: 'Settings service unavailable' });
-    const input = req.body || {};
-    const providers = ['gemini', 'nvidia', 'openai', 'groq', 'openrouter', 'deepseek'];
-    const secretField = {
-        gemini: 'geminiApiKey', nvidia: 'nvidiaApiKey', openai: 'openaiApiKey',
-        groq: 'groqApiKey', openrouter: 'openrouterApiKey', deepseek: 'deepseekApiKey'
-    };
-    const modelField = {
-        gemini: 'model', nvidia: 'nvidiaModel', openai: 'openaiModel', groq: 'groqModel',
-        openrouter: 'openrouterModel', deepseek: 'deepseekModel'
-    };
-    const secrets = {};
-    for (const provider of providers) {
-        const apiKey = String(input[secretField[provider]] || '').trim();
-        const model = String(input[modelField[provider]] || '').trim();
-        if (apiKey && (apiKey.length < 12 || apiKey.length > 512)) return res.status(400).json({ success: false, error: `Invalid ${provider} API key format` });
-        if (model && !/^[A-Za-z0-9._:/-]{1,150}$/.test(model)) return res.status(400).json({ success: false, error: `Invalid ${provider} model` });
-        secrets[provider] = { ...(apiKey ? { apiKey } : {}), ...(model ? { model } : {}) };
+    try {
+        const input = req.body || {};
+        const providers = ['gemini', 'nvidia', 'openai', 'groq', 'openrouter', 'deepseek'];
+        const secretField = {
+            gemini: 'geminiApiKey', nvidia: 'nvidiaApiKey', openai: 'openaiApiKey',
+            groq: 'groqApiKey', openrouter: 'openrouterApiKey', deepseek: 'deepseekApiKey'
+        };
+        const modelField = {
+            gemini: 'model', nvidia: 'nvidiaModel', openai: 'openaiModel', groq: 'groqModel',
+            openrouter: 'openrouterModel', deepseek: 'deepseekModel'
+        };
+        const secrets = {};
+        for (const provider of providers) {
+            const apiKey = String(input[secretField[provider]] || '').trim();
+            const model = String(input[modelField[provider]] || '').trim();
+            if (apiKey && (apiKey.length < 12 || apiKey.length > 512)) return res.status(400).json({ success: false, error: `Invalid ${provider} API key format` });
+            if (model && !/^[A-Za-z0-9._:/-]{1,150}$/.test(model)) return res.status(400).json({ success: false, error: `Invalid ${provider} model` });
+            secrets[provider] = { ...(apiKey ? { apiKey } : {}), ...(model ? { model } : {}) };
+        }
+        const publicAi = {
+            provider: providers.includes(input.provider) ? input.provider : 'gemini',
+            ...Object.fromEntries(Object.entries(input).filter(([key, value]) =>
+                /^(enable[A-Z]|temperature$|maxTokens$|model$|[a-z]+Model$)/.test(key)
+                && (typeof value === 'boolean' || typeof value === 'number' || (typeof value === 'string' && value.length <= 150))
+            ))
+        };
+        const batch = db.batch();
+        batch.set(db.collection('settings').doc('ai_providers'), secrets, { merge: true });
+        batch.set(db.collection('data').doc('public_config'), { ai: publicAi }, { merge: true });
+        if (admin) {
+            batch.set(db.collection('security_audit_logs').doc(), {
+                action: 'AI_PROVIDER_SETTINGS_UPDATED', actorUid: req.user?.uid || 'admin_console',
+                requestId: res.locals?.requestId || 'req_ai_settings', createdAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+        }
+        await batch.commit();
+        clearProviderConfigurationCache(db);
+        return res.json({ success: true, message: 'AI provider settings saved securely.' });
+    } catch (err) {
+        console.error('Error saving AI settings:', err);
+        return res.status(500).json({ success: false, error: err.message || 'Internal server error while saving AI settings.' });
     }
-    const publicAi = {
-        provider: providers.includes(input.provider) ? input.provider : 'gemini',
-        ...Object.fromEntries(Object.entries(input).filter(([key, value]) =>
-            /^(enable[A-Z]|temperature$|maxTokens$|model$|[a-z]+Model$)/.test(key)
-            && (typeof value === 'boolean' || typeof value === 'number' || (typeof value === 'string' && value.length <= 150))
-        ))
-    };
-    const batch = db.batch();
-    batch.set(db.collection('settings').doc('ai_providers'), secrets, { merge: true });
-    batch.set(db.collection('data').doc('public_config'), { ai: publicAi }, { merge: true });
-    batch.set(db.collection('security_audit_logs').doc(), {
-        action: 'AI_PROVIDER_SETTINGS_UPDATED', actorUid: req.user.uid,
-        requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-    await batch.commit();
-    clearProviderConfigurationCache(db);
-    return res.json({ success: true, message: 'AI provider settings saved securely.' });
 });
 
 app.post('/api/admin/payment-settings', async (req, res) => {
@@ -1629,7 +1636,10 @@ app.post('/api/admin/test-connection', async (req, res) => {
                 body: JSON.stringify({ model: selectedModel, messages: [{ role: 'user', content: 'Reply with OK.' }], max_tokens: 10, temperature: 0 })
             });
             const providerData = await providerRes.json().catch(() => ({}));
-            if (!providerRes.ok) return res.status(400).json({ success: false, error: providerData.error?.message || `${type} authentication test failed.` });
+            if (!providerRes.ok) {
+                const errMsg = providerData.error?.message || providerData.detail || providerData.message || (typeof providerData.error === 'string' ? providerData.error : null) || `${type} authentication test failed (HTTP ${providerRes.status}).`;
+                return res.status(400).json({ success: false, error: errMsg });
+            }
             return res.json({ success: true, message: `${type} provider connection verified.` });
         } else if (type === 'ollama') {
             return res.status(400).json({ success: false, error: 'Ollama connectivity must be configured and validated on the server; browser-supplied endpoints are not accepted.' });
