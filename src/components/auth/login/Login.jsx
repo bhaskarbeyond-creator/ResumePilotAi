@@ -280,30 +280,26 @@ class Login extends Component {
                     <div className="socialAuth">
                         {/* Google */}
                         {enableGoogle && (
-                            <div onClick={this.signInWithGoogle} className={`googleAuthItem${oauthLoading === 'google' ? ' is-loading' : ''}`} id="btn-login-google" title="Login with Google">
+                            <div onClick={this.signInWithGoogle} className={`googleAuthItem${oauthLoading === 'google' ? ' is-loading' : ''}`} id="btn-login-google" title="Continue with Google">
                                 <img src={GoogleImage} alt="Google" />
-                                <span>{oauthLoading === 'google' ? '...' : 'Google'}</span>
                             </div>
                         )}
                         {/* Facebook */}
                         {enableFacebook && (
-                            <div onClick={this.signInWithFacebook} className={`facebookAuthItem${oauthLoading === 'facebook' ? ' is-loading' : ''}`} id="btn-login-facebook" title="Login with Facebook">
+                            <div onClick={this.signInWithFacebook} className={`facebookAuthItem${oauthLoading === 'facebook' ? ' is-loading' : ''}`} id="btn-login-facebook" title="Continue with Facebook">
                                 <img src={FacebookImage} alt="Facebook" />
-                                <span>{oauthLoading === 'facebook' ? '...' : 'Facebook'}</span>
                             </div>
                         )}
                         {/* LinkedIn */}
                         {enableLinkedIn && (
-                            <div onClick={this.signInWithLinkedIn} className={`linkedinAuthItem${oauthLoading === 'linkedin' ? ' is-loading' : ''}`} id="btn-login-linkedin" title="Login with LinkedIn">
+                            <div onClick={this.signInWithLinkedIn} className={`linkedinAuthItem${oauthLoading === 'linkedin' ? ' is-loading' : ''}`} id="btn-login-linkedin" title="Continue with LinkedIn">
                                 <LinkedInIcon />
-                                <span>{oauthLoading === 'linkedin' ? '...' : 'LinkedIn'}</span>
                             </div>
                         )}
                         {/* GitHub */}
                         {enableGitHub && (
-                            <div onClick={this.signInWithGitHub} className={`githubAuthItem${oauthLoading === 'github' ? ' is-loading' : ''}`} id="btn-login-github" title="Login with GitHub">
+                            <div onClick={this.signInWithGitHub} className={`githubAuthItem${oauthLoading === 'github' ? ' is-loading' : ''}`} id="btn-login-github" title="Continue with GitHub">
                                 <GitHubIcon />
-                                <span>{oauthLoading === 'github' ? '...' : 'GitHub'}</span>
                             </div>
                         )}
                     </div>

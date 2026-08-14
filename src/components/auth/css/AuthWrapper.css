@@ -119,19 +119,19 @@
   cursor: pointer;
   flex: 1 1 0% !important;
   width: auto !important;
-  max-width: none !important;
+  max-width: 72px !important;
   min-width: 0 !important;
+  height: 48px !important;
   box-sizing: border-box;
-  border-radius: 12px;
+  border-radius: 14px;
   text-align: center;
-  padding: 0 8px;
+  padding: 0 !important;
   margin: 0 !important;
   display: flex !important;
   flex-direction: row !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 8px;
-  transition: background-color 0.2s ease, opacity 0.2s ease;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 .socialAuth .googleAuthItem.is-loading,
