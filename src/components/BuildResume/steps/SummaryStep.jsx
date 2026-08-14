@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdLightbulb } from 'react-icons/md';
 import SectionCard from './components/SectionCard';
 import RichTextEditor from './components/RichTextEditor';
-import config from '../../../conf/configuration';
 import { generateUserAiContent } from '../../../services/aiService';
 
 const SummaryStep = ({ resumeData, updateResumeData }) => {
@@ -20,6 +19,8 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
     const [charCount, setCharCount] = useState(0);
     const [isGeneratingAI, setIsGeneratingAI] = useState(false);
     const [error, setError] = useState(null);
+    const aiRequestControllerRef = useRef(null);
+    useEffect(() => () => { const controller = aiRequestControllerRef.current; aiRequestControllerRef.current = null; controller?.abort(); }, []);
 
     const handleSummaryChange = (text) => {
         setSummary(text);
@@ -39,6 +40,9 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
             return;
         }
 
+        aiRequestControllerRef.current?.abort();
+        const requestController = new AbortController();
+        aiRequestControllerRef.current = requestController;
         try {
             // Extract data from resumeData for AI generation
             const name = `${resumeData.firstname || ''} ${resumeData.lastname || ''}`.trim() || 'Professional';
@@ -94,7 +98,7 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
                 achievement: achievement,
                 summaryType: 'professional',
                 language: preferredLanguage,
-            });
+            }, { signal: requestController.signal });
 
             if (data && data.summary) {
                 setSummary(data.summary);
@@ -103,6 +107,7 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
                 throw new Error('Invalid response format');
             }
         } catch (error) {
+            if (error?.name === 'AbortError') return;
             console.error('Error generating AI summary:', error);
             setError('Failed to generate AI summary. Please try again.');
 
@@ -122,7 +127,10 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
             setSummary(fallbackSummary);
             setCharCount(fallbackSummary.length);
         } finally {
-            setIsGeneratingAI(false);
+            if (aiRequestControllerRef.current === requestController) {
+                aiRequestControllerRef.current = null;
+                setIsGeneratingAI(false);
+            }
         }
     };
 

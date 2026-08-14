@@ -29,11 +29,13 @@ const ResumeImportModal = ({
     const [progress, setProgress] = useState(0);
     const fileInputRef = useRef(null);
     const modalRef = useRef(null);
+    const requestControllerRef = useRef(null);
 
     // Reset state when modal opens/closes
     useEffect(() => {
         if (!isOpen) {
-            // Reset when closed
+            requestControllerRef.current?.abort();
+            requestControllerRef.current = null;
             setStatus('idle');
             setErrorMessage('');
             setParsedResult(null);
@@ -61,6 +63,9 @@ const ResumeImportModal = ({
                 return;
             }
 
+            requestControllerRef.current?.abort();
+            const requestController = new AbortController();
+            requestControllerRef.current = requestController;
             setFileName(file.name);
             setStatus('extracting');
             setErrorMessage('');
@@ -82,7 +87,7 @@ const ResumeImportModal = ({
 
                 // Step 2: AI Parse
                 setStatus('parsing');
-                const structuredData = await parseResumeTextToStructuredData(rawText);
+                const structuredData = await parseResumeTextToStructuredData(rawText, { signal: requestController.signal });
                 setProgress(90);
 
                 // Fallback regex for contact info (guarantees)
@@ -98,10 +103,17 @@ const ResumeImportModal = ({
                 setStatus('success');
                 setProgress(100);
             } catch (err) {
+                if (err?.name === 'AbortError') {
+                    setStatus('idle');
+                    setProgress(0);
+                    return;
+                }
                 console.error('Resume import error:', err);
                 setStatus('error');
                 setErrorMessage(err.message || 'Failed to import resume. Please try another file.');
                 setProgress(0);
+            } finally {
+                if (requestControllerRef.current === requestController) requestControllerRef.current = null;
             }
         },
         []
@@ -289,6 +301,8 @@ const ResumeImportModal = ({
                                 {/* Cancel button during loading */}
                                 <button
                                     onClick={() => {
+                                        requestControllerRef.current?.abort();
+                                        requestControllerRef.current = null;
                                         setStatus('idle');
                                         setProgress(0);
                                     }}

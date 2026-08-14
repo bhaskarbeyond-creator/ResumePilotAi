@@ -1,5 +1,5 @@
 import { writeSanitizedPrintDocument } from '../../../utils/sanitizeHtml';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { uploadImageToFirebase, getProfileOfUser, addProfileToUser, getAccountInfo, changePassword, updateUserEmail, getSystemSettings, getWebsiteData, getSubscriptionStatus, getUserTransactions, deleteUserAccountPermanently, exportUserDataJSON, beginUserTotp2FA, saveUserTotp2FA, disableUserTotp2FA, getUserTotpStatus, reauthenticateUser, recordUserLoginEvent, getUserLoginHistory, sendSmsNotification } from '../../../firestore/dbOperations';
@@ -41,6 +41,7 @@ function DashboardSettings(props) {
     const [skillFilter, setSkillFilter] = useState('all');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isAiGenerating, setIsAiGenerating] = useState(false);
+    const aiRequestControllerRef = useRef(null);
     const [toastState, setToastState] = useState(null);
     const [cropModalSrc, setCropModalSrc] = useState(null); // raw image src waiting to be cropped
     const [aiModalState, setAiModalState] = useState({
@@ -788,6 +789,19 @@ function DashboardSettings(props) {
         return `${years}+ years`;
     };
 
+    useEffect(() => () => { const controller = aiRequestControllerRef.current; aiRequestControllerRef.current = null; controller?.abort(); }, []);
+
+    const runProfileAi = async (operation, payload) => {
+        aiRequestControllerRef.current?.abort();
+        const controller = new AbortController();
+        aiRequestControllerRef.current = controller;
+        try {
+            return await generateUserAiContent(operation, payload, { signal: controller.signal });
+        } finally {
+            if (aiRequestControllerRef.current === controller) aiRequestControllerRef.current = null;
+        }
+    };
+
     // REAL AI GENERATION FUNCTIONS (Synthesizes all filled profile details into Executive Bio)
     const handleWriteAiSummary = async () => {
         if (!profile.occupation && !profile.firstname) {
@@ -805,7 +819,7 @@ function DashboardSettings(props) {
             const certsDetails = profile.certifications.map(c => typeof c === 'string' ? c : `${c.title || ''}${c.issuer ? ' (' + c.issuer + ')' : ''}`).filter(Boolean).join(', ');
             const projectsDetails = profile.projects.map(p => `${p.title || p.name || 'Project'}: ${p.description || ''}`).filter(Boolean).join('; ');
 
-            const data = await generateUserAiContent('generate-summary', {
+            const data = await runProfileAi('generate-summary', {
                 name: `${profile.firstname} ${profile.lastname}`.trim(),
                 jobTitle: primaryRole,
                 occupation: primaryRole,
@@ -826,6 +840,7 @@ function DashboardSettings(props) {
                 throw new Error('Invalid AI response');
             }
         } catch (err) {
+            if (err?.name === 'AbortError') return;
             console.error('AI Summary Error:', err);
             triggerNotification('Failed to generate AI Executive Bio. Please try again.', 'error');
         }
@@ -840,7 +855,7 @@ function DashboardSettings(props) {
         }
         setIsAiGenerating(true);
         try {
-            const data = await generateUserAiContent('generate-work-description', {
+            const data = await runProfileAi('generate-work-description', {
                 jobTitle: job.jobTitle,
                 employer: job.company || 'Organization',
                 city: job.city || '',
@@ -854,6 +869,7 @@ function DashboardSettings(props) {
                 throw new Error('Invalid AI suggestions');
             }
         } catch (err) {
+            if (err?.name === 'AbortError') return;
             console.error('AI Work Description Error:', err);
             triggerNotification('Failed to generate AI work description.', 'error');
         }
@@ -869,7 +885,7 @@ function DashboardSettings(props) {
             const projDetails = profile.projects.map(p => p.title || p.name).filter(Boolean).join(', ');
             const existing = profile.skills.map(s => (typeof s === 'string' ? s : s.name)).filter(Boolean);
 
-            const data = await generateUserAiContent('generate-skills', {
+            const data = await runProfileAi('generate-skills', {
                 jobTitle: profile.occupation || 'Professional',
                 occupation: profile.occupation || 'Professional',
                 workHistory: expDetails,
@@ -908,6 +924,7 @@ function DashboardSettings(props) {
                 }
             }
         } catch (err) {
+            if (err?.name === 'AbortError') return;
             console.error('AI Skills Recommendation Error:', err);
             triggerNotification('Failed to generate AI skills recommendations.', 'error');
         }
@@ -922,7 +939,7 @@ function DashboardSettings(props) {
             const skillsDetails = profile.skills.map(s => (typeof s === 'string' ? s : s.name)).filter(Boolean).join(', ');
             const existingCerts = profile.certifications.map(c => c.title).filter(Boolean);
 
-            const data = await generateUserAiContent('generate-certifications', {
+            const data = await runProfileAi('generate-certifications', {
                 jobTitle: profile.occupation || 'Professional',
                 occupation: profile.occupation || 'Professional',
                 workHistory: expDetails,
@@ -962,6 +979,7 @@ function DashboardSettings(props) {
                 }
             }
         } catch (err) {
+            if (err?.name === 'AbortError') return;
             console.error('AI Certifications Recommendation Error:', err);
             triggerNotification('Failed to generate AI certification recommendations.', 'error');
         }

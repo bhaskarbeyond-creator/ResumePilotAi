@@ -39,42 +39,80 @@ const ALLOWED_ENDPOINTS = new Set([
     'generate-skills', 'check-grammar', 'enhance-single-bullet',
     'generate-certifications', 'autocomplete'
 ]);
+const LEGACY_PROMPT_OPERATIONS = new Set([
+    'generate-summary', 'generate-work-description', 'generate-education-description',
+    'generate-skills', 'enhance-single-bullet', 'generate-certifications', 'autocomplete',
+]);
 
-/**
- * All user AI calls cross the authenticated backend boundary. Provider credentials,
- * model allowlists, durable quotas and cost accounting never reach browser code.
- */
-export async function generateUserAiContent(endpointName, payload = {}) {
+export function buildAiRequest(endpointName, payload = {}) {
     if (!ALLOWED_ENDPOINTS.has(endpointName)) throw new Error('Unsupported AI operation');
-    const auxiliary = ['enhance-single-bullet', 'generate-certifications', 'autocomplete'].includes(endpointName);
-    const response = await fetch(auxiliary ? '/api/generate-content' : `/api/${endpointName}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(auxiliary ? { operation: endpointName, payload } : { ...payload, apiKey: undefined })
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-        throw new Error(data?.error?.message || data?.error || 'AI request failed');
+    if (LEGACY_PROMPT_OPERATIONS.has(endpointName)) {
+        return { url: '/api/generate-content', body: { operation: endpointName, payload } };
     }
-    return data;
+    return { url: `/api/${endpointName}`, body: payload };
+}
+
+function createAbortController(externalSignal, timeoutMs) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(new DOMException('AI request timed out', 'TimeoutError')), timeoutMs);
+    const abort = () => controller.abort(externalSignal.reason);
+    if (externalSignal) {
+        if (externalSignal.aborted) abort();
+        else externalSignal.addEventListener('abort', abort, { once: true });
+    }
+    return {
+        controller,
+        dispose() {
+            clearTimeout(timeout);
+            externalSignal?.removeEventListener('abort', abort);
+        },
+    };
 }
 
 /**
- * Parse resume text through the quota-controlled server. Heuristic extraction remains a
- * local availability fallback and is merged into AI output to avoid dropping real fields.
+ * Restores the pre-security product contract while retaining the authenticated,
+ * same-origin backend boundary. Prompt construction and provider credentials stay server-side.
  */
-export async function parseResumeTextToStructuredData(rawText) {
-    const text = typeof rawText === 'string' ? rawText.slice(0, 100_000) : '';
-    // Base64 image payloads are intentionally not parsed or sent through JSON. They require
-    // an authenticated object-storage upload and malware/content scanning pipeline.
-    if (!text || text.startsWith('[IMAGE_RESUME_BASE64:')) {
-        return normalizeRawDataToTempJson({}, '');
+export async function generateUserAiContent(endpointName, payload = {}, options = {}) {
+    const request = buildAiRequest(endpointName, payload);
+    const { controller, dispose } = createAbortController(options.signal, options.timeoutMs || 45_000);
+    try {
+        const response = await fetch(request.url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            signal: controller.signal,
+            body: JSON.stringify(request.body),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            const error = new Error(data?.error?.message || data?.error || 'AI request failed');
+            error.code = data?.error?.code || 'AI_REQUEST_FAILED';
+            error.status = response.status;
+            error.requestId = data?.error?.requestId || response.headers.get('X-Request-Id') || '';
+            throw error;
+        }
+        return data;
+    } finally {
+        dispose();
     }
+}
+
+/** Parse resume text securely and merge AI extraction with deterministic local recovery. */
+export async function parseResumeTextToStructuredData(rawText, options = {}) {
+    const text = typeof rawText === 'string' ? rawText.slice(0, 100_000) : '';
+    // Current import UX accepts text-bearing PDF/DOC/DOCX/RTF/TXT only. Image OCR remains
+    // disabled until authenticated object upload and scanning exist; no prior reachable image
+    // workflow is removed by this guard.
+    if (!text || text.startsWith('[IMAGE_RESUME_BASE64:')) return normalizeRawDataToTempJson({}, '');
     const heuristic = normalizeRawDataToTempJson(extractHeuristicResumeData(text), text);
+    const { controller, dispose } = createAbortController(options.signal, options.timeoutMs || 55_000);
     try {
         const response = await fetch('/api/parse-resume', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            signal: controller.signal,
             body: JSON.stringify({ rawText: text.slice(0, 40_000) })
         });
         const result = await response.json().catch(() => ({}));
@@ -89,7 +127,10 @@ export async function parseResumeTextToStructuredData(rawText) {
             languages: ai.languages?.length ? ai.languages : heuristic.languages,
         };
     } catch (error) {
+        if (error?.name === 'AbortError' && options.signal?.aborted) throw error;
         console.warn('Server AI parser unavailable; using heuristic parser:', error.message);
         return heuristic;
+    } finally {
+        dispose();
     }
 }
