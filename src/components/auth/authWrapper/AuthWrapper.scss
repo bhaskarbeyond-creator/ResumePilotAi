@@ -132,7 +132,7 @@
             .socialAuth {
                 width: 100%;
                 display: flex;
-                flex-direction: column;
+                flex-direction: row;
                 align-items: center;
                 gap: 10px;
 
@@ -141,17 +141,18 @@
                 .linkedinAuthItem,
                 .githubAuthItem {
                     cursor: pointer;
-                    width: 100%;
+                    flex: 1;
+                    min-width: 0;
                     height: 44px;
                     box-sizing: border-box;
                     border-radius: 12px;
                     text-align: center;
-                    padding: 0 16px;
-                    margin: 0;
+                    padding: 0 10px;
+                    margin: 0 !important;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    gap: 10px;
+                    gap: 8px;
                     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
                     font-size: 13px;
                     font-weight: 700;
@@ -159,7 +160,7 @@
 
                     &:hover {
                         transform: translateY(-1.5px);
-                        box-shadow: 0 6px 16px -4px rgba(0, 0, 0, 0.1);
+                        box-shadow: 0 6px 16px -4px rgba(0, 0, 0, 0.12);
                     }
 
                     &:active {
@@ -176,9 +177,12 @@
 
                     span {
                         font-family: $font;
-                        font-size: 13.5px;
+                        font-size: 12.5px;
                         font-weight: 600;
                         line-height: 1;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
                     }
 
                     &.is-loading,

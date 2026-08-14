@@ -280,89 +280,40 @@ class Login extends Component {
                     <div className="socialAuth">
                         {/* Google */}
                         {enableGoogle && (
-                            <div onClick={this.signInWithGoogle} className={`googleAuthItem${oauthLoading === 'google' ? ' is-loading' : ''}`} id="btn-login-google">
+                            <div onClick={this.signInWithGoogle} className={`googleAuthItem${oauthLoading === 'google' ? ' is-loading' : ''}`} id="btn-login-google" title="Login with Google">
                                 <img src={GoogleImage} alt="Google" />
-                                <span>{oauthLoading === 'google' ? 'Signing in...' : `${t("login.googleLogin")} Google`}</span>
+                                <span>{oauthLoading === 'google' ? '...' : 'Google'}</span>
                             </div>
                         )}
                         {/* Facebook */}
                         {enableFacebook && (
-                            <div onClick={this.signInWithFacebook} className={`facebookAuthItem${oauthLoading === 'facebook' ? ' is-loading' : ''}`} id="btn-login-facebook">
+                            <div onClick={this.signInWithFacebook} className={`facebookAuthItem${oauthLoading === 'facebook' ? ' is-loading' : ''}`} id="btn-login-facebook" title="Login with Facebook">
                                 <img src={FacebookImage} alt="Facebook" />
-                                <span>{oauthLoading === 'facebook' ? 'Signing in...' : `${t("login.facebookLogin")} Facebook`}</span>
+                                <span>{oauthLoading === 'facebook' ? '...' : 'Facebook'}</span>
                             </div>
                         )}
                         {/* LinkedIn */}
                         {enableLinkedIn && (
-                            <div 
-                                onClick={this.signInWithLinkedIn} 
-                                className={`linkedinAuthItem${oauthLoading === 'linkedin' ? ' is-loading' : ''}`} 
-                                id="btn-login-linkedin"
-                                style={{
-                                    cursor: 'pointer',
-                                    width: '100%',
-                                    maxWidth: '350px',
-                                    backgroundColor: '#0A66C2',
-                                    color: '#ffffff',
-                                    border: '1px solid #0A66C2',
-                                    borderRadius: '5px',
-                                    textAlign: 'center',
-                                    padding: '10px 16px',
-                                    marginBottom: '10px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '10px',
-                                    boxSizing: 'border-box',
-                                    marginLeft: 'auto',
-                                    marginRight: 'auto'
-                                }}
-                            >
+                            <div onClick={this.signInWithLinkedIn} className={`linkedinAuthItem${oauthLoading === 'linkedin' ? ' is-loading' : ''}`} id="btn-login-linkedin" title="Login with LinkedIn">
                                 <LinkedInIcon />
-                                <span style={{ color: '#ffffff', fontFamily: 'Poppins, sans-serif', fontSize: '14px', fontWeight: 600 }}>
-                                    {oauthLoading === 'linkedin' ? 'Redirecting...' : 'Continue with LinkedIn'}
-                                </span>
+                                <span>{oauthLoading === 'linkedin' ? '...' : 'LinkedIn'}</span>
                             </div>
                         )}
                         {/* GitHub */}
                         {enableGitHub && (
-                            <div 
-                                onClick={this.signInWithGitHub} 
-                                className={`githubAuthItem${oauthLoading === 'github' ? ' is-loading' : ''}`} 
-                                id="btn-login-github"
-                                style={{
-                                    cursor: 'pointer',
-                                    width: '100%',
-                                    maxWidth: '350px',
-                                    backgroundColor: '#24292e',
-                                    color: '#ffffff',
-                                    border: '1px solid #24292e',
-                                    borderRadius: '5px',
-                                    textAlign: 'center',
-                                    padding: '10px 16px',
-                                    marginBottom: '10px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '10px',
-                                    boxSizing: 'border-box',
-                                    marginLeft: 'auto',
-                                    marginRight: 'auto'
-                                }}
-                            >
+                            <div onClick={this.signInWithGitHub} className={`githubAuthItem${oauthLoading === 'github' ? ' is-loading' : ''}`} id="btn-login-github" title="Login with GitHub">
                                 <GitHubIcon />
-                                <span style={{ color: '#ffffff', fontFamily: 'Poppins, sans-serif', fontSize: '14px', fontWeight: 600 }}>
-                                    {oauthLoading === 'github' ? 'Redirecting...' : 'Continue with GitHub'}
-                                </span>
+                                <span>{oauthLoading === 'github' ? '...' : 'GitHub'}</span>
                             </div>
                         )}
-                        {/* Divider */}
-                        {anySocial && (
-                            <div className="devider">
-                                <hr />
-                                <span>{t("login.or")}</span>
-                            </div>
-                        )}
+                    </div>
+                    {/* Divider */}
+                    {anySocial && (
+                        <div className="devider">
+                            <hr />
+                            <span>{t("login.or")}</span>
+                        </div>
+                    )}
                         {/* Login Form */}
                         <form onSubmit={this.login} className="w-full flex flex-col">
                             <Input name="Email" title={t("login.email")} handleInputs={this.handleInputs} />
@@ -370,7 +321,6 @@ class Login extends Component {
                             <input className="inputSubmit" value={t("login.login")} type="submit" />
                         </form>
                     </div>
-                </div>
                 {/* Modal Footer */}
                 <div className="modalFooter">
                     <span>{t("login.dontHaveAcc")}<a onClick={() => this.props.handleNavigationClick()}>{t("login.signup")}</a></span>

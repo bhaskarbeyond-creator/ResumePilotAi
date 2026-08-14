@@ -345,89 +345,40 @@ class Register extends Component {
                     <div className="socialAuth">
                         {/* Google */}
                         {enableGoogle && (
-                            <div onClick={this.signInWithGoogle} className={`googleAuthItem${oauthLoading === 'google' ? ' is-loading' : ''}`} id="btn-register-google">
+                            <div onClick={this.signInWithGoogle} className={`googleAuthItem${oauthLoading === 'google' ? ' is-loading' : ''}`} id="btn-register-google" title="Register with Google">
                                 <img src={GoogleImage} alt="Google" />
-                                <span>{oauthLoading === 'google' ? 'Signing in...' : `${t("login.googleLogin")} Google`}</span>
+                                <span>{oauthLoading === 'google' ? '...' : 'Google'}</span>
                             </div>
                         )}
                         {/* Facebook */}
                         {enableFacebook && (
-                            <div onClick={this.signInWithFacebook} className={`facebookAuthItem${oauthLoading === 'facebook' ? ' is-loading' : ''}`} id="btn-register-facebook">
+                            <div onClick={this.signInWithFacebook} className={`facebookAuthItem${oauthLoading === 'facebook' ? ' is-loading' : ''}`} id="btn-register-facebook" title="Register with Facebook">
                                 <img src={FacebookImage} alt="Facebook" />
-                                <span>{oauthLoading === 'facebook' ? 'Signing in...' : `${t("login.facebookLogin")} Facebook`}</span>
+                                <span>{oauthLoading === 'facebook' ? '...' : 'Facebook'}</span>
                             </div>
                         )}
                         {/* LinkedIn */}
                         {enableLinkedIn && (
-                            <div 
-                                onClick={this.signInWithLinkedIn} 
-                                className={`linkedinAuthItem${oauthLoading === 'linkedin' ? ' is-loading' : ''}`} 
-                                id="btn-register-linkedin"
-                                style={{
-                                    cursor: 'pointer',
-                                    width: '100%',
-                                    maxWidth: '350px',
-                                    backgroundColor: '#0A66C2',
-                                    color: '#ffffff',
-                                    border: '1px solid #0A66C2',
-                                    borderRadius: '5px',
-                                    textAlign: 'center',
-                                    padding: '10px 16px',
-                                    marginBottom: '10px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '10px',
-                                    boxSizing: 'border-box',
-                                    marginLeft: 'auto',
-                                    marginRight: 'auto'
-                                }}
-                            >
+                            <div onClick={this.signInWithLinkedIn} className={`linkedinAuthItem${oauthLoading === 'linkedin' ? ' is-loading' : ''}`} id="btn-register-linkedin" title="Register with LinkedIn">
                                 <LinkedInIcon />
-                                <span style={{ color: '#ffffff', fontFamily: 'Poppins, sans-serif', fontSize: '14px', fontWeight: 600 }}>
-                                    {oauthLoading === 'linkedin' ? 'Redirecting...' : 'Continue with LinkedIn'}
-                                </span>
+                                <span>{oauthLoading === 'linkedin' ? '...' : 'LinkedIn'}</span>
                             </div>
                         )}
+                        {/* GitHub */}
                         {enableGitHub && (
-                            <div 
-                                onClick={this.signInWithGitHub} 
-                                className={`githubAuthItem${oauthLoading === 'github' ? ' is-loading' : ''}`} 
-                                id="btn-register-github"
-                                style={{
-                                    cursor: 'pointer',
-                                    width: '100%',
-                                    maxWidth: '350px',
-                                    backgroundColor: '#24292e',
-                                    color: '#ffffff',
-                                    border: '1px solid #24292e',
-                                    borderRadius: '5px',
-                                    textAlign: 'center',
-                                    padding: '10px 16px',
-                                    marginBottom: '10px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '10px',
-                                    boxSizing: 'border-box',
-                                    marginLeft: 'auto',
-                                    marginRight: 'auto'
-                                }}
-                            >
+                            <div onClick={this.signInWithGitHub} className={`githubAuthItem${oauthLoading === 'github' ? ' is-loading' : ''}`} id="btn-register-github" title="Register with GitHub">
                                 <GitHubIcon />
-                                <span style={{ color: '#ffffff', fontFamily: 'Poppins, sans-serif', fontSize: '14px', fontWeight: 600 }}>
-                                    {oauthLoading === 'github' ? 'Redirecting...' : 'Continue with GitHub'}
-                                </span>
-                            </div>
-                        )}
-                        {/* Divider */}
-                        {anySocial && (
-                            <div className="devider">
-                                <hr />
-                                <span>{t("login.or")}</span>
+                                <span>{oauthLoading === 'github' ? '...' : 'GitHub'}</span>
                             </div>
                         )}
                     </div>
+                    {/* Divider */}
+                    {anySocial && (
+                        <div className="devider">
+                            <hr />
+                            <span>{t("login.or")}</span>
+                        </div>
+                    )}
                     <form onSubmit={this.signUp} className="registerForm w-full flex flex-col">
                         <Input name="Email" title={t("login.email")} handleInputs={this.handleInputs} />
                         <Input name="Password" type="Password" title={t("login.password")} handleInputs={this.handleInputs} />
