@@ -23,7 +23,7 @@ class SubscriptionSetting extends Component {
             isSuccessOpen: false,
 
             // Payment Gateway API Credentials State
-            razorpayKeyId: 'rzp_test_TOnviD5XeHLE0y',
+            razorpayKeyId: '',
             razorpayKeySecret: 'ERtqc12PbwXNyou8ITu0Ekqp',
             stripePublishableKey: '',
             stripeSecretKey: '',
@@ -2904,7 +2904,7 @@ class SubscriptionSetting extends Component {
                                             type="text"
                                             value={this.state.razorpayKeyId}
                                             onChange={(e) => this.setState({ razorpayKeyId: e.target.value })}
-                                            placeholder="e.g. rzp_test_TOnviD5XeHLE0y or rzp_live_..."
+                                            placeholder="e.g. rzp_test_... or rzp_live_..."
                                             className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 font-mono focus:border-emerald-500 outline-none"
                                         />
                                     </div>

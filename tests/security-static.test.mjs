@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 
 const root = path.resolve(import.meta.dirname, '..');
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
@@ -15,6 +16,29 @@ function sourceFiles(directory, extensions = new Set(['.js', '.jsx', '.php'])) {
   }
   return found;
 }
+
+test('tracked files contain no recognizable private credentials', () => {
+  const tracked = execFileSync('git', ['ls-files', '-z'], { cwd: root }).toString().split('\0').filter(Boolean);
+  const patterns = [
+    /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----\s+[A-Za-z0-9+/=\r\n]{100,}-----END/,
+    /AKIA[0-9A-Z]{16}/,
+    /gh[pousr]_[A-Za-z0-9]{20,}/,
+    /xox[baprs]-[A-Za-z0-9-]{10,}/,
+    /sk_(?:live|test)_[A-Za-z0-9]{8,}/,
+    /nvapi-[A-Za-z0-9_-]{10,}/,
+    /AIza[0-9A-Za-z_-]{30,}/,
+    /rzp_(?:live|test)_[A-Za-z0-9]{8,}/,
+  ];
+  const findings = [];
+  for (const file of tracked) {
+    if (/\.(?:png|jpe?g|gif|pdf|ttf|woff2?|ico|zip)$/i.test(file)) continue;
+    let content;
+    try { content = read(file); } catch (_) { continue; }
+    if (patterns.some(pattern => pattern.test(content))) findings.push(file);
+    if (file !== '.env.example' && /\bpassword\s*=\s*['"][^'"]{8,}['"]/i.test(content)) findings.push(`${file}: hardcoded password`);
+  }
+  assert.deepEqual(findings, []);
+});
 
 test('all browser HTML sinks are centralized or import the sanitizer', () => {
   const failures = [];

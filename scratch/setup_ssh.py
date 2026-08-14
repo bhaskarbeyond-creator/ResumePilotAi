@@ -1,53 +1,40 @@
-import paramiko
+"""One-time SSH key installer.
+
+No host, username, password, or trust-on-first-use policy is embedded in the repository.
+The destination must already have a verified host key in ~/.ssh/known_hosts.
+"""
+import getpass
 import os
+import shlex
 
-hostname = '82.112.232.112'
-port = 65002
-username = 'u727965524'
-password = 'Bhaskar@002!'
-pub_key_path = os.path.expanduser('~/.ssh/id_ed25519.pub')
+import paramiko
 
-with open(pub_key_path, 'r') as f:
-    pub_key = f.read().strip()
+hostname = os.environ.get('SSH_HOST')
+username = os.environ.get('SSH_USER')
+port = int(os.environ.get('SSH_PORT', '22'))
+if not hostname or not username:
+    raise SystemExit('Set SSH_HOST and SSH_USER. Optionally set SSH_PORT.')
+password = getpass.getpass('SSH password (not stored): ')
+pub_key_path = os.path.expanduser(os.environ.get('SSH_PUBLIC_KEY_PATH', '~/.ssh/id_ed25519.pub'))
+
+with open(pub_key_path, 'r', encoding='utf-8') as key_file:
+    pub_key = key_file.read().strip()
 
 ssh = paramiko.SSHClient()
-ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-print(f"Connecting to {hostname}:{port}...")
-ssh.connect(hostname, port=port, username=username, password=password)
-print("Connected successfully!")
+ssh.load_system_host_keys()
+ssh.set_missing_host_key_policy(paramiko.RejectPolicy())
+ssh.connect(hostname, port=port, username=username, password=password, look_for_keys=False)
 
-# Ensure ~/.ssh exists and add public key to authorized_keys
+quoted_key = shlex.quote(pub_key)
 commands = [
     'mkdir -p ~/.ssh && chmod 700 ~/.ssh',
-    f'grep -qF "{pub_key}" ~/.ssh/authorized_keys 2>/dev/null || echo "{pub_key}" >> ~/.ssh/authorized_keys',
+    f'touch ~/.ssh/authorized_keys && grep -qF -- {quoted_key} ~/.ssh/authorized_keys || printf "%s\\n" {quoted_key} >> ~/.ssh/authorized_keys',
     'chmod 600 ~/.ssh/authorized_keys',
-    'echo "=== SYSTEM INFORMATION ==="',
-    'uname -a',
-    'whoami',
-    'pwd',
-    'echo "=== INSTALLED RUNTIMES ==="',
-    'node -v 2>&1',
-    'npm -v 2>&1',
-    'npx -v 2>&1',
-    'pm2 -v 2>&1',
-    'python3 --version 2>&1',
-    'which chromium 2>&1',
-    'which google-chrome 2>&1',
-    'which playwright 2>&1',
-    'echo "=== DIRECTORY LISTING ==="',
-    'ls -la',
-    'ls -la domains 2>&1',
-    'ls -la public_html 2>&1'
 ]
-
-for cmd in commands:
-    stdin, stdout, stderr = ssh.exec_command(cmd)
-    out = stdout.read().decode().strip()
-    err = stderr.read().decode().strip()
-    print(f"\n$ {cmd}")
-    if out:
-        print(out)
-    if err:
-        print(f"STDERR: {err}")
+for command in commands:
+    _stdin, stdout, stderr = ssh.exec_command(command)
+    if stdout.channel.recv_exit_status() != 0:
+        raise RuntimeError(stderr.read().decode().strip() or 'Remote command failed')
 
 ssh.close()
+print('SSH public key installed successfully.')

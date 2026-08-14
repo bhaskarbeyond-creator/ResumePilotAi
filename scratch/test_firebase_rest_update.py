@@ -1,6 +1,6 @@
 import requests
 
-apiKey = "AIzaSyDigXT7n4Pyf-8WHQtvjHa0wGvJ86nmrwc"
+apiKey = "YOUR_FIREBASE_WEB_API_KEY"
 email = "bhaskar.beyond@gmail.com"
 newPassword = "Bhaskar@002!"
 

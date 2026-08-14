@@ -1,6 +1,6 @@
 import json, urllib.request, urllib.error
 
-FIREBASE_API_KEY = 'AIzaSyDigXT7n4Pyf-8WHQtvjHa0wGvJ86nmrwc'
+FIREBASE_API_KEY = 'YOUR_FIREBASE_WEB_API_KEY'
 TEST_EMAIL = 'bhaskar.beyond@gmail.com'
 TEST_PASSWORD = 'Bhaskar002!'
 BACKEND = 'https://airesume.projectdemo.guru'

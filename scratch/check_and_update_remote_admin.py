@@ -22,7 +22,7 @@ require('firebase/compat/firestore');
 require('firebase/compat/auth');
 
 const config = {
-    apiKey: "AIzaSyDigXT7n4Pyf-8WHQtvjHa0wGvJ86nmrwc",
+    apiKey: "YOUR_FIREBASE_WEB_API_KEY",
     authDomain: "ai-resume-builder-424cf.firebaseapp.com",
     databaseURL: "https://ai-resume-builder-424cf-default-rtdb.firebaseio.com",
     projectId: "ai-resume-builder-424cf",

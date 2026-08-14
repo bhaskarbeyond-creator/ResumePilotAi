@@ -7,7 +7,7 @@ from playwright.async_api import async_playwright
 BASE_URL = "https://airesume.projectdemo.guru"
 TEST_EMAIL = "bhaskar.beyond@gmail.com"
 TEST_PASSWORD = "Bhaskar002!"
-FIREBASE_API_KEY = "AIzaSyDigXT7n4Pyf-8WHQtvjHa0wGvJ86nmrwc"
+FIREBASE_API_KEY = "YOUR_FIREBASE_WEB_API_KEY"
 
 
 def firebase_sign_in(email, password):
