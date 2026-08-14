@@ -1,10 +1,8 @@
 import React, { Component } from 'react';
-import GoogleImage from '../../../assets/google.png';
-import FacebookImage from '../../../assets/facebook.png';
 import Input from '../../Form/simple-input/SimpleInput';
-import { addUser, IncrementUsers } from '../../../firestore/dbOperations'
 import fire from '../../../conf/fire';
 import { withTranslation } from 'react-i18next';
+
 class RecoverPassword extends Component {
     constructor(props) {
         super(props);

@@ -81,6 +81,7 @@ class Login extends Component {
             enableLinkedIn,
             enableGitHub,
             oauthLoading: null, // tracks which provider is loading
+            isSubmitting: false, // GAP-01: prevents double-submit
         };
         this.handleInputs = this.handleInputs.bind(this);
         this.toggleRememberMe = this.toggleRememberMe.bind(this);
@@ -152,20 +153,25 @@ class Login extends Component {
 
     login(event) {
         event.preventDefault();
+        if (this.state.isSubmitting) return; // GAP-01: prevent double-submit
         const email = (this.state.email || '').trim();
         const password = this.state.password || '';
 
         if (!email) {
             if (this.props.throwError) this.props.throwError('Please enter your email address.');
-            else alert('Please enter your email address.');
+            return;
+        }
+        // GAP-04: basic email format check
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            if (this.props.throwError) this.props.throwError('Please enter a valid email address.');
+            return;
+        }
+        if (!password) {
+            if (this.props.throwError) this.props.throwError('Please enter your password.');
             return;
         }
 
-        if (!password) {
-            if (this.props.throwError) this.props.throwError('Please enter your password.');
-            else alert('Please enter your password.');
-            return;
-        }
+        this.setState({ isSubmitting: true }); // GAP-01: lock submit
 
         const persistenceType = this.state.rememberMe 
             ? (firebase?.auth?.Auth?.Persistence?.LOCAL || 'local')
@@ -191,6 +197,7 @@ class Login extends Component {
             .then(() => executeLogin())
             .catch(() => executeLogin())
             .catch((error) => {
+                this.setState({ isSubmitting: false }); // GAP-01: unlock on error
                 console.error('[Login Auth Error]:', error);
                 let msg = error.message;
                 if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
@@ -201,7 +208,6 @@ class Login extends Component {
                     msg = 'Access to this account has been temporarily disabled due to many failed login attempts. You can immediately restore it by resetting your password.';
                 }
                 if (this.props.throwError) this.props.throwError(msg);
-                else alert(msg);
             });
     }
 
@@ -317,30 +323,30 @@ class Login extends Component {
                     <p>Enter your credentials to access your dashboard</p>
                 </div>
                 <div className="body">
-                    <div className="socialAuth">
-                        {/* Google */}
+                    <div className="socialAuth" role="group" aria-label="Sign in with social account">
+                        {/* Google — GAP-07: button element for keyboard/a11y */}
                         {enableGoogle && (
-                            <div onClick={this.signInWithGoogle} className={`googleAuthItem${oauthLoading === 'google' ? ' is-loading' : ''}`} id="btn-login-google" title="Continue with Google">
-                                <img src={GoogleImage} alt="Google" />
-                            </div>
+                            <button type="button" onClick={this.signInWithGoogle} className={`googleAuthItem${oauthLoading === 'google' ? ' is-loading' : ''}`} id="btn-login-google" aria-label="Continue with Google" title="Continue with Google" disabled={!!oauthLoading}>
+                                <img src={GoogleImage} alt="" aria-hidden="true" />
+                            </button>
                         )}
                         {/* Facebook */}
                         {enableFacebook && (
-                            <div onClick={this.signInWithFacebook} className={`facebookAuthItem${oauthLoading === 'facebook' ? ' is-loading' : ''}`} id="btn-login-facebook" title="Continue with Facebook">
-                                <img src={FacebookImage} alt="Facebook" />
-                            </div>
+                            <button type="button" onClick={this.signInWithFacebook} className={`facebookAuthItem${oauthLoading === 'facebook' ? ' is-loading' : ''}`} id="btn-login-facebook" aria-label="Continue with Facebook" title="Continue with Facebook" disabled={!!oauthLoading}>
+                                <img src={FacebookImage} alt="" aria-hidden="true" />
+                            </button>
                         )}
                         {/* LinkedIn */}
                         {enableLinkedIn && (
-                            <div onClick={this.signInWithLinkedIn} className={`linkedinAuthItem${oauthLoading === 'linkedin' ? ' is-loading' : ''}`} id="btn-login-linkedin" title="Continue with LinkedIn">
+                            <button type="button" onClick={this.signInWithLinkedIn} className={`linkedinAuthItem${oauthLoading === 'linkedin' ? ' is-loading' : ''}`} id="btn-login-linkedin" aria-label="Continue with LinkedIn" title="Continue with LinkedIn" disabled={!!oauthLoading}>
                                 <LinkedInIcon />
-                            </div>
+                            </button>
                         )}
                         {/* GitHub */}
                         {enableGitHub && (
-                            <div onClick={this.signInWithGitHub} className={`githubAuthItem${oauthLoading === 'github' ? ' is-loading' : ''}`} id="btn-login-github" title="Continue with GitHub">
+                            <button type="button" onClick={this.signInWithGitHub} className={`githubAuthItem${oauthLoading === 'github' ? ' is-loading' : ''}`} id="btn-login-github" aria-label="Continue with GitHub" title="Continue with GitHub" disabled={!!oauthLoading}>
                                 <GitHubIcon />
-                            </div>
+                            </button>
                         )}
                     </div>
                     {/* Divider */}
@@ -351,9 +357,8 @@ class Login extends Component {
                         </div>
                     )}
                         {/* Login Form */}
-                        <form onSubmit={this.login} className="w-full flex flex-col" autoComplete="on">
+                        <form onSubmit={this.login} className="w-full flex flex-col" autoComplete="on" noValidate>
                             <Input name="Email" title={t("login.email")} value={this.state.email} handleInputs={this.handleInputs} />
-                            {/* Password: don't pass value if empty so browser autofill can set it */}
                             <Input
                                 name="Password"
                                 type="Password"
@@ -367,6 +372,7 @@ class Login extends Component {
                                 <label className="flex items-center gap-2 cursor-pointer select-none font-medium hover:text-[#1e293b] transition-colors">
                                     <input 
                                         type="checkbox" 
+                                        id="remember-me-checkbox"
                                         checked={this.state.rememberMe} 
                                         onChange={this.toggleRememberMe}
                                         className="w-4 h-4 rounded-md border-slate-300 text-[#6366f1] focus:ring-[#6366f1]/20 accent-[#6366f1] cursor-pointer"
@@ -374,6 +380,9 @@ class Login extends Component {
                                     <span>Remember me</span>
                                 </label>
                                 <a 
+                                    role="button"
+                                    tabIndex={0}
+                                    onKeyDown={(e) => e.key === 'Enter' && this.props.showPasswordRecovery && this.props.showPasswordRecovery()}
                                     onClick={() => this.props.showPasswordRecovery && this.props.showPasswordRecovery()}
                                     className="text-[#6366f1] hover:text-[#4f46e5] font-semibold text-[13px] hover:underline cursor-pointer transition-all duration-200"
                                 >
@@ -381,7 +390,14 @@ class Login extends Component {
                                 </a>
                             </div>
 
-                            <input className="inputSubmit mt-2" value={t("login.login")} type="submit" />
+                            {/* GAP-01: Loading state on submit button */}
+                            <input
+                                className="inputSubmit mt-2"
+                                value={this.state.isSubmitting ? 'Signing in…' : t('login.login')}
+                                type="submit"
+                                disabled={this.state.isSubmitting}
+                                style={{ opacity: this.state.isSubmitting ? 0.75 : 1, cursor: this.state.isSubmitting ? 'not-allowed' : 'pointer' }}
+                            />
                         </form>
                     </div>
                 {/* Modal Footer */}

@@ -89,7 +89,20 @@ class AuthWrapper extends Component {
                             exit={{ opacity: 0, y: -20, scale: 0.95 }}
                             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
                         >
-                            <Toast type="SuccessEmail" message={this.state.successMessage} />
+                            {/* GAP-05: Pass title based on message content for correct semantic heading */}
+                            <Toast
+                                type="SuccessEmail"
+                                title={
+                                    (this.state.successMessage || '').startsWith('Welcome back')
+                                        ? ''
+                                        : (this.state.successMessage || '').startsWith('Welcome aboard')
+                                        ? 'Account Created!'
+                                        : (this.state.successMessage || '').startsWith('Password reset')
+                                        ? 'Email Sent'
+                                        : 'Success'
+                                }
+                                message={this.state.successMessage}
+                            />
                         </motion.div>
                     )}
                 </AnimatePresence>

@@ -78,7 +78,8 @@ class Register extends Component {
             enableFacebook,
             enableLinkedIn,
             enableGitHub,
-            oauthLoading: null
+            oauthLoading: null,
+            isSubmitting: false, // GAP-01: prevent double-submit
         };
         this.signUp = this.signUp.bind(this);
         this.signInWithGoogle = this.signInWithGoogle.bind(this);
@@ -243,13 +244,30 @@ class Register extends Component {
 
     async signUp(event) {
         event.preventDefault();
+        if (this.state.isSubmitting) return; // GAP-01: prevent double-submit
+
+        const email = (this.state.email || '').trim();
+        // GAP-04: email format validation
+        if (!email) {
+            if (this.props.throwError) this.props.throwError('Please enter your email address.');
+            return;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            if (this.props.throwError) this.props.throwError('Please enter a valid email address.');
+            return;
+        }
+        if (!this.state.password) {
+            if (this.props.throwError) this.props.throwError('Please enter a password.');
+            return;
+        }
         if (this.state.passwordRepeat !== this.state.password) {
             this.props.throwError("Passwords do not match");
             return;
         }
+
+        this.setState({ isSubmitting: true }); // GAP-01: lock submit
         try {
-            const u = await fire.auth().createUserWithEmailAndPassword(this.state.email, this.state.password);
-            const email = this.state.email;
+            const u = await fire.auth().createUserWithEmailAndPassword(email, this.state.password);
             const userName = email.split('@')[0];
             // Uses auth.js addUser for deduplication + metadata tracking
             const userRes = await addUser(u.user.uid, userName, '', email, { authProvider: 'email' });
@@ -278,7 +296,6 @@ class Register extends Component {
                     }).catch(e => console.warn('[Register] Verification email notice:', e.message));
                 }
             } catch (verifyErr) {
-                // Non-fatal — don't block registration
                 console.warn('[Register] Email verification notice:', verifyErr.message);
             }
 
@@ -290,33 +307,30 @@ class Register extends Component {
                 if (this.props.closeModal) this.props.closeModal();
             }, 2000);
         } catch (error) {
+            this.setState({ isSubmitting: false }); // GAP-01: unlock on error
             let msg = error.message;
             if (error.code === 'auth/email-already-in-use') {
-                // Autonomous Orphaned Account Recovery:
-                // Check if an active Firestore user document actually exists for this email.
-                // If an Admin deleted the account from Firestore, the Firebase Auth record is an orphan.
+                // Autonomous Orphaned Account Recovery
                 try {
                     const firestoreModule = await import('../../../conf/fire');
                     const db = firestoreModule.default.firestore();
-                    const query = await db.collection('users').where('email', '==', this.state.email.toLowerCase().trim()).get();
+                    const query = await db.collection('users').where('email', '==', email.toLowerCase().trim()).get();
                     
                     if (query.empty) {
-                        console.log(`⚡ Autonomous Recovery: Email '${this.state.email}' exists in Firebase Auth but user doc was deleted by Admin. Purging orphaned Auth record and retrying registration...`);
+                        console.log(`⚡ Autonomous Recovery: Email '${email}' exists in Firebase Auth but user doc was deleted by Admin. Purging orphaned Auth record and retrying...`);
                         const purgeRes = await fetch('/api/auth/purge-orphaned-auth', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ email: this.state.email })
+                            body: JSON.stringify({ email })
                         });
                         const purgeData = await purgeRes.json();
                         
                         if (purgeData.success) {
-                            // Retry registration automatically!
-                            console.log('⚡ Retrying createUserWithEmailAndPassword after purging orphan...');
-                            const retryUser = await fire.auth().createUserWithEmailAndPassword(this.state.email, this.state.password);
-                            const email = this.state.email;
+                            const retryUser = await fire.auth().createUserWithEmailAndPassword(email, this.state.password);
                             const userName = email.split('@')[0];
                             await addUser(retryUser.user.uid, userName, '', email, { authProvider: 'email' });
-                            if (this.props.closeModal) this.props.closeModal();
+                            if (this.props.throwSuccess) this.props.throwSuccess('Account created successfully! Welcome aboard.');
+                            setTimeout(() => { if (this.props.closeModal) this.props.closeModal(); }, 2000);
                             return;
                         }
                     }
@@ -348,30 +362,30 @@ class Register extends Component {
                     <p>Build ATS-friendly resumes & portfolios in minutes</p>
                 </div>
                 <div className="body">
-                    <div className="socialAuth">
-                        {/* Google */}
+                    <div className="socialAuth" role="group" aria-label="Register with social account">
+                        {/* Google — GAP-07: button for keyboard/a11y */}
                         {enableGoogle && (
-                            <div onClick={this.signInWithGoogle} className={`googleAuthItem${oauthLoading === 'google' ? ' is-loading' : ''}`} id="btn-register-google" title="Continue with Google">
-                                <img src={GoogleImage} alt="Google" />
-                            </div>
+                            <button type="button" onClick={this.signInWithGoogle} className={`googleAuthItem${oauthLoading === 'google' ? ' is-loading' : ''}`} id="btn-register-google" aria-label="Continue with Google" title="Continue with Google" disabled={!!oauthLoading}>
+                                <img src={GoogleImage} alt="" aria-hidden="true" />
+                            </button>
                         )}
                         {/* Facebook */}
                         {enableFacebook && (
-                            <div onClick={this.signInWithFacebook} className={`facebookAuthItem${oauthLoading === 'facebook' ? ' is-loading' : ''}`} id="btn-register-facebook" title="Continue with Facebook">
-                                <img src={FacebookImage} alt="Facebook" />
-                            </div>
+                            <button type="button" onClick={this.signInWithFacebook} className={`facebookAuthItem${oauthLoading === 'facebook' ? ' is-loading' : ''}`} id="btn-register-facebook" aria-label="Continue with Facebook" title="Continue with Facebook" disabled={!!oauthLoading}>
+                                <img src={FacebookImage} alt="" aria-hidden="true" />
+                            </button>
                         )}
                         {/* LinkedIn */}
                         {enableLinkedIn && (
-                            <div onClick={this.signInWithLinkedIn} className={`linkedinAuthItem${oauthLoading === 'linkedin' ? ' is-loading' : ''}`} id="btn-register-linkedin" title="Continue with LinkedIn">
+                            <button type="button" onClick={this.signInWithLinkedIn} className={`linkedinAuthItem${oauthLoading === 'linkedin' ? ' is-loading' : ''}`} id="btn-register-linkedin" aria-label="Continue with LinkedIn" title="Continue with LinkedIn" disabled={!!oauthLoading}>
                                 <LinkedInIcon />
-                            </div>
+                            </button>
                         )}
                         {/* GitHub */}
                         {enableGitHub && (
-                            <div onClick={this.signInWithGitHub} className={`githubAuthItem${oauthLoading === 'github' ? ' is-loading' : ''}`} id="btn-register-github" title="Continue with GitHub">
+                            <button type="button" onClick={this.signInWithGitHub} className={`githubAuthItem${oauthLoading === 'github' ? ' is-loading' : ''}`} id="btn-register-github" aria-label="Continue with GitHub" title="Continue with GitHub" disabled={!!oauthLoading}>
                                 <GitHubIcon />
-                            </div>
+                            </button>
                         )}
                     </div>
                     {/* Divider */}
@@ -381,11 +395,18 @@ class Register extends Component {
                             <span>{t("login.or")}</span>
                         </div>
                     )}
-                    <form onSubmit={this.signUp} className="registerForm w-full flex flex-col">
+                    <form onSubmit={this.signUp} className="registerForm w-full flex flex-col" autoComplete="on" noValidate>
                         <Input name="Email" title={t("login.email")} value={this.state.email} handleInputs={this.handleInputs} />
                         <Input name="Password" type="Password" title={t("login.password")} value={this.state.password} handleInputs={this.handleInputs} />
                         <Input name="Repeat Password" type="Password" title={t("login.passwordRepeat")} value={this.state.passwordRepeat} handleInputs={this.handleInputs} />
-                        <input className="inputSubmit mt-2" value={t("login.register")} type="submit" />
+                        {/* GAP-01: Loading state on submit button */}
+                        <input
+                            className="inputSubmit mt-2"
+                            value={this.state.isSubmitting ? 'Creating account…' : t('login.register')}
+                            type="submit"
+                            disabled={this.state.isSubmitting}
+                            style={{ opacity: this.state.isSubmitting ? 0.75 : 1, cursor: this.state.isSubmitting ? 'not-allowed' : 'pointer' }}
+                        />
                     </form>
                 </div>
                 {/* Modal Footer */}

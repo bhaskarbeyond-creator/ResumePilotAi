@@ -10,8 +10,8 @@ import { chromium } from 'playwright';
 
     try {
         console.log('1. Navigating to live site...');
-        await page.goto('https://airesume.projectdemo.guru', { waitUntil: 'networkidle', timeout: 30000 });
-        await page.waitForTimeout(1000);
+        await page.goto('https://airesume.projectdemo.guru', { waitUntil: 'domcontentloaded', timeout: 30000 });
+        await page.waitForTimeout(2000);
 
         console.log('2. Locating Sign In / Account button on header...');
         const loginBtn = page.locator('text=/sign in|login|get started|account/i').first();

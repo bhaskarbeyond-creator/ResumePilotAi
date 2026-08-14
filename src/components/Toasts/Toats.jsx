@@ -77,25 +77,31 @@ class Toasts extends Component {
                     {/* <Lottie options={this.props.type == "Success" ? successOptions : this.props.type == "Name Changed" ? successOptions : this.props.type == "Password Changed" ? successOptions : this.props.type == "Delete" ? deleteOptions : this.props.type == "Error" ? errorOptions : this.props.type == "Download" ? downloadOptions : this.props.type == "SuccessEmail" && successOptions}
                         height={this.props.type == "Delete" ? 70 : 50}
                         width={this.props.type == "Delete" ? 70 : 50} /> */}
-                    {this.props.type == 'Success' ? <SuccessView /> : <></>}
-                    {this.props.type == 'Download' ? <SuccessView /> : <></>}
-                    {this.props.type == 'Upgrade' ? <SuccessView /> : <></>}
-                    {this.props.type == 'Error' ? <ErrorView /> : <></>}
-                    {this.props.type == 'SuccessEmail' ? <SuccessEmailView /> : <></>}
+                    {this.props.type == 'Success' ? <SuccessView /> : <></> }
+                    {this.props.type == 'Download' ? <SuccessView /> : <></> }
+                    {this.props.type == 'Upgrade' ? <SuccessView /> : <></> }
+                    {this.props.type == 'Error' ? <ErrorView /> : <></> }
+                    {(this.props.type == 'SuccessEmail' || this.props.type == 'AuthSuccess') ? <SuccessEmailView /> : <></> }
                 </div>
                 <div className="toastDetails">
                     <span className="toastTitle">
-                        {this.props.type == 'Success'
-                            ? 'Success'
-                            : this.props.type == 'Delete'
-                            ? 'Deleted'
-                            : this.props.type == 'Error'
-                            ? 'Error'
-                            : this.props.type == 'Download'
-                            ? 'Downloading'
-                            : this.props.type == 'Upgrade'
-                            ? 'Premium Required'
-                            : this.props.type == 'SuccessEmail' && 'Email Sent'}
+                        {/* GAP-05: Support explicit title prop, fallback to type-based title */}
+                        {this.props.title ||
+                            (this.props.type === 'Success'
+                                ? 'Success'
+                                : this.props.type === 'Delete'
+                                ? 'Deleted'
+                                : this.props.type === 'Error'
+                                ? 'Error'
+                                : this.props.type === 'Download'
+                                ? 'Downloading'
+                                : this.props.type === 'Upgrade'
+                                ? 'Premium Required'
+                                : this.props.type === 'SuccessEmail'
+                                ? 'Email Sent'
+                                : this.props.type === 'AuthSuccess'
+                                ? ''
+                                : '')}
                     </span>
                     <span className="toastMessage">
                         {this.props.message ||
