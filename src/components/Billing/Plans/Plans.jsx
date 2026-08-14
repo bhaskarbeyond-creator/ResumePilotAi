@@ -1,3 +1,4 @@
+import { writeSanitizedPrintDocument } from '../../../utils/sanitizeHtml';
 import React, { useState, useEffect } from 'react';
 import { FaCrown, FaCheck, FaShieldAlt, FaLock, FaCreditCard, FaPaypal, FaRupeeSign, FaTag, FaPercent, FaArrowRight, FaUserCheck, FaGift, FaCheckCircle, FaExclamationTriangle, FaClock, FaArrowLeft, FaCalendarAlt, FaFileInvoice, FaPrint, FaDownload, FaFilePdf, FaHistory, FaExchangeAlt, FaUndo, FaTimes } from 'react-icons/fa';
 import { loadStripe } from '@stripe/stripe-js';
@@ -810,9 +811,7 @@ const PlansPage = (props) => {
             </html>
         `;
 
-        printWindow.document.open();
-        printWindow.document.write(html);
-        printWindow.document.close();
+        writeSanitizedPrintDocument(printWindow, html);
         setTimeout(() => {
             try { printWindow.print(); } catch (e) {}
         }, 400);

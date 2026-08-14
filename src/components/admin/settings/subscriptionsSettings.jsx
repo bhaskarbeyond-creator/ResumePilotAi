@@ -1,3 +1,4 @@
+import { writeSanitizedPrintDocument } from '../../../utils/sanitizeHtml';
 import React, { Component } from 'react';
 import { getSubscriptionStatus, setSubscriptionsData, getAllCouponsAdmin, saveCoupon, deleteCoupon, getSystemSettings, saveSystemSettings, getAllInvoicesAdmin, getAllAdminTransactions, refundOrderTransaction } from '../../../firestore/dbOperations';
 import { FaCheck, FaTimes, FaCreditCard, FaRupeeSign, FaDollarSign, FaToggleOn, FaToggleOff, FaPaypal, FaStripe, FaFlask, FaShieldAlt, FaTag, FaPlus, FaTrash, FaEdit, FaCalendarAlt, FaPercent, FaEye, FaEyeSlash, FaDownload, FaSearch, FaFileInvoice, FaPrint, FaListAlt, FaCog, FaUndo } from 'react-icons/fa';
@@ -941,9 +942,7 @@ class SubscriptionSetting extends Component {
             </html>
         `;
 
-        printWindow.document.open();
-        printWindow.document.write(html);
-        printWindow.document.close();
+        writeSanitizedPrintDocument(printWindow, html);
         try {
             printWindow.focus();
         } catch (e) {}
@@ -1191,8 +1190,7 @@ class SubscriptionSetting extends Component {
             </body>
             </html>
         `;
-        win.document.write(html);
-        win.document.close();
+        writeSanitizedPrintDocument(win, html);
     }
 
     handleChange(event, inputName) {
@@ -1408,8 +1406,7 @@ class SubscriptionSetting extends Component {
             </body>
             </html>
         `;
-        printWindow.document.write(invoiceHtml);
-        printWindow.document.close();
+        writeSanitizedPrintDocument(printWindow, invoiceHtml);
     }
 
     handlePPCheckedChange() {

@@ -1,3 +1,4 @@
+import { sanitizeUrl } from '../../../utils/sanitizeHtml';
 import React, { Component } from 'react';
 import { addPages, getPages, removePageByName, getAds, addAds, removeAd } from '../../../firestore/dbOperations';
 import { FaCheck, FaTimes, FaBullhorn, FaTrash, FaPlus, FaImage, FaLink, FaEye, FaExternalLinkAlt } from 'react-icons/fa';
@@ -70,7 +71,7 @@ class AdsSettings extends Component {
     render() {
         const totalAds = this.state.ads ? this.state.ads.length : 0;
         const isFormValid = this.state.bannerName.trim() && this.state.imageLink.trim() && this.state.destinationLink.trim();
-        
+
         return (
             <div className="space-y-6">
                 {/* Success Alert */}
@@ -105,7 +106,7 @@ class AdsSettings extends Component {
                                 <p className="text-sm text-slate-500">Manage banner ads displayed on your website</p>
                             </div>
                         </div>
-                        
+
                         <div className="flex items-center space-x-4 text-sm">
                             <div className="text-center">
                                 <p className="text-2xl font-bold text-slate-900">{totalAds}</p>
@@ -113,7 +114,7 @@ class AdsSettings extends Component {
                             </div>
                         </div>
                     </div>
-                    
+
                     {/* Current Ads List */}
                     <div className="pt-4 border-t border-slate-100">
                         {this.state.ads === null || this.state.ads.length === 0 ? (
@@ -129,8 +130,8 @@ class AdsSettings extends Component {
                                         <div className="flex items-center space-x-3">
                                             <div className="w-12 h-8 bg-white rounded border border-slate-200 flex items-center justify-center overflow-hidden">
                                                 {ad.imageLink ? (
-                                                    <img 
-                                                        src={ad.imageLink} 
+                                                    <img
+                                                        src={ad.imageLink}
                                                         alt={ad.name}
                                                         className="w-full h-full object-cover"
                                                         onError={(e) => {
@@ -149,11 +150,11 @@ class AdsSettings extends Component {
                                                 </p>
                                             </div>
                                         </div>
-                                        
+
                                         <div className="flex items-center space-x-2">
                                             {ad.imageLink && (
-                                                <a 
-                                                    href={ad.imageLink} 
+                                                <a
+                                                    href={sanitizeUrl(ad.imageLink)}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -162,7 +163,7 @@ class AdsSettings extends Component {
                                                     <FaEye className="w-4 h-4" />
                                                 </a>
                                             )}
-                                            <button 
+                                            <button
                                                 onClick={() => this.removeAddHandler(ad.id)}
                                                 className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                                 title="Delete ad"
@@ -242,7 +243,7 @@ class AdsSettings extends Component {
                                 <p className="text-xs text-slate-500 mt-2">Where users will go when they click the banner</p>
                             </div>
                         </div>
-                        
+
                         {/* Preview Section */}
                         <div>
                             <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
@@ -250,12 +251,12 @@ class AdsSettings extends Component {
                                     <FaEye className="w-4 h-4 text-slate-600" />
                                     <span className="text-sm font-medium text-slate-700">Preview</span>
                                 </div>
-                                
+
                                 {this.state.imageLink ? (
                                     <div className="space-y-3">
                                         <div className="bg-white rounded-lg border border-slate-200 p-3">
-                                            <img 
-                                                src={this.state.imageLink} 
+                                            <img
+                                                src={this.state.imageLink}
                                                 alt={this.state.bannerName || 'Banner preview'}
                                                 className="w-full h-24 object-cover rounded border border-slate-200"
                                                 onError={(e) => {
@@ -263,7 +264,7 @@ class AdsSettings extends Component {
                                                     e.target.nextSibling.style.display = 'flex';
                                                 }}
                                             />
-                                            <div 
+                                            <div
                                                 className="w-full h-24 border border-dashed border-slate-300 rounded bg-slate-100 flex items-center justify-center"
                                                 style={{display: 'none'}}
                                             >
@@ -273,7 +274,7 @@ class AdsSettings extends Component {
                                                 </div>
                                             </div>
                                         </div>
-                                        
+
                                         <div className="text-xs space-y-1">
                                             <p className="text-slate-600">
                                                 <strong>Name:</strong> {this.state.bannerName || 'Untitled Banner'}

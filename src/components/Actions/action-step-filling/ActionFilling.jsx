@@ -1,3 +1,4 @@
+import { sanitizeUrl } from '../../../utils/sanitizeHtml';
 import React, { Component } from 'react';
 import './ActionFilling.scss';
 import { Analytics } from '../../Analytics';
@@ -671,7 +672,7 @@ class ActionFilling extends Component {
                     {this.state.containAds && (
                         <div className="ads-wrapper">
                             <div className="ads-area">
-                                <a href={this.state.ads[randomAdIndex].destinationLink}>
+                                <a href={sanitizeUrl(this.state.ads[randomAdIndex].destinationLink)}>
                                     <img src={this.state.ads[randomAdIndex].imageLink} alt="image" />
                                 </a>
                             </div>
@@ -724,7 +725,7 @@ class ActionFilling extends Component {
                         {this.state.containAds && (
                             <div className="ads-wrapper">
                                 <div className="ads-area">
-                                    <a href={this.state.ads[randomAdIndex].destinationLink}>
+                                    <a href={sanitizeUrl(this.state.ads[randomAdIndex].destinationLink)}>
                                         <img src={this.state.ads[randomAdIndex].imageLink} alt="image" />
                                     </a>
                                 </div>

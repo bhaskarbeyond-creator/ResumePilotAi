@@ -3,14 +3,42 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const EmailNotifier = require('../services/emailNotifier');
 const router = express.Router();
 
+async function getGeminiApiKey(req) {
+    if (process.env.GEMINI_API_KEY) return process.env.GEMINI_API_KEY;
+    const db = req.app.get('db');
+    if (!db) return '';
+    try {
+        const secrets = await db.collection('settings').doc('ai_providers').get();
+        if (secrets.exists && secrets.data()?.gemini?.apiKey) return secrets.data().gemini.apiKey;
+        const legacy = await db.collection('data').doc('system_settings').get();
+        return legacy.data()?.ai?.geminiApiKey || '';
+    } catch (error) {
+        console.warn('[AI config]', error.message);
+        return '';
+    }
+}
+
+// Provider credentials are server-owned. Bound prompt inputs before any paid provider call.
+router.use((req, res, next) => {
+    if (req.method === 'GET') return next();
+    if (Object.prototype.hasOwnProperty.call(req.body || {}, 'apiKey') || req.get('x-gemini-api-key')) {
+        return res.status(400).json({ error: { code: 'CLIENT_AI_KEY_REJECTED', message: 'Client-supplied AI credentials are not accepted', requestId: res.locals.requestId } });
+    }
+    const serialized = JSON.stringify(req.body || {});
+    if (serialized.length > 50_000) {
+        return res.status(413).json({ error: { code: 'AI_INPUT_TOO_LARGE', message: 'AI input exceeds the allowed size', requestId: res.locals.requestId } });
+    }
+    return next();
+});
+
 // Resume generation endpoint
 router.post('/generate-resume', async (req, res) => {
     try {
-        const { occupation, experienceLevel, skills = [], education = [], language = 'en', userEmail, userName } = req.body;
+        const { occupation, experienceLevel, skills = [], education = [], language = 'en', userName } = req.body;
 
-        if (userEmail) {
+        if (req.user?.email) {
             EmailNotifier.notifyAIResumeReady(req.app.get('db'), {
-                userEmail,
+                userEmail: req.user.email,
                 userName: userName || 'Candidate',
                 atsScore: '94'
             }).catch(e => console.warn('[AI Notifier] Resume email notice:', e.message));
@@ -67,7 +95,7 @@ router.post('/generate-resume', async (req, res) => {
         positionTitle = positionLevel ? `${positionLevel} ${cleanOccupation}` : cleanOccupation;
 
         // Check for API key from request body, headers, or env
-        const apiKey = req.body.apiKey || req.headers['x-gemini-api-key'] || process.env.GEMINI_API_KEY;
+        const apiKey = await getGeminiApiKey(req);
 
         if (!apiKey) {
             console.log('No API key found, using fallback generator');
@@ -272,7 +300,7 @@ router.post('/generate-summary', async (req, res) => {
         console.log('Summary target language mapped to:', targetLanguage);
 
         // Check for API key from request body, headers, or env
-        const apiKey = req.body.apiKey || req.headers['x-gemini-api-key'] || process.env.GEMINI_API_KEY;
+        const apiKey = await getGeminiApiKey(req);
 
         if (!apiKey) {
             console.log('No API key found, using fallback summary generator');
@@ -413,7 +441,7 @@ router.post('/generate-interview', async (req, res) => {
 
         const targetLanguage = languageNames[language] || 'English';
 
-        const apiKey = req.body.apiKey || req.headers['x-gemini-api-key'] || process.env.GEMINI_API_KEY;
+        const apiKey = await getGeminiApiKey(req);
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
@@ -556,7 +584,7 @@ router.post('/generate-work-description', async (req, res) => {
         console.log('Target language mapped to:', targetLanguage);
 
         // Check for API key from request body, headers, or env
-        const apiKey = req.body.apiKey || req.headers['x-gemini-api-key'] || process.env.GEMINI_API_KEY;
+        const apiKey = await getGeminiApiKey(req);
 
         if (!apiKey) {
             console.log('No API key found, using fallback work description generator');
@@ -699,7 +727,7 @@ router.post('/generate-education-description', async (req, res) => {
         console.log('Target language mapped to:', targetLanguage);
 
         // Check for API key from request body, headers, or env
-        const apiKey = req.body.apiKey || req.headers['x-gemini-api-key'] || process.env.GEMINI_API_KEY;
+        const apiKey = await getGeminiApiKey(req);
 
         if (!apiKey) {
             console.log('No API key found, using fallback education description generator');
@@ -1733,8 +1761,8 @@ router.post('/generate-skills', async (req, res) => {
         console.log('Target language mapped to:', targetLanguage);
 
         // Check for API key
-        const apiKey = process.env.GEMINI_API_KEY;
-        console.log('🔑 API Key status:', apiKey ? `Set (${apiKey.substring(0, 10)}...)` : '❌ NOT SET');
+        const apiKey = await getGeminiApiKey(req);
+        console.log('AI provider key configured:', Boolean(apiKey));
 
         if (!apiKey) {
             console.log('⚠️  No GEMINI_API_KEY found in environment variables, using fallback skills generator');
@@ -2065,7 +2093,7 @@ router.post('/check-grammar', async (req, res) => {
         const targetLanguage = languageNames[language] || 'English';
 
         // Check for API key
-        const apiKey = process.env.GEMINI_API_KEY;
+        const apiKey = await getGeminiApiKey(req);
         if (!apiKey) {
             console.log('No API key found, using fallback grammar checker');
             const fallbackData = generateFallbackGrammarCheck(text, targetLanguage);
@@ -2223,16 +2251,76 @@ router.post('/check-grammar', async (req, res) => {
     }
 });
 
+const extractJsonObject = (text) => {
+    const cleaned = String(text || '').replace(/```json|```/gi, '').trim();
+    try { return JSON.parse(cleaned); } catch (_) {}
+    const start = cleaned.indexOf('{');
+    const end = cleaned.lastIndexOf('}');
+    if (start >= 0 && end > start) {
+        try { return JSON.parse(cleaned.slice(start, end + 1)); } catch (_) {}
+    }
+    return null;
+};
+
+// Small auxiliary operations retained behind the same auth/quota boundary.
+router.post('/generate-content', async (req, res) => {
+    const operation = String(req.body.operation || '');
+    const payload = req.body.payload || {};
+    const key = await getGeminiApiKey(req);
+    if (!key) return res.status(503).json({ error: { code: 'AI_PROVIDER_UNAVAILABLE', message: 'AI provider is not configured', requestId: res.locals.requestId } });
+    const compact = value => String(value || '').replace(/[\u0000-\u001f]/g, ' ').slice(0, 4000);
+    let prompt;
+    if (operation === 'enhance-single-bullet') {
+        prompt = `Improve this resume bullet without inventing facts. Return JSON only: {"enhancedBullet":"..."}. Bullet: ${compact(payload.bullet)}`;
+    } else if (operation === 'generate-certifications') {
+        prompt = `Recommend up to 6 real, recognized certifications for this candidate. Do not invent credentials. Return JSON only: {"certifications":[{"title":"...","issuer":"..."}]}. Role: ${compact(payload.jobTitle || payload.occupation)}. Skills: ${compact(payload.skills)}. Education: ${compact(payload.education)}.`;
+    } else if (operation === 'autocomplete') {
+        const allowedTypes = new Set(['jobTitle', 'occupation', 'employer', 'school', 'degree', 'skill', 'city']);
+        const type = allowedTypes.has(payload.type) ? payload.type : 'occupation';
+        prompt = `Return up to 8 concise autocomplete values as JSON only: {"suggestions":["..."]}. Field: ${type}. Prefix: ${compact(payload.query).slice(0, 100)}`;
+    } else {
+        return res.status(400).json({ error: { code: 'UNSUPPORTED_AI_OPERATION', message: 'Unsupported AI operation', requestId: res.locals.requestId } });
+    }
+    try {
+        const model = new GoogleGenerativeAI(key).getGenerativeModel({ model: process.env.GEMINI_MODEL || 'gemini-2.0-flash' });
+        const result = await model.generateContent(prompt);
+        const parsed = extractJsonObject(result.response.text());
+        if (!parsed) throw new Error('INVALID_AI_RESPONSE');
+        return res.json(parsed);
+    } catch (error) {
+        console.error('[Aux AI]', error.message);
+        return res.status(502).json({ error: { code: 'AI_PROVIDER_ERROR', message: 'AI generation failed', requestId: res.locals.requestId } });
+    }
+});
+
+router.post('/parse-resume', async (req, res) => {
+    const rawText = String(req.body.rawText || '');
+    if (!rawText || rawText.length > 40_000) return res.status(400).json({ error: { code: 'INVALID_RESUME_TEXT', message: 'Resume text must be between 1 and 40000 characters', requestId: res.locals.requestId } });
+    const key = await getGeminiApiKey(req);
+    if (!key) return res.status(503).json({ error: { code: 'AI_PROVIDER_UNAVAILABLE', message: 'AI provider is not configured', requestId: res.locals.requestId } });
+    const prompt = `Extract resume facts without inventing data. Return one JSON object only with keys firstname, lastname, email, phone, occupation, city, country, address, postalcode, summary, employments, educations, skills, languages. Missing scalar fields must be empty strings and missing arrays empty arrays. Resume text:\n${rawText}`;
+    try {
+        const model = new GoogleGenerativeAI(key).getGenerativeModel({ model: process.env.GEMINI_MODEL || 'gemini-2.0-flash' });
+        const result = await model.generateContent(prompt);
+        const parsed = extractJsonObject(result.response.text());
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('INVALID_AI_RESPONSE');
+        return res.json({ data: parsed });
+    } catch (error) {
+        console.error('[Resume parser]', error.message);
+        return res.status(502).json({ error: { code: 'AI_PROVIDER_ERROR', message: 'Resume parsing failed', requestId: res.locals.requestId } });
+    }
+});
+
 // Test endpoint to check AI configuration
 router.get('/test-ai-config', async (req, res) => {
     try {
         console.log('===== AI CONFIGURATION TEST =====');
         console.log('Environment check:');
         console.log('- NODE_ENV:', process.env.NODE_ENV);
-        console.log('- GEMINI_API_KEY exists:', !!process.env.GEMINI_API_KEY);
-        console.log('- GEMINI_API_KEY length:', process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.length : 0);
+        const configuredKey = await getGeminiApiKey(req);
+        console.log('- GEMINI_API_KEY exists:', Boolean(configuredKey));
         
-        if (!process.env.GEMINI_API_KEY) {
+        if (!configuredKey) {
             return res.status(500).json({
                 error: 'GEMINI_API_KEY is not configured',
                 configured: false
@@ -2240,7 +2328,7 @@ router.get('/test-ai-config', async (req, res) => {
         }
 
         // Test the API connection
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const genAI = new GoogleGenerativeAI(configuredKey);
         const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
         const result = await model.generateContent('Test connection. Just respond with "API working".');

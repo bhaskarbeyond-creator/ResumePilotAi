@@ -1,3 +1,4 @@
+import { sanitizeUrl } from '../../../utils/sanitizeHtml';
 import { useState, useEffect } from 'react';
 import { FaPlus, FaTrash, FaPen, FaSave, FaTimes, FaImage, FaBuilding, FaEye, FaInfoCircle, FaSpinner, FaCheck, FaExclamationTriangle } from 'react-icons/fa';
 import { addTrustedBy, getTrustedBy, removeTrustedBy, updateTrustedBy } from '../../../firestore/dbOperations';
@@ -418,7 +419,7 @@ const TrustedBy = () => {
                                                         <span>Edit</span>
                                                     </button>
                                                     <button
-                                                        onClick={() => window.open(company.imageUrl, '_blank')}
+                                                        onClick={() => window.open(sanitizeUrl(company.imageUrl), '_blank')}
                                                         className="flex items-center space-x-1 bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-medium px-3 py-1 rounded-lg transition-colors"
                                                         title="Preview image"
                                                     >

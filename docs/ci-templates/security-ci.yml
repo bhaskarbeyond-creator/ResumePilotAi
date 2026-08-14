@@ -1,0 +1,65 @@
+name: Security CI
+
+on:
+  pull_request:
+  push:
+    branches: ["arena/019ffe7b-resumepilotai"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install frontend and test tooling
+        run: npm ci --ignore-scripts
+
+      - name: Install backend
+        run: npm --prefix backend ci --ignore-scripts
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Security and authorization unit tests
+        run: npm run test:security
+
+      - name: Firestore rules adversarial tests
+        run: npm run test:firestore
+
+      - name: Production build
+        run: npm run build
+
+      - name: Block high and critical production dependency findings
+        run: npm run audit:production
+
+      - name: Detect accidentally committed private keys and provider tokens
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git grep -nIE 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|sk_(live|test)_[A-Za-z0-9]{16,}|AIza[0-9A-Za-z_-]{30,}' -- ':!package-lock.json' ':!backend/package-lock.json' ':!tests/**'; then
+            echo 'Potential secret material found in tracked files.' >&2
+            exit 1
+          fi

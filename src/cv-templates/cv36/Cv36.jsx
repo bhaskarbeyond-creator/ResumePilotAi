@@ -1,3 +1,4 @@
+import { sanitizeRichText } from '../../utils/sanitizeHtml';
 import React, { Component } from 'react';
 import './Cv36.scss';
 import { withTranslation } from 'react-i18next';
@@ -113,7 +114,7 @@ class Cv36 extends Component {
                         <h3 className="timeline-title">{tempEmployments[index].jobTitle}</h3>
                         <div className="timeline-subtitle">{tempEmployments[index].employer}</div>
                         <div className="timeline-description">
-                            <p dangerouslySetInnerHTML={{ __html: tempEmployments[index].description }}></p>
+                            <p dangerouslySetInnerHTML={{ __html: sanitizeRichText(tempEmployments[index].description) }}></p>
                         </div>
                     </div>
                 </div>
@@ -142,7 +143,7 @@ class Cv36 extends Component {
                         <h3 className="timeline-title">{tempEducations[index].degree}</h3>
                         <div className="timeline-subtitle">{tempEducations[index].school}</div>
                         <div className="timeline-description">
-                            <p dangerouslySetInnerHTML={{ __html: tempEducations[index].description }}></p>
+                            <p dangerouslySetInnerHTML={{ __html: sanitizeRichText(tempEducations[index].description) }}></p>
                         </div>
                     </div>
                 </div>
@@ -222,7 +223,7 @@ class Cv36 extends Component {
                                     <div className="quote-icon">
                                         <FaQuoteRight />
                                     </div>
-                                    <p className="summary-text" dangerouslySetInnerHTML={{ __html: this.props.values.summary }}></p>
+                                    <p className="summary-text" dangerouslySetInnerHTML={{ __html: sanitizeRichText(this.props.values.summary) }}></p>
                                 </div>
                             </div>
                         </div>

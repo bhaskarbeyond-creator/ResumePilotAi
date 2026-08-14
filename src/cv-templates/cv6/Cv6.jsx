@@ -1,3 +1,4 @@
+import { sanitizeRichText } from '../../utils/sanitizeHtml';
 import React, { Component } from 'react';
 import './Cv6.scss';
 import Address from '../../assets/cv2-assets/address.png';
@@ -51,7 +52,7 @@ class Cv6 extends Component {
                     <div className="cv6-jobDate">
                         {item.employer}{dateStr ? ` | ${dateStr}` : ''}
                     </div>
-                    <div dangerouslySetInnerHTML={{ __html: item.description }} />
+                    <div dangerouslySetInnerHTML={{ __html: sanitizeRichText(item.description) }} />
                 </div>
             );
         }
@@ -84,7 +85,7 @@ class Cv6 extends Component {
                     <div className="cv6-jobDate">
                         {item.school}{dateStr ? ` | ${dateStr}` : ''}
                     </div>
-                    <div dangerouslySetInnerHTML={{ __html: item.description }} />
+                    <div dangerouslySetInnerHTML={{ __html: sanitizeRichText(item.description) }} />
                 </div>
             );
         }
@@ -203,7 +204,7 @@ class Cv6 extends Component {
                                 <div className="cv5-rightSectionTitle">
                                     <span style={{ color: this.getPrimaryColor() }}>{t('resume.personalSummary')}</span>
                                 </div>
-                                <p dangerouslySetInnerHTML={{ __html: this.props.values.summary }}></p>
+                                <p dangerouslySetInnerHTML={{ __html: sanitizeRichText(this.props.values.summary) }}></p>
                             </div>
                             {/* End : Summary */}
                             {/* Experience */}

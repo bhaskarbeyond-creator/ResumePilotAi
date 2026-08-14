@@ -1,3 +1,4 @@
+import { sanitizeUrl } from '../../../utils/sanitizeHtml';
 import React from 'react';
 
 const Contact3 = {
@@ -274,7 +275,7 @@ const Contact3 = {
                                                 <div className="flex-1">
                                                     <div className="text-sm font-medium text-gray-600 mb-1">{method.name}</div>
                                                     {method.href ? (
-                                                        <a href={method.href} className={`font-semibold ${currentAccent.primary} hover:underline transition-colors`}>
+                                                        <a href={sanitizeUrl(method.href)} className={`font-semibold ${currentAccent.primary} hover:underline transition-colors`}>
                                                             {method.value}
                                                         </a>
                                                     ) : (

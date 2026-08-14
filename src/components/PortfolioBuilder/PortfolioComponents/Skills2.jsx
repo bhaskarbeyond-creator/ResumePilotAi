@@ -1,12 +1,9 @@
 import React from 'react';
 
 // 🔒 SECURITY: Secure text renderer
-const SecureText = ({ children, className = '' }) => {
-    if (typeof children !== 'string') return <span className={className}>{children}</span>;
-    // Escape any potential HTML/JS in text content
-    const escaped = children.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
-    return <span className={className} dangerouslySetInnerHTML={{ __html: escaped }} />;
-};
+const SecureText = ({ children, className = '' }) => (
+    <span className={className}>{children}</span>
+);
 
 const Skills2 = {
     fields: {

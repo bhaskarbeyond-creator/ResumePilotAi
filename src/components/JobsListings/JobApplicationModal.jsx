@@ -1,3 +1,4 @@
+import { sanitizeUrl } from '../../utils/sanitizeHtml';
 import React, { useState, useRef, useEffect, useMemo, useContext, useCallback } from 'react';
 import { withTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -770,7 +771,7 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
                                                             </button>
                                                             <span className="text-xs text-slate-400">•</span>
                                                             <a
-                                                                href={applicationData.selectedResume.shareableLink}
+                                                                href={sanitizeUrl(applicationData.selectedResume.shareableLink)}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
                                                                 className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center space-x-1">

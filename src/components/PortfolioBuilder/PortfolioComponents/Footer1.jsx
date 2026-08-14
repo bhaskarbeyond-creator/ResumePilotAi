@@ -1,3 +1,4 @@
+import { sanitizeUrl } from '../../../utils/sanitizeHtml';
 import React from 'react';
 
 const Footer1 = {
@@ -66,7 +67,7 @@ const Footer1 = {
                             <p className="text-gray-300 mb-6 leading-relaxed">{description}</p>
                             <div className="flex space-x-4">
                                 {socialList.map((social, index) => (
-                                    <a key={index} href={social.url} target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-white transition-colors duration-200">
+                                    <a key={index} href={sanitizeUrl(social.url)} target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-white transition-colors duration-200">
                                         {social.platform}
                                     </a>
                                 ))}

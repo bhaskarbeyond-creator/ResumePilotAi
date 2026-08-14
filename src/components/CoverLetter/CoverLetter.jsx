@@ -3,7 +3,7 @@ import './CoverLetter.scss';
 import logo from '../../assets/logo/logo.png';
 import { withTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { saveCoverLetter, getUserCoverLetters, deleteCoverLetter, getSystemSettings, getProfileOfUser } from '../../firestore/dbOperations';
+import { saveCoverLetter, getUserCoverLetters, deleteCoverLetter, getProfileOfUser } from '../../firestore/dbOperations';
 import fire from '../../conf/fire';
 import Cover1 from '../../cv-templates/cover1/Cover1';
 
@@ -200,9 +200,6 @@ class CoverLetter extends Component {
     generateAiCoverLetter = async () => {
         this.setState({ isAiGenerating: true });
         try {
-            const settings = await getSystemSettings();
-            const aiSettings = settings?.ai || {};
-
             const response = await fetch('/api/generate-ai-cover-letter', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -212,8 +209,7 @@ class CoverLetter extends Component {
                     recipientName: this.state.recipientName,
                     userSkills: this.state.userSkills,
                     candidateName: `${this.state.candidateFirstname} ${this.state.candidateLastname}`.trim(),
-                    yearsExperience: this.state.yearsExperience || (this.state.userSkills ? `${Math.max(2, this.state.userSkills.split(',').length * 2)}+` : '3+'),
-                    aiSettings: aiSettings
+                    yearsExperience: this.state.yearsExperience || (this.state.userSkills ? `${Math.max(2, this.state.userSkills.split(',').length * 2)}+` : '3+')
                 })
             });
             const data = await response.json();

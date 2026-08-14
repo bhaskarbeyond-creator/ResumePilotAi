@@ -1,3 +1,4 @@
+import { sanitizeRichText } from '../../utils/sanitizeHtml';
 import React, { Component } from 'react';
 import './Cv2.scss';
 import Address from '../../assets/cv2-assets/address.png';
@@ -155,7 +156,7 @@ class Cv2 extends Component {
                         {emp.description && (
                             <div
                                 className="cv-jobDescription justified-text"
-                                dangerouslySetInnerHTML={{ __html: emp.description }}
+                                dangerouslySetInnerHTML={{ __html: sanitizeRichText(emp.description) }}
                             />
                         )}
                     </div>
@@ -184,7 +185,7 @@ class Cv2 extends Component {
                         {edu.description && (
                             <div
                                 className="cv-jobDescription justified-text"
-                                dangerouslySetInnerHTML={{ __html: edu.description }}
+                                dangerouslySetInnerHTML={{ __html: sanitizeRichText(edu.description) }}
                             />
                         )}
                     </div>
@@ -284,7 +285,7 @@ class Cv2 extends Component {
                                 <div className="cv-sectionRight">
                                     <div
                                         className="summary justified-text"
-                                        dangerouslySetInnerHTML={{ __html: values.summary }}
+                                        dangerouslySetInnerHTML={{ __html: sanitizeRichText(values.summary) }}
                                     />
                                 </div>
                             </div>

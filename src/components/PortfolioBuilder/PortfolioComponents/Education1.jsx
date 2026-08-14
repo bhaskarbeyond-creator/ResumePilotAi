@@ -1,3 +1,4 @@
+import { sanitizeUrl } from '../../../utils/sanitizeHtml';
 import React from 'react';
 
 // 🔒 SECURITY: Secure URL validator
@@ -12,12 +13,9 @@ const SecureUrl = {
 };
 
 // 🔒 SECURITY: Secure text renderer
-const SecureText = ({ children, className = '' }) => {
-    if (typeof children !== 'string') return <span className={className}>{children}</span>;
-    // Escape any potential HTML/JS in text content
-    const escaped = children.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
-    return <span className={className} dangerouslySetInnerHTML={{ __html: escaped }} />;
-};
+const SecureText = ({ children, className = '' }) => (
+    <span className={className}>{children}</span>
+);
 
 const Education1 = {
     fields: {
@@ -237,7 +235,7 @@ const Education1 = {
 
                                                     {edu.credentialUrl && (
                                                         <a
-                                                            href={edu.credentialUrl}
+                                                            href={sanitizeUrl(edu.credentialUrl)}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
                                                             className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-300 hover:scale-105 shadow-lg">

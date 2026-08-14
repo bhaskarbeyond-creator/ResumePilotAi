@@ -1,3 +1,4 @@
+import { sanitizeRichText } from '../../utils/sanitizeHtml';
 import React, { Component } from 'react';
 import './Cv22.scss';
 
@@ -37,7 +38,7 @@ class Cv22 extends Component {
                     <div className="cv22-content">
                         <h3 className="cv22-title">{tempEmployments[index].jobTitle}</h3>
                         <div className="cv22-subtitle">{tempEmployments[index].employer}</div>
-                        <p className="cv22-description" dangerouslySetInnerHTML={{ __html: tempEmployments[index].description }}></p>
+                        <p className="cv22-description" dangerouslySetInnerHTML={{ __html: sanitizeRichText(tempEmployments[index].description) }}></p>
                     </div>
                 </div>
             );
@@ -62,7 +63,7 @@ class Cv22 extends Component {
                     <div className="cv22-content">
                         <h3 className="cv22-title">{tempEducations[index].degree}</h3>
                         <div className="cv22-subtitle">{tempEducations[index].school}</div>
-                        <p className="cv22-description" dangerouslySetInnerHTML={{ __html: tempEducations[index].description }}></p>
+                        <p className="cv22-description" dangerouslySetInnerHTML={{ __html: sanitizeRichText(tempEducations[index].description) }}></p>
                     </div>
                 </div>
             );
@@ -191,7 +192,7 @@ class Cv22 extends Component {
                             <h3 className="cv22-section-title">{t('resume.personalSummary')}</h3>
                         </div>
                         <div className="cv22-summary-content">
-                            <p dangerouslySetInnerHTML={{ __html: this.props.values.summary }}></p>
+                            <p dangerouslySetInnerHTML={{ __html: sanitizeRichText(this.props.values.summary) }}></p>
                         </div>
                     </div>
 

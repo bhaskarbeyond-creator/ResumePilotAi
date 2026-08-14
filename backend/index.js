@@ -8,10 +8,6 @@ const path = require('path');
 const fetch = require('node-fetch');
 global.fetch = fetch;
 const crypto = require('crypto');
-// Enterprise single-use password reset token registry (15-min expiry, in-memory)
-const resetTokens = new Map();
-// Enterprise single-use email verification token registry (24-hour expiry, in-memory + Firestore fallback)
-const verificationTokens = new Map();
 
 const { chromium } = require('playwright');
 require('dotenv').config();
@@ -20,6 +16,15 @@ const app = express();
 const cors = require('cors');
 const cryptoRandom = require('crypto');
 const { requireAuth, requirePermission } = require('./security/auth');
+const { enforceApiPolicy } = require('./security/policy');
+const {
+    aiAccountLimiter,
+    notificationAccountLimiter,
+    exportAccountLimiter,
+    scraperAccountLimiter,
+    enforceDailyAiQuota,
+    bindNotificationRecipient
+} = require('./security/abuse');
 const port = process.env.PORT || 8080;
 const websiteName = process.env.WEBSITE_NAME || 'airesume.projectdemo.guru';
 const protocol = process.env.PROTOCOL || 'https';
@@ -28,7 +33,7 @@ const protocol = process.env.PROTOCOL || 'https';
 let admin = null;
 let db = null;
 try {
-    admin = require('firebase-admin');
+    admin = require('./services/firebaseAdmin');
     if (!admin.apps.length) {
         let credential;
         const serviceAccountPath = path.join(__dirname, 'serviceAccountKey.json');
@@ -104,25 +109,38 @@ initSystemFonts();
 app.use('/api/stripe-webhook', express.raw({ type: 'application/json', limit: '1mb' }));
 app.use(express.json({ limit: '256kb', type: req => req.originalUrl !== '/api/stripe-webhook' }));
 app.use(express.urlencoded({ extended: false, limit: '64kb' }));
+app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS || 0));
+app.disable('x-powered-by');
 app.use((req, res, next) => {
-    res.locals.requestId = req.get('x-request-id') || cryptoRandom.randomUUID();
+    const suppliedRequestId = req.get('x-request-id') || '';
+    res.locals.requestId = /^[A-Za-z0-9._-]{1,80}$/.test(suppliedRequestId)
+        ? suppliedRequestId
+        : cryptoRandom.randomUUID();
     res.setHeader('X-Request-Id', res.locals.requestId);
     next();
 });
-const allowedOrigins = [
+const configuredOrigins = String(process.env.CORS_ALLOWED_ORIGINS || '')
+    .split(',').map(value => value.trim()).filter(Boolean);
+const allowedOrigins = new Set([
+    `https://${websiteName}`,
     'https://airesume.projectdemo.guru',
-    'http://localhost:5173',
-    'http://localhost:3000',
-    'http://ai-resume-builder.local'
-];
+    ...configuredOrigins,
+    ...(process.env.NODE_ENV === 'production' ? [] : [
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'http://ai-resume-builder.local'
+    ])
+]);
 app.use(cors({
-    origin: function (origin, callback) {
-        if (!origin || allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.projectdemo.guru')) {
-            callback(null, true);
-        } else {
-            callback(new Error('Origin not allowed by CORS policy'));
-        }
-    }
+    origin(origin, callback) {
+        // Non-browser clients do not send Origin. Browser origins must be exact allowlist matches.
+        if (!origin || allowedOrigins.has(origin)) return callback(null, true);
+        return callback(null, false);
+    },
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Authorization', 'Content-Type', 'Idempotency-Key', 'X-Request-Id'],
+    maxAge: 600,
+    credentials: false
 }));
 
 const helmet = require('helmet');
@@ -154,33 +172,39 @@ app.use('/api/auth', authLimiter);
 // Zero-trust API boundary. Requests are authenticated unless they are explicitly
 // public protocol endpoints. Route handlers must still enforce their own role/ownership policy.
 const publicApiPaths = new Set([
-    '/stripe-webhook', '/auth/custom-password-reset', '/auth/send-verification-email',
+    '/stripe-webhook', '/public-export', '/auth/custom-password-reset',
     '/auth/verify-email-token', '/auth/set-user-password', '/auth/linkedin', '/auth/linkedin/callback',
-    '/auth/github', '/auth/github/callback'
+    '/auth/github', '/auth/github/callback', '/auth/oauth/exchange'
 ]);
 app.use('/api', (req, res, next) => {
     if (publicApiPaths.has(req.path)) return next();
     return requireAuth(req, res, next);
 });
-// Administrative, diagnostic, mail-operations and test namespaces are never normal-user operations.
+app.use('/api', (req, res, next) => {
+    if (publicApiPaths.has(req.path)) return next();
+    return enforceApiPolicy(req, res, next);
+});
+
+// Cost and abuse boundaries are account-based in addition to the global IP limiter.
+const aiPaths = [
+    '/api/generate-resume', '/api/generate-summary', '/api/generate-interview',
+    '/api/generate-work-description', '/api/generate-education-description',
+    '/api/generate-skills', '/api/check-grammar', '/api/generate-ai-cover-letter',
+    '/api/generate-content', '/api/parse-resume'
+];
+app.use(aiPaths, aiAccountLimiter, enforceDailyAiQuota);
+app.use('/api/ai', aiAccountLimiter, enforceDailyAiQuota);
+const ownNotificationPaths = [
+    '/api/notify/user-signup', '/api/notify/password-changed', '/api/notify/email-otp',
+    '/api/notify/portfolio-published', '/api/notify/subscription-cancelled',
+    '/api/send-invoice-email', '/api/email/send-invoice-email'
+];
+app.use(ownNotificationPaths, notificationAccountLimiter, bindNotificationRecipient);
+app.use(['/api/export', '/api/public-export', '/api/export-docx'], exportAccountLimiter);
+app.use('/api/linkedin-scraper', scraperAccountLimiter);
+// Defense in depth for administrative namespaces. The route policy also protects aliases
+// such as /api/auth/purge-orphaned-auth and modular email routes mounted under /api.
 app.use(['/api/admin', '/api/test-grant-admin', '/api/test-create-candidate-subscription', '/api/email/admin'], requirePermission('system.config.write'));
-
-// ── Mount Modular Sub-Routers ────────────────────────────────────────────────
-try {
-    const emailRoutes = require('./routes/email');
-    app.use('/api/email', emailRoutes);
-    console.log('[Backend Routes] Mounted /api/email routes cleanly.');
-} catch (e) {
-    console.warn('[Backend Routes] Could not mount email routes:', e.message);
-}
-
-try {
-    const aiRoutes = require('./routes/ai');
-    app.use('/api/ai', aiRoutes);
-    console.log('[Backend Routes] Mounted /api/ai routes cleanly.');
-} catch (e) {
-    console.warn('[Backend Routes] Could not mount AI routes:', e.message);
-}
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET || 'missing');
 // Server-owned catalog. Amounts are smallest currency units and never derive from a browser request.
@@ -189,6 +213,59 @@ const PLAN_CATALOG = Object.freeze({
     halfYear: { amount: 9999, currency: 'usd', months: 6 },
     yearly: { amount: 17999, currency: 'usd', months: 12 }
 });
+// India gateway catalog. Values are subunits (paise) and are never accepted from clients.
+const INDIA_PLAN_CATALOG = Object.freeze({
+    // Current advertised prices include the configured 18% GST.
+    monthly: { amount: 23482, currency: 'INR', months: 1 },
+    halfYear: { amount: 47082, currency: 'INR', months: 6 },
+    yearly: { amount: 58882, currency: 'INR', months: 12 }
+});
+function providerPlan(planId, provider) {
+    const catalog = provider === 'stripe' ? PLAN_CATALOG : INDIA_PLAN_CATALOG;
+    const plan = catalog[planId];
+    if (!plan) { const err = new Error('INVALID_PLAN'); err.status = 400; throw err; }
+    return plan;
+}
+async function activateVerifiedOrder(orderRef, gatewayLabel, providerPaymentId) {
+    if (!db || !admin) throw Object.assign(new Error('PAYMENT_SERVICE_UNAVAILABLE'), { status: 503 });
+    await db.runTransaction(async tx => {
+        const orderSnap = await tx.get(orderRef);
+        if (!orderSnap.exists) throw Object.assign(new Error('ORDER_NOT_FOUND'), { status: 404 });
+        const order = orderSnap.data();
+        if (order.status === 'ACTIVE') return;
+        if (!['PAYMENT_CREATED', 'PENDING_PAYMENT', 'PROVIDER_CONFIRMED'].includes(order.status)) {
+            throw Object.assign(new Error('INVALID_ORDER_STATE'), { status: 409 });
+        }
+        const plan = providerPlan(order.planId, order.provider);
+        const userRef = db.collection('users').doc(order.uid);
+        const userSnap = await tx.get(userRef);
+        if (!userSnap.exists) throw new Error('PAYMENT_USER_NOT_FOUND');
+        const existingEnd = userSnap.data().membershipEnds?.toDate?.() || new Date(userSnap.data().membershipEnds || 0);
+        const startDate = existingEnd > new Date() ? existingEnd : new Date();
+        const membershipEnds = new Date(startDate);
+        membershipEnds.setMonth(membershipEnds.getMonth() + plan.months);
+        tx.update(userRef, {
+            membership: 'Premium', membershipEnds, paymentStatus: 'ACTIVE',
+            lastPaymentGateway: gatewayLabel, lastPaymentOrderId: orderRef.id, cancellationRequested: false,
+            lastPaymentSync: admin.firestore.FieldValue.serverTimestamp()
+        });
+        tx.update(orderRef, {
+            status: 'ACTIVE', membershipEnds, providerPaymentId: providerPaymentId || null,
+            activatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+    });
+    return (await orderRef.get()).data();
+}
+async function createProviderOrderRecord({ uid, planId, provider }) {
+    const plan = providerPlan(planId, provider);
+    if (!db || !admin) throw Object.assign(new Error('PAYMENT_SERVICE_UNAVAILABLE'), { status: 503 });
+    const ref = db.collection('payment_orders').doc();
+    await ref.set({
+        uid, planId, provider, amount: plan.amount, currency: plan.currency,
+        status: 'PENDING_PAYMENT', createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    return { ref, plan };
+}
 async function createPaymentOrder({ uid, planId }) {
     const plan = PLAN_CATALOG[planId];
     if (!plan) { const err = new Error('INVALID_PLAN'); err.status = 400; throw err; }
@@ -199,9 +276,8 @@ async function createPaymentOrder({ uid, planId }) {
     try {
         const intent = await stripe.paymentIntents.create({
             amount: plan.amount, currency: plan.currency,
-            metadata: { orderId: orderRef.id, uid, planId },
-            idempotencyKey: `order:${orderRef.id}`
-        });
+            metadata: { orderId: orderRef.id, uid, planId }
+        }, { idempotencyKey: `order:${orderRef.id}` });
         await orderRef.update({ provider: 'stripe', providerPaymentIntentId: intent.id, status: 'PAYMENT_CREATED', updatedAt: admin.firestore.FieldValue.serverTimestamp() });
         return { orderId: orderRef.id, clientSecret: intent.client_secret, amount: plan.amount, currency: plan.currency };
     } catch (err) {
@@ -241,7 +317,7 @@ app.post('/api/stripe-webhook', async (req, res) => {
         return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
-    if (event.type === 'payment_intent.succeeded' || event.type === 'checkout.session.completed') {
+    if (event.type === 'payment_intent.succeeded') {
         const paymentData = event.data.object;
         const orderId = paymentData.metadata?.orderId;
         if (!db || !orderId) return res.status(400).json({ error: 'Unknown payment order' });
@@ -280,7 +356,7 @@ app.post('/api/stripe-webhook', async (req, res) => {
                 expDate.setMonth(expDate.getMonth() + months);
                 tx.update(userRef, {
                     membership: 'Premium', membershipEnds: expDate, autoRenew: true,
-                    paymentStatus: 'ACTIVE', lastPaymentGateway: 'Stripe', cancellationRequested: false,
+                    paymentStatus: 'ACTIVE', lastPaymentGateway: 'Stripe', lastPaymentOrderId: orderId, cancellationRequested: false,
                     lastWebhookSync: admin.firestore.FieldValue.serverTimestamp()
                 });
                 tx.update(orderRef, { status: 'ACTIVE', activatedAt: admin.firestore.FieldValue.serverTimestamp(), membershipEnds: expDate });
@@ -301,71 +377,147 @@ app.post('/api/stripe-webhook', async (req, res) => {
         });
     }
 
-    res.json({ received: true });
+    if (event.type === 'payment_intent.payment_failed') {
+        const payment = event.data.object;
+        const orderId = payment.metadata?.orderId;
+        if (db && orderId) {
+            const orderRef = db.collection('payment_orders').doc(orderId);
+            const snap = await orderRef.get();
+            if (snap.exists && snap.data().providerPaymentIntentId === payment.id) {
+                const eventRef = db.collection('payment_webhook_events').doc(event.id);
+                try {
+                    await eventRef.create({ provider: 'stripe', eventType: event.type, orderId, receivedAt: admin.firestore.FieldValue.serverTimestamp() });
+                    await orderRef.update({ status: 'FAILED', failureCode: payment.last_payment_error?.code || 'PAYMENT_FAILED', updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+                } catch (error) {
+                    if (error.code !== 6 && error.code !== 'already-exists') throw error;
+                }
+            }
+        }
+        return res.json({ received: true });
+    }
+
+    if (event.type === 'charge.refunded' || event.type === 'charge.dispute.created') {
+        const providerObject = event.data.object;
+        const paymentIntentId = providerObject.payment_intent;
+        if (!db || !paymentIntentId) return res.status(400).json({ error: 'Unknown payment order' });
+        const orders = await db.collection('payment_orders').where('providerPaymentIntentId', '==', paymentIntentId).limit(1).get();
+        if (orders.empty) return res.status(400).json({ error: 'Unknown payment order' });
+        const orderRef = orders.docs[0].ref;
+        const order = orders.docs[0].data();
+        const status = event.type === 'charge.refunded' ? 'REFUNDED' : 'CHARGEBACK';
+        const eventRef = db.collection('payment_webhook_events').doc(event.id);
+        try {
+            await eventRef.create({ provider: 'stripe', eventType: event.type, orderId: orderRef.id, receivedAt: admin.firestore.FieldValue.serverTimestamp() });
+        } catch (error) {
+            if (error.code === 6 || error.code === 'already-exists') return res.json({ received: true, duplicate: true });
+            throw error;
+        }
+        await db.runTransaction(async tx => {
+            const userRef = db.collection('users').doc(order.uid);
+            const userSnap = await tx.get(userRef);
+            tx.update(orderRef, { status, reversedAt: admin.firestore.FieldValue.serverTimestamp() });
+            // Do not remove a later legitimate purchase when an older order is reversed.
+            if (userSnap.exists && userSnap.data().lastPaymentOrderId === orderRef.id) {
+                tx.update(userRef, {
+                    membership: 'Basic', paymentStatus: status, autoRenew: false,
+                    membershipEnds: new Date(), lastPaymentSync: admin.firestore.FieldValue.serverTimestamp()
+                });
+            }
+        });
+        return res.json({ received: true, status: status.toLowerCase() });
+    }
+
+    return res.json({ received: true });
 });
 
-// PayPal Server-Side Order Verification
-app.post('/api/paypal/verify', async (req, res) => {
-    const { orderId, userId, plan, amount, currency } = req.body;
-    if (!orderId) {
-        return res.status(400).json({ verified: false, error: 'orderId is required' });
-    }
-
+// PayPal orders are created server-side so amount, currency, plan and owner are bound
+// before the browser is allowed to approve or capture the provider order.
+async function paypalAccessToken(baseUrl, clientId, clientSecret) {
+    const tokenRes = await fetch(`${baseUrl}/v1/oauth2/token`, {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Basic ' + Buffer.from(`${clientId}:${clientSecret}`).toString('base64'),
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: 'grant_type=client_credentials',
+        timeout: 10_000
+    });
+    const tokenData = await tokenRes.json();
+    if (!tokenRes.ok || !tokenData.access_token) throw Object.assign(new Error('PAYPAL_AUTH_FAILED'), { status: 502 });
+    return tokenData.access_token;
+}
+function paypalConfig() {
     const clientId = process.env.PAYPAL_CLIENT_ID;
     const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
-    const paypalEnv = (process.env.PAYPAL_ENV || 'sandbox').toLowerCase();
-    const baseUrl = paypalEnv === 'live'
-        ? 'https://api-m.paypal.com'
-        : 'https://api-m.sandbox.paypal.com';
-
-    // Soft-verify if PayPal credentials not configured
-    if (!clientId || !clientSecret) {
-        console.warn('[PayPal Verify] No PayPal credentials in .env — soft-verifying order:', orderId);
-        return res.json({ verified: true, orderId, note: 'soft-verified-no-credentials' });
-    }
-
+    if (!clientId || !clientSecret) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
+    const baseUrl = String(process.env.PAYPAL_ENV || 'sandbox').toLowerCase() === 'live'
+        ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
+    return { clientId, clientSecret, baseUrl };
+}
+app.post('/api/paypal/create-order', async (req, res) => {
+    let orderRef;
     try {
-        // Step 1: Obtain PayPal access token
-        const tokenRes = await fetch(`${baseUrl}/v1/oauth2/token`, {
+        const { clientId, clientSecret, baseUrl } = paypalConfig();
+        const { ref, plan } = await createProviderOrderRecord({ uid: req.user.uid, planId: req.body.planId, provider: 'paypal' });
+        orderRef = ref;
+        const accessToken = await paypalAccessToken(baseUrl, clientId, clientSecret);
+        const providerRes = await fetch(`${baseUrl}/v2/checkout/orders`, {
             method: 'POST',
-            headers: {
-                'Authorization': 'Basic ' + Buffer.from(`${clientId}:${clientSecret}`).toString('base64'),
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: 'grant_type=client_credentials',
+            headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json', 'PayPal-Request-Id': ref.id },
+            body: JSON.stringify({
+                intent: 'CAPTURE',
+                purchase_units: [{
+                    reference_id: ref.id,
+                    custom_id: req.user.uid,
+                    description: `${req.body.planId} ResumePilot subscription`,
+                    amount: { currency_code: plan.currency, value: (plan.amount / 100).toFixed(2) }
+                }]
+            }),
+            timeout: 10_000
         });
-        const tokenData = await tokenRes.json();
-        const accessToken = tokenData.access_token;
-
-        if (!accessToken) {
-            console.error('[PayPal Verify] Token error:', tokenData);
-            return res.status(400).json({ verified: false, error: 'PayPal authentication failed' });
-        }
-
-        // Step 2: Fetch and verify order status from PayPal
-        const orderRes = await fetch(`${baseUrl}/v2/checkout/orders/${orderId}`, {
-            headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-        });
-        const orderData = await orderRes.json();
-        console.log(`[PayPal Verify] Order ${orderId} → status: ${orderData.status}`);
-
-        if (orderData.status === 'COMPLETED') {
-            return res.json({
-                verified: true,
-                orderId,
-                status: 'COMPLETED',
-                payer: orderData.payer,
-                purchaseUnit: orderData.purchase_units?.[0],
-            });
-        } else {
-            return res.status(400).json({
-                verified: false,
-                error: `Order not completed — PayPal status: ${orderData.status || 'UNKNOWN'}`,
-            });
-        }
+        const providerOrder = await providerRes.json();
+        if (!providerRes.ok || !providerOrder.id) throw new Error('PAYPAL_CREATE_FAILED');
+        await ref.update({ providerOrderId: providerOrder.id, status: 'PAYMENT_CREATED', updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+        return res.status(201).json({ orderId: providerOrder.id, paymentOrderId: ref.id, amount: plan.amount, currency: plan.currency });
     } catch (err) {
-        console.error('[PayPal Verify] Error:', err.message);
-        return res.status(500).json({ verified: false, error: err.message });
+        if (orderRef) await orderRef.update({ status: 'FAILED', failureCode: 'PROVIDER_CREATE_FAILED' }).catch(() => {});
+        console.error('[PayPal create]', err.message);
+        return res.status(err.status || 502).json({ error: { code: err.message, message: 'Unable to create PayPal order', requestId: res.locals.requestId } });
+    }
+});
+
+app.post('/api/paypal/verify', async (req, res) => {
+    try {
+        const providerOrderId = String(req.body.orderId || '');
+        const paymentOrderId = String(req.body.paymentOrderId || '');
+        if (!/^[A-Za-z0-9_-]{1,128}$/.test(providerOrderId) || !/^[A-Za-z0-9_-]{1,128}$/.test(paymentOrderId)) {
+            return res.status(400).json({ verified: false, error: 'Invalid order identifier' });
+        }
+        const orderRef = db.collection('payment_orders').doc(paymentOrderId);
+        const internalSnap = await orderRef.get();
+        const internal = internalSnap.data();
+        if (!internalSnap.exists || internal.uid !== req.user.uid || internal.provider !== 'paypal' || internal.providerOrderId !== providerOrderId) {
+            return res.status(404).json({ verified: false, error: 'Order not found' });
+        }
+        const { clientId, clientSecret, baseUrl } = paypalConfig();
+        const accessToken = await paypalAccessToken(baseUrl, clientId, clientSecret);
+        const providerRes = await fetch(`${baseUrl}/v2/checkout/orders/${encodeURIComponent(providerOrderId)}`, {
+            headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, timeout: 10_000
+        });
+        const providerOrder = await providerRes.json();
+        const purchase = providerOrder.purchase_units?.[0];
+        const amount = Math.round(Number(purchase?.amount?.value) * 100);
+        if (!providerRes.ok || providerOrder.status !== 'COMPLETED'
+            || purchase?.reference_id !== paymentOrderId || purchase?.custom_id !== req.user.uid
+            || amount !== internal.amount || String(purchase?.amount?.currency_code).toUpperCase() !== internal.currency) {
+            return res.status(400).json({ verified: false, error: 'PayPal order verification failed' });
+        }
+        const captureId = purchase?.payments?.captures?.[0]?.id || providerOrderId;
+        const active = await activateVerifiedOrder(orderRef, 'PayPal', captureId);
+        return res.json({ verified: true, orderId: providerOrderId, paymentOrderId, status: active.status, membershipEnds: active.membershipEnds });
+    } catch (err) {
+        console.error('[PayPal verify]', err.message);
+        return res.status(err.status || 502).json({ verified: false, error: 'PayPal verification unavailable' });
     }
 });
 
@@ -445,123 +597,95 @@ app.post('/api/test-create-candidate-subscription', async (req, res) => {
     }
 });
 
-// Helper to resolve Razorpay keys dynamically
-async function getRazorpayKeys(req) {
-    let keyId = req.body?.keyId || process.env.RAZORPAY_KEY_ID;
-    let keySecret = req.body?.keySecret || process.env.RAZORPAY_KEY_SECRET;
-
+// Razorpay credentials are server-owned and never accepted from payment requests.
+async function getRazorpayKeys() {
+    let keyId = process.env.RAZORPAY_KEY_ID || '';
+    let keySecret = process.env.RAZORPAY_KEY_SECRET || '';
     if ((!keyId || !keySecret) && db) {
         try {
-            const doc = await db.collection('data').doc('subscriptions').get();
-            if (doc.exists) {
-                const data = doc.data() || {};
-                if (!keyId && data.razorpayKeyId) keyId = data.razorpayKeyId;
-                if (!keySecret && data.razorpayKeySecret) keySecret = data.razorpayKeySecret;
-            }
-            if (!keyId || !keySecret) {
-                const sysDoc = await db.collection('settings').doc('subscription').get();
-                if (sysDoc.exists) {
-                    const data = sysDoc.data() || {};
-                    if (!keyId && data.razorpayKeyId) keyId = data.razorpayKeyId;
-                    if (!keySecret && data.razorpayKeySecret) keySecret = data.razorpayKeySecret;
-                }
-            }
-        } catch (e) {
-            console.warn('[Razorpay Keys] Firestore lookup notice:', e.message);
+            const doc = await db.collection('settings').doc('payment_providers').get();
+            const data = doc.data()?.razorpay || {};
+            keyId = keyId || data.keyId || '';
+            keySecret = keySecret || data.keySecret || '';
+        } catch (error) {
+            console.warn('[Razorpay config]', error.message);
         }
     }
-    return { keyId: keyId || '', keySecret: keySecret || '' };
+    return { keyId, keySecret };
 }
 
-// Razorpay Order Creation Endpoint
 app.post('/api/razorpay/create-order', async (req, res) => {
-    const { keyId, keySecret } = await getRazorpayKeys(req);
-    const amount = req.body.amount;
-    const currency = (req.body.currency || 'INR').toUpperCase();
-    const userId = req.body.userId || '';
-    const plan = req.body.plan || 'monthly';
-
-    if (!keyId || !keySecret) {
-        console.warn('[Razorpay Order] Keys missing — returning demo order structure');
-        return res.json({
-            id: 'order_demo_' + Date.now(),
-            amount: Math.round(parseFloat(amount) * 100),
-            currency,
-            key: 'rzp_test_demo',
-            demoMode: true,
-        });
-    }
-
+    let internalRef;
     try {
-        const amountInSubunits = Math.round(parseFloat(amount) * 100);
-        const orderPayload = {
-            amount: amountInSubunits,
-            currency,
-            receipt: `rcpt_${userId.slice(0, 8)}_${Date.now()}`,
-            notes: { userId, plan },
-        };
-
-        const rzpRes = await fetch('https://api.razorpay.com/v1/orders', {
+        const { keyId, keySecret } = await getRazorpayKeys();
+        if (!keyId || !keySecret) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
+        const { ref, plan } = await createProviderOrderRecord({ uid: req.user.uid, planId: req.body.planId || req.body.plan, provider: 'razorpay' });
+        internalRef = ref;
+        const providerRes = await fetch('https://api.razorpay.com/v1/orders', {
             method: 'POST',
             headers: {
                 'Authorization': 'Basic ' + Buffer.from(`${keyId}:${keySecret}`).toString('base64'),
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/json'
             },
-            body: JSON.stringify(orderPayload),
+            body: JSON.stringify({
+                amount: plan.amount,
+                currency: plan.currency,
+                receipt: ref.id,
+                notes: { paymentOrderId: ref.id, uid: req.user.uid, planId: req.body.planId || req.body.plan }
+            }),
+            timeout: 10_000
         });
-
-        const orderData = await rzpRes.json();
-        if (orderData.id) {
-            return res.json({
-                id: orderData.id,
-                amount: orderData.amount,
-                currency: orderData.currency,
-                key: keyId,
-            });
-        } else {
-            console.error('[Razorpay Order] API Error:', orderData);
-            return res.status(400).json({ error: orderData.error?.description || 'Razorpay order creation failed' });
-        }
+        const providerOrder = await providerRes.json();
+        if (!providerRes.ok || !providerOrder.id) throw new Error('RAZORPAY_CREATE_FAILED');
+        await ref.update({ providerOrderId: providerOrder.id, status: 'PAYMENT_CREATED', updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+        return res.status(201).json({ id: providerOrder.id, paymentOrderId: ref.id, amount: plan.amount, currency: plan.currency, key: keyId });
     } catch (err) {
-        console.error('[Razorpay Order] Exception:', err.message);
-        return res.status(500).json({ error: err.message });
+        if (internalRef) await internalRef.update({ status: 'FAILED', failureCode: 'PROVIDER_CREATE_FAILED' }).catch(() => {});
+        console.error('[Razorpay create]', err.message);
+        return res.status(err.status || 502).json({ error: { code: err.message, message: 'Unable to create Razorpay order', requestId: res.locals.requestId } });
     }
 });
 
-// Razorpay Payment Signature Verification Endpoint
 app.post('/api/razorpay/verify-payment', async (req, res) => {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
-    const { keySecret } = await getRazorpayKeys(req);
-
-    if (!keySecret) {
-        console.warn('[Razorpay Verify] No RAZORPAY_KEY_SECRET — soft-verifying demo transaction');
-        return res.json({ verified: true, note: 'soft-verified-demo' });
-    }
-
     try {
-        const crypto = require('crypto');
-        const generatedSignature = crypto
-            .createHmac('sha256', keySecret)
-            .update(`${razorpay_order_id}|${razorpay_payment_id}`)
-            .digest('hex');
-
-        if (generatedSignature === razorpay_signature) {
-            return res.json({ verified: true, status: 'captured' });
-        } else {
-            console.error('[Razorpay Verify] Signature mismatch!');
-            return res.status(400).json({ verified: false, error: 'Razorpay signature verification failed' });
+        const { razorpay_order_id: providerOrderId, razorpay_payment_id: paymentId, razorpay_signature: signature } = req.body;
+        const paymentOrderId = String(req.body.paymentOrderId || '');
+        if (![providerOrderId, paymentId, signature, paymentOrderId].every(value => typeof value === 'string' && /^[A-Za-z0-9_-]{1,256}$/.test(value))) {
+            return res.status(400).json({ verified: false, error: 'Invalid payment confirmation' });
         }
+        const orderRef = db.collection('payment_orders').doc(paymentOrderId);
+        const orderSnap = await orderRef.get();
+        const order = orderSnap.data();
+        if (!orderSnap.exists || order.uid !== req.user.uid || order.provider !== 'razorpay' || order.providerOrderId !== providerOrderId) {
+            return res.status(404).json({ verified: false, error: 'Order not found' });
+        }
+        const { keyId, keySecret } = await getRazorpayKeys();
+        if (!keyId || !keySecret) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
+        const expected = crypto.createHmac('sha256', keySecret).update(`${providerOrderId}|${paymentId}`).digest('hex');
+        const validSignature = signature.length === expected.length && crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+        if (!validSignature) return res.status(400).json({ verified: false, error: 'Payment signature verification failed' });
+        // A valid callback signature alone is not proof of capture. Confirm provider state and amount.
+        const paymentRes = await fetch(`https://api.razorpay.com/v1/payments/${encodeURIComponent(paymentId)}`, {
+            headers: { 'Authorization': 'Basic ' + Buffer.from(`${keyId}:${keySecret}`).toString('base64') }, timeout: 10_000
+        });
+        const payment = await paymentRes.json();
+        if (!paymentRes.ok || payment.order_id !== providerOrderId || payment.status !== 'captured'
+            || Number(payment.amount) !== order.amount || String(payment.currency).toUpperCase() !== order.currency) {
+            return res.status(400).json({ verified: false, error: 'Provider payment is not captured or does not match the order' });
+        }
+        const active = await activateVerifiedOrder(orderRef, 'Razorpay', paymentId);
+        return res.json({ verified: true, status: active.status, paymentOrderId, membershipEnds: active.membershipEnds });
     } catch (err) {
-        console.error('[Razorpay Verify] Exception:', err.message);
-        return res.status(500).json({ verified: false, error: err.message });
+        console.error('[Razorpay verify]', err.message);
+        return res.status(err.status || 502).json({ verified: false, error: 'Razorpay verification unavailable' });
     }
 });
 
 // ── Helper: Resolve Paytm Credentials from Firestore / .env ──────────────────
-async function getPaytmConfig(req) {
-    let mid = req.body?.paytmMid || process.env.PAYTM_MID || '';
-    let key = req.body?.paytmMerchantKey || process.env.PAYTM_MERCHANT_KEY || '';
-    let website = req.body?.paytmWebsite || process.env.PAYTM_WEBSITE || 'WEBSTAGING';
+async function getPaytmConfig() {
+    let mid = process.env.PAYTM_MID || '';
+    let key = process.env.PAYTM_MERCHANT_KEY || '';
+    let website = process.env.PAYTM_WEBSITE || 'WEBSTAGING';
     let channelId = process.env.PAYTM_CHANNEL_ID || 'WEB';
     const env = (process.env.PAYTM_ENV || 'staging').toLowerCase();
     const isLive = env === 'production' || env === 'live';
@@ -569,12 +693,12 @@ async function getPaytmConfig(req) {
 
     if ((!mid || !key) && db) {
         try {
-            const doc = await db.collection('data').doc('subscriptions').get();
+            const doc = await db.collection('settings').doc('payment_providers').get();
             if (doc.exists) {
-                const d = doc.data() || {};
-                if (!mid && d.paytmMid) mid = d.paytmMid;
-                if (!key && d.paytmMerchantKey) key = d.paytmMerchantKey;
-                if (d.paytmWebsite) website = d.paytmWebsite;
+                const d = doc.data()?.paytm || {};
+                if (!mid && d.mid) mid = d.mid;
+                if (!key && d.merchantKey) key = d.merchantKey;
+                if (d.website) website = d.website;
             }
         } catch (e) {
             console.warn('[Paytm Config] Firestore lookup notice:', e.message);
@@ -584,10 +708,10 @@ async function getPaytmConfig(req) {
 }
 
 // ── Helper: Resolve PhonePe Credentials from Firestore / .env ────────────────
-async function getPhonePeConfig(req) {
-    let merchantId = req.body?.phonepeId || process.env.PHONEPE_MERCHANT_ID || '';
-    let saltKey = req.body?.phonepeSaltKey || process.env.PHONEPE_SALT_KEY || '';
-    let saltIndex = parseInt(req.body?.phonepeSaltIndex || process.env.PHONEPE_SALT_INDEX || '1');
+async function getPhonePeConfig() {
+    let merchantId = process.env.PHONEPE_MERCHANT_ID || '';
+    let saltKey = process.env.PHONEPE_SALT_KEY || '';
+    let saltIndex = parseInt(process.env.PHONEPE_SALT_INDEX || '1');
     const env = (process.env.PHONEPE_ENV || 'sandbox').toLowerCase();
     const isLive = env === 'production' || env === 'live';
     const baseUrl = isLive
@@ -596,12 +720,12 @@ async function getPhonePeConfig(req) {
 
     if ((!merchantId || !saltKey) && db) {
         try {
-            const doc = await db.collection('data').doc('subscriptions').get();
+            const doc = await db.collection('settings').doc('payment_providers').get();
             if (doc.exists) {
-                const d = doc.data() || {};
-                if (!merchantId && d.phonepeId) merchantId = d.phonepeId;
-                if (!saltKey && d.phonepeSaltKey) saltKey = d.phonepeSaltKey;
-                if (d.phonepeSaltIndex) saltIndex = parseInt(d.phonepeSaltIndex) || 1;
+                const d = doc.data()?.phonepe || {};
+                if (!merchantId && d.merchantId) merchantId = d.merchantId;
+                if (!saltKey && d.saltKey) saltKey = d.saltKey;
+                if (d.saltIndex) saltIndex = parseInt(d.saltIndex) || 1;
             }
         } catch (e) {
             console.warn('[PhonePe Config] Firestore lookup notice:', e.message);
@@ -610,270 +734,164 @@ async function getPhonePeConfig(req) {
     return { merchantId, saltKey, saltIndex, baseUrl, isLive };
 }
 
-// ── Paytm: Initiate Transaction Endpoint ─────────────────────────────────────
+// ── Paytm: server-owned transaction lifecycle ───────────────────────────────
 app.post('/api/paytm/initiate-transaction', async (req, res) => {
-    const { amount, orderId, userId, plan, currency = 'INR', callbackUrl } = req.body;
-    const { mid, key, website, channelId, baseUrl, isLive } = await getPaytmConfig(req);
-
-    // DEMO MODE: No real Paytm credentials configured
-    if (!mid || !key) {
-        console.warn('[Paytm] No credentials configured — returning demo transaction token');
-        return res.json({
-            success: true,
-            demoMode: true,
-            orderId: orderId || `PAYTM_DEMO_${Date.now()}`,
-            txnToken: `demo_paytm_token_${Date.now()}`,
-            mid: 'DEMO_MID',
-            amount: String(parseFloat(amount || 199).toFixed(2)),
-            note: 'Paytm sandbox demo — no real credentials configured. Add PAYTM_MID and PAYTM_MERCHANT_KEY to activate.'
-        });
-    }
-
+    let orderRef;
     try {
-        const crypto = require('crypto');
-        const txnAmount = String(parseFloat(amount).toFixed(2));
-        const finalOrderId = orderId || `ORD_${userId}_${Date.now()}`;
-        const finalCallbackUrl = callbackUrl || `${protocol}://${websiteName}/api/paytm/callback`;
-
-        // Paytm Initiate Transaction API — generates TXN token
-        const paytmReqBody = JSON.stringify({
-            body: {
-                requestType: 'Payment',
-                mid,
-                websiteName: website,
-                orderId: finalOrderId,
-                callbackUrl: finalCallbackUrl,
-                txnAmount: { value: txnAmount, currency },
-                userInfo: { custId: userId || `GUEST_${Date.now()}` },
-                enablePaymentMode: [{ mode: 'UPI' }, { mode: 'CARD' }, { mode: 'NET_BANKING' }, { mode: 'PAYTM_WALLET' }]
-            }
-        });
-
-        // Generate HMAC-SHA256 checksum for Paytm API call
+        const { mid, key, website, channelId, baseUrl, isLive } = await getPaytmConfig();
+        if (!mid || !key) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
+        const { ref, plan } = await createProviderOrderRecord({ uid: req.user.uid, planId: req.body.planId || req.body.plan, provider: 'paytm' });
+        orderRef = ref;
+        const providerOrderId = ref.id;
+        const txnAmount = (plan.amount / 100).toFixed(2);
+        const callbackUrl = `${protocol}://${websiteName}/api/paytm/callback`;
+        const paytmReqBody = JSON.stringify({ body: {
+            requestType: 'Payment', mid, websiteName: website, orderId: providerOrderId,
+            callbackUrl, txnAmount: { value: txnAmount, currency: plan.currency },
+            userInfo: { custId: req.user.uid },
+            enablePaymentMode: [{ mode: 'UPI' }, { mode: 'CARD' }, { mode: 'NET_BANKING' }, { mode: 'PAYTM_WALLET' }]
+        }});
         const bodyBase64 = Buffer.from(paytmReqBody).toString('base64');
-        const headerPayload = JSON.stringify({
-            alg: 'HS256',
-            version: 'v1',
-            kid: mid,
-            requesttimestamp: Math.floor(Date.now() / 1000).toString(),
-            channelId,
-        });
+        const headerPayload = JSON.stringify({ alg: 'HS256', version: 'v1', kid: mid, requesttimestamp: Math.floor(Date.now() / 1000).toString(), channelId });
         const headerBase64 = Buffer.from(headerPayload).toString('base64');
         const signature = crypto.createHmac('sha256', key).update(`${headerBase64}.${bodyBase64}`).digest('base64');
-
-        const txnRes = await fetch(`${baseUrl}/theia/api/v1/initiateTransaction?mid=${mid}&orderId=${finalOrderId}`, {
+        const providerRes = await fetch(`${baseUrl}/theia/api/v1/initiateTransaction?mid=${encodeURIComponent(mid)}&orderId=${encodeURIComponent(providerOrderId)}`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${headerBase64}.${bodyBase64}.${signature}`,
-            },
-            body: paytmReqBody,
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${headerBase64}.${bodyBase64}.${signature}` },
+            body: paytmReqBody, timeout: 10_000
         });
-
-        const txnData = await txnRes.json();
-        console.log('[Paytm Initiate]', JSON.stringify(txnData?.head || {}));
-
-        if (txnData?.body?.resultInfo?.resultStatus === 'S') {
-            return res.json({
-                success: true,
-                txnToken: txnData.body.txnToken,
-                orderId: finalOrderId,
-                mid,
-                amount: txnAmount,
-                isLive,
-            });
-        } else {
-            console.error('[Paytm Initiate] Error Response:', txnData?.body?.resultInfo);
-            return res.status(400).json({
-                success: false,
-                error: txnData?.body?.resultInfo?.resultMsg || 'Paytm transaction initiation failed',
-            });
+        const providerData = await providerRes.json();
+        if (!providerRes.ok || providerData?.body?.resultInfo?.resultStatus !== 'S' || !providerData.body.txnToken) {
+            throw new Error('PAYTM_CREATE_FAILED');
         }
+        await ref.update({ providerOrderId, status: 'PAYMENT_CREATED', updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+        return res.status(201).json({ success: true, txnToken: providerData.body.txnToken, orderId: providerOrderId, paymentOrderId: ref.id, mid, amount: txnAmount, isLive });
     } catch (err) {
-        console.error('[Paytm Initiate] Exception:', err.message);
-        return res.status(500).json({ success: false, error: err.message });
+        if (orderRef) await orderRef.update({ status: 'FAILED', failureCode: 'PROVIDER_CREATE_FAILED' }).catch(() => {});
+        console.error('[Paytm create]', err.message);
+        return res.status(err.status || 502).json({ success: false, error: 'Unable to create Paytm transaction' });
     }
 });
 
-// ── Paytm: Verify Transaction Endpoint ───────────────────────────────────────
 app.post('/api/paytm/verify-transaction', async (req, res) => {
-    const { orderId, txnId } = req.body;
-    const { mid, key, baseUrl } = await getPaytmConfig(req);
-
-    if (!mid || !key) {
-        console.warn('[Paytm Verify] No credentials — soft-verifying demo transaction');
-        return res.json({ verified: true, status: 'TXN_SUCCESS', note: 'demo-soft-verified' });
-    }
-
     try {
-        const crypto = require('crypto');
+        const orderId = String(req.body.orderId || '');
+        if (!/^[A-Za-z0-9_-]{1,128}$/.test(orderId)) return res.status(400).json({ verified: false, error: 'Invalid order' });
+        const orderRef = db.collection('payment_orders').doc(orderId);
+        const snap = await orderRef.get();
+        const order = snap.data();
+        if (!snap.exists || order.uid !== req.user.uid || order.provider !== 'paytm' || order.providerOrderId !== orderId) {
+            return res.status(404).json({ verified: false, error: 'Order not found' });
+        }
+        const { mid, key, baseUrl } = await getPaytmConfig();
+        if (!mid || !key) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
         const verifyBody = JSON.stringify({ body: { mid, orderId } });
         const bodyBase64 = Buffer.from(verifyBody).toString('base64');
-        const headerPayload = JSON.stringify({
-            alg: 'HS256', version: 'v1', kid: mid,
-            requesttimestamp: Math.floor(Date.now() / 1000).toString(),
-            channelId: 'WEB'
-        });
+        const headerPayload = JSON.stringify({ alg: 'HS256', version: 'v1', kid: mid, requesttimestamp: Math.floor(Date.now() / 1000).toString(), channelId: 'WEB' });
         const headerBase64 = Buffer.from(headerPayload).toString('base64');
         const signature = crypto.createHmac('sha256', key).update(`${headerBase64}.${bodyBase64}`).digest('base64');
-
-        const vRes = await fetch(`${baseUrl}/v3/order/status`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${headerBase64}.${bodyBase64}.${signature}`,
-            },
-            body: verifyBody,
+        const providerRes = await fetch(`${baseUrl}/v3/order/status`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${headerBase64}.${bodyBase64}.${signature}` },
+            body: verifyBody, timeout: 10_000
         });
-        const vData = await vRes.json();
-        const status = vData?.body?.resultInfo?.resultStatus;
-        if (status === 'TXN_SUCCESS') {
-            return res.json({ verified: true, status, txnId: vData?.body?.txnId, orderId });
-        } else {
-            return res.status(400).json({ verified: false, status, error: vData?.body?.resultInfo?.resultMsg || 'Transaction not successful' });
+        const providerData = await providerRes.json();
+        const body = providerData?.body || {};
+        const paidSubunits = Math.round(Number(body.txnAmount) * 100);
+        if (!providerRes.ok || body?.resultInfo?.resultStatus !== 'TXN_SUCCESS'
+            || paidSubunits !== order.amount || String(body.currency || order.currency).toUpperCase() !== order.currency) {
+            return res.status(400).json({ verified: false, error: 'Provider transaction is not successful or does not match the order' });
         }
+        const active = await activateVerifiedOrder(orderRef, 'Paytm', body.txnId);
+        return res.json({ verified: true, status: active.status, txnId: body.txnId, orderId, membershipEnds: active.membershipEnds });
     } catch (err) {
-        console.error('[Paytm Verify] Exception:', err.message);
-        return res.status(500).json({ verified: false, error: err.message });
+        console.error('[Paytm verify]', err.message);
+        return res.status(err.status || 502).json({ verified: false, error: 'Paytm verification unavailable' });
     }
 });
 
-// ── PhonePe: Initiate Payment Endpoint ───────────────────────────────────────
+// ── PhonePe: server-owned transaction lifecycle ─────────────────────────────
 app.post('/api/phonepe/initiate', async (req, res) => {
-    const { amount, orderId, userId, plan, currency = 'INR', redirectUrl, callbackUrl } = req.body;
-    const { merchantId, saltKey, saltIndex, baseUrl, isLive } = await getPhonePeConfig(req);
-
-    // DEMO MODE: No real PhonePe credentials configured
-    if (!merchantId || !saltKey) {
-        console.warn('[PhonePe] No credentials — returning demo redirect payload');
-        return res.json({
-            success: true,
-            demoMode: true,
-            orderId: orderId || `PHONEPE_DEMO_${Date.now()}`,
-            redirectUrl: `${protocol}://${websiteName}?phonepe_demo=1&order=${orderId || 'DEMO'}`,
-            note: 'PhonePe sandbox demo — no real credentials configured. Add PHONEPE_MERCHANT_ID and PHONEPE_SALT_KEY to activate.'
-        });
-    }
-
+    let orderRef;
     try {
-        const crypto = require('crypto');
-        const finalOrderId = orderId || `PP_${userId}_${Date.now()}`;
-        const amountInPaise = Math.round(parseFloat(amount) * 100);
-        const finalRedirectUrl = redirectUrl || `${protocol}://${websiteName}/billing/plans?phonepe_callback=1`;
-        const finalCallbackUrl = callbackUrl || `${protocol}://${websiteName}/api/phonepe/callback`;
-
+        const { merchantId, saltKey, saltIndex, baseUrl, isLive } = await getPhonePeConfig();
+        if (!merchantId || !saltKey) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
+        const { ref, plan } = await createProviderOrderRecord({ uid: req.user.uid, planId: req.body.planId || req.body.plan, provider: 'phonepe' });
+        orderRef = ref;
         const payload = {
-            merchantId,
-            merchantTransactionId: finalOrderId,
-            merchantUserId: userId || `USR_${Date.now()}`,
-            amount: amountInPaise,
-            redirectUrl: finalRedirectUrl,
+            merchantId, merchantTransactionId: ref.id, merchantUserId: req.user.uid,
+            amount: plan.amount,
+            redirectUrl: `${protocol}://${websiteName}/billing/plans?phonepe_callback=1&order=${encodeURIComponent(ref.id)}`,
             redirectMode: 'REDIRECT',
-            callbackUrl: finalCallbackUrl,
-            mobileNumber: '',
+            callbackUrl: `${protocol}://${websiteName}/api/phonepe/callback`,
             paymentInstrument: { type: 'PAY_PAGE' }
         };
-
         const base64Payload = Buffer.from(JSON.stringify(payload)).toString('base64');
-        const checksumStr = `${base64Payload}/pg/v1/pay${saltKey}`;
-        const sha256Hash = crypto.createHash('sha256').update(checksumStr).digest('hex');
-        const checksum = `${sha256Hash}###${saltIndex}`;
-
-        const ppRes = await fetch(`${baseUrl}/pg/v1/pay`, {
+        const checksum = `${crypto.createHash('sha256').update(`${base64Payload}/pg/v1/pay${saltKey}`).digest('hex')}###${saltIndex}`;
+        const providerRes = await fetch(`${baseUrl}/pg/v1/pay`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-VERIFY': checksum,
-                'Accept': 'application/json',
-            },
-            body: JSON.stringify({ request: base64Payload }),
+            headers: { 'Content-Type': 'application/json', 'X-VERIFY': checksum, 'Accept': 'application/json' },
+            body: JSON.stringify({ request: base64Payload }), timeout: 10_000
         });
-
-        const ppData = await ppRes.json();
-        console.log('[PhonePe Initiate]', ppData?.code, ppData?.message);
-
-        if (ppData?.success && ppData?.data?.instrumentResponse?.redirectInfo?.url) {
-            return res.json({
-                success: true,
-                orderId: finalOrderId,
-                redirectUrl: ppData.data.instrumentResponse.redirectInfo.url,
-                isLive,
-            });
-        } else {
-            console.error('[PhonePe Initiate] Error:', ppData);
-            return res.status(400).json({
-                success: false,
-                error: ppData?.message || 'PhonePe payment initiation failed',
-                code: ppData?.code,
-            });
+        const providerData = await providerRes.json();
+        const redirectUrl = providerData?.data?.instrumentResponse?.redirectInfo?.url;
+        if (!providerRes.ok || !providerData?.success || !redirectUrl) throw new Error('PHONEPE_CREATE_FAILED');
+        // Never relay an unexpected provider-controlled scheme to the browser.
+        const parsedRedirect = new URL(redirectUrl);
+        if (parsedRedirect.protocol !== 'https:' || !(parsedRedirect.hostname === 'phonepe.com' || parsedRedirect.hostname.endsWith('.phonepe.com'))) {
+            throw new Error('PHONEPE_INVALID_REDIRECT');
         }
+        await ref.update({ providerOrderId: ref.id, status: 'PAYMENT_CREATED', updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+        return res.status(201).json({ success: true, orderId: ref.id, paymentOrderId: ref.id, redirectUrl: parsedRedirect.href, isLive });
     } catch (err) {
-        console.error('[PhonePe Initiate] Exception:', err.message);
-        return res.status(500).json({ success: false, error: err.message });
+        if (orderRef) await orderRef.update({ status: 'FAILED', failureCode: 'PROVIDER_CREATE_FAILED' }).catch(() => {});
+        console.error('[PhonePe create]', err.message);
+        return res.status(err.status || 502).json({ success: false, error: 'Unable to create PhonePe transaction' });
     }
 });
 
-// ── PhonePe: Check Payment Status Endpoint ────────────────────────────────────
 app.post('/api/phonepe/status', async (req, res) => {
-    const { orderId } = req.body;
-    const { merchantId, saltKey, saltIndex, baseUrl } = await getPhonePeConfig(req);
-
-    if (!merchantId || !saltKey) {
-        console.warn('[PhonePe Status] No credentials — soft-verifying demo transaction');
-        return res.json({ verified: true, state: 'COMPLETED', responseCode: 'SUCCESS', note: 'demo-soft-verified' });
-    }
-
     try {
-        const crypto = require('crypto');
-        const checksumStr = `/pg/v1/status/${merchantId}/${orderId}${saltKey}`;
-        const sha256Hash = crypto.createHash('sha256').update(checksumStr).digest('hex');
-        const checksum = `${sha256Hash}###${saltIndex}`;
-
-        const statusRes = await fetch(`${baseUrl}/pg/v1/status/${merchantId}/${orderId}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-VERIFY': checksum,
-                'X-MERCHANT-ID': merchantId,
-                'Accept': 'application/json',
-            },
-        });
-
-        const statusData = await statusRes.json();
-        console.log('[PhonePe Status] Order:', orderId, '→', statusData?.data?.state);
-
-        if (statusData?.success && statusData?.data?.state === 'COMPLETED') {
-            return res.json({
-                verified: true,
-                state: statusData.data.state,
-                responseCode: statusData.data.responseCode,
-                paymentId: statusData.data?.paymentInstrument?.pgTransactionId || '',
-                orderId
-            });
-        } else {
-            return res.status(400).json({
-                verified: false,
-                state: statusData?.data?.state || 'UNKNOWN',
-                error: statusData?.message || 'Payment not completed',
-                code: statusData?.code
-            });
+        const orderId = String(req.body.orderId || '');
+        if (!/^[A-Za-z0-9_-]{1,128}$/.test(orderId)) return res.status(400).json({ verified: false, error: 'Invalid order' });
+        const orderRef = db.collection('payment_orders').doc(orderId);
+        const snap = await orderRef.get();
+        const order = snap.data();
+        if (!snap.exists || order.uid !== req.user.uid || order.provider !== 'phonepe' || order.providerOrderId !== orderId) {
+            return res.status(404).json({ verified: false, error: 'Order not found' });
         }
+        const { merchantId, saltKey, saltIndex, baseUrl } = await getPhonePeConfig();
+        if (!merchantId || !saltKey) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
+        const checksum = `${crypto.createHash('sha256').update(`/pg/v1/status/${merchantId}/${orderId}${saltKey}`).digest('hex')}###${saltIndex}`;
+        const providerRes = await fetch(`${baseUrl}/pg/v1/status/${encodeURIComponent(merchantId)}/${encodeURIComponent(orderId)}`, {
+            headers: { 'Content-Type': 'application/json', 'X-VERIFY': checksum, 'X-MERCHANT-ID': merchantId, 'Accept': 'application/json' },
+            timeout: 10_000
+        });
+        const providerData = await providerRes.json();
+        const payment = providerData?.data || {};
+        if (!providerRes.ok || !providerData?.success || payment.state !== 'COMPLETED'
+            || Number(payment.amount) !== order.amount) {
+            return res.status(400).json({ verified: false, state: payment.state || 'UNKNOWN', error: 'Provider transaction is not complete or does not match the order' });
+        }
+        const paymentId = payment?.paymentInstrument?.pgTransactionId || orderId;
+        const active = await activateVerifiedOrder(orderRef, 'PhonePe', paymentId);
+        return res.json({ verified: true, status: active.status, state: payment.state, paymentId, orderId, membershipEnds: active.membershipEnds });
     } catch (err) {
-        console.error('[PhonePe Status] Exception:', err.message);
-        return res.status(500).json({ verified: false, error: err.message });
+        console.error('[PhonePe status]', err.message);
+        return res.status(err.status || 502).json({ verified: false, error: 'PhonePe verification unavailable' });
     }
 });
 
 app.post('/api/check', async (req, res) => {
-    const accountType = req.body.accountType;
-    const expDate = req.body.expDate;
-    var specific_date = new Date(expDate);
-    var current_date = new Date();
-    /// We need to get account membership type - expiration. and check if the user can download the resume
-    if (current_date.getTime() < specific_date.getTime()) {
-        res.json({ status: 'true' });
-    } else {
-        res.json({ status: 'false' });
+    if (!db) return res.status(503).json({ status: 'false', error: 'Entitlement service unavailable' });
+    try {
+        const userSnap = await db.collection('users').doc(req.user.uid).get();
+        const user = userSnap.data() || {};
+        const expiry = user.membershipEnds?.toDate?.() || new Date(user.membershipEnds || 0);
+        const entitled = user.membership === 'Premium' && user.paymentStatus === 'ACTIVE' && expiry > new Date();
+        return res.json({ status: entitled ? 'true' : 'false', membershipEnds: entitled ? expiry.toISOString() : null });
+    } catch (error) {
+        console.error('[Entitlement check]', error.message);
+        return res.status(503).json({ status: 'false', error: 'Entitlement service unavailable' });
     }
 });
 
@@ -885,13 +903,33 @@ app.post('/api/date', async (req, res) => {
 let activeExports = 0;
 const MAX_CONCURRENT_EXPORTS = 5;
 
-app.post('/api/export', async (req, res) => {
+app.post(['/api/export', '/api/public-export'], async (req, res) => {
     if (activeExports >= MAX_CONCURRENT_EXPORTS) {
         return res.status(429).json({ error: 'Server is busy processing PDF exports. Please try again in a few seconds.' });
     }
-    activeExports++;
     let browser;
+    let slotAcquired = false;
     try {
+        const resumeId = String(req.body.resumeId || '');
+        const resumeName = String(req.body.resumeName || '');
+        const language = String(req.body.language || 'en');
+        if (!/^[A-Za-z0-9_-]{10,128}$/.test(resumeId)
+            || !/^Cv(?:[1-9]|[1-4][0-9]|5[0-1])$/.test(resumeName)
+            || !/^[a-z]{2}(?:-[A-Z]{2})?$/.test(language)) {
+            return res.status(400).json({ error: 'Invalid export request' });
+        }
+        if (!db) return res.status(503).json({ error: 'Export authorization unavailable' });
+        const publishedSnap = await db.collection('pb').doc(resumeId).get();
+        const published = publishedSnap.data();
+        if (!publishedSnap.exists || published.isPublished !== true
+            || (req.path !== '/public-export' && published.ownerUid !== req.user?.uid)) {
+            return res.status(404).json({ error: 'Resume not found' });
+        }
+        let stored;
+        try { stored = JSON.parse(published.object); } catch (_) { return res.status(422).json({ error: 'Resume data is invalid' }); }
+        if (stored?.template && stored.template !== resumeName) return res.status(400).json({ error: 'Template mismatch' });
+        activeExports++;
+        slotAcquired = true;
         const launchOptions = {
             headless: true,
             args: ['--no-sandbox', '--disable-setuid-sandbox', '--single-process', '--no-zygote']
@@ -899,7 +937,7 @@ app.post('/api/export', async (req, res) => {
         browser = await chromium.launch(launchOptions);
         const context = await browser.newContext({ viewport: { width: 794, height: 1123 }, deviceScaleFactor: 1 });
         const page = await context.newPage();
-        const targetUrl = `${protocol}://${websiteName}/export/${req.body.resumeName}/${req.body.resumeId}/${req.body.language || 'en'}`;
+        const targetUrl = `${protocol}://${websiteName}/export/${encodeURIComponent(resumeName)}/${encodeURIComponent(resumeId)}/${encodeURIComponent(language)}`;
         console.log('Playwright exporting PDF, navigating to: ', targetUrl);
         await page.goto(targetUrl, {
             waitUntil: 'domcontentloaded',
@@ -911,7 +949,7 @@ app.post('/api/export', async (req, res) => {
             { timeout: 25000 }
         ).catch(err => console.log('data-export-ready timeout, proceeding anyway:', err.message));
         // Wait for all fonts (Google Fonts) to finish loading
-        await page.evaluate(() => document.fonts.ready).catch(() => {});
+        await page.evaluate(() => globalThis.document.fonts.ready).catch(() => {});
         // Extra buffer for images and final paint
         await page.waitForTimeout(3000);
 
@@ -944,7 +982,7 @@ app.post('/api/export', async (req, res) => {
         if (browser) await browser.close().catch(() => {});
         res.status(500).json({ error: error.message });
     } finally {
-        activeExports = Math.max(0, activeExports - 1);
+        if (slotAcquired) activeExports = Math.max(0, activeExports - 1);
     }
 });
 
@@ -956,6 +994,46 @@ const emailRoutes = require('./routes/email');
 app.use('/api', aiRoutes);
 app.use('/api', emailRoutes);
 app.use('/api/email', emailRoutes);
+
+// AI provider configuration is split: secrets remain in a server-only document while
+// browser-readable settings contain models/toggles only.
+app.post('/api/admin/ai-settings', async (req, res) => {
+    if (!db) return res.status(503).json({ success: false, error: 'Settings service unavailable' });
+    const input = req.body || {};
+    const providers = ['gemini', 'nvidia', 'openai', 'groq', 'openrouter', 'deepseek'];
+    const secretField = {
+        gemini: 'geminiApiKey', nvidia: 'nvidiaApiKey', openai: 'openaiApiKey',
+        groq: 'groqApiKey', openrouter: 'openrouterApiKey', deepseek: 'deepseekApiKey'
+    };
+    const modelField = {
+        gemini: 'model', nvidia: 'nvidiaModel', openai: 'openaiModel', groq: 'groqModel',
+        openrouter: 'openrouterModel', deepseek: 'deepseekModel'
+    };
+    const secrets = {};
+    for (const provider of providers) {
+        const apiKey = String(input[secretField[provider]] || '').trim();
+        const model = String(input[modelField[provider]] || '').trim();
+        if (apiKey && (apiKey.length < 12 || apiKey.length > 512)) return res.status(400).json({ success: false, error: `Invalid ${provider} API key format` });
+        if (model && !/^[A-Za-z0-9._:/-]{1,150}$/.test(model)) return res.status(400).json({ success: false, error: `Invalid ${provider} model` });
+        secrets[provider] = { ...(apiKey ? { apiKey } : {}), ...(model ? { model } : {}) };
+    }
+    const publicAi = {
+        provider: providers.includes(input.provider) ? input.provider : 'gemini',
+        ...Object.fromEntries(Object.entries(input).filter(([key, value]) =>
+            /^(enable[A-Z]|temperature$|maxTokens$|model$|[a-z]+Model$)/.test(key)
+            && (typeof value === 'boolean' || typeof value === 'number' || (typeof value === 'string' && value.length <= 150))
+        ))
+    };
+    const batch = db.batch();
+    batch.set(db.collection('settings').doc('ai_providers'), secrets, { merge: true });
+    batch.set(db.collection('data').doc('public_config'), { ai: publicAi }, { merge: true });
+    batch.set(db.collection('security_audit_logs').doc(), {
+        action: 'AI_PROVIDER_SETTINGS_UPDATED', actorUid: req.user.uid,
+        requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    await batch.commit();
+    return res.json({ success: true, message: 'AI provider settings saved securely.' });
+});
 
 // Admin diagnostic test-connection endpoint
 app.post('/api/admin/test-connection', async (req, res) => {
@@ -972,6 +1050,29 @@ app.post('/api/admin/test-connection', async (req, res) => {
             const result = await aiModel.generateContent('Say hello in 3 words');
             const text = result.response.text();
             return res.json({ success: true, message: `Response: "${text.trim()}"` });
+        } else if (['openai', 'groq', 'openrouter', 'deepseek', 'nvidia'].includes(type)) {
+            const providerConfig = {
+                openai: { url: 'https://api.openai.com/v1/chat/completions', key: process.env.OPENAI_API_KEY, model: process.env.OPENAI_MODEL || 'gpt-4o-mini' },
+                groq: { url: 'https://api.groq.com/openai/v1/chat/completions', key: process.env.GROQ_API_KEY, model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile' },
+                openrouter: { url: 'https://openrouter.ai/api/v1/chat/completions', key: process.env.OPENROUTER_API_KEY, model: process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct:free' },
+                deepseek: { url: 'https://api.deepseek.com/chat/completions', key: process.env.DEEPSEEK_API_KEY, model: process.env.DEEPSEEK_MODEL || 'deepseek-chat' },
+                nvidia: { url: 'https://integrate.api.nvidia.com/v1/chat/completions', key: process.env.NVIDIA_API_KEY, model: process.env.NVIDIA_MODEL || 'meta/llama-3.1-8b-instruct' }
+            }[type];
+            const providerKey = apiKey || providerConfig.key;
+            const selectedModel = String(model || providerConfig.model);
+            if (!providerKey || !/^[A-Za-z0-9._:/-]{1,150}$/.test(selectedModel)) {
+                return res.status(400).json({ success: false, error: 'A provider key and valid model are required.' });
+            }
+            const providerRes = await fetch(providerConfig.url, {
+                method: 'POST', timeout: 10_000,
+                headers: { 'Authorization': `Bearer ${providerKey}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model: selectedModel, messages: [{ role: 'user', content: 'Reply with OK.' }], max_tokens: 10, temperature: 0 })
+            });
+            const providerData = await providerRes.json().catch(() => ({}));
+            if (!providerRes.ok) return res.status(400).json({ success: false, error: providerData.error?.message || `${type} authentication test failed.` });
+            return res.json({ success: true, message: `${type} provider connection verified.` });
+        } else if (type === 'ollama') {
+            return res.status(400).json({ success: false, error: 'Ollama connectivity must be configured and validated on the server; browser-supplied endpoints are not accepted.' });
         } else if (type === 'stripe') {
             const stripeKey = secretKey || process.env.STRIPE_SECRET;
             if (!stripeKey) {
@@ -1072,15 +1173,15 @@ app.post('/api/admin/test-connection', async (req, res) => {
 
 // Twilio SMS Dispatcher Endpoint
 app.post('/api/send-sms', async (req, res) => {
-    const { toPhone, messageBody, accountSid: bodySid, authToken: bodyToken, fromPhoneNumber: bodyFrom } = req.body;
+    const { toPhone, messageBody } = req.body;
     if (!toPhone || !messageBody) {
         return res.status(400).json({ success: false, error: 'Target phone number and message body are required.' });
     }
 
     try {
-        let accountSid = bodySid || process.env.TWILIO_ACCOUNT_SID;
-        let authToken = bodyToken || process.env.TWILIO_AUTH_TOKEN;
-        let fromPhoneNumber = bodyFrom || process.env.TWILIO_FROM_PHONE;
+        let accountSid = process.env.TWILIO_ACCOUNT_SID;
+        let authToken = process.env.TWILIO_AUTH_TOKEN;
+        let fromPhoneNumber = process.env.TWILIO_FROM_PHONE;
 
         // Try loading from Firestore settings if db is initialized
         if (!accountSid && db) {
@@ -1098,6 +1199,10 @@ app.post('/api/send-sms', async (req, res) => {
                 success: false,
                 error: 'Twilio Gateway not configured. Please enter Account SID, Auth Token, and From Phone Number in Admin -> Twilio Settings.'
             });
+        }
+        if (!/^AC[a-f0-9]{32}$/i.test(accountSid) || !/^\+[1-9]\d{7,14}$/.test(String(toPhone))
+            || !/^\+[1-9]\d{7,14}$/.test(String(fromPhoneNumber)) || String(messageBody).length > 1600) {
+            return res.status(400).json({ success: false, error: 'Invalid SMS gateway or message parameters.' });
         }
 
         const authString = Buffer.from(`${accountSid}:${authToken}`).toString('base64');
@@ -1148,47 +1253,11 @@ app.get('/llms.txt', (req, res) => {
 `);
 });
 
-// Razorpay Order Endpoint
-app.post('/api/payment/razorpay-order', async (req, res) => {
-    try {
-        const { amount, currency = 'INR', receipt = 'receipt_1' } = req.body;
-        const razorpayKeyId = req.body.keyId || process.env.RAZORPAY_KEY_ID;
-        const razorpayKeySecret = req.body.keySecret || process.env.RAZORPAY_KEY_SECRET;
-
-        if (!razorpayKeyId || !razorpayKeySecret) {
-            // Mock Order ID for Sandbox Testing if keys are not set yet
-            return res.json({
-                success: true,
-                order: {
-                    id: 'order_mock_' + Date.now(),
-                    entity: 'order',
-                    amount: (amount || 199) * 100,
-                    amount_paid: 0,
-                    amount_due: (amount || 199) * 100,
-                    currency: currency,
-                    receipt: receipt,
-                    status: 'created',
-                },
-                mode: 'sandbox'
-            });
-        }
-
-        const Razorpay = require('razorpay');
-        const instance = new Razorpay({
-            key_id: razorpayKeyId,
-            key_secret: razorpayKeySecret,
-        });
-
-        const order = await instance.orders.create({
-            amount: amount * 100, // amount in paise
-            currency: currency,
-            receipt: receipt,
-        });
-
-        res.json({ success: true, order, mode: 'live' });
-    } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
-    }
+// Legacy clients must use the server-authoritative order endpoint above.
+app.post('/api/payment/razorpay-order', (req, res) => {
+    return res.status(410).json({
+        error: { code: 'LEGACY_PAYMENT_ENDPOINT_RETIRED', message: 'Use /api/razorpay/create-order with a planId', requestId: res.locals.requestId }
+    });
 });
 
 // --- Indian GST Tax Engine Helper Functions ---
@@ -1476,8 +1545,13 @@ app.post('/api/invoice', async (req, res) => {
 // Item 41 & 42: PDF Job Queue & DOCX (Word) Document Export Engine Endpoint
 app.post('/api/export-docx', async (req, res) => {
     const { resumeName, resumeId, language } = req.body;
-    // Generate simple DOCX text buffer header for Word compatibility
-    const docxContent = `FILE: ${resumeName || 'Resume'}\nID: ${resumeId}\nLANGUAGE: ${language || 'en'}\nSTATUS: DOCX Export Generated Successfully`;
+    if (!db || !/^[A-Za-z0-9_-]{10,128}$/.test(String(resumeId || ''))) return res.status(400).json({ error: 'Invalid resume' });
+    const publishedSnap = await db.collection('pb').doc(String(resumeId)).get();
+    if (!publishedSnap.exists || publishedSnap.data().ownerUid !== req.user.uid) return res.status(404).json({ error: 'Resume not found' });
+    // Compatibility representation; ownership is enforced even while full DOCX rendering is pending.
+    const safeName = String(resumeName || 'Resume').replace(/[^A-Za-z0-9 _-]/g, '').slice(0, 80);
+    const safeLanguage = /^[a-z]{2}(?:-[A-Z]{2})?$/.test(String(language || '')) ? language : 'en';
+    const docxContent = `FILE: ${safeName}\nID: ${resumeId}\nLANGUAGE: ${safeLanguage}\nSTATUS: DOCX Export Generated Successfully`;
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     res.setHeader('Content-Disposition', `attachment; filename="resume.docx"`);
     res.send(Buffer.from(docxContent, 'utf-8'));
@@ -1496,7 +1570,7 @@ app.get('/api/rtl-font-config', (req, res) => {
 // Real AI Cover Letter Generator Endpoint (Admin Dashboard Dynamic AI Key & Model Integration)
 app.post('/api/generate-ai-cover-letter', async (req, res) => {
     try {
-        const { jobTitle, companyName, recipientName, userSkills, yearsExperience, aiSettings } = req.body;
+        const { jobTitle, companyName, recipientName, userSkills, yearsExperience } = req.body;
 
         const title = jobTitle || 'Software Engineer';
         const company = companyName || 'TechCorp';
@@ -1505,12 +1579,18 @@ app.post('/api/generate-ai-cover-letter', async (req, res) => {
         const skills = userSkills || 'full-stack architecture, API optimization, and team leadership';
 
         // Extract Admin Configuration from Admin Panel settings passed in request or environment
-        const model = aiSettings?.openaiModel || aiSettings?.model || 'gpt-3.5-turbo';
-        const systemPrompt = aiSettings?.coverLetterSystemPrompt || 'You are an elite executive career strategist and professional resume writer specializing in high-impact ATS cover letters.';
+        let storedAi = {};
+        if (db) {
+            try { storedAi = (await db.collection('settings').doc('ai_providers').get()).data() || {}; } catch (_) {}
+        }
+        const openAiKey = process.env.OPENAI_API_KEY || storedAi.openai?.apiKey;
+        const geminiKey = process.env.GEMINI_API_KEY || storedAi.gemini?.apiKey;
+        const model = process.env.OPENAI_MODEL || storedAi.openai?.model || 'gpt-4o-mini';
+        const systemPrompt = 'You are a professional career writer. Never invent candidate facts and return only the requested cover letter.';
 
-        // 1. If OpenAI Key from Admin Settings exists:
-        if (aiSettings?.openaiApiKey || process.env.OPENAI_API_KEY) {
-            const key = aiSettings?.openaiApiKey || process.env.OPENAI_API_KEY;
+        // 1. If OpenAI is configured in the server-only store:
+        if (openAiKey) {
+            const key = openAiKey;
             try {
                 const response = await fetch('https://api.openai.com/v1/chat/completions', {
                     method: 'POST',
@@ -1524,8 +1604,8 @@ app.post('/api/generate-ai-cover-letter', async (req, res) => {
                             { role: 'system', content: systemPrompt },
                             { role: 'user', content: `Write a compelling, tailored, 3-paragraph ATS cover letter addressed to ${recipient} for a ${title} position at ${company}. Highlight ${exp} years of experience and key skills in ${skills}.` }
                         ],
-                        temperature: aiSettings?.temperature || 0.7,
-                        max_tokens: aiSettings?.maxTokens || 500
+                        temperature: 0.7,
+                        max_tokens: 500
                     })
                 });
                 const data = await response.json();
@@ -1537,9 +1617,9 @@ app.post('/api/generate-ai-cover-letter', async (req, res) => {
             }
         }
 
-        // 2. If Gemini Key from Admin Settings exists:
-        if (aiSettings?.geminiApiKey || process.env.GEMINI_API_KEY) {
-            const key = aiSettings?.geminiApiKey || process.env.GEMINI_API_KEY;
+        // 2. If Gemini is configured in the server-only store:
+        if (geminiKey) {
+            const key = geminiKey;
             try {
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
                     method: 'POST',
@@ -1597,7 +1677,7 @@ app.post('/api/generate-ai-cover-letter', async (req, res) => {
 app.post('/api/jobs/naukri', async (req, res) => {
     try {
         const { keywords = 'software engineer', location = 'Bengaluru', maxJobs = 10 } = req.body;
-        
+
         // Mock sample scraped Naukri jobs for Indian market
         const mockNaukriJobs = [
             {
@@ -1654,33 +1734,36 @@ app.get('/api/return', async (req, res) => {
 });
 
 
-// Listen HTTP/HTTPS port safely
-const keyPath = '/etc/letsencrypt/live/' + websiteName + '/privkey.pem';
-const certPath = '/etc/letsencrypt/live/' + websiteName + '/fullchain.pem';
+// Start a listener only for the executable entry point; integration tests import the Express app.
+if (require.main === module) {
+    // Listen HTTP/HTTPS port safely
+    const keyPath = '/etc/letsencrypt/live/' + websiteName + '/privkey.pem';
+    const certPath = '/etc/letsencrypt/live/' + websiteName + '/fullchain.pem';
 
-if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
-    const httpsServer = https.createServer(
-        {
-            key: fs.readFileSync(keyPath),
-            cert: fs.readFileSync(certPath),
-        },
-        app
-    );
-    httpsServer.listen(port, () => {
-        console.log('HTTPS Server running on port ' + port);
-    });
-} else {
-    const httpServer = http.createServer(app);
-    httpServer.on('error', (err) => {
-        if (err.code === 'EADDRINUSE') {
-            console.warn(`[HTTP Server] Port ${port} is already in use by another instance.`);
-        } else {
-            console.error('[HTTP Server Error]', err);
-        }
-    });
-    httpServer.listen(port, () => {
-        console.log('HTTP Server running on port ' + port);
-    });
+    if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
+        const httpsServer = https.createServer(
+            {
+                key: fs.readFileSync(keyPath),
+                cert: fs.readFileSync(certPath),
+            },
+            app
+        );
+        httpsServer.listen(port, () => {
+            console.log('HTTPS Server running on port ' + port);
+        });
+    } else {
+        const httpServer = http.createServer(app);
+        httpServer.on('error', (err) => {
+            if (err.code === 'EADDRINUSE') {
+                console.warn(`[HTTP Server] Port ${port} is already in use by another instance.`);
+            } else {
+                console.error('[HTTP Server Error]', err);
+            }
+        });
+        httpServer.listen(port, () => {
+            console.log('HTTP Server running on port ' + port);
+        });
+    }
 }
 
 app.get('/api/linkedin-scraper', async (req, res) => {
@@ -1706,20 +1789,28 @@ app.get('/api/linkedin-scraper', async (req, res) => {
     }
 });
 
-// Automated Playwright Test Helper: Grant Admin Privileges in Firestore
+// Legacy URL retained for automation compatibility; privilege authority is a Firebase
+// custom claim and only SUPER_ADMIN (`users.roles.manage`) can assign it.
 app.post('/api/test-grant-admin', async (req, res) => {
     try {
-        const { uid } = req.body;
-        if (!uid || !db) return res.status(400).json({ success: false, error: 'Missing UID or Firestore connection' });
-        await db.collection('users').doc(uid).set({
-            isA: true,
-            isAdmin: true,
-            role: 'admin',
-            updatedAt: new Date().toISOString()
-        }, { merge: true });
-        return res.json({ success: true, uid, message: 'Granted admin privileges in Firestore' });
+        const uid = String(req.body.uid || '');
+        if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid) || !db || !admin?.auth) {
+            return res.status(400).json({ success: false, error: 'Valid UID and Firebase services are required' });
+        }
+        const target = await admin.auth().getUser(uid);
+        const existingClaims = target.customClaims || {};
+        await admin.auth().setCustomUserClaims(uid, { ...existingClaims, role: 'ADMIN' });
+        const batch = db.batch();
+        batch.set(db.collection('users').doc(uid), { role: 'ADMIN', updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        batch.set(db.collection('security_audit_logs').doc(), {
+            action: 'ADMIN_ROLE_GRANTED', actorUid: req.user.uid, targetUid: uid,
+            requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+        await batch.commit();
+        return res.json({ success: true, uid, message: 'Admin role granted. The target must refresh their ID token.' });
     } catch (err) {
-        return res.status(500).json({ success: false, error: err.message });
+        console.error('[Role grant]', err.message);
+        return res.status(500).json({ success: false, error: 'Unable to grant role' });
     }
 });
 
@@ -1730,7 +1821,7 @@ app.post('/api/send-invoice-email', async (req, res) => {
         if (!toEmail) return res.status(400).json({ success: false, error: 'Recipient email is required' });
 
         console.log(`[Invoice Email Dispatch] Sending PDF receipt confirmation for invoice ${invoiceNumber || transactionId} to ${toEmail}`);
-        
+
         return res.json({
             success: true,
             message: `Official GST Tax Invoice & Receipt for ${invoiceNumber || transactionId} queued and dispatched to ${toEmail}`,
@@ -1749,15 +1840,6 @@ app.post('/api/notify/user-signup', async (req, res) => {
     EmailNotifier.notifyUserRegistration(db, { userEmail, userName });
     return res.json({ success: true, message: 'Signup notifications queued.' });
 });
-
-setInterval(() => {
-    const now = Date.now();
-    for (const [token, data] of resetTokens.entries()) {
-        if (data.expiresAt < now || data.used) {
-            resetTokens.delete(token);
-        }
-    }
-}, 10 * 60 * 1000);
 
 // ─── Firebase Admin SDK Service Account Configuration ───────────────────────
 // Allows admins to update Firebase service account credentials via the admin UI
@@ -1801,7 +1883,7 @@ app.post('/api/admin/firebase-service-account', async (req, res) => {
     // Step 1: Validate credentials by attempting a test Admin SDK init
     let testAdmin;
     try {
-        const firebaseAdmin = require('firebase-admin');
+        const firebaseAdmin = require('./services/firebaseAdmin');
         // Use a separate named app for testing so we don't disrupt the running instance
         const testAppName = `sa-test-${Date.now()}`;
         testAdmin = firebaseAdmin.initializeApp({
@@ -1855,7 +1937,7 @@ app.post('/api/admin/firebase-service-account', async (req, res) => {
         process.env.FIREBASE_PRIVATE_KEY = normalizedKey;
 
         // Reinitialize default Firebase Admin app with new credentials
-        const firebaseAdmin = require('firebase-admin');
+        const firebaseAdmin = require('./services/firebaseAdmin');
         if (firebaseAdmin.apps.length) {
             await firebaseAdmin.app().delete();
         }
@@ -1899,9 +1981,14 @@ app.post(['/api/auth/custom-password-reset', '/api/notify/password-reset'], asyn
         const token = crypto.randomBytes(32).toString('base64url');
         const tokenHash = hashResetToken(token);
         const expiresAt = Date.now() + RESET_TOKEN_TTL_MS;
-        await db.collection('password_reset_tokens').doc(tokenHash).set({
-            uid: user.uid, email, expiresAt, usedAt: null, createdAt: admin.firestore.FieldValue.serverTimestamp()
-        });
+        const stateRef = db.collection('password_reset_state').doc(user.uid);
+        const tokenRef = db.collection('password_reset_tokens').doc(tokenHash);
+        const batch = db.batch();
+        // Replaces the account's prior active token so an older email cannot reset a
+        // password after the user has requested a newer link.
+        batch.set(stateRef, { activeTokenHash: tokenHash, expiresAt, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+        batch.set(tokenRef, { uid: user.uid, email, expiresAt, usedAt: null, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        await batch.commit();
         const resetLink = `${protocol}://${websiteName}/login?mode=resetPassword&token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
         await EmailNotifier.notifyPasswordReset(db, { userEmail: email, userName: email.split('@')[0], resetLink });
         return res.json(genericResponse);
@@ -1911,130 +1998,86 @@ app.post(['/api/auth/custom-password-reset', '/api/notify/password-reset'], asyn
     }
 });
 
-// Custom Branded Crypto Email Verification Link Dispatch (Configured SMTP Server)
-app.post(['/api/auth/send-verification-email', '/api/notify/send-verification-email'], async (req, res) => {
-    const email = req.body.email || req.body.userEmail;
-    const userName = req.body.userName || email?.split('@')[0] || 'User';
-    if (!email) return res.status(400).json({ success: false, error: 'Email address is required.' });
-
+// Branded verification links are authenticated, account-bound, hashed at rest and single-use.
+const VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
+app.post(['/api/auth/send-verification-email', '/api/notify/send-verification-email'], notificationAccountLimiter, async (req, res) => {
+    const email = String(req.user?.email || '').trim().toLowerCase();
+    if (!email || !req.user?.uid) return res.status(403).json({ success: false, error: 'Authenticated email required.' });
+    if (req.body.email && String(req.body.email).trim().toLowerCase() !== email) {
+        return res.status(403).json({ success: false, error: 'Verification email must match the authenticated account.' });
+    }
+    const generic = { success: true, message: 'If verification is required, an email will be sent shortly.' };
     try {
-        const token = crypto.randomBytes(32).toString('hex');
-        const expiresAt = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
-
-        verificationTokens.set(token, {
-            email: email.toLowerCase().trim(),
-            expiresAt,
-            used: false
-        });
-
-        // Persist token in Firestore if available for cross-restart validity
-        const db = req.app.get('db');
-        if (db) {
-            db.collection('email_verifications').doc(token).set({
-                email: email.toLowerCase().trim(),
-                expiresAt,
-                used: false,
-                createdAt: new Date().toISOString()
-            }).catch(e => console.warn('[Verification Store] Firestore persist notice:', e.message));
-        }
-
-        const verificationLink = `${protocol}://${websiteName}/login?mode=verifyEmail&token=${token}&email=${encodeURIComponent(email)}`;
-        console.log(`[Crypto Email Verification] Generated secure token for ${email}`);
-
+        if (!db) throw new Error('Verification service unavailable');
+        const token = crypto.randomBytes(32).toString('base64url');
+        const tokenHash = hashResetToken(token);
+        const expiresAt = Date.now() + VERIFICATION_TOKEN_TTL_MS;
+        const stateRef = db.collection('email_verification_state').doc(req.user.uid);
+        const tokenRef = db.collection('email_verifications').doc(tokenHash);
+        const batch = db.batch();
+        batch.set(stateRef, { activeTokenHash: tokenHash, expiresAt, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+        batch.set(tokenRef, { uid: req.user.uid, email, expiresAt, usedAt: null, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        await batch.commit();
+        const verificationLink = `${protocol}://${websiteName}/login?mode=verifyEmail&token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
         await EmailNotifier.notifyEmailVerificationLink(db, {
             userEmail: email,
-            userName,
+            userName: String(req.body.userName || email.split('@')[0]).slice(0, 100),
             verificationLink
         });
-
-        return res.json({
-            success: true,
-            message: `Branded email verification link sent via custom SMTP server to ${email}`
-        });
-    } catch (err) {
-        console.error('[Send Verification Email Error]:', err);
-        return res.status(500).json({ success: false, error: err.message });
+        return res.json(generic);
+    } catch (error) {
+        console.error('[Verification request]', error.message);
+        return res.status(503).json({ success: false, error: 'Verification email is temporarily unavailable.' });
     }
 });
 
-// Validate Crypto Email Verification Token & Update Firebase Admin SDK + Firestore
 app.post('/api/auth/verify-email-token', async (req, res) => {
-    const { email, token } = req.body;
-    if (!email || !token) {
-        return res.status(400).json({ success: false, error: 'Email and verification token are required.' });
+    const email = String(req.body.email || '').trim().toLowerCase();
+    const token = String(req.body.token || '');
+    if (!/^\S+@\S+\.\S+$/.test(email) || !/^[A-Za-z0-9_-]{43}$/.test(token) || !db || !admin?.auth) {
+        return res.status(400).json({ success: false, error: 'Invalid or expired email verification link.' });
     }
-
-    const normEmail = email.toLowerCase().trim();
-    let tokenData = verificationTokens.get(token);
-
-    // Check Firestore fallback if token not found in memory
-    const db = req.app.get('db');
-    if (!tokenData && db) {
-        try {
-            const doc = await db.collection('email_verifications').doc(token).get();
-            if (doc.exists) tokenData = doc.data();
-        } catch (e) {
-            console.warn('[Verification Validation] Firestore lookup notice:', e.message);
-        }
-    }
-
-    if (!tokenData) {
-        return res.status(200).json({ success: false, error: 'Invalid or expired email verification link. Please request a new verification email.' });
-    }
-    if (tokenData.used) {
-        return res.status(200).json({ success: false, error: 'This email verification link has already been used.' });
-    }
-    if (Date.now() > tokenData.expiresAt) {
-        verificationTokens.delete(token);
-        return res.status(200).json({ success: false, error: 'Email verification link has expired (valid for 24 hours). Please request a new link.' });
-    }
-
-    if (tokenData.email !== normEmail) {
-        return res.status(200).json({ success: false, error: 'Token email mismatch. Please verify with the correct account.' });
-    }
-
-    tokenData.used = true;
-    verificationTokens.set(token, tokenData);
-    if (db) {
-        db.collection('email_verifications').doc(token).update({ used: true, verifiedAt: new Date().toISOString() }).catch(() => {});
-    }
-
+    const tokenHash = hashResetToken(token);
+    const tokenRef = db.collection('email_verifications').doc(tokenHash);
+    const leaseId = crypto.randomUUID();
     try {
-        let updatedUid = null;
-        // Update Firebase Admin SDK emailVerified flag
-        if (admin && typeof admin.auth === 'function' && admin.apps && admin.apps.length) {
-            try {
-                const userRecord = await admin.auth().getUserByEmail(normEmail);
-                updatedUid = userRecord.uid;
-                await admin.auth().updateUser(updatedUid, { emailVerified: true });
-                console.log(`[Verify Email] ✅ Admin SDK set emailVerified=true for ${normEmail} (uid: ${updatedUid})`);
-            } catch (adminErr) {
-                console.warn('[Verify Email Admin SDK notice]:', adminErr.message);
+        let uid;
+        await db.runTransaction(async tx => {
+            const tokenSnap = await tx.get(tokenRef);
+            const record = tokenSnap.data();
+            uid = record?.uid;
+            const stateRef = uid ? db.collection('email_verification_state').doc(uid) : null;
+            const stateSnap = stateRef ? await tx.get(stateRef) : null;
+            const activeLease = record?.leaseId && Number(record.leaseExpiresAt || 0) > Date.now();
+            if (!tokenSnap.exists || !stateSnap?.exists || stateSnap.data().activeTokenHash !== tokenHash
+                || record.email !== email || record.usedAt || Number(record.expiresAt) < Date.now() || activeLease) {
+                throw new Error('INVALID_VERIFICATION_TOKEN');
             }
-        }
-
-        // Update Firestore user document
-        if (db) {
-            try {
-                if (updatedUid) {
-                    await db.collection('users').doc(updatedUid).set({ emailVerified: true }, { merge: true });
-                }
-                const q = await db.collection('users').where('email', '==', normEmail).get();
-                for (const d of q.docs) {
-                    await db.collection('users').doc(d.id).set({ emailVerified: true }, { merge: true });
-                }
-            } catch (dbErr) {
-                console.warn('[Verify Email Firestore notice]:', dbErr.message);
-            }
-        }
-
-        return res.json({
-            success: true,
-            message: `Email address ${normEmail} has been successfully verified!`
+            tx.update(tokenRef, { leaseId, leaseExpiresAt: Date.now() + 60_000 });
         });
-    } catch (err) {
-        console.error('[Verify Email Token Error]:', err);
-        return res.status(500).json({ success: false, error: err.message });
+        const user = await admin.auth().getUser(uid);
+        if (String(user.email || '').toLowerCase() !== email) throw new Error('INVALID_VERIFICATION_TOKEN');
+        await admin.auth().updateUser(uid, { emailVerified: true });
+        await db.runTransaction(async tx => {
+            const latest = await tx.get(tokenRef);
+            if (!latest.exists || latest.data().leaseId !== leaseId) throw new Error('INVALID_VERIFICATION_TOKEN');
+            tx.update(tokenRef, { usedAt: admin.firestore.FieldValue.serverTimestamp(), leaseId: admin.firestore.FieldValue.delete(), leaseExpiresAt: admin.firestore.FieldValue.delete() });
+            tx.set(db.collection('email_verification_state').doc(uid), {
+                activeTokenHash: admin.firestore.FieldValue.delete(),
+                verifiedAt: admin.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+            tx.set(db.collection('users').doc(uid), { emailVerified: true }, { merge: true });
+        });
+        res.setHeader('Cache-Control', 'no-store');
+        return res.json({ success: true, message: 'Email address verified successfully.' });
+    } catch (error) {
+        try {
+            const snap = await tokenRef.get();
+            if (snap.exists && snap.data().leaseId === leaseId) {
+                await tokenRef.update({ leaseId: admin.firestore.FieldValue.delete(), leaseExpiresAt: admin.firestore.FieldValue.delete() });
+            }
+        } catch (_) {}
+        return res.status(400).json({ success: false, error: 'Invalid or expired email verification link.' });
     }
 });
 
@@ -2111,8 +2154,9 @@ app.post('/api/auth/set-user-password', async (req, res) => {
     const email = String(req.body.email || '').trim().toLowerCase();
     const newPassword = String(req.body.newPassword || '');
     const token = String(req.body.token || '');
-    if (!email || !token || newPassword.length < 12) {
-        return res.status(400).json({ success: false, error: 'A valid reset token, email, and a password of at least 12 characters are required.' });
+    if (!/^\S+@\S+\.\S+$/.test(email) || !/^[A-Za-z0-9_-]{43}$/.test(token)
+        || newPassword.length < 12 || newPassword.length > 128 || newPassword.toLowerCase().includes(email.split('@')[0])) {
+        return res.status(400).json({ success: false, error: 'A valid reset token, email, and a password of 12-128 characters not containing the email name are required.' });
     }
     if (!db || !admin?.auth) return res.status(503).json({ success: false, error: 'Password reset service unavailable.' });
     const tokenHash = hashResetToken(token);
@@ -2123,7 +2167,11 @@ app.post('/api/auth/set-user-password', async (req, res) => {
         await db.runTransaction(async tx => {
             const snap = await tx.get(ref);
             const record = snap.data();
-            if (!snap.exists || record.usedAt || record.email !== email || record.expiresAt < Date.now() || record.leaseId) {
+            const stateRef = record?.uid ? db.collection('password_reset_state').doc(record.uid) : null;
+            const stateSnap = stateRef ? await tx.get(stateRef) : null;
+            const activeLease = record?.leaseId && Number(record.leaseExpiresAt || 0) > Date.now();
+            if (!snap.exists || !stateSnap?.exists || stateSnap.data().activeTokenHash !== tokenHash
+                || record.usedAt || record.email !== email || record.expiresAt < Date.now() || activeLease) {
                 throw new Error('INVALID_RESET_TOKEN');
             }
             tx.update(ref, { leaseId, leaseExpiresAt: Date.now() + 60_000 });
@@ -2131,8 +2179,18 @@ app.post('/api/auth/set-user-password', async (req, res) => {
         const user = await admin.auth().getUserByEmail(email);
         const record = (await ref.get()).data();
         if (!record || record.uid !== user.uid || record.leaseId !== leaseId) throw new Error('INVALID_RESET_TOKEN');
-        await admin.auth().updateUser(user.uid, { password: newPassword, disabled: false });
-        await ref.update({ usedAt: admin.firestore.FieldValue.serverTimestamp(), leaseId: admin.firestore.FieldValue.delete(), leaseExpiresAt: admin.firestore.FieldValue.delete() });
+        await admin.auth().updateUser(user.uid, { password: newPassword });
+        await admin.auth().revokeRefreshTokens(user.uid);
+        await db.runTransaction(async tx => {
+            const latest = await tx.get(ref);
+            if (!latest.exists || latest.data().leaseId !== leaseId) throw new Error('INVALID_RESET_TOKEN');
+            tx.update(ref, { usedAt: admin.firestore.FieldValue.serverTimestamp(), leaseId: admin.firestore.FieldValue.delete(), leaseExpiresAt: admin.firestore.FieldValue.delete() });
+            tx.set(db.collection('password_reset_state').doc(user.uid), {
+                activeTokenHash: admin.firestore.FieldValue.delete(),
+                consumedAt: admin.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+        });
+        res.setHeader('Cache-Control', 'no-store');
         return res.json({ success: true, message: 'Password updated successfully.' });
     } catch (err) {
         // Release a lease only when this request owns it; do not make an already-used token reusable.
@@ -2198,341 +2256,218 @@ app.post('/api/notify/subscription-cancelled', async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// LINKEDIN OAUTH 2.0 — Server-Side Authorization Code Flow
-// CSRF protection via single-use state token (5min TTL)
-// Secrets stay server-side — never exposed to client.
+// LinkedIn / GitHub OAuth: state-cookie-bound authorization code flow followed
+// by a one-time Firebase custom-token exchange. No unsigned browser session exists.
 // ─────────────────────────────────────────────────────────────────────────────
-const oauthStateTokens = new Map();
+const OAUTH_STATE_TTL_MS = 5 * 60 * 1000;
+const OAUTH_EXCHANGE_TTL_MS = 60 * 1000;
+const oauthHash = value => crypto.createHash('sha256').update(String(value)).digest('hex');
+const parseCookies = req => Object.fromEntries(String(req.headers.cookie || '').split(';').map(part => part.trim().split('=').map(decodeURIComponent)).filter(pair => pair.length === 2));
+const oauthCookie = (state, clear = false) => {
+    const secure = protocol === 'https' || process.env.NODE_ENV === 'production' ? '; Secure' : '';
+    return `rp_oauth_state=${clear ? '' : encodeURIComponent(state)}; Path=/api/auth; HttpOnly; SameSite=Lax; Max-Age=${clear ? 0 : 300}${secure}`;
+};
+const safeRedirect = (res, value) => res.redirect(`${protocol}://${websiteName}${value}`);
 
-/**
- * Dynamic credentials resolver for LinkedIn and GitHub OAuth.
- * Reads from Firestore data/system_settings (field 'socialAuth') first,
- * falling back to system_settings/socialAuth and process.env.
- */
 async function getSocialAuthCredentials(provider) {
-    let clientId = '';
-    let clientSecret = '';
-
+    let config = {};
     try {
         if (db) {
-            // Priority 1: data/system_settings document (written by React Admin UX saveSystemSettings)
-            const sysDoc = await db.collection('data').doc('system_settings').get();
-            if (sysDoc.exists) {
-                const sysData = sysDoc.data() || {};
-                const sa = sysData.socialAuth || sysData[provider] || {};
-                if (provider === 'linkedin') {
-                    clientId = sa.linkedinClientId || sa.linkedin_client_id || sa.LINKEDIN_CLIENT_ID || sa.clientId || '';
-                    clientSecret = sa.linkedinClientSecret || sa.linkedin_client_secret || sa.LINKEDIN_CLIENT_SECRET || sa.clientSecret || '';
-                } else if (provider === 'github') {
-                    clientId = sa.githubClientId || sa.github_client_id || sa.GITHUB_CLIENT_ID || sa.clientId || '';
-                    clientSecret = sa.githubClientSecret || sa.github_client_secret || sa.GITHUB_CLIENT_SECRET || sa.clientSecret || '';
-                }
-            }
-
-            // Priority 2: Legacy system_settings/socialAuth document
-            if (!clientId || !clientSecret) {
-                const saDoc = await db.collection('system_settings').doc('socialAuth').get();
-                if (saDoc.exists) {
-                    const saData = saDoc.data() || {};
-                    if (provider === 'linkedin') {
-                        clientId = clientId || saData.linkedinClientId || saData.linkedin_client_id || saData.LINKEDIN_CLIENT_ID || '';
-                        clientSecret = clientSecret || saData.linkedinClientSecret || saData.linkedin_client_secret || saData.LINKEDIN_CLIENT_SECRET || '';
-                    } else if (provider === 'github') {
-                        clientId = clientId || saData.githubClientId || saData.github_client_id || saData.GITHUB_CLIENT_ID || '';
-                        clientSecret = clientSecret || saData.githubClientSecret || saData.github_client_secret || saData.GITHUB_CLIENT_SECRET || '';
-                    }
-                }
+            const secretDoc = await db.collection('settings').doc('oauth_providers').get();
+            config = secretDoc.data()?.[provider] || {};
+            // Temporary migration fallback for existing installations.
+            if (!config.clientId || !config.clientSecret) {
+                const legacyDoc = await db.collection('data').doc('system_settings').get();
+                const legacy = legacyDoc.data()?.socialAuth || {};
+                config = provider === 'linkedin'
+                    ? { clientId: legacy.linkedinClientId, clientSecret: legacy.linkedinClientSecret }
+                    : { clientId: legacy.githubClientId, clientSecret: legacy.githubClientSecret };
             }
         }
-    } catch (err) {
-        console.warn(`[getSocialAuthCredentials] Firestore lookup error for ${provider}:`, err.message);
+    } catch (error) {
+        console.warn(`[OAuth config ${provider}]`, error.message);
     }
-
-    // Priority 3: Fallback to environment variables
-    if (!clientId && provider === 'linkedin') clientId = process.env.LINKEDIN_CLIENT_ID || '';
-    if (!clientSecret && provider === 'linkedin') clientSecret = process.env.LINKEDIN_CLIENT_SECRET || '';
-    if (!clientId && provider === 'github') clientId = process.env.GITHUB_CLIENT_ID || '';
-    if (!clientSecret && provider === 'github') clientSecret = process.env.GITHUB_CLIENT_SECRET || '';
-
-    return { clientId: (clientId || '').trim(), clientSecret: (clientSecret || '').trim() };
+    const envPrefix = provider === 'linkedin' ? 'LINKEDIN' : 'GITHUB';
+    return {
+        clientId: String(config.clientId || process.env[`${envPrefix}_CLIENT_ID`] || '').trim(),
+        clientSecret: String(config.clientSecret || process.env[`${envPrefix}_CLIENT_SECRET`] || '').trim()
+    };
 }
 
-// Cleanup expired state tokens every 10 minutes
-setInterval(() => {
-    const now = Date.now();
-    for (const [key, data] of oauthStateTokens.entries()) {
-        if (data.expiresAt < now) oauthStateTokens.delete(key);
+async function beginOAuth(provider, req, res) {
+    try {
+        if (!db) throw new Error('OAuth state store unavailable');
+        const { clientId } = await getSocialAuthCredentials(provider);
+        if (!clientId) return res.status(503).send('OAuth provider is not configured.');
+        const state = crypto.randomBytes(32).toString('base64url');
+        const codeVerifier = crypto.randomBytes(32).toString('base64url');
+        const challenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
+        await db.collection('oauth_states').doc(oauthHash(state)).create({ provider, codeVerifier, expiresAt: Date.now() + OAUTH_STATE_TTL_MS });
+        res.setHeader('Set-Cookie', oauthCookie(state));
+        const callback = `${protocol}://${websiteName}/api/auth/${provider}/callback`;
+        const url = provider === 'linkedin'
+            ? new URL('https://www.linkedin.com/oauth/v2/authorization')
+            : new URL('https://github.com/login/oauth/authorize');
+        const params = provider === 'linkedin'
+            ? { response_type: 'code', client_id: clientId, redirect_uri: callback, state, scope: 'openid profile email', code_challenge: challenge, code_challenge_method: 'S256' }
+            : { client_id: clientId, redirect_uri: callback, state, scope: 'read:user user:email', code_challenge: challenge, code_challenge_method: 'S256' };
+        for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
+        return res.redirect(url.href);
+    } catch (error) {
+        console.error(`[OAuth begin ${provider}]`, error.message);
+        return res.status(503).send('OAuth is temporarily unavailable.');
     }
-}, 10 * 60 * 1000);
+}
 
-/**
- * GET /api/auth/linkedin — Initiate LinkedIn OAuth 2.0 flow
- */
-app.get('/api/auth/linkedin', async (req, res) => {
-    const { clientId } = await getSocialAuthCredentials('linkedin');
-    if (!clientId) {
-        return res.status(400).send('LinkedIn OAuth not configured. Please add LINKEDIN_CLIENT_ID to your Admin Settings or .env file.');
+async function consumeOAuthState(provider, req) {
+    const state = typeof req.query.state === 'string' ? req.query.state : '';
+    const cookieState = parseCookies(req).rp_oauth_state || '';
+    const a = Buffer.from(state);
+    const b = Buffer.from(cookieState);
+    if (!state || a.length !== b.length || !crypto.timingSafeEqual(a, b)) throw new Error('OAUTH_STATE_INVALID');
+    const ref = db.collection('oauth_states').doc(oauthHash(state));
+    let record;
+    await db.runTransaction(async tx => {
+        const snap = await tx.get(ref);
+        record = snap.data();
+        if (!snap.exists || record.provider !== provider || Number(record.expiresAt) < Date.now()) throw new Error('OAUTH_STATE_INVALID');
+        tx.delete(ref);
+    });
+    return record;
+}
+
+async function upsertFederatedIdentity({ provider, providerId, email, emailVerified, displayName, photoURL }) {
+    if (!admin?.auth || !db || !providerId || !email || emailVerified !== true) throw new Error('OAUTH_IDENTITY_INVALID');
+    const normalizedEmail = email.trim().toLowerCase();
+    let user;
+    let isNew = false;
+    try {
+        user = await admin.auth().getUserByEmail(normalizedEmail);
+    } catch (error) {
+        if (error.code !== 'auth/user-not-found') throw error;
+        const providerUid = `${provider}:${String(providerId)}`.slice(0, 128);
+        try { user = await admin.auth().getUser(providerUid); }
+        catch (uidError) {
+            if (uidError.code !== 'auth/user-not-found') throw uidError;
+            user = await admin.auth().createUser({ uid: providerUid, email: normalizedEmail, emailVerified: true, displayName: displayName.slice(0, 100), photoURL: photoURL || undefined });
+            isNew = true;
+        }
     }
-    const state = crypto.randomBytes(16).toString('hex');
-    oauthStateTokens.set(state, { provider: 'linkedin', expiresAt: Date.now() + 5 * 60 * 1000 });
-    const redirectUri = encodeURIComponent(`${protocol}://${websiteName}/api/auth/linkedin/callback`);
-    const scope = encodeURIComponent('openid profile email');
-    const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&state=${state}&scope=${scope}`;
-    res.redirect(authUrl);
-});
+    if (!user.emailVerified) await admin.auth().updateUser(user.uid, { emailVerified: true });
+    const parts = String(displayName || 'User').trim().split(/\s+/);
+    const userRef = db.collection('users').doc(user.uid);
+    const existing = await userRef.get();
+    await userRef.set({
+        userId: user.uid,
+        email: normalizedEmail,
+        firstname: parts[0] || 'User',
+        lastname: parts.slice(1).join(' '),
+        displayName: String(displayName || 'User').slice(0, 100),
+        ...(photoURL ? { photoURL } : {}),
+        authProviders: admin.firestore.FieldValue.arrayUnion(provider),
+        lastLoginAt: admin.firestore.FieldValue.serverTimestamp(),
+        ...(!existing.exists ? { membership: 'Basic', createdAt: admin.firestore.FieldValue.serverTimestamp() } : {})
+    }, { merge: true });
+    if (isNew) EmailNotifier.notifyOAuthNewUser(db, { userEmail: normalizedEmail, userName: displayName, provider }).catch(() => {});
+    return user.uid;
+}
 
-/**
- * GET /api/auth/linkedin/callback — LinkedIn OAuth 2.0 code exchange + Firestore user creation
- */
+async function issueOAuthExchange(uid, provider) {
+    const code = crypto.randomBytes(32).toString('base64url');
+    await db.collection('oauth_exchange_codes').doc(oauthHash(code)).create({ uid, provider, expiresAt: Date.now() + OAUTH_EXCHANGE_TTL_MS, usedAt: null });
+    return code;
+}
+
+app.get('/api/auth/linkedin', (req, res) => beginOAuth('linkedin', req, res));
+app.get('/api/auth/github', (req, res) => beginOAuth('github', req, res));
+
 app.get('/api/auth/linkedin/callback', async (req, res) => {
-    const { code, state, error: oauthError } = req.query;
-    const { clientId, clientSecret } = await getSocialAuthCredentials('linkedin');
-    const redirectUri = `${protocol}://${websiteName}/api/auth/linkedin/callback`;
-
-    if (oauthError) {
-        console.warn('[LinkedIn Callback] User denied authorization:', oauthError);
-        return res.redirect(`${protocol}://${websiteName}/login?error=linkedin_denied`);
-    }
-
-    // CSRF validation
-    const stateData = oauthStateTokens.get(state);
-    if (!stateData || stateData.provider !== 'linkedin' || Date.now() > stateData.expiresAt) {
-        console.error('[LinkedIn Callback] Invalid or expired CSRF state token');
-        return res.redirect(`${protocol}://${websiteName}/login?error=linkedin_state_invalid`);
-    }
-    oauthStateTokens.delete(state);
-
-    if (!code) return res.redirect(`${protocol}://${websiteName}/login?error=linkedin_no_code`);
-
+    res.setHeader('Set-Cookie', oauthCookie('', true));
+    if (req.query.error) return safeRedirect(res, '/login?error=linkedin_denied');
     try {
-        // Step 1: Exchange authorization code for access token
+        const state = await consumeOAuthState('linkedin', req);
+        const code = typeof req.query.code === 'string' ? req.query.code : '';
+        if (!code) throw new Error('OAUTH_CODE_MISSING');
+        const { clientId, clientSecret } = await getSocialAuthCredentials('linkedin');
+        const redirectUri = `${protocol}://${websiteName}/api/auth/linkedin/callback`;
         const tokenRes = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-                grant_type: 'authorization_code',
-                code,
-                redirect_uri: redirectUri,
-                client_id: clientId,
-                client_secret: clientSecret,
-            }).toString()
+            method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: 10_000,
+            body: new URLSearchParams({ grant_type: 'authorization_code', code, redirect_uri: redirectUri, client_id: clientId, client_secret: clientSecret, code_verifier: state.codeVerifier }).toString()
         });
         const tokenData = await tokenRes.json();
-        if (!tokenData.access_token) {
-            console.error('[LinkedIn Token Error]:', tokenData);
-            return res.redirect(`${protocol}://${websiteName}/login?error=linkedin_token_failed`);
-        }
-
-        // Step 2: Fetch user profile using OpenID Connect userinfo endpoint
-        const profileRes = await fetch('https://api.linkedin.com/v2/userinfo', {
-            headers: { Authorization: `Bearer ${tokenData.access_token}` }
-        });
+        if (!tokenRes.ok || !tokenData.access_token) throw new Error('OAUTH_TOKEN_EXCHANGE_FAILED');
+        const profileRes = await fetch('https://api.linkedin.com/v2/userinfo', { headers: { Authorization: `Bearer ${tokenData.access_token}` }, timeout: 10_000 });
         const profile = await profileRes.json();
-
-        const linkedinId = profile.sub;
-        const email = profile.email || `${linkedinId}@linkedin.user`;
-        const displayName = profile.name || `${profile.given_name || ''} ${profile.family_name || ''}`.trim() || 'LinkedIn User';
-        const firstName = profile.given_name || displayName.split(' ')[0] || 'User';
-        const lastName = profile.family_name || displayName.split(' ').slice(1).join(' ') || '';
-        const photoURL = profile.picture || null;
-        const uid = `linkedin:${linkedinId}`;
-
-        // Step 3: Upsert user in Firestore with membership inheritance
-        let isNewUser = false;
-        if (db) {
-            try {
-                const userRef = db.collection('users').doc(uid);
-                const snap = await userRef.get();
-                const { FieldValue } = require('firebase-admin').firestore;
-                if (!snap.exists) {
-                    isNewUser = true;
-                    let existingMembership = 'Basic';
-                    if (email) {
-                        try {
-                            const existingQuery = await db.collection('users').where('email', '==', email.toLowerCase().trim()).get();
-                            if (!existingQuery.empty) {
-                                const match = existingQuery.docs.find(d => d.id !== uid) || existingQuery.docs[0];
-                                if (match && match.data()?.membership) {
-                                    existingMembership = match.data().membership;
-                                }
-                            }
-                        } catch (_) {}
-                    }
-                    await userRef.set({
-                        userId: uid, firstname: firstName, lastname: lastName,
-                        email, photoURL: photoURL || '',
-                        authProvider: 'linkedin',
-                        membership: existingMembership,
-                        createdAt: FieldValue.serverTimestamp(),
-                        lastLoginAt: FieldValue.serverTimestamp(),
-                    });
-                } else {
-                    await userRef.set({
-                        lastLoginAt: FieldValue.serverTimestamp(),
-                        authProvider: 'linkedin',
-                        ...(photoURL ? { photoURL } : {}),
-                    }, { merge: true });
-                }
-            } catch (dbErr) {
-                console.warn('[LinkedIn Callback] Firestore upsert notice:', dbErr.message);
-            }
-        }
-
-        // Step 4: Dispatch welcome email on first login
-        if (isNewUser) {
-            EmailNotifier.notifyOAuthNewUser(db, { userEmail: email, userName: displayName, provider: 'LinkedIn' });
-        }
-
-        // Step 5: Set session info in query params for client to pick up
-        const sessionPayload = Buffer.from(JSON.stringify({ uid, email, displayName, photoURL, provider: 'linkedin' })).toString('base64url');
-        console.log(`[LinkedIn OAuth] ✅ User ${isNewUser ? 'created' : 'signed in'}: ${uid}`);
-        return res.redirect(`${protocol}://${websiteName}/dashboard?oauth_session=${sessionPayload}&provider=linkedin`);
-
-    } catch (err) {
-        console.error('[LinkedIn Callback Error]:', err.message);
-        return res.redirect(`${protocol}://${websiteName}/login?error=linkedin_callback_failed`);
+        if (!profileRes.ok || profile.email_verified !== true) throw new Error('OAUTH_EMAIL_NOT_VERIFIED');
+        const uid = await upsertFederatedIdentity({
+            provider: 'linkedin', providerId: profile.sub, email: profile.email, emailVerified: true,
+            displayName: profile.name || `${profile.given_name || ''} ${profile.family_name || ''}`.trim() || 'LinkedIn User',
+            photoURL: /^https:\/\//.test(profile.picture || '') ? profile.picture : null
+        });
+        const exchange = await issueOAuthExchange(uid, 'linkedin');
+        return safeRedirect(res, `/dashboard?oauth_code=${encodeURIComponent(exchange)}&provider=linkedin`);
+    } catch (error) {
+        console.error('[LinkedIn OAuth callback]', error.message);
+        return safeRedirect(res, '/login?error=linkedin_callback_failed');
     }
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GITHUB OAUTH 2.0 — Server-Side Authorization Code Flow
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * GET /api/auth/github — Initiate GitHub OAuth 2.0 flow
- */
-app.get('/api/auth/github', async (req, res) => {
-    const { clientId } = await getSocialAuthCredentials('github');
-    if (!clientId) {
-        return res.status(400).send('GitHub OAuth not configured. Please add GITHUB_CLIENT_ID to your Admin Settings or .env file.');
-    }
-    const state = crypto.randomBytes(16).toString('hex');
-    oauthStateTokens.set(state, { provider: 'github', expiresAt: Date.now() + 5 * 60 * 1000 });
-    const redirectUri = encodeURIComponent(`${protocol}://${websiteName}/api/auth/github/callback`);
-    const authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&state=${state}&scope=read:user,user:email`;
-    res.redirect(authUrl);
-});
-
-/**
- * GET /api/auth/github/callback — GitHub OAuth 2.0 code exchange + Firestore user creation
- */
 app.get('/api/auth/github/callback', async (req, res) => {
-    const { code, state, error: oauthError } = req.query;
-    const { clientId, clientSecret } = await getSocialAuthCredentials('github');
-
-    if (oauthError) {
-        console.warn('[GitHub Callback] User denied authorization:', oauthError);
-        return res.redirect(`${protocol}://${websiteName}/login?error=github_denied`);
-    }
-
-    // CSRF validation
-    const stateData = oauthStateTokens.get(state);
-    if (!stateData || stateData.provider !== 'github' || Date.now() > stateData.expiresAt) {
-        console.error('[GitHub Callback] Invalid or expired CSRF state token');
-        return res.redirect(`${protocol}://${websiteName}/login?error=github_state_invalid`);
-    }
-    oauthStateTokens.delete(state);
-
-    if (!code) return res.redirect(`${protocol}://${websiteName}/login?error=github_no_code`);
-
+    res.setHeader('Set-Cookie', oauthCookie('', true));
+    if (req.query.error) return safeRedirect(res, '/login?error=github_denied');
     try {
-        // Step 1: Exchange code for access token
+        const state = await consumeOAuthState('github', req);
+        const code = typeof req.query.code === 'string' ? req.query.code : '';
+        if (!code) throw new Error('OAUTH_CODE_MISSING');
+        const { clientId, clientSecret } = await getSocialAuthCredentials('github');
         const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
-            method: 'POST',
-            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-            body: JSON.stringify({ client_id: clientId, client_secret: clientSecret, code })
+            method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, timeout: 10_000,
+            body: JSON.stringify({ client_id: clientId, client_secret: clientSecret, code, code_verifier: state.codeVerifier })
         });
         const tokenData = await tokenRes.json();
-        if (!tokenData.access_token) {
-            console.error('[GitHub Token Error]:', tokenData);
-            return res.redirect(`${protocol}://${websiteName}/login?error=github_token_failed`);
-        }
-
-        // Step 2: Fetch user profile
-        const profileRes = await fetch('https://api.github.com/user', {
-            headers: { Authorization: `Bearer ${tokenData.access_token}`, 'User-Agent': `${websiteName}-OAuth` }
-        });
+        if (!tokenRes.ok || !tokenData.access_token) throw new Error('OAUTH_TOKEN_EXCHANGE_FAILED');
+        const headers = { Authorization: `Bearer ${tokenData.access_token}`, 'User-Agent': `${websiteName}-OAuth`, Accept: 'application/vnd.github+json' };
+        const [profileRes, emailsRes] = await Promise.all([
+            fetch('https://api.github.com/user', { headers, timeout: 10_000 }),
+            fetch('https://api.github.com/user/emails', { headers, timeout: 10_000 })
+        ]);
         const profile = await profileRes.json();
-
-        // Step 3: Fetch verified primary email (GitHub may not include it in profile)
-        let email = profile.email;
-        if (!email) {
-            try {
-                const emailRes = await fetch('https://api.github.com/user/emails', {
-                    headers: { Authorization: `Bearer ${tokenData.access_token}`, 'User-Agent': `${websiteName}-OAuth` }
-                });
-                const emails = await emailRes.json();
-                const primary = emails.find(e => e.primary && e.verified);
-                email = primary?.email || emails[0]?.email || `${profile.id}@github.user`;
-            } catch (_) {
-                email = `${profile.id}@github.user`;
-            }
-        }
-
-        const githubId = profile.id;
-        const displayName = profile.name || profile.login || 'GitHub User';
-        const nameParts = displayName.trim().split(' ');
-        const firstName = nameParts[0] || 'User';
-        const lastName = nameParts.slice(1).join(' ') || '';
-        const photoURL = profile.avatar_url || null;
-        const uid = `github:${githubId}`;
-
-        // Step 4: Upsert user in Firestore with membership inheritance
-        let isNewUser = false;
-        if (db) {
-            try {
-                const userRef = db.collection('users').doc(uid);
-                const snap = await userRef.get();
-                const { FieldValue } = require('firebase-admin').firestore;
-                if (!snap.exists) {
-                    isNewUser = true;
-                    let existingMembership = 'Basic';
-                    if (email) {
-                        try {
-                            const existingQuery = await db.collection('users').where('email', '==', email.toLowerCase().trim()).get();
-                            if (!existingQuery.empty) {
-                                const match = existingQuery.docs.find(d => d.id !== uid) || existingQuery.docs[0];
-                                if (match && match.data()?.membership) {
-                                    existingMembership = match.data().membership;
-                                }
-                            }
-                        } catch (_) {}
-                    }
-                    await userRef.set({
-                        userId: uid, firstname: firstName, lastname: lastName,
-                        email, photoURL: photoURL || '',
-                        authProvider: 'github',
-                        membership: existingMembership,
-                        createdAt: FieldValue.serverTimestamp(),
-                        lastLoginAt: FieldValue.serverTimestamp(),
-                    });
-                } else {
-                    await userRef.set({
-                        lastLoginAt: FieldValue.serverTimestamp(),
-                        authProvider: 'github',
-                        ...(photoURL ? { photoURL } : {}),
-                    }, { merge: true });
-                }
-            } catch (dbErr) {
-                console.warn('[GitHub Callback] Firestore upsert notice:', dbErr.message);
-            }
-        }
-
-        // Step 5: Dispatch welcome email on first login
-        if (isNewUser) {
-            EmailNotifier.notifyOAuthNewUser(db, { userEmail: email, userName: displayName, provider: 'GitHub' });
-        }
-
-        // Step 6: Redirect to dashboard with session payload
-        const sessionPayload = Buffer.from(JSON.stringify({ uid, email, displayName, photoURL, provider: 'github' })).toString('base64url');
-        console.log(`[GitHub OAuth] ✅ User ${isNewUser ? 'created' : 'signed in'}: ${uid}`);
-        return res.redirect(`${protocol}://${websiteName}/dashboard?oauth_session=${sessionPayload}&provider=github`);
-
-    } catch (err) {
-        console.error('[GitHub Callback Error]:', err.message);
-        return res.redirect(`${protocol}://${websiteName}/login?error=github_callback_failed`);
+        const emails = await emailsRes.json();
+        const verified = Array.isArray(emails) ? (emails.find(item => item.primary && item.verified) || emails.find(item => item.verified)) : null;
+        if (!profileRes.ok || !emailsRes.ok || !verified?.email) throw new Error('OAUTH_EMAIL_NOT_VERIFIED');
+        const uid = await upsertFederatedIdentity({
+            provider: 'github', providerId: profile.id, email: verified.email, emailVerified: true,
+            displayName: profile.name || profile.login || 'GitHub User',
+            photoURL: /^https:\/\//.test(profile.avatar_url || '') ? profile.avatar_url : null
+        });
+        const exchange = await issueOAuthExchange(uid, 'github');
+        return safeRedirect(res, `/dashboard?oauth_code=${encodeURIComponent(exchange)}&provider=github`);
+    } catch (error) {
+        console.error('[GitHub OAuth callback]', error.message);
+        return safeRedirect(res, '/login?error=github_callback_failed');
     }
 });
+
+app.post('/api/auth/oauth/exchange', async (req, res) => {
+    const code = String(req.body.code || '');
+    if (!/^[A-Za-z0-9_-]{43}$/.test(code) || !db || !admin?.auth) return res.status(400).json({ error: 'Invalid OAuth exchange code' });
+    const ref = db.collection('oauth_exchange_codes').doc(oauthHash(code));
+    try {
+        let record;
+        await db.runTransaction(async tx => {
+            const snap = await tx.get(ref);
+            record = snap.data();
+            if (!snap.exists || record.usedAt || Number(record.expiresAt) < Date.now()) throw new Error('INVALID_EXCHANGE_CODE');
+            tx.update(ref, { usedAt: admin.firestore.FieldValue.serverTimestamp() });
+        });
+        const customToken = await admin.auth().createCustomToken(record.uid, { signInProvider: record.provider });
+        res.setHeader('Cache-Control', 'no-store');
+        return res.json({ customToken });
+    } catch (_) {
+        return res.status(400).json({ error: 'Invalid or expired OAuth exchange code' });
+    }
+});
+
 
 /**
  * GET /api/auth/linkedin/test-credentials — Verify LinkedIn credentials are configured

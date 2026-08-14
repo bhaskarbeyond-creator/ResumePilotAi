@@ -1,3 +1,4 @@
+import { sanitizeRichText } from '../../utils/sanitizeHtml';
 import React, { Component } from 'react';
 import './Cv51.scss';
 import { withTranslation } from 'react-i18next';
@@ -211,7 +212,7 @@ class Cv51 extends Component {
                         <div className="cv51-experience-content">
                             <div className="cv51-job-title">{tempEmployments[index].jobTitle}</div>
                             {/* <div className="cv51-employer">{tempEmployments[index].employer}</div> */}
-                            <div className="cv51-description" dangerouslySetInnerHTML={{ __html: tempEmployments[index].description }} />
+                            <div className="cv51-description" dangerouslySetInnerHTML={{ __html: sanitizeRichText(tempEmployments[index].description) }} />
                             <div className="cv51-sector">
                                 <span className="cv51-sector-label">Business or sector</span> {tempEmployments[index].employer || 'Information and communication'}
                             </div>
@@ -241,7 +242,7 @@ class Cv51 extends Component {
                         <div className="cv51-education-content">
                             <div className="cv51-degree">{tempEducations[index].degree}</div>
                             <div className="cv51-school">{tempEducations[index].school}</div>
-                            <div className="cv51-description" dangerouslySetInnerHTML={{ __html: tempEducations[index].description }} />
+                            <div className="cv51-description" dangerouslySetInnerHTML={{ __html: sanitizeRichText(tempEducations[index].description) }} />
                             {/* <div className="cv51-sector">
                                 <span className="cv51-sector-label">Business or sector</span> {tempEducations[index].sector || 'Information and communication'}
                             </div> */}
@@ -403,7 +404,7 @@ class Cv51 extends Component {
                                 <div className="cv51-section-left"></div>
                                 <div className="cv51-section-right">
                                     <div className="cv51-additional-info">
-                                        <div dangerouslySetInnerHTML={{ __html: this.props.values.summary }} />
+                                        <div dangerouslySetInnerHTML={{ __html: sanitizeRichText(this.props.values.summary) }} />
                                     </div>
                                 </div>
                             </div>

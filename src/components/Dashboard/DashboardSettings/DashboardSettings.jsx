@@ -1,11 +1,11 @@
+import { writeSanitizedPrintDocument } from '../../../utils/sanitizeHtml';
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { uploadImageToFirebase, getProfileOfUser, addProfileToUser, getAccountInfo, changePassword, updateUserEmail, getSystemSettings, getWebsiteData, getSubscriptionStatus, getUserTransactions, deleteUserAccountPermanently, exportUserDataJSON, saveUserTotp2FA, disableUserTotp2FA, getUserTotpStatus, reauthenticateUser, recordUserLoginEvent, getUserLoginHistory, sendSmsNotification } from '../../../firestore/dbOperations';
+import { uploadImageToFirebase, getProfileOfUser, addProfileToUser, getAccountInfo, changePassword, updateUserEmail, getSystemSettings, getWebsiteData, getSubscriptionStatus, getUserTransactions, deleteUserAccountPermanently, exportUserDataJSON, beginUserTotp2FA, saveUserTotp2FA, disableUserTotp2FA, getUserTotpStatus, reauthenticateUser, recordUserLoginEvent, getUserLoginHistory, sendSmsNotification } from '../../../firestore/dbOperations';
 import { generateUserAiContent, cleanSkillName } from '../../../services/aiService';
 import { FaUser, FaCog, FaCamera, FaTrash, FaUserCircle, FaKey, FaCalendarAlt, FaEnvelope, FaCreditCard, FaUpload, FaCheckCircle, FaExclamationTriangle, FaBriefcase, FaGraduationCap, FaTools, FaGlobe, FaPlus, FaCheck, FaShieldAlt, FaDesktop, FaDownload, FaCertificate, FaProjectDiagram, FaMagic, FaLinkedin, FaGithub, FaLink, FaSyncAlt, FaExternalLinkAlt, FaUnlink, FaLock, FaEye, FaEyeSlash, FaCrown, FaMobileAlt, FaQrcode, FaCopy, FaPrint, FaHistory } from 'react-icons/fa';
 import fire from '../../../conf/fire';
-import { generateBase32Secret, verifyTotpCode, generateBackupCodes, buildOtpauthUrl, getQrCodeImageUrl } from '../../../utils/totpHelper';
 import MonthYearPicker from '../../Form/MonthYearPicker';
 import AiRecommendationModal from '../../Form/AiRecommendationModal';
 import BulletPointsEditor from '../../Form/BulletPointsEditor';
@@ -81,12 +81,12 @@ function DashboardSettings(props) {
     const [totpSetupModalOpen, setTotpSetupModalOpen] = useState(false);
     const [totpSetupStep, setTotpSetupStep] = useState(1);
     const [totpSetupSecret, setTotpSetupSecret] = useState('');
-    const [totpSetupBackupCodes, setTotpSetupBackupCodes] = useState([]);
+    const [totpEnrollmentSecret, setTotpEnrollmentSecret] = useState(null);
+    const [totpQrCodeDataUrl, setTotpQrCodeDataUrl] = useState('');
     const [totpVerificationCode, setTotpVerificationCode] = useState('');
     const [totpDisableModalOpen, setTotpDisableModalOpen] = useState(false);
     const [totpDisablePassword, setTotpDisablePassword] = useState('');
     const [totpDisableCode, setTotpDisableCode] = useState('');
-    const [totpBackupModalOpen, setTotpBackupModalOpen] = useState(false);
     const [loginHistory, setLoginHistory] = useState([]);
 
     // Master Profile State matching ALL Resume & Cover Letter fields
@@ -447,8 +447,7 @@ function DashboardSettings(props) {
             </body>
             </html>
         `;
-        printWindow.document.write(invoiceHtml);
-        printWindow.document.close();
+        writeSanitizedPrintDocument(printWindow, invoiceHtml);
         printWindow.print();
     };
 
@@ -623,14 +622,21 @@ function DashboardSettings(props) {
     };
 
     // TOTP 2FA Setup & Disable Handlers
-    const handleStartTotpSetup = () => {
-        const secret = generateBase32Secret(16);
-        const backupCodes = generateBackupCodes(6);
-        setTotpSetupSecret(secret);
-        setTotpSetupBackupCodes(backupCodes);
-        setTotpVerificationCode('');
-        setTotpSetupStep(1);
-        setTotpSetupModalOpen(true);
+    const handleStartTotpSetup = async () => {
+        setIsSubmitting(true);
+        try {
+            const enrollment = await beginUserTotp2FA();
+            setTotpEnrollmentSecret(enrollment.secret);
+            setTotpSetupSecret(enrollment.secretKey);
+            setTotpQrCodeDataUrl(enrollment.qrCodeDataUrl);
+            setTotpVerificationCode('');
+            setTotpSetupStep(1);
+            setTotpSetupModalOpen(true);
+        } catch (error) {
+            triggerNotification(error.message || 'Unable to start MFA enrollment. Reauthenticate and try again.', 'error');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const handleVerifyAndEnableTotp = async () => {
@@ -640,14 +646,8 @@ function DashboardSettings(props) {
         }
         setIsSubmitting(true);
         try {
-            const isValid = await verifyTotpCode(totpSetupSecret, totpVerificationCode);
-            if (!isValid) {
-                triggerNotification('Invalid TOTP code. Please check Google Authenticator / Authy and try again.', 'error');
-                setIsSubmitting(false);
-                return;
-            }
-            await saveUserTotp2FA(totpSetupSecret, totpSetupBackupCodes);
-            setTotpStatus({ enabled: true, secret: totpSetupSecret, backupCodes: totpSetupBackupCodes });
+            const status = await saveUserTotp2FA(totpEnrollmentSecret, totpVerificationCode);
+            setTotpStatus(status);
             setTotpSetupStep(3); // Advance to backup codes screen
             triggerNotification('TOTP Two-Factor Authentication enabled successfully! 🛡️');
         } catch (err) {
@@ -666,19 +666,8 @@ function DashboardSettings(props) {
         try {
             // Re-authenticate user first
             await reauthenticateUser(totpDisablePassword);
-
-            // Optional TOTP code check if provided
-            if (totpDisableCode) {
-                const isValid = await verifyTotpCode(totpStatus.secret, totpDisableCode);
-                if (!isValid) {
-                    triggerNotification('Invalid 6-digit 2FA code. Please verify your authenticator app.', 'error');
-                    setIsSubmitting(false);
-                    return;
-                }
-            }
-
-            await disableUserTotp2FA();
-            setTotpStatus({ enabled: false, secret: null, backupCodes: [] });
+            const status = await disableUserTotp2FA();
+            setTotpStatus(status);
             setTotpDisableModalOpen(false);
             setTotpDisablePassword('');
             setTotpDisableCode('');
@@ -2293,12 +2282,6 @@ function DashboardSettings(props) {
                                         <>
                                             <button
                                                 type="button"
-                                                onClick={() => setTotpBackupModalOpen(true)}
-                                                className="px-3.5 py-2 bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 text-xs font-bold rounded-xl transition-all shadow-2xs cursor-pointer">
-                                                View Recovery Codes
-                                            </button>
-                                            <button
-                                                type="button"
                                                 onClick={() => setTotpDisableModalOpen(true)}
                                                 className="px-3.5 py-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 text-xs font-bold rounded-xl transition-all shadow-2xs cursor-pointer">
                                                 Disable 2FA
@@ -2617,7 +2600,7 @@ function DashboardSettings(props) {
                             <div className="flex flex-col sm:flex-row items-center gap-4 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
                                 <div className="p-2 bg-white rounded-xl shadow-xs border border-slate-200 shrink-0">
                                     <img
-                                        src={getQrCodeImageUrl(buildOtpauthUrl(fire.auth().currentUser?.email, totpSetupSecret), 160)}
+                                        src={totpQrCodeDataUrl}
                                         alt="2FA QR Code"
                                         className="w-36 h-36"
                                     />
@@ -2695,87 +2678,19 @@ function DashboardSettings(props) {
                         </div>
                     )}
 
-                    {/* Step 3: Emergency Backup Recovery Codes */}
+                    {/* Step 3: Native Firebase MFA enrollment complete */}
                     {totpSetupStep === 3 && (
                         <div className="space-y-4">
-                            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900 leading-relaxed">
-                                🎉 <strong>2FA Enabled Successfully!</strong> Below are your emergency <strong>1-time recovery codes</strong>. Save or print them in case you lose access to your phone.
+                            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900 leading-relaxed">
+                                <strong>Two-factor authentication is active.</strong> Firebase Identity Platform will require your authenticator code during sign-in. ResumePilot does not store or display reusable recovery codes.
                             </div>
-
-                            <div className="p-4 bg-slate-900 rounded-xl text-white font-mono text-xs">
-                                <div className="grid grid-cols-2 gap-2 text-center">
-                                    {totpSetupBackupCodes.map((code, i) => (
-                                        <div key={i} className="p-2 bg-slate-800 rounded-lg text-emerald-400 font-bold border border-slate-700 select-all">
-                                            {code}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        navigator.clipboard.writeText(totpSetupBackupCodes.join('\n'));
-                                        triggerNotification('All recovery codes copied to clipboard!');
-                                    }}
-                                    className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-1.5">
-                                    <FaCopy className="w-3 h-3" /> Copy Codes
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => { setTotpSetupModalOpen(false); }}
-                                    className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs">
+                            <div className="flex justify-end pt-2 border-t border-slate-100">
+                                <button type="button" onClick={() => setTotpSetupModalOpen(false)} className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs">
                                     Done &amp; Close ✓
                                 </button>
                             </div>
                         </div>
                     )}
-                </div>
-            </div>
-        )}
-
-        {/* View Recovery Codes Modal */}
-        {totpBackupModalOpen && (
-            <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-                <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4 border border-slate-200">
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                        <div className="flex items-center gap-2">
-                            <FaShieldAlt className="w-5 h-5 text-emerald-600" />
-                            <h3 className="text-base font-bold text-slate-900">Emergency Recovery Codes</h3>
-                        </div>
-                        <button onClick={() => setTotpBackupModalOpen(false)} className="text-slate-400 hover:text-slate-600 font-bold">✕</button>
-                    </div>
-                    <p className="text-xs text-slate-600 leading-relaxed">
-                        Use these single-use recovery codes to access your account if you lose your phone or Authenticator app.
-                    </p>
-                    <div className="p-4 bg-slate-900 rounded-xl text-white font-mono text-xs">
-                        <div className="grid grid-cols-2 gap-2 text-center">
-                            {(totpStatus.backupCodes && totpStatus.backupCodes.length > 0 ? totpStatus.backupCodes : ['8392-1049', '9401-2834', '1049-5829', '6720-3910', '4820-1920', '3910-4820']).map((code, i) => (
-                                <div key={i} className="p-2 bg-slate-800 rounded-lg text-emerald-400 font-bold border border-slate-700 select-all">
-                                    {code}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                const codes = totpStatus.backupCodes || [];
-                                navigator.clipboard.writeText(codes.join('\n'));
-                                triggerNotification('Backup codes copied!');
-                            }}
-                            className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-1.5">
-                            <FaCopy className="w-3 h-3" /> Copy Codes
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setTotpBackupModalOpen(false)}
-                            className="px-4 py-2 bg-slate-900 text-white font-bold text-xs rounded-xl">
-                            Close
-                        </button>
-                    </div>
                 </div>
             </div>
         )}

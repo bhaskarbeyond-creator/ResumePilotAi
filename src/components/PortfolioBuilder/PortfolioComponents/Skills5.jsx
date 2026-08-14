@@ -13,9 +13,7 @@ const SecureUrl = {
 
 // 🔒 SECURITY: Secure text renderer
 const SecureText = ({ children, className = '' }) => {
-    if (typeof children !== 'string') return <span className={className}>{children}</span>;
-    const escaped = children.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
-    return <span className={className} dangerouslySetInnerHTML={{ __html: escaped }} />;
+    return <span className={className}>{children}</span>;
 };
 
 const Skills5 = {

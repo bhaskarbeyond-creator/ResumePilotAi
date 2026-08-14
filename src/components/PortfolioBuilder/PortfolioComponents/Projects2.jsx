@@ -1,3 +1,4 @@
+import { sanitizeUrl } from '../../../utils/sanitizeHtml';
 import React from 'react';
 
 // 🔒 SECURITY: Secure URL validator
@@ -12,12 +13,9 @@ const SecureUrl = {
 };
 
 // 🔒 SECURITY: Secure text renderer
-const SecureText = ({ children, className = '' }) => {
-    if (typeof children !== 'string') return <span className={className}>{children}</span>;
-    // Escape any potential HTML/JS in text content
-    const escaped = children.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
-    return <span className={className} dangerouslySetInnerHTML={{ __html: escaped }} />;
-};
+const SecureText = ({ children, className = '' }) => (
+    <span className={className}>{children}</span>
+);
 
 const Projects2 = {
     fields: {
@@ -205,7 +203,7 @@ const Projects2 = {
                                             {/* Action Buttons */}
                                             <div className="flex flex-wrap gap-4">
                                                 <a
-                                                    href={project.link || '#'}
+                                                    href={sanitizeUrl(project.link) || '#'}
                                                     className="group relative px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl font-bold transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/30 overflow-hidden">
                                                     <span className="relative z-10 flex items-center gap-3">
                                                         View Live
@@ -221,7 +219,7 @@ const Projects2 = {
                                                     <div className="absolute inset-0 bg-gradient-to-r from-blue-700 to-purple-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                                                 </a>
                                                 <a
-                                                    href={project.githubLink || '#'}
+                                                    href={sanitizeUrl(project.githubLink) || '#'}
                                                     className="px-8 py-4 border-2 border-gray-300 text-gray-700 rounded-2xl font-bold hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 hover:shadow-lg flex items-center gap-3">
                                                     GitHub
                                                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">

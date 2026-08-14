@@ -1,3 +1,4 @@
+import { sanitizeUrl } from '../../../utils/sanitizeHtml';
 import React from 'react';
 
 const Resume2 = {
@@ -8,7 +9,7 @@ const Resume2 = {
                     <h2 className="text-3xl font-bold mb-4 text-white">{title}</h2>
                     {subtitle && <p className="text-lg text-slate-300">{subtitle}</p>}
                 </div>
-                
+
                 {/* Stats Section */}
                 {stats && stats.length > 0 && (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
@@ -21,7 +22,7 @@ const Resume2 = {
                         ))}
                     </div>
                 )}
-                
+
                 <div className="grid lg:grid-cols-3 gap-12">
                     {/* Resume Preview */}
                     <div className="lg:col-span-1">
@@ -30,15 +31,15 @@ const Resume2 = {
                                 <div className="mb-4">
                                     <h3 className="text-lg font-semibold text-gray-800 mb-2">Resume Preview</h3>
                                     <div className="w-full border-2 border-dashed border-gray-300 rounded-lg p-4">
-                                        <img 
-                                            src={resumePreview} 
+                                        <img
+                                            src={resumePreview}
                                             alt="Resume Preview"
                                             className="w-full rounded shadow-sm"
                                         />
                                     </div>
                                 </div>
-                                <a 
-                                    href={resumeUrl} 
+                                <a
+                                    href={sanitizeUrl(resumeUrl)}
                                     download
                                     className="w-full bg-slate-800 text-white px-6 py-3 rounded-lg hover:bg-slate-700 transition-colors font-semibold text-center flex items-center justify-center"
                                 >
@@ -48,14 +49,14 @@ const Resume2 = {
                             </div>
                         )}
                     </div>
-                    
+
                     {/* Content */}
                     <div className="lg:col-span-2 space-y-8">
                         <div className="bg-slate-800 rounded-lg p-8">
                             <h3 className="text-2xl font-bold text-white mb-4">Professional Overview</h3>
                             <p className="text-slate-300 text-lg leading-relaxed">{description}</p>
                         </div>
-                        
+
                         {highlights && highlights.length > 0 && (
                             <div className="bg-slate-800 rounded-lg p-8">
                                 <h3 className="text-2xl font-bold text-white mb-6">Key Highlights</h3>
@@ -71,7 +72,7 @@ const Resume2 = {
                                 </div>
                             </div>
                         )}
-                        
+
                         <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-8 text-center">
                             <h3 className="text-2xl font-bold text-white mb-4">Ready to Collaborate?</h3>
                             <p className="text-blue-100 mb-6">Let's discuss how I can contribute to your next project</p>
@@ -91,4 +92,4 @@ const Resume2 = {
     ),
 };
 
-export default Resume2; 
+export default Resume2;

@@ -1,10 +1,11 @@
-const admin = require('firebase-admin');
+const admin = require('../services/firebaseAdmin');
 
 const PERMISSIONS = Object.freeze({
   SUPER_ADMIN: ['*'],
   ADMIN: [
     'users.read', 'users.update', 'users.delete', 'email.template.manage',
-    'email.logs.read', 'system.config.read', 'system.config.write', 'payments.manage'
+    'email.logs.read', 'system.config.read', 'system.config.write', 'payments.manage',
+    'notifications.send'
   ],
   SUPPORT: ['users.read', 'email.logs.read']
 });
@@ -13,12 +14,14 @@ function unauthorized(res, code = 'AUTH_REQUIRED') {
   return res.status(401).json({ error: { code, message: 'Authentication required', requestId: res.locals.requestId } });
 }
 
+let verifyToken = token => admin.auth().verifyIdToken(token, true);
+
 async function requireAuth(req, res, next) {
   const header = req.get('authorization') || '';
-  const match = /^Bearer\s+(.+)$/i.exec(header);
+  const match = /^Bearer\s+([^\s]{1,8192})$/i.exec(header);
   if (!match) return unauthorized(res);
   try {
-    const decoded = await admin.auth().verifyIdToken(match[1], true);
+    const decoded = await verifyToken(match[1]);
     req.user = Object.freeze({ uid: decoded.uid, email: decoded.email || null, emailVerified: decoded.email_verified === true, claims: decoded });
     return next();
   } catch (_) {
@@ -32,8 +35,10 @@ function requireVerifiedEmail(req, res, next) {
 }
 
 function permissionsFor(user) {
-  const role = user?.claims?.role;
-  const declared = Array.isArray(user?.claims?.permissions) ? user.claims.permissions : [];
+  const role = String(user?.claims?.role || '').toUpperCase();
+  const declared = Array.isArray(user?.claims?.permissions)
+    ? user.claims.permissions.filter(value => typeof value === 'string' && value.length <= 100)
+    : [];
   return new Set([...(PERMISSIONS[role] || []), ...declared]);
 }
 
@@ -47,5 +52,10 @@ function requirePermission(permission) {
   };
 }
 
+function setTokenVerifierForTests(verifier) {
+  if (process.env.NODE_ENV !== 'test') throw new Error('Test verifier injection is disabled outside tests');
+  verifyToken = verifier;
+}
+
 const requireAdmin = requirePermission('system.config.write');
-module.exports = { requireAuth, requireVerifiedEmail, requirePermission, requireAdmin, permissionsFor };
+module.exports = { requireAuth, requireVerifiedEmail, requirePermission, requireAdmin, permissionsFor, setTokenVerifierForTests };

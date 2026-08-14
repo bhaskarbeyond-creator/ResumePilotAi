@@ -89,13 +89,13 @@ class SettingsContent extends Component {
     getStatusBadge(key) {
         const s = this.state.systemSettings;
         const activeFirebaseKey = s?.firebase?.apiKey || fire?.apps?.[0]?.options?.apiKey || import.meta.env.VITE_FIREBASE_KEY;
-        const activeGeminiKey = s?.ai?.geminiApiKey || import.meta.env.VITE_GEMINI_API_KEY;
+        const activeGeminiKey = s?.ai?.geminiApiKey || '';
         const activeRazorpayKey = s?.payments?.razorpayKeyId || import.meta.env.VITE_RAZORPAY_KEY_ID;
 
         switch (key) {
             case 'modulesSettings': { const m=s?.modules||{}; const ai=s?.ai||{}; const on=m.enableImportModule!==undefined?m.enableImportModule:ai.enableImportModule; return on?{color:'green',label:'Import Enabled'}:{color:'amber',label:'Import Disabled'}; }
             case 'firebaseSettings': return activeFirebaseKey?{color:'green',label:'Connected & Active'}:{color:'red',label:'Missing Firebase Key'};
-            case 'aiSettings': { const ai=s?.ai||{}; const p=ai.provider||'gemini'; if(p==='nvidia'&&(ai.nvidiaApiKey||import.meta.env.VITE_NVIDIA_API_KEY))return{color:'green',label:'NVIDIA NIM Active'}; if(p==='openai'&&(ai.openaiApiKey||import.meta.env.VITE_OPENAI_API_KEY))return{color:'green',label:'OpenAI Active'}; if(p==='groq'&&(ai.groqApiKey||import.meta.env.VITE_GROQ_API_KEY))return{color:'green',label:'Groq Active'}; if(p==='openrouter'&&(ai.openrouterApiKey||import.meta.env.VITE_OPENROUTER_API_KEY))return{color:'green',label:'OpenRouter Active'}; if(p==='deepseek'&&(ai.deepseekApiKey||import.meta.env.VITE_DEEPSEEK_API_KEY))return{color:'green',label:'DeepSeek Active'}; if(p==='ollama')return{color:'green',label:'Local Ollama'}; return activeGeminiKey?{color:'green',label:'Gemini 2.0 Active'}:{color:'red',label:'AI Key Missing'}; }
+            case 'aiSettings': { const ai=s?.ai||{}; const p=ai.provider||'gemini'; if(p==='nvidia'&&(ai.nvidiaApiKey||''))return{color:'green',label:'NVIDIA NIM Active'}; if(p==='openai'&&(ai.openaiApiKey||''))return{color:'green',label:'OpenAI Active'}; if(p==='groq'&&(ai.groqApiKey||''))return{color:'green',label:'Groq Active'}; if(p==='openrouter'&&(ai.openrouterApiKey||''))return{color:'green',label:'OpenRouter Active'}; if(p==='deepseek'&&(ai.deepseekApiKey||''))return{color:'green',label:'DeepSeek Active'}; if(p==='ollama')return{color:'green',label:'Local Ollama'}; return activeGeminiKey?{color:'green',label:'Gemini 2.0 Active'}:{color:'red',label:'AI Key Missing'}; }
             case 'paymentSettings':
             case 'subscriptionsSettings': return (activeRazorpayKey||s?.payments?.stripePublishableKey)?{color:'green',label:'Razorpay & Stripe Active'}:{color:'amber',label:'Sandbox Mode'};
             case 'geoSeoSettings': return s?.geoSeo?.enableGeoSeo!==false?{color:'green',label:'Geo-SEO Active'}:{color:'red',label:'Disabled'};

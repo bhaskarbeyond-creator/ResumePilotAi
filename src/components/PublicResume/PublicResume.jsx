@@ -44,7 +44,7 @@ function PublicResume(props) {
     const handleDownloadClick = () => {
         axios
             .post(
-                config.provider + '://' + config.backendUrl + '/api/export',
+                config.provider + '://' + config.backendUrl + '/api/public-export',
                 {
                     language: 'en',
                     resumeId: resumeId,

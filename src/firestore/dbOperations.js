@@ -3050,51 +3050,25 @@ export async function exportUserDataJSON(uid) {
     };
 }
 
-// Enable & Save TOTP 2FA Secret & Recovery Codes to User Document
-export async function saveUserTotp2FA(secret, backupCodes) {
-    const user = fire.auth().currentUser;
-    if (!user) throw new Error("No authenticated user logged in");
-    const db = fire.firestore();
-    await db.collection('users').doc(user.uid).set({
-        totp2FA: {
-            enabled: true,
-            secret: secret,
-            backupCodes: backupCodes || [],
-            enabledAt: new Date().toISOString()
-        }
-    }, { merge: true });
-    return true;
+// Firebase Identity Platform native TOTP MFA. Secrets never enter Firestore or local storage.
+export async function beginUserTotp2FA() {
+    const { beginTotpEnrollment } = await import('../services/mfaService');
+    return beginTotpEnrollment();
 }
 
-// Disable TOTP 2FA and Purge Secret
+export async function saveUserTotp2FA(enrollmentSecret, verificationCode) {
+    const { completeTotpEnrollment } = await import('../services/mfaService');
+    return completeTotpEnrollment(enrollmentSecret, verificationCode);
+}
+
 export async function disableUserTotp2FA() {
-    const user = fire.auth().currentUser;
-    if (!user) throw new Error("No authenticated user logged in");
-    const db = fire.firestore();
-    await db.collection('users').doc(user.uid).set({
-        totp2FA: {
-            enabled: false,
-            secret: null,
-            backupCodes: [],
-            disabledAt: new Date().toISOString()
-        }
-    }, { merge: true });
-    return true;
+    const { disableTotpEnrollment } = await import('../services/mfaService');
+    return disableTotpEnrollment();
 }
 
-// Fetch User TOTP 2FA Activation Status & Details
-export async function getUserTotpStatus(uid) {
-    if (!uid) {
-        const user = fire.auth().currentUser;
-        if (user) uid = user.uid;
-        else return { enabled: false };
-    }
-    const db = fire.firestore();
-    const doc = await db.collection('users').doc(uid).get();
-    if (doc.exists && doc.data()?.totp2FA) {
-        return doc.data().totp2FA;
-    }
-    return { enabled: false };
+export async function getUserTotpStatus() {
+    const { getTotpStatus } = await import('../services/mfaService');
+    return getTotpStatus();
 }
 
 // Parse Device OS and Browser from User-Agent
@@ -4685,7 +4659,10 @@ export async function setJsonPb(resumeId, resumeObject) {
         .doc(resumeId)
         .set({
             id: resumeId,
+            ownerUid: fire.auth().currentUser?.uid || null,
+            isPublished: true,
             object: JSON.stringify(objectToSave),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
         });
 }
 
@@ -6133,11 +6110,29 @@ export async function getPublicPortfolios(limit = 10, theme = null) {
 }
 
 // System Settings DB Operations
+function redactClientSecrets(settings = {}) {
+    const copy = typeof structuredClone === 'function' ? structuredClone(settings) : JSON.parse(JSON.stringify(settings || {}));
+    const secretFields = [
+        ['ai', ['geminiApiKey','nvidiaApiKey','openaiApiKey','groqApiKey','openrouterApiKey','deepseekApiKey']],
+        ['payments', ['stripeSecretKey','razorpayKeySecret','razorpayWebhookSecret','paytmMerchantKey','phonepeSaltKey']],
+        ['smtp', ['password']], ['fallbackSmtp', ['password']], ['imap', ['password']],
+        ['socialAuth', ['linkedinClientSecret','githubClientSecret']],
+        ['facebook', ['facebookAppSecret','facebookClientToken']],
+        ['storage', ['cloudinaryApiSecret','s3AccessKeyId','s3SecretAccessKey']],
+        ['twilio', ['authToken']], ['firebase', ['privateKey']]
+    ];
+    for (const [section, fields] of secretFields) {
+        if (!copy[section]) continue;
+        for (const field of fields) delete copy[section][field];
+    }
+    return copy;
+}
+
 export async function getSystemSettings() {
     let localCache = {};
     try {
         const raw = typeof window !== 'undefined' ? localStorage.getItem('system_settings_cache') : null;
-        if (raw) localCache = JSON.parse(raw);
+        if (raw) localCache = redactClientSecrets(JSON.parse(raw));
     } catch (e) {
         console.warn('Could not read system_settings_cache from localStorage:', e);
     }
@@ -6158,22 +6153,22 @@ export async function getSystemSettings() {
         ai: {
             provider: 'gemini',
             enableGemini: true,
-            geminiApiKey: import.meta.env.VITE_GEMINI_API_KEY || '',
+            geminiApiKey: '' || '',
             model: 'gemini-2.0-flash',
             enableNvidia: true,
-            nvidiaApiKey: import.meta.env.VITE_NVIDIA_API_KEY || '',
+            nvidiaApiKey: '' || '',
             nvidiaModel: 'meta/llama-3.1-8b-instruct',
-            nvidiaBaseUrl: 'https://integrate.api.nvidia.com/v1',
+            nvidiaBaseUrl: '',
             enableOpenai: false,
-            openaiApiKey: import.meta.env.VITE_OPENAI_API_KEY || '',
+            openaiApiKey: '' || '',
             openaiModel: 'gpt-4o-mini',
             openaiBaseUrl: '',
             enableGroq: false,
-            groqApiKey: import.meta.env.VITE_GROQ_API_KEY || '',
+            groqApiKey: '' || '',
             enableOpenrouter: false,
-            openrouterApiKey: import.meta.env.VITE_OPENROUTER_API_KEY || '',
+            openrouterApiKey: '' || '',
             enableDeepseek: false,
-            deepseekApiKey: import.meta.env.VITE_DEEPSEEK_API_KEY || '',
+            deepseekApiKey: '' || '',
             enableOllama: false,
             ollamaBaseUrl: 'http://localhost:11434/v1',
             temperature: 0.7,
@@ -6377,12 +6372,12 @@ export async function getSystemSettings() {
         const fetchWithTimeout = Promise.race([
             safeDbOperation(async () => {
                 const db = fire.firestore();
-                const docRef = db.collection('data').doc('system_settings');
+                const docRef = db.collection('data').doc('public_config');
                 const snapshot = await docRef.get();
 
                 let remoteData = {};
                 if (snapshot && snapshot.exists) {
-                    remoteData = snapshot.data() || {};
+                    remoteData = redactClientSecrets(snapshot.data() || {});
                 }
 
                 const allKeys = new Set([
@@ -6424,7 +6419,7 @@ export async function saveSystemSettings(category, data) {
         if (typeof window !== 'undefined') {
             const raw = localStorage.getItem('system_settings_cache');
             const cache = raw ? JSON.parse(raw) : {};
-            cache[category] = data;
+            cache[category] = redactClientSecrets({ [category]: data })[category] || {};
             localStorage.setItem('system_settings_cache', JSON.stringify(cache));
         }
     } catch (e) {

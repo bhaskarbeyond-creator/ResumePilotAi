@@ -1,32 +1,38 @@
 {
   "rules": {
+    ".read": false,
+    ".write": false,
     "conversations": {
       "$conversationId": {
-        ".read": "data.child('participants').child(auth.uid).exists()",
-        ".write": "(!data.exists() && newData.child('participants').child(auth.uid).exists()) || (data.exists() && data.child('participants').child(auth.uid).exists())"
+        ".read": "auth != null && data.child('participants').child(auth.uid).exists()",
+        ".write": "auth != null && ((!data.exists() && newData.child('participants').child(auth.uid).exists() && newData.child('participants').numChildren() >= 2 && newData.child('participants').numChildren() <= 10) || (data.exists() && data.child('participants').child(auth.uid).exists() && newData.child('participants').val() === data.child('participants').val()))",
+        "participants": {
+          "$uid": { ".validate": "newData.val() === true || newData.hasChildren()" }
+        }
       }
     },
     "messages": {
       "$conversationId": {
-        ".read": "root.child('conversations').child($conversationId).child('participants').child(auth.uid).exists()",
+        ".read": "auth != null && root.child('conversations').child($conversationId).child('participants').child(auth.uid).exists()",
         ".indexOn": "timestamp",
         "$messageId": {
-          ".write": "root.child('conversations').child($conversationId).child('participants').child(auth.uid).exists() && newData.child('senderId').val() === auth.uid"
+          ".write": "auth != null && root.child('conversations').child($conversationId).child('participants').child(auth.uid).exists() && ((!data.exists() && newData.child('senderId').val() === auth.uid) || (data.exists() && data.child('senderId').val() === auth.uid && newData.child('senderId').val() === auth.uid))",
+          ".validate": "newData.hasChildren(['senderId','text','timestamp']) && newData.child('text').isString() && newData.child('text').val().length <= 10000"
         }
       }
     },
     "user-conversations": {
       "$userId": {
-        ".read": "$userId === auth.uid",
+        ".read": "auth != null && $userId === auth.uid",
         "$conversationId": {
-          ".write": "root.child('conversations').child($conversationId).child('participants').child(auth.uid).exists()"
+          ".write": "auth != null && $userId === auth.uid && root.child('conversations').child($conversationId).child('participants').child(auth.uid).exists() && (newData.val() === true || !newData.exists())"
         }
       }
     },
     "conversation-participants": {
       "$lookupKey": {
-        ".read": "auth != null && ($lookupKey.contains(auth.uid + '_') || $lookupKey.contains('_' + auth.uid) || $lookupKey === auth.uid)",
-        ".write": "auth != null && ($lookupKey.contains(auth.uid + '_') || $lookupKey.contains('_' + auth.uid) || $lookupKey === auth.uid)"
+        ".read": "auth != null && data.isString() && root.child('conversations').child(data.val()).child('participants').child(auth.uid).exists()",
+        ".write": "auth != null && !data.exists() && newData.isString() && root.child('conversations').child(newData.val()).child('participants').child(auth.uid).exists()"
       }
     }
   }

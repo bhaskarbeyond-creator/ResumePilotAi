@@ -2,78 +2,173 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
-    function admin() { return signedIn() && request.auth.token.role in ['ADMIN', 'SUPER_ADMIN']; }
+    function admin() {
+      return signedIn() && request.auth.token.role in ['ADMIN', 'SUPER_ADMIN'];
+    }
+    function employer() { return signedIn() && request.auth.token.employer == true; }
     function owner(uid) { return signedIn() && request.auth.uid == uid; }
-    function unchanged(field) { return !(field in request.resource.data.diff(resource.data).affectedKeys()); }
-    function noServerFieldMutation() {
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-        'firstname','lastname','displayName','photoURL','profile','preferences','lastLoginAt'
-      ]);
+    function ownEmail(email) {
+      return signedIn() && request.auth.token.email is string && email == request.auth.token.email;
+    }
+    function changedOnly(fields) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
+    }
+    function jobOwner(jobId) {
+      return signedIn() && get(/databases/$(database)/documents/jobs/$(jobId)).data.employerId == request.auth.uid;
     }
 
-    // Roles, entitlements, billing state, verification state, and suspension are server-owned.
+    // Identity, role, verification, suspension, billing and entitlements are server-owned.
     match /users/{uid} {
-      allow create: if owner(uid) && request.resource.data.keys().hasOnly([
-        'userId','firstname','lastname','email','displayName','photoURL','profile','preferences','createdAt','lastLoginAt','authProvider'
-      ]) && request.resource.data.userId == uid;
+      allow create: if owner(uid)
+        && request.resource.data.keys().hasOnly([
+          'userId','firstname','lastname','email','displayName','photoURL','profile',
+          'preferences','createdAt','lastLoginAt','authProvider','membership'
+        ])
+        && request.resource.data.userId == uid
+        && ownEmail(request.resource.data.email)
+        && (!('membership' in request.resource.data) || request.resource.data.membership == 'Basic');
       allow read: if owner(uid) || admin();
-      allow update: if owner(uid) && noServerFieldMutation();
+      allow update: if owner(uid) && changedOnly([
+        'firstname','lastname','displayName','photoURL','profile','preferences','lastLoginAt','authProvider'
+      ]);
       allow delete: if owner(uid) || admin();
 
-      match /resumes/{resumeId} {
-        allow read, create, update, delete: if owner(uid);
-      }
-      match /covers/{coverId} {
-        allow read, create, update, delete: if owner(uid);
-      }
-      match /coverLetters/{coverId} {
-        allow read, create, update, delete: if owner(uid);
-      }
+      match /resumes/{resumeId} { allow read, create, update, delete: if owner(uid); }
+      match /covers/{coverId} { allow read, create, update, delete: if owner(uid); }
+      match /coverLetters/{coverId} { allow read, create, update, delete: if owner(uid); }
       match /favourites/{id} { allow read, create, update, delete: if owner(uid); }
       match /portfolios/{id} { allow read, create, update, delete: if owner(uid); }
+      match /invoices/{id} { allow read: if owner(uid) || admin(); allow write: if false; }
       match /transactions/{id} { allow read: if owner(uid) || admin(); allow write: if false; }
     }
 
     match /portfolios/{id} {
-      allow read: if resource.data.isPublished == true || (signedIn() && resource.data.userId == request.auth.uid) || admin();
+      allow read: if resource.data.isPublished == true
+        || (signedIn() && resource.data.userId == request.auth.uid) || admin();
       allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if signedIn() && resource.data.userId == request.auth.uid;
+      allow update: if admin() || (signedIn()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == resource.data.userId);
+      // Anonymous view counters may increment by exactly one and cannot alter content.
+      allow update: if resource.data.isPublished == true
+        && changedOnly(['views'])
+        && request.resource.data.views == resource.data.views + 1;
+      allow delete: if admin() || (signedIn() && resource.data.userId == request.auth.uid);
     }
+
     match /companies/{id} {
-      allow read: if resource.data.status == 'approved' || admin() || (signedIn() && resource.data.employerId == request.auth.uid);
-      allow create: if signedIn() && request.resource.data.employerId == request.auth.uid && request.auth.token.employer == true;
-      allow update, delete: if admin() || (signedIn() && resource.data.employerId == request.auth.uid && request.resource.data.employerId == resource.data.employerId);
+      allow read: if resource.data.status == 'approved' || admin()
+        || (signedIn() && resource.data.employerId == request.auth.uid);
+      allow create: if employer()
+        && request.resource.data.employerId == request.auth.uid
+        && request.resource.data.status == 'pending';
+      allow update: if admin() || (employer()
+        && resource.data.employerId == request.auth.uid
+        && request.resource.data.employerId == resource.data.employerId
+        && request.resource.data.status == resource.data.status);
+      allow delete: if admin() || (employer() && resource.data.employerId == request.auth.uid);
     }
+
     match /jobs/{id} {
-      allow read: if true;
-      allow create: if signedIn() && request.auth.token.employer == true && request.resource.data.employerId == request.auth.uid;
-      allow update, delete: if admin() || (signedIn() && resource.data.employerId == request.auth.uid && request.resource.data.employerId == resource.data.employerId);
+      allow read: if resource.data.status == 'active' || admin()
+        || (signedIn() && resource.data.employerId == request.auth.uid);
+      allow create: if employer()
+        && request.resource.data.employerId == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.applicationsCount == 0;
+      allow update: if admin() || (employer()
+        && resource.data.employerId == request.auth.uid
+        && request.resource.data.employerId == resource.data.employerId
+        && request.resource.data.status == 'pending');
+      // Applications are separate protected documents; this exception changes metrics only.
+      allow update: if signedIn()
+        && changedOnly(['applicationsCount','updatedAt'])
+        && request.resource.data.applicationsCount == resource.data.applicationsCount + 1;
+      allow delete: if admin() || (employer() && resource.data.employerId == request.auth.uid);
     }
+
     match /jobApplications/{id} {
-      allow create: if signedIn() && request.resource.data.applicantUid == request.auth.uid;
-      allow read: if admin() || (signedIn() && (resource.data.applicantUid == request.auth.uid || resource.data.employerId == request.auth.uid));
-      allow update: if admin() || (signedIn() && resource.data.employerId == request.auth.uid && request.resource.data.applicantUid == resource.data.applicantUid);
-      allow delete: if admin();
+      allow create: if signedIn()
+        && request.resource.data.userId == request.auth.uid
+        && ownEmail(request.resource.data.applicantEmail)
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.status == 'pending'
+        && get(/databases/$(database)/documents/jobs/$(request.resource.data.jobId)).data.status == 'active';
+      allow read: if admin()
+        || (signedIn() && resource.data.userId == request.auth.uid)
+        || jobOwner(resource.data.jobId);
+      allow update: if admin() || (jobOwner(resource.data.jobId)
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.jobId == resource.data.jobId
+        && changedOnly(['status','statusUpdatedAt','employerNotes','updatedAt']));
+      allow delete: if admin() || (signedIn()
+        && resource.data.userId == request.auth.uid
+        && resource.data.status == 'pending');
     }
-    match /transactions/{id} { allow read: if signedIn() && resource.data.userId == request.auth.uid || admin(); allow write: if false; }
-    match /subscriptions/{id} { allow read: if signedIn() && resource.data.userId == request.auth.uid || admin(); allow write: if false; }
+
+    match /pb/{id} {
+      allow read: if resource.data.isPublished == true
+        || (signedIn() && resource.data.ownerUid == request.auth.uid) || admin();
+      allow create: if signedIn()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.id == id;
+      allow update, delete: if admin() || (signedIn()
+        && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == resource.data.ownerUid);
+    }
+
+    match /transactions/{id} {
+      allow read: if (signedIn() && resource.data.userId == request.auth.uid) || admin();
+      allow write: if false;
+    }
+    match /subscriptions/{id} {
+      allow read: if (signedIn() && resource.data.userId == request.auth.uid) || admin();
+      allow write: if false;
+    }
+    match /payment_orders/{id} {
+      allow read: if (signedIn() && resource.data.uid == request.auth.uid) || admin();
+      allow write: if false;
+    }
+    match /invoices/{id} {
+      allow read: if (signedIn() && resource.data.userId == request.auth.uid) || admin();
+      allow write: if false;
+    }
     match /coupons/{id} { allow read: if signedIn(); allow write: if admin(); }
+
     match /blog_posts/{id} {
-      allow read: if resource.data.status == 'approved' || (signedIn() && resource.data.authorUid == request.auth.uid) || admin();
-      allow create: if signedIn() && request.resource.data.authorUid == request.auth.uid && request.resource.data.status == 'pending';
-      allow update: if admin() || (signedIn() && resource.data.authorUid == request.auth.uid && resource.data.status in ['pending','rejected'] && request.resource.data.status == resource.data.status && request.resource.data.authorUid == resource.data.authorUid);
+      allow read: if resource.data.status == 'approved'
+        || (signedIn() && resource.data.authorUid == request.auth.uid) || admin();
+      allow create: if signedIn()
+        && request.resource.data.authorUid == request.auth.uid
+        && request.resource.data.status == 'pending';
+      allow update: if admin() || (signedIn()
+        && resource.data.authorUid == request.auth.uid
+        && request.resource.data.authorUid == resource.data.authorUid
+        && resource.data.status in ['pending','rejected']
+        && request.resource.data.status == 'pending');
       allow delete: if admin();
     }
     match /blog_categories/{id} { allow read: if true; allow write: if admin(); }
     match /pages/{id} { allow read: if true; allow write: if admin(); }
     match /ads/{id} { allow read: if true; allow write: if admin(); }
-    match /reviews/{id} { allow read: if true; allow write: if admin(); }
+    match /reviews/{id} { allow read: if resource.data.status == 'approved' || admin(); allow write: if admin(); }
     match /trustedBy/{id} { allow read: if true; allow write: if admin(); }
     match /contact/{id} { allow create: if signedIn(); allow read, update, delete: if admin(); }
-    match /notifications/{uid}/{document=**} { allow read, create, update, delete: if owner(uid); }
-    match /data/{id} { allow read: if id in ['meta','system_settings','frontendstats']; allow write: if admin(); }
+    match /notifications/{uid}/{document=**} {
+      allow read, update, delete: if owner(uid);
+      allow create: if owner(uid);
+    }
+
+    // Public settings must live in the explicitly curated public_config document.
+    // system_settings can contain provider credentials and is never client-public.
+    match /data/{id} {
+      allow read: if id in ['meta','frontendstats','public_config'] || admin();
+      allow write: if admin();
+    }
     match /settings/{id} { allow read, write: if admin(); }
     match /system_settings/{id} { allow read, write: if admin(); }
+
+    // Reset/verification tokens, provider secrets, audit logs and webhook ledgers are server-only.
     match /{document=**} { allow read, write: if false; }
   }
 }

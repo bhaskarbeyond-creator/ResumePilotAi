@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FiX, FiCalendar, FiUser, FiTag, FiClock, FiEye, FiExternalLink } from 'react-icons/fi';
-import DOMPurify from 'dompurify';
+import { sanitizeBlogHtml } from '../../../utils/sanitizeHtml';
 import { listBlogCategories } from '../../../firestore/dbOperations';
 import '../../../components/Blog/BlogPost/BlogContent.css';
 
@@ -67,49 +67,7 @@ const BlogPreviewModal = ({ post, onClose, isOpen }) => {
         return htmlTagRegex.test(content);
     };
 
-    // Sanitize HTML content for safe rendering
-    const sanitizeHtmlContent = (htmlContent) => {
-        if (!htmlContent) return '';
-        
-        try {
-            // Configure DOMPurify with safe settings for blog post display
-            const sanitized = DOMPurify.sanitize(htmlContent, {
-                // Allow safe HTML tags for blog content display
-                ALLOWED_TAGS: [
-                    'p', 'br', 'strong', 'b', 'em', 'i', 'u', 'mark',
-                    'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-                    'ul', 'ol', 'li',
-                    'blockquote', 'code', 'pre',
-                    'a', 'img',
-                    'table', 'thead', 'tbody', 'tr', 'th', 'td',
-                    'div', 'span'
-                ],
-                // Allow safe attributes
-                ALLOWED_ATTR: [
-                    'href', 'title', 'alt', 'src', 'width', 'height',
-                    'class', 'style', 'target', 'rel', 'loading'
-                ],
-                // Security settings
-                FORBID_TAGS: ['script', 'object', 'embed', 'form', 'input', 'button'],
-                FORBID_ATTR: ['onclick', 'onload', 'onerror', 'onmouseover'],
-                // Allow only safe URLs
-                ALLOWED_URI_REGEXP: /^https?:\/\/|^mailto:|^tel:|^#/i,
-                // Add security attributes to links
-                ADD_ATTR: {
-                    'a': {'target': '_blank', 'rel': 'noopener noreferrer'},
-                    'img': {'loading': 'lazy'}
-                },
-                // Keep content structure
-                KEEP_CONTENT: true,
-                ALLOW_UNKNOWN_PROTOCOLS: false,
-            });
-            
-            return sanitized;
-        } catch (error) {
-            console.error('Error sanitizing HTML content:', error);
-            return '<p class="text-red-600 bg-red-50 p-4 rounded-lg border border-red-200"><strong>Content Error:</strong> Unable to display content safely.</p>';
-        }
-    };
+    const sanitizeHtmlContent = sanitizeBlogHtml;
 
     console.log('BlogPreviewModal: rendering with post:', post.title);
     

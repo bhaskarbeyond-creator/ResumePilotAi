@@ -8,6 +8,7 @@ import fire, { googleProvider, facebookProvider } from '../../../conf/fire';
 import addUser from '../../../firestore/auth'
 import { withTranslation } from 'react-i18next';
 import { resolveOAuthSettings } from '../../../utils/oauthResolver';
+import { getTotpSignInResolver, completeTotpSignIn } from '../../../services/mfaService';
 
 // LinkedIn & GitHub SVG icons (inline — no extra dependencies)
 const LinkedInIcon = () => (
@@ -48,6 +49,8 @@ class Login extends Component {
             enableGitHub,
             oauthLoading: null, // tracks which provider is loading
             isSubmitting: false, // GAP-01: prevents double-submit
+            mfaResolver: null,
+            mfaCode: '',
             errors: {}, // Validation errors
         };
         this.handleInputs = this.handleInputs.bind(this);
@@ -58,6 +61,7 @@ class Login extends Component {
         this.signInWithLinkedIn = this.signInWithLinkedIn.bind(this);
         this.signInWithGitHub = this.signInWithGitHub.bind(this);
         this.login = this.login.bind(this);
+        this.completeMfaLogin = this.completeMfaLogin.bind(this);
         this._postAuth = this._postAuth.bind(this);
         this._handleRedirect = this._handleRedirect.bind(this);
     }
@@ -134,6 +138,11 @@ class Login extends Component {
             .catch((error) => {
                 this.setState({ isSubmitting: false }); // GAP-01: unlock on error
                 console.error('[Login Auth Error]:', error);
+                const mfaResolver = getTotpSignInResolver(error);
+                if (mfaResolver) {
+                    this.setState({ mfaResolver, mfaCode: '', isSubmitting: false });
+                    return;
+                }
                 let msg = error.message;
                 if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
                     msg = `Invalid credentials for ${email}. Please check your password or click "Forgot password?" to reset it.`;
@@ -144,6 +153,24 @@ class Login extends Component {
                 }
                 if (this.props.throwError) this.props.throwError(msg);
             });
+    }
+
+    async completeMfaLogin(event) {
+        event.preventDefault();
+        if (this.state.isSubmitting || !/^\d{6}$/.test(this.state.mfaCode)) return;
+        this.setState({ isSubmitting: true });
+        try {
+            const credential = await completeTotpSignIn(this.state.mfaResolver, this.state.mfaCode);
+            this.setState({ mfaResolver: null, mfaCode: '', isSubmitting: false });
+            if (this.props.throwSuccess) this.props.throwSuccess('Two-factor authentication successful.');
+            setTimeout(() => {
+                if (this.props.closeModal) this.props.closeModal();
+                this._handleRedirect(credential.user.uid);
+            }, 500);
+        } catch (error) {
+            this.setState({ isSubmitting: false, mfaCode: '' });
+            if (this.props.throwError) this.props.throwError('Invalid or expired authenticator code. Please try again.');
+        }
     }
 
     handleInputs(title, value) {
@@ -226,6 +253,8 @@ class Login extends Component {
             self._handleRedirect(u.uid);
         }).catch((error) => {
             self.setState({ oauthLoading: null });
+            const mfaResolver = getTotpSignInResolver(error);
+            if (mfaResolver) { self.setState({ mfaResolver, mfaCode: '' }); return; }
             if (error.code === 'auth/popup-blocked') {
                 fire.auth().signInWithRedirect(googleProvider); return;
             }
@@ -254,6 +283,8 @@ class Login extends Component {
             self._handleRedirect(u.uid);
         }).catch((error) => {
             self.setState({ oauthLoading: null });
+            const mfaResolver = getTotpSignInResolver(error);
+            if (mfaResolver) { self.setState({ mfaResolver, mfaCode: '' }); return; }
             if (error.code === 'auth/popup-blocked') {
                 fire.auth().signInWithRedirect(facebookProvider); return;
             }
@@ -329,8 +360,27 @@ class Login extends Component {
                             <span>{t("login.or")}</span>
                         </div>
                     )}
+                        {this.state.mfaResolver && (
+                            <form onSubmit={this.completeMfaLogin} className="w-full flex flex-col gap-3" autoComplete="one-time-code">
+                                <label htmlFor="mfa-code" className="text-sm font-semibold text-slate-700">Authenticator code</label>
+                                <p className="text-xs text-slate-500">Enter the 6-digit code from your authenticator app to finish signing in.</p>
+                                <input
+                                    id="mfa-code"
+                                    inputMode="numeric"
+                                    autoFocus
+                                    maxLength={6}
+                                    value={this.state.mfaCode}
+                                    onChange={(event) => this.setState({ mfaCode: event.target.value.replace(/\D/g, '') })}
+                                    className="w-full p-3 text-center text-xl tracking-[0.4em] border border-slate-300 rounded-xl"
+                                />
+                                <button type="submit" disabled={this.state.isSubmitting || this.state.mfaCode.length !== 6} className="inputSubmit mt-2">
+                                    {this.state.isSubmitting ? 'Verifying…' : 'Verify & Sign In'}
+                                </button>
+                                <button type="button" onClick={() => this.setState({ mfaResolver: null, mfaCode: '', password: '' })} className="text-xs text-slate-500 hover:text-slate-800">Cancel</button>
+                            </form>
+                        )}
                         {/* Login Form */}
-                        <form onSubmit={this.login} className="w-full flex flex-col" autoComplete="on" noValidate>
+                        <form onSubmit={this.login} className={`w-full flex-col ${this.state.mfaResolver ? 'hidden' : 'flex'}`} autoComplete="on" noValidate>
                             <Input 
                                 name="Email" 
                                 title={t("login.email")} 

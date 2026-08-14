@@ -1,3 +1,4 @@
+import { sanitizeRichText } from '../../utils/sanitizeHtml';
 import React, { Component } from 'react';
 import './Cv26.scss';
 import { withTranslation } from 'react-i18next';
@@ -76,7 +77,7 @@ class Cv26 extends Component {
                     <div className="experience-details">
                         <h3 className="experience-title">{tempEmployments[index].jobTitle}</h3>
                         <h4 className="experience-company">{tempEmployments[index].employer}</h4>
-                        <p className="experience-description" dangerouslySetInnerHTML={{ __html: tempEmployments[index].description }}></p>
+                        <p className="experience-description" dangerouslySetInnerHTML={{ __html: sanitizeRichText(tempEmployments[index].description) }}></p>
                     </div>
                 </div>
             );
@@ -101,7 +102,7 @@ class Cv26 extends Component {
                     <div className="experience-details">
                         <h3 className="experience-title">{tempEducations[index].degree}</h3>
                         <h4 className="experience-company">{tempEducations[index].school}</h4>
-                        <p className="experience-description" dangerouslySetInnerHTML={{ __html: tempEducations[index].description }}></p>
+                        <p className="experience-description" dangerouslySetInnerHTML={{ __html: sanitizeRichText(tempEducations[index].description) }}></p>
                     </div>
                 </div>
             );
@@ -187,7 +188,7 @@ class Cv26 extends Component {
                                     <h3>{t('resume.personalSummary')}</h3>
                                 </div>
                                 <div className="summary-content">
-                                    <p dangerouslySetInnerHTML={{ __html: this.props.values.summary }}></p>
+                                    <p dangerouslySetInnerHTML={{ __html: sanitizeRichText(this.props.values.summary) }}></p>
                                 </div>
                             </section>
 

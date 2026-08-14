@@ -1,3 +1,4 @@
+import { sanitizeRichText } from '../../utils/sanitizeHtml';
 import React, { Component } from 'react';
 import './Cv25.scss';
 import { withTranslation } from 'react-i18next';
@@ -117,7 +118,7 @@ class Cv25 extends Component {
                         </div>
                     </div>
                     <div className="experience-content">
-                        <p dangerouslySetInnerHTML={{ __html: tempEmployments[index].description }}></p>
+                        <p dangerouslySetInnerHTML={{ __html: sanitizeRichText(tempEmployments[index].description) }}></p>
                     </div>
                 </div>
             );
@@ -146,7 +147,7 @@ class Cv25 extends Component {
                         </div>
                     </div>
                     <div className="experience-content">
-                        <p dangerouslySetInnerHTML={{ __html: tempEducations[index].description }}></p>
+                        <p dangerouslySetInnerHTML={{ __html: sanitizeRichText(tempEducations[index].description) }}></p>
                     </div>
                 </div>
             );
@@ -212,7 +213,7 @@ class Cv25 extends Component {
                             <div className="cv25-section summary-section">
                                 <h3>{t('resume.personalSummary')}</h3>
                                 <div className="section-content">
-                                    <p dangerouslySetInnerHTML={{ __html: this.props.values.summary }}></p>
+                                    <p dangerouslySetInnerHTML={{ __html: sanitizeRichText(this.props.values.summary) }}></p>
                                 </div>
                             </div>
 

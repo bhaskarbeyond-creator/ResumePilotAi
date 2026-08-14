@@ -1,3 +1,4 @@
+import { sanitizeRichText } from '../../utils/sanitizeHtml';
 import React, { Component } from 'react';
 import './Cv10.scss';
 
@@ -48,7 +49,7 @@ class Cv10 extends Component {
                         </p>
                     </div>
                     <div className="cv10-jobDesc">
-                        <p dangerouslySetInnerHTML={{ __html: this.props.values.employments[index].description }}></p>
+                        <p dangerouslySetInnerHTML={{ __html: sanitizeRichText(this.props.values.employments[index].description) }}></p>
                     </div>
                 </div>
             );
@@ -76,7 +77,7 @@ class Cv10 extends Component {
                         </p>
                     </div>
                     <div className="cv10-jobDesc">
-                        <p dangerouslySetInnerHTML={{ __html: this.props.values.educations[index].description }}></p>
+                        <p dangerouslySetInnerHTML={{ __html: sanitizeRichText(this.props.values.educations[index].description) }}></p>
                     </div>
                 </div>
             );
@@ -132,7 +133,7 @@ class Cv10 extends Component {
                             <div className="cv10-sectionTitle" style={{ borderBottomColor: secondaryColor }}>
                                 <h2>{t('resume.personalSummary')}</h2>
                             </div>
-                            <p style={{ marginBottom: '0px', marginTop: '10px' }} className="cv10-summary" dangerouslySetInnerHTML={{ __html: this.props.values.summary }}></p>
+                            <p style={{ marginBottom: '0px', marginTop: '10px' }} className="cv10-summary" dangerouslySetInnerHTML={{ __html: sanitizeRichText(this.props.values.summary) }}></p>
 
                             {/* Professional experience */}
                             <div className="cv10-sectionTitle" style={{ borderBottomColor: secondaryColor }}>

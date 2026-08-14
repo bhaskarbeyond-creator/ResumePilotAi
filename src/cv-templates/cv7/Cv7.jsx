@@ -1,3 +1,4 @@
+import { sanitizeRichText } from '../../utils/sanitizeHtml';
 import React, { Component } from 'react';
 import './Cv7.scss';
 import Email from '../../assets/cv7-assets/email.png';
@@ -55,7 +56,7 @@ class Cv7 extends Component {
                         </p>
                     </div>
                     <div className="cv7-jobDescription">
-                        <p dangerouslySetInnerHTML={{ __html: item.description }}></p>
+                        <p dangerouslySetInnerHTML={{ __html: sanitizeRichText(item.description) }}></p>
                     </div>
                 </div>
             );
@@ -89,7 +90,7 @@ class Cv7 extends Component {
                         </p>
                     </div>
                     <div className="cv7-jobDescription">
-                        <p dangerouslySetInnerHTML={{ __html: item.description }}></p>
+                        <p dangerouslySetInnerHTML={{ __html: sanitizeRichText(item.description) }}></p>
                     </div>
                 </div>
             );
@@ -128,7 +129,7 @@ class Cv7 extends Component {
                                 </h3>
                             </div>
                             <div className="cv7-summary">
-                                <p dangerouslySetInnerHTML={{ __html: this.props.values.summary }}></p>
+                                <p dangerouslySetInnerHTML={{ __html: sanitizeRichText(this.props.values.summary) }}></p>
                             </div>
                             {/* End - Summary */}
                             {/* EXPERIENCE */}

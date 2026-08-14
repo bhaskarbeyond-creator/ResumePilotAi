@@ -1,3 +1,4 @@
+import { sanitizeRichText } from '../../utils/sanitizeHtml';
 import React, { Component } from 'react';
 import './Cv12.scss';
 import { withTranslation } from 'react-i18next';
@@ -33,7 +34,7 @@ class Cv12 extends Component {
                     <div className="cv12-employment-item-right">
                         <h3>{tempEmployments[index].jobTitle}</h3>
                         <p> {tempEmployments[index].employer}</p>
-                        <p dangerouslySetInnerHTML={{ __html: tempEmployments[index].description }}></p>
+                        <p dangerouslySetInnerHTML={{ __html: sanitizeRichText(tempEmployments[index].description) }}></p>
                     </div>
                 </div>
             );
@@ -60,7 +61,7 @@ class Cv12 extends Component {
                     <div className="cv12-employment-item-right">
                         <h3>{tempEducations[index].degree}</h3>
                         <p>{tempEducations[index].school}</p>
-                        <p dangerouslySetInnerHTML={{ __html: tempEducations[index].description }}></p>
+                        <p dangerouslySetInnerHTML={{ __html: sanitizeRichText(tempEducations[index].description) }}></p>
                     </div>
                 </div>
             );
@@ -112,7 +113,7 @@ class Cv12 extends Component {
                         <div className="cv12-left">
                             {/* Suummary */}
                             <div className="cv12-summary" style={{ marginTop: '10px', marginBottom: '10px' }}>
-                                <p dangerouslySetInnerHTML={{ __html: this.props.values?.summary }}></p>
+                                <p dangerouslySetInnerHTML={{ __html: sanitizeRichText(this.props.values?.summary) }}></p>
                             </div>
                             {/* Section title */}
                             <div className="cv12-section-title">

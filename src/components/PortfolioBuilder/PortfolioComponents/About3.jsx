@@ -138,7 +138,7 @@ const About3 = {
                     // Show user-friendly message instead of alert
                     const errorMsg = document.createElement('div');
                     errorMsg.className = 'fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-50';
-                    errorMsg.innerHTML = 'Please provide a valid resume URL in the format: /shared/your-resume-id';
+                    errorMsg.textContent = 'Please provide a valid resume URL in the format: /shared/your-resume-id';
                     document.body.appendChild(errorMsg);
                     setTimeout(() => errorMsg.remove(), 4000);
                 }
@@ -147,7 +147,7 @@ const About3 = {
                 // Show user-friendly message instead of alert
                 const errorMsg = document.createElement('div');
                 errorMsg.className = 'fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-50';
-                errorMsg.innerHTML = 'Please add a resume download URL in the About section settings';
+                errorMsg.textContent = 'Please add a resume download URL in the About section settings';
                 document.body.appendChild(errorMsg);
                 setTimeout(() => errorMsg.remove(), 4000);
             }

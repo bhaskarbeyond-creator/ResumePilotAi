@@ -1,3 +1,4 @@
+import { sanitizeRichText } from '../../utils/sanitizeHtml';
 import React, { Component } from 'react';
 import './Cv40.scss';
 import { withTranslation } from 'react-i18next';
@@ -121,7 +122,7 @@ class Cv40 extends Component {
                     <div className="exp-content">
                         <h3 className="exp-title">{tempEmployments[index].jobTitle}</h3>
                         <div className="exp-company">{tempEmployments[index].employer}</div>
-                        <div className="exp-description" dangerouslySetInnerHTML={{ __html: tempEmployments[index].description }}></div>
+                        <div className="exp-description" dangerouslySetInnerHTML={{ __html: sanitizeRichText(tempEmployments[index].description) }}></div>
                     </div>
                 </div>
             );
@@ -151,7 +152,7 @@ class Cv40 extends Component {
                     <div className="edu-content">
                         <h3 className="edu-title">{tempEducations[index].degree}</h3>
                         <div className="edu-institution">{tempEducations[index].school}</div>
-                        <div className="edu-description" dangerouslySetInnerHTML={{ __html: tempEducations[index].description }}></div>
+                        <div className="edu-description" dangerouslySetInnerHTML={{ __html: sanitizeRichText(tempEducations[index].description) }}></div>
                     </div>
                 </div>
             );
@@ -222,7 +223,7 @@ class Cv40 extends Component {
                                 <h3 className="section-title">{t('resume.personalSummary')}</h3>
                             </div>
                             <div className="section-content">
-                                <div className="profile-text" dangerouslySetInnerHTML={{ __html: this.props.values.summary }}></div>
+                                <div className="profile-text" dangerouslySetInnerHTML={{ __html: sanitizeRichText(this.props.values.summary) }}></div>
                             </div>
                         </section>
 

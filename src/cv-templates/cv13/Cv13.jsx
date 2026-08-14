@@ -1,3 +1,4 @@
+import { sanitizeRichText } from '../../utils/sanitizeHtml';
 import React, { Component } from 'react';
 import './Cv13.scss';
 
@@ -34,7 +35,7 @@ class Cv13 extends Component {
                     <div className="cv13-employment-item-right">
                         <h3>{tempEmployments[index].jobTitle}</h3>
                         <p> {tempEmployments[index].employer}</p>
-                        <p dangerouslySetInnerHTML={{ __html: tempEmployments[index].description }}></p>
+                        <p dangerouslySetInnerHTML={{ __html: sanitizeRichText(tempEmployments[index].description) }}></p>
                     </div>
                 </div>
             );
@@ -61,7 +62,7 @@ class Cv13 extends Component {
                     <div className="cv13-employment-item-right">
                         <h3>{tempEducations[index].degree}</h3>
                         <p>{tempEducations[index].school}</p>
-                        <p dangerouslySetInnerHTML={{ __html: tempEducations[index].description }}></p>
+                        <p dangerouslySetInnerHTML={{ __html: sanitizeRichText(tempEducations[index].description) }}></p>
                     </div>
                 </div>
             );
@@ -113,7 +114,7 @@ class Cv13 extends Component {
                         <div className="cv13-left">
                             {/* Suummary */}
                             <div className="cv13-summary">
-                                <p dangerouslySetInnerHTML={{ __html: this.props.values?.summary }}></p>
+                                <p dangerouslySetInnerHTML={{ __html: sanitizeRichText(this.props.values?.summary) }}></p>
                             </div>
                             {/* Section title */}
                             <div className="cv13-section-title">

@@ -20,7 +20,7 @@ import { getSystemSettings } from '../../../firestore/dbOperations';
 // Helper for status dots
 const getStatusDotColor = (key, s) => {
     const activeFirebaseKey = s?.firebase?.apiKey || fire?.apps?.[0]?.options?.apiKey || import.meta.env.VITE_FIREBASE_KEY;
-    const activeGeminiKey = s?.ai?.geminiApiKey || import.meta.env.VITE_GEMINI_API_KEY;
+    const activeGeminiKey = s?.ai?.geminiApiKey || '';
     const activeRazorpayKey = s?.payments?.razorpayKeyId || import.meta.env.VITE_RAZORPAY_KEY_ID;
 
     switch (key) {
@@ -35,11 +35,11 @@ const getStatusDotColor = (key, s) => {
         case 'aiSettings': {
             const ai = s?.ai || {};
             const p = ai.provider || 'gemini';
-            if (p === 'nvidia' && (ai.nvidiaApiKey || import.meta.env.VITE_NVIDIA_API_KEY)) return 'bg-emerald-500';
-            if (p === 'openai' && (ai.openaiApiKey || import.meta.env.VITE_OPENAI_API_KEY)) return 'bg-emerald-500';
-            if (p === 'groq' && (ai.groqApiKey || import.meta.env.VITE_GROQ_API_KEY)) return 'bg-emerald-500';
-            if (p === 'openrouter' && (ai.openrouterApiKey || import.meta.env.VITE_OPENROUTER_API_KEY)) return 'bg-emerald-500';
-            if (p === 'deepseek' && (ai.deepseekApiKey || import.meta.env.VITE_DEEPSEEK_API_KEY)) return 'bg-emerald-500';
+            if (p === 'nvidia' && (ai.nvidiaApiKey || '')) return 'bg-emerald-500';
+            if (p === 'openai' && (ai.openaiApiKey || '')) return 'bg-emerald-500';
+            if (p === 'groq' && (ai.groqApiKey || '')) return 'bg-emerald-500';
+            if (p === 'openrouter' && (ai.openrouterApiKey || '')) return 'bg-emerald-500';
+            if (p === 'deepseek' && (ai.deepseekApiKey || '')) return 'bg-emerald-500';
             if (p === 'ollama') return 'bg-emerald-500';
             return activeGeminiKey ? 'bg-emerald-500' : 'bg-red-500';
         }

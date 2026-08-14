@@ -289,39 +289,9 @@ class Register extends Component {
             this.setState({ isSubmitting: false }); // GAP-01: unlock on error
             let msg = error.message;
             if (error.code === 'auth/email-already-in-use') {
-                // Autonomous Orphaned Account Recovery
-                try {
-                    const firestoreModule = await import('../../../conf/fire');
-                    const db = firestoreModule.default.firestore();
-                    const query = await db.collection('users').where('email', '==', email.toLowerCase().trim()).get();
-                    
-                    if (query.empty) {
-                        console.log(`⚡ Autonomous Recovery: Email '${email}' exists in Firebase Auth but user doc was deleted by Admin. Purging orphaned Auth record and retrying...`);
-                        const purgeRes = await fetch('/api/auth/purge-orphaned-auth', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ email })
-                        });
-                        const purgeData = await purgeRes.json();
-                        
-                        if (purgeData.success) {
-                            const retryUser = await fire.auth().createUserWithEmailAndPassword(email, this.state.password);
-                            const userName = email.split('@')[0];
-                            await addUser(retryUser.user.uid, userName, '', email, { authProvider: 'email' });
-                            if (this.props.throwSuccess) this.props.throwSuccess('Account created successfully! Welcome aboard.');
-                            setTimeout(() => { 
-                                if (this.props.closeModal) this.props.closeModal(); 
-                                this._handleRedirect(retryUser.user.uid);
-                            }, 2000);
-                            return;
-                        }
-                    }
-                } catch (recoveryErr) {
-                    console.warn('[Register Recovery Notice]:', recoveryErr.message);
-                }
-                msg = 'An account with this email already exists. Please click Login to sign in.';
-            } else if (error.code === 'auth/weak-password') {
-                msg = 'Password should be at least 6 characters long.';
+                // Never delete an existing Auth identity based only on an unauthenticated
+                // registration attempt. The account owner must sign in or use password reset.
+                msg = 'An account already exists for this email. Sign in or use Forgot password?';
             } else if (error.code === 'auth/invalid-email') {
                 msg = 'Please enter a valid email address.';
             }

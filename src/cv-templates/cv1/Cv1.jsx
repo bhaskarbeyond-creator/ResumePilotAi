@@ -1,3 +1,4 @@
+import { sanitizeRichText } from '../../utils/sanitizeHtml';
 import React, { Component } from 'react';
 import './Cv1.scss';
 import { FaPhoneAlt, FaEnvelope, FaMapMarkerAlt } from 'react-icons/fa';
@@ -93,7 +94,7 @@ class Cv1 extends Component {
                                 {dateStr && <span className="employment__dateBadge">{dateStr}</span>}
                             </div>
                             {item.description && (
-                                <div className="employment__body" dangerouslySetInnerHTML={{ __html: item.description }} />
+                                <div className="employment__body" dangerouslySetInnerHTML={{ __html: sanitizeRichText(item.description) }} />
                             )}
                         </div>
                     );
@@ -123,7 +124,7 @@ class Cv1 extends Component {
                                 {dateStr && <span className="employment__dateBadge">{dateStr}</span>}
                             </div>
                             {item.description && (
-                                <div className="employment__body" dangerouslySetInnerHTML={{ __html: item.description }} />
+                                <div className="employment__body" dangerouslySetInnerHTML={{ __html: sanitizeRichText(item.description) }} />
                             )}
                         </div>
                     );
@@ -257,7 +258,7 @@ class Cv1 extends Component {
                                     <div className="sectionTitle">
                                         <h2 style={{ color: colors.primary, borderColor: colors.primary }}>{t('resume.personalSummary')}</h2>
                                     </div>
-                                    <div className="summaryContent" dangerouslySetInnerHTML={{ __html: this.props.values.summary }} />
+                                    <div className="summaryContent" dangerouslySetInnerHTML={{ __html: sanitizeRichText(this.props.values.summary) }} />
                                 </div>
                             )}
 

@@ -1,10 +1,9 @@
+import { sanitizeUrl } from '../../../utils/sanitizeHtml';
 import React from 'react';
 
 // 🔒 SECURITY: Secure text renderer
 const SecureText = ({ children, className = '' }) => {
-    if (typeof children !== 'string') return <span className={className}>{children}</span>;
-    const escaped = children.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
-    return <span className={className} dangerouslySetInnerHTML={{ __html: escaped }} />;
+    return <span className={className}>{children}</span>;
 };
 
 const Footer3 = {
@@ -186,7 +185,7 @@ const Footer3 = {
                                             <div key={index} className="flex items-center gap-2">
                                                 <span className="text-purple-400 font-mono text-sm">"{social.platform}":</span>
                                                 <a
-                                                    href={social.url}
+                                                    href={sanitizeUrl(social.url)}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className={`text-green-300 ${colors.hover} transition-colors duration-200 font-mono text-sm hover:underline`}>

@@ -1,3 +1,4 @@
+import { sanitizeUrl } from '../../../utils/sanitizeHtml';
 import React, { useState, useEffect, useContext } from 'react';
 import { motion } from 'framer-motion';
 import { withTranslation } from 'react-i18next';
@@ -490,7 +491,7 @@ const CompaniesManagement = ({ showToast, sidebarCollapsed, t }) => {
                                                                 <div className="flex items-center gap-2">
                                                                     <FaGlobe className="w-3 h-3 text-slate-500" />
                                                                     <a
-                                                                        href={company.website}
+                                                                        href={sanitizeUrl(company.website)}
                                                                         target="_blank"
                                                                         rel="noopener noreferrer"
                                                                         className="text-blue-600 hover:text-blue-700 flex items-center gap-1"

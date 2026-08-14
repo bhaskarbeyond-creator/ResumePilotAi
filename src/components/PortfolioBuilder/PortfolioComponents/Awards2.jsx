@@ -1,3 +1,4 @@
+import { sanitizeUrl } from '../../../utils/sanitizeHtml';
 import React from 'react';
 
 const Awards2 = {
@@ -76,7 +77,7 @@ const Awards2 = {
                                         {award.certificateUrl && (
                                             <div className="flex justify-end">
                                                 <a
-                                                    href={award.certificateUrl}
+                                                    href={sanitizeUrl(award.certificateUrl)}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="inline-flex items-center bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium">

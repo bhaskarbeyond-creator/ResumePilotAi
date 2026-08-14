@@ -1,3 +1,4 @@
+import { sanitizeUrl } from '../../../utils/sanitizeHtml';
 import React from 'react';
 
 const Resume1 = {
@@ -29,7 +30,7 @@ const Resume1 = {
 
                         <div className="flex flex-col sm:flex-row gap-4">
                             <a
-                                href={resumeUrl}
+                                href={sanitizeUrl(resumeUrl)}
                                 download
                                 className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold text-center flex items-center justify-center">
                                 <span className="mr-2">📄</span>

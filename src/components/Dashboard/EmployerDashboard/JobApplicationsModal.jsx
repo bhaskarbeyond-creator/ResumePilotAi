@@ -1,6 +1,7 @@
+import { sanitizeUrl } from '../../../utils/sanitizeHtml';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import DOMPurify from 'dompurify';
+import { sanitizeRichText } from '../../../utils/sanitizeHtml';
 import { withTranslation } from 'react-i18next';
 import './JobApplicationsModal.css';
 import SendMessageDialog from './SendMessageDialog';
@@ -161,20 +162,7 @@ const [selectedApplication, setSelectedApplication] = useState(null);
         setExpandedApplication(expandedApplication === applicationId ? null : applicationId);
     };
 
-    // Sanitize and render HTML content safely
-    const renderSafeHTML = (htmlContent) => {
-        if (!htmlContent) return t('JobsUpdate.JobApplicationsModal.coverLetter.none', 'No cover letter provided');
-
-        // Configure DOMPurify to allow safe HTML tags for rich text
-        const cleanHTML = DOMPurify.sanitize(htmlContent, {
-            ALLOWED_TAGS: ['p', 'br', 'strong', 'b', 'em', 'i', 'u', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
-            ALLOWED_ATTR: [],
-            KEEP_CONTENT: true,
-            RETURN_DOM_FRAGMENT: false,
-        });
-
-        return { __html: cleanHTML };
-    };
+    const renderSafeHTML = (htmlContent) => ({ __html: sanitizeRichText(htmlContent || '') });
 
     if (!isOpen) return null;
 
@@ -408,7 +396,7 @@ const [selectedApplication, setSelectedApplication] = useState(null);
                                                                     if (resumeUrl.includes('/resume/')) {
                                                                         resumeUrl = resumeUrl.replace('/resume/', '/shared/');
                                                                     }
-                                                                    window.open(resumeUrl, '_blank');
+                                                                    window.open(sanitizeUrl(resumeUrl), '_blank');
                                                                 } else {
                                                                     alert('Resume link not available');
                                                                 }

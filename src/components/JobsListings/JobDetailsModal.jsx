@@ -1,3 +1,4 @@
+import { sanitizeUrl } from '../../utils/sanitizeHtml';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { withTranslation } from 'react-i18next';
@@ -402,7 +403,7 @@ const JobDetailsModal = ({ job, isOpen, onClose, isSaved, onToggleSaved, onApply
                                                                 <>
                                                                     {(enhancedJob.companyStats.industry || enhancedJob.companyStats.employees) && <span>•</span>}
                                                                     <a
-                                                                        href={enhancedJob.companyStats.website}
+                                                                        href={sanitizeUrl(enhancedJob.companyStats.website)}
                                                                         target="_blank"
                                                                         rel="noopener noreferrer"
                                                                         className="text-blue-600 hover:text-blue-800 hover:underline">

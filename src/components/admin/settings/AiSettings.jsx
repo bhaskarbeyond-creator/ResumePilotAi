@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
+import { getSystemSettings } from '../../../firestore/dbOperations';
 import {
     FaRobot, FaCheck, FaTimes, FaSpinner, FaKey, FaSlidersH,
     FaEye, FaEyeSlash, FaServer, FaBolt, FaGlobe, FaBrain,
@@ -65,36 +65,36 @@ const AiSettings = () => {
     useEffect(() => {
         getSystemSettings().then((settings) => {
             const ai = (settings && settings.ai) || {};
-            const hasGeminiKey = !!(ai.geminiApiKey || import.meta.env.VITE_GEMINI_API_KEY);
-            const hasNvidiaKey = !!(ai.nvidiaApiKey || import.meta.env.VITE_NVIDIA_API_KEY);
-            const hasOpenaiKey = !!(ai.openaiApiKey || import.meta.env.VITE_OPENAI_API_KEY);
-            const hasGroqKey = !!(ai.groqApiKey || import.meta.env.VITE_GROQ_API_KEY);
-            const hasOpenrouterKey = !!(ai.openrouterApiKey || import.meta.env.VITE_OPENROUTER_API_KEY);
-            const hasDeepseekKey = !!(ai.deepseekApiKey || import.meta.env.VITE_DEEPSEEK_API_KEY);
+            const hasGeminiKey = !!(ai.geminiApiKey || '');
+            const hasNvidiaKey = !!(ai.nvidiaApiKey || '');
+            const hasOpenaiKey = !!(ai.openaiApiKey || '');
+            const hasGroqKey = !!(ai.groqApiKey || '');
+            const hasOpenrouterKey = !!(ai.openrouterApiKey || '');
+            const hasDeepseekKey = !!(ai.deepseekApiKey || '');
 
             setAiConfig({
                 provider: ai.provider || 'gemini',
                 enableGemini: ai.enableGemini !== undefined ? ai.enableGemini : hasGeminiKey,
-                geminiApiKey: ai.geminiApiKey || import.meta.env.VITE_GEMINI_API_KEY || '',
+                geminiApiKey: ai.geminiApiKey || '' || '',
                 model: ai.model || 'gemini-2.0-flash',
                 enableNvidia: ai.enableNvidia !== undefined ? ai.enableNvidia : hasNvidiaKey,
-                nvidiaApiKey: ai.nvidiaApiKey || import.meta.env.VITE_NVIDIA_API_KEY || '',
+                nvidiaApiKey: ai.nvidiaApiKey || '' || '',
                 nvidiaModel: (ai.nvidiaModel && ai.nvidiaModel !== 'meta/llama-3.3-70b-instruct')
                     ? ai.nvidiaModel
                     : 'meta/llama-3.1-8b-instruct',
                 nvidiaBaseUrl: ai.nvidiaBaseUrl || 'https://integrate.api.nvidia.com/v1',
                 enableOpenai: ai.enableOpenai !== undefined ? ai.enableOpenai : hasOpenaiKey,
-                openaiApiKey: ai.openaiApiKey || import.meta.env.VITE_OPENAI_API_KEY || '',
+                openaiApiKey: ai.openaiApiKey || '' || '',
                 openaiModel: ai.openaiModel || 'gpt-4o-mini',
                 openaiBaseUrl: ai.openaiBaseUrl || '',
                 enableGroq: ai.enableGroq !== undefined ? ai.enableGroq : hasGroqKey,
-                groqApiKey: ai.groqApiKey || import.meta.env.VITE_GROQ_API_KEY || '',
+                groqApiKey: ai.groqApiKey || '' || '',
                 groqModel: ai.groqModel || 'llama-3.3-70b-versatile',
                 enableOpenrouter: ai.enableOpenrouter !== undefined ? ai.enableOpenrouter : hasOpenrouterKey,
-                openrouterApiKey: ai.openrouterApiKey || import.meta.env.VITE_OPENROUTER_API_KEY || '',
+                openrouterApiKey: ai.openrouterApiKey || '' || '',
                 openrouterModel: ai.openrouterModel || 'meta-llama/llama-3.3-70b-instruct:free',
                 enableDeepseek: ai.enableDeepseek !== undefined ? ai.enableDeepseek : hasDeepseekKey,
-                deepseekApiKey: ai.deepseekApiKey || import.meta.env.VITE_DEEPSEEK_API_KEY || '',
+                deepseekApiKey: ai.deepseekApiKey || '' || '',
                 deepseekModel: ai.deepseekModel || 'deepseek-chat',
                 enableOllama: ai.enableOllama !== undefined ? ai.enableOllama : false,
                 ollamaBaseUrl: ai.ollamaBaseUrl || 'http://localhost:11434/v1',
@@ -175,86 +175,25 @@ const AiSettings = () => {
         }, 10000);
     };
 
-    const fetchWithCorsFallback = async (targetUrl, options = {}) => {
-        if (targetUrl.includes('integrate.api.nvidia.com')) {
-            // Priority 1: Local PHP Proxy (Resolves on http://ai-resume-builder.local/nvidia-proxy.php)
-            try {
-                const phpProxyUrl = `${window.location.origin}/nvidia-proxy.php`;
-                const res = await fetch(phpProxyUrl, options);
-                if (res.ok) return res;
-            } catch (err) {
-                console.warn('Local PHP proxy failed, trying Vite dev proxy...', err);
-            }
-
-            // Priority 2: Vite Dev Server Proxy (/api/nvidia)
-            try {
-                const proxyUrl = targetUrl.replace('https://integrate.api.nvidia.com', '/api/nvidia');
-                const res = await fetch(proxyUrl, options);
-                if (res.ok) return res;
-            } catch (err) {
-                console.warn('Vite dev proxy failed, trying direct fetch...', err);
-            }
-        }
-
-        // Priority 3: Direct browser fetch
-        try {
-            const res = await fetch(targetUrl, options);
-            if (res.status !== 0) return res;
-        } catch (err) {
-            throw new Error(`Browser Network/CORS Error: Direct request to ${targetUrl} was blocked by CORS policy.`);
-        }
-    };
-
     const handleFetchNvidiaModels = async () => {
-        if (!aiConfig.nvidiaApiKey || !aiConfig.nvidiaApiKey.trim()) {
-            setCardMessage('nvidia', 'error', 'Please enter your NVIDIA API Key (nvapi-...) first.');
-            return;
-        }
         setFetchingNvidiaModels(true);
-        try {
-            const baseUrl = (aiConfig.nvidiaBaseUrl && aiConfig.nvidiaBaseUrl.trim())
-                ? aiConfig.nvidiaBaseUrl.trim().replace(/\/+$/, '')
-                : 'https://integrate.api.nvidia.com/v1';
-            const res = await fetchWithCorsFallback(`${baseUrl}/models`, {
-                headers: {
-                    Authorization: `Bearer ${aiConfig.nvidiaApiKey.trim()}`,
-                    Accept: 'application/json',
-                },
-            });
-            const data = await res.json().catch(() => ({}));
-            if (res.ok && data.data && Array.isArray(data.data)) {
-                const fetchedList = data.data.map((m) => ({
-                    id: m.id,
-                    name: `${m.id} ${m.id.includes('llama-3.3') ? '(Top Pick)' : ''}`,
-                    badge: m.id.includes('llama') ? 'LLAMA' : m.id.includes('deepseek') ? 'DEEPSEEK' : 'NVIDIA',
-                }));
-                if (fetchedList.length > 0) {
-                    setNvidiaModels(fetchedList);
-                    setCardMessage('nvidia', 'success', `Successfully fetched ${fetchedList.length} NVIDIA NIM models directly from API!`);
-                } else {
-                    setNvidiaModels(RECOMMENDED_NVIDIA_MODELS);
-                    setCardMessage('nvidia', 'success', 'Loaded recommended NVIDIA NIM models for AI Resume Builder.');
-                }
-            } else {
-                const errDetail = typeof data.detail === 'string'
-                    ? data.detail
-                    : data.error?.message || `HTTP ${res.status} Error fetching models`;
-                throw new Error(errDetail);
-            }
-        } catch (err) {
-            setNvidiaModels(RECOMMENDED_NVIDIA_MODELS);
-            setCardMessage('nvidia', 'success', `Loaded ${RECOMMENDED_NVIDIA_MODELS.length} curated top NVIDIA NIM models (including Nemotron 3 Ultra 550B).`);
-        } finally {
-            setFetchingNvidiaModels(false);
-        }
+        setNvidiaModels(RECOMMENDED_NVIDIA_MODELS);
+        setCardMessage('nvidia', 'success', `Loaded ${RECOMMENDED_NVIDIA_MODELS.length} curated NVIDIA models. Provider discovery runs server-side only.`);
+        setFetchingNvidiaModels(false);
     };
 
     const handleSave = async (e) => {
         e.preventDefault();
         setSaving(true);
         try {
-            await saveSystemSettings('ai', aiConfig);
-            setGlobalMessage({ type: 'success', text: 'AI engine & provider settings saved successfully!' });
+            const response = await fetch('/api/admin/ai-settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(aiConfig)
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result.success) throw new Error(result.error || 'Unable to save AI settings');
+            setGlobalMessage({ type: 'success', text: 'AI engine and provider secrets saved to the server-only store.' });
         } catch (error) {
             setGlobalMessage({ type: 'error', text: `Failed to save settings: ${error.message}` });
         } finally {
@@ -266,217 +205,31 @@ const AiSettings = () => {
     const testSpecificProvider = async (targetProvider) => {
         setTestingProvider(targetProvider);
         setCardMessage(targetProvider, null, null);
-        const {
-            geminiApiKey, model,
-            openaiApiKey, openaiModel, openaiBaseUrl,
-            nvidiaApiKey, nvidiaModel, nvidiaBaseUrl,
-            groqApiKey, groqModel,
-            openrouterApiKey, openrouterModel,
-            deepseekApiKey, deepseekModel,
-            ollamaBaseUrl, ollamaModel,
-        } = aiConfig;
-
+        const keyFields = {
+            gemini: 'geminiApiKey', nvidia: 'nvidiaApiKey', openai: 'openaiApiKey',
+            groq: 'groqApiKey', openrouter: 'openrouterApiKey', deepseek: 'deepseekApiKey'
+        };
+        const modelFields = {
+            gemini: 'model', nvidia: 'nvidiaModel', openai: 'openaiModel', groq: 'groqModel',
+            openrouter: 'openrouterModel', deepseek: 'deepseekModel', ollama: 'ollamaModel'
+        };
         try {
-            if (targetProvider === 'nvidia') {
-                if (!nvidiaApiKey || !nvidiaApiKey.trim()) {
-                    throw new Error('Please enter a valid NVIDIA API Key (starting with nvapi-...) first.');
-                }
-                const baseUrl = (nvidiaBaseUrl && nvidiaBaseUrl.trim())
-                    ? nvidiaBaseUrl.trim().replace(/\/+$/, '')
-                    : 'https://integrate.api.nvidia.com/v1';
-                const targetModel = nvidiaModel || 'poolside/laguna-xs-2.1';
-
-                let res = await fetchWithCorsFallback(`${baseUrl}/chat/completions`, {
-                    method: 'POST',
-                    headers: {
-                        Authorization: `Bearer ${nvidiaApiKey.trim()}`,
-                        'Content-Type': 'application/json',
-                        Accept: 'application/json',
-                    },
-                    body: JSON.stringify({
-                        model: targetModel,
-                        messages: [{ role: 'user', content: 'hi' }],
-                        temperature: 0.7,
-                        top_p: 1,
-                        max_tokens: 30,
-                    }),
-                });
-
-                let usedFallback = false;
-                if (!res.ok && res.status === 503 && targetModel !== 'poolside/laguna-xs-2.1') {
-                    usedFallback = true;
-                    res = await fetchWithCorsFallback(`${baseUrl}/chat/completions`, {
-                        method: 'POST',
-                        headers: {
-                            Authorization: `Bearer ${nvidiaApiKey.trim()}`,
-                            'Content-Type': 'application/json',
-                            Accept: 'application/json',
-                        },
-                        body: JSON.stringify({
-                            model: 'poolside/laguna-xs-2.1',
-                            messages: [{ role: 'user', content: 'hi' }],
-                            temperature: 0.7,
-                            top_p: 1,
-                            max_tokens: 30,
-                        }),
-                    });
-                }
-
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok) {
-                    if (res.status === 503) {
-                        throw new Error(`NVIDIA GPU Capacity Busy (HTTP 503). Free endpoint for "${targetModel}" is temporarily under heavy traffic. Try again shortly.`);
-                    }
-                    const errDetail =
-                        typeof data.detail === 'string' ? data.detail :
-                            data.detail?.message ? data.detail.message :
-                                data.error?.message ? data.error.message :
-                                    typeof data.error === 'string' ? data.error : `HTTP ${res.status} error from NVIDIA API`;
-                    throw new Error(errDetail);
-                }
-                const replyText = data.choices?.[0]?.message?.content?.trim() || 'Response Received';
-                if (usedFallback) {
-                    setCardMessage('nvidia', 'success', `NVIDIA Key Verified (via Laguna XS 2.1)! Note: "${targetModel}" is 503 busy. Response: "${replyText}"`);
-                } else {
-                    setCardMessage('nvidia', 'success', `LIVE NVIDIA NIM PASSED (${targetModel})! Response: "${replyText}"`);
-                }
-            } else if (targetProvider === 'gemini') {
-                if (!geminiApiKey || !geminiApiKey.trim()) {
-                    throw new Error('Please enter a valid Google Gemini API key first.');
-                }
-                const targetModel = model || 'gemini-2.0-flash';
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${geminiApiKey.trim()}`;
-                const res = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: 'hi' }] }],
-                    }),
-                });
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok) {
-                    throw new Error(data.error?.message || `HTTP ${res.status} error from Gemini API`);
-                }
-                const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || 'Response Received';
-                setCardMessage('gemini', 'success', `LIVE GEMINI TEST PASSED! Response: "${replyText}"`);
-            } else if (targetProvider === 'openai') {
-                if (!openaiApiKey || !openaiApiKey.trim()) {
-                    throw new Error('Please enter a valid OpenAI API key first.');
-                }
-                const baseUrl = (openaiBaseUrl && openaiBaseUrl.trim())
-                    ? openaiBaseUrl.trim().replace(/\/+$/, '')
-                    : 'https://api.openai.com/v1';
-                const res = await fetch(`${baseUrl}/chat/completions`, {
-                    method: 'POST',
-                    headers: {
-                        Authorization: `Bearer ${openaiApiKey.trim()}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        model: openaiModel || 'gpt-4o-mini',
-                        messages: [{ role: 'user', content: 'hi' }],
-                        temperature: 0.7,
-                        max_tokens: 30,
-                    }),
-                });
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok) {
-                    throw new Error(data.error?.message || `HTTP ${res.status} error from OpenAI API`);
-                }
-                const replyText = data.choices?.[0]?.message?.content?.trim() || 'Response Received';
-                setCardMessage('openai', 'success', `LIVE OPENAI TEST PASSED! Response: "${replyText}"`);
-            } else if (targetProvider === 'groq') {
-                if (!groqApiKey || !groqApiKey.trim()) {
-                    throw new Error('Please enter a valid Groq API key first.');
-                }
-                const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        Authorization: `Bearer ${groqApiKey.trim()}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        model: groqModel || 'llama-3.3-70b-versatile',
-                        messages: [{ role: 'user', content: 'hi' }],
-                        temperature: 0.7,
-                        max_tokens: 30,
-                    }),
-                });
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok) {
-                    throw new Error(data.error?.message || `HTTP ${res.status} error from Groq API`);
-                }
-                const replyText = data.choices?.[0]?.message?.content?.trim() || 'Response Received';
-                setCardMessage('groq', 'success', `LIVE GROQ TEST PASSED! Response: "${replyText}"`);
-            } else if (targetProvider === 'openrouter') {
-                if (!openrouterApiKey || !openrouterApiKey.trim()) {
-                    throw new Error('Please enter a valid OpenRouter API key first.');
-                }
-                const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        Authorization: `Bearer ${openrouterApiKey.trim()}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        model: openrouterModel || 'meta-llama/llama-3.3-70b-instruct:free',
-                        messages: [{ role: 'user', content: 'hi' }],
-                        temperature: 0.7,
-                        max_tokens: 30,
-                    }),
-                });
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok) {
-                    throw new Error(data.error?.message || `HTTP ${res.status} error from OpenRouter API`);
-                }
-                const replyText = data.choices?.[0]?.message?.content?.trim() || 'Response Received';
-                setCardMessage('openrouter', 'success', `LIVE OPENROUTER TEST PASSED! Response: "${replyText}"`);
-            } else if (targetProvider === 'deepseek') {
-                if (!deepseekApiKey || !deepseekApiKey.trim()) {
-                    throw new Error('Please enter a valid DeepSeek API key first.');
-                }
-                const res = await fetch('https://api.deepseek.com/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        Authorization: `Bearer ${deepseekApiKey.trim()}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        model: deepseekModel || 'deepseek-chat',
-                        messages: [{ role: 'user', content: 'hi' }],
-                        temperature: 0.7,
-                        max_tokens: 30,
-                    }),
-                });
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok) {
-                    throw new Error(data.error?.message || `HTTP ${res.status} error from DeepSeek API`);
-                }
-                const replyText = data.choices?.[0]?.message?.content?.trim() || 'Response Received';
-                setCardMessage('deepseek', 'success', `LIVE DEEPSEEK TEST PASSED! Response: "${replyText}"`);
-            } else if (targetProvider === 'ollama') {
-                const baseUrl = (ollamaBaseUrl && ollamaBaseUrl.trim())
-                    ? ollamaBaseUrl.trim().replace(/\/+$/, '')
-                    : 'http://localhost:11434/v1';
-                const res = await fetch(`${baseUrl}/chat/completions`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        model: ollamaModel || 'llama3',
-                        messages: [{ role: 'user', content: 'hi' }],
-                        temperature: 0.7,
-                        max_tokens: 30,
-                    }),
-                });
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok) {
-                    throw new Error(data.error?.message || `HTTP ${res.status} error from Local Ollama Endpoint`);
-                }
-                const replyText = data.choices?.[0]?.message?.content?.trim() || 'Response Received';
-                setCardMessage('ollama', 'success', `LIVE OLLAMA TEST PASSED! Response: "${replyText}"`);
-            }
-        } catch (err) {
-            setCardMessage(targetProvider, 'error', `Test Failed: ${err.message}`);
+            const key = keyFields[targetProvider] ? String(aiConfig[keyFields[targetProvider]] || '').trim() : '';
+            if (targetProvider !== 'ollama' && !key) throw new Error(`Enter the ${targetProvider} API key first.`);
+            const response = await fetch('/api/admin/test-connection', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: targetProvider,
+                    apiKey: key,
+                    model: aiConfig[modelFields[targetProvider]] || ''
+                })
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result.success) throw new Error(result.error || 'Provider test failed.');
+            setCardMessage(targetProvider, 'success', result.message || `${targetProvider} provider verified.`);
+        } catch (error) {
+            setCardMessage(targetProvider, 'error', `Test Failed: ${error.message}`);
         } finally {
             setTestingProvider(null);
         }

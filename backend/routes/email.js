@@ -31,7 +31,10 @@ function writeLocalConfig(data) {
     try {
         const existing = readLocalConfig() || {};
         const merged = { ...existing, ...data, updatedAt: new Date().toISOString() };
-        fs.writeFileSync(CONFIG_FILE, JSON.stringify(merged, null, 2), 'utf-8');
+        const tempFile = `${CONFIG_FILE}.${process.pid}.tmp`;
+        fs.writeFileSync(tempFile, JSON.stringify(merged, null, 2), { encoding: 'utf-8', mode: 0o600 });
+        fs.renameSync(tempFile, CONFIG_FILE);
+        fs.chmodSync(CONFIG_FILE, 0o600);
         return true;
     } catch (e) {
         console.error('Error writing local email config:', e.message);
@@ -128,25 +131,6 @@ async function getEmailConfig(db) {
     return config;
 }
 
-// Create Nodemailer Transporter instance
-function createTransporter(smtpConfig) {
-    const isSecure = smtpConfig.encryption === 'ssl' || smtpConfig.port === 465;
-    return nodemailer.createTransport({
-        host: smtpConfig.host,
-        port: smtpConfig.port,
-        secure: isSecure,
-        auth: (smtpConfig.username && smtpConfig.password) ? {
-            user: smtpConfig.username,
-            pass: smtpConfig.password,
-        } : undefined,
-        tls: {
-            rejectUnauthorized: false
-        },
-        connectionTimeout: 10000, // 10s connection timeout
-        greetingTimeout: 5000
-    });
-}
-
 // Verify IMAP Connection via direct Socket
 function verifyImapConnection(imapConfig) {
     return new Promise((resolve, reject) => {
@@ -170,7 +154,7 @@ function verifyImapConnection(imapConfig) {
         };
 
         if (isSsl) {
-            socket = tls.connect(port, host, { rejectUnauthorized: false }, onConnect);
+            socket = tls.connect(port, host, { rejectUnauthorized: true }, onConnect);
         } else {
             socket = net.connect(port, host, onConnect);
         }
@@ -745,7 +729,7 @@ function createTransporter(smtpConfig) {
             pass: smtpConfig.password,
         } : undefined,
         tls: {
-            rejectUnauthorized: false
+            rejectUnauthorized: true
         },
         connectionTimeout: 5000, // 5s fast connection timeout
         greetingTimeout: 4000,   // 4s SMTP greeting timeout
@@ -756,6 +740,15 @@ function createTransporter(smtpConfig) {
 // Helper: Dispatch Outbound Mail with Fallback Transport Support (10/10 High-Availability Circuit Breaker)
 async function dispatchMailWithFallback(config, mailOptions) {
     let primaryErr = null;
+    const allowedEncryption = new Set(['ssl', 'tls', 'starttls']);
+    if (config.smtp?.host) {
+        if (!allowedEncryption.has(String(config.smtp.encryption || '').toLowerCase())) throw new Error('Encrypted SMTP transport is required');
+        await assertPublicNetworkTarget(config.smtp.host);
+    }
+    if (config.fallbackSmtp?.enabled && config.fallbackSmtp?.host) {
+        if (!allowedEncryption.has(String(config.fallbackSmtp.encryption || '').toLowerCase())) throw new Error('Encrypted fallback SMTP transport is required');
+        await assertPublicNetworkTarget(config.fallbackSmtp.host);
+    }
     const now = Date.now();
     const isCircuitOpen = primaryCircuitBreakerUntil > now;
     const maxFailures = parseInt(config?.fallbackSmtp?.maxFailures || 3, 10);
@@ -1017,6 +1010,9 @@ router.post('/admin/test-imap', async (req, res) => {
             password: req.body.password || ''
         };
 
+        if (imapConfig.encryption !== 'ssl' || imapConfig.port !== 993) {
+            return res.status(400).json({ success: false, error: 'IMAP requires TLS on port 993.' });
+        }
         await assertPublicNetworkTarget(imapConfig.host);
         const result = await verifyImapConnection(imapConfig);
         return res.json({ success: true, message: `IMAP Socket Verified! Connected to ${imapConfig.host}:${imapConfig.port}` });

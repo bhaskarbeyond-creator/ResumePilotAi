@@ -1,3 +1,4 @@
+import { sanitizeRichText } from '../../utils/sanitizeHtml';
 import React, { Component } from 'react';
 import './Cv14.scss';
 import { FaPhoneAlt, FaEnvelope, FaMapMarkerAlt } from 'react-icons/fa';
@@ -33,7 +34,7 @@ class Cv14 extends Component {
                     </div>
                     <div className="cv14-work-history-item-right">
                         <h3>{tempEmployments[index].jobTitle}</h3>
-                        <p dangerouslySetInnerHTML={{ __html: tempEmployments[index].description }}></p>
+                        <p dangerouslySetInnerHTML={{ __html: sanitizeRichText(tempEmployments[index].description) }}></p>
                     </div>
                 </div>
             );
@@ -58,7 +59,7 @@ class Cv14 extends Component {
                     <div className="cv14-work-history-item-right">
                         <h3>{tempEducations[index].degree}</h3>
                         <p style={{ marginBottom: '5px' }}>{tempEducations[index].school}</p>
-                        <p dangerouslySetInnerHTML={{ __html: tempEducations[index].description }}></p>
+                        <p dangerouslySetInnerHTML={{ __html: sanitizeRichText(tempEducations[index].description) }}></p>
                     </div>
                 </div>
             );
@@ -122,7 +123,7 @@ class Cv14 extends Component {
                                 <span>{t('resume.personalSummary')}</span>
                             </div>
                             <div className="cv14-summary">
-                                <p dangerouslySetInnerHTML={{ __html: this.props.values.summary }}></p>
+                                <p dangerouslySetInnerHTML={{ __html: sanitizeRichText(this.props.values.summary) }}></p>
                             </div>
                             <div className="cv14-left-title">
                                 <span>{t('resume.skills')}</span>

@@ -18,7 +18,7 @@ import JCBLogo from '../../../assets/payment/JCB_logo.svg';
 import DropdownInput from '../../Form/dropdown-input/DropdownInput';
 import SimpleInput from '../../Form/simple-input/SimpleInput';
 import axios from 'axios';
-import { addSbs, getSubscriptionStatus, getSystemSettings } from '../../../firestore/dbOperations';
+import { getSubscriptionStatus, getSystemSettings } from '../../../firestore/dbOperations';
 import SuccessAnimation from '../../../assets/animations/50049-nfc-successful.json';
 import { withTranslation } from 'react-i18next';
 import Lottie from 'lottie-react';
@@ -41,16 +41,16 @@ const View = () => {
 // PayPal Button Component
 const PayPalButtonWrapper = ({ amount, currency, onSuccess, onError, selectedPlan }) => {
     const [{ isPending, isResolved, isRejected }] = usePayPalScriptReducer();
+    const paymentOrderIdRef = React.useRef(null);
 
-    const createOrder = (data, actions) => {
-        const finalCurrency = currency || 'USD';
-        return actions.order.create({
-            purchase_units: [{ amount: { value: amount.toString(), currency_code: finalCurrency }, description: `${selectedPlan} subscription plan` }],
-            intent: 'CAPTURE',
-        });
+    const createOrder = async () => {
+        const apiBase = `${conf.provider || 'http'}://${conf.backendUrl}`;
+        const response = await axios.post(`${apiBase}/api/paypal/create-order`, { planId: selectedPlan });
+        paymentOrderIdRef.current = response.data.paymentOrderId;
+        return response.data.orderId;
     };
 
-    const onApprove = (data, actions) => actions.order.capture().then((details) => onSuccess(details));
+    const onApprove = (data, actions) => actions.order.capture().then((details) => onSuccess({ ...details, paymentOrderId: paymentOrderIdRef.current }));
     const onErrorHandler = (err) => onError(err);
     const onCancel = (data) => {};
 
@@ -186,23 +186,16 @@ class Checkout extends Component {
                     // Clean URL params without reload
                     const cleanUrl = window.location.origin + window.location.pathname;
                     window.history.replaceState({}, '', cleanUrl);
-
-                    const currentUser = this.getCurrentUser();
-                    const uid = (currentUser && currentUser.uid) || pending.uid;
-                    if (uid) {
-                        const { plan, amount, taxCalc, currency, customerTaxId, orderId } = pending;
-                        addSbs(plan, 'PhonePe', new Date(), amount, uid, {
-                            subtotal: taxCalc.subtotal, taxAmount: taxCalc.taxAmount, taxRate: taxCalc.taxRate,
-                            taxName: taxCalc.taxName, companyTaxId: taxCalc.companyTaxId,
-                            customerTaxId: customerTaxId || '', currency: currency || 'INR',
-                            phonepeOrderId: orderId,
-                        }).then(() => {
-                            this.setState({ step: 3 });
-                            this.showToast('success', 'PhonePe payment verified & subscription activated!');
-                        }).catch((err) => {
-                            this.showToast('error', 'PhonePe callback processing failed: ' + err.message);
-                        });
-                    }
+                    const apiBase = `${conf.provider || 'http'}://${conf.backendUrl}`;
+                    axios.post(`${apiBase}/api/phonepe/status`, { orderId: pending.orderId })
+                        .then((verification) => {
+                            if (!verification.data?.verified || verification.data?.status !== 'ACTIVE') {
+                                throw new Error('PhonePe payment was not activated by the server.');
+                            }
+                            this.setState({ step: 3, serverPaymentStatus: 'ENTITLEMENT_ACTIVE' });
+                            this.showToast('success', 'PhonePe payment verified and subscription activated.');
+                        })
+                        .catch((err) => this.showToast('error', 'PhonePe verification failed: ' + (err.response?.data?.error || err.message)));
                 }
             }
         } catch (e) { /* sessionStorage may be unavailable */ }
@@ -471,31 +464,26 @@ class Checkout extends Component {
 
         const taxCalc = this.getTaxCalculations(basePrice);
 
-        // Verify order on backend
+        // Verification and entitlement activation are server-authoritative.
         try {
             const apiBase = `${conf.provider || 'http'}://${conf.backendUrl}`;
-            await axios.post(`${apiBase}/api/paypal/verify`, {
+            const verification = await axios.post(`${apiBase}/api/paypal/verify`, {
                 orderId: details.id,
-                userId: uid,
-                plan: this.props.selectedPlan,
-                amount: taxCalc.totalPrice,
-                currency: this.props.currencyCode || 'USD',
+                paymentOrderId: details.paymentOrderId,
             });
+            if (!verification.data?.verified || verification.data?.status !== 'ACTIVE') {
+                throw new Error('PayPal payment was not activated by the server.');
+            }
         } catch (verifyErr) {
-            console.warn('[PayPal Verification Notice]:', verifyErr.message);
+            this.showToast('error', verifyErr.response?.data?.error || verifyErr.message || 'PayPal verification failed.');
+            return;
         }
 
         trackSubscription(this.props.selectedPlan, taxCalc.totalPrice);
         trackEvent('subscription_purchase', 'Billing', this.props.selectedPlan, taxCalc.totalPrice);
         trackEngagement('purchase_completed', { plan_type: this.props.selectedPlan, payment_method: 'PayPal', amount: taxCalc.totalPrice, user_id: uid });
 
-        await addSbs(this.props.selectedPlan, 'PayPal', new Date(), taxCalc.totalPrice, uid, {
-            subtotal: taxCalc.subtotal, taxAmount: taxCalc.taxAmount, taxRate: taxCalc.taxRate,
-            taxName: taxCalc.taxName, companyTaxId: taxCalc.companyTaxId,
-            customerTaxId: this.state.customerTaxId || '', currency: this.props.currencyCode || 'USD',
-            paypalOrderId: details.id,
-        });
-        this.setState({ step: 3 });
+        this.setState({ step: 3, serverPaymentStatus: 'ENTITLEMENT_ACTIVE' });
     };
 
     handlePayPalError = (error) => {
@@ -517,10 +505,7 @@ class Checkout extends Component {
 
             const apiBase = `${conf.provider || 'http'}://${conf.backendUrl}`;
             const orderRes = await axios.post(`${apiBase}/api/razorpay/create-order`, {
-                amount: taxCalc.totalPrice,
-                currency: this.props.currencyCode || 'INR',
-                userId: uid,
-                plan: this.props.selectedPlan,
+                planId: this.props.selectedPlan,
             });
 
             const orderData = orderRes.data;
@@ -540,32 +525,29 @@ class Checkout extends Component {
             }
 
             const options = {
-                key: orderData.key || conf.razorpayKeyID || 'rzp_test_demo',
+                key: orderData.key,
                 amount: orderData.amount,
                 currency: orderData.currency || 'INR',
                 name: conf.brand?.name || 'ResumePilot AI',
                 description: `${this.getPlanLabel()} Subscription`,
-                order_id: orderData.id.startsWith('order_demo_') ? undefined : orderData.id,
+                order_id: orderData.id,
                 handler: async (response) => {
                     try {
-                        if (response.razorpay_signature) {
-                            await axios.post(`${apiBase}/api/razorpay/verify-payment`, {
-                                razorpay_order_id: response.razorpay_order_id,
-                                razorpay_payment_id: response.razorpay_payment_id,
-                                razorpay_signature: response.razorpay_signature,
-                            });
+                        if (!response.razorpay_signature) throw new Error('Missing Razorpay payment signature');
+                        const verification = await axios.post(`${apiBase}/api/razorpay/verify-payment`, {
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature,
+                            paymentOrderId: orderData.paymentOrderId,
+                        });
+                        if (!verification.data?.verified || verification.data?.status !== 'ACTIVE') {
+                            throw new Error('Payment was not activated by the server.');
                         }
                         trackSubscription(this.props.selectedPlan, taxCalc.totalPrice);
                         trackEvent('subscription_purchase', 'Billing', this.props.selectedPlan, taxCalc.totalPrice);
                         trackEngagement('purchase_completed', { plan_type: this.props.selectedPlan, payment_method: 'Razorpay', amount: taxCalc.totalPrice, user_id: uid });
 
-                        await addSbs(this.props.selectedPlan, 'Razorpay', new Date(), taxCalc.totalPrice, uid, {
-                            subtotal: taxCalc.subtotal, taxAmount: taxCalc.taxAmount, taxRate: taxCalc.taxRate,
-                            taxName: taxCalc.taxName, companyTaxId: taxCalc.companyTaxId,
-                            customerTaxId: this.state.customerTaxId || '', currency: this.props.currencyCode || 'INR',
-                            razorpayPaymentId: response.razorpay_payment_id || 'demo_pay_id',
-                        });
-                        this.setState({ step: 3, isLoading: false });
+                        this.setState({ step: 3, serverPaymentStatus: 'ENTITLEMENT_ACTIVE', isLoading: false });
                     } catch (err) {
                         console.error('Razorpay verification error:', err);
                         this.showToast('error', 'Payment verification failed: ' + (err.response?.data?.error || err.message));
@@ -605,33 +587,11 @@ class Checkout extends Component {
                 : this.props.yearly;
             const taxCalc = this.getTaxCalculations(basePrice);
             const apiBase = `${conf.provider || 'http'}://${conf.backendUrl}`;
-            const orderId = `PAYTM_${uid.slice(0, 8)}_${Date.now()}`;
-
             const txnRes = await axios.post(`${apiBase}/api/paytm/initiate-transaction`, {
-                amount: taxCalc.totalPrice,
-                orderId,
-                userId: uid,
-                plan: this.props.selectedPlan,
-                currency: this.props.currencyCode || 'INR',
+                planId: this.props.selectedPlan,
             });
 
             const txnData = txnRes.data;
-
-            if (txnData.demoMode) {
-                // Demo mode — simulate success after a brief delay
-                await new Promise(r => setTimeout(r, 1500));
-                trackSubscription(this.props.selectedPlan, taxCalc.totalPrice);
-                trackEvent('subscription_purchase', 'Billing', this.props.selectedPlan, taxCalc.totalPrice);
-                trackEngagement('purchase_completed', { plan_type: this.props.selectedPlan, payment_method: 'Paytm (Demo)', amount: taxCalc.totalPrice, user_id: uid });
-                await addSbs(this.props.selectedPlan, 'Paytm', new Date(), taxCalc.totalPrice, uid, {
-                    subtotal: taxCalc.subtotal, taxAmount: taxCalc.taxAmount, taxRate: taxCalc.taxRate,
-                    taxName: taxCalc.taxName, companyTaxId: taxCalc.companyTaxId,
-                    customerTaxId: this.state.customerTaxId || '', currency: this.props.currencyCode || 'INR',
-                    paytmOrderId: orderId, paytmTxnId: txnData.txnToken, demoMode: true,
-                });
-                this.setState({ step: 3, isLoading: false });
-                return;
-            }
 
             if (!txnData.success || !txnData.txnToken) {
                 throw new Error(txnData.error || 'Paytm transaction initiation failed');
@@ -666,20 +626,16 @@ class Checkout extends Component {
                     },
                     transactionStatus: async (data) => {
                         try {
-                            await axios.post(`${apiBase}/api/paytm/verify-transaction`, {
+                            const verification = await axios.post(`${apiBase}/api/paytm/verify-transaction`, {
                                 orderId: txnData.orderId,
-                                txnId: data.TXNID,
                             });
+                            if (!verification.data?.verified || verification.data?.status !== 'ACTIVE') {
+                                throw new Error('Paytm payment was not activated by the server.');
+                            }
                             trackSubscription(this.props.selectedPlan, taxCalc.totalPrice);
                             trackEvent('subscription_purchase', 'Billing', this.props.selectedPlan, taxCalc.totalPrice);
                             trackEngagement('purchase_completed', { plan_type: this.props.selectedPlan, payment_method: 'Paytm', amount: taxCalc.totalPrice, user_id: uid });
-                            await addSbs(this.props.selectedPlan, 'Paytm', new Date(), taxCalc.totalPrice, uid, {
-                                subtotal: taxCalc.subtotal, taxAmount: taxCalc.taxAmount, taxRate: taxCalc.taxRate,
-                                taxName: taxCalc.taxName, companyTaxId: taxCalc.companyTaxId,
-                                customerTaxId: this.state.customerTaxId || '', currency: this.props.currencyCode || 'INR',
-                                paytmOrderId: txnData.orderId, paytmTxnId: data.TXNID,
-                            });
-                            this.setState({ step: 3, isLoading: false });
+                            this.setState({ step: 3, serverPaymentStatus: 'ENTITLEMENT_ACTIVE', isLoading: false });
                         } catch (err) {
                             this.showToast('error', 'Paytm payment verification failed: ' + err.message);
                             this.setState({ isLoading: false });
@@ -714,34 +670,11 @@ class Checkout extends Component {
                 : this.props.yearly;
             const taxCalc = this.getTaxCalculations(basePrice);
             const apiBase = `${conf.provider || 'http'}://${conf.backendUrl}`;
-            const orderId = `PP_${uid.slice(0, 8)}_${Date.now()}`;
-
             const ppRes = await axios.post(`${apiBase}/api/phonepe/initiate`, {
-                amount: taxCalc.totalPrice,
-                orderId,
-                userId: uid,
-                plan: this.props.selectedPlan,
-                currency: this.props.currencyCode || 'INR',
-                redirectUrl: `${window.location.origin}/billing/plans?phonepe_callback=1&order=${orderId}`,
+                planId: this.props.selectedPlan,
             });
 
             const ppData = ppRes.data;
-
-            if (ppData.demoMode) {
-                // Demo mode — simulate success flow
-                await new Promise(r => setTimeout(r, 1500));
-                trackSubscription(this.props.selectedPlan, taxCalc.totalPrice);
-                trackEvent('subscription_purchase', 'Billing', this.props.selectedPlan, taxCalc.totalPrice);
-                trackEngagement('purchase_completed', { plan_type: this.props.selectedPlan, payment_method: 'PhonePe (Demo)', amount: taxCalc.totalPrice, user_id: uid });
-                await addSbs(this.props.selectedPlan, 'PhonePe', new Date(), taxCalc.totalPrice, uid, {
-                    subtotal: taxCalc.subtotal, taxAmount: taxCalc.taxAmount, taxRate: taxCalc.taxRate,
-                    taxName: taxCalc.taxName, companyTaxId: taxCalc.companyTaxId,
-                    customerTaxId: this.state.customerTaxId || '', currency: this.props.currencyCode || 'INR',
-                    phonepeOrderId: orderId, demoMode: true,
-                });
-                this.setState({ step: 3, isLoading: false });
-                return;
-            }
 
             if (!ppData.success || !ppData.redirectUrl) {
                 throw new Error(ppData.error || 'PhonePe payment initiation failed');
@@ -750,7 +683,7 @@ class Checkout extends Component {
             // Store pending order context in sessionStorage for callback handling
             try {
                 sessionStorage.setItem('phonepe_pending', JSON.stringify({
-                    orderId, uid, plan: this.props.selectedPlan, amount: taxCalc.totalPrice,
+                    orderId: ppData.orderId, plan: this.props.selectedPlan, amount: taxCalc.totalPrice,
                     taxCalc: { subtotal: taxCalc.subtotal, taxAmount: taxCalc.taxAmount, taxRate: taxCalc.taxRate,
                         taxName: taxCalc.taxName, companyTaxId: taxCalc.companyTaxId },
                     currency: this.props.currencyCode || 'INR',

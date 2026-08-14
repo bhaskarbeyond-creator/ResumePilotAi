@@ -83,8 +83,7 @@ const AuthWrapper = () => {
         const reset = params.get('reset');
         const email = params.get('email');
         const token = params.get('token');
-        const oauthSession = params.get('oauth_session');
-        const provider = params.get('provider');
+        const oauthCode = params.get('oauth_code');
 
         if (mode === 'verifyEmail' && token && email) {
             console.log('[AuthWrapper] Verifying email token for:', email);
@@ -114,26 +113,21 @@ const AuthWrapper = () => {
             setDirectResetEmail(email);
         }
 
-        // ── STEP 1: Hydrate OAuth session from URL SYNCHRONOUSLY before onAuthStateChanged ─
-        // LinkedIn / GitHub server-side OAuth redirects pass a base64url session payload in the
-        // URL. Writing it to localStorage HERE — synchronously before the subscription below —
-        // guarantees onAuthStateChanged always finds the mock-user session on its very first
-        // tick, eliminating the null → user flicker race condition.
-        if (oauthSession) {
-            try {
-                const decoded = JSON.parse(atob(oauthSession.replace(/-/g, '+').replace(/_/g, '/')));
-                if (decoded && decoded.uid && decoded.email) {
-                    const sessionKey = `${provider || 'oauth'}_user_session`;
-                    localStorage.setItem(sessionKey, JSON.stringify(decoded));
-                    // Generic key read by onAuthStateChanged fallback below
-                    localStorage.setItem('oauth_user_session', JSON.stringify(decoded));
-                    console.log(`[AuthWrapper] OAuth session stored: provider=${decoded.provider || provider}, uid=${decoded.uid}`);
-                    // Clean URL so payload is not re-processed on page refresh
-                    window.history.replaceState({}, document.title, window.location.pathname);
-                }
-            } catch (decodeErr) {
-                console.error('[AuthWrapper] Failed to decode oauth_session param:', decodeErr);
-            }
+        // Exchange the short-lived, single-use OAuth code for a genuine Firebase session.
+        // Remove it from browser history before any later navigation can leak it via referrers.
+        if (oauthCode && /^[A-Za-z0-9_-]{43}$/.test(oauthCode)) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+            fetch('/api/auth/oauth/exchange', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: oauthCode })
+            })
+                .then(response => response.ok ? response.json() : Promise.reject(new Error('OAuth exchange failed')))
+                .then(({ customToken }) => fire.auth().signInWithCustomToken(customToken))
+                .catch(error => {
+                    console.error('[OAuth exchange]', error.message);
+                    setVerificationBanner({ type: 'error', title: 'Sign-in failed', text: 'The social sign-in link expired. Please try again.' });
+                });
         }
 
         // ── STEP 2: Handle Google/Facebook Firebase Redirect Result ────────────────────────
@@ -167,39 +161,9 @@ const AuthWrapper = () => {
             console.error('[OAuth Redirect Error]:', err);
         });
 
-        // ── STEP 3: Subscribe to auth state (localStorage already hydrated above) ──────────
-        const makeMockFirebaseUser = (rawObj) => {
-            if (!rawObj) return null;
-            return {
-                uid: rawObj.uid || 'user',
-                email: rawObj.email || '',
-                displayName: rawObj.displayName || 'User',
-                photoURL: rawObj.photoURL || '',
-                getIdToken: async () => '',
-                getIdTokenResult: async () => ({ token: '' }),
-                reload: async () => {},
-                ...rawObj
-            };
-        };
-
-        const unsubscribe = fire.auth().onAuthStateChanged((user) => {
-            if (user) {
-                setUser(user);
-            } else {
-                // Check all OAuth mock-user sessions — written before this subscription
-                const fbSession = localStorage.getItem('fb_user_session');
-                const googleSession = localStorage.getItem('google_user_session');
-                const linkedInGitHubSession = localStorage.getItem('oauth_user_session');
-                if (fbSession) {
-                    try { setUser(makeMockFirebaseUser(JSON.parse(fbSession))); } catch (e) { setUser(null); }
-                } else if (googleSession) {
-                    try { setUser(makeMockFirebaseUser(JSON.parse(googleSession))); } catch (e) { setUser(null); }
-                } else if (linkedInGitHubSession) {
-                    try { setUser(makeMockFirebaseUser(JSON.parse(linkedInGitHubSession))); } catch (e) { setUser(null); }
-                } else {
-                    setUser(null);
-                }
-            }
+        // ── STEP 3: Subscribe only to cryptographically verified Firebase sessions. ───────
+        const unsubscribe = fire.auth().onAuthStateChanged((authenticatedUser) => {
+            setUser(authenticatedUser || null);
             setAuthLoading(false);
         });
 

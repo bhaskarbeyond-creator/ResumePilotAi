@@ -1,3 +1,4 @@
+import { sanitizeRichText } from '../../utils/sanitizeHtml';
 import React, { Component } from 'react';
 import './Cv9.scss';
 import { withTranslation } from 'react-i18next';
@@ -36,7 +37,7 @@ class Cv9 extends Component {
                             </span>
                         </div>
                     </div>
-                    <p dangerouslySetInnerHTML={{ __html: this.props.values.employments[index].description }}></p>
+                    <p dangerouslySetInnerHTML={{ __html: sanitizeRichText(this.props.values.employments[index].description) }}></p>
                 </div>
             );
         }
@@ -56,7 +57,7 @@ class Cv9 extends Component {
                             </span>
                         </div>
                     </div>
-                    <p dangerouslySetInnerHTML={{ __html: this.props.values.educations[index].description }}></p>
+                    <p dangerouslySetInnerHTML={{ __html: sanitizeRichText(this.props.values.educations[index].description) }}></p>
                 </div>
             );
         }
@@ -123,7 +124,7 @@ class Cv9 extends Component {
                                 <span style={{ color: primaryColor }}>{t('resume.personalSummary')}</span>
                             </div>
                             <div className="cv-bodySection-right cv9-bodySection-right">
-                                <p dangerouslySetInnerHTML={{ __html: this.props.values.summary }}></p>
+                                <p dangerouslySetInnerHTML={{ __html: sanitizeRichText(this.props.values.summary) }}></p>
                             </div>
                         </div>
                         {/* Body Section */}

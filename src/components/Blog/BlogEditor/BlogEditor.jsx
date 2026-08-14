@@ -26,7 +26,7 @@ import Spinner from '../../Spinner/Spinner';
 import HomepageNavbar from '../../Dashboard2/elements/HomepageNavbar';
 import HomepageFooter from '../../Dashboard2/elements/HomepageFooter';
 import fire from '../../../conf/fire';
-import DOMPurify from 'dompurify';
+import { sanitizeBlogHtml, sanitizePlainText } from '../../../utils/sanitizeHtml';
 import './TiptapEditor.css';
 import { 
     FiSave, 
@@ -465,54 +465,8 @@ const BlogEditor = () => {
         }
     };
 
-    // Comprehensive content sanitization function
-    const sanitizeContent = (htmlContent) => {
-        if (!htmlContent) return '';
-        
-        // Configure DOMPurify with strict settings for blog content
-        const cleanContent = DOMPurify.sanitize(htmlContent, {
-            // Allow only safe HTML tags that are commonly used in blog posts
-            ALLOWED_TAGS: [
-                'p', 'br', 'strong', 'b', 'em', 'i', 'u', 'mark',
-                'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-                'ul', 'ol', 'li',
-                'blockquote', 'code', 'pre',
-                'a', 'img',
-                'table', 'thead', 'tbody', 'tr', 'th', 'td',
-                'div', 'span'
-            ],
-            // Allow only safe attributes
-            ALLOWED_ATTR: [
-                'href', 'title', 'alt', 'src', 'width', 'height',
-                'class', 'style', 'target', 'rel',
-                'data-*' // Allow data attributes for Tiptap functionality
-            ],
-            // Additional security settings
-            ALLOW_DATA_ATTR: false, // Disable data attributes for extra security
-            FORBID_TAGS: ['script', 'object', 'embed', 'form', 'input', 'button'],
-            FORBID_ATTR: ['onclick', 'onload', 'onerror', 'onmouseover'],
-            // Remove any javascript: or data: URLs
-            ALLOWED_URI_REGEXP: /^https?:\/\/|^mailto:|^tel:|^#/i,
-            // Add target="_blank" and rel="noopener noreferrer" to external links for security
-            ADD_ATTR: {
-                'a': {'target': '_blank', 'rel': 'noopener noreferrer'},
-                'img': {'loading': 'lazy'}
-            },
-            // Remove empty elements
-            KEEP_CONTENT: true,
-            // Prevent XSS in CSS styles
-            ALLOW_UNKNOWN_PROTOCOLS: false,
-        });
-        
-        return cleanContent;
-    };
-
-    // Sanitize title and excerpt as well
-    const sanitizeText = (text) => {
-        if (!text) return '';
-        // For plain text fields, strip all HTML and encode special characters
-        return DOMPurify.sanitize(text, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] });
-    };
+    const sanitizeContent = sanitizeBlogHtml;
+    const sanitizeText = sanitizePlainText;
 
     const generateExcerpt = (content) => {
         if (!content) return '';

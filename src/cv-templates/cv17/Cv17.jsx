@@ -1,3 +1,4 @@
+import { sanitizeRichText } from '../../utils/sanitizeHtml';
 import React, { Component } from 'react';
 import './Cv17.scss';
 
@@ -32,7 +33,7 @@ class Cv17 extends Component {
                         <span className="cv17-date">{`${tempEmployments[index].begin} - ${tempEmployments[index].end}`}</span>
                         <h3 className="cv17-title">{tempEmployments[index].jobTitle}</h3>
                         <h4 className="cv17-subtitle">{tempEmployments[index].employer}</h4>
-                        <p className="cv17-description" dangerouslySetInnerHTML={{ __html: tempEmployments[index].description }}></p>
+                        <p className="cv17-description" dangerouslySetInnerHTML={{ __html: sanitizeRichText(tempEmployments[index].description) }}></p>
                     </div>
                 </div>
             );
@@ -54,7 +55,7 @@ class Cv17 extends Component {
                         <span className="cv17-date">{`${tempEducations[index].started} - ${tempEducations[index].finished}`}</span>
                         <h3 className="cv17-title">{tempEducations[index].degree}</h3>
                         <h4 className="cv17-subtitle">{tempEducations[index].school}</h4>
-                        <p className="cv17-description" dangerouslySetInnerHTML={{ __html: tempEducations[index].description }}></p>
+                        <p className="cv17-description" dangerouslySetInnerHTML={{ __html: sanitizeRichText(tempEducations[index].description) }}></p>
                     </div>
                 </div>
             );
@@ -168,7 +169,7 @@ class Cv17 extends Component {
                         <section className="cv17-main-section">
                             <h3 className="cv17-section-title">{t('resume.personalSummary')}</h3>
                             <div className="cv17-summary">
-                                <p dangerouslySetInnerHTML={{ __html: this.props.values.summary }}></p>
+                                <p dangerouslySetInnerHTML={{ __html: sanitizeRichText(this.props.values.summary) }}></p>
                             </div>
                         </section>
 
