@@ -4,7 +4,10 @@
 
 import React, { Component } from 'react';
 import './ResumeCard.scss';
-import {  checkIfInFavourites, removeCover, removeResumeCurrent } from '../../../firestore/dbOperations';
+import { checkIfInFavourites, removeCover } from '../../../firestore/dbOperations';
+import fire from '../../../conf/fire';
+import { deleteResumeDraft, publishResume } from '../../../services/resumePersistence';
+import { normalizeResumeData } from '../../../utils/resumeData';
 import { ReactComponent as ResumeIcon } from '../../../assets/resume.svg';
 import { ReactComponent as BookmarkIcon } from '../../../assets/bookmark.svg';
 import { ReactComponent as CoverIcon } from '../../../assets/CoverIcon.svg';
@@ -37,7 +40,7 @@ class ResumeCard extends Component {
             this.props.showToast('success', 'Added to favourites', 'You have added this resume to your favourites');
         }
 
-        checkIfInFavourites(localStorage.getItem('user'), this.props.document.id)
+        checkIfInFavourites(fire.auth().currentUser?.uid, this.props.document.id)
             .then((res) => {})
             .catch((err) => {
                 console.log(err);
@@ -52,31 +55,29 @@ class ResumeCard extends Component {
         }
     }
 
-    handleShareClick = () => {
-        this.setState({ shareModal: true });
+    handleShareClick = async () => {
+        const userId = fire.auth().currentUser?.uid;
+        if (!userId || this.props.type !== 'resume') return;
+        try {
+            await publishResume(userId, this.props.document.id, normalizeResumeData(this.props.document.item || this.props.document));
+            this.setState({ shareModal: true });
+        } catch (error) {
+            this.props.showToast?.('error', 'Sharing failed', 'Resume could not be published.');
+        }
     };
 
     handleShareModalClose = () => {
         this.setState({ shareModal: false });
     };
 
-    setAsCurrentResume(resumeId, data) {
-        console.log(data);
-        localStorage.removeItem('currentResumeId');
-        localStorage.removeItem('currentResumeDara');
+    setAsCurrentResume(resumeId) {
         localStorage.setItem('currentResumeId', resumeId);
-        localStorage.setItem('currentResumeItem', JSON.stringify(data));
-        localStorage.setItem('currentCoverId', resumeId);
-
-        console.log('Data of resumes');
-        var resumeData = JSON.parse(localStorage.getItem('currentResumeItem'));
-        console.log(resumeData.firstname);
-        // redirect to resume builder
+        localStorage.removeItem('currentResumeItem');
         window.location.href = '/build-resume/heading';
     }
     // function that handle remove click of resume
     handleResumeRemoveClick = async (id) => {
-        let res = await removeResumeCurrent(localStorage.getItem('user'), id);
+        let res = await deleteResumeDraft(fire.auth().currentUser?.uid, id);
         if (res) {
             this.props.getAllDocuments();
             this.props.showToast('error', ' Document removed!', 'You have removed this document from your account ');
