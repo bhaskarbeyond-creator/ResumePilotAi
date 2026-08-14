@@ -23,7 +23,7 @@ This document deliberately does **not** certify the application for production. 
 - Route policy enforces verified email, administrative permissions, recent authentication for high-risk operations, and SUPER_ADMIN-only role/credential changes.
 - Former aliases such as `/api/auth/purge-orphaned-auth`, email logs/templates/resend, generic SMS, diagnostics, and test routes are covered by policy.
 - Email/hostname/UID-pattern client admin backdoors and public first-admin initialization were removed. Roles come only from Firebase custom claims; ADMIN cannot grant roles or rotate Firebase credentials.
-- User role, suspension, and complimentary entitlement administration crosses an audited server endpoint; Firebase Auth accounts are disabled/revoked transactionally with server-owned profile state.
+- User role, employer approval, suspension, and complimentary entitlement administration crosses audited server endpoints; Firebase claims/tokens and server-owned profile state are updated together. Employer applicants cannot self-approve.
 - CORS is exact-origin based; wildcard project subdomains are no longer trusted.
 - Request sizes, request IDs, structured errors, global IP limits, per-account notification/AI/export/scraper limits, and bounded PDF concurrency are implemented.
 - Contact submissions cross a server-only moderation boundary with validation, honeypot handling, and per-source throttling; direct Firestore contact writes are denied.
@@ -82,7 +82,7 @@ This document deliberately does **not** certify the application for production. 
 - `npm run test:security`: PASS (XSS/static security tests plus backend unit/integration tests).
 - `npm --prefix backend test`: PASS (21 tests at the time of this report).
 - `npm run build`: PASS.
-- `npm run lint`: PASS with **0 errors and 546 legacy warnings**; warnings remain technical debt.
+- `npm run lint`: PASS with **0 errors and 543 legacy warnings**; warnings remain technical debt.
 - `npm run audit:production`: PASS.
 - Frontend production audit: Critical 0, High 0, Moderate 0 (migrated deprecated `@measured/puck` to `@puckeditor/core`).
 - Backend production audit: Critical 0, High 0, Moderate 0 (Firebase transitive UUID advisory constrained to patched `uuid` 11.1.1 and backend tests pass).
@@ -106,7 +106,7 @@ This document deliberately does **not** certify the application for production. 
 
 ## Known remaining risks / not yet complete
 
-- 546 lint warnings remain; many are unused legacy code and hook dependency warnings. Lint has no errors, but warnings should be burned down rather than hidden indefinitely.
+- 543 lint warnings remain; many are unused legacy code and hook dependency warnings. Lint has no errors, but warnings should be burned down rather than hidden indefinitely.
 - Frontend bundles remain very large; this is primarily performance/availability debt.
 - Production dependency audits are currently clean, but forced transitive overrides and upstream Firebase/Google releases require continuous compatibility and advisory monitoring.
 - The PDF renderer uses Chromium `--no-sandbox` for container compatibility. Egress is blocked at the browser context and HTML is sanitized, but production should run the renderer in a dedicated locked-down sandboxed worker/container.

@@ -35,7 +35,7 @@ service cloud.firestore {
       allow update: if owner(uid) && changedOnly([
         'firstname','lastname','displayName','photoURL','profile','preferences','lastLoginAt','authProvider'
       ]);
-      allow delete: if owner(uid) || admin();
+      allow delete: if false;
 
       match /resumes/{resumeId} { allow read, create, update, delete: if owner(uid); }
       match /covers/{coverId} { allow read, create, update, delete: if owner(uid); }
@@ -58,6 +58,18 @@ service cloud.firestore {
         && changedOnly(['views'])
         && request.resource.data.views == resource.data.views + 1;
       allow delete: if admin() || (signedIn() && resource.data.userId == request.auth.uid);
+    }
+
+    match /employerApplications/{uid} {
+      allow create: if owner(uid)
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'pending';
+      allow read: if owner(uid) || admin();
+      allow update: if owner(uid)
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.status == 'pending';
+      allow delete: if admin();
     }
 
     match /companies/{id} {

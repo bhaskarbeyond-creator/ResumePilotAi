@@ -44,7 +44,12 @@ test('admin aliases and mail logs reject an ordinary authenticated user', async 
 });
 
 test('stale admin sessions cannot perform refunds or user administration', async () => {
-  for (const [method, route] of [['post', '/api/admin/payments/refund'], ['patch', '/api/admin/users/victim']]) {
+  for (const [method, route] of [
+    ['post', '/api/admin/payments/refund'],
+    ['patch', '/api/admin/users/victim'],
+    ['patch', '/api/admin/employer-applications/victim'],
+    ['post', '/api/account/delete']
+  ]) {
     const response = await request(app)[method](route).set(bearer('stale-admin')).send({ paymentOrderId: 'order', suspended: true });
     assert.equal(response.status, 403, route);
     assert.equal(response.body.error.code, 'RECENT_AUTH_REQUIRED', route);

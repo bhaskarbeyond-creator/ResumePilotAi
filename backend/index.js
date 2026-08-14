@@ -2261,6 +2261,47 @@ app.post('/api/admin/payments/refund', async (req, res) => {
     }
 });
 
+app.patch('/api/admin/employer-applications/:uid', async (req, res) => {
+    const uid = String(req.params.uid || '');
+    const status = String(req.body.status || '').toLowerCase();
+    const reason = String(req.body.reason || '').trim().slice(0, 500);
+    if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid) || !['approved', 'rejected', 'active'].includes(status)
+        || !db || !admin?.auth) {
+        return res.status(400).json({ success: false, error: 'Valid application, user, and status are required.' });
+    }
+    if (uid === req.user.uid) return res.status(400).json({ success: false, error: 'Administrators cannot review their own employer application.' });
+    try {
+        const applicationRef = db.collection('employerApplications').doc(uid);
+        const [application, target] = await Promise.all([applicationRef.get(), admin.auth().getUser(uid)]);
+        if (!application.exists || application.data().userId !== uid) return res.status(404).json({ success: false, error: 'Employer application not found.' });
+        const enabled = status === 'approved' || status === 'active';
+        await admin.auth().setCustomUserClaims(uid, { ...(target.customClaims || {}), employer: enabled });
+        await admin.auth().revokeRefreshTokens(uid);
+        const batch = db.batch();
+        batch.set(db.collection('users').doc(uid), {
+            isEmployer: enabled,
+            employerApplicationStatus: status,
+            employerStatusUpdatedAt: admin.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+        batch.set(applicationRef, {
+            status,
+            ...(reason ? { rejectionReason: reason } : {}),
+            reviewedBy: req.user.uid,
+            reviewedAt: admin.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+        batch.set(db.collection('security_audit_logs').doc(), {
+            action: 'EMPLOYER_APPLICATION_REVIEWED', actorUid: req.user.uid, targetUid: uid,
+            status, reason, requestId: res.locals.requestId,
+            createdAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+        await batch.commit();
+        return res.json({ success: true, status, employer: enabled });
+    } catch (error) {
+        console.error('[Employer review]', error.message);
+        return res.status(error.code === 'auth/user-not-found' ? 404 : 500).json({ success: false, error: 'Unable to review employer application.' });
+    }
+});
+
 // Audited server-authoritative user administration. Firestore rules never permit these
 // identity/entitlement fields to be changed directly by a browser.
 app.patch('/api/admin/users/:uid', async (req, res) => {
@@ -2326,72 +2367,85 @@ app.patch('/api/admin/users/:uid', async (req, res) => {
     }
 });
 
-// Admin Delete User Endpoint (Deletes from Firebase Auth & Firestore)
-app.post(['/api/admin/delete-user', '/api/auth/purge-orphaned-auth'], async (req, res) => {
-    const { uid, email } = req.body;
-    if (!uid && !email) {
-        return res.status(400).json({ success: false, error: 'User UID or email address is required.' });
-    }
-
-    const normEmail = email ? email.toLowerCase().trim() : null;
-    const db = req.app.get('db');
-
+app.post('/api/account/delete', async (req, res) => {
+    if (!db || !admin?.auth) return res.status(503).json({ success: false, error: 'Account deletion service unavailable.' });
+    const uid = req.user.uid;
     try {
-        let targetUid = uid;
-        let deletedFromAuth = false;
-
-        // Step 1: Purge from Firebase Auth via Firebase Admin SDK
-        if (admin && typeof admin.auth === 'function' && admin.apps && admin.apps.length) {
-            try {
-                if (targetUid) {
-                    await admin.auth().deleteUser(targetUid);
-                    deletedFromAuth = true;
-                    console.log(`[Admin Delete User] ✅ Deleted UID ${targetUid} from Firebase Auth`);
-                } else if (normEmail) {
-                    try {
-                        const userRecord = await admin.auth().getUserByEmail(normEmail);
-                        targetUid = userRecord.uid;
-                        await admin.auth().deleteUser(targetUid);
-                        deletedFromAuth = true;
-                        console.log(`[Admin Delete User] ✅ Deleted user ${normEmail} (uid: ${targetUid}) from Firebase Auth`);
-                    } catch (findErr) {
-                        if (findErr.code === 'auth/user-not-found') {
-                            console.log(`[Admin Delete User] Email ${normEmail} not found in Firebase Auth.`);
-                        } else {
-                            throw findErr;
-                        }
-                    }
-                }
-            } catch (authErr) {
-                console.warn('[Admin Delete User Auth notice]:', authErr.message);
-            }
+        await db.recursiveDelete(db.collection('users').doc(uid));
+        for (const query of [
+            db.collection('portfolios').where('userId', '==', uid),
+            db.collection('pb').where('ownerUid', '==', uid),
+            db.collection('jobApplications').where('userId', '==', uid)
+        ]) {
+            const snapshot = await query.get();
+            for (const item of snapshot.docs) await db.recursiveDelete(item.ref);
         }
-
-        // Step 2: Purge associated Firestore documents
-        if (db) {
-            try {
-                if (targetUid) {
-                    await db.collection('users').doc(targetUid).delete().catch(() => {});
-                }
-                if (normEmail) {
-                    const q = await db.collection('users').where('email', '==', normEmail).get();
-                    for (const doc of q.docs) {
-                        await db.collection('users').doc(doc.id).delete().catch(() => {});
-                    }
-                }
-            } catch (dbErr) {
-                console.warn('[Admin Delete User Firestore notice]:', dbErr.message);
-            }
-        }
-
-        return res.json({
-            success: true,
-            deletedFromAuth,
-            message: `User ${uid || email} permanently deleted from Firebase Auth and Firestore.`
+        await db.recursiveDelete(db.collection('employerApplications').doc(uid)).catch(() => {});
+        await db.recursiveDelete(db.collection('notifications').doc(uid)).catch(() => {});
+        await admin.auth().deleteUser(uid);
+        await db.collection('security_audit_logs').add({
+            action: 'ACCOUNT_SELF_DELETED', targetUid: uid,
+            requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp()
         });
-    } catch (err) {
-        console.error('[Admin Delete User Error]:', err);
-        return res.status(500).json({ success: false, error: err.message });
+        return res.json({ success: true, message: 'Account and owned application data deleted.' });
+    } catch (error) {
+        console.error('[Account self-delete]', error.message);
+        return res.status(500).json({ success: false, error: 'Unable to delete account.' });
+    }
+});
+
+// Administrative deletion is explicit, recently authenticated, and recursive.
+app.post(['/api/admin/delete-user', '/api/auth/purge-orphaned-auth'], async (req, res) => {
+    const requestedUid = String(req.body.uid || '');
+    const requestedEmail = String(req.body.email || '').trim().toLowerCase();
+    if ((!requestedUid && !requestedEmail) || !db || !admin?.auth) {
+        return res.status(400).json({ success: false, error: 'User UID or email is required.' });
+    }
+    try {
+        let target = null;
+        try {
+            target = requestedUid ? await admin.auth().getUser(requestedUid) : await admin.auth().getUserByEmail(requestedEmail);
+        } catch (error) {
+            if (error.code !== 'auth/user-not-found' || !requestedUid) throw error;
+        }
+        const targetUid = target?.uid || requestedUid;
+        if (!/^[A-Za-z0-9:_-]{1,128}$/.test(targetUid)) return res.status(400).json({ success: false, error: 'Invalid user UID.' });
+        if (targetUid === req.user.uid) return res.status(400).json({ success: false, error: 'Self-deletion through the admin endpoint is prohibited.' });
+        if (target && requestedEmail && String(target.email || '').toLowerCase() !== requestedEmail) {
+            return res.status(400).json({ success: false, error: 'UID/email identity mismatch.' });
+        }
+        const targetRole = String(target?.customClaims?.role || '').toUpperCase();
+        if (targetRole === 'SUPER_ADMIN' && !permissionsFor(req.user).has('*')) {
+            return res.status(403).json({ success: false, error: 'Only SUPER_ADMIN can delete another SUPER_ADMIN.' });
+        }
+        if (target) await admin.auth().deleteUser(targetUid);
+
+        await db.recursiveDelete(db.collection('users').doc(targetUid));
+        const relatedQueries = [
+            db.collection('portfolios').where('userId', '==', targetUid),
+            db.collection('pb').where('ownerUid', '==', targetUid),
+            db.collection('jobApplications').where('userId', '==', targetUid)
+        ];
+        for (const query of relatedQueries) {
+            try {
+                if (typeof query.get === 'function') {
+                    const snapshot = await query.get();
+                    for (const item of snapshot.docs) await db.recursiveDelete(item.ref);
+                }
+            } catch (error) {
+                console.warn('[User deletion related data]', error.message);
+            }
+        }
+        await db.recursiveDelete(db.collection('employerApplications').doc(targetUid)).catch(() => {});
+        await db.recursiveDelete(db.collection('notifications').doc(targetUid)).catch(() => {});
+        await db.collection('security_audit_logs').add({
+            action: 'USER_DELETED', actorUid: req.user.uid, targetUid,
+            requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+        return res.json({ success: true, deletedFromAuth: Boolean(target), message: 'User identity and owned data deleted.' });
+    } catch (error) {
+        console.error('[Admin delete user]', error.message);
+        return res.status(error.code === 'auth/user-not-found' ? 404 : 500).json({ success: false, error: 'Unable to delete user.' });
     }
 });
 

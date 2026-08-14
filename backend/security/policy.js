@@ -28,7 +28,7 @@ const ADMIN_EXACT = new Set([
 const VERIFIED_PREFIXES = [
   '/generate-', '/check-grammar', '/ai/', '/pay', '/paypal/', '/razorpay/',
   '/paytm/', '/phonepe/', '/export', '/invoice', '/send-invoice-email',
-  '/linkedin-scraper', '/subscription/', '/notify/'
+  '/linkedin-scraper', '/subscription/', '/account/', '/notify/'
 ];
 
 const RECENT_AUTH_PATHS = new Set([
@@ -58,7 +58,9 @@ function enforceApiPolicy(req, res, next) {
     ? 'users.roles.manage'
     : (pathname === '/admin/firebase-service-account'
       ? 'secrets.manage'
-      : (pathname.startsWith('/admin/payments/') ? 'payments.manage' : null));
+      : (pathname.startsWith('/admin/payments/')
+        ? 'payments.manage'
+        : (pathname.startsWith('/admin/employer-applications/') ? 'users.update' : null)));
   if (elevatedPermission && !hasPermission(req, elevatedPermission)) {
     return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Insufficient permission', requestId: res.locals.requestId } });
   }
@@ -68,8 +70,9 @@ function enforceApiPolicy(req, res, next) {
   if (requiresVerifiedEmail(pathname) && !req.user?.emailVerified) {
     return res.status(403).json({ error: { code: 'EMAIL_VERIFICATION_REQUIRED', message: 'A verified email address is required', requestId: res.locals.requestId } });
   }
-  if (RECENT_AUTH_PATHS.has(pathname)
+  if (RECENT_AUTH_PATHS.has(pathname) || pathname === '/account/delete'
       || pathname.startsWith('/admin/users/') || pathname.startsWith('/admin/payments/')
+      || pathname.startsWith('/admin/employer-applications/')
       || ['/admin/ai-settings', '/admin/save-smtp', '/admin/test-connection'].includes(pathname)) {
     const authTime = Number(req.user?.claims?.auth_time || 0) * 1000;
     const maxAgeMs = Number(process.env.SENSITIVE_AUTH_MAX_AGE_MS || 10 * 60 * 1000);

@@ -46,6 +46,8 @@ test('users are isolated and server-owned entitlement fields cannot be changed',
   await assertFails(updateDoc(doc(alice(), 'users/alice'), { membership: 'Premium' }));
   await assertFails(updateDoc(doc(alice(), 'users/alice'), { role: 'SUPER_ADMIN' }));
   await assertSucceeds(getDoc(doc(admin(), 'users/alice')));
+  await assertFails(deleteDoc(doc(alice(), 'users/alice')));
+  await assertFails(deleteDoc(doc(admin(), 'users/alice')));
 });
 
 test('new users must bind UID and verified token email and cannot self-assign premium', async () => {
@@ -70,6 +72,16 @@ test('portfolio ownership cannot be transferred and public viewers cannot edit c
   await assertFails(updateDoc(doc(alice(), 'portfolios/portfolio-1'), { userId: 'bob' }));
   await assertSucceeds(updateDoc(doc(anonymous(), 'portfolios/portfolio-1'), { views: 1 }));
   await assertFails(updateDoc(doc(anonymous(), 'portfolios/portfolio-1'), { views: 2, title: 'Injected' }));
+});
+
+test('employer applications are owner-bound and cannot self-approve', async () => {
+  await assertSucceeds(setDoc(doc(alice(), 'employerApplications/alice'), {
+    userId: 'alice', status: 'pending', contactEmail: 'alice@example.com', reasonForJoining: 'Hiring'
+  }));
+  await assertFails(getDoc(doc(bob(), 'employerApplications/alice')));
+  await assertSucceeds(getDoc(doc(admin(), 'employerApplications/alice')));
+  await assertFails(updateDoc(doc(alice(), 'employerApplications/alice'), { status: 'approved' }));
+  await assertFails(setDoc(doc(alice(), 'employerApplications/bob'), { userId: 'bob', status: 'pending' }));
 });
 
 test('jobs expose active listings only and employer edits cannot self-approve', async () => {

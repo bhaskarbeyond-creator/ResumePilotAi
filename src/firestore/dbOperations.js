@@ -622,153 +622,13 @@ export async function makeUserAdminByEmail(email) {
     }
 }
 
-// Save backup snapshot before account deletion (for both merges & manual admin deletions)
-async function saveUserBackup(deletedUserId, keeperUserId, deletedUserData, actionType = 'merged') {
-    const db = fire.firestore();
-    try {
-        await db.collection('merged_user_backups').doc(deletedUserId).set({
-            backupId: deletedUserId,
-            originalUserId: deletedUserId,
-            mergedIntoUserId: keeperUserId || null,
-            email: deletedUserData.email || '',
-            firstname: deletedUserData.firstname || '',
-            lastname: deletedUserData.lastname || '',
-            membership: deletedUserData.membership || 'Basic',
-            userData: deletedUserData,
-            mergedAt: firebase.firestore.FieldValue.serverTimestamp(),
-            mergedBy: fire.auth().currentUser?.email || 'Admin',
-            status: actionType, // 'merged' or 'deleted'
-        });
-        console.log(`📦 Saved user backup snapshot for ${deletedUserId} (${actionType})`);
-    } catch (e) {
-        console.warn('⚠️ Could not save user backup:', e.message);
-    }
-}
-
-// Merge duplicate user accounts (same email, different UIDs).
-// Keeps the "primary" account (with better membership) and creates a backup of the deleted account.
-export async function mergeUserAccounts(keepUserId, deleteUserId) {
-    const db = fire.firestore();
-    try {
-        const keepRef = db.collection('users').doc(keepUserId);
-        const deleteRef = db.collection('users').doc(deleteUserId);
-        const [keepSnap, deleteSnap] = await Promise.all([keepRef.get(), deleteRef.get()]);
-
-        if (!keepSnap.exists || !deleteSnap.exists) {
-            return { success: false, error: 'One or both user documents do not exist.' };
-        }
-
-        const keepData = keepSnap.data();
-        const deleteData = deleteSnap.data();
-
-        // Save backup of duplicate account BEFORE deletion for safe restore
-        await saveUserBackup(deleteUserId, keepUserId, deleteData, 'merged');
-
-        // Merge strategy: take the "best" value from either account
-        const mergedUpdate = {};
-
-        // Admin status: if either account is admin, keep admin
-        if (deleteData.isA && !keepData.isA) {
-            mergedUpdate.isA = true;
-        }
-
-        // Membership: Premium wins over Basic
-        const tierRank = (m) => (m && m.toLowerCase().includes('premium') ? 2 : 1);
-        if (tierRank(deleteData.membership) > tierRank(keepData.membership)) {
-            mergedUpdate.membership = deleteData.membership;
-        }
-
-        // Membership expiry: keep the later date
-        const keepExpiry = keepData.membershipEnds?.toDate ? keepData.membershipEnds.toDate() : (keepData.membershipEnds ? new Date(keepData.membershipEnds) : null);
-        const deleteExpiry = deleteData.membershipEnds?.toDate ? deleteData.membershipEnds.toDate() : (deleteData.membershipEnds ? new Date(deleteData.membershipEnds) : null);
-        if (deleteExpiry && (!keepExpiry || deleteExpiry > keepExpiry)) {
-            mergedUpdate.membershipEnds = deleteData.membershipEnds;
-        }
-
-        // Merge profile data (keep existing, fill gaps)
-        if (deleteData.profile && typeof deleteData.profile === 'object') {
-            mergedUpdate.profile = { ...(deleteData.profile), ...(keepData.profile || {}) };
-        }
-
-        // Fill missing name
-        if (!keepData.firstname && deleteData.firstname) mergedUpdate.firstname = deleteData.firstname;
-        if (!keepData.lastname && deleteData.lastname) mergedUpdate.lastname = deleteData.lastname;
-
-        // Apply merged updates to the keeper account
-        if (Object.keys(mergedUpdate).length > 0) {
-            await keepRef.set(mergedUpdate, { merge: true });
-        }
-
-        // Delete the duplicate account's Firestore doc
-        await deleteRef.delete();
-
-        // Decrement user count
-        try {
-            await db.collection('data').doc('stats').update({
-                numberOfUsers: firebase.firestore.FieldValue.increment(-1),
-            });
-        } catch (e) { /* stats doc may not exist */ }
-
-        console.log(`✅ Merged user ${deleteUserId} into ${keepUserId}`);
-        return { success: true, message: `Accounts merged successfully. Kept UID: ${keepUserId} (Backup saved).` };
-    } catch (error) {
-        console.error('❌ Error merging users:', error);
-        return { success: false, error: error.message };
-    }
+export async function mergeUserAccounts() {
+    return { success: false, error: 'Account merging is disabled until a provider-aware, transactional server workflow is configured.' };
 }
 
 // Bulk merge all duplicate accounts across the system with safe backup snapshots
 export async function bulkMergeDuplicateUsers() {
-    const db = fire.firestore();
-    try {
-        const usersSnap = await db.collection('users').get();
-        if (usersSnap.empty) {
-            return { success: true, count: 0, message: 'No users found.' };
-        }
-
-        // Group users by email
-        const emailMap = {};
-        usersSnap.forEach((doc) => {
-            const data = doc.data();
-            if (data.email && data.email !== 'Not Provided') {
-                const key = data.email.toLowerCase().trim();
-                if (!emailMap[key]) emailMap[key] = [];
-                emailMap[key].push({ id: doc.id, ...data });
-            }
-        });
-
-        const tierRank = (u) => (u.membership === 'Premium' ? 10 : 0) + (u.isA ? 5 : 0);
-        let totalMerged = 0;
-        let duplicateEmailsCount = 0;
-
-        for (const email of Object.keys(emailMap)) {
-            const accounts = emailMap[email];
-            if (accounts.length > 1) {
-                duplicateEmailsCount++;
-                // Sort accounts: best account first
-                accounts.sort((a, b) => tierRank(b) - tierRank(a));
-                const keeper = accounts[0];
-
-                for (let i = 1; i < accounts.length; i++) {
-                    const duplicate = accounts[i];
-                    await mergeUserAccounts(keeper.id, duplicate.id);
-                    totalMerged++;
-                }
-            }
-        }
-
-        return {
-            success: true,
-            totalMerged,
-            duplicateEmailsCount,
-            message: totalMerged > 0
-                ? `Bulk merge completed! Merged ${totalMerged} duplicate account(s) across ${duplicateEmailsCount} email(s). All backups saved.`
-                : 'No duplicate accounts found to merge.'
-        };
-    } catch (error) {
-        console.error('❌ Error during bulk merge:', error);
-        return { success: false, error: error.message };
-    }
+    return { success: false, totalMerged: 0, error: 'Bulk account merging is disabled to prevent identity and entitlement corruption.' };
 }
 
 // Fetch all merged/deleted account backups for safe restore inspection
@@ -794,83 +654,21 @@ export async function getMergedUserBackups() {
 }
 
 // Restore a previously merged/deleted user account from backup
-export async function restoreMergedUserAccount(backupId) {
-    const db = fire.firestore();
-    try {
-        const backupRef = db.collection('merged_user_backups').doc(backupId);
-        const backupSnap = await backupRef.get();
-
-        if (!backupSnap.exists) {
-            return { success: false, error: 'Backup snapshot not found.' };
-        }
-
-        const backupData = backupSnap.data();
-        const userData = backupData.userData || {};
-
-        // Restore user document to 'users' collection
-        await db.collection('users').doc(backupId).set({
-            ...userData,
-            userId: backupId,
-            restoredAt: firebase.firestore.FieldValue.serverTimestamp(),
-        });
-
-        // Delete backup record (or mark as restored)
-        await backupRef.delete();
-
-        // Increment stats user count
-        try {
-            await db.collection('data').doc('stats').update({
-                numberOfUsers: firebase.firestore.FieldValue.increment(1),
-            });
-        } catch (e) { /* stats doc may not exist */ }
-
-        console.log(`↩ Restored user account ${backupId} (${backupData.email})`);
-        return { success: true, message: `Account ${backupData.email} (${backupId.slice(0, 8)}...) restored successfully!` };
-    } catch (error) {
-        console.error('❌ Error restoring user account:', error);
-        return { success: false, error: error.message };
-    }
+export async function restoreMergedUserAccount() {
+    return { success: false, error: 'Identity restore is disabled; use the documented disaster-recovery procedure.' };
 }
 
-// Function to delete user record from Firestore & Firebase Authentication by Admin (with automatic backup for safe restore)
+// Administrative deletion executes atomically on the trusted backend and fails closed.
 export async function deleteUserByAdmin(userId, email = null) {
-    const db = fire.firestore();
     try {
-        const userRef = db.collection('users').doc(userId);
-        const userSnap = await userRef.get();
-        let targetEmail = email;
-        
-        if (userSnap.exists) {
-            const userData = userSnap.data();
-            if (!targetEmail && userData.email) targetEmail = userData.email;
-            // Save full backup snapshot before deletion for safe restore capability
-            await saveUserBackup(userId, null, userData, 'deleted');
-            await userRef.delete();
-        } else {
-            await userRef.delete();
-        }
-
-        // Call backend API to delete user account from Firebase Authentication via Admin SDK
-        try {
-            await fetch('/api/admin/delete-user', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ uid: userId, email: targetEmail })
-            });
-            console.log(`✅ User ${userId} (${targetEmail || 'no-email'}) purged from Firebase Auth.`);
-        } catch (apiErr) {
-            console.warn('⚠️ Delete from Firebase Auth notice:', apiErr.message);
-        }
-
-        try {
-            const statsRef = db.collection('data').doc('stats');
-            await statsRef.update({
-                numberOfUsers: firebase.firestore.FieldValue.increment(-1),
-            });
-        } catch (e) {}
-        return { success: true, message: 'User deleted successfully from Firestore and Firebase Authentication (Backup saved to Backup History).' };
+        const response = await fetch('/api/admin/delete-user', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uid: userId, email })
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.success) throw new Error(result.error || 'Unable to delete user.');
+        return result;
     } catch (error) {
-        console.error('Error deleting user:', error);
         return { success: false, error: error.message };
     }
 }
@@ -1195,16 +993,6 @@ export async function submitEmployerApplication(userId, applicationData) {
         });
 
         console.log('Application document created successfully');
-
-        // Update user document to indicate application submitted
-        const userRef = db.collection('users').doc(userId);
-        await userRef.update({
-            employerApplicationStatus: 'pending',
-            employerApplicationSubmittedAt: new Date(),
-        });
-
-        console.log('User document updated successfully');
-
         return { success: true };
     } catch (error) {
         console.error('Error submitting employer application:', error);
@@ -1248,77 +1036,30 @@ export async function getAllEmployerApplications() {
     }
 }
 
-// Approve employer application (admin function)
+async function reviewEmployerApplication(userId, status, reason = '') {
+    try {
+        const response = await fetch(`/api/admin/employer-applications/${encodeURIComponent(userId)}`, {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status, reason })
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || 'Unable to review employer application.');
+        return result;
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
 export async function approveEmployerApplication(userId) {
-    const db = fire.firestore();
-    try {
-        // Update user to be an employer
-        await db.collection('users').doc(userId).update({
-            isEmployer: true,
-            employerApplicationStatus: 'approved',
-            employerApprovedAt: new Date(),
-        });
-
-        // Update application status
-        await db.collection('employerApplications').doc(userId).update({
-            status: 'approved',
-            approvedAt: new Date(),
-        });
-
-        return { success: true };
-    } catch (error) {
-        console.error('Error approving employer application:', error);
-        return { success: false, error: error.message };
-    }
+    return reviewEmployerApplication(userId, 'approved');
 }
 
-// Reject employer application (admin function) - can reject even after approval
 export async function rejectEmployerApplication(userId, reason = '') {
-    const db = fire.firestore();
-    try {
-        // Update user application status and remove employer privileges if they were approved
-        await db.collection('users').doc(userId).update({
-            isEmployer: false, // Remove employer privileges
-            employerApplicationStatus: 'rejected',
-            employerRejectedAt: new Date(),
-        });
-
-        // Update application status
-        await db.collection('employerApplications').doc(userId).update({
-            status: 'rejected',
-            rejectedAt: new Date(),
-            rejectionReason: reason,
-        });
-
-        return { success: true };
-    } catch (error) {
-        console.error('Error rejecting employer application:', error);
-        return { success: false, error: error.message };
-    }
+    return reviewEmployerApplication(userId, 'rejected', reason);
 }
 
-// Reactivate employer application (admin function)
 export async function reactivateEmployerApplication(userId) {
-    const db = fire.firestore();
-    try {
-        // Update user to regain employer privileges
-        await db.collection('users').doc(userId).update({
-            isEmployer: true,
-            employerApplicationStatus: 'active',
-            employerReactivatedAt: new Date(),
-        });
-
-        // Update application status
-        await db.collection('employerApplications').doc(userId).update({
-            status: 'active',
-            reactivatedAt: new Date(),
-        });
-
-        return { success: true };
-    } catch (error) {
-        console.error('Error reactivating employer application:', error);
-        return { success: false, error: error.message };
-    }
+    return reviewEmployerApplication(userId, 'active');
 }
 
 // ==================== COMPANY MANAGEMENT FUNCTIONS ====================
@@ -2896,48 +2637,14 @@ export async function updateUserEmail(currentPassword, newEmail) {
 export async function deleteUserAccountPermanently(currentPassword) {
     const user = fire.auth().currentUser;
     if (!user) throw new Error("No authenticated user logged in");
-
-    if (currentPassword && user.email) {
+    const token = await user.getIdTokenResult();
+    if (!['linkedin', 'github'].includes(token.claims.signInProvider)) {
         await reauthenticateUser(currentPassword);
     }
-
-    const uid = user.uid;
-    const db = fire.firestore();
-
-    try {
-        const resumesSnap = await db.collection('users').doc(uid).collection('resumes').get();
-        const batch = db.batch();
-        resumesSnap.forEach((doc) => batch.delete(doc.ref));
-        await batch.commit();
-    } catch (e) {
-        console.warn('Error purging user resumes:', e);
-    }
-
-    try {
-        const coverSnap = await db.collection('users').doc(uid).collection('coverLetters').get();
-        const batch = db.batch();
-        coverSnap.forEach((doc) => batch.delete(doc.ref));
-        await batch.commit();
-    } catch (e) {
-        console.warn('Error purging user cover letters:', e);
-    }
-
-    try {
-        const portSnap = await db.collection('portfolios').where('userId', '==', uid).get();
-        const batch = db.batch();
-        portSnap.forEach((doc) => batch.delete(doc.ref));
-        await batch.commit();
-    } catch (e) {
-        console.warn('Error purging user portfolios:', e);
-    }
-
-    try {
-        await db.collection('users').doc(uid).delete();
-    } catch (e) {
-        console.warn('Error purging user profile doc:', e);
-    }
-
-    await user.delete();
+    const response = await fetch('/api/account/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.success) throw new Error(result.error || 'Unable to delete account.');
+    await fire.auth().signOut().catch(() => {});
     return true;
 }
 

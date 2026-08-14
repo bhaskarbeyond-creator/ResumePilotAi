@@ -2521,18 +2521,14 @@ function DashboardSettings(props) {
                         This action is <strong>irreversible</strong>. All your master profile data, AI resume builds, cover letters, and subscription details will be permanently purged from our servers.
                     </p>
                     <div className="space-y-3">
-                        <div>
-                            <label className="block text-xs font-bold text-slate-700 mb-1">
-                                Current Password (Required for Identity Verification):
-                            </label>
-                            <input
-                                type="password"
-                                value={deletePassword}
-                                onChange={(e) => setDeletePassword(e.target.value)}
-                                placeholder="Enter current password"
-                                className="w-full text-xs p-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-red-500 outline-none"
-                            />
-                        </div>
+                        {usesPasswordProvider ? (
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1">Current Password (Required for Identity Verification):</label>
+                                <input type="password" value={deletePassword} onChange={(e) => setDeletePassword(e.target.value)} placeholder="Enter current password" className="w-full text-xs p-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-red-500 outline-none" />
+                            </div>
+                        ) : (
+                            <p className="text-xs text-slate-600">Your identity provider or recent verified sign-in will be used for confirmation.</p>
+                        )}
                         <div>
                             <label className="block text-xs font-bold text-slate-700 mb-1">
                                 Type <span className="font-mono text-red-600 font-bold">DELETE</span> to confirm:
@@ -2555,7 +2551,7 @@ function DashboardSettings(props) {
                         </button>
                         <button
                             type="button"
-                            disabled={deleteInputText !== 'DELETE' || !deletePassword || isSubmitting}
+                            disabled={deleteInputText !== 'DELETE' || (usesPasswordProvider && !deletePassword) || isSubmitting}
                             onClick={handleDeleteAccountConfirmed}
                             className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer">
                             {isSubmitting ? 'Purging Account...' : 'Permanently Delete Account'}
