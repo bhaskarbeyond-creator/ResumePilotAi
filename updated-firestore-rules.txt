@@ -23,6 +23,16 @@ service cloud.firestore {
 
     // Identity, role, verification, suspension, billing and entitlements are server-owned.
     match /users/{uid} {
+      function validPreferences() {
+        return request.resource.data.preferences.keys().hasOnly(['language','emailNotifications','securityNotifications','productUpdates','profileDiscoverable','revision'])
+          && request.resource.data.preferences.language is string
+          && request.resource.data.preferences.language.size() <= 10
+          && request.resource.data.preferences.emailNotifications is bool
+          && request.resource.data.preferences.securityNotifications is bool
+          && request.resource.data.preferences.productUpdates is bool
+          && request.resource.data.preferences.profileDiscoverable is bool
+          && request.resource.data.preferences.revision == resource.data.get('preferences', {}).get('revision', 0) + 1;
+      }
       allow create: if owner(uid)
         && request.resource.data.keys().hasOnly([
           'userId','firstname','lastname','email','displayName','photoURL','profile',
@@ -33,8 +43,9 @@ service cloud.firestore {
         && (!('membership' in request.resource.data) || request.resource.data.membership == 'Basic');
       allow read: if owner(uid) || admin();
       allow update: if owner(uid) && changedOnly([
-        'firstname','lastname','displayName','photoURL','profile','preferences','lastLoginAt','authProvider'
-      ]);
+        'firstname','lastname','email','displayName','photoURL','profile','preferences','lastLoginAt','authProvider'
+      ]) && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['email']) || ownEmail(request.resource.data.email))
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['preferences']) || validPreferences());
       allow delete: if false;
 
       match /resumes/{resumeId} { allow read, create, update, delete: if owner(uid); }

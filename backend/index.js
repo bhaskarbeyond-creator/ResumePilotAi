@@ -3073,27 +3073,45 @@ app.patch('/api/admin/users/:uid', async (req, res) => {
 app.post('/api/account/delete', async (req, res) => {
     if (!db || !admin?.auth) return res.status(503).json({ success: false, error: 'Account deletion service unavailable.' });
     const uid = req.user.uid;
+    const failures = [];
     try {
-        await db.recursiveDelete(db.collection('users').doc(uid));
-        for (const query of [
-            db.collection('portfolios').where('userId', '==', uid),
-            db.collection('pb').where('ownerUid', '==', uid),
-            db.collection('jobApplications').where('userId', '==', uid)
-        ]) {
-            const snapshot = await query.get();
-            for (const item of snapshot.docs) await db.recursiveDelete(item.ref);
+        const jobs = await db.collection('jobs').where('employerId', '==', uid).get().catch(() => { failures.push('employer jobs'); return { docs: [] }; });
+        for (const job of jobs.docs) {
+            try {
+                const applications = await db.collection('jobApplications').where('jobId', '==', job.id).get();
+                for (const application of applications.docs) await db.recursiveDelete(application.ref);
+                await db.recursiveDelete(job.ref);
+            } catch { failures.push(`job:${job.id}`); }
         }
-        await db.recursiveDelete(db.collection('employerApplications').doc(uid)).catch(() => {});
-        await db.recursiveDelete(db.collection('notifications').doc(uid)).catch(() => {});
-        await admin.auth().deleteUser(uid);
-        await db.collection('security_audit_logs').add({
-            action: 'ACCOUNT_SELF_DELETED', targetUid: uid,
-            requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp()
-        });
-        return res.json({ success: true, message: 'Account and owned application data deleted.' });
+        const queries = [
+            ['portfolios', db.collection('portfolios').where('userId', '==', uid)],
+            ['published portfolios', db.collection('pb').where('ownerUid', '==', uid)],
+            ['job applications', db.collection('jobApplications').where('userId', '==', uid)],
+            ['blog posts', db.collection('blog_posts').where('authorUid', '==', uid)],
+            ['companies', db.collection('companies').where('employerId', '==', uid)],
+        ];
+        for (const [label, query] of queries) {
+            try { const snapshot = await query.get(); for (const item of snapshot.docs) await db.recursiveDelete(item.ref); }
+            catch { failures.push(label); }
+        }
+        for (const [label, reference] of [['employer application', db.collection('employerApplications').doc(uid)], ['notifications', db.collection('notifications').doc(uid)]]) {
+            try { await db.recursiveDelete(reference); } catch { failures.push(label); }
+        }
+        if (!failures.length) try { await db.recursiveDelete(db.collection('users').doc(uid)); } catch { failures.push('user profile tree'); }
+        if (failures.length) {
+            await db.collection('security_audit_logs').add({ action: 'ACCOUNT_SELF_DELETION_INCOMPLETE', targetUid: uid, cleanupFailures: failures, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+            return res.status(500).json({ success: false, code: 'ACCOUNT_CLEANUP_INCOMPLETE', error: `Cleanup failed for: ${failures.join(', ')}. Your identity remains active; retry deletion.` });
+        }
+        try { await admin.auth().deleteUser(uid); }
+        catch {
+            await db.collection('security_audit_logs').add({ action: 'ACCOUNT_SELF_DELETION_INCOMPLETE', targetUid: uid, cleanupFailures: ['firebase identity'], requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+            return res.status(500).json({ success: false, code: 'ACCOUNT_IDENTITY_DELETE_FAILED', error: 'Owned application data was removed, but the Firebase identity could not be deleted. Contact support immediately.' });
+        }
+        await db.collection('security_audit_logs').add({ action: 'ACCOUNT_SELF_DELETED', targetUid: uid, retainedRecordTypes: ['payment_orders', 'invoices', 'transactions', 'subscriptions', 'security_audit_logs'], requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        return res.json({ success: true, message: 'Identity and owned profile, resume, portfolio, CMS, employer, job, application, and notification data were deleted.', retainedRecordTypes: ['payment_orders', 'invoices', 'transactions', 'subscriptions', 'security_audit_logs'] });
     } catch (error) {
         console.error('[Account self-delete]', error.message);
-        return res.status(500).json({ success: false, error: 'Unable to delete account.' });
+        return res.status(500).json({ success: false, error: 'Unable to complete account deletion. Identity remains active unless the response explicitly confirms success.' });
     }
 });
 

@@ -48,7 +48,13 @@ test('users are isolated and server-owned entitlement fields cannot be changed',
   await assertSucceeds(updateDoc(doc(alice(), 'users/alice'), { displayName: 'Alice' }));
   await assertFails(updateDoc(doc(alice(), 'users/alice'), { membership: 'Premium' }));
   await assertFails(updateDoc(doc(alice(), 'users/alice'), { role: 'SUPER_ADMIN' }));
+  await assertFails(updateDoc(doc(alice(), 'users/alice'), { email: 'new-alice@example.com' }));
+  const aliceWithRefreshedEmail = env.authenticatedContext('alice', { email: 'new-alice@example.com' }).firestore();
+  await assertSucceeds(updateDoc(doc(aliceWithRefreshedEmail, 'users/alice'), { email: 'new-alice@example.com' }));
   await assertSucceeds(getDoc(doc(admin(), 'users/alice')));
+  const preferences = { language: 'en', emailNotifications: true, securityNotifications: true, productUpdates: false, profileDiscoverable: false, revision: 1 };
+  await assertSucceeds(updateDoc(doc(alice(), 'users/alice'), { preferences }));
+  await assertFails(updateDoc(doc(alice(), 'users/alice'), { preferences: { ...preferences, productUpdates: true } }));
   await assertFails(deleteDoc(doc(alice(), 'users/alice')));
   await assertFails(deleteDoc(doc(admin(), 'users/alice')));
 });

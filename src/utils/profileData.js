@@ -1,0 +1,37 @@
+const clean = (value, max) => String(value || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, max);
+const list = (value, max) => Array.isArray(value) ? value.slice(0, max) : [];
+
+export function normalizeProfileData(input = {}) {
+  const profile = input && typeof input === 'object' ? input : {};
+  const simple = ['firstname','lastname','name','email','phone','address','city','postalCode','postalcode','country','occupation','linkedinUrl','githubUrl','websiteUrl','website'];
+  const result = Object.fromEntries(simple.map(key => [key, clean(profile[key], ['address'].includes(key) ? 500 : 240)]));
+  result.summary = clean(profile.summary, 5000);
+  result.selectedImage = normalizeProfileImage(profile.selectedImage);
+  result.workExperiences = list(profile.workExperiences, 50).map(item => normalizeEntry(item, ['jobTitle','company','city','startDate','endDate','description']));
+  result.education = list(profile.education, 50).map(item => normalizeEntry(item, ['degree','school','city','startDate','endDate','description']));
+  result.skills = list(profile.skills, 100).map(item => normalizeEntry(item, ['name','level']));
+  result.languages = list(profile.languages, 30).map(item => normalizeEntry(item, ['name','level']));
+  result.certifications = list(profile.certifications, 50).map(item => normalizeEntry(item, ['title','issuer','date']));
+  result.projects = list(profile.projects, 50).map(item => normalizeEntry(item, ['title','description','link']));
+  result.isLinkedinConnected = profile.isLinkedinConnected === true;
+  result.linkedinConnectedName = clean(profile.linkedinConnectedName, 240);
+  result.revision = Math.max(0, Number(profile.revision) || 0);
+  return result;
+}
+
+function normalizeEntry(value, fields) {
+  const item = value && typeof value === 'object' ? value : (typeof value === 'string' ? { [fields[0]]: value } : {});
+  return { id: clean(item.id, 128), ...Object.fromEntries(fields.map(field => [field, clean(item[field], field === 'description' ? 5000 : 500)])) };
+}
+
+export function normalizeProfileImage(value) {
+  const image = String(value || '').trim();
+  if (!image) return null;
+  if (/^https:\/\//i.test(image) || (image.startsWith('/') && !image.startsWith('//'))) return image.slice(0, 2048);
+  if (/^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/i.test(image) && image.length <= 1_000_000) return image;
+  return null;
+}
+
+export function profileFitsFirestore(profile) {
+  return new Blob([JSON.stringify(normalizeProfileData(profile))]).size <= 850_000;
+}

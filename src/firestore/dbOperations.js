@@ -4,6 +4,7 @@ import config from '../conf/configuration';
 import firebase from 'firebase/compat/app';
 import { JOB_TRACKER_STATUSES, normalizeTrackedJob, validateTrackedJob } from '../utils/jobTracker';
 import { blogPostFitsFirestore, normalizeBlogPost } from '../utils/blogData';
+import { normalizeProfileData, profileFitsFirestore } from '../utils/profileData';
 
 // Utility function to wait for authentication state
 export const waitForAuth = () => {
@@ -2591,10 +2592,9 @@ export async function updateUserEmail(currentPassword, newEmail) {
         await reauthenticateUser(currentPassword);
     }
     await user.updateEmail(newEmail);
+    await user.getIdToken(true);
     const db = fire.firestore();
-    await db.collection('users').doc(user.uid).update({
-        email: newEmail
-    }).catch(() => {});
+    await db.collection('users').doc(user.uid).update({ email: newEmail });
     return true;
 }
 
@@ -2610,7 +2610,7 @@ export async function deleteUserAccountPermanently(currentPassword) {
     const result = await response.json().catch(() => ({}));
     if (!response.ok || !result.success) throw new Error(result.error || 'Unable to delete account.');
     await fire.auth().signOut().catch(() => {});
-    return true;
+    return result;
 }
 
 // Export all user data as JSON (GDPR Compliant Data Portability)
@@ -2642,13 +2642,18 @@ export async function exportUserDataJSON(uid) {
         console.warn('Transactions export notice:', e);
     }
 
+    const readOwned = async (collection, field) => {
+        try { const snapshot = await db.collection(collection).where(field, '==', uid).get(); return snapshot.docs.map(document => ({ id: document.id, ...document.data() })); }
+        catch { return []; }
+    };
+    const [portfolios, publishedPortfolios, blogPosts, jobApplications, jobs, companies] = await Promise.all([
+        readOwned('portfolios', 'userId'), readOwned('pb', 'ownerUid'), readOwned('blog_posts', 'authorUid'),
+        readOwned('jobApplications', 'userId'), readOwned('jobs', 'employerId'), readOwned('companies', 'employerId'),
+    ]);
     return {
-        exportDate: new Date().toISOString(),
-        userId: uid,
-        profile: profile,
-        resumes: resumes,
-        coverLetters: coverLetters,
-        transactions: transactions
+        exportDate: new Date().toISOString(), userId: uid, profile,
+        resumes, coverLetters, portfolios, publishedPortfolios, blogPosts, jobApplications, jobs, companies, transactions,
+        note: 'Provider-held identity, payment-provider records, security audit logs, and legally retained billing records require provider/support export channels.'
     };
 }
 
@@ -4577,24 +4582,24 @@ export async function getStatesOfUser(uid) {
 }
 
 // a function that take data url and add image to firebase /users/uid/profile
-export async function uploadImageToFirebase(dataUrl, uid) {
+export async function uploadImageToFirebase(dataUrl, uid, expectedRevision = null) {
     const db = fire.firestore();
-    const userRef = await db.collection('users').doc(uid);
-    const user = await userRef.get();
-    if (user.exists) {
-        var profile = user.data().profile;
-        if (profile == undefined) {
-            profile = {};
-        }
-        // Save under 'selectedImage' — consistent with the front-end state key
-        profile.selectedImage = dataUrl;
-        userRef.set(
-            {
-                profile: profile,
-            },
-            { merge: true }
-        );
-    }
+    const reference = db.collection('users').doc(uid);
+    let result;
+    try {
+        await db.runTransaction(async transaction => {
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists) throw new Error('Profile not found.');
+            const current = normalizeProfileData(snapshot.data()?.profile || {});
+            if (expectedRevision !== null && Number(expectedRevision) !== current.revision) { const error = new Error('Profile changed elsewhere. Reload before replacing the avatar.'); error.code = 'PROFILE_CONFLICT'; error.remoteRevision = current.revision; throw error; }
+            const selectedImage = normalizeProfileData({ selectedImage: dataUrl }).selectedImage;
+            if (!selectedImage) throw new Error('Avatar must be a bounded PNG, JPEG, or WebP image.');
+            const profile = { ...current, selectedImage, revision: current.revision + 1 };
+            transaction.set(reference, { profile }, { merge: true });
+            result = { success: true, revision: profile.revision, selectedImage };
+        });
+        return result;
+    } catch (error) { return { success: false, error: error.message, code: error.code, remoteRevision: error.remoteRevision }; }
 }
 
 // create a function that take as a parameters uid,field,value
@@ -4644,26 +4649,53 @@ export async function getProfileOfUser(uid) {
 // country: '',
 // selectedImage: null
 
-export async function addProfileToUser(uid, profile) {
+export async function addProfileToUser(uid, profile, expectedRevision = null) {
+    if (!profileFitsFirestore(profile)) return { success: false, error: 'Profile is too large to save.' };
     const db = fire.firestore();
-    const userRef = await db.collection('users').doc(uid);
-    const user = await userRef.get();
-    if (user.exists) {
-        userRef.set(
-            {
-                profile: profile,
-            },
-            { merge: true }
-        );
-        return true;
-    } else {
-        return false;
-    }
+    const reference = db.collection('users').doc(uid);
+    let result;
+    try {
+        await db.runTransaction(async transaction => {
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists) throw new Error('Profile not found.');
+            const current = normalizeProfileData(snapshot.data()?.profile || {});
+            if (expectedRevision !== null && Number(expectedRevision) !== current.revision) { const error = new Error('Profile changed in another tab or device.'); error.code = 'PROFILE_CONFLICT'; error.remoteRevision = current.revision; throw error; }
+            const normalized = normalizeProfileData(profile);
+            normalized.revision = current.revision + 1;
+            transaction.set(reference, { profile: normalized }, { merge: true });
+            result = { success: true, revision: normalized.revision, profile: normalized };
+        });
+        return result;
+    } catch (error) { return { success: false, error: error.message, code: error.code, remoteRevision: error.remoteRevision }; }
 }
 
 // get account info
 
 // /users/uid
+
+export async function saveUserPreferences(uid, preferences, expectedRevision = 0) {
+    const allowedLanguages = ['en','hi','es','fr','de','it','pt','nl','pl','ru','ja','ko','zh','ar','tr','sv','da','no','fi','is','ro','el'];
+    const normalized = {
+        language: allowedLanguages.includes(preferences?.language) ? preferences.language : 'en',
+        emailNotifications: preferences?.emailNotifications !== false,
+        securityNotifications: preferences?.securityNotifications !== false,
+        productUpdates: preferences?.productUpdates === true,
+        profileDiscoverable: preferences?.profileDiscoverable === true,
+    };
+    const reference = fire.firestore().collection('users').doc(uid);
+    try {
+        let revision;
+        await fire.firestore().runTransaction(async transaction => {
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists) throw new Error('Account not found.');
+            const currentRevision = Number(snapshot.data()?.preferences?.revision || 0);
+            if (Number(expectedRevision) !== currentRevision) { const error = new Error('Preferences changed elsewhere. Reload before saving.'); error.code = 'PREFERENCES_CONFLICT'; throw error; }
+            revision = currentRevision + 1;
+            transaction.set(reference, { preferences: { ...normalized, revision } }, { merge: true });
+        });
+        return { success: true, preferences: { ...normalized, revision } };
+    } catch (error) { return { success: false, error: error.message, code: error.code }; }
+}
 
 export async function getAccountInfo(uid) {
     const db = fire.firestore();
