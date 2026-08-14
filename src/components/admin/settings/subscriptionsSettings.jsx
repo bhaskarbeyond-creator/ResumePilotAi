@@ -1,6 +1,6 @@
 import { writeSanitizedPrintDocument } from '../../../utils/sanitizeHtml';
 import React, { Component } from 'react';
-import { getSubscriptionStatus, setSubscriptionsData, getAllCouponsAdmin, saveCoupon, deleteCoupon, getSystemSettings, saveSystemSettings, getAllInvoicesAdmin, getAllAdminTransactions, refundOrderTransaction } from '../../../firestore/dbOperations';
+import { getSubscriptionStatus, setSubscriptionsData, getAllCouponsAdmin, saveCoupon, deleteCoupon, getSystemSettings, saveSystemSettings, getAllAdminTransactions, refundOrderTransaction } from '../../../firestore/dbOperations';
 import { FaCheck, FaTimes, FaCreditCard, FaRupeeSign, FaDollarSign, FaToggleOn, FaToggleOff, FaPaypal, FaStripe, FaFlask, FaShieldAlt, FaTag, FaPlus, FaTrash, FaEdit, FaCalendarAlt, FaPercent, FaEye, FaEyeSlash, FaDownload, FaSearch, FaFileInvoice, FaPrint, FaListAlt, FaCog, FaUndo } from 'react-icons/fa';
 import config from '../../../conf/configuration';
 
@@ -106,6 +106,7 @@ class SubscriptionSetting extends Component {
             customRefundNote: '',
             isProcessingRefund: false,
             orderSuccessToast: '',
+            orderErrorToast: '',
         };
         this.handleChange = this.handleChange.bind(this);
         this.handleSubscriptionToggleChange = this.handleSubscriptionToggleChange.bind(this);
@@ -251,27 +252,15 @@ class SubscriptionSetting extends Component {
         try {
             const res = await refundOrderTransaction(inv.docId, txnId, inv.userId, fullReason);
             if (res && res.success) {
-                this.setState((prevState) => ({
-                    adminInvoicesList: (prevState.adminInvoicesList || []).map(item => {
-                        if (item.docId === inv.docId || item.transactionId === txnId) {
-                            return { ...item, status: 'Refunded', refundReason: fullReason };
-                        }
-                        return item;
-                    }),
-                    refundModalInvoice: null,
-                    isProcessingRefund: false,
-                    orderSuccessToast: `Order ${txnId} refunded successfully! Candidate membership reverted to Free.`
-                }));
-
+                this.setState({ refundModalInvoice: null, isProcessingRefund: false, orderSuccessToast: res.message || `Order ${txnId} refund confirmed.` });
+                await this.fetchAdminInvoices();
                 setTimeout(() => this.setState({ orderSuccessToast: '' }), 4500);
             } else {
-                alert(`⚠️ Refund process failed: ${res ? res.error : 'Unknown error'}`);
-                this.setState({ isProcessingRefund: false });
+                this.setState({ isProcessingRefund: false, orderErrorToast: res?.error || 'Refund could not be confirmed.' });
             }
         } catch (err) {
             console.error('Execute refund error:', err);
-            alert(`⚠️ Refund error: ${err.message}`);
-            this.setState({ isProcessingRefund: false });
+            this.setState({ isProcessingRefund: false, orderErrorToast: err.message || 'Refund failed.' });
         }
     }
 
@@ -592,12 +581,10 @@ class SubscriptionSetting extends Component {
         const supplierPincode = (this.state.supplierPincode || '').trim();
         const supplierSacCode = this.state.sacCode || '998313';
         const supplierEmail = (this.state.supplierEmail || config.adminEmail || 'support@' + (typeof window !== 'undefined' ? window.location.hostname : 'airesume.projectdemo.guru')).trim();
-        const invoicePrefix = this.state.invoicePrefix || 'RPAI';
-        const financialYear = this.state.financialYear || '26-27';
-
         const gstin = inv.customerSnapshot?.gstin || inv.customerGstin || '';
         const isB2B = Boolean(gstin && gstin.length === 15);
-        const invoiceTitle = isB2B ? 'B2B GST Tax Invoice & Payment Receipt' : 'Tax Invoice & Payment Receipt';
+        const isIssuedInvoice = inv.source === 'invoices' && Boolean(inv.invoiceNumber);
+        const invoiceTitle = isIssuedInvoice ? (isB2B ? 'B2B GST Tax Invoice' : 'Tax Invoice') : 'Server-Verified Payment Receipt';
         const customerType = isB2B ? 'B2B Registered Entity' : 'B2C / Individual Customer';
 
         const billedCustomerName = inv.customerName || inv.customerSnapshot?.name || 'Valued Candidate';
@@ -609,19 +596,19 @@ class SubscriptionSetting extends Component {
         const customerStateCode = inv.customerStateCode ? String(inv.customerStateCode).padStart(2, '0') : (gstin.length === 15 ? gstin.substring(0, 2) : '');
         const customerCountry = inv.customerCountry || inv.customerSnapshot?.country || 'India';
 
-        const txnId = inv.transactionId || inv.invoiceNumber || inv.invoiceId || inv.id || `TXN_${Date.now()}`;
-        const invoiceNo = inv.invoiceNumber || `${invoicePrefix}/${financialYear}/${String(inv.id || Date.now()).slice(-6)}`;
-        const dateStr = inv.formattedDate || (inv.created_at ? new Date(inv.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }));
-        const paymentMethod = inv.paymentType || inv.paimentType || inv.paymentMethod || 'Razorpay / Digital Payment';
+        const txnId = inv.transactionId || inv.providerReference || inv.docId || 'Unavailable';
+        const invoiceNo = isIssuedInvoice ? inv.invoiceNumber : `Receipt reference: ${inv.docId || txnId}`;
+        const dateStr = inv.created_at ? new Date(inv.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Date unavailable';
+        const paymentMethod = inv.paymentType || inv.paimentType || inv.paymentMethod || 'Provider unavailable';
         const isRefunded = inv.status === 'Refunded';
 
-        const totalPrice = parseFloat(inv.price !== undefined ? inv.price : (inv.grandTotal || inv.amount || 199)) || 199;
-        const gstRate = parseFloat(inv.taxRate || this.state.taxRate || 18) || 18;
-        const currency = (inv.currency || this.state.currency || 'INR').toUpperCase();
+        const totalPrice = Number(inv.price ?? inv.grandTotal ?? inv.amount ?? 0);
+        const gstRate = Number(inv.taxRate || 0);
+        const currency = String(inv.currency || 'UNKNOWN').toUpperCase();
         const currencySymbol = currency === 'INR' ? '₹' : (currency === 'EUR' ? '€' : (currency === 'GBP' ? '£' : (currency === 'CAD' ? 'CA$' : '$')));
 
-        const taxableAmount = parseFloat((totalPrice / (1 + (gstRate / 100))).toFixed(2));
-        const totalTax = parseFloat((totalPrice - taxableAmount).toFixed(2));
+        const totalTax = Number(inv.taxAmount || 0);
+        const taxableAmount = Number(inv.subtotal ?? (totalPrice - totalTax));
 
         const isIntraState = supplierStateCode === customerStateCode || (!customerStateCode && (currency === 'INR' || !inv.currency));
         let cgstAmount = 0, sgstAmount = 0, igstAmount = 0;
@@ -1040,7 +1027,7 @@ class SubscriptionSetting extends Component {
 
         const gstin = inv.customerSnapshot?.gstin || inv.customerGstin || '';
         const isB2B = Boolean(gstin && gstin.length === 15);
-        const symbol = inv.currency === 'USD' ? '$' : inv.currency === 'EUR' ? '€' : '₹';
+        const symbol = inv.currency === 'USD' ? '$' : inv.currency === 'EUR' ? '€' : inv.currency === 'INR' ? '₹' : `${inv.currency || 'UNKNOWN'} `;
         const invNo = inv.transactionId || inv.invoiceNumber || inv.invoiceId || inv.id || 'TXN_SAMPLE';
         const priceVal = parseFloat(inv.price !== undefined ? inv.price : (inv.grandTotal || inv.amount || 199)).toFixed(2);
         const taxRate = parseFloat(inv.taxRate || this.state.taxRate || 18);
@@ -1749,7 +1736,7 @@ class SubscriptionSetting extends Component {
                     <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs space-y-6">
                         {/* Order Success Toast Banner */}
                         {this.state.orderSuccessToast && (
-                            <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 px-4 py-3 rounded-2xl text-xs font-bold flex items-center justify-between shadow-2xs">
+                            <div role="status" aria-live="polite" className="bg-emerald-50 border border-emerald-200 text-emerald-900 px-4 py-3 rounded-2xl text-xs font-bold flex items-center justify-between shadow-2xs">
                                 <span>✅ {this.state.orderSuccessToast}</span>
                                 <button
                                     type="button"
@@ -1760,6 +1747,7 @@ class SubscriptionSetting extends Component {
                                 </button>
                             </div>
                         )}
+                        {this.state.orderErrorToast && <div role="alert" className="flex items-center justify-between rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-bold text-red-900"><span>{this.state.orderErrorToast}</span><button type="button" aria-label="Dismiss refund error" onClick={() => this.setState({ orderErrorToast: '' })}><FaTimes /></button></div>}
 
                         {(() => {
                             const rawList = this.state.adminInvoicesList || [];
@@ -1771,17 +1759,22 @@ class SubscriptionSetting extends Component {
                             const totalGross = paidList.reduce((acc, inv) => acc + (parseFloat(inv.price !== undefined ? inv.price : (inv.amount || 0)) || 0), 0);
                             const refundedVal = refundedList.reduce((acc, inv) => acc + (parseFloat(inv.price !== undefined ? inv.price : (inv.amount || 0)) || 0), 0);
                             const netRev = totalGross - refundedVal;
+                            const ledgerCurrencies = new Set([...paidList, ...refundedList].map(item => item.currency).filter(Boolean));
+                            const summaryCurrency = ledgerCurrencies.size === 1 ? [...ledgerCurrencies][0] : null;
+                            const summarySymbol = summaryCurrency === 'INR' ? '₹' : summaryCurrency === 'USD' ? '$' : summaryCurrency === 'EUR' ? '€' : summaryCurrency ? `${summaryCurrency} ` : '';
+                            const grossDisplay = summaryCurrency ? `${summarySymbol}${totalGross.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : 'Multiple currencies';
+                            const netDisplay = summaryCurrency ? `${summarySymbol}${netRev.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : 'Unavailable';
 
                             return (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                     <div className="bg-slate-900 text-white p-4 rounded-2xl shadow-xs space-y-1 border border-slate-800">
                                         <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Gross Volume</div>
-                                        <div className="text-xl font-black font-mono">₹{totalGross.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                                        <div className="text-xl font-black font-mono">{grossDisplay}</div>
                                         <div className="text-[10px] text-slate-400">{paidList.length} Confirmed Paid Orders</div>
                                     </div>
                                     <div className="bg-emerald-900 text-white p-4 rounded-2xl shadow-xs space-y-1 border border-emerald-800">
                                         <div className="text-[11px] font-bold text-emerald-300 uppercase tracking-wider">Net Revenue</div>
-                                        <div className="text-xl font-black font-mono">₹{netRev.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                                        <div className="text-xl font-black font-mono">{netDisplay}</div>
                                         <div className="text-[10px] text-emerald-300">Revenue Excluding Refunds</div>
                                     </div>
                                     <div className="bg-rose-950 text-white p-4 rounded-2xl shadow-xs space-y-1 border border-rose-900">
@@ -1791,7 +1784,7 @@ class SubscriptionSetting extends Component {
                                     </div>
                                     <div className="bg-purple-950 text-white p-4 rounded-2xl shadow-xs space-y-1 border border-purple-900">
                                         <div className="text-[11px] font-bold text-purple-300 uppercase tracking-wider">Refunds Issued</div>
-                                        <div className="text-xl font-black font-mono">₹{refundedVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                                        <div className="text-xl font-black font-mono">{summaryCurrency ? `${summarySymbol}${refundedVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : 'Multiple currencies'}</div>
                                         <div className="text-[10px] text-purple-300">{refundedList.length} Orders Refunded</div>
                                     </div>
                                 </div>
@@ -1806,7 +1799,7 @@ class SubscriptionSetting extends Component {
                                         <FaFileInvoice className="w-4 h-4 text-indigo-600" />
                                         <span>Master Orders &amp; Transactions Audit Ledger</span>
                                     </h3>
-                                    <p className="text-xs text-slate-500 mt-0.5">Live site-wide customer GST invoices, B2B tax details, 1-click refunds &amp; status records</p>
+                                    <p className="text-xs text-slate-500 mt-0.5">Latest server-authoritative payment, invoice, and legacy ledger records (up to 200 per source), with provider-confirmed refunds</p>
                                 </div>
 
                                 <div className="flex items-center gap-2 flex-wrap">
@@ -1889,7 +1882,7 @@ class SubscriptionSetting extends Component {
                                 const email = (inv.customerSnapshot?.email || inv.customerEmail || '').toLowerCase();
                                 const gstin = (inv.customerSnapshot?.gstin || inv.customerGstin || '').toLowerCase();
                                 const gw = (inv.paimentType || '').toLowerCase();
-                                const status = (inv.status || 'completed').toLowerCase();
+                                const status = (inv.status || 'unknown').toLowerCase();
                                 const isB2B = Boolean(gstin && gstin.length === 15);
 
                                 const matchesQuery = !query || invNo.includes(query) || name.includes(query) || email.includes(query) || gstin.includes(query);
@@ -1929,13 +1922,13 @@ class SubscriptionSetting extends Component {
                                             {filtered.map((inv, idx) => {
                                                 const gstin = inv.customerSnapshot?.gstin || inv.customerGstin || '';
                                                 const isB2B = Boolean(gstin && gstin.length === 15);
-                                                const symbol = inv.currency === 'USD' ? '$' : inv.currency === 'EUR' ? '€' : '₹';
+                                                const symbol = inv.currency === 'USD' ? '$' : inv.currency === 'EUR' ? '€' : inv.currency === 'INR' ? '₹' : `${inv.currency || 'UNKNOWN'} `;
                                                 const invNo = inv.transactionId || inv.invoiceNumber || inv.invoiceId || inv.id || `TXN_${idx}`;
                                                 const priceVal = inv.price !== undefined ? inv.price : (inv.grandTotal || inv.amount || 199);
                                                 const tax = inv.totalTax !== undefined ? inv.totalTax : (inv.taxAmount || 0);
                                                 const taxable = inv.subtotal !== undefined ? inv.subtotal : (priceVal - tax);
                                                 
-                                                const status = (inv.status || 'Completed').toLowerCase();
+                                                const status = (inv.status || 'Unknown').toLowerCase();
                                                 const isPaid = status === 'completed' || status === 'paid';
                                                 const isRefunded = status === 'refunded';
                                                 const isFailed = status === 'failed';
@@ -1972,13 +1965,14 @@ class SubscriptionSetting extends Component {
                                                                         PENDING ⏳
                                                                     </span>
                                                                 )}
+                                                                {!isPaid && !isRefunded && !isFailed && !isPending && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-extrabold text-slate-700">STATUS UNKNOWN</span>}
                                                             </div>
                                                             <div className="text-[10px] text-slate-500 font-mono mt-0.5">
                                                                 {inv.customerEmail || inv.customerSnapshot?.email || inv.userId || ''}
                                                             </div>
                                                             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                                                                 <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase ${isB2B ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-slate-100 text-slate-700 border border-slate-200'}`}>
-                                                                    {inv.paimentType || 'Card/UPI'} {isB2B ? '• B2B' : '• B2C'}
+                                                                    {inv.paimentType || 'Provider unknown'} {isB2B ? '• B2B' : '• B2C'}
                                                                 </span>
                                                                 {isB2B && <span className="font-mono text-[9px] text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-100">GST: {gstin}</span>}
                                                             </div>
@@ -1993,15 +1987,15 @@ class SubscriptionSetting extends Component {
                                                         </td>
                                                         <td className="p-3 text-right">
                                                             <div className="flex items-center justify-end gap-1.5 whitespace-nowrap">
-                                                                <button
+                                                                {(isPaid || isRefunded) && <button
                                                                     type="button"
                                                                     onClick={() => this.handleOpenPDFModal(inv)}
                                                                     className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-lg text-[11px] transition-colors border border-indigo-200 cursor-pointer inline-flex items-center gap-1"
                                                                 >
                                                                     <FaPrint className="w-3 h-3" />
-                                                                    <span>View PDF</span>
-                                                                </button>
-                                                                {isPaid && (
+                                                                    <span>{inv.source === 'invoices' && inv.invoiceNumber ? 'View invoice' : 'View receipt'}</span>
+                                                                </button>}
+                                                                {isPaid && inv.source === 'payment_orders' && (
                                                                     <button
                                                                         type="button"
                                                                         onClick={() => this.handleOpenRefundModal(inv)}
@@ -2061,7 +2055,7 @@ class SubscriptionSetting extends Component {
                                     const inv = this.state.pdfModalInvoice;
                                     const gstin = inv.customerSnapshot?.gstin || inv.customerGstin || '';
                                     const isB2B = Boolean(gstin && gstin.length === 15);
-                                    const symbol = inv.currency === 'USD' ? '$' : inv.currency === 'EUR' ? '€' : '₹';
+                                    const symbol = inv.currency === 'USD' ? '$' : inv.currency === 'EUR' ? '€' : inv.currency === 'INR' ? '₹' : `${inv.currency || 'UNKNOWN'} `;
                                     const invNo = inv.transactionId || inv.invoiceNumber || inv.invoiceId || inv.id || 'TXN_INV';
                                     const priceVal = parseFloat(inv.price !== undefined ? inv.price : (inv.grandTotal || inv.amount || 199)).toFixed(2);
                                     const taxRate = parseFloat(inv.taxRate || this.state.taxRate || 18);
@@ -2070,7 +2064,7 @@ class SubscriptionSetting extends Component {
                                     const cgstAmt = (parseFloat(taxAmt) / 2).toFixed(2);
                                     const sgstAmt = (parseFloat(taxAmt) / 2).toFixed(2);
                                     const dateStr = inv.formattedDate || (inv.created_at ? new Date(inv.created_at).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }) : new Date().toLocaleDateString('en-IN'));
-                                    const status = (inv.status || 'Completed').toLowerCase();
+                                    const status = (inv.status || 'Unknown').toLowerCase();
 
                                     return (
                                         <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm space-y-6 text-xs text-slate-800">
@@ -3536,7 +3530,7 @@ class SubscriptionSetting extends Component {
                                     const inv = this.state.pdfModalInvoice;
                                     const gstin = inv.customerSnapshot?.gstin || inv.customerGstin || '';
                                     const isB2B = Boolean(gstin && gstin.length === 15);
-                                    const symbol = inv.currency === 'USD' ? '$' : inv.currency === 'EUR' ? '€' : '₹';
+                                    const symbol = inv.currency === 'USD' ? '$' : inv.currency === 'EUR' ? '€' : inv.currency === 'INR' ? '₹' : `${inv.currency || 'UNKNOWN'} `;
                                     const invNo = inv.transactionId || inv.invoiceNumber || inv.invoiceId || inv.id || 'TXN_INV';
                                     const priceVal = parseFloat(inv.price !== undefined ? inv.price : (inv.grandTotal || inv.amount || 199)).toFixed(2);
                                     const taxRate = parseFloat(inv.taxRate || this.state.taxRate || 18);
@@ -3545,7 +3539,7 @@ class SubscriptionSetting extends Component {
                                     const cgstAmt = (parseFloat(taxAmt) / 2).toFixed(2);
                                     const sgstAmt = (parseFloat(taxAmt) / 2).toFixed(2);
                                     const dateStr = inv.formattedDate || (inv.created_at ? new Date(inv.created_at).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }) : new Date().toLocaleDateString('en-IN'));
-                                    const status = (inv.status || 'Completed').toLowerCase();
+                                    const status = (inv.status || 'Unknown').toLowerCase();
 
                                     return (
                                         <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm space-y-6 text-xs text-slate-800">

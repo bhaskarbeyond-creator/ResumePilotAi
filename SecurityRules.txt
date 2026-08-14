@@ -243,7 +243,7 @@ service cloud.firestore {
     match /pages/{id} { allow read: if true; allow write: if admin(); }
     match /ads/{id} { allow read: if true; allow write: if admin(); }
     match /reviews/{id} { allow read: if resource.data.status == 'approved' || admin(); allow write: if false; }
-    match /trustedBy/{id} { allow read: if true; allow write: if admin(); }
+    match /trustedBy/{id} { allow read: if true; allow write: if false; }
     match /contact/{id} { allow read, update, delete: if admin(); allow create: if false; }
     match /notifications/{uid}/{document=**} {
       allow read, update, delete: if owner(uid);
@@ -255,7 +255,7 @@ service cloud.firestore {
     match /data/{id} {
       allow read: if id in ['meta','frontendstats','public_config']
         || (admin() && !(id in ['system_settings','subscriptions']));
-      allow write: if admin() && (!(id in ['system_settings','subscriptions']) || recentAuth());
+      allow write: if admin() && id != 'frontendstats' && (!(id in ['system_settings','subscriptions']) || recentAuth());
     }
     match /settings/{id} {
       allow read: if admin() && !(id in ['ai_providers','payment_providers','oauth_providers','admin_configuration']);

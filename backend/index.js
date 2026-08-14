@@ -2726,6 +2726,88 @@ function firestoreTimeMillis(value) {
     return date && Number.isFinite(date.getTime()) ? date.getTime() : null;
 }
 
+function normalizeTrustedLogo(input = {}) {
+    const name = String(input.name || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, 120);
+    const rawUrl = String(input.imageUrl || '').trim().slice(0, 2048);
+    let imageUrl = '';
+    if (rawUrl.startsWith('/') && !rawUrl.startsWith('//')) imageUrl = rawUrl;
+    else try { const parsed = new URL(rawUrl); if (parsed.protocol === 'https:' && !parsed.username && !parsed.password) imageUrl = parsed.href; } catch { /* invalid URL */ }
+    const order = Math.max(0, Math.min(10_000, Number(input.order) || 0));
+    if (!name || !imageUrl) throw new Error('A company name and valid HTTPS or site-relative image URL are required.');
+    return { name, imageUrl, order, published: input.published !== false };
+}
+
+app.post('/api/admin/landing-content', async (req, res) => {
+    if (!db || !admin) return res.status(503).json({ success: false, error: 'Landing-content service unavailable.' });
+    const fields = ['activeJobs', 'rating', 'partnerCompanies', 'successfulHires', 'featuredJobs', 'successRate', 'topCompanies'];
+    const content = Object.fromEntries(fields.map(field => [field, String(req.body?.content?.[field] || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, 40)]));
+    if (Object.values(content).some(value => !value || !/^[\p{L}\p{N}\s.,%+/-]{1,40}$/u.test(value))) return res.status(400).json({ success: false, error: 'All landing claims are required and must contain only short display text.' });
+    const reference = db.collection('data').doc('frontendstats');
+    try {
+        let revision;
+        await db.runTransaction(async transaction => {
+            const snapshot = await transaction.get(reference);
+            const currentRevision = Number(snapshot.data()?.revision || 0);
+            if (Number(req.body.expectedRevision || 0) !== currentRevision) { const error = new Error('Landing content changed after this page loaded. Refresh before saving.'); error.code = 'ADMIN_TARGET_CHANGED'; throw error; }
+            revision = currentRevision + 1;
+            transaction.set(reference, { ...content, revision, updatedAt: admin.firestore.FieldValue.serverTimestamp(), updatedBy: req.user.uid });
+            transaction.set(db.collection('security_audit_logs').doc(), { action: 'LANDING_CONTENT_UPDATED', actorUid: req.user.uid, revision, changedFields: fields, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        });
+        return res.json({ success: true, content: { ...content, revision } });
+    } catch (error) { return res.status(error.code === 'ADMIN_TARGET_CHANGED' ? 409 : 500).json({ success: false, code: error.code, error: error.code ? error.message : 'Unable to save landing content.' }); }
+});
+
+app.post('/api/admin/trusted-by', async (req, res) => {
+    if (!db || !admin) return res.status(503).json({ success: false, error: 'Trusted-logo service unavailable.' });
+    try {
+        const data = normalizeTrustedLogo(req.body);
+        const reference = db.collection('trustedBy').doc();
+        const batch = db.batch();
+        batch.set(reference, { ...data, id: reference.id, revision: 1, createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+        batch.set(db.collection('security_audit_logs').doc(), { action: 'TRUSTED_LOGO_CREATED', actorUid: req.user.uid, logoId: reference.id, published: data.published, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        await batch.commit();
+        return res.json({ success: true, item: { ...data, id: reference.id, revision: 1 } });
+    } catch (error) { return res.status(400).json({ success: false, error: error.message }); }
+});
+
+app.patch('/api/admin/trusted-by/:logoId', async (req, res) => {
+    if (!db || !admin) return res.status(503).json({ success: false, error: 'Trusted-logo service unavailable.' });
+    const logoId = String(req.params.logoId || '');
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(logoId)) return res.status(400).json({ success: false, error: 'Invalid logo ID.' });
+    try {
+        const data = normalizeTrustedLogo(req.body);
+        let result;
+        await db.runTransaction(async transaction => {
+            const reference = db.collection('trustedBy').doc(logoId);
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists) { const error = new Error('Logo not found.'); error.code = 'NOT_FOUND'; throw error; }
+            const revision = Number(snapshot.data()?.revision || 0);
+            if (Number(req.body.expectedRevision || 0) !== revision) { const error = new Error('This logo changed after the page loaded. Refresh before saving.'); error.code = 'ADMIN_TARGET_CHANGED'; throw error; }
+            result = { ...data, id: logoId, revision: revision + 1 };
+            transaction.update(reference, { ...data, id: logoId, revision: revision + 1, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+            transaction.set(db.collection('security_audit_logs').doc(), { action: 'TRUSTED_LOGO_UPDATED', actorUid: req.user.uid, logoId, revision: revision + 1, published: data.published, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        });
+        return res.json({ success: true, item: result });
+    } catch (error) { const status = error.code === 'ADMIN_TARGET_CHANGED' ? 409 : error.code === 'NOT_FOUND' ? 404 : 400; return res.status(status).json({ success: false, code: error.code, error: error.message }); }
+});
+
+app.delete('/api/admin/trusted-by/:logoId', async (req, res) => {
+    if (!db || !admin) return res.status(503).json({ success: false, error: 'Trusted-logo service unavailable.' });
+    const logoId = String(req.params.logoId || '');
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(logoId)) return res.status(400).json({ success: false, error: 'Invalid logo ID.' });
+    try {
+        await db.runTransaction(async transaction => {
+            const reference = db.collection('trustedBy').doc(logoId);
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists) { const error = new Error('Logo not found.'); error.code = 'NOT_FOUND'; throw error; }
+            if (Number(req.body?.expectedRevision || 0) !== Number(snapshot.data()?.revision || 0)) { const error = new Error('This logo changed after the page loaded. Refresh before deleting.'); error.code = 'ADMIN_TARGET_CHANGED'; throw error; }
+            transaction.delete(reference);
+            transaction.set(db.collection('security_audit_logs').doc(), { action: 'TRUSTED_LOGO_DELETED', actorUid: req.user.uid, logoId, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        });
+        return res.json({ success: true });
+    } catch (error) { const status = error.code === 'ADMIN_TARGET_CHANGED' ? 409 : error.code === 'NOT_FOUND' ? 404 : 500; return res.status(status).json({ success: false, code: error.code, error: status === 500 ? 'Unable to delete logo.' : error.message }); }
+});
+
 app.post('/api/admin/reviews', async (req, res) => {
     if (!db || !admin) return res.status(503).json({ success: false, error: 'Review service unavailable.' });
     const clean = (value, max) => String(value || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, max);

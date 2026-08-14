@@ -22,6 +22,7 @@ const LandingPages = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState('');
+    const [confirmSave, setConfirmSave] = useState(false);
 
     useEffect(() => {
         fetchStats();
@@ -32,7 +33,7 @@ const LandingPages = () => {
             setLoading(true);
             const fetchedStats = await getFrontendStats();
             if (fetchedStats) {
-                setStats({ ...stats, ...fetchedStats });
+                setStats(current => ({ ...current, ...fetchedStats }));
             }
         } catch (error) {
             console.error('Error fetching stats:', error);
@@ -52,12 +53,14 @@ const LandingPages = () => {
     const handleSave = async () => {
         try {
             setSaving(true);
-            const result = await setFrontendStats(stats);
+            const result = await setFrontendStats(stats, Number(stats.revision || 0));
             if (result.success) {
-                setMessage('Stats updated successfully!');
-                setTimeout(() => setMessage(''), 3000);
+                setStats(current => ({ ...current, ...result.content }));
+                setConfirmSave(false);
+                setMessage('Marketing display content saved and audited.');
             } else {
-                setMessage('Error updating stats: ' + result.message);
+                setMessage('Error updating content: ' + result.message);
+                if (result.code === 'ADMIN_TARGET_CHANGED') { setConfirmSave(false); await fetchStats(); }
             }
         } catch (error) {
             console.error('Error saving stats:', error);
@@ -81,10 +84,11 @@ const LandingPages = () => {
 
     return (
         <div className="p-6 max-w-6xl mx-auto">
+            {confirmSave && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="presentation" onKeyDown={event => { if (event.key === 'Escape' && !saving) setConfirmSave(false); }}><div role="alertdialog" aria-modal="true" aria-labelledby="landing-save-title" className="w-full max-w-md rounded-lg bg-white p-6"><h2 id="landing-save-title" className="text-lg font-bold">Publish landing display content?</h2><p className="mt-2 text-sm text-gray-600">These are marketing display claims, not measured operational metrics. Saving publishes all fields immediately and creates an audit record.</p><div className="mt-6 flex justify-end gap-3"><button type="button" autoFocus onClick={() => setConfirmSave(false)} disabled={saving} className="rounded border px-4 py-2">Cancel</button><button type="button" onClick={handleSave} disabled={saving} className="rounded bg-blue-700 px-4 py-2 text-white">{saving ? 'Publishing…' : 'Publish content'}</button></div></div></div>}
             {/* Header */}
             <div className="mb-8">
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">Landing Pages Management</h1>
-                <p className="text-gray-600">Manage statistics and content for your landing pages</p>
+                <p className="text-gray-600">Manage public marketing display copy. These values are not live operational statistics.</p>
             </div>
 
             {/* Tab Navigation */}
@@ -250,7 +254,7 @@ const LandingPages = () => {
 
             {/* Message Display */}
             {message && (
-                <div className={`mt-4 p-4 rounded-md ${
+                <div role={message.includes('Error') ? 'alert' : 'status'} aria-live="polite" className={`mt-4 p-4 rounded-md ${
                     message.includes('Error') ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'
                 }`}>
                     {message}
@@ -278,7 +282,7 @@ const LandingPages = () => {
                     </button>
                     
                     <button
-                        onClick={handleSave}
+                        onClick={() => setConfirmSave(true)}
                         disabled={saving}
                         className="inline-flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                     >

@@ -2504,14 +2504,6 @@ export async function setSubscriptionsData(state, month, quartarly, yearly, only
     });
     const result = await response.json().catch(() => ({}));
     if (!response.ok || !result.success) throw new Error(result.error || 'Unable to save payment settings.');
-    try {
-        if (typeof window !== 'undefined') {
-            // Cache only the backend-curated public projection; never persist secrets.
-            localStorage.setItem('subscriptions_cache', JSON.stringify(result.settings || {}));
-        }
-    } catch (error) {
-        console.warn('Could not cache public subscription settings:', error);
-    }
     return result;
 }
 
@@ -2544,51 +2536,21 @@ function redactSubscriptionSecrets(value = {}) {
 }
 
 export async function getSubscriptionStatus() {
-    let localCache = null;
-    try {
-        const raw = typeof window !== 'undefined' ? localStorage.getItem('subscriptions_cache') : null;
-        if (raw) {
-            localCache = redactSubscriptionSecrets(JSON.parse(raw));
-            localStorage.setItem('subscriptions_cache', JSON.stringify(localCache));
-        }
-    } catch (e) {
-        console.warn('Could not read subscriptions_cache from localStorage:', e);
-    }
-
-    const res = await safeDbOperation(async () => {
-        const db = fire.firestore();
-        const userRef = db.collection('data').doc('public_config');
-        const snapshot = await userRef.get();
-        if (snapshot && snapshot.exists) {
-            const data = redactSubscriptionSecrets(snapshot.data()?.subscriptions || {});
-            return {
-                ...(localCache || {}),
-                ...data
-            };
-        }
-        return localCache;
-    }, false);
-
-    return res || localCache || {
-        state: true,
-        monthlyPrice: 199,
-        quartarlyPrice: 399,
-        yearlyPrice: 499,
-        onlyPP: false,
-        currency: 'INR',
-        razorpayUPI: true,
-        stripeEnabled: true,
-        paypalEnabled: true,
-        razorpayEnabled: true,
-        sandboxMode: false,
-        enableTax: true,
-        taxName: 'GST',
-        taxRate: 18,
-        taxInclusive: false,
-        companyTaxId: '27AAAAA0000A1Z5',
-        requireCustomerTaxId: false,
-        receiptTemplate: 'modern',
+    const defaults = {
+        state: true, monthlyPrice: 199, quartarlyPrice: 399, yearlyPrice: 499,
+        onlyPP: false, currency: 'INR', razorpayUPI: false,
+        stripeEnabled: false, paypalEnabled: false, razorpayEnabled: false,
+        paytmEnabled: false, phonepeEnabled: false, sandboxMode: true,
+        enableTax: true, taxName: 'GST', taxRate: 18, taxInclusive: false,
+        companyTaxId: '', requireCustomerTaxId: false, receiptTemplate: 'modern',
     };
+    try {
+        const snapshot = await fire.firestore().collection('data').doc('public_config').get();
+        return snapshot.exists ? { ...defaults, ...redactSubscriptionSecrets(snapshot.data()?.subscriptions || {}) } : defaults;
+    } catch (error) {
+        console.warn('Public subscription configuration unavailable:', error.message);
+        return defaults;
+    }
 }
 
 // Re-authenticate user with password
@@ -2910,15 +2872,12 @@ export async function getFrontendStats() {
 }
 
 // Set frontend stats for landing pages
-export async function setFrontendStats(stats) {
-    const db = fire.firestore();
-    const statsRef = db.collection('data').doc('frontendstats');
+export async function setFrontendStats(stats, expectedRevision = 0) {
     try {
-        await statsRef.set(stats);
-        return { success: true };
-    } catch (error) {
-        return { success: false, message: error.message };
-    }
+        const response = await fetch('/api/admin/landing-content', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: stats, expectedRevision }) });
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success ? result : { success: false, message: result.error || 'Unable to save landing content.', code: result.code };
+    } catch (error) { return { success: false, message: error.message }; }
 }
 // Get ads
 export async function getAds() {
@@ -4797,43 +4756,37 @@ export async function addReview(review) {
 
 // add a trusted by
 
-export async function addTrustedBy(trustedBy) {
-    const db = fire.firestore();
-    const trustedByRef = await db.collection('trustedBy').doc();
-    trustedByRef.set(trustedBy);
-    return true;
-}
-
-// get trusted by
-
-export async function getTrustedBy() {
-    const db = fire.firestore();
-    const trustedByRef = await db.collection('trustedBy').get();
-    const trustedBy = trustedByRef.docs.map((doc) => doc.data());
-    return trustedBy;
-}
-
-// remove trusted by where id ==
-
-export async function removeTrustedBy(id) {
+export async function addTrustedBy(data) {
     try {
-        const db = fire.firestore();
-        const trustedByRef = await db.collection('trustedBy').where('id', '==', id).get();
-        trustedByRef.docs.forEach((doc) => doc.ref.delete());
-        return true;
-    } catch (error) {
-        console.log(error);
-        return false;
-    }
+        const response = await fetch('/api/admin/trusted-by', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success ? result : { success: false, error: result.error || 'Unable to add logo.' };
+    } catch (error) { return { success: false, error: error.message }; }
 }
 
-// update trusted by  we need to use where id ==
+export async function getTrustedBy({ includeUnpublished = false } = {}) {
+    const snapshot = await fire.firestore().collection('trustedBy').get();
+    return snapshot.docs.map(document => {
+        const data = document.data() || {};
+        return { id: document.id, ...data, revision: Number(data.revision || 0) };
+    }).filter(item => includeUnpublished || item.published !== false)
+      .sort((a, b) => Number(a.order || 0) - Number(b.order || 0) || String(a.name || '').localeCompare(String(b.name || '')));
+}
 
-export async function updateTrustedBy(id, trustedBy) {
-    const db = fire.firestore();
-    const trustedByRef = await db.collection('trustedBy').where('id', '==', id).get();
-    trustedByRef.docs.forEach((doc) => doc.ref.update(trustedBy));
-    return true;
+export async function removeTrustedBy(id, expectedRevision = 0) {
+    try {
+        const response = await fetch(`/api/admin/trusted-by/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expectedRevision }) });
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success ? result : { success: false, error: result.error || 'Unable to delete logo.', code: result.code };
+    } catch (error) { return { success: false, error: error.message }; }
+}
+
+export async function updateTrustedBy(id, data, expectedRevision = 0) {
+    try {
+        const response = await fetch(`/api/admin/trusted-by/${encodeURIComponent(id)}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...data, expectedRevision }) });
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success ? result : { success: false, error: result.error || 'Unable to update logo.', code: result.code };
+    } catch (error) { return { success: false, error: error.message }; }
 }
 
 // add global rating to a /data/meta
@@ -6081,166 +6034,33 @@ export async function saveSystemSettings(category, data) {
 }
 
 export async function getAllAdminTransactions() {
-    try {
-        const db = fire.firestore();
-        const invoices = [];
-        const seenTxnIds = new Set();
-
-        // Authoritative provider orders are the primary billing ledger.
-        try {
-            const ordersSnap = await db.collection('payment_orders').orderBy('createdAt', 'desc').limit(200).get();
-            for (const orderDoc of ordersSnap.docs) {
-                const data = orderDoc.data();
-                if (seenTxnIds.has(orderDoc.id)) continue;
-                seenTxnIds.add(orderDoc.id);
-                let customerEmail = '';
-                let customerName = '';
-                try {
-                    const user = await db.collection('users').doc(data.uid).get();
-                    customerEmail = user.data()?.email || '';
-                    customerName = user.data()?.displayName || customerEmail.split('@')[0] || data.uid;
-                } catch (_) {}
-                invoices.push({
-                    docId: orderDoc.id,
-                    transactionId: data.providerPaymentId || data.providerOrderId || orderDoc.id,
-                    userId: data.uid,
-                    customerEmail,
-                    customerName,
-                    planType: data.planId || 'Plan',
-                    paimentType: data.provider || 'Payment provider',
-                    price: Number(data.amount || 0) / 100,
-                    currency: data.currency || 'INR',
-                    subtotal: Number(data.amount || 0) / 100,
-                    taxAmount: 0,
-                    status: data.status === 'ACTIVE' ? 'Completed' : (data.status === 'REFUNDED' ? 'Refunded' : data.status),
-                    created_at: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString()
-                });
-            }
-        } catch (error) {
-            console.warn('Payment orders query error:', error);
-        }
-
-        // Legacy global transaction records
-        try {
-            const txnsSnap = await db.collection('transactions').orderBy('created_at', 'desc').limit(200).get();
-            txnsSnap.forEach(doc => {
-                const data = doc.data();
-                const id = data.transactionId || doc.id;
-                if (!seenTxnIds.has(id)) {
-                    seenTxnIds.add(id);
-
-                    let status = 'Completed';
-                    const rawStatus = (data.status || data.paymentStatus || '').toUpperCase();
-                    if (rawStatus === 'REFUNDED') status = 'Refunded';
-                    else if (rawStatus === 'FAILED' || rawStatus === 'CANCELLED' || rawStatus === 'DECLINED') status = 'Failed';
-                    else if (rawStatus === 'PENDING' || rawStatus === 'INITIATED') status = 'Pending';
-                    else if (rawStatus === 'COMPLETED' || rawStatus === 'SUCCESS' || rawStatus === 'PAID') status = 'Completed';
-
-                    invoices.push({
-                        docId: doc.id,
-                        ...data,
-                        status: status,
-                        created_at: data.created_at ? (data.created_at.toDate ? data.created_at.toDate().toISOString() : data.created_at) : new Date().toISOString()
-                    });
-                }
-            });
-        } catch (e) {
-            console.warn('Global transactions collection query error:', e);
-        }
-
-        // 2. Fetch from global 'subscriptions' collection
-        try {
-            const subsSnap = await db.collection('subscriptions').limit(200).get();
-            subsSnap.forEach(doc => {
-                const data = doc.data();
-                const id = data.transactionId || `SUB_${doc.id}`;
-                if (!seenTxnIds.has(id)) {
-                    seenTxnIds.add(id);
-
-                    let status = 'Completed';
-                    const rawStatus = (data.status || data.paymentStatus || '').toUpperCase();
-                    if (rawStatus === 'REFUNDED') status = 'Refunded';
-                    else if (rawStatus === 'FAILED' || rawStatus === 'CANCELLED') status = 'Failed';
-                    else if (rawStatus === 'PENDING') status = 'Pending';
-
-                    invoices.push({
-                        docId: doc.id,
-                        transactionId: id,
-                        userId: data.userId,
-                        planType: data.type || 'Pro Plan',
-                        paimentType: data.paimentType || 'Card/UPI',
-                        price: data.price || 199,
-                        currency: data.currency || 'INR',
-                        subtotal: data.price || 199,
-                        taxAmount: 0,
-                        status: status,
-                        created_at: data.created_at ? (data.created_at.toDate ? data.created_at.toDate().toISOString() : data.created_at) : new Date().toISOString()
-                    });
-                }
-            });
-        } catch (e) {
-            console.warn('Global subscriptions collection query error:', e);
-        }
-
-        // 3. Scan 'users' collection to capture all user transactions
-        try {
-            const usersSnap = await db.collection('users').get();
-            for (const userDoc of usersSnap.docs) {
-                const uData = userDoc.data();
-                const uid = userDoc.id;
-                
-                if (uData.lastPaymentAmount || uData.membership === 'Premium') {
-                    const fallbackTxnId = `TXN_${uData.lastPaymentDate ? (uData.lastPaymentDate.toMillis ? uData.lastPaymentDate.toMillis() : Date.now()) : Date.now()}_${uid.substring(0,5).toUpperCase()}`;
-                    if (!seenTxnIds.has(fallbackTxnId)) {
-                        seenTxnIds.add(fallbackTxnId);
-
-                        let status = 'Failed';
-                        const rawStatus = (uData.paymentStatus || uData.lastPaymentStatus || uData.status || '').toUpperCase();
-                        
-                        if (rawStatus === 'REFUNDED') {
-                            status = 'Refunded';
-                        } else if (rawStatus === 'ACTIVE' || rawStatus === 'PAID' || rawStatus === 'SUCCESS' || rawStatus === 'COMPLETED') {
-                            status = 'Completed';
-                        } else if (rawStatus === 'FAILED' || rawStatus === 'CANCELLED' || rawStatus === 'DECLINED') {
-                            status = 'Failed';
-                        } else if (rawStatus === 'PENDING' || rawStatus === 'INITIATED') {
-                            status = 'Pending';
-                        } else if (uData.membership === 'Premium' && uData.lastPaymentAmount > 0) {
-                            status = 'Completed';
-                        } else {
-                            status = 'Failed';
-                        }
-
-                        const displayName = uData.name || uData.displayName || (uData.email ? uData.email.split('@')[0] : `Candidate (${uid.substring(0,6)})`);
-
-                        invoices.push({
-                            docId: `USR_${uid}`,
-                            transactionId: fallbackTxnId,
-                            userId: uid,
-                            customerName: displayName,
-                            customerEmail: uData.email || '',
-                            customerGstin: uData.gstin || '',
-                            planType: uData.membership || 'Pro',
-                            paimentType: uData.lastPaymentGateway || 'Razorpay UPI',
-                            price: uData.lastPaymentAmount || 199,
-                            currency: uData.lastPaymentCurrency || 'INR',
-                            subtotal: uData.lastPaymentAmount || 199,
-                            taxAmount: 0,
-                            status: status,
-                            created_at: uData.lastPaymentDate ? (uData.lastPaymentDate.toDate ? uData.lastPaymentDate.toDate().toISOString() : uData.lastPaymentDate) : new Date().toISOString()
-                        });
-                    }
-                }
-            }
-        } catch (e) {
-            console.warn('Users scanner error:', e);
-        }
-
-        return invoices;
-    } catch (err) {
-        console.error('getAllAdminTransactions error:', err);
-        return [];
+    const db = fire.firestore();
+    const records = [];
+    const seen = new Set();
+    const statusLabel = raw => {
+        const status = String(raw || 'UNKNOWN').toUpperCase();
+        return status === 'ACTIVE' ? 'Completed' : status === 'REFUNDED' ? 'Refunded' : ['FAILED','CANCELLED','DECLINED'].includes(status) ? 'Failed' : ['PENDING','PENDING_PAYMENT','PAYMENT_CREATED','INITIATED'].includes(status) ? 'Pending' : ['PAID','SUCCESS','COMPLETED'].includes(status) ? 'Completed' : 'Unknown';
+    };
+    const dateValue = value => { const candidate = value?.toDate?.() || (value ? new Date(value) : null); return candidate && Number.isFinite(candidate.getTime?.()) ? candidate.toISOString() : null; };
+    const [ordersResult, invoicesResult, legacyResult] = await Promise.allSettled([
+        db.collection('payment_orders').orderBy('createdAt', 'desc').limit(200).get(),
+        db.collection('invoices').orderBy('createdAt', 'desc').limit(200).get(),
+        db.collection('transactions').orderBy('created_at', 'desc').limit(200).get(),
+    ]);
+    if (ordersResult.status === 'fulfilled') for (const document of ordersResult.value.docs) {
+        const data = document.data() || {}; seen.add(document.id);
+        records.push({ docId: document.id, source: 'payment_orders', transactionId: data.providerPaymentId || data.providerOrderId || document.id, providerReference: data.providerPaymentId || data.providerOrderId || '', userId: data.uid || '', customerEmail: data.customerEmail || '', customerName: data.customerName || '', customerGstin: data.customerGstin || '', planType: data.planId || 'Unknown', paimentType: data.provider || 'Unknown', price: Number(data.amount || 0) / 100, originalAmount: Number(data.originalAmount || data.amount || 0) / 100, discountAmount: Number(data.couponDiscount || 0) / 100, currency: String(data.currency || 'UNKNOWN').toUpperCase(), subtotal: Number(data.subtotal ?? data.amount ?? 0) / 100, taxAmount: Number(data.taxAmount || 0) / 100, taxRate: Number(data.taxRate || 0), sacCode: data.sacCode || '', invoiceNumber: data.invoiceNumber || '', status: statusLabel(data.status), rawStatus: String(data.status || 'UNKNOWN'), created_at: dateValue(data.createdAt), refundedAt: dateValue(data.refundedAt), refundReason: data.refundReason || '' });
     }
+    if (invoicesResult.status === 'fulfilled') for (const document of invoicesResult.value.docs) {
+        const data = document.data() || {}; const id = data.paymentOrderId || data.transactionId || document.id; if (seen.has(id)) continue; seen.add(id);
+        records.push({ docId: data.paymentOrderId || document.id, source: 'invoices', transactionId: data.transactionId || id, providerReference: data.providerReference || '', userId: data.userId || '', customerEmail: data.customerEmail || '', customerName: data.customerName || '', customerGstin: data.customerGstin || '', planType: data.planId || data.planType || 'Unknown', paimentType: data.provider || data.paymentProvider || 'Unknown', price: Number(data.total ?? data.amount ?? 0), originalAmount: Number(data.originalAmount ?? data.total ?? data.amount ?? 0), discountAmount: Number(data.discountAmount || 0), currency: String(data.currency || 'UNKNOWN').toUpperCase(), subtotal: Number(data.subtotal || 0), taxAmount: Number(data.taxAmount || 0), taxRate: Number(data.taxRate || 0), sacCode: data.sacCode || '', invoiceNumber: data.invoiceNumber || document.id, status: statusLabel(data.status || data.paymentStatus), rawStatus: String(data.status || data.paymentStatus || 'UNKNOWN'), created_at: dateValue(data.createdAt || data.created_at), refundedAt: dateValue(data.refundedAt), refundReason: data.refundReason || '' });
+    }
+    if (legacyResult.status === 'fulfilled') for (const document of legacyResult.value.docs) {
+        const data = document.data() || {}; const id = data.transactionId || document.id; if (seen.has(id)) continue; seen.add(id);
+        records.push({ docId: document.id, source: 'legacy_transactions', transactionId: id, providerReference: data.providerReference || '', userId: data.userId || '', customerEmail: data.customerEmail || '', customerName: data.customerName || '', customerGstin: data.customerGstin || '', planType: data.planType || data.type || 'Unknown', paimentType: data.provider || data.paimentType || 'Unknown', price: Number(data.total ?? data.price ?? data.amount ?? 0), originalAmount: Number(data.originalAmount ?? data.total ?? data.price ?? data.amount ?? 0), discountAmount: Number(data.discountAmount || 0), currency: String(data.currency || 'UNKNOWN').toUpperCase(), subtotal: Number(data.subtotal ?? data.price ?? 0), taxAmount: Number(data.taxAmount || 0), taxRate: Number(data.taxRate || 0), sacCode: data.sacCode || '', invoiceNumber: data.invoiceNumber || '', status: statusLabel(data.status || data.paymentStatus), rawStatus: String(data.status || data.paymentStatus || 'UNKNOWN'), created_at: dateValue(data.created_at || data.createdAt), refundedAt: dateValue(data.refundedAt), refundReason: data.refundReason || '' });
+    }
+    if ([ordersResult, invoicesResult, legacyResult].every(result => result.status === 'rejected')) throw new Error('Billing ledgers are unavailable.');
+    return records.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
 }
 
 export async function refundOrderTransaction(docId, _transactionId, _userId, reason = 'Customer requested refund') {

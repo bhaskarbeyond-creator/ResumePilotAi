@@ -60,7 +60,7 @@ const SystemHealthSettings = () => {
 
             <section className="rounded-lg border border-slate-200 bg-slate-50 p-4" aria-labelledby="maintenance-heading">
                 <h3 id="maintenance-heading" className="mb-1 flex items-center gap-2 font-semibold text-slate-800"><FaTools className="text-amber-600" aria-hidden="true" />Global maintenance mode</h3>
-                <p className="mb-4 text-xs text-slate-500">This stores the public maintenance announcement state, requires recent authentication, and creates an audit record. The current web shell does not enforce an access lock; use deployment controls when access must be blocked.</p>
+                <p className="mb-4 text-xs text-slate-500">This stores the public maintenance state, requires recent authentication, and creates an audit record. The web shell blocks non-admin routes while preserving protected Admin and sign-in access; deployment controls remain necessary for API- or infrastructure-level isolation.</p>
                 <label className="flex items-start gap-3 rounded border border-slate-200 bg-white p-3" htmlFor="maintenanceMode">
                     <input type="checkbox" id="maintenanceMode" checked={healthConfig.maintenanceMode} onChange={event => setHealthConfig(current => ({ ...current, maintenanceMode: event.target.checked }))} className="mt-0.5 h-5 w-5" />
                     <span><span className="block text-sm font-semibold text-slate-800">Enable site maintenance mode</span><span className="text-xs text-slate-500">{healthConfig.maintenanceMode ? 'Pending save: maintenance mode enabled.' : 'Pending save: normal public operation.'}</span></span>

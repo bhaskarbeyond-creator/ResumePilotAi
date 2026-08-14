@@ -192,6 +192,8 @@ test('billing, provider secrets and token registries are server-only', async () 
   await assertFails(getDoc(doc(admin(), 'settings/admin_configuration')));
   await assertFails(setDoc(doc(admin(), 'settings/admin_configuration'), { smtp: { password: 'browser-secret' } }));
   await assertFails(setDoc(doc(admin(), 'reviews/direct-admin-review'), { status: 'approved', review: 'bypass' }));
+  await assertFails(setDoc(doc(admin(), 'trustedBy/direct-admin-logo'), { name: 'Bypass', imageUrl: 'https://example.com/logo.png' }));
+  await assertFails(setDoc(doc(admin(), 'data/frontendstats'), { activeJobs: 'fake' }));
   await assertFails(getDoc(doc(admin(), 'password_reset_tokens/token')));
   await assertFails(deleteDoc(doc(admin(), 'password_reset_tokens/token')));
   await assertFails(setDoc(doc(alice(), 'contact/direct-client-write'), { email: 'alice@example.com', message: 'bypass' }));

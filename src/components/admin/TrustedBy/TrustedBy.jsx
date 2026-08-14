@@ -1,498 +1,69 @@
-import { sanitizeUrl } from '../../../utils/sanitizeHtml';
-import { useState, useEffect } from 'react';
-import { FaPlus, FaTrash, FaPen, FaSave, FaTimes, FaImage, FaBuilding, FaEye, FaInfoCircle, FaSpinner, FaCheck, FaExclamationTriangle } from 'react-icons/fa';
+import React, { useCallback, useEffect, useId, useState } from 'react';
+import { FaPlus, FaTrash, FaPen, FaSave, FaTimes, FaImage, FaBuilding, FaEye, FaSpinner, FaCheck, FaExclamationTriangle } from 'react-icons/fa';
 import { addTrustedBy, getTrustedBy, removeTrustedBy, updateTrustedBy } from '../../../firestore/dbOperations';
+import { sanitizeImageUrl } from '../../../utils/sanitizeHtml';
+
+const EMPTY = { name: '', imageUrl: '', order: 0, published: true };
+
 const TrustedBy = () => {
-    const [trustedCompanies, setTrustedCompanies] = useState([
-      
-    ]);
-    const [newCompanyUrl, setNewCompanyUrl] = useState('');
-    const [newCompanyName, setNewCompanyName] = useState('');
-    const [editingId, setEditingId] = useState(null);
-    const [editUrl, setEditUrl] = useState('');
-    const [editName, setEditName] = useState('');
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [deletingIds, setDeletingIds] = useState([]);
-    const [addingCompany, setAddingCompany] = useState(false);
-    const [updatingId, setUpdatingId] = useState(null);
-    const [successMessage, setSuccessMessage] = useState('');
+    const [items, setItems] = useState([]);
+    const [form, setForm] = useState(EMPTY);
+    const [editing, setEditing] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [processing, setProcessing] = useState(false);
+    const [message, setMessage] = useState(null);
+    const [deleteTarget, setDeleteTarget] = useState(null);
 
-    const addTrustedCompany = async (e) => {
-        e.preventDefault();
-        setError('');
-        
-        if (!newCompanyUrl.trim()) {
-            setError('Image URL is required');
-            return;
-        }
-
-        try {
-            setAddingCompany(true);
-            
-            const newCompany = {
-                id: Date.now().toString(),
-                imageUrl: newCompanyUrl.trim(),
-                name: newCompanyName.trim() || 'Trusted Company',
-                createdAt: new Date(),
-            };
-
-            // Optimistic UI update
-            setTrustedCompanies([newCompany, ...trustedCompanies]);
-            setNewCompanyUrl('');
-            setNewCompanyName('');
-            
-            // Execute the database operation in the background
-            await addTrustedBy(newCompany);
-            
-            setSuccessMessage('Company added successfully');
-            setTimeout(() => setSuccessMessage(''), 3000);
-        } catch (error) {
-            console.error('Error adding company:', error);
-            setError('Failed to add company. Please try again.');
-            // Refresh the list to ensure consistency with the database
-            getTrustedCompanies();
-        } finally {
-            setAddingCompany(false);
-        }
-    };
-
-    const startEditing = (company) => {
-        setEditingId(company.id);
-        setEditUrl(company.imageUrl);
-        setEditName(company.name);
-    };
-
-    const cancelEditing = () => {
-        setEditingId(null);
-        setEditUrl('');
-        setEditName('');
-    };
-
-    const saveEdit = async (id) => {
-        if (!editUrl.trim()) {
-            setError('Image URL is required');
-            return;
-        }
-
-        try {
-            setUpdatingId(id);
-            
-            // Prepare updated company data
-            const updatedCompanyData = { 
-                imageUrl: editUrl.trim(), 
-                name: editName.trim() || 'Trusted Company' 
-            };
-            
-            // Update local state first (optimistic update)
-            const updatedCompanies = trustedCompanies.map(company => {
-                if (company.id === id) {
-                    return { ...company, ...updatedCompanyData };
-                }
-                return company;
-            });
-            
-            setTrustedCompanies(updatedCompanies);
-            setEditingId(null);
-            setEditUrl('');
-            setEditName('');
-            
-            // Then update in Firebase
-            await updateTrustedBy(id, updatedCompanyData);
-            
-            setSuccessMessage('Company updated successfully');
-            setTimeout(() => setSuccessMessage(''), 3000);
-        } catch (error) {
-            console.error('Error updating company:', error);
-            setError('Failed to update company. Please try again.');
-            // Refresh the list to ensure consistency with the database
-            getTrustedCompanies();
-        } finally {
-            setUpdatingId(null);
-        }
-    };
-
-    const removeCompany = async (id) => {
-      
-            try {
-                setLoading(true);
-                // Optimistic UI update - remove from UI immediately
-        
-                // Then perform the actual deletion in the background
-                await removeTrustedBy(id).then(() => {
-                    setDeletingIds(prev => [...prev, id]);
-                    setSuccessMessage('Company removed successfully');
-                    setTimeout(() => setSuccessMessage(''), 3000);
-                    setTrustedCompanies(trustedCompanies.filter(company => company.id !== id));
-                    setLoading(false);
-                });
-            } catch (error) {
-                console.error('Error removing company:', error);
-                // If the deletion fails, restore the company to the list
-                getTrustedCompanies();
-                setError('Failed to remove company. Please try again.');
-            } finally {
-                setDeletingIds(prev => prev.filter(itemId => itemId !== id));
-            }
-        
-    };
-
-    const getTrustedCompanies = async () => {
-        await getTrustedBy().then((res) => {
-            console.log(res);
-            setTrustedCompanies(res);
-        });
-    };
-
-    useEffect(() => {
-        getTrustedCompanies();
+    const load = useCallback(async () => {
+        setLoading(true);
+        try { setItems(await getTrustedBy({ includeUnpublished: true })); }
+        catch (error) { setMessage({ type: 'error', text: error.message || 'Unable to load trusted logos.' }); }
+        finally { setLoading(false); }
     }, []);
-    return (
-        <div className="min-h-screen bg-slate-50 p-4 sm:p-6">
-            {/* Header Section */}
-            <div className="bg-white border border-slate-200 rounded-lg p-6 mb-6">
-                <div className="flex items-center space-x-3 mb-4">
-                    <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                        <FaBuilding className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold text-slate-900">Trusted Companies</h1>
-                        <p className="text-sm text-slate-500">Manage company logos displayed on your homepage</p>
-                    </div>
-                </div>
+    useEffect(() => { load(); }, [load]);
 
-                {/* Quick Stats */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="bg-slate-50 rounded-lg p-4">
-                        <div className="flex items-center space-x-2">
-                            <FaBuilding className="w-4 h-4 text-slate-600" />
-                            <span className="text-sm text-slate-600">Total Companies</span>
-                        </div>
-                        <p className="text-lg font-semibold text-slate-900">{trustedCompanies.length}</p>
-                    </div>
-                    <div className="bg-slate-50 rounded-lg p-4">
-                        <div className="flex items-center space-x-2">
-                            <FaImage className="w-4 h-4 text-slate-600" />
-                            <span className="text-sm text-slate-600">Display Status</span>
-                        </div>
-                        <p className="text-lg font-semibold text-slate-900">{trustedCompanies.length > 0 ? 'Active' : 'Inactive'}</p>
-                    </div>
-                    <div className="bg-slate-50 rounded-lg p-4">
-                        <div className="flex items-center space-x-2">
-                            <FaCheck className="w-4 h-4 text-emerald-500" />
-                            <span className="text-sm text-slate-600">System Status</span>
-                        </div>
-                        <p className="text-lg font-semibold text-slate-900">Ready</p>
-                    </div>
-                </div>
-            </div>
+    const validate = data => {
+        if (!data.name.trim()) return 'Company name is required.';
+        if (!sanitizeImageUrl(data.imageUrl)) return 'Use a valid HTTPS or site-relative image URL.';
+        return '';
+    };
+    const submit = async event => {
+        event.preventDefault();
+        const error = validate(form); if (error) { setMessage({ type: 'error', text: error }); return; }
+        setProcessing(true);
+        const result = await addTrustedBy({ ...form, imageUrl: sanitizeImageUrl(form.imageUrl) });
+        if (result.success) { setForm(EMPTY); setMessage({ type: 'success', text: form.published ? 'Logo published and audited.' : 'Unpublished logo saved and audited.' }); await load(); }
+        else setMessage({ type: 'error', text: result.error || 'Unable to add logo.' });
+        setProcessing(false);
+    };
+    const saveEdit = async event => {
+        event.preventDefault();
+        const error = validate(editing); if (error) { setMessage({ type: 'error', text: error }); return; }
+        setProcessing(true);
+        const result = await updateTrustedBy(editing.id, { ...editing, imageUrl: sanitizeImageUrl(editing.imageUrl) }, editing.revision);
+        if (result.success) { setEditing(null); setMessage({ type: 'success', text: 'Logo changes saved and audited.' }); await load(); }
+        else { setMessage({ type: 'error', text: result.error }); if (result.code === 'ADMIN_TARGET_CHANGED') { setEditing(null); await load(); } }
+        setProcessing(false);
+    };
+    const confirmDelete = async () => {
+        setProcessing(true);
+        const result = await removeTrustedBy(deleteTarget.id, deleteTarget.revision);
+        if (result.success) { setDeleteTarget(null); setMessage({ type: 'success', text: 'Logo deleted and audited.' }); await load(); }
+        else { setMessage({ type: 'error', text: result.error }); if (result.code === 'ADMIN_TARGET_CHANGED') { setDeleteTarget(null); await load(); } }
+        setProcessing(false);
+    };
 
-            {/* Success Message */}
-            {successMessage && (
-                <div className="bg-white border border-emerald-200 rounded-lg p-4 mb-6">
-                    <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center">
-                            <FaCheck className="w-4 h-4 text-emerald-600" />
-                        </div>
-                        <div className="flex-1">
-                            <h4 className="text-sm font-medium text-emerald-900">Success</h4>
-                            <p className="text-sm text-emerald-700">{successMessage}</p>
-                        </div>
-                        <button
-                            onClick={() => setSuccessMessage('')}
-                            className="w-6 h-6 flex items-center justify-center text-emerald-400 hover:text-emerald-600 transition-colors"
-                        >
-                            <FaTimes className="w-3 h-3" />
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* Error Message */}
-            {error && (
-                <div className="bg-white border border-red-200 rounded-lg p-4 mb-6">
-                    <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-red-50 rounded-lg flex items-center justify-center">
-                            <FaExclamationTriangle className="w-4 h-4 text-red-600" />
-                        </div>
-                        <div className="flex-1">
-                            <h4 className="text-sm font-medium text-red-900">Error</h4>
-                            <p className="text-sm text-red-700">{error}</p>
-                        </div>
-                        <button
-                            onClick={() => setError('')}
-                            className="w-6 h-6 flex items-center justify-center text-red-400 hover:text-red-600 transition-colors"
-                        >
-                            <FaTimes className="w-3 h-3" />
-                        </button>
-                    </div>
-                </div>
-            )}
-            
-            {/* Add New Company Form */}
-            <div className="bg-white border border-slate-200 rounded-lg overflow-hidden mb-6">
-                <div className="px-6 py-4 border-b border-slate-200">
-                    <div className="flex items-center space-x-2">
-                        <FaPlus className="w-5 h-5 text-blue-600" />
-                        <h3 className="text-lg font-semibold text-slate-900">Add New Company</h3>
-                    </div>
-                    <p className="text-sm text-slate-500">Add a trusted company logo to display on your homepage</p>
-                </div>
-                <div className="p-6">
-                    <form onSubmit={addTrustedCompany} className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-2">
-                                    <div className="flex items-center space-x-2">
-                                        <FaImage className="w-4 h-4 text-slate-600" />
-                                        <span>Logo Image URL</span>
-                                        <span className="text-red-500 text-xs">*</span>
-                                    </div>
-                                </label>
-                                <input
-                                    type="url"
-                                    placeholder="https://example.com/logo.png"
-                                    value={newCompanyUrl}
-                                    onChange={(e) => setNewCompanyUrl(e.target.value)}
-                                    className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                    required
-                                />
-                                <p className="text-xs text-slate-500 mt-1">Direct link to company logo image</p>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-2">
-                                    <div className="flex items-center space-x-2">
-                                        <FaBuilding className="w-4 h-4 text-slate-600" />
-                                        <span>Company Name</span>
-                                    </div>
-                                </label>
-                                <input
-                                    type="text"
-                                    placeholder="Company Name"
-                                    value={newCompanyName}
-                                    onChange={(e) => setNewCompanyName(e.target.value)}
-                                    className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                />
-                                <p className="text-xs text-slate-500 mt-1">Optional - defaults to "Trusted Company"</p>
-                            </div>
-                        </div>
-                        <button
-                            type="submit"
-                            disabled={addingCompany || !newCompanyUrl.trim()}
-                            className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200"
-                        >
-                            {addingCompany ? (
-                                <>
-                                    <FaSpinner className="w-4 h-4 animate-spin" />
-                                    <span>Adding Company...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <FaPlus className="w-4 h-4" />
-                                    <span>Add Company</span>
-                                </>
-                            )}
-                        </button>
-                    </form>
-                </div>
-            </div>
-            
-            {/* Companies List */}
-            <div className="bg-white border border-slate-200 rounded-lg overflow-hidden mb-6">
-                <div className="px-6 py-4 border-b border-slate-200">
-                    <h3 className="text-lg font-semibold text-slate-900">Company Logos</h3>
-                    <p className="text-sm text-slate-500">Manage and organize your trusted company logos</p>
-                </div>
-                
-                {trustedCompanies.length === 0 ? (
-                    <div className="text-center py-12">
-                        <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <FaBuilding className="w-8 h-8 text-slate-400" />
-                        </div>
-                        <h4 className="text-lg font-medium text-slate-900 mb-2">No Companies Added</h4>
-                        <p className="text-sm text-slate-500">Start by adding your first trusted company logo</p>
-                    </div>
-                ) : (
-                    <div className="p-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {trustedCompanies.map((company) => (
-                                <div
-                                    key={company.id}
-                                    className={`border border-slate-200 rounded-lg overflow-hidden transition-all duration-200 ${
-                                        editingId === company.id
-                                            ? 'ring-2 ring-blue-500 border-blue-500'
-                                            : 'hover:shadow-md hover:border-slate-300'
-                                    }`}
-                                >
-                                    {editingId === company.id ? (
-                                        <div className="p-4">
-                                            <div className="flex items-center space-x-2 mb-4">
-                                                <FaPen className="w-4 h-4 text-blue-600" />
-                                                <h4 className="font-medium text-slate-900">Edit Company</h4>
-                                            </div>
-                                            <div className="space-y-4">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                                                        <div className="flex items-center space-x-2">
-                                                            <FaImage className="w-3 h-3 text-slate-600" />
-                                                            <span>Image URL</span>
-                                                        </div>
-                                                    </label>
-                                                    <input
-                                                        type="url"
-                                                        value={editUrl}
-                                                        onChange={(e) => setEditUrl(e.target.value)}
-                                                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-sm"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                                                        <div className="flex items-center space-x-2">
-                                                            <FaBuilding className="w-3 h-3 text-slate-600" />
-                                                            <span>Company Name</span>
-                                                        </div>
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        value={editName}
-                                                        onChange={(e) => setEditName(e.target.value)}
-                                                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-sm"
-                                                        placeholder="Company Name"
-                                                    />
-                                                </div>
-                                                <div className="flex space-x-2">
-                                                    <button
-                                                        onClick={() => saveEdit(company.id)}
-                                                        disabled={updatingId === company.id || !editUrl.trim()}
-                                                        className="flex-1 flex items-center justify-center space-x-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-400 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors"
-                                                    >
-                                                        {updatingId === company.id ? (
-                                                            <>
-                                                                <FaSpinner className="w-3 h-3 animate-spin" />
-                                                                <span>Saving...</span>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <FaSave className="w-3 h-3" />
-                                                                <span>Save</span>
-                                                            </>
-                                                        )}
-                                                    </button>
-                                                    <button
-                                                        onClick={cancelEditing}
-                                                        disabled={updatingId === company.id}
-                                                        className="flex-1 flex items-center justify-center space-x-1 bg-slate-600 hover:bg-slate-700 disabled:bg-slate-400 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors"
-                                                    >
-                                                        <FaTimes className="w-3 h-3" />
-                                                        <span>Cancel</span>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <div className="bg-slate-50 h-32 flex items-center justify-center p-4">
-                                                <img
-                                                    src={company.imageUrl}
-                                                    alt={company.name || 'Company Logo'}
-                                                    className="max-h-full max-w-full object-contain"
-                                                    onError={(e) => {
-                                                        e.target.style.display = 'none';
-                                                        e.target.nextSibling.style.display = 'flex';
-                                                    }}
-                                                />
-                                                <div className="w-full h-24 bg-slate-200 hidden items-center justify-center text-slate-400">
-                                                    <FaImage className="w-8 h-8" />
-                                                </div>
-                                            </div>
-                                            <div className="p-4">
-                                                <h4 className="text-center text-slate-900 font-medium mb-3 truncate">
-                                                    {company.name || 'Trusted Company'}
-                                                </h4>
-                                                <div className="flex justify-center space-x-2">
-                                                    <button
-                                                        onClick={() => startEditing(company)}
-                                                        className="flex items-center space-x-1 bg-blue-50 hover:bg-blue-100 text-blue-600 text-xs font-medium px-3 py-1 rounded-lg transition-colors"
-                                                        title="Edit company details"
-                                                    >
-                                                        <FaPen className="w-3 h-3" />
-                                                        <span>Edit</span>
-                                                    </button>
-                                                    <button
-                                                        onClick={() => window.open(sanitizeUrl(company.imageUrl), '_blank')}
-                                                        className="flex items-center space-x-1 bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-medium px-3 py-1 rounded-lg transition-colors"
-                                                        title="Preview image"
-                                                    >
-                                                        <FaEye className="w-3 h-3" />
-                                                        <span>Preview</span>
-                                                    </button>
-                                                    <button
-                                                        onClick={() => removeCompany(company.id)}
-                                                        disabled={deletingIds.includes(company.id)}
-                                                        className="flex items-center space-x-1 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-medium px-3 py-1 rounded-lg transition-colors disabled:opacity-50"
-                                                        title="Remove company"
-                                                    >
-                                                        {deletingIds.includes(company.id) ? (
-                                                            <FaSpinner className="w-3 h-3 animate-spin" />
-                                                        ) : (
-                                                            <FaTrash className="w-3 h-3" />
-                                                        )}
-                                                        <span>{deletingIds.includes(company.id) ? 'Removing...' : 'Remove'}</span>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-            </div>
-            
-            {/* Information Section */}
-            <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
-                <div className="px-6 py-4 border-b border-slate-200">
-                    <div className="flex items-center space-x-2">
-                        <FaInfoCircle className="w-5 h-5 text-blue-600" />
-                        <h3 className="text-lg font-semibold text-slate-900">Display Guidelines</h3>
-                    </div>
-                    <p className="text-sm text-slate-500">Best practices for company logo display</p>
-                </div>
-                <div className="p-6">
-                    <div className="space-y-4">
-                        <div className="flex items-start space-x-3">
-                            <div className="w-5 h-5 bg-blue-50 rounded flex items-center justify-center mt-0.5">
-                                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                            </div>
-                            <div>
-                                <h4 className="text-sm font-medium text-slate-900 mb-1">Homepage Display</h4>
-                                <p className="text-sm text-slate-600">Company logos will be displayed in the "Trusted By" section of your homepage</p>
-                            </div>
-                        </div>
-                        <div className="flex items-start space-x-3">
-                            <div className="w-5 h-5 bg-emerald-50 rounded flex items-center justify-center mt-0.5">
-                                <div className="w-2 h-2 bg-emerald-600 rounded-full"></div>
-                            </div>
-                            <div>
-                                <h4 className="text-sm font-medium text-slate-900 mb-1">Image Requirements</h4>
-                                <p className="text-sm text-slate-600">Use transparent PNG logos with consistent dimensions for best results</p>
-                            </div>
-                        </div>
-                        <div className="flex items-start space-x-3">
-                            <div className="w-5 h-5 bg-amber-50 rounded flex items-center justify-center mt-0.5">
-                                <div className="w-2 h-2 bg-amber-600 rounded-full"></div>
-                            </div>
-                            <div>
-                                <h4 className="text-sm font-medium text-slate-900 mb-1">Recommended Size</h4>
-                                <p className="text-sm text-slate-600">Optimal image dimensions are 200x80 pixels for consistent appearance</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    return <div className="min-h-screen bg-slate-50 p-4 sm:p-6">
+        {deleteTarget && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" role="presentation" onKeyDown={event => { if (event.key === 'Escape' && !processing) setDeleteTarget(null); }}><div role="alertdialog" aria-modal="true" aria-labelledby="trusted-delete-title" className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl"><h2 id="trusted-delete-title" className="text-lg font-bold">Delete trusted logo?</h2><p className="mt-2 text-sm text-slate-600">Delete {deleteTarget.name}? It will disappear from the public homepage and the action is audited.</p><div className="mt-6 flex justify-end gap-3"><button type="button" autoFocus onClick={() => setDeleteTarget(null)} disabled={processing} className="rounded border px-4 py-2">Cancel</button><button type="button" onClick={confirmDelete} disabled={processing} className="rounded bg-red-700 px-4 py-2 text-white">{processing ? 'Deleting…' : 'Delete'}</button></div></div></div>}
+        <header className="mb-6 rounded-lg border border-slate-200 bg-white p-6"><div className="flex items-center gap-3"><FaBuilding className="text-blue-600" aria-hidden="true" /><div><h1 className="text-2xl font-bold">Trusted Companies</h1><p className="text-sm text-slate-500">Draft, order, preview, publish, and remove homepage logos.</p></div></div><div className="mt-4 grid gap-3 sm:grid-cols-2"><div className="rounded bg-slate-50 p-3"><span className="text-sm">Stored</span><p className="font-bold">{items.length}</p></div><div className="rounded bg-slate-50 p-3"><span className="text-sm">Published</span><p className="font-bold">{items.filter(item => item.published !== false).length}</p></div></div></header>
+        {message && <div role={message.type === 'error' ? 'alert' : 'status'} className={`mb-5 flex items-center gap-2 rounded border p-4 ${message.type === 'error' ? 'border-red-200 bg-red-50 text-red-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>{message.type === 'error' ? <FaExclamationTriangle aria-hidden="true" /> : <FaCheck aria-hidden="true" />}{message.text}<button type="button" className="ml-auto" aria-label="Dismiss message" onClick={() => setMessage(null)}><FaTimes /></button></div>}
+        <div className="grid gap-6 lg:grid-cols-[minmax(280px,380px)_1fr]">
+            <form onSubmit={submit} className="h-fit space-y-4 rounded-lg border bg-white p-5"><h2 className="font-semibold">Add logo</h2><Field label="Company name" value={form.name} onChange={value => setForm(current => ({ ...current, name: value }))} /><Field label="Image URL" type="url" value={form.imageUrl} onChange={value => setForm(current => ({ ...current, imageUrl: value }))} /><Field label="Order" type="number" value={form.order} onChange={value => setForm(current => ({ ...current, order: Number(value) }))} /><label className="flex gap-2 text-sm"><input type="checkbox" checked={form.published} onChange={event => setForm(current => ({ ...current, published: event.target.checked }))} />Publish immediately</label>{sanitizeImageUrl(form.imageUrl) && <img src={sanitizeImageUrl(form.imageUrl)} alt="New logo preview" className="h-20 max-w-full object-contain" />}<button disabled={processing} className="flex items-center gap-2 rounded bg-blue-700 px-4 py-2 text-white disabled:opacity-50"><FaPlus />{processing ? 'Saving…' : 'Save logo'}</button></form>
+            <section className="rounded-lg border bg-white p-5" aria-labelledby="logos-title"><div className="mb-4 flex items-center justify-between"><h2 id="logos-title" className="font-semibold">Stored logos</h2><button type="button" onClick={load} disabled={loading} className="rounded border px-3 py-1 text-sm">{loading ? 'Loading…' : 'Refresh'}</button></div>{loading ? <div role="status" className="p-8 text-center"><FaSpinner className="mx-auto animate-spin" />Loading logos…</div> : items.length === 0 ? <p className="p-8 text-center text-sm text-slate-500">No trusted logos saved.</p> : <div className="space-y-3">{items.map(item => editing?.id === item.id ? <form key={item.id} onSubmit={saveEdit} className="space-y-3 rounded border border-blue-300 p-4"><Field label="Company name" value={editing.name} onChange={value => setEditing(current => ({ ...current, name: value }))} /><Field label="Image URL" type="url" value={editing.imageUrl} onChange={value => setEditing(current => ({ ...current, imageUrl: value }))} /><Field label="Order" type="number" value={editing.order || 0} onChange={value => setEditing(current => ({ ...current, order: Number(value) }))} /><label className="flex gap-2 text-sm"><input type="checkbox" checked={editing.published !== false} onChange={event => setEditing(current => ({ ...current, published: event.target.checked }))} />Published</label><div className="flex gap-2"><button disabled={processing} className="flex items-center gap-1 rounded bg-blue-700 px-3 py-2 text-sm text-white"><FaSave />Save</button><button type="button" onClick={() => setEditing(null)} className="rounded border px-3 py-2 text-sm">Cancel</button></div></form> : <article key={item.id} className="flex flex-col gap-3 rounded border p-4 sm:flex-row sm:items-center"><div className="flex h-20 w-32 items-center justify-center rounded bg-slate-50">{sanitizeImageUrl(item.imageUrl) ? <img src={sanitizeImageUrl(item.imageUrl)} alt={`${item.name} logo`} className="max-h-16 max-w-28 object-contain" /> : <FaImage className="text-slate-400" />}</div><div className="min-w-0 flex-1"><h3 className="font-medium">{item.name}</h3><p className="text-xs text-slate-500">Order {item.order || 0} · {item.published === false ? 'Private draft' : 'Published'} · revision {item.revision}</p></div><div className="flex gap-2"><a href={sanitizeImageUrl(item.imageUrl)} target="_blank" rel="noopener noreferrer" aria-label={`Preview ${item.name}`} className="rounded border p-2"><FaEye /></a><button type="button" onClick={() => setEditing({ ...item })} aria-label={`Edit ${item.name}`} className="rounded border p-2"><FaPen /></button><button type="button" onClick={() => setDeleteTarget(item)} aria-label={`Delete ${item.name}`} className="rounded border p-2 text-red-700"><FaTrash /></button></div></article>)}</div>}</section>
         </div>
-    );
+    </div>;
 };
+
+const Field = ({ label, value, onChange, type = 'text' }) => { const id = useId(); return <label htmlFor={id} className="block text-sm font-medium">{label}<input id={id} required type={type} value={value} min={type === 'number' ? 0 : undefined} max={type === 'number' ? 10000 : undefined} onChange={event => onChange(event.target.value)} className="mt-1 w-full rounded border border-slate-300 px-3 py-2 font-normal" /></label>; };
 
 export default TrustedBy;
