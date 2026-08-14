@@ -61,7 +61,7 @@ export async function generateUserAiContent(endpointName, payload) {
     const aiConfig = settings?.ai || {};
     const activeProvider = aiConfig.provider || 'nvidia';
 
-    const nvidiaApiKey = (aiConfig.nvidiaApiKey || import.meta.env.VITE_NVIDIA_API_KEY || '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').trim();
+    const nvidiaApiKey = (aiConfig.nvidiaApiKey || import.meta.env.VITE_NVIDIA_API_KEY).trim();
     const nvidiaModel = resolveDynamicModel('nvidia', aiConfig);
 
     const geminiApiKey = (aiConfig.geminiApiKey || import.meta.env.VITE_GEMINI_API_KEY || '').trim();
@@ -667,7 +667,7 @@ export async function parseResumeTextToStructuredData(rawText) {
     }
 
     const aiConfig = settings?.ai || {};
-    const nvidiaApiKey = (aiConfig.nvidiaApiKey || import.meta.env.VITE_NVIDIA_API_KEY || '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').trim();
+    const nvidiaApiKey = (aiConfig.nvidiaApiKey || import.meta.env.VITE_NVIDIA_API_KEY).trim();
     const nvidiaModel = resolveDynamicModel('nvidia', aiConfig);
     const geminiApiKey = (aiConfig.geminiApiKey || import.meta.env.VITE_GEMINI_API_KEY || '').trim();
     const geminiModel = resolveDynamicModel('gemini', aiConfig);

@@ -7,6 +7,7 @@ import { withTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import HomepageNavbar from '../Dashboard2/elements/HomepageNavbar';
 import HomepageFooter from '../Dashboard2/elements/HomepageFooter';
+import { sanitizePublicHtml } from '../../utils/sanitizeHtml';
 
 class CustomePage extends Component {
     constructor(props) {
@@ -64,7 +65,7 @@ class CustomePage extends Component {
                             {/* Navbar */}
                             <HomepageNavbar user={this.props.user} />
                             {/* Page Content */}
-                            <div dangerouslySetInnerHTML={{ __html: this.state.pageContent }} className="custom-page__content mt-[100px] w-7xl mx-auto"></div>
+                            <div dangerouslySetInnerHTML={{ __html: sanitizePublicHtml(this.state.pageContent) }} className="custom-page__content mt-[100px] w-7xl mx-auto"></div>
                             {/* Page Footer */}
                             <HomepageFooter user={this.props.user} />
                         </div>

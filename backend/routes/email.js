@@ -5,6 +5,7 @@ const tls = require('tls');
 const net = require('net');
 const fs = require('fs');
 const path = require('path');
+const { assertPublicNetworkTarget } = require('../security/network');
 
 // In-memory Outbox Log Store (persisted to DB if available)
 let emailLogsStore = [];
@@ -898,6 +899,7 @@ router.post('/admin/test-connection', async (req, res) => {
                 return res.status(400).json({ success: false, error: 'Secondary Fallback Relay Username and Password are required.' });
             }
 
+            await assertPublicNetworkTarget(fallbackConfig.host);
             const transporter = createTransporter(fallbackConfig);
             await transporter.verify();
 
@@ -1015,6 +1017,7 @@ router.post('/admin/test-imap', async (req, res) => {
             password: req.body.password || ''
         };
 
+        await assertPublicNetworkTarget(imapConfig.host);
         const result = await verifyImapConnection(imapConfig);
         return res.json({ success: true, message: `IMAP Socket Verified! Connected to ${imapConfig.host}:${imapConfig.port}` });
     } catch (err) {

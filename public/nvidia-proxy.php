@@ -1,5 +1,5 @@
 <?php
-header('Access-Control-Allow-Origin: *');
+// Same-origin proxy: CORS is enforced by the application gateway; never reflect arbitrary origins.
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Authorization, Content-Type, Accept');
 header('Content-Type: application/json');
@@ -58,7 +58,8 @@ if (function_exists('curl_init')) {
     if (!empty($body)) {
         curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
     }
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
     curl_setopt($ch, CURLOPT_TIMEOUT, 30);
 
     $response = curl_exec($ch);
@@ -75,8 +76,8 @@ if (function_exists('curl_init')) {
             'timeout' => 30
         ],
         'ssl' => [
-            'verify_peer' => false,
-            'verify_peer_name' => false
+            'verify_peer' => true,
+            'verify_peer_name' => true
         ]
     ];
     $context = stream_context_create($opts);

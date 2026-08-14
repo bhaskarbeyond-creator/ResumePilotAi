@@ -353,6 +353,19 @@ class Checkout extends Component {
         return null;
     }
 
+    async awaitServerPaymentConfirmation(orderId) {
+        const apiBase = `${conf.provider || 'http'}://${conf.backendUrl}`;
+        for (let attempt = 0; attempt < 20; attempt += 1) {
+            const response = await axios.get(`${apiBase}/api/payment-orders/${encodeURIComponent(orderId)}`);
+            if (response.data.status === 'ACTIVE') return response.data;
+            if (['FAILED', 'CANCELLED', 'REFUNDED', 'CHARGEBACK', 'EXPIRED'].includes(response.data.status)) {
+                throw new Error('Payment was not confirmed by the server.');
+            }
+            await new Promise(resolve => setTimeout(resolve, 1500));
+        }
+        return null;
+    }
+
     async handleSubmit() {
         const { stripe, elements } = this.props;
         if (!stripe || !elements) return;
@@ -399,16 +412,14 @@ class Checkout extends Component {
 
             // Step 1: Create Stripe Payment Intent on backend (with idempotency key)
             const payRes = await axios.post(`${apiBase}/api/pay`, {
-                price: taxCalc.totalPrice,
-                userId: uid,
-                plan: this.props.selectedPlan,
-                currency: this.props.currencyCode || 'USD',
+                planId: this.props.selectedPlan,
             }, {
                 headers: { 'Idempotency-Key': this.state.idempotencyKey },
             });
 
             const clientSecret = payRes.data?.client_secret;
-            if (!clientSecret) {
+            const paymentOrderId = payRes.data?.orderId;
+            if (!clientSecret || !paymentOrderId) {
                 throw new Error('Failed to retrieve payment confirmation token from server.');
             }
 
@@ -430,19 +441,19 @@ class Checkout extends Component {
                 return;
             }
 
-            // Step 3: Track & activate subscription on Firestore
+            // Browser confirmation is not an entitlement. Wait for the verified server webhook/order state.
+            this.setState({ paymentOrderId, serverPaymentStatus: 'PENDING_SERVER_CONFIRMATION' });
+            const confirmedOrder = await this.awaitServerPaymentConfirmation(paymentOrderId);
+            if (!confirmedOrder) {
+                this.showToast('info', 'Payment is pending secure server confirmation. Your dashboard will update automatically.');
+                this.setState({ isLoading: false });
+                return;
+            }
             trackSubscription(this.props.selectedPlan, taxCalc.totalPrice);
             trackEvent('subscription_purchase', 'Billing', this.props.selectedPlan, taxCalc.totalPrice);
-            trackEngagement('purchase_completed', { plan_type: this.props.selectedPlan, payment_method: 'Stripe', amount: taxCalc.totalPrice, user_id: uid });
-
-            await addSbs(this.props.selectedPlan, 'Stripe', new Date(), taxCalc.totalPrice, uid, {
-                subtotal: taxCalc.subtotal, taxAmount: taxCalc.taxAmount, taxRate: taxCalc.taxRate,
-                taxName: taxCalc.taxName, companyTaxId: taxCalc.companyTaxId,
-                customerTaxId: this.state.customerTaxId || '', currency: this.props.currencyCode || 'USD',
-                paymentIntentId: paymentIntent.id,
-            });
+            trackEngagement('purchase_confirmed', { plan_type: this.props.selectedPlan, payment_method: 'Stripe' });
             this.triggerInvoiceEmail({ amount: taxCalc.totalPrice, symbol: this.props.currencyCode === 'INR' ? '₹' : '$', planName: this.props.selectedPlan });
-            this.setState({ step: 3, isLoading: false });
+            this.setState({ step: 3, serverPaymentStatus: 'ENTITLEMENT_ACTIVE', isLoading: false });
         } catch (err) {
             console.error('Unexpected Submit Error:', err);
             this.showToast('error', err.response?.data?.error || err.message || 'An unexpected error occurred. Please try again.');

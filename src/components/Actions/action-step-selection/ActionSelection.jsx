@@ -64,7 +64,7 @@ import Cv47 from '../../../assets/resumesNew/Cv47.JPG';
 import Cv48 from '../../../assets/resumesNew/Cv48.JPG';
 import Cv49 from '../../../assets/resumesNew/Cv49.JPG';
 import Cv50 from '../../../assets/resumesNew/Cv50.JPG';
-import Cv51 from '../../../assets/resumesNew/Cv51.JPG';
+import Cv51 from '../../../assets/resumesNew/CV51.JPG';
 
 // Cover letter template imports
 import Cover1 from '../../../assets/coversNew/Cover1.JPG';

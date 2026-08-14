@@ -7,7 +7,7 @@
 // Allow large timeouts for PDF generation & external API calls
 set_time_limit(120);
 
-header('Access-Control-Allow-Origin: *');
+// Same-origin proxy: CORS is enforced by the application gateway; never reflect arbitrary origins.
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, Accept, X-Requested-With');
 

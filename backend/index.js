@@ -13,15 +13,13 @@ const resetTokens = new Map();
 // Enterprise single-use email verification token registry (24-hour expiry, in-memory + Firestore fallback)
 const verificationTokens = new Map();
 
-const puppeteer = require('puppeteer-extra');
-const StealthPlugin = require('puppeteer-extra-plugin-stealth');
-puppeteer.use(StealthPlugin());
-
 const { chromium } = require('playwright');
 require('dotenv').config();
 const EmailNotifier = require('./services/emailNotifier');
 const app = express();
 const cors = require('cors');
+const cryptoRandom = require('crypto');
+const { requireAuth, requirePermission } = require('./security/auth');
 const port = process.env.PORT || 8080;
 const websiteName = process.env.WEBSITE_NAME || 'airesume.projectdemo.guru';
 const protocol = process.env.PROTOCOL || 'https';
@@ -102,12 +100,15 @@ const initSystemFonts = () => {
 };
 initSystemFonts();
 
-app.use(express.json());
-app.use(
-    express.urlencoded({
-        extended: true,
-    })
-);
+// Stripe must receive the exact raw payload; install this before JSON parsing.
+app.use('/api/stripe-webhook', express.raw({ type: 'application/json', limit: '1mb' }));
+app.use(express.json({ limit: '256kb', type: req => req.originalUrl !== '/api/stripe-webhook' }));
+app.use(express.urlencoded({ extended: false, limit: '64kb' }));
+app.use((req, res, next) => {
+    res.locals.requestId = req.get('x-request-id') || cryptoRandom.randomUUID();
+    res.setHeader('X-Request-Id', res.locals.requestId);
+    next();
+});
 const allowedOrigins = [
     'https://airesume.projectdemo.guru',
     'http://localhost:5173',
@@ -119,7 +120,8 @@ app.use(cors({
         if (!origin || allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.projectdemo.guru')) {
             callback(null, true);
         } else {
-            callback(null, true);
+            callback(new Error('Origin not allowed by CORS policy'));
+        }
     }
 }));
 
@@ -149,6 +151,20 @@ const authLimiter = rateLimit({
 app.use('/api/email', authLimiter);
 app.use('/api/auth', authLimiter);
 
+// Zero-trust API boundary. Requests are authenticated unless they are explicitly
+// public protocol endpoints. Route handlers must still enforce their own role/ownership policy.
+const publicApiPaths = new Set([
+    '/stripe-webhook', '/auth/custom-password-reset', '/auth/send-verification-email',
+    '/auth/verify-email-token', '/auth/set-user-password', '/auth/linkedin', '/auth/linkedin/callback',
+    '/auth/github', '/auth/github/callback'
+]);
+app.use('/api', (req, res, next) => {
+    if (publicApiPaths.has(req.path)) return next();
+    return requireAuth(req, res, next);
+});
+// Administrative, diagnostic, mail-operations and test namespaces are never normal-user operations.
+app.use(['/api/admin', '/api/test-grant-admin', '/api/test-create-candidate-subscription', '/api/email/admin'], requirePermission('system.config.write'));
+
 // ── Mount Modular Sub-Routers ────────────────────────────────────────────────
 try {
     const emailRoutes = require('./routes/email');
@@ -166,40 +182,60 @@ try {
     console.warn('[Backend Routes] Could not mount AI routes:', e.message);
 }
 
-const stripe = require('stripe')(process.env.STRIPE_SECRET);
-app.post('/api/pay', async (req, res) => {
-    var price = req.body.price;
-    const userId = req.body.userId || '';
-    const plan = req.body.plan || 'monthly';
-    const currency = (req.body.currency || 'usd').toLowerCase();
-    price = Math.round(parseFloat(price) * 100); // use round to avoid float drift
+const stripe = require('stripe')(process.env.STRIPE_SECRET || 'missing');
+// Server-owned catalog. Amounts are smallest currency units and never derive from a browser request.
+const PLAN_CATALOG = Object.freeze({
+    monthly: { amount: 1999, currency: 'usd', months: 1 },
+    halfYear: { amount: 9999, currency: 'usd', months: 6 },
+    yearly: { amount: 17999, currency: 'usd', months: 12 }
+});
+async function createPaymentOrder({ uid, planId }) {
+    const plan = PLAN_CATALOG[planId];
+    if (!plan) { const err = new Error('INVALID_PLAN'); err.status = 400; throw err; }
+    if (!db || !admin) { const err = new Error('PAYMENT_SERVICE_UNAVAILABLE'); err.status = 503; throw err; }
+    if (!process.env.STRIPE_SECRET) { const err = new Error('PAYMENT_PROVIDER_UNAVAILABLE'); err.status = 503; throw err; }
+    const orderRef = db.collection('payment_orders').doc();
+    await orderRef.set({ uid, planId, amount: plan.amount, currency: plan.currency, status: 'PENDING_PAYMENT', createdAt: admin.firestore.FieldValue.serverTimestamp() });
     try {
-        const paymentIntent = await stripe.paymentIntents.create({
-            amount: price,
-            currency: currency,
-            metadata: {
-                userId: userId,
-                plan: plan,
-                integration_check: 'accept_a_payment'
-            },
+        const intent = await stripe.paymentIntents.create({
+            amount: plan.amount, currency: plan.currency,
+            metadata: { orderId: orderRef.id, uid, planId },
+            idempotencyKey: `order:${orderRef.id}`
         });
-        res.json({ client_secret: paymentIntent['client_secret'], server_time: Date.now() });
+        await orderRef.update({ provider: 'stripe', providerPaymentIntentId: intent.id, status: 'PAYMENT_CREATED', updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+        return { orderId: orderRef.id, clientSecret: intent.client_secret, amount: plan.amount, currency: plan.currency };
     } catch (err) {
-        console.error('[Stripe /api/pay] Error:', err.message);
-        res.status(500).json({ error: err.message });
+        await orderRef.update({ status: 'FAILED', failureCode: 'PROVIDER_CREATE_FAILED', updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+        throw err;
+    }
+}
+app.post('/api/pay', async (req, res) => {
+    try {
+        const result = await createPaymentOrder({ uid: req.user.uid, planId: req.body.planId || req.body.plan });
+        return res.status(201).json({ orderId: result.orderId, client_secret: result.clientSecret, amount: result.amount, currency: result.currency, status: 'PAYMENT_PENDING' });
+    } catch (err) {
+        console.error('[Stripe payment create]', err.message);
+        return res.status(err.status || 500).json({ error: { code: err.message === 'INVALID_PLAN' ? 'INVALID_PLAN' : 'PAYMENT_UNAVAILABLE', message: 'Unable to create payment', requestId: res.locals.requestId } });
     }
 });
 
+
+// Payment status is read from a server-owned order and is bound to the verified caller.
+app.get('/api/payment-orders/:orderId', async (req, res) => {
+    if (!db || !/^[A-Za-z0-9_-]{1,128}$/.test(req.params.orderId)) return res.status(404).json({ error: { code: 'ORDER_NOT_FOUND', message: 'Order not found', requestId: res.locals.requestId } });
+    const snap = await db.collection('payment_orders').doc(req.params.orderId).get();
+    if (!snap.exists || snap.data().uid !== req.user.uid) return res.status(404).json({ error: { code: 'ORDER_NOT_FOUND', message: 'Order not found', requestId: res.locals.requestId } });
+    const order = snap.data();
+    return res.json({ orderId: snap.id, status: order.status, planId: order.planId, membershipEnds: order.membershipEnds || null });
+});
+
 // Stripe Webhook — instant subscription activation + Firestore sync
-app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+app.post('/api/stripe-webhook', async (req, res) => {
     const sig = req.headers['stripe-signature'];
     let event;
     try {
-        if (process.env.STRIPE_WEBHOOK_SECRET) {
-            event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
-        } else {
-            event = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-        }
+        if (!process.env.STRIPE_WEBHOOK_SECRET) throw new Error('Stripe webhook is not configured');
+        event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
     } catch (err) {
         console.error('[Stripe Webhook] Signature error:', err.message);
         return res.status(400).send(`Webhook Error: ${err.message}`);
@@ -207,42 +243,55 @@ app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async
 
     if (event.type === 'payment_intent.succeeded' || event.type === 'checkout.session.completed') {
         const paymentData = event.data.object;
-        const userId = paymentData.metadata?.userId;
-        const plan = paymentData.metadata?.plan || 'monthly';
-        console.log(`[Stripe Webhook] Payment succeeded — userId: ${userId}, plan: ${plan}`);
-
-        // Calculate correct expiry based on plan type
-        const expDate = new Date();
-        if (plan === 'monthly') {
-            expDate.setMonth(expDate.getMonth() + 1);
-        } else if (plan === 'halfYear') {
-            expDate.setMonth(expDate.getMonth() + 6);
-        } else if (plan === 'yearly') {
-            expDate.setMonth(expDate.getMonth() + 15); // 12 + 3 bonus months
-        } else {
-            expDate.setMonth(expDate.getMonth() + 1); // fallback to monthly
+        const orderId = paymentData.metadata?.orderId;
+        if (!db || !orderId) return res.status(400).json({ error: 'Unknown payment order' });
+        const eventRef = db.collection('payment_webhook_events').doc(event.id);
+        const orderRef = db.collection('payment_orders').doc(orderId);
+        const orderSnap = await orderRef.get();
+        if (!orderSnap.exists) return res.status(400).json({ error: 'Unknown payment order' });
+        const order = orderSnap.data();
+        if (order.provider !== 'stripe' || order.providerPaymentIntentId !== paymentData.id || order.amount !== paymentData.amount || order.currency !== String(paymentData.currency).toLowerCase() || order.uid !== paymentData.metadata?.uid || order.planId !== paymentData.metadata?.planId) {
+            return res.status(400).json({ error: 'Payment order mismatch' });
         }
+        const userId = order.uid;
+        const plan = order.planId;
+        try {
+            // Firestore create is atomic: replayed or concurrent events cannot both claim the event id.
+            await eventRef.create({ provider: 'stripe', eventType: event.type, orderId, receivedAt: admin.firestore.FieldValue.serverTimestamp() });
+        } catch (err) {
+            if (err.code === 6 || err.code === 'already-exists') return res.json({ received: true, duplicate: true });
+            throw err;
+        }
+        console.log(`[Stripe Webhook] verified order ${orderId}`);
 
-        // Sync Firestore user membership record
-        if (db && userId) {
-            try {
-                await db.collection('users').doc(userId).update({
-                    membership: 'Premium',
-                    membershipEnds: expDate,
-                    autoRenew: true,
-                    paymentStatus: 'ACTIVE',
-                    lastPaymentGateway: 'Stripe',
-                    cancellationRequested: false,
-                    lastWebhookSync: admin.firestore.FieldValue.serverTimestamp(),
+        const monthsByPlan = { monthly: 1, halfYear: 6, yearly: 12 };
+        const months = monthsByPlan[plan];
+        if (!months) return res.status(400).json({ error: 'Invalid payment plan' });
+        try {
+            await db.runTransaction(async tx => {
+                const currentOrder = await tx.get(orderRef);
+                if (!currentOrder.exists || currentOrder.data().status === 'ACTIVE') return;
+                const userRef = db.collection('users').doc(userId);
+                const userSnap = await tx.get(userRef);
+                if (!userSnap.exists) throw new Error('PAYMENT_USER_NOT_FOUND');
+                const existingEnd = userSnap.data().membershipEnds?.toDate?.() || new Date(userSnap.data().membershipEnds || 0);
+                const startDate = existingEnd > new Date() ? existingEnd : new Date();
+                const expDate = new Date(startDate);
+                expDate.setMonth(expDate.getMonth() + months);
+                tx.update(userRef, {
+                    membership: 'Premium', membershipEnds: expDate, autoRenew: true,
+                    paymentStatus: 'ACTIVE', lastPaymentGateway: 'Stripe', cancellationRequested: false,
+                    lastWebhookSync: admin.firestore.FieldValue.serverTimestamp()
                 });
-                console.log(`[Stripe Webhook] Firestore synced — user ${userId} → expires ${expDate.toISOString()}`);
-            } catch (dbErr) {
-                console.error('[Stripe Webhook] Firestore update failed:', dbErr.message);
-            }
-        } else {
-            console.warn('[Stripe Webhook] Skipped Firestore — db or userId missing');
+                tx.update(orderRef, { status: 'ACTIVE', activatedAt: admin.firestore.FieldValue.serverTimestamp(), membershipEnds: expDate });
+            });
+        } catch (err) {
+            // Event claim is released on processing failure so Stripe can safely retry.
+            await eventRef.delete().catch(() => {});
+            throw err;
         }
-
+        const activated = (await orderRef.get()).data();
+        const expDate = activated.membershipEnds?.toDate?.() || new Date(activated.membershipEnds);
         return res.json({
             received: true,
             status: 'activated',
@@ -1635,72 +1684,25 @@ if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
 }
 
 app.get('/api/linkedin-scraper', async (req, res) => {
+    // Fixed destination, headless, bounded browser workload. This is not a general-purpose browser proxy.
+    let browser;
     try {
-        const cookiesPath = path.join(__dirname, 'cookies.json');
-        const cookiesExist = fs.existsSync(cookiesPath);
-        const cookies = cookiesExist ? JSON.parse(fs.readFileSync(cookiesPath, 'utf8')) : [];
-
-        const browser = await puppeteer.launch({
-            headless: false,
-            args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        browser = await chromium.launch({ headless: true });
+        const context = await browser.newContext({
+            userAgent: 'ResumePilotJobsBot/1.0 (+https://resumepilot.ai)',
+            javaScriptEnabled: false
         });
-
-        const page = await browser.newPage();
-
-        // Set user agent
-        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
-
-        // Set cookies before navigating
-        if (cookies.length > 0) {
-            await page.setCookie(...cookies);
-            console.log('Cookies loaded into page');
-        }
-
-        console.log('navigating to LinkedIn jobs search...');
-
-        await page.goto('https://www.linkedin.com/jobs/search?keywords=web%20developer&location=United%20States&geoId=103644278&trk=public_jobs_jobs-search-bar_search-submit&position=1&pageNum=0', {
-            timeout: 60000,
-            waitUntil: 'networkidle0',
+        const page = await context.newPage();
+        await page.goto('https://www.linkedin.com/jobs/search?keywords=web%20developer&location=United%20States', {
+            timeout: 30_000, waitUntil: 'domcontentloaded'
         });
-
-        await page.waitForSelector('ul.jobs-search__results-list', {
-            visible: true,
-            timeout: 30000,
-        });
-
-        await page.waitForTimeout(3000); // fixed deprecated waitFor
-
-        const jobData = await page.evaluate(() => {
-            const jobCards = document.querySelectorAll('ul.jobs-search__results-list div.base-card');
-            const jobs = [];
-
-            jobCards.forEach((card, index) => {
-                const textContent = card.textContent.trim();
-                if (textContent) {
-                    jobs.push({
-                        id: index + 1,
-                        content: textContent,
-                    });
-                }
-            });
-
-            return jobs;
-        });
-
-        await browser.close();
-
-        res.json({
-            success: true,
-            totalJobs: jobData.length,
-            jobs: jobData,
-        });
+        const jobData = await page.locator('ul.jobs-search__results-list div.base-card').evaluateAll(cards => cards.slice(0, 25).map((card, index) => ({ id: index + 1, content: (card.textContent || '').trim() })).filter(job => job.content));
+        return res.json({ success: true, totalJobs: jobData.length, jobs: jobData });
     } catch (error) {
-        console.error('LinkedIn scraper error:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to scrape LinkedIn jobs',
-            message: error.message,
-        });
+        console.error('LinkedIn scraper error:', error.message);
+        return res.status(502).json({ success: false, error: 'Job source temporarily unavailable' });
+    } finally {
+        if (browser) await browser.close().catch(() => {});
     }
 });
 
@@ -1881,38 +1883,31 @@ app.post('/api/admin/firebase-service-account', async (req, res) => {
     }
 });
 
-// Custom Password Reset via Configured SMTP Server (Bypasses Firebase Default Spammy Domain)
+// Password reset: only a hash is persisted; raw tokens are never stored server-side.
+const RESET_TOKEN_TTL_MS = 15 * 60 * 1000;
+const hashResetToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 app.post(['/api/auth/custom-password-reset', '/api/notify/password-reset'], async (req, res) => {
-    const email = req.body.email || req.body.userEmail;
-    if (!email) return res.status(400).json({ success: false, error: 'Email address is required.' });
-
+    const email = String(req.body.email || req.body.userEmail || '').trim().toLowerCase();
+    // Keep response enumeration-resistant. The request is still rate limited by authLimiter.
+    const genericResponse = { success: true, message: 'If an account exists, a password reset email will be sent shortly.' };
+    if (!email || !/^\S+@\S+\.\S+$/.test(email)) return res.json(genericResponse);
     try {
-        const token = crypto.randomBytes(32).toString('hex');
-        const expiresAt = Date.now() + 15 * 60 * 1000;
-
-        resetTokens.set(token, {
-            email: email.toLowerCase().trim(),
-            expiresAt,
-            used: false
+        if (!db || !admin?.auth) throw new Error('Password reset service unavailable');
+        let user;
+        try { user = await admin.auth().getUserByEmail(email); }
+        catch (err) { if (err.code === 'auth/user-not-found') return res.json(genericResponse); throw err; }
+        const token = crypto.randomBytes(32).toString('base64url');
+        const tokenHash = hashResetToken(token);
+        const expiresAt = Date.now() + RESET_TOKEN_TTL_MS;
+        await db.collection('password_reset_tokens').doc(tokenHash).set({
+            uid: user.uid, email, expiresAt, usedAt: null, createdAt: admin.firestore.FieldValue.serverTimestamp()
         });
-
-        const resetLink = `${protocol}://${websiteName}/login?mode=resetPassword&token=${token}&email=${encodeURIComponent(email)}`;
-        console.log(`[Enterprise Reset Token] Generated single-use token for ${email}`);
-
-        const db = req.app.get('db');
-        await EmailNotifier.notifyPasswordReset(db, {
-            userEmail: email,
-            userName: email.split('@')[0],
-            resetLink
-        });
-
-        return res.json({
-            success: true,
-            message: `Branded password reset email sent from your configured SMTP server to ${email}`
-        });
+        const resetLink = `${protocol}://${websiteName}/login?mode=resetPassword&token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
+        await EmailNotifier.notifyPasswordReset(db, { userEmail: email, userName: email.split('@')[0], resetLink });
+        return res.json(genericResponse);
     } catch (err) {
-        console.error('[Custom Password Reset Error]:', err);
-        return res.status(500).json({ success: false, error: err.message });
+        console.error('[Password reset request]', err.message);
+        return res.status(503).json({ success: false, error: 'Password reset is temporarily unavailable.' });
     }
 });
 
@@ -2113,45 +2108,36 @@ app.post(['/api/admin/delete-user', '/api/auth/purge-orphaned-auth'], async (req
 });
 
 app.post('/api/auth/set-user-password', async (req, res) => {
-    const { email, newPassword, token } = req.body;
-    if (!email || !newPassword) {
-        return res.status(200).json({ success: false, error: 'Email and new password are required.' });
+    const email = String(req.body.email || '').trim().toLowerCase();
+    const newPassword = String(req.body.newPassword || '');
+    const token = String(req.body.token || '');
+    if (!email || !token || newPassword.length < 12) {
+        return res.status(400).json({ success: false, error: 'A valid reset token, email, and a password of at least 12 characters are required.' });
     }
-
-    // Validate single-use token if provided
-    if (token) {
-        const tokenData = resetTokens.get(token);
-        if (!tokenData) {
-            return res.status(200).json({ success: false, error: 'Invalid or expired password reset link. Please request a new link.' });
-        }
-        if (tokenData.used) {
-            return res.status(200).json({ success: false, error: 'This password reset link has already been used. Please request a new link.' });
-        }
-        if (Date.now() > tokenData.expiresAt) {
-            resetTokens.delete(token);
-            return res.status(200).json({ success: false, error: 'Password reset link has expired (valid for 15 mins). Please request a new link.' });
-        }
-        tokenData.used = true;
-    }
-
+    if (!db || !admin?.auth) return res.status(503).json({ success: false, error: 'Password reset service unavailable.' });
+    const tokenHash = hashResetToken(token);
+    const ref = db.collection('password_reset_tokens').doc(tokenHash);
+    const leaseId = crypto.randomUUID();
     try {
-        // ✅ Primary path: Firebase Admin SDK (service account initialized via env vars)
-        if (admin && typeof admin.auth === 'function' && admin.apps && admin.apps.length) {
-            const userRecord = await admin.auth().getUserByEmail(email);
-            await admin.auth().updateUser(userRecord.uid, { password: newPassword, disabled: false });
-            console.log(`[Set Password] ✅ Admin SDK updated Firebase Auth password for ${email} (uid: ${userRecord.uid})`);
-            return res.json({ success: true, method: 'admin_sdk', message: `Password updated successfully for ${email}` });
-        }
-
-        // Fallback: Admin SDK not available
-        console.error('[Set Password] ❌ Firebase Admin SDK not initialized — cannot update password');
-        return res.status(500).json({ success: false, error: 'Server configuration error: Admin SDK unavailable. Please contact support.' });
+        // Atomically reserve the token. A concurrent request cannot acquire the same token.
+        await db.runTransaction(async tx => {
+            const snap = await tx.get(ref);
+            const record = snap.data();
+            if (!snap.exists || record.usedAt || record.email !== email || record.expiresAt < Date.now() || record.leaseId) {
+                throw new Error('INVALID_RESET_TOKEN');
+            }
+            tx.update(ref, { leaseId, leaseExpiresAt: Date.now() + 60_000 });
+        });
+        const user = await admin.auth().getUserByEmail(email);
+        const record = (await ref.get()).data();
+        if (!record || record.uid !== user.uid || record.leaseId !== leaseId) throw new Error('INVALID_RESET_TOKEN');
+        await admin.auth().updateUser(user.uid, { password: newPassword, disabled: false });
+        await ref.update({ usedAt: admin.firestore.FieldValue.serverTimestamp(), leaseId: admin.firestore.FieldValue.delete(), leaseExpiresAt: admin.firestore.FieldValue.delete() });
+        return res.json({ success: true, message: 'Password updated successfully.' });
     } catch (err) {
-        console.error('[Set User Password Error]:', err.code, err.message);
-        if (err.code === 'auth/user-not-found') {
-            return res.status(200).json({ success: false, error: `No account found for ${email}. Please check the email address.` });
-        }
-        return res.status(200).json({ success: false, error: err.message || 'Failed to update password.' });
+        // Release a lease only when this request owns it; do not make an already-used token reusable.
+        try { const snap = await ref.get(); if (snap.exists && snap.data().leaseId === leaseId) await ref.update({ leaseId: admin.firestore.FieldValue.delete(), leaseExpiresAt: admin.firestore.FieldValue.delete() }); } catch (_) {}
+        return res.status(400).json({ success: false, error: 'Invalid or expired password reset link.' });
     }
 });
 

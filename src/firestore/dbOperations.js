@@ -227,106 +227,17 @@ export function removeResume(userId, resumeId) {
 }
 
 // Add sbs
-export async function addSbs(type, paimentType, currentDate, price, uid, taxDetails = {}) {
-    // Don't rely on fire.auth().currentUser which might be null
-    const db = fire.firestore();
-
-    // ── Renewal-Stack Logic ────────────────────────────────────────────────────
-    // If the user still has active time remaining, new plan stacks ONTO that date.
-    // If expired or no active membership, new plan starts from today.
-    let baseDate = new Date(currentDate); // fallback: today
-
-    try {
-        const userDoc = await db.collection('users').doc(uid).get();
-        if (userDoc.exists) {
-            const userData = userDoc.data();
-            const existingEndsRaw = userData.membershipEnds;
-            const existingMembership = userData.membership || '';
-            if (existingEndsRaw && (existingMembership === 'Premium' || existingMembership.toLowerCase().includes('premium') || existingMembership.toLowerCase().includes('pro'))) {
-                const existingEnds = existingEndsRaw.toDate ? existingEndsRaw.toDate() : new Date(existingEndsRaw);
-                if (existingEnds > new Date()) {
-                    // Active membership found — stack new plan time from their existing expiry
-                    baseDate = new Date(existingEnds);
-                }
-            }
-        }
-    } catch (e) {
-        // Fallback to today on error
-        baseDate = new Date(currentDate);
-    }
-
-    var sbsEnd = null;
-    var date = new Date(baseDate);
-
-    if (type === 'monthly') {
-        sbsEnd = new Date(date.setMonth(date.getMonth() + 1));
-    }
-    if (type === 'halfYear') {
-        sbsEnd = new Date(date.setMonth(date.getMonth() + 6));
-    }
-    if (type === 'yearly') {
-        sbsEnd = new Date(date.setMonth(date.getMonth() + 12));
-    }
-
-    db.collection('subscriptions').add({
-        userId: uid,
-        type: type,
-        sbsEnd: sbsEnd,
-        paimentType: paimentType,
-        created_at: firebase.firestore.Timestamp.now(),
-    });
-
-    // Save transaction record for Admin & User Billing History with Tax Breakdown
-    const txnId = `TXN_${Date.now()}_${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
-    const txnData = {
-        transactionId: txnId,
-        userId: uid,
-        planType: type || 'pro',
-        paimentType: paimentType || 'Card',
-        price: parseFloat(price) || 19.99,
-        currency: taxDetails.currency || 'INR',
-        subtotal: parseFloat(taxDetails.subtotal) || parseFloat(price) || 19.99,
-        taxAmount: parseFloat(taxDetails.taxAmount) || 0,
-        taxRate: parseFloat(taxDetails.taxRate) || 0,
-        taxName: taxDetails.taxName || 'GST',
-        companyTaxId: taxDetails.companyTaxId || '',
-        customerTaxId: taxDetails.customerTaxId || '',
-        status: 'Completed',
-        created_at: firebase.firestore.Timestamp.now(),
+/**
+ * Legacy checkout completion hook. Entitlements are exclusively granted by a
+ * cryptographically verified server webhook; the browser must never write
+ * membership, transactions, subscriptions, or earnings records directly.
+ */
+export async function addSbs() {
+    return {
+        accepted: true,
+        status: 'PENDING_SERVER_CONFIRMATION',
+        message: 'Payment submitted. Your subscription will activate after secure server confirmation.'
     };
-
-    // Save in global transactions collection
-    db.collection('transactions').add(txnData).catch(e => console.warn('Global txn add error:', e));
-
-    // Save in user's private subcollection (guaranteed read permission)
-    db.collection('users').doc(uid).collection('transactions').add(txnData).catch(e => console.warn('User txn add error:', e));
-
-    db.collection('users').doc(uid).update({
-        membership: 'Premium',
-        membershipEnds: sbsEnd,
-        autoRenew: true,
-        lastPaymentGateway: paimentType || 'Card/PayPal/UPI',
-        lastPaymentDate: firebase.firestore.Timestamp.now(),
-        lastPaymentAmount: parseFloat(price) || 19.99,
-        lastPaymentCurrency: taxDetails.currency || 'INR',
-        cancellationRequested: false,
-        paymentStatus: 'ACTIVE',
-    });
-
-    const snapshot = await db.collection('data').doc('earnings').get();
-    if (snapshot.exists) {
-        db.collection('data')
-            .doc('earnings')
-            .update({
-                amount: firebase.firestore.FieldValue.increment(parseInt(price)),
-            });
-    } else {
-        db.collection('data')
-            .doc('earnings')
-            .set({
-                amount: parseInt(price),
-            });
-    }
 }
 
 // Fetch user payment transactions for Dashboard Billing History

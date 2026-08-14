@@ -14,8 +14,33 @@ import fire from './conf/fire'; // Import fire
 import GA4Provider from './components/GA4Provider';
 import i18n from './i18n';
 import GoogleMapsProvider from './components/JobsListings/GoogleMapsProvider';
+import axios from 'axios';
+
+// Attach Firebase ID tokens at the browser-to-API trust boundary. The backend never
+// accepts identity, role, or entitlement from request bodies.
+async function getApiAuthorization() {
+    const user = fire.auth().currentUser;
+    return user ? `Bearer ${await user.getIdToken()}` : null;
+}
+
+axios.interceptors.request.use(async (request) => {
+    if (typeof request.url === 'string' && request.url.includes('/api/')) {
+        const authorization = await getApiAuthorization();
+        if (authorization) request.headers.Authorization = authorization;
+    }
+    return request;
+});
 
 if (typeof window !== 'undefined') {
+    const nativeFetch = window.fetch.bind(window);
+    window.fetch = async (input, init = {}) => {
+        const url = typeof input === 'string' ? input : input?.url;
+        if (!url || !url.includes('/api/')) return nativeFetch(input, init);
+        const authorization = await getApiAuthorization();
+        const headers = new Headers(init.headers || (typeof input !== 'string' ? input.headers : undefined));
+        if (authorization) headers.set('Authorization', authorization);
+        return nativeFetch(input, { ...init, headers });
+    };
     window.fire = fire;
 }
 
