@@ -5214,6 +5214,14 @@ export async function removePhraseFromCategory(categoryName, phrase) {
 export default addResume;
 
 // Portfolio operations
+function assertPortfolioSize(data) {
+    const bytes = new Blob([JSON.stringify(data || {})]).size;
+    if (bytes <= 900_000) return;
+    const error = new Error('Portfolio is too large to save. Remove oversized embedded images or content.');
+    error.code = 'PORTFOLIO_TOO_LARGE';
+    throw error;
+}
+
 export async function publishPortfolio(userId, portfolioData, theme = 'default') {
     const db = fire.firestore();
 
@@ -5254,6 +5262,7 @@ export async function publishPortfolio(userId, portfolioData, theme = 'default')
             }
             return component;
         });
+        assertPortfolioSize(cleanPortfolioData);
 
         const portfolioDoc = {
             userId: userId,
@@ -5265,6 +5274,7 @@ export async function publishPortfolio(userId, portfolioData, theme = 'default')
             publishedAt: firebase.firestore.Timestamp.now(),
             updatedAt: firebase.firestore.Timestamp.now(),
             views: 0,
+            revision: 1,
             metadata: {
                 description: portfolioData.description || '',
                 tags: portfolioData.tags || [],
@@ -5284,17 +5294,18 @@ export async function publishPortfolio(userId, portfolioData, theme = 'default')
             theme: theme,
             publishedAt: portfolioDoc.publishedAt,
             isPublished: true,
+            revision: 1,
         });
         await batch.commit();
 
-        return { id: docRef.id, slug: slug };
+        return { id: docRef.id, slug: slug, revision: 1 };
     } catch (error) {
         console.error('Error publishing portfolio:', error);
         throw error;
     }
 }
 
-export async function updateExistingPortfolio(portfolioId, userId, portfolioData, theme = 'default') {
+export async function updateExistingPortfolio(portfolioId, userId, portfolioData, theme = 'default', expectedRevision = null) {
     const db = fire.firestore();
 
     try {
@@ -5334,6 +5345,7 @@ export async function updateExistingPortfolio(portfolioId, userId, portfolioData
             }
             return component;
         });
+        assertPortfolioSize(cleanPortfolioData);
 
         let updateData = {
             title: portfolioData.title || 'My Portfolio',
@@ -5383,15 +5395,29 @@ export async function updateExistingPortfolio(portfolioId, userId, portfolioData
             subCollectionUpdate.slug = updateData.slug;
         }
 
-        const batch = db.batch();
-        batch.update(db.collection('portfolios').doc(portfolioId), updateData);
-        batch.set(db.collection('users').doc(userId).collection('portfolios').doc(portfolioId), subCollectionUpdate, { merge: true });
-        await batch.commit();
+        const mainReference = db.collection('portfolios').doc(portfolioId);
+        const userReference = db.collection('users').doc(userId).collection('portfolios').doc(portfolioId);
+        let revision;
+        await db.runTransaction(async transaction => {
+            const latestSnapshot = await transaction.get(mainReference);
+            if (!latestSnapshot.exists || latestSnapshot.data()?.userId !== userId) throw new Error('Portfolio not found or access denied');
+            const latestRevision = Number(latestSnapshot.data()?.revision) || 0;
+            if (expectedRevision !== null && Number(expectedRevision) !== latestRevision) {
+                const conflict = new Error('This portfolio changed in another tab or device. Reload before publishing.');
+                conflict.code = 'PORTFOLIO_CONFLICT';
+                conflict.remoteRevision = latestRevision;
+                throw conflict;
+            }
+            revision = latestRevision + 1;
+            transaction.update(mainReference, { ...updateData, revision });
+            transaction.set(userReference, { ...subCollectionUpdate, revision }, { merge: true });
+        });
 
         return {
             id: portfolioId,
             slug: updateData.slug || existingPortfolio.slug,
             isNewlyPublished: !existingPortfolio.isPublished,
+            revision,
         };
     } catch (error) {
         console.error('Error updating existing portfolio:', error);
@@ -5430,6 +5456,7 @@ export async function savePortfolioDraft(userId, portfolioData, portfolioId = nu
             }
             return component;
         });
+        assertPortfolioSize(cleanPortfolioData);
 
         const portfolioDoc = {
             userId: userId,
@@ -5497,6 +5524,58 @@ export async function savePortfolioDraft(userId, portfolioData, portfolioId = nu
         console.error('Error saving portfolio draft:', error);
         throw error;
     }
+}
+
+export async function duplicatePortfolio(userId, portfolioId) {
+    const existing = await getPortfolioById(portfolioId);
+    if (!existing || existing.userId !== userId) throw new Error('Portfolio not found or access denied');
+    const source = JSON.parse(JSON.stringify(existing.draftData || existing.data || {}));
+    const title = `${existing.draftTitle || existing.title || 'Portfolio'} (Copy)`;
+    source.root = source.root || { props: {} };
+    source.root.props = { ...(source.root.props || {}), title };
+    return savePortfolioDraft(userId, {
+        ...source,
+        title,
+        description: existing.draftMetadata?.description || existing.metadata?.description || '',
+        tags: existing.draftMetadata?.tags || existing.metadata?.tags || [],
+        seoTitle: title,
+        seoDescription: existing.draftMetadata?.seoDescription || existing.metadata?.seoDescription || '',
+    }, null, existing.theme || 'default', null);
+}
+
+export async function renamePortfolio(userId, portfolioId, title, expectedRevision = null) {
+    const cleanTitle = String(title || '').trim().slice(0, 160);
+    if (!cleanTitle) throw new Error('Portfolio title is required');
+    const db = fire.firestore();
+    const mainReference = db.collection('portfolios').doc(portfolioId);
+    const userReference = db.collection('users').doc(userId).collection('portfolios').doc(portfolioId);
+    let revision;
+    await db.runTransaction(async transaction => {
+        const snapshot = await transaction.get(mainReference);
+        if (!snapshot.exists || snapshot.data()?.userId !== userId) throw new Error('Portfolio not found or access denied');
+        const existing = snapshot.data() || {};
+        const currentRevision = Number(existing.revision) || 0;
+        if (expectedRevision !== null && Number(expectedRevision) !== currentRevision) {
+            const conflict = new Error('This portfolio changed in another tab or device.');
+            conflict.code = 'PORTFOLIO_CONFLICT';
+            conflict.remoteRevision = currentRevision;
+            throw conflict;
+        }
+        revision = currentRevision + 1;
+        if (existing.isPublished) {
+            const draftData = JSON.parse(JSON.stringify(existing.draftData || existing.data || {}));
+            draftData.root = draftData.root || { props: {} };
+            draftData.root.props = { ...(draftData.root.props || {}), title: cleanTitle };
+            transaction.update(mainReference, { draftTitle: cleanTitle, draftData, hasUnpublishedChanges: true, revision, updatedAt: firebase.firestore.Timestamp.now() });
+        } else {
+            const data = JSON.parse(JSON.stringify(existing.data || {}));
+            data.root = data.root || { props: {} };
+            data.root.props = { ...(data.root.props || {}), title: cleanTitle };
+            transaction.update(mainReference, { title: cleanTitle, data, revision, updatedAt: firebase.firestore.Timestamp.now() });
+        }
+        transaction.set(userReference, { title: cleanTitle, revision, hasUnpublishedChanges: existing.isPublished === true }, { merge: true });
+    });
+    return { id: portfolioId, title: cleanTitle, revision };
 }
 
 export async function getPortfolioBySlug(slug) {
@@ -5601,6 +5680,15 @@ export async function updatePortfolioVisibility(userId, portfolioId, isPublished
 
         if (isPublished) {
             updateData.publishedAt = firebase.firestore.Timestamp.now();
+            if (!portfolio.slug) {
+                let slug;
+                let attempts = 0;
+                do {
+                    slug = generatePortfolioSlug(portfolio.title || 'portfolio');
+                    attempts += 1;
+                } while (attempts < 3 && await getPortfolioBySlug(slug));
+                updateData.slug = slug;
+            }
         }
 
         const batch = db.batch();
@@ -5608,7 +5696,7 @@ export async function updatePortfolioVisibility(userId, portfolioId, isPublished
         batch.set(db.collection('users').doc(userId).collection('portfolios').doc(portfolioId), {
             isPublished: isPublished,
             updatedAt: updateData.updatedAt,
-            ...(isPublished ? { publishedAt: updateData.publishedAt } : {}),
+            ...(isPublished ? { publishedAt: updateData.publishedAt, slug: updateData.slug || portfolio.slug } : {}),
         }, { merge: true });
         await batch.commit();
 
