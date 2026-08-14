@@ -99,13 +99,8 @@ const ModulesSettings = () => {
             // Sync enableEmailVerification to auth namespace for cross-tab reads
             await saveSystemSettings('auth', { enableEmailVerification: modulesConfig.enableEmailVerification });
 
-            // Also sync socialAuth & AI settings for complete multi-tab compatibility
+            // Social sign-on flags share a public configuration projection.
             const currentSettings = (await getSystemSettings()) || {};
-            await saveSystemSettings('ai', {
-                ...(currentSettings.ai || {}),
-                enableImportModule: modulesConfig.enableImportModule,
-            });
-
             await saveSystemSettings('socialAuth', {
                 ...(currentSettings.socialAuth || {}),
                 enableLinkedinLogin: modulesConfig.enableLinkedinAuthModule,

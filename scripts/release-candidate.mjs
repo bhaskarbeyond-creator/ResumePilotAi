@@ -18,6 +18,7 @@ run('Root lockfile consistency', 'npm', ['ci', '--ignore-scripts', '--dry-run'])
 run('Backend lockfile consistency', 'npm', ['--prefix', 'backend', 'ci', '--ignore-scripts', '--dry-run']);
 run('Product, AI, Resume, Portfolio, CMS, Admin, Profile, Job Tracker, i18n and analytics/privacy', 'npm', ['run', 'test:product']);
 run('Security and backend integration', 'npm', ['run', 'test:security']);
+run('AI settings regression', 'npm', ['run', 'test:ai-settings']);
 run('Templates', 'npm', ['run', 'test:templates']);
 run('Production build', 'npm', ['run', 'build']);
 run('ESLint', 'npm', ['run', 'lint']);

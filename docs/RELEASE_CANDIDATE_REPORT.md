@@ -6,12 +6,13 @@ Date: 2026-08-15
 
 `npm run test:rc` completed successfully:
 
-- Product, cross-module and forensic suites: 82/82
+- Product, cross-module, forensic and AI-settings suites: 89/89
 - Template render suite: 1/1
 - Security/static: 22/22
-- Backend security/integration: 65/65
+- Backend security/integration: 75/75
+- Dedicated AI settings command: 12/12
 - Explicit template command: 8/8
-- Production build: passed in 3.80 seconds
+- Production build: passed in 3.87 seconds
 - ESLint: 0 errors, 479 warnings
 - Root lockfile dry-run consistency: passed
 - Backend lockfile dry-run consistency: passed

@@ -2352,7 +2352,7 @@ export async function setSubscriptionsData(state, month, quartarly, yearly, only
         body: JSON.stringify(subData)
     });
     const result = await response.json().catch(() => ({}));
-    if (!response.ok || !result.success) throw new Error(result.error || 'Unable to save payment settings.');
+    if (!response.ok || !result.success) throw new Error(result.error?.message || result.error || 'Unable to save payment settings.');
     return result;
 }
 
@@ -3261,7 +3261,6 @@ export async function getBlogSettings() {
 }
 
 export async function updateBlogSettings(settings) {
-    const db = fire.firestore();
     try {
         const clean = {
             blogTitle: String(settings?.blogTitle || DEFAULT_BLOG_SETTINGS.blogTitle).slice(0, 120),
@@ -3273,10 +3272,8 @@ export async function updateBlogSettings(settings) {
             featuredImage: settings?.featuredImage ? String(settings.featuredImage).slice(0, 2048) : null,
             seoTitle: String(settings?.seoTitle || settings?.blogTitle || DEFAULT_BLOG_SETTINGS.seoTitle).slice(0, 120),
             seoDescription: String(settings?.seoDescription || settings?.blogDescription || DEFAULT_BLOG_SETTINGS.seoDescription).slice(0, 320),
-            updatedAt: new Date(),
         };
-        await db.collection('data').doc('public_config').set({ blog: clean }, { merge: true });
-        return { success: true };
+        return await saveSystemSettings('blog', clean);
     } catch (error) {
         console.error('Error updating blog settings:', error);
         return { success: false, error: error.message };

@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getSystemSettings } from '../../../firestore/dbOperations';
+import { reauthenticateUser } from '../../../firestore/dbOperations';
+import { loadAdminAiSettings, saveAdminAiSettings, testAdminAiProvider } from '../../../services/adminAiSettings';
+import fire from '../../../conf/fire';
 import {
     FaRobot, FaCheck, FaTimes, FaSpinner, FaKey, FaSlidersH,
     FaEye, FaEyeSlash, FaServer, FaBolt, FaGlobe, FaBrain,
@@ -7,12 +9,13 @@ import {
 } from 'react-icons/fa';
 import { SiNvidia } from 'react-icons/si';
 
+const SUPPORTED_AI_PROVIDERS = ['gemini', 'nvidia', 'openai', 'groq', 'openrouter', 'deepseek'];
+const PROVIDER_KEY_FIELDS = { gemini: 'geminiApiKey', nvidia: 'nvidiaApiKey', openai: 'openaiApiKey', groq: 'groqApiKey', openrouter: 'openrouterApiKey', deepseek: 'deepseekApiKey' };
 const RECOMMENDED_NVIDIA_MODELS = [
-    { id: 'poolside/laguna-xs-2.1', name: 'Poolside Laguna XS 2.1 (Ultra Fast - 366ms - Verified 200 OK)', badge: 'LAGUNA' },
-    { id: 'nvidia/nemotron-3-ultra-550b-a55b', name: 'NVIDIA Nemotron 3 Ultra 550B (NVIDIA Flagship - Verified 200 OK)', badge: 'FLAGSHIP' },
-    { id: 'meta/llama-3.1-8b-instruct', name: 'Meta Llama 3.1 8B Instruct (Ultra Fast - 370ms)', badge: 'FAST' },
-    { id: 'meta/llama-3.1-70b-instruct', name: 'Meta Llama 3.1 70B Instruct (High Reasoning)', badge: 'TOP PICK' },
-    { id: 'meta/llama-3.3-70b-instruct', name: 'Meta Llama 3.3 70B Instruct (Deep Reasoning)', badge: 'REASONING' },
+    { id: 'nvidia/nemotron-3-ultra-550b-a55b', name: 'NVIDIA Nemotron 3 Ultra 550B', badge: 'NVIDIA' },
+    { id: 'meta/llama-3.1-8b-instruct', name: 'Meta Llama 3.1 8B Instruct', badge: 'LLAMA' },
+    { id: 'meta/llama-3.1-70b-instruct', name: 'Meta Llama 3.1 70B Instruct', badge: 'LLAMA' },
+    { id: 'meta/llama-3.3-70b-instruct', name: 'Meta Llama 3.3 70B Instruct', badge: 'LLAMA' },
     { id: 'deepseek-ai/deepseek-r1', name: 'DeepSeek R1 on NVIDIA NIM', badge: 'DEEPSEEK' },
 ];
 
@@ -50,11 +53,18 @@ const AiSettings = () => {
 
     const [showKeys, setShowKeys] = useState({});
     const [loading, setLoading] = useState(true);
+    const [loadFailed, setLoadFailed] = useState(false);
     const [saving, setSaving] = useState(false);
     const [testingProvider, setTestingProvider] = useState(null);
     const [fetchingNvidiaModels, setFetchingNvidiaModels] = useState(false);
     const [nvidiaModels, setNvidiaModels] = useState(RECOMMENDED_NVIDIA_MODELS);
     const [configuredProviders, setConfiguredProviders] = useState({});
+    const [credentialSources, setCredentialSources] = useState({});
+    const [settingsRevision, setSettingsRevision] = useState(0);
+    const [pendingOperation, setPendingOperation] = useState(null);
+    const [reauthPassword, setReauthPassword] = useState('');
+    const [reauthenticating, setReauthenticating] = useState(false);
+    const usesPasswordProvider = fire.auth().currentUser?.providerData?.some(item => item.providerId === 'password') === true;
 
     // Per-provider inline message state
     const [providerMessages, setProviderMessages] = useState({});
@@ -63,19 +73,23 @@ const AiSettings = () => {
     // Refs for clearing timeouts
     const messageTimeouts = useRef({});
 
+    useEffect(() => () => {
+        Object.values(messageTimeouts.current).forEach(clearTimeout);
+        messageTimeouts.current = {};
+    }, []);
+
     useEffect(() => {
         let active = true;
         const loadSettings = async () => {
             try {
-                const [settings, response] = await Promise.all([
-                    getSystemSettings(),
-                    fetch('/api/admin/ai-settings'),
-                ]);
-                const serverResult = response.ok ? await response.json() : { settings: {}, configuredProviders: {} };
+                const serverResult = await loadAdminAiSettings();
                 if (!active) return;
-            const ai = { ...((settings && settings.ai) || {}), ...(serverResult.settings || {}) };
+            setLoadFailed(false);
+            const ai = serverResult.settings || {};
             const configured = serverResult.configuredProviders || {};
             setConfiguredProviders(configured);
+            setCredentialSources(serverResult.credentialSources || {});
+            setSettingsRevision(Number(serverResult.revision) || 0);
             const hasGeminiKey = Boolean(configured.gemini);
             const hasNvidiaKey = Boolean(configured.nvidia);
             const hasOpenaiKey = Boolean(configured.openai);
@@ -84,28 +98,28 @@ const AiSettings = () => {
             const hasDeepseekKey = Boolean(configured.deepseek);
 
             setAiConfig({
-                provider: ai.provider || 'gemini',
+                provider: SUPPORTED_AI_PROVIDERS.includes(ai.provider) ? ai.provider : 'gemini',
                 enableGemini: ai.enableGemini !== undefined ? ai.enableGemini : hasGeminiKey,
-                geminiApiKey: ai.geminiApiKey || '' || '',
+                geminiApiKey: '',
                 model: ai.model || 'gemini-2.0-flash',
                 enableNvidia: ai.enableNvidia !== undefined ? ai.enableNvidia : hasNvidiaKey,
-                nvidiaApiKey: ai.nvidiaApiKey || '' || '',
+                nvidiaApiKey: '',
                 nvidiaModel: (ai.nvidiaModel && ai.nvidiaModel !== 'meta/llama-3.3-70b-instruct')
                     ? ai.nvidiaModel
                     : 'meta/llama-3.1-8b-instruct',
                 nvidiaBaseUrl: ai.nvidiaBaseUrl || 'https://integrate.api.nvidia.com/v1',
                 enableOpenai: ai.enableOpenai !== undefined ? ai.enableOpenai : hasOpenaiKey,
-                openaiApiKey: ai.openaiApiKey || '' || '',
+                openaiApiKey: '',
                 openaiModel: ai.openaiModel || 'gpt-4o-mini',
                 openaiBaseUrl: ai.openaiBaseUrl || '',
                 enableGroq: ai.enableGroq !== undefined ? ai.enableGroq : hasGroqKey,
-                groqApiKey: ai.groqApiKey || '' || '',
+                groqApiKey: '',
                 groqModel: ai.groqModel || 'llama-3.3-70b-versatile',
                 enableOpenrouter: ai.enableOpenrouter !== undefined ? ai.enableOpenrouter : hasOpenrouterKey,
-                openrouterApiKey: ai.openrouterApiKey || '' || '',
+                openrouterApiKey: '',
                 openrouterModel: ai.openrouterModel || 'meta-llama/llama-3.3-70b-instruct:free',
                 enableDeepseek: ai.enableDeepseek !== undefined ? ai.enableDeepseek : hasDeepseekKey,
-                deepseekApiKey: ai.deepseekApiKey || '' || '',
+                deepseekApiKey: '',
                 deepseekModel: ai.deepseekModel || 'deepseek-chat',
                 enableOllama: ai.enableOllama !== undefined ? ai.enableOllama : false,
                 ollamaBaseUrl: ai.ollamaBaseUrl || 'http://localhost:11434/v1',
@@ -116,7 +130,7 @@ const AiSettings = () => {
                 enableImportModule: ai.enableImportModule !== undefined ? ai.enableImportModule : false,
             });
             } catch (error) {
-                if (active) setGlobalMessage({ type: 'error', text: `Unable to load AI settings: ${error.message}` });
+                if (active) { setLoadFailed(true); setGlobalMessage({ type: 'error', text: `Unable to load AI settings: ${error.message}${error.requestId ? ` (Request ${error.requestId})` : ''}` }); }
             } finally {
                 if (active) setLoading(false);
             }
@@ -199,41 +213,44 @@ const AiSettings = () => {
         setFetchingNvidiaModels(false);
     };
 
-    const handleSave = async (e) => {
-        e.preventDefault();
+    const saveSettings = async () => {
+        if (loadFailed) { setGlobalMessage({ type: 'error', text: 'Reload AI settings successfully before saving to avoid overwriting unknown state.' }); return false; }
         setSaving(true);
         try {
-            const response = await fetch('/api/admin/ai-settings', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(aiConfig)
-            });
-            const result = await response.json().catch(() => ({}));
-            if (!response.ok || !result.success) throw new Error(result.error || 'Unable to save AI settings');
-            setConfiguredProviders((current) => ({
-                ...current,
-                ...Object.fromEntries([
-                    ['gemini', aiConfig.geminiApiKey], ['nvidia', aiConfig.nvidiaApiKey],
-                    ['openai', aiConfig.openaiApiKey], ['groq', aiConfig.groqApiKey],
-                    ['openrouter', aiConfig.openrouterApiKey], ['deepseek', aiConfig.deepseekApiKey],
-                ].filter(([, key]) => String(key || '').trim()).map(([provider]) => [provider, true])),
+            const result = await saveAdminAiSettings(aiConfig, settingsRevision);
+            setSettingsRevision(Number(result.revision) || settingsRevision);
+            setConfiguredProviders(result.configuredProviders || {});
+            setCredentialSources(result.credentialSources || {});
+            setAiConfig(current => ({
+                ...current, ...(result.settings || {}),
+                geminiApiKey: '', nvidiaApiKey: '', openaiApiKey: '', groqApiKey: '', openrouterApiKey: '', deepseekApiKey: '',
             }));
-            setGlobalMessage({ type: 'success', text: 'AI engine and provider secrets saved to the server-only store.' });
+            setPendingOperation(null);
+            setReauthPassword('');
+            setGlobalMessage({ type: 'success', text: 'AI settings saved to the server-only provider store.' });
+            return true;
         } catch (error) {
-            setGlobalMessage({ type: 'error', text: `Failed to save settings: ${error.message}` });
+            if (error.code === 'RECENT_AUTH_REQUIRED') setPendingOperation({ type: 'save' });
+            if (error.code === 'AI_SETTINGS_CONFLICT') {
+                setGlobalMessage({ type: 'error', text: `${error.message} Your unsaved values remain in this panel.` });
+            } else {
+                setGlobalMessage({ type: 'error', text: `Failed to save settings: ${error.message}${error.requestId ? ` (Request ${error.requestId})` : ''}` });
+            }
+            return false;
         } finally {
             setSaving(false);
-            setTimeout(() => setGlobalMessage(null), 5000);
         }
+    };
+
+    const handleSave = async (event) => {
+        event.preventDefault();
+        await saveSettings();
     };
 
     const testSpecificProvider = async (targetProvider) => {
         setTestingProvider(targetProvider);
         setCardMessage(targetProvider, null, null);
-        const keyFields = {
-            gemini: 'geminiApiKey', nvidia: 'nvidiaApiKey', openai: 'openaiApiKey',
-            groq: 'groqApiKey', openrouter: 'openrouterApiKey', deepseek: 'deepseekApiKey'
-        };
+        const keyFields = PROVIDER_KEY_FIELDS;
         const modelFields = {
             gemini: 'model', nvidia: 'nvidiaModel', openai: 'openaiModel', groq: 'groqModel',
             openrouter: 'openrouterModel', deepseek: 'deepseekModel', ollama: 'ollamaModel'
@@ -243,22 +260,36 @@ const AiSettings = () => {
             if (targetProvider !== 'ollama' && !key && !configuredProviders[targetProvider]) {
                 throw new Error(`Enter and save the ${targetProvider} API key first.`);
             }
-            const response = await fetch('/api/admin/test-connection', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    type: targetProvider,
-                    apiKey: key,
-                    model: aiConfig[modelFields[targetProvider]] || ''
-                })
+            const result = await testAdminAiProvider({
+                provider: targetProvider,
+                apiKey: key,
+                model: aiConfig[modelFields[targetProvider]] || '',
             });
-            const result = await response.json().catch(() => ({}));
-            if (!response.ok || !result.success) throw new Error(result.error || 'Provider test failed.');
+            setPendingOperation(null);
             setCardMessage(targetProvider, 'success', result.message || `${targetProvider} provider verified.`);
         } catch (error) {
-            setCardMessage(targetProvider, 'error', `Test Failed: ${error.message}`);
+            if (error.code === 'RECENT_AUTH_REQUIRED') setPendingOperation({ type: 'test', provider: targetProvider });
+            setCardMessage(targetProvider, 'error', `Test Failed: ${error.message}${error.requestId ? ` (Request ${error.requestId})` : ''}`);
         } finally {
             setTestingProvider(null);
+        }
+    };
+
+    const handleReauthenticateAndRetry = async () => {
+        if (!pendingOperation) return;
+        setReauthenticating(true);
+        try {
+            await reauthenticateUser(usesPasswordProvider ? reauthPassword : '');
+            await fire.auth().currentUser?.getIdToken(true);
+            const operation = pendingOperation;
+            setPendingOperation(null);
+            setReauthPassword('');
+            if (operation.type === 'save') await saveSettings();
+            else if (operation.type === 'test') await testSpecificProvider(operation.provider);
+        } catch (error) {
+            setGlobalMessage({ type: 'error', text: `Reauthentication failed: ${error.message || 'Try signing in again.'}` });
+        } finally {
+            setReauthenticating(false);
         }
     };
 
@@ -289,7 +320,7 @@ const AiSettings = () => {
     return (
         <form onSubmit={handleSave} className="space-y-6">
             {globalMessage && (
-                <div className={`p-4 rounded-lg flex items-center justify-between text-sm ${globalMessage.type === 'success'
+                <div role={globalMessage.type === 'success' ? 'status' : 'alert'} aria-live="polite" className={`p-4 rounded-lg flex items-center justify-between text-sm ${globalMessage.type === 'success'
                         ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
                         : 'bg-red-50 border border-red-200 text-red-800'
                     }`}>
@@ -297,6 +328,16 @@ const AiSettings = () => {
                         {globalMessage.type === 'success' ? <FaCheck className="text-emerald-600" /> : <FaTimes className="text-red-600" />}
                         <span>{globalMessage.text}</span>
                     </div>
+                    {loadFailed && <button type="button" onClick={() => window.location.reload()} className="ml-3 rounded border border-red-300 bg-white px-3 py-1 text-xs font-semibold">Reload settings</button>}
+                </div>
+            )}
+
+            {pendingOperation && (
+                <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+                    <p className="font-semibold">Reauthentication is required for this sensitive AI settings operation.</p>
+                    <p className="mt-1 text-xs">Your unsaved settings remain in this panel. Reauthenticate to retry the exact operation.</p>
+                    {usesPasswordProvider && <label htmlFor="ai-reauth-password" className="mt-3 block text-xs font-semibold">Current password<input id="ai-reauth-password" type="password" autoComplete="current-password" value={reauthPassword} onChange={event => setReauthPassword(event.target.value)} className="mt-1 block w-full max-w-sm rounded border border-amber-300 bg-white px-3 py-2 font-normal" /></label>}
+                    <button type="button" onClick={handleReauthenticateAndRetry} disabled={reauthenticating || (usesPasswordProvider && !reauthPassword)} className="mt-3 rounded bg-amber-800 px-4 py-2 text-xs font-bold text-white disabled:opacity-50">{reauthenticating ? 'Reauthenticating…' : 'Reauthenticate and retry'}</button>
                 </div>
             )}
 
@@ -312,6 +353,12 @@ const AiSettings = () => {
                             <p className="text-xs text-emerald-200/80">Select primary AI generation provider for resume building & bullet optimization</p>
                         </div>
                     </div>
+                </div>
+
+                <div className="mb-3 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs text-emerald-100">
+                    Primary credential source: <strong>{credentialSources[aiConfig.provider] || 'none'}</strong>.
+                    {credentialSources[aiConfig.provider] === 'environment' && ' This deployment-managed credential takes precedence; saving UI keys will not replace the environment secret.'}
+                    {!configuredProviders[aiConfig.provider] && !String(aiConfig[PROVIDER_KEY_FIELDS[aiConfig.provider]] || '').trim() && ' No credential is configured; generation will use the first configured enabled fallback provider.'}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
@@ -331,7 +378,6 @@ const AiSettings = () => {
                             <option value="groq">Groq Cloud (Free Tier & Fast)</option>
                             <option value="openrouter">OpenRouter (Free Open-Source Models)</option>
                             <option value="deepseek">DeepSeek AI</option>
-                            <option value="ollama">Ollama / LocalAI (Self-Hosted)</option>
                         </select>
                     </div>
 
@@ -974,80 +1020,9 @@ const AiSettings = () => {
                         )}
                     </div>
 
-                    <div className={`p-4 rounded-xl border transition-all ${aiConfig.enableOllama
-                            ? 'bg-cyan-50/50 border-cyan-300 ring-2 ring-cyan-500/10'
-                            : 'bg-slate-50 border-slate-200 opacity-90'
-                        }`}>
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2">
-                                <FaDesktop className="text-cyan-600" />
-                                <h4 className="text-sm font-semibold text-slate-800">Ollama / LocalAI (Self-Hosted)</h4>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => toggleProviderState('ollama')}
-                                className="flex items-center space-x-2 focus:outline-none"
-                            >
-                                <span className={`text-xs font-bold ${aiConfig.enableOllama ? 'text-cyan-600' : 'text-slate-400'}`}>
-                                    {aiConfig.enableOllama ? 'ENABLED' : 'DISABLED'}
-                                </span>
-                                <div className={`w-10 h-5 flex items-center rounded-full p-1 transition-colors ${aiConfig.enableOllama ? 'bg-cyan-600' : 'bg-slate-300'
-                                    }`}>
-                                    <div className={`bg-white w-3.5 h-3.5 rounded-full shadow-md transform transition-transform ${aiConfig.enableOllama ? 'translate-x-5' : 'translate-x-0'
-                                        }`} />
-                                </div>
-                            </button>
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-2 mb-3">
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-600 mb-1">Local Endpoint Base URL</label>
-                                <input
-                                    type="text"
-                                    name="ollamaBaseUrl"
-                                    value={aiConfig.ollamaBaseUrl}
-                                    onChange={handleChange}
-                                    placeholder="http://localhost:11434/v1"
-                                    className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-cyan-500 focus:outline-none"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-600 mb-1">Ollama Model</label>
-                                <input
-                                    type="text"
-                                    name="ollamaModel"
-                                    value={aiConfig.ollamaModel}
-                                    onChange={handleChange}
-                                    placeholder="llama3"
-                                    className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-cyan-500 focus:outline-none"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="flex items-center justify-between pt-2 border-t border-slate-200/60">
-                            <span className="text-[11px] font-mono text-slate-500">localhost:11434</span>
-                            <button
-                                type="button"
-                                onClick={() => testSpecificProvider('ollama')}
-                                disabled={testingProvider === 'ollama'}
-                                className="px-3 py-1.5 text-xs font-medium bg-cyan-600 hover:bg-cyan-700 text-white rounded-md flex items-center space-x-1.5 shadow-sm"
-                            >
-                                {testingProvider === 'ollama' ? <FaSpinner className="animate-spin" /> : <FaRobot />}
-                                <span>Test Local Ollama</span>
-                            </button>
-                        </div>
-
-                        {providerMessages.ollama && (
-                            <div className={`mt-3 p-3 rounded-lg text-xs font-medium flex items-center justify-between ${providerMessages.ollama.type === 'success'
-                                    ? 'bg-emerald-100 border border-emerald-300 text-emerald-900'
-                                    : 'bg-red-100 border border-red-300 text-red-900'
-                                }`}>
-                                <div className="flex items-center space-x-2">
-                                    {providerMessages.ollama.type === 'success' ? <FaCheck className="text-emerald-600 flex-shrink-0" /> : <FaTimes className="text-red-600 flex-shrink-0" />}
-                                    <span>{providerMessages.ollama.text}</span>
-                                </div>
-                            </div>
-                        )}
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-slate-700">
+                        <div className="flex items-center gap-2"><FaDesktop className="text-slate-500" /><h4 className="text-sm font-semibold">Ollama / LocalAI</h4></div>
+                        <p className="mt-2 text-xs">Not supported by the trusted multi-provider runtime. Browser-supplied self-hosted endpoints remain disabled by SSRF policy.</p>
                     </div>
                 </div>
 
@@ -1062,7 +1037,7 @@ const AiSettings = () => {
                         className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 h-4 w-4"
                     />
                     <label htmlFor="enableFallback" className="text-xs font-semibold text-slate-700 cursor-pointer">
-                        Enable automatic fallback templates if AI active provider fails, rate limits, or exceeds quota
+                        Enable automatic fallback to the next configured provider when the primary provider fails or rate-limits
                     </label>
                 </div>
             </div>
@@ -1071,7 +1046,7 @@ const AiSettings = () => {
             <div className="flex items-center justify-end pt-2">
                 <button
                     type="submit"
-                    disabled={saving}
+                    disabled={saving || loadFailed}
                     className="px-6 py-2.5 text-sm font-medium text-white bg-slate-900 hover:bg-black rounded-lg flex items-center space-x-2 shadow-md disabled:opacity-50"
                 >
                     {saving && <FaSpinner className="animate-spin text-white" />}

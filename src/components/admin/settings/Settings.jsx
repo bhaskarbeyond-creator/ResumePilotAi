@@ -8,7 +8,6 @@ import PagesSettings from './pagesSettings';
 import AdsSettings from './adsSettings';
 import BlogSettings from './blogSettings';
 import AiSettings from './AiSettings';
-import PaymentSettings from './PaymentSettings';
 import EmailSmtpSettings from './EmailSmtpSettings';
 import ExportPdfSettings from './ExportPdfSettings';
 import JobScraperSettings from './JobScraperSettings';

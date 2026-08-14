@@ -11,6 +11,7 @@ setTokenVerifierForTests(async token => {
   if (token === 'user') return { uid: 'user-1', email: 'user@example.com', email_verified: true, role: 'USER', auth_time: now };
   if (token === 'unverified') return { uid: 'user-2', email: 'pending@example.com', email_verified: false, role: 'USER', auth_time: now };
   if (token === 'admin') return { uid: 'admin-1', email: 'admin@example.com', email_verified: true, role: 'ADMIN', auth_time: now };
+  if (token === 'unverified-admin') return { uid: 'admin-2', email: 'admin2@example.com', email_verified: false, role: 'ADMIN', auth_time: now };
   if (token === 'stale-admin') return { uid: 'admin-1', email: 'admin@example.com', email_verified: true, role: 'ADMIN', auth_time: now - 3600 };
   throw new Error('invalid token');
 });
@@ -58,7 +59,7 @@ test('valid authenticated user reaches an ordinary route', async () => {
 });
 
 test('admin aliases and mail logs reject an ordinary authenticated user', async () => {
-  for (const route of ['/api/auth/purge-orphaned-auth', '/api/email/logs', '/api/email/admin/test-imap', '/api/send-sms', '/api/admin/blog/publish-due']) {
+  for (const route of ['/api/auth/purge-orphaned-auth', '/api/email/logs', '/api/email/admin/test-imap', '/api/send-sms', '/api/admin/blog/publish-due', '/api/admin/ai/test-provider']) {
     const method = route.includes('logs') ? 'get' : 'post';
     const response = await request(app)[method](route).set(bearer('user')).send({});
     assert.equal(response.status, 403, route);
@@ -66,7 +67,7 @@ test('admin aliases and mail logs reject an ordinary authenticated user', async 
   }
 });
 
-test('stale admin sessions cannot perform refunds or user administration', async () => {
+test('stale admin sessions cannot perform sensitive administration or provider tests', async () => {
   for (const [method, route] of [
     ['post', '/api/admin/payments/refund'],
     ['patch', '/api/admin/users/victim'],
@@ -79,12 +80,84 @@ test('stale admin sessions cannot perform refunds or user administration', async
     ['post', '/api/admin/global-rating'],
     ['post', '/api/admin/trusted-by'],
     ['post', '/api/admin/landing-content'],
+    ['post', '/api/admin/ai-settings'],
+    ['post', '/api/admin/ai/test-provider'],
+    ['post', '/api/admin/payment/test-provider'],
     ['post', '/api/account/delete']
   ]) {
     const response = await request(app)[method](route).set(bearer('stale-admin')).send({ paymentOrderId: 'order', suspended: true });
     assert.equal(response.status, 403, route);
     assert.equal(response.body.error.code, 'RECENT_AUTH_REQUIRED', route);
   }
+});
+
+test('unverified admin cannot load, save, or test AI configuration', async () => {
+  for (const [method, route] of [['get', '/api/admin/ai-settings'], ['post', '/api/admin/ai-settings'], ['post', '/api/admin/ai/test-provider']]) {
+    const response = await request(app)[method](route).set(bearer('unverified-admin')).send({});
+    assert.equal(response.status, 403, route);
+    assert.equal(response.body.error.code, 'EMAIL_VERIFICATION_REQUIRED', route);
+  }
+});
+
+test('loading non-secret AI settings does not require recent authentication', async () => {
+  const response = await request(app).get('/api/admin/ai-settings').set(bearer('stale-admin'));
+  assert.equal(response.status, 503);
+  assert.equal(response.body.code, 'AI_SETTINGS_UNAVAILABLE');
+});
+
+test('fresh authorized admin reaches revisioned AI settings persistence without secret disclosure', async () => {
+  const store = new Map([
+    ['data/public_config', { ai: { provider: 'gemini' }, aiRevision: 0 }],
+    ['settings/ai_providers', {}],
+    ['data/system_settings', {}],
+  ]);
+  const merge = (left, right) => {
+    const output = { ...(left || {}) };
+    for (const [key, value] of Object.entries(right || {})) output[key] = value && typeof value === 'object' && !Array.isArray(value) ? merge(output[key], value) : value;
+    return output;
+  };
+  const ref = path => ({ path, async get() { const data = store.get(path); return { exists: data !== undefined, data: () => data }; } });
+  const fakeDb = {
+    collection(name) { return { doc(id = `auto-${store.size}`) { return ref(`${name}/${id}`); } }; },
+    runTransaction: callback => callback({ get: reference => reference.get(), set(reference, value, options) { store.set(reference.path, options?.merge ? merge(store.get(reference.path), value) : value); } }),
+  };
+  const originalDb = app.get('db');
+  app.set('db', fakeDb);
+  try {
+    const saved = await request(app).post('/api/admin/ai-settings').set(bearer('admin')).send({ provider: 'gemini', model: 'gemini-2.0-flash', geminiApiKey: 'gemini-secret-value', expectedRevision: 0, enableFallback: true });
+    assert.equal(saved.status, 200);
+    assert.equal(saved.body.success, true);
+    assert.equal(saved.body.revision, 1);
+    assert.equal(saved.body.configuredProviders.gemini, true);
+    assert.doesNotMatch(JSON.stringify(saved.body), /gemini-secret-value/);
+    const loaded = await request(app).get('/api/admin/ai-settings').set(bearer('admin'));
+    assert.equal(loaded.status, 200);
+    assert.equal(loaded.body.revision, 1);
+    assert.doesNotMatch(JSON.stringify(loaded.body), /gemini-secret-value/);
+  } finally { app.set('db', originalDb); }
+});
+
+test('legacy shared test endpoint cannot falsely report an AI provider success', async () => {
+  const response = await request(app).post('/api/admin/test-connection').set(bearer('admin')).send({ type: 'gemini' });
+  assert.equal(response.status, 400);
+  assert.equal(response.body.code, 'EMAIL_TEST_TYPE_UNSUPPORTED');
+  assert.equal(response.body.success, false);
+});
+
+test('fresh authorized admin provider test reaches the dedicated AI route with useful errors', async () => {
+  const originalFetch = global.fetch;
+  try {
+    global.fetch = async () => ({ ok: true, status: 200, json: async () => ({ choices: [{ message: { content: 'OK' } }] }) });
+    const valid = await request(app).post('/api/admin/ai/test-provider').set(bearer('admin')).send({ provider: 'openai', model: 'gpt-4o-mini', apiKey: 'openai-secret-value' });
+    assert.equal(valid.status, 200);
+    assert.equal(valid.body.success, true);
+    assert.equal(valid.body.provider, 'openai');
+    global.fetch = async () => ({ ok: false, status: 401, json: async () => ({ error: { message: 'provider-sensitive-detail' } }) });
+    const invalid = await request(app).post('/api/admin/ai/test-provider').set(bearer('admin')).send({ provider: 'openai', model: 'gpt-4o-mini', apiKey: 'invalid-secret-value' });
+    assert.equal(invalid.status, 422);
+    assert.equal(invalid.body.code, 'AI_PROVIDER_AUTHENTICATION_FAILED');
+    assert.doesNotMatch(JSON.stringify(invalid.body), /provider-sensitive-detail|invalid-secret-value/);
+  } finally { global.fetch = originalFetch; }
 });
 
 test('unverified users cannot consume paid AI or payment endpoints', async () => {

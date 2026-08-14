@@ -1,5 +1,4 @@
 const express = require('express');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 const EmailNotifier = require('../services/emailNotifier');
 const { executeContentOperation, executeResumeParsing, extractJson, loadProviderConfiguration, generateWithProviders } = require('../services/aiRuntime');
 const router = express.Router();
@@ -19,23 +18,8 @@ function notifyAiResumeReady(req, userName) {
     EmailNotifier.notifyAIResumeReady(req.app.get('db'), {
         userEmail: req.user.email,
         userName: String(userName || 'Candidate').slice(0, 120),
-        atsScore: '94',
+        atsScore: 'Not measured',
     }).catch(error => console.warn('[AI notifier]', error.message));
-}
-
-async function getGeminiApiKey(req) {
-    if (process.env.GEMINI_API_KEY) return process.env.GEMINI_API_KEY;
-    const db = req.app.get('db');
-    if (!db) return '';
-    try {
-        const secrets = await db.collection('settings').doc('ai_providers').get();
-        if (secrets.exists && secrets.data()?.gemini?.apiKey) return secrets.data().gemini.apiKey;
-        const legacy = await db.collection('data').doc('system_settings').get();
-        return legacy.data()?.ai?.geminiApiKey || '';
-    } catch (error) {
-        console.warn('[AI config]', error.message);
-        return '';
-    }
 }
 
 // Provider credentials are server-owned. Scope validation strictly to AI routes because this
@@ -43,7 +27,7 @@ async function getGeminiApiKey(req) {
 const AI_ROUTE_PATHS = new Set([
     '/generate-resume', '/generate-summary', '/generate-interview', '/generate-work-description',
     '/generate-education-description', '/generate-skills', '/check-grammar', '/generate-content',
-    '/parse-resume', '/test-ai-config',
+    '/parse-resume',
 ]);
 router.use((req, res, next) => {
     if (!AI_ROUTE_PATHS.has(req.path)) return next();
@@ -2225,43 +2209,4 @@ router.post('/parse-resume', async (req, res) => {
 });
 
 // Test endpoint to check AI configuration
-router.get('/test-ai-config', async (req, res) => {
-    try {
-        console.log('===== AI CONFIGURATION TEST =====');
-        console.log('Environment check:');
-        console.log('- NODE_ENV:', process.env.NODE_ENV);
-        const configuredKey = await getGeminiApiKey(req);
-        console.log('- GEMINI_API_KEY exists:', Boolean(configuredKey));
-        
-        if (!configuredKey) {
-            return res.status(500).json({
-                error: 'GEMINI_API_KEY is not configured',
-                configured: false
-            });
-        }
-
-        // Test the API connection
-        const genAI = new GoogleGenerativeAI(configuredKey);
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-
-        const result = await model.generateContent('Test connection. Just respond with "API working".');
-        const response = await result.response;
-        const text = response.text();
-        
-        
-        res.json({
-            configured: true,
-            apiWorking: true,
-            testResponse: text,
-            model: 'gemini-2.0-flash'
-        });
-    } catch (error) {
-        console.error('❌ Error checking AI configuration:', error);
-        res.status(500).json({
-            error: 'Failed to check AI configuration',
-            message: error.message,
-        });
-    }
-});
-
 module.exports = router;

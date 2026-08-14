@@ -83,8 +83,8 @@ test('browser entitlement checks display server state and never downgrade member
 });
 
 test('notification defaults never invent payment, invoice, plan, or ATS facts', async () => {
-  const notifier = await fs.readFile('backend/services/emailNotifier.js', 'utf8');
-  assert.doesNotMatch(notifier, /₹199\.00|₹1,999\.00|RPAI-INV-1001|atsScore = '94'/);
+  const [notifier, aiRoutes] = await Promise.all([fs.readFile('backend/services/emailNotifier.js', 'utf8'), fs.readFile('backend/routes/ai.js', 'utf8')]);
+  assert.doesNotMatch(`${notifier}\n${aiRoutes}`, /₹199\.00|₹1,999\.00|RPAI-INV-1001|atsScore: '94'|atsScore = '94'/);
   assert.match(notifier, /Amount unavailable/);
-  assert.match(notifier, /Not measured/);
+  assert.match(`${notifier}\n${aiRoutes}`, /Not measured/);
 });

@@ -5,7 +5,7 @@ Status meanings: **GREEN** locally verified; **YELLOW** implemented but requires
 | Area | Status | Evidence | Local validation | External validation required | Blocker | Owner / action |
 |---|---|---|---|---|---|---|
 | Product modules | GREEN | Product/cross-module suites | `npm run test:product` | Authenticated Journeys A–G | Browser/staging unavailable | QA: execute journey matrix |
-| Restored AI | YELLOW | Deterministic AI contract/provider/fallback tests | Backend/client fixtures pass | Live providers, quotas and spend controls | Provider credentials | AI Ops: run provider staging matrix |
+| Restored AI | YELLOW | Deterministic generation plus revisioned Admin load/save/test contracts for all six providers | Backend/client fixtures and authorization/error tests pass | Live providers, quotas and spend controls | Provider credentials | AI Ops: run provider staging matrix |
 | Authentication/MFA/OAuth | YELLOW | Native Firebase and OAuth state/PKCE tests | Static/backend tests pass | Identity Platform and OAuth apps | Staging projects/credentials | Identity owner: execute enrollment/link/recovery matrix |
 | Payment/entitlement | YELLOW | Provider crypto/state-machine tests; authoritative ledgers | All deterministic payment tests pass | Five provider sandboxes/webhooks/refunds | Merchant accounts | Billing owner: reconcile provider events/invoices |
 | Account isolation | GREEN | UID-scoped persistence, sign-out cleanup, no checkout/browser identity fallback | Forensic/cross-module tests | Independent browser account-switch run | Chromium unavailable | QA: User A/User B storage inspection |
