@@ -2726,6 +2726,54 @@ function firestoreTimeMillis(value) {
     return date && Number.isFinite(date.getTime()) ? date.getTime() : null;
 }
 
+app.patch('/api/admin/companies/:companyId', async (req, res) => {
+    if (!db || !admin) return res.status(503).json({ success: false, error: 'Company administration unavailable.' });
+    const companyId = String(req.params.companyId || '');
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(companyId)) return res.status(400).json({ success: false, error: 'Invalid company ID.' });
+    const hasStatus = Object.hasOwn(req.body, 'status');
+    const hasFeatured = Object.hasOwn(req.body, 'featured');
+    if (Number(hasStatus) + Number(hasFeatured) !== 1) return res.status(400).json({ success: false, error: 'Exactly one company change is allowed per request.' });
+    const status = String(req.body.status || '').toLowerCase();
+    if (hasStatus && !['approved', 'rejected'].includes(status)) return res.status(400).json({ success: false, error: 'Invalid company status.' });
+    if (hasStatus && status === 'rejected' && !String(req.body.reason || '').trim()) return res.status(400).json({ success: false, error: 'A rejection reason is required.' });
+    if (hasFeatured && typeof req.body.featured !== 'boolean') return res.status(400).json({ success: false, error: 'Invalid featured state.' });
+    const reference = db.collection('companies').doc(companyId);
+    try {
+        const result = await db.runTransaction(async transaction => {
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists) { const missing = new Error('Company not found.'); missing.code = 'NOT_FOUND'; throw missing; }
+            const company = snapshot.data() || {};
+            const expectedUpdatedAt = req.body.expectedUpdatedAt === undefined ? null : Number(req.body.expectedUpdatedAt);
+            const stale = (Object.hasOwn(req.body, 'expectedStatus') && String(company.status || 'pending') !== String(req.body.expectedStatus))
+                || (Object.hasOwn(req.body, 'expectedFeatured') && Boolean(company.featured) !== Boolean(req.body.expectedFeatured))
+                || (expectedUpdatedAt !== null && expectedUpdatedAt !== firestoreTimeMillis(company.updatedAt));
+            if (stale) { const conflict = new Error('This company changed after the page loaded. Refresh before changing it.'); conflict.code = 'ADMIN_TARGET_CHANGED'; throw conflict; }
+            const reason = String(req.body.reason || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, 500);
+            const changes = hasStatus
+                ? { status, ...(status === 'approved' ? { approvedAt: admin.firestore.FieldValue.serverTimestamp(), rejectionReason: null } : { rejectedAt: admin.firestore.FieldValue.serverTimestamp(), rejectionReason: reason }), updatedAt: admin.firestore.FieldValue.serverTimestamp() }
+                : { featured: req.body.featured, featuredAt: req.body.featured ? admin.firestore.FieldValue.serverTimestamp() : null, updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+            transaction.update(reference, changes);
+            if (hasStatus && company.employerId) {
+                const name = String(company.name || 'Company').replace(/\p{Cc}/gu, ' ').slice(0, 160);
+                transaction.set(db.collection('notifications').doc(company.employerId).collection('userNotifications').doc(), {
+                    type: 'company_status_update', title: 'Company review updated', message: `${name} is now ${status}.`,
+                    data: { companyId, status }, read: false, createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                });
+            }
+            transaction.set(db.collection('security_audit_logs').doc(), {
+                action: hasStatus ? 'COMPANY_STATUS_UPDATED' : 'COMPANY_FEATURED_UPDATED', actorUid: req.user.uid, companyId,
+                ...(hasStatus ? { status, reason: reason || null } : { featured: req.body.featured }), requestId: res.locals.requestId,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+            return { status: hasStatus ? status : company.status, featured: hasFeatured ? req.body.featured : Boolean(company.featured) };
+        });
+        return res.json({ success: true, ...result });
+    } catch (error) {
+        const responseStatus = error.code === 'ADMIN_TARGET_CHANGED' ? 409 : error.code === 'NOT_FOUND' ? 404 : 500;
+        return res.status(responseStatus).json({ success: false, code: error.code, error: responseStatus === 500 ? 'Unable to update company.' : error.message });
+    }
+});
+
 app.patch('/api/admin/jobs/:jobId', async (req, res) => {
     if (!db || !admin) return res.status(503).json({ success: false, error: 'Job administration unavailable.' });
     const jobId = String(req.params.jobId || '');

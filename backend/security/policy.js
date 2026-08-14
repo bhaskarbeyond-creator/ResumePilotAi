@@ -70,7 +70,7 @@ function enforceApiPolicy(req, res, next) {
   if (RECENT_AUTH_PATHS.has(pathname) || pathname === '/account/delete'
       || pathname.startsWith('/admin/users/') || pathname.startsWith('/admin/payments/')
       || pathname.startsWith('/admin/employer-applications/') || pathname.startsWith('/admin/settings/')
-      || pathname.startsWith('/admin/jobs/')
+      || pathname.startsWith('/admin/jobs/') || pathname.startsWith('/admin/companies/')
       || pathname.startsWith('/email/admin/')
       || ['/admin/ai-settings', '/admin/payment-settings', '/admin/save-smtp', '/admin/test-connection'].includes(pathname)) {
     const authTime = Number(req.user?.claims?.auth_time || 0) * 1000;

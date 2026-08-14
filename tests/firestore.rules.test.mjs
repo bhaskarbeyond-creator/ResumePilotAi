@@ -21,6 +21,7 @@ before(async () => {
     await setDoc(doc(db, 'users/bob'), { userId: 'bob', email: 'bob@example.com', membership: 'Basic' });
     await setDoc(doc(db, 'jobs/active-job'), { employerId: 'employer', status: 'active', applicationsCount: 0, title: 'Engineer' });
     await setDoc(doc(db, 'jobs/draft-job'), { employerId: 'employer', status: 'pending', applicationsCount: 0, title: 'Draft' });
+    await setDoc(doc(db, 'companies/draft-company'), { employerId: 'employer', status: 'pending', name: 'Draft Co' });
     await setDoc(doc(db, 'jobApplications/application-1'), {
       userId: 'alice', jobId: 'active-job', applicantEmail: 'alice@example.com', email: 'alice@example.com', status: 'pending'
     });
@@ -105,6 +106,14 @@ test('employer applications are owner-bound and cannot self-approve', async () =
   await assertSucceeds(getDoc(doc(admin(), 'employerApplications/alice')));
   await assertFails(updateDoc(doc(alice(), 'employerApplications/alice'), { status: 'approved' }));
   await assertFails(setDoc(doc(alice(), 'employerApplications/bob'), { userId: 'bob', status: 'pending' }));
+});
+
+test('company moderation is backend-only while employer-owned pending edits remain available', async () => {
+  await assertSucceeds(getDoc(doc(admin(), 'companies/draft-company')));
+  await assertSucceeds(updateDoc(doc(employer(), 'companies/draft-company'), { name: 'Updated Draft Co' }));
+  await assertFails(updateDoc(doc(employer(), 'companies/draft-company'), { status: 'approved' }));
+  await assertFails(updateDoc(doc(admin(), 'companies/draft-company'), { status: 'approved' }));
+  await assertFails(deleteDoc(doc(admin(), 'companies/draft-company')));
 });
 
 test('jobs expose active listings only and employer edits cannot self-approve', async () => {

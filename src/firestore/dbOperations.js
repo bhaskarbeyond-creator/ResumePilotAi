@@ -1271,61 +1271,33 @@ export async function getAllCompanies() {
         }
     } catch (error) {
         console.error('Error getting all companies:', error);
-        return [];
+        throw error;
     }
 }
 
-// Approve company (admin function)
-export async function approveCompany(companyId) {
-    const db = fire.firestore();
+// Company moderation is server-authoritative, stale-target checked, and audited.
+async function updateCompanyByAdminApi(companyId, changes) {
     try {
-        await db.collection('companies').doc(companyId).update({
-            status: 'approved',
-            approvedAt: new Date(),
+        const response = await fetch(`/api/admin/companies/${encodeURIComponent(companyId)}`, {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(changes),
         });
-        return { success: true };
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success ? result : { success: false, error: result.error || 'Unable to update company.', code: result.code };
     } catch (error) {
-        console.error('Error approving company:', error);
         return { success: false, error: error.message };
     }
 }
 
-// Reject company (admin function)
-export async function rejectCompany(companyId, reason = '') {
-    const db = fire.firestore();
-    try {
-        await db.collection('companies').doc(companyId).update({
-            status: 'rejected',
-            rejectedAt: new Date(),
-            rejectionReason: reason,
-        });
-        return { success: true };
-    } catch (error) {
-        console.error('Error rejecting company:', error);
-        return { success: false, error: error.message };
-    }
+export async function approveCompany(companyId, expected = {}) {
+    return updateCompanyByAdminApi(companyId, { status: 'approved', ...expected });
 }
 
-// Toggle company featured status (admin function)
-export async function toggleCompanyFeatured(companyId, featured = true) {
-    const db = fire.firestore();
-    try {
-        const updateData = {
-            featured: featured,
-            updatedAt: new Date(),
-        };
-        
-        if (featured) {
-            updateData.featuredAt = new Date();
-        }
-        
-        await db.collection('companies').doc(companyId).update(updateData);
-        console.log(`Company ${companyId} featured status updated to: ${featured}`);
-        return { success: true };
-    } catch (error) {
-        console.error('Error updating company featured status:', error);
-        return { success: false, error: error.message };
-    }
+export async function rejectCompany(companyId, reason = '', expected = {}) {
+    return updateCompanyByAdminApi(companyId, { status: 'rejected', reason, ...expected });
+}
+
+export async function toggleCompanyFeatured(companyId, featured = true, expected = {}) {
+    return updateCompanyByAdminApi(companyId, { featured, ...expected });
 }
 
 // Get featured companies for public display

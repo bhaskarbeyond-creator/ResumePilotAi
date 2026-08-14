@@ -79,11 +79,11 @@ service cloud.firestore {
       allow create: if employer()
         && request.resource.data.employerId == request.auth.uid
         && request.resource.data.status == 'pending';
-      allow update: if admin() || (employer()
+      allow update: if employer()
         && resource.data.employerId == request.auth.uid
         && request.resource.data.employerId == resource.data.employerId
-        && request.resource.data.status == resource.data.status);
-      allow delete: if admin() || (employer() && resource.data.employerId == request.auth.uid);
+        && request.resource.data.status == resource.data.status;
+      allow delete: if employer() && resource.data.employerId == request.auth.uid;
     }
 
     match /jobs/{id} {

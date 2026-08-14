@@ -95,6 +95,22 @@ test('job moderation is stale-safe, audited, confirmation-gated, and preserves a
   assert.doesNotMatch(rules.match(/match \/jobs\/\{id\}[\s\S]*?match \/jobApplications/)?.[0] || '', /allow update: if admin\(\)/);
 });
 
+test('company moderation is backend-only, stale-safe, reasoned, and confirmation-gated', async () => {
+  const [companies, operations, backend, rules] = await Promise.all([
+    fs.readFile('src/components/admin/companyManagement/CompanyManagement.jsx', 'utf8'),
+    fs.readFile('src/firestore/dbOperations.js', 'utf8'),
+    fs.readFile('backend/index.js', 'utf8'),
+    fs.readFile('SecurityRules.txt', 'utf8'),
+  ]);
+  assert.match(companies, /role="alertdialog"/);
+  assert.match(companies, /A reason is required/);
+  assert.match(companies, /sanitizeImageUrl/);
+  assert.match(operations, /\/api\/admin\/companies\//);
+  assert.match(backend, /COMPANY_STATUS_UPDATED/);
+  assert.match(backend, /expectedFeatured/);
+  assert.doesNotMatch(rules.match(/match \/companies\/\{id\}[\s\S]*?match \/jobs/)?.[0] || '', /allow update: if admin\(\)/);
+});
+
 test('user CSV export neutralizes spreadsheet formulas', async () => {
   const users = await fs.readFile('src/components/admin/usersManager/UsersManager.jsx', 'utf8');
   assert.match(users, /\^\[=\+\\-@\]/);
