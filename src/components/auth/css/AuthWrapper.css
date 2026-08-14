@@ -117,18 +117,20 @@
 .socialAuth .linkedinAuthItem,
 .socialAuth .githubAuthItem {
   cursor: pointer;
-  width: 100%;
-  max-width: 350px;
+  flex: 1 1 0% !important;
+  width: auto !important;
+  max-width: none !important;
+  min-width: 0 !important;
   box-sizing: border-box;
-  border-radius: 5px;
+  border-radius: 12px;
   text-align: center;
-  padding: 10px 16px;
-  margin: 0 auto 10px auto;
+  padding: 0 8px;
+  margin: 0 !important;
   display: flex !important;
   flex-direction: row !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 10px;
+  gap: 8px;
   transition: background-color 0.2s ease, opacity 0.2s ease;
 }
 
