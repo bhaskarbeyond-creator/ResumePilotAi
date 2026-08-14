@@ -8,6 +8,7 @@ The earlier browser workflow created `jobApplications` directly, incremented a j
 
 ## Current workflow
 
+- Employer company creation, edit, and deletion use `/api/employer/companies*`. Fields are allowlisted and bounded, URLs require HTTPS, edits return to pending moderation and clear featured state, revisions prevent stale writes, and deletion is refused while jobs depend on the company.
 - Employer job creation, edit, active/paused transitions, and deletion use `/api/employer/jobs*`. The backend requires the approved-employer claim, resolves an owned approved company, validates bounded job data, verifies revisions, and audits every mutation.
 - Edits return a posting to pending moderation. Active jobs can be paused and previously paused jobs resumed without weakening Admin moderation. Deletion is refused once applications exist, preserving applicant records.
 - Browser job writes and arbitrary application-counter increments are denied; public and owner reads remain available.

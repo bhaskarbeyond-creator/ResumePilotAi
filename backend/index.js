@@ -1210,6 +1210,88 @@ function normalizeEmployerJobInput(input = {}, company = {}) {
 
 function isEmployerAccount(req) { return req.user?.claims?.employer === true; }
 
+function normalizeEmployerCompanyInput(input = {}) {
+    const text = (value, maximum) => String(value || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, maximum);
+    const name = text(input.name, 160);
+    const industry = text(input.industry, 120);
+    const size = text(input.size, 80);
+    const location = text(input.location, 200);
+    const website = safePublicUrl(input.website);
+    const companyImage = safePublicUrl(input.companyImage);
+    const email = text(input.email, 254).toLowerCase();
+    const phone = text(input.phone, 30);
+    if (!name || !industry || !size || !location) throw new Error('Company name, industry, size, and location are required.');
+    if (input.website && (!website || !website.startsWith('https:'))) throw new Error('Company website must use HTTPS.');
+    if (input.companyImage && (!companyImage || !companyImage.startsWith('https:'))) throw new Error('Company image must use HTTPS.');
+    if (email && !/^[^\s@,;<>]{1,64}@[^\s@,;<>]{1,190}$/.test(email)) throw new Error('Invalid company email.');
+    if (phone && !/^\+?[0-9 ()-]{7,30}$/.test(phone)) throw new Error('Invalid company phone.');
+    return { name, industry, size, location, website: website || '', companyImage: companyImage || '', description: text(input.description, 5000), address: text(input.address, 500), phone, email };
+}
+
+app.post('/api/employer/companies', async (req, res) => {
+    const requestDb = req.app.get('db');
+    if (!isEmployerAccount(req)) return res.status(403).json({ success: false, error: 'Approved employer access is required.' });
+    if (!requestDb || !admin) return res.status(503).json({ success: false, error: 'Company service unavailable.' });
+    try {
+        const data = normalizeEmployerCompanyInput(req.body?.data);
+        const reference = requestDb.collection('companies').doc();
+        const batch = requestDb.batch();
+        batch.set(reference, { ...data, employerId: req.user.uid, status: 'pending', featured: false, revision: 1, stats: { totalJobs: 0, activeJobs: 0, expiredJobs: 0, totalApplications: 0, lastJobPosted: null }, createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+        batch.set(requestDb.collection('security_audit_logs').doc(), { action: 'EMPLOYER_COMPANY_CREATED', actorUid: req.user.uid, companyId: reference.id, revision: 1, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        await batch.commit();
+        return res.status(201).json({ success: true, companyId: reference.id, status: 'pending', revision: 1 });
+    } catch (error) { return res.status(400).json({ success: false, error: error.message || 'Unable to create company.' }); }
+});
+
+app.patch('/api/employer/companies/:companyId', async (req, res) => {
+    const requestDb = req.app.get('db');
+    const companyId = String(req.params.companyId || '');
+    const expectedRevision = Number(req.body?.expectedRevision || 0);
+    if (!isEmployerAccount(req)) return res.status(403).json({ success: false, error: 'Approved employer access is required.' });
+    if (!requestDb || !admin || !/^[A-Za-z0-9_-]{1,128}$/.test(companyId) || !Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid company update.' });
+    try {
+        let revision;
+        await requestDb.runTransaction(async transaction => {
+            const reference = requestDb.collection('companies').doc(companyId);
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists || snapshot.data()?.employerId !== req.user.uid) { const missing = new Error('Company not found.'); missing.code = 'NOT_FOUND'; throw missing; }
+            const currentRevision = Number(snapshot.data()?.revision || 0);
+            if (currentRevision !== expectedRevision) { const conflict = new Error('This company changed after the dashboard loaded. Refresh before saving.'); conflict.code = 'EMPLOYER_COMPANY_CHANGED'; throw conflict; }
+            revision = currentRevision + 1;
+            transaction.update(reference, { ...normalizeEmployerCompanyInput(req.body?.data), status: 'pending', featured: false, revision, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+            transaction.set(requestDb.collection('security_audit_logs').doc(), { action: 'EMPLOYER_COMPANY_EDITED', actorUid: req.user.uid, companyId, revision, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        });
+        return res.json({ success: true, status: 'pending', featured: false, revision });
+    } catch (error) {
+        const status = error.code === 'EMPLOYER_COMPANY_CHANGED' ? 409 : error.code === 'NOT_FOUND' ? 404 : 400;
+        return res.status(status).json({ success: false, code: error.code, error: error.message || 'Unable to update company.' });
+    }
+});
+
+app.delete('/api/employer/companies/:companyId', async (req, res) => {
+    const requestDb = req.app.get('db');
+    const companyId = String(req.params.companyId || '');
+    const expectedRevision = Number(req.body?.expectedRevision || 0);
+    if (!isEmployerAccount(req)) return res.status(403).json({ success: false, error: 'Approved employer access is required.' });
+    if (!requestDb || !admin || !/^[A-Za-z0-9_-]{1,128}$/.test(companyId) || !Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid company deletion.' });
+    try {
+        await requestDb.runTransaction(async transaction => {
+            const reference = requestDb.collection('companies').doc(companyId);
+            const jobsQuery = requestDb.collection('jobs').where('companyId', '==', companyId).limit(1);
+            const [snapshot, jobs] = await Promise.all([transaction.get(reference), transaction.get(jobsQuery)]);
+            if (!snapshot.exists || snapshot.data()?.employerId !== req.user.uid) { const missing = new Error('Company not found.'); missing.code = 'NOT_FOUND'; throw missing; }
+            if (Number(snapshot.data()?.revision || 0) !== expectedRevision) { const conflict = new Error('This company changed after the dashboard loaded. Refresh before deleting.'); conflict.code = 'EMPLOYER_COMPANY_CHANGED'; throw conflict; }
+            if (!jobs.empty) { const conflict = new Error('Delete or archive this company’s jobs before deleting the company.'); conflict.code = 'COMPANY_HAS_JOBS'; throw conflict; }
+            transaction.delete(reference);
+            transaction.set(requestDb.collection('security_audit_logs').doc(), { action: 'EMPLOYER_COMPANY_DELETED', actorUid: req.user.uid, companyId, revision: expectedRevision, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        });
+        return res.json({ success: true });
+    } catch (error) {
+        const status = ['EMPLOYER_COMPANY_CHANGED', 'COMPANY_HAS_JOBS'].includes(error.code) ? 409 : error.code === 'NOT_FOUND' ? 404 : 500;
+        return res.status(status).json({ success: false, code: error.code, error: status === 500 ? 'Unable to delete company.' : error.message });
+    }
+});
+
 app.post('/api/employer/jobs', async (req, res) => {
     const requestDb = req.app.get('db');
     if (!isEmployerAccount(req)) return res.status(403).json({ success: false, error: 'Approved employer access is required.' });

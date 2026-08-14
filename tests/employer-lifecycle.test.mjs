@@ -28,24 +28,33 @@ test('job application lifecycle is backend-owned, identity-bound, and atomic', a
 });
 
 test('employer job posting mutations are backend-owned, audited, and revision safe', async () => {
-  const [backend, operations, rules, dashboard, editor] = await Promise.all([
+  const [backend, operations, rules, dashboard, editor, companies] = await Promise.all([
     fs.readFile('backend/index.js', 'utf8'),
     fs.readFile('src/firestore/dbOperations.js', 'utf8'),
     fs.readFile('SecurityRules.txt', 'utf8'),
     fs.readFile('src/components/Dashboard/EmployerDashboard/EmployerDashboard.jsx', 'utf8'),
     fs.readFile('src/components/Dashboard/EmployerDashboard/EditJobModal.jsx', 'utf8'),
+    fs.readFile('src/components/Dashboard/EmployerDashboard/CompaniesManagement.jsx', 'utf8'),
   ]);
+  assert.match(backend, /EMPLOYER_COMPANY_CREATED/);
+  assert.match(backend, /EMPLOYER_COMPANY_EDITED/);
+  assert.match(backend, /EMPLOYER_COMPANY_DELETED/);
+  assert.match(backend, /COMPANY_HAS_JOBS/);
   assert.match(backend, /EMPLOYER_JOB_CREATED/);
   assert.match(backend, /EMPLOYER_JOB_STATUS_CHANGED/);
   assert.match(backend, /EMPLOYER_JOB_EDITED/);
   assert.match(backend, /EMPLOYER_JOB_DELETED/);
   assert.match(backend, /EMPLOYER_JOB_CHANGED/);
   assert.match(operations, /\/api\/employer\/jobs/);
+  assert.match(operations, /\/api\/employer\/companies/);
+  const companyRule = rules.slice(rules.indexOf('match /companies/{id}'), rules.indexOf('match /jobs/{id}'));
+  assert.match(companyRule, /allow create, update, delete: if false/);
   const jobRule = rules.slice(rules.indexOf('match /jobs/{id}'), rules.indexOf('match /jobApplications/{id}'));
   assert.match(jobRule, /allow create, update, delete: if false/);
   assert.match(dashboard, /job\.revision/);
   assert.match(dashboard, /result\.revision/);
   assert.match(editor, /job\.revision/);
+  assert.match(companies, /deleteCompany\(companyId, revision\)/);
 });
 
 test('candidate and employer UI wait for confirmed revisioned outcomes', async () => {

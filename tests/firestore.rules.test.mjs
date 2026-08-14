@@ -116,7 +116,7 @@ test('employer applications are owner-bound and cannot self-approve', async () =
 
 test('company moderation is backend-only while employer-owned pending edits remain available', async () => {
   await assertSucceeds(getDoc(doc(admin(), 'companies/draft-company')));
-  await assertSucceeds(updateDoc(doc(employer(), 'companies/draft-company'), { name: 'Updated Draft Co' }));
+  await assertFails(updateDoc(doc(employer(), 'companies/draft-company'), { name: 'Updated Draft Co' }));
   await assertFails(updateDoc(doc(employer(), 'companies/draft-company'), { status: 'approved' }));
   await assertFails(updateDoc(doc(admin(), 'companies/draft-company'), { status: 'approved' }));
   await assertFails(deleteDoc(doc(admin(), 'companies/draft-company')));

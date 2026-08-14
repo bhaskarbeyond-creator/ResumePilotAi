@@ -271,10 +271,22 @@ test('employer job create, pause, edit, and delete routes are owned, audited, an
   const originalDb = app.get('db');
   app.set('db', fakeDb);
   try {
+    const companyCreated = await request(app).post('/api/employer/companies').set(bearer('employer')).send({ data: { name: 'Second Co', industry: 'Technology', size: '1-10 employees', location: 'Remote', website: 'https://second.example.com' } });
+    assert.equal(companyCreated.status, 201);
+    assert.equal(companyCreated.body.revision, 1);
+    const companyId = companyCreated.body.companyId;
+    const companyRemoved = await request(app).delete(`/api/employer/companies/${companyId}`).set(bearer('employer')).send({ expectedRevision: 1 });
+    assert.equal(companyRemoved.status, 200);
     const created = await request(app).post('/api/employer/jobs').set(bearer('employer')).send({ data: { companyId: 'company-1', title: 'New role', description: 'A real role', location: 'Remote', country: 'IN', requirements: ['JavaScript'] } });
     assert.equal(created.status, 201);
     assert.equal(created.body.revision, 1);
     assert.equal(store.get(`jobs/${created.body.jobId}`).employerId, 'employer-1');
+    const editedCompany = await request(app).patch('/api/employer/companies/company-1').set(bearer('employer')).send({ data: { name: 'Example Co Updated', industry: 'Technology', size: '11-50 employees', location: 'Remote', website: 'https://example.com' }, expectedRevision: 0 });
+    assert.equal(editedCompany.status, 200);
+    assert.equal(editedCompany.body.revision, 1);
+    assert.equal(store.get('companies/company-1').status, 'pending');
+    const companyWithJobs = await request(app).delete('/api/employer/companies/company-1').set(bearer('employer')).send({ expectedRevision: 1 });
+    assert.equal(companyWithJobs.status, 409);
     const paused = await request(app).patch('/api/employer/jobs/active-owned').set(bearer('employer')).send({ status: 'paused', expectedRevision: 2 });
     assert.equal(paused.status, 200);
     assert.equal(paused.body.revision, 3);

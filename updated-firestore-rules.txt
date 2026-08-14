@@ -91,14 +91,8 @@ service cloud.firestore {
     match /companies/{id} {
       allow read: if resource.data.status == 'approved' || admin()
         || (signedIn() && resource.data.employerId == request.auth.uid);
-      allow create: if employer()
-        && request.resource.data.employerId == request.auth.uid
-        && request.resource.data.status == 'pending';
-      allow update: if employer()
-        && resource.data.employerId == request.auth.uid
-        && request.resource.data.employerId == resource.data.employerId
-        && request.resource.data.status == resource.data.status;
-      allow delete: if employer() && resource.data.employerId == request.auth.uid;
+      // Employer create/edit/delete and Admin moderation are audited backend operations.
+      allow create, update, delete: if false;
     }
 
     match /jobs/{id} {

@@ -1024,37 +1024,13 @@ export async function reactivateEmployerApplication(userId, expectedStatus = und
 // ==================== COMPANY MANAGEMENT FUNCTIONS ====================
 // Create a new company
 export async function createCompany(employerId, companyData) {
-    const db = fire.firestore();
+    const user = fire.auth().currentUser;
+    if (!user || user.uid !== employerId) return { success: false, error: 'Approved employer sign-in is required.' };
     try {
-
-        const finalCompanyData = {
-            employerId: employerId,
-            ...companyData,
-            status: 'pending', // Companies need approval
-            // Job statistics - initialized when company is created
-            stats: {
-                totalJobs: 0,
-                activeJobs: 0,
-                expiredJobs: 0,
-                totalApplications: 0,
-                lastJobPosted: null,
-            },
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        };
-
-
-        const companyRef = await db.collection('companies').add(finalCompanyData);
-
-
-        return { success: true, companyId: companyRef.id };
-    } catch (error) {
-        console.error('❌ Error creating company:', error);
-        console.error('Error code:', error.code);
-        console.error('Error message:', error.message);
-        console.error('Full error:', error);
-        return { success: false, error: error.message };
-    }
+        const response = await fetch('/api/employer/companies', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: companyData }) });
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success ? result : { success: false, error: result.error?.message || result.error || 'Unable to create company.', code: result.code };
+    } catch (error) { return { success: false, error: error.message }; }
 }
 
 // Get companies for an employer
@@ -1142,36 +1118,21 @@ export async function getApprovedEmployerCompanies(employerId) {
 }
 
 // Update a company
-export async function updateCompany(companyId, companyData) {
-    const db = fire.firestore();
+export async function updateCompany(companyId, companyData, expectedRevision = 0) {
     try {
-
-        const updateData = {
-            ...companyData,
-            updatedAt: new Date(),
-        };
-
-        await db.collection('companies').doc(companyId).update(updateData);
-
-        return { success: true };
-    } catch (error) {
-        console.error('❌ Error updating company:', error);
-        return { success: false, error: error.message };
-    }
+        const response = await fetch(`/api/employer/companies/${encodeURIComponent(companyId)}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: companyData, expectedRevision }) });
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success ? result : { success: false, error: result.error?.message || result.error || 'Unable to update company.', code: result.code };
+    } catch (error) { return { success: false, error: error.message }; }
 }
 
-// Delete a company
-export async function deleteCompany(companyId) {
-    const db = fire.firestore();
+// Delete a company only after revision and dependent-job checks.
+export async function deleteCompany(companyId, expectedRevision = 0) {
     try {
-
-        await db.collection('companies').doc(companyId).delete();
-
-        return { success: true };
-    } catch (error) {
-        console.error('❌ Error deleting company:', error);
-        return { success: false, error: error.message };
-    }
+        const response = await fetch(`/api/employer/companies/${encodeURIComponent(companyId)}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expectedRevision }) });
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success ? result : { success: false, error: result.error?.message || result.error || 'Unable to delete company.', code: result.code };
+    } catch (error) { return { success: false, error: error.message }; }
 }
 
 // Admin functions for company management
