@@ -16,7 +16,7 @@
     "test:firebase-rules": "firebase emulators:exec --only firestore,database --project demo-resumepilot-security \"node --test tests/firestore.rules.test.mjs tests/database.rules.test.mjs\"",
     "audit:all": "npm audit --audit-level=moderate && npm --prefix backend audit --audit-level=moderate",
     "test:templates": "node --test tests/template-data.test.mjs tests/template-render.test.mjs",
-    "test:product": "node --test tests/template-data.test.mjs tests/portfolio-sanitization.test.mjs tests/job-tracker.test.mjs tests/i18n.test.mjs tests/ai-client.test.mjs tests/privacy-consent.test.mjs && node --test tests/template-render.test.mjs"
+    "test:product": "node --test tests/template-data.test.mjs tests/portfolio-sanitization.test.mjs tests/job-tracker.test.mjs tests/i18n.test.mjs tests/ai-client.test.mjs tests/privacy-consent.test.mjs tests/resume-workflow.test.mjs tests/resume-persistence.test.mjs && node --test tests/template-render.test.mjs"
   },
   "dependencies": {
     "@lexical/react": "^0.32.1",

@@ -131,7 +131,7 @@ const PhotoUpload = ({ label, value, onChange, required = false }) => {
 
     return (
         <div className="space-y-2">
-            <label className="block text-sm font-medium text-slate-700">
+            <label htmlFor="resume-photo-upload" className="block text-sm font-medium text-slate-700">
                 {label}
                 {required && <span className="text-red-500 ml-1">*</span>}
             </label>
@@ -180,6 +180,10 @@ const PhotoUpload = ({ label, value, onChange, required = false }) => {
                         isDragging ? 'border-blue-500 bg-blue-50' : isLoading ? 'border-slate-300 bg-slate-50' : 'border-slate-300 hover:border-blue-400 hover:bg-blue-50'
                     }`}
                     onClick={triggerFileInput}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={t('PhotoUpload.actions.addPhoto')}
+                    onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); triggerFileInput(); } }}
                     onDragEnter={handleDragEnter}
                     onDragLeave={handleDragLeave}
                     onDragOver={handleDragOver}
@@ -204,7 +208,7 @@ const PhotoUpload = ({ label, value, onChange, required = false }) => {
             )}
 
             {/* File input */}
-            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleInputChange} className="hidden" />
+            <input id="resume-photo-upload" ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleInputChange} className="hidden" />
 
             {/* Error message */}
             {error && (

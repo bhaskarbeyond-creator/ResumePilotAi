@@ -128,7 +128,7 @@ service cloud.firestore {
     }
 
     match /pb/{id} {
-      allow read: if resource.data.isPublished == true
+      allow read: if (resource.data.isPublished == true && resource.data.publicationMode == 'explicit')
         || (signedIn() && resource.data.ownerUid == request.auth.uid) || admin();
       allow create: if signedIn()
         && request.resource.data.ownerUid == request.auth.uid

@@ -3782,29 +3782,21 @@ export async function getResumes(userId, page = 1, itemsPerPage = 5) {
     const totalItems = countSnapshot.size;
     const totalPages = Math.ceil(totalItems / itemsPerPage);
 
-    // Apply pagination using orderBy, limit and startAfter for consistent ordering
-    // Important: We use 'created_at' as a stable sorting key to ensure consistency
-    const paginatedQuery = userRef.orderBy('created_at', 'desc').limit(itemsPerPage);
-
-    // If not the first page, use startAfter with a document snapshot
-    let paginatedSnapshot;
-    if (page > 1) {
-        // Get the document at the previous page's last position
-        // This approach gives us consistent pagination without skipping or duplicating items
-        const previousPageQuery = userRef.orderBy('created_at', 'desc').limit((page - 1) * itemsPerPage);
-        const previousPageSnapshot = await previousPageQuery.get();
-
-        if (!previousPageSnapshot.empty) {
-            const lastVisible = previousPageSnapshot.docs[previousPageSnapshot.docs.length - 1];
-            paginatedSnapshot = await paginatedQuery.startAfter(lastVisible).get();
-        } else {
-            // Fallback to first page if we can't get a cursor
-            paginatedSnapshot = await paginatedQuery.get();
-        }
-    } else {
-        // First page case
-        paginatedSnapshot = await paginatedQuery.get();
-    }
+    // The count read already contains every owner document. Reuse it so legacy resumes
+    // without created_at are not excluded by Firestore orderBy and avoid a duplicate page read.
+    const sortedDocuments = [...countSnapshot.docs].sort((left, right) => {
+        const leftData = left.data() || {};
+        const rightData = right.data() || {};
+        const leftTime = leftData.updatedAt?.toMillis?.() || leftData.created_at?.toMillis?.() || 0;
+        const rightTime = rightData.updatedAt?.toMillis?.() || rightData.created_at?.toMillis?.() || 0;
+        return rightTime - leftTime || left.id.localeCompare(right.id);
+    });
+    const startIndex = Math.max(0, (page - 1) * itemsPerPage);
+    const pageDocuments = sortedDocuments.slice(startIndex, startIndex + itemsPerPage);
+    const paginatedSnapshot = {
+        empty: pageDocuments.length === 0,
+        forEach(callback) { pageDocuments.forEach(callback); },
+    };
 
     // Handle empty results case
     if (paginatedSnapshot.empty) {
@@ -3824,20 +3816,24 @@ export async function getResumes(userId, page = 1, itemsPerPage = 5) {
     const resumes = [];
     paginatedSnapshot.forEach((doc) => {
         // Create a NEW object for each resume to avoid reference issues
+        const stored = doc.data() || {};
+        const isCanonical = Number(stored.revision) > 0 || ['employments', 'educations', 'skills', 'languages'].some(key => Array.isArray(stored[key]));
         const resume = {
             id: doc.id,
-            template: doc.data().template,
-            item: doc.data(),
-            employments: [],
-            educations: [],
-            languages: [],
-            skills: [],
+            template: stored.template,
+            item: stored,
+            employments: isCanonical && Array.isArray(stored.employments) ? stored.employments : [],
+            educations: isCanonical && Array.isArray(stored.educations) ? stored.educations : [],
+            languages: isCanonical && Array.isArray(stored.languages) ? stored.languages : [],
+            skills: isCanonical && Array.isArray(stored.skills) ? stored.skills : [],
+            isNewStyle: isCanonical,
         };
         resumes.push(resume);
     });
 
     // Pull from global pb collection for new-style flat resume objects
     for (let index = 0; index < resumes.length; index++) {
+        if (resumes[index].isNewStyle) continue;
         try {
             const pbDoc = await db.collection('pb').doc(resumes[index].id).get();
             if (pbDoc.exists && pbDoc.data().object) {
@@ -3859,9 +3855,9 @@ export async function getResumes(userId, page = 1, itemsPerPage = 5) {
     }
 
     ////////////////////// After getting all resumes we loop throu each resume Id  and get the emploments
-    var employmentIndex = 0; // this index will represent the index of each employment inside resumeObject
     for (let index = 0; index < resumes.length; index++) {
         if (resumes[index].isNewStyle) continue;
+        let employmentIndex = 0;
         const employmentRef = db.collection('users').doc(userId).collection('resumes').doc(resumes[index].id).collection('employments'); // Getting all employments inside the resume
         const employmentSnapshot = await employmentRef.get();
         if (!employmentSnapshot.empty) {
@@ -3876,9 +3872,9 @@ export async function getResumes(userId, page = 1, itemsPerPage = 5) {
     }
 
     ////////////////////// After getting all resumes we loop throu each resume Id  and get the eductions
-    var educationIndex = 0; // this index will represent the index of each employment inside resumeObject
     for (let index = 0; index < resumes.length; index++) {
         if (resumes[index].isNewStyle) continue;
+        let educationIndex = 0;
         const educationRef = db.collection('users').doc(userId).collection('resumes').doc(resumes[index].id).collection('educations'); // Getting all employments inside the resume
         const educationSnapshot = await educationRef.get();
         if (!educationSnapshot.empty) {
@@ -3894,9 +3890,9 @@ export async function getResumes(userId, page = 1, itemsPerPage = 5) {
         }
     }
     ////////////////////// After getting all resumes we loop throu each resume Id  and get the eductions
-    var skillIndex = 0; // this index will represent the index of each employment inside resumeObject
     for (let index = 0; index < resumes.length; index++) {
         if (resumes[index].isNewStyle) continue;
+        let skillIndex = 0;
         const skillRef = db.collection('users').doc(userId).collection('resumes').doc(resumes[index].id).collection('skills'); // Getting all employments inside the resume
         const skillSnapshot = await skillRef.get();
         if (!skillSnapshot.empty) {
@@ -3913,9 +3909,9 @@ export async function getResumes(userId, page = 1, itemsPerPage = 5) {
     }
 
     ////////////////////// After getting all resumes we loop throu each resume Id  and get the eductions
-    var languageIndex = 0; // this index will represent the index of each employment inside resumeObject
     for (let index = 0; index < resumes.length; index++) {
         if (resumes[index].isNewStyle) continue;
+        let languageIndex = 0;
         const skillRef = db.collection('users').doc(userId).collection('resumes').doc(resumes[index].id).collection('languages'); // Getting all employments inside the resume
         const skillSnapshot = await skillRef.get();
         if (!skillSnapshot.empty) {
@@ -4291,21 +4287,32 @@ export async function getJsonById(resumeId) {
     }
 }
 
-export async function setJsonPb(resumeId, resumeObject) {
+export async function setJsonPb(resumeId, resumeObject, { isPublished = false } = {}) {
     const db = fire.firestore();
-    // Create a shallow copy to avoid mutating the caller's object
-    const objectToSave = { ...resumeObject, user: null };
-    console.log(objectToSave);
-    await db
-        .collection('pb')
-        .doc(resumeId)
-        .set({
-            id: resumeId,
-            ownerUid: fire.auth().currentUser?.uid || null,
-            isPublished: true,
-            object: JSON.stringify(objectToSave),
+    const ownerUid = fire.auth().currentUser?.uid;
+    if (!ownerUid) throw new Error('Authentication is required');
+    const objectToSave = { ...resumeObject };
+    delete objectToSave.user;
+    if (isPublished === true) {
+        await db.collection('pb').doc(resumeId).set({
+            id: resumeId, ownerUid, isPublished: true, publicationMode: 'explicit', object: JSON.stringify(objectToSave),
+            publishedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        });
+        return;
+    }
+    const isCover = String(objectToSave.template || objectToSave.resumeName || '').startsWith('Cover');
+    const collectionName = isCover ? 'covers' : 'resumes';
+    const reference = db.collection('users').doc(ownerUid).collection(collectionName).doc(resumeId);
+    await db.runTransaction(async transaction => {
+        const snapshot = await transaction.get(reference);
+        const existing = snapshot.exists ? snapshot.data() || {} : {};
+        transaction.set(reference, {
+            ...objectToSave,
+            revision: Number(existing.revision || 0) + 1,
+            created_at: existing.created_at || firebase.firestore.Timestamp.now(),
             updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
         });
+    });
 }
 
 export async function checkIfResumeIdAvailable(userId) {

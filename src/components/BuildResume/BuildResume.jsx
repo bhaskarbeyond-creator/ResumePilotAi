@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Routes, Route, useNavigate, useLocation, Link } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 // Step Components
@@ -22,7 +22,9 @@ import ResumeImportModal from './ResumeImportModal';
 import axios from 'axios';
 import download from 'downloadjs';
 import config from '../../conf/configuration';
-import { setJsonPb, getJsonById, getResumeById, IncrementDownloads, addOneToNumberOfDocumentsDownloaded, getProfileOfUser, setResumePropertyPerUser, getSystemSettings } from '../../firestore/dbOperations';
+import { getJsonById, IncrementDownloads, addOneToNumberOfDocumentsDownloaded, getProfileOfUser, getSystemSettings } from '../../firestore/dbOperations';
+import { createResumeDraft, loadResumeDraft, saveResumeDraft, publishResume, unpublishResume, getResumePublication, writeResumeRecovery, readResumeRecovery, clearResumeRecovery } from '../../services/resumePersistence';
+import { EMPTY_RESUME, normalizeResumeData } from '../../utils/resumeData';
 import { trackDownload, trackEvent, trackEngagement } from '../../utils/ga4';
 
 // Import logo
@@ -32,7 +34,7 @@ import logo from '../../assets/logo/logo.png';
 import Toasts from '../Toasts/Toats';
 
 // Import animation library for toast animations
-import { evaluateDownloadAccess, isGlobalSubscriptionDisabled, isUserPremium } from '../../utils/subscriptionUtils';
+import { evaluateDownloadAccess } from '../../utils/subscriptionUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Import user membership functions
@@ -51,8 +53,8 @@ const BuildResume = () => {
     const [currentTemplate, setCurrentTemplate] = useState('Cv1');
     const [isDownloading, setIsDownloading] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [loadRetry, setLoadRetry] = useState(0);
     const [authChecked, setAuthChecked] = useState(false);
-    const [hasLoaded, setHasLoaded] = useState(false);
     const [isManualSaving, setIsManualSaving] = useState(false);
     const [saveSuccessMsg, setSaveSuccessMsg] = useState(false);
 
@@ -60,9 +62,6 @@ const BuildResume = () => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isMobilePreviewOpen, setIsMobilePreviewOpen] = useState(false);
     const [isFooterCompressed, setIsFooterCompressed] = useState(true);
-
-    // Layout mounting state to handle responsive layout timing
-    const [isMounted, setIsMounted] = useState(false);
 
     // Toast notification states
     const [isSuccessToastVisible, setIsSuccessToastVisible] = useState(false);
@@ -77,42 +76,34 @@ const BuildResume = () => {
         membershipEnds: null,
     });
 
-    const [resumeData, setResumeData] = useState({
-        // Personal Information
-        firstname: '',
-        lastname: '',
-        email: '',
-        phone: '',
-        occupation: '',
-        country: '',
-        city: '',
-        address: '',
-        postalcode: '',
-        photo: null,
+    const [resumeData, setResumeData] = useState(() => normalizeResumeData(EMPTY_RESUME));
+    const [saveState, setSaveState] = useState({ status: 'idle', message: '' });
+    const [saveConflict, setSaveConflict] = useState(null);
+    const [publicationState, setPublicationState] = useState({ isPublished: false, status: 'idle', message: '' });
+    const saveConflictRef = useRef(null);
+    const resumeDataRef = useRef(resumeData);
+    const currentTemplateRef = useRef(currentTemplate);
+    const resumeIdRef = useRef(null);
+    const revisionRef = useRef(0);
+    const userIdRef = useRef(null);
+    const hasLoadedRef = useRef(false);
+    const changeVersionRef = useRef(0);
+    const savedVersionRef = useRef(0);
+    const saveTimerRef = useRef(null);
+    const saveInFlightRef = useRef(null);
+    const retryTimerRef = useRef(null);
 
-        // Work History
-        employments: [],
-
-        // Education
-        educations: [],
-
-        // Skills
-        skills: [],
-
-        // Languages
-        languages: [],
-
-        // Summary
-        summary: '',
-
-        // Progress tracking
-        completedSteps: [],
-    });
-
-    // Set mounted state on initial load
     useEffect(() => {
-        setIsMounted(true);
-    }, []);
+        if (!isMobileMenuOpen && !isMobilePreviewOpen) return undefined;
+        const closeOnEscape = event => {
+            if (event.key === 'Escape') {
+                setIsMobileMenuOpen(false);
+                setIsMobilePreviewOpen(false);
+            }
+        };
+        document.addEventListener('keydown', closeOnEscape);
+        return () => document.removeEventListener('keydown', closeOnEscape);
+    }, [isMobileMenuOpen, isMobilePreviewOpen]);
 
     // Load AI module settings & check if import module is enabled (Default OFF)
     useEffect(() => {
@@ -205,128 +196,175 @@ const BuildResume = () => {
             ),
         },
     ];
+    const sectionKeyForPath = path => ({ 'work-history': 'employment' }[path] || path);
+    const orderedSteps = [...steps].sort((left, right) => {
+        const leftIndex = resumeData.sectionOrder.indexOf(sectionKeyForPath(left.path));
+        const rightIndex = resumeData.sectionOrder.indexOf(sectionKeyForPath(right.path));
+        return (leftIndex < 0 ? 999 : leftIndex) - (rightIndex < 0 ? 999 : rightIndex);
+    });
 
     const getCurrentStepIndex = () => {
         const currentPath = location.pathname.toLowerCase().replace(/\/$/, '');
         const segments = currentPath.split('/').filter(Boolean);
         const lastSegment = segments[segments.length - 1] || 'heading';
 
-        const stepIndex = steps.findIndex((step) => step.path.toLowerCase() === lastSegment);
+        const stepIndex = orderedSteps.findIndex((step) => step.path.toLowerCase() === lastSegment);
         return stepIndex >= 0 ? stepIndex : 0;
     };
 
     const currentStepIndex = getCurrentStepIndex();
-    const currentStep = currentStepIndex >= 0 ? steps[currentStepIndex] : steps[0];
+    const currentStep = currentStepIndex >= 0 ? orderedSteps[currentStepIndex] : orderedSteps[0];
 
-    // Automatic background draft saver
-    const autoSaveResumeDraft = async (overrideData = null) => {
-        try {
-            // Don't auto-save if we haven't loaded existing data yet (prevents overwriting)
-            if (!hasLoaded) {
-                console.log('[AutoSave] Skipped — resume data has not been loaded yet');
-                return;
-            }
+    const buildCanonicalSnapshot = useCallback((data = resumeDataRef.current) => normalizeResumeData({
+        ...data,
+        template: currentTemplateRef.current || data.template || 'Cv1',
+    }), []);
 
-            const userId = userData.user || localStorage.getItem('user');
-            if (!userId) return;
+    const persistLatest = useCallback(async ({ manual = false } = {}) => {
+        if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+        if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+        const userId = userIdRef.current;
+        const resumeId = resumeIdRef.current;
+        const version = changeVersionRef.current;
+        const snapshot = buildCanonicalSnapshot();
 
-            let resumeId = localStorage.getItem('currentResumeId');
-            if (!resumeId) {
-                resumeId = `resume_${Date.now()}`;
-                localStorage.setItem('currentResumeId', resumeId);
-            }
-
-            const rawPayload = overrideData || getPreviewData();
-            const payload = {
-                ...rawPayload,
-                template: currentTemplate || rawPayload.template || localStorage.getItem('selectedTemplate') || 'Cv1',
-            };
-
-            // Safety check: Don't save completely empty data over existing resumes
-            const hasAnyData = (payload.firstname && payload.firstname.trim() !== '') ||
-                               (payload.lastname && payload.lastname.trim() !== '') ||
-                               (payload.email && payload.email.trim() !== '') ||
-                               (payload.employments && payload.employments.length > 0);
-            
-            if (!hasAnyData) {
-                console.log('[AutoSave] Skipped — payload has no meaningful data, refusing to overwrite');
-                return;
-            }
-
-            localStorage.setItem('currentResumeItem', JSON.stringify(payload));
-            if (payload.template) {
-                localStorage.setItem('selectedTemplate', payload.template);
-            }
-            await setJsonPb(resumeId, payload);
-            console.log('✔ Auto-saved resume draft to Firestore & localStorage:', resumeId, 'template:', payload.template);
-        } catch (err) {
-            console.warn('Auto-save background sync warning:', err);
+        if (!hasLoadedRef.current || !userId || !resumeId) {
+            setSaveState({ status: version > savedVersionRef.current ? 'pending' : 'idle', message: userId ? 'Preparing draft…' : 'Sign in to save this draft' });
+            return false;
         }
-    };
+        writeResumeRecovery(userId, resumeId, revisionRef.current, snapshot);
+        if (saveConflictRef.current) return false;
+        if (saveInFlightRef.current) {
+            await saveInFlightRef.current;
+            if (savedVersionRef.current < changeVersionRef.current && !saveConflictRef.current) return persistLatest({ manual });
+            return savedVersionRef.current >= version;
+        }
+
+        setSaveState({ status: 'saving', message: manual ? 'Saving resume…' : 'Saving changes…' });
+        const operation = (async () => {
+            try {
+                const result = await saveResumeDraft(userId, resumeId, snapshot, { expectedRevision: revisionRef.current });
+                revisionRef.current = result.revision;
+                savedVersionRef.current = Math.max(savedVersionRef.current, version);
+                if (savedVersionRef.current >= changeVersionRef.current) {
+                    clearResumeRecovery(userId, resumeId);
+                    setSaveState({ status: 'saved', message: 'All changes saved' });
+                } else {
+                    setSaveState({ status: 'pending', message: 'More changes pending…' });
+                }
+                return true;
+            } catch (error) {
+                if (error.code === 'RESUME_CONFLICT') {
+                    saveConflictRef.current = { remoteRevision: error.remoteRevision, remoteData: error.remoteData };
+                    setSaveConflict(saveConflictRef.current);
+                    setSaveState({ status: 'conflict', message: 'This resume changed in another tab or device.' });
+                } else {
+                    const retryable = !['RESUME_TOO_LARGE', 'permission-denied', 'unauthenticated'].includes(error.code);
+                    setSaveState({ status: 'error', message: error.message || (retryable ? 'Save failed. Retrying…' : 'Save failed.') });
+                    if (retryable) retryTimerRef.current = setTimeout(() => persistLatest(), 3000);
+                }
+                return false;
+            } finally {
+                saveInFlightRef.current = null;
+            }
+        })();
+        saveInFlightRef.current = operation;
+        const saved = await operation;
+        if (saved && savedVersionRef.current < changeVersionRef.current) return persistLatest({ manual });
+        return saved;
+    }, [buildCanonicalSnapshot]);
+
+    const scheduleSave = useCallback((delay = 800) => {
+        if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+        setSaveState({ status: 'pending', message: 'Changes pending…' });
+        saveTimerRef.current = setTimeout(() => persistLatest(), delay);
+    }, [persistLatest]);
 
     const handleNext = async () => {
-        await autoSaveResumeDraft();
-        if (currentStepIndex < steps.length - 1) {
-            const nextPath = `/build-resume/${steps[currentStepIndex + 1].path}`;
-            console.log('Navigating to:', nextPath, 'Current step index:', currentStepIndex);
-            navigate(nextPath);
-        }
+        await persistLatest({ manual: true });
+        if (currentStepIndex < orderedSteps.length - 1) navigate(`/build-resume/${orderedSteps[currentStepIndex + 1].path}`);
     };
 
     const handlePrevious = async () => {
-        await autoSaveResumeDraft();
-        if (currentStepIndex > 0) {
-            const prevPath = `/build-resume/${steps[currentStepIndex - 1].path}`;
-            navigate(prevPath);
-        }
+        await persistLatest({ manual: true });
+        if (currentStepIndex > 0) navigate(`/build-resume/${orderedSteps[currentStepIndex - 1].path}`);
     };
 
     const handleStepClick = async (stepPath) => {
-        await autoSaveResumeDraft();
+        await persistLatest({ manual: true });
         navigate(`/build-resume/${stepPath}`);
     };
 
-    const isStepCompleted = (stepId) => {
-        return resumeData.completedSteps.includes(stepId);
+    const isStepCompleted = (stepId) => resumeData.completedSteps.includes(stepId);
+
+    const updateResumeData = useCallback((newData) => {
+        const merged = normalizeResumeData({ ...resumeDataRef.current, ...newData, template: currentTemplateRef.current });
+        if (JSON.stringify(merged) === JSON.stringify(resumeDataRef.current)) return;
+        resumeDataRef.current = merged;
+        changeVersionRef.current += 1;
+        setResumeData(merged);
+        const userId = userIdRef.current;
+        const resumeId = resumeIdRef.current;
+        if (userId && resumeId) writeResumeRecovery(userId, resumeId, revisionRef.current, merged);
+        scheduleSave();
+    }, [scheduleSave]);
+
+    const toggleSectionVisibility = stepPath => {
+        const sectionKey = sectionKeyForPath(stepPath);
+        const hidden = new Set(resumeDataRef.current.hiddenSections || []);
+        if (hidden.has(sectionKey)) hidden.delete(sectionKey); else hidden.add(sectionKey);
+        updateResumeData({ hiddenSections: [...hidden] });
     };
 
-    const updateResumeData = (newData) => {
-        setResumeData((prev) => {
-            const updated = { ...prev, ...newData };
-            if (currentStep && !updated.completedSteps.includes(currentStep.id)) {
-                updated.completedSteps = [...updated.completedSteps, currentStep.id];
-            }
-            return updated;
-        });
-
-        // Compute the auto-save payload AFTER setting state (deferred auto-save)
-        // Use setTimeout(0) to ensure it runs after React has committed the state update
-        setTimeout(() => {
-            setResumeData((current) => {
-                const addressParts = [
-                    current.address,
-                    current.city,
-                    current.postalcode || current.postalCode,
-                    current.country
-                ].map(item => (item || '').trim()).filter(Boolean);
-
-                const payload = {
-                    ...current,
-                    fullAddress: addressParts.join(', '),
-                    employments: current.employments || [],
-                    skills: (current.skills || []).map((skill, index) => ({
-                        name: skill.skillName || skill.name || '',
-                        rating: skill.rating || 50,
-                        date: skill.date || index + 1,
-                    })),
-                    educations: current.educations || [],
-                    languages: current.languages || [],
-                };
-                autoSaveResumeDraft(payload);
-                return current; // Don't change state, just read it
-            });
-        }, 0);
+    const moveSection = (stepPath, direction) => {
+        const sectionKey = sectionKeyForPath(stepPath);
+        const order = [...resumeDataRef.current.sectionOrder];
+        const index = order.indexOf(sectionKey);
+        const target = index + direction;
+        if (index < 0 || target < 0 || target >= order.length) return;
+        [order[index], order[target]] = [order[target], order[index]];
+        updateResumeData({ sectionOrder: order });
     };
+
+    const resolveConflictWithRemote = () => {
+        if (!saveConflict?.remoteData) return;
+        const remote = normalizeResumeData(saveConflict.remoteData);
+        revisionRef.current = saveConflict.remoteRevision;
+        resumeDataRef.current = remote;
+        setResumeData(remote);
+        setCurrentTemplate(remote.template || 'Cv1');
+        currentTemplateRef.current = remote.template || 'Cv1';
+        changeVersionRef.current += 1;
+        savedVersionRef.current = changeVersionRef.current;
+        clearResumeRecovery(userIdRef.current, resumeIdRef.current);
+        saveConflictRef.current = null;
+        setSaveConflict(null);
+        setSaveState({ status: 'saved', message: 'Loaded the newer saved version' });
+    };
+
+    const resolveConflictWithLocal = async () => {
+        if (!saveConflict) return;
+        revisionRef.current = saveConflict.remoteRevision;
+        saveConflictRef.current = null;
+        setSaveConflict(null);
+        setSaveState({ status: 'pending', message: 'Saving your version…' });
+        await persistLatest({ manual: true });
+    };
+
+    useEffect(() => {
+        const beforeUnload = event => {
+            if (changeVersionRef.current <= savedVersionRef.current || saveState.status === 'saved') return;
+            event.preventDefault();
+            event.returnValue = '';
+        };
+        window.addEventListener('beforeunload', beforeUnload);
+        return () => window.removeEventListener('beforeunload', beforeUnload);
+    }, [saveState.status]);
+
+    useEffect(() => () => {
+        if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+        if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+    }, []);
 
     // Get user-friendly template name
     const getTemplateName = (templateId) => {
@@ -388,99 +426,31 @@ const BuildResume = () => {
 
     const handleManualSave = async () => {
         setIsManualSaving(true);
-        try {
-            localStorage.setItem('selectedTemplate', currentTemplate);
-            setResumeData(prev => ({ ...prev, template: currentTemplate }));
-            
-            const payload = {
-                ...getPreviewData(),
-                template: currentTemplate
-            };
-            
-            try {
-                localStorage.setItem('currentResumeItem', JSON.stringify(payload));
-            } catch (err) {}
-
-            await autoSaveResumeDraft(payload);
-
-            const userId = userData.user || localStorage.getItem('user');
-            const resumeId = localStorage.getItem('currentResumeId');
-            if (userId && resumeId) {
-                try {
-                    await setResumePropertyPerUser(userId, resumeId, 'template', currentTemplate);
-                    await setResumePropertyPerUser(userId, resumeId, 'firstname', payload.firstname || '');
-                    await setResumePropertyPerUser(userId, resumeId, 'lastname', payload.lastname || '');
-                    await setResumePropertyPerUser(userId, resumeId, 'occupation', payload.occupation || '');
-                } catch (subErr) {
-                    console.warn('[BuildResume] Subcollection template save warning:', subErr);
-                }
-            }
-
+        setSaveSuccessMsg(false);
+        const saved = await persistLatest({ manual: true });
+        if (saved) {
             setSaveSuccessMsg(true);
-            setTimeout(() => {
-                setSaveSuccessMsg(false);
-            }, 3500);
-        } catch (e) {
-            console.error('[BuildResume] Failed to save resume state completely:', e);
-        } finally {
-            setIsManualSaving(false);
+            setTimeout(() => setSaveSuccessMsg(false), 2500);
         }
+        setIsManualSaving(false);
     };
 
     const handleTemplateSelect = (templateId) => {
-        setCurrentTemplate(templateId);
-        localStorage.setItem('selectedTemplate', templateId);
-
         const templateColors = getTemplateDefaultColors(templateId);
-        let updatedData = { ...resumeData, template: templateId };
-        if (templateColors) {
-            updatedData.colors = templateColors;
-        } else {
-            const { colors, ...restData } = updatedData;
-            updatedData = restData;
-        }
-        setResumeData(updatedData);
-
-        const addressParts = [
-            updatedData.address,
-            updatedData.city,
-            updatedData.postalcode || updatedData.postalCode,
-            updatedData.country
-        ].map(item => (item || '').trim()).filter(Boolean);
-        
-        const payload = {
-            ...updatedData,
+        currentTemplateRef.current = templateId;
+        setCurrentTemplate(templateId);
+        const updated = normalizeResumeData({
+            ...resumeDataRef.current,
             template: templateId,
-            fullAddress: addressParts.join(', '),
-            employments: updatedData.employments || [],
-            skills: (updatedData.skills || []).map((skill, index) => ({
-                name: skill.skillName || skill.name || '',
-                rating: skill.rating || 50,
-                date: skill.date || index + 1,
-            })),
-            educations: updatedData.educations || [],
-            languages: updatedData.languages || [],
-            colors: updatedData.colors || templateColors,
-        };
-
-        try {
-            localStorage.setItem('currentResumeItem', JSON.stringify(payload));
-        } catch (err) {}
-
-        autoSaveResumeDraft(payload);
-
-        // Also sync template selection to user subcollection
-        const userId = userData.user || localStorage.getItem('user');
-        const resumeId = localStorage.getItem('currentResumeId');
-        if (userId && resumeId) {
-            try {
-                setResumePropertyPerUser(userId, resumeId, 'template', templateId);
-            } catch (userErr) {
-                console.warn('[BuildResume] User subcollection sync warning on template select:', userErr);
-            }
-        }
-
-        console.log(t('BuildResume.analytics.templateChanged', { templateName: getTemplateName(templateId), templateId }));
+            colors: templateColors || null,
+        });
+        resumeDataRef.current = updated;
+        setResumeData(updated);
+        changeVersionRef.current += 1;
+        const userId = userIdRef.current;
+        const resumeId = resumeIdRef.current;
+        if (userId && resumeId) writeResumeRecovery(userId, resumeId, revisionRef.current, updated);
+        scheduleSave(0);
     };
 
     // Load saved template and language on component mount
@@ -491,10 +461,6 @@ const BuildResume = () => {
             i18n.changeLanguage(savedLanguage);
         }
 
-        const savedTemplate = localStorage.getItem('selectedTemplate');
-        if (savedTemplate) {
-            setCurrentTemplate(savedTemplate);
-        }
     }, []);
 
     // Get default colors for each template based on their actual defaults
@@ -554,11 +520,11 @@ const BuildResume = () => {
             Cv51: null,
         };
 
-        return templateColors[templateId] || templateColors.Cv1;
+        return Object.prototype.hasOwnProperty.call(templateColors, templateId) ? templateColors[templateId] : templateColors.Cv1;
     };
 
-    // Create preview data ensuring arrays exist to prevent errors
-    const getPreviewData = () => {
+    // Memoize the normalized preview/export view model once per data or template change.
+    const previewData = React.useMemo(() => {
         const templateColors = getTemplateDefaultColors(currentTemplate);
 
         const addressParts = [
@@ -586,7 +552,7 @@ const BuildResume = () => {
             // Include template-specific default colors
             colors: resumeData.colors || templateColors,
         };
-    };
+    }, [resumeData, currentTemplate]);
 
     // Show Toast function similar to BoardFilling.jsx
     const showToast = (type) => {
@@ -607,6 +573,56 @@ const BuildResume = () => {
             setTimeout(() => {
                 setIsUpgradeToastVisible(false);
             }, 8000);
+        }
+    };
+
+    const handleExitBuilder = async () => {
+        if (changeVersionRef.current > savedVersionRef.current && !await persistLatest({ manual: true })) return;
+        navigate(userData.user ? '/dashboard' : '/');
+    };
+
+    const handleAddCustomSection = () => {
+        const title = window.prompt('Enter Custom Section Title (e.g. Volunteer Work, Awards, Publications):', 'Awards & Honors');
+        if (!title?.trim()) return;
+        const id = `custom-${globalThis.crypto?.randomUUID?.() || Date.now()}`;
+        const customSections = [...(resumeDataRef.current.customSections || []), { id, title: title.trim().slice(0, 100), items: [], visible: true }];
+        const sectionOrder = resumeDataRef.current.sectionOrder.includes(id)
+            ? resumeDataRef.current.sectionOrder
+            : [...resumeDataRef.current.sectionOrder, id];
+        updateResumeData({ customSections, sectionOrder });
+    };
+
+    const handlePublishForReview = async () => {
+        const userId = userIdRef.current;
+        const resumeId = resumeIdRef.current;
+        if (!userId || !resumeId) return;
+        setPublicationState(current => ({ ...current, status: 'saving', message: 'Publishing secure review link…' }));
+        try {
+            if (!await persistLatest({ manual: true })) throw new Error('Save the resume before sharing');
+            await publishResume(userId, resumeId, buildCanonicalSnapshot());
+            const shareUrl = `${window.location.origin}/shared/${resumeId}`;
+            setPublicationState({ isPublished: true, status: 'saved', message: 'Review link published' });
+            try {
+                await navigator.clipboard.writeText(shareUrl);
+                setPublicationState({ isPublished: true, status: 'saved', message: 'Review link copied' });
+            } catch {
+                setPublicationState({ isPublished: true, status: 'saved', message: `Published: ${shareUrl}` });
+            }
+        } catch (error) {
+            setPublicationState(current => ({ ...current, status: 'error', message: error.message || 'Unable to publish review link' }));
+        }
+    };
+
+    const handleStopSharing = async () => {
+        const userId = userIdRef.current;
+        const resumeId = resumeIdRef.current;
+        if (!userId || !resumeId) return;
+        setPublicationState(current => ({ ...current, status: 'saving', message: 'Revoking public link…' }));
+        try {
+            await unpublishResume(userId, resumeId);
+            setPublicationState({ isPublished: false, status: 'saved', message: 'Public link revoked' });
+        } catch (error) {
+            setPublicationState(current => ({ ...current, status: 'error', message: error.message || 'Unable to revoke link' }));
         }
     };
 
@@ -645,16 +661,12 @@ const BuildResume = () => {
         if (access.reason === 'PREMIUM_REQUIRED') {
             console.log('Non-premium user with subscriptions enabled, redirecting to billing');
 
-            try {
-                if (!localStorage.getItem('currentResumeId')) {
-                    localStorage.setItem('currentResumeId', Math.floor(Math.random() * 20000).toString() + 'xknd');
-                }
-                await setJsonPb(localStorage.getItem('currentResumeId'), getPreviewData());
-                showToast('Success');
-            } catch (error) {
-                console.error('Error saving resume:', error);
+            const saved = await persistLatest({ manual: true });
+            if (!saved) {
+                setSaveState({ status: 'error', message: 'Save the resume before leaving for billing.' });
+                return;
             }
-
+            showToast('Success');
             showToast('Upgrade');
             setTimeout(() => {
                 window.location.href = '/billing/plans';
@@ -667,29 +679,21 @@ const BuildResume = () => {
         setIsDownloading(true);
 
         try {
-            // Generate resume ID if it doesn't exist
-            if (!localStorage.getItem('currentResumeId')) {
-                localStorage.setItem('currentResumeId', Math.floor(Math.random() * 20000).toString() + 'xknd');
-            }
-
-            // Save resume data to database for export
-            await setJsonPb(localStorage.getItem('currentResumeId'), getPreviewData());
+            const resumeId = resumeIdRef.current;
+            const user = userIdRef.current;
+            if (!resumeId || !user || !await persistLatest({ manual: true })) throw new Error('Resume must be saved before export');
 
             // Increment download counter
             await IncrementDownloads();
 
-            // Add to user's download count if user is logged in
-            const user = localStorage.getItem('user');
-            if (user) {
-                await addOneToNumberOfDocumentsDownloaded(user);
-            }
+            await addOneToNumberOfDocumentsDownloaded(user);
 
             // Make API call to generate PDF
             const response = await axios.post(
                 `${config.provider}://${config.backendUrl}/api/export`,
                 {
                     language: i18n.language, // Use current language from i18n
-                    resumeId: localStorage.getItem('currentResumeId'),
+                    resumeId,
                     resumeName: currentTemplate, // Using selected template
                 },
                 {
@@ -703,7 +707,6 @@ const BuildResume = () => {
             trackEngagement('document_downloaded', {
                 template_name: currentTemplate,
                 document_type: 'resume',
-                user_id: user,
             });
 
             // Validate the blob is a real PDF before downloading
@@ -733,7 +736,7 @@ const BuildResume = () => {
 
     // Export resume in standardized JSON Resume format (jsonresume.org)
     const handleExportJsonResume = () => {
-        const data = getPreviewData();
+        const data = previewData;
         const jsonResumeSchema = {
             $schema: "https://raw.githubusercontent.com/jsonresume/resume-schema/v1.0.0/schema.json",
             basics: {
@@ -766,7 +769,19 @@ const BuildResume = () => {
                 name: s.skillName || s.name || ''
             })),
             languages: (data.languages || []).map(l => ({
-                language: l.language || l.name || ''
+                language: l.language || l.name || '', fluency: l.level || l.proficiency || ''
+            })),
+            projects: (data.projects || []).map(project => ({
+                name: project.title || project.name || '', description: project.description || '', url: project.url || project.link || ''
+            })),
+            certificates: (data.certifications || []).map(certificate => ({
+                name: certificate.title || certificate.name || '', issuer: certificate.issuer || certificate.organization || '', date: certificate.date || ''
+            })),
+            awards: (data.achievements || []).map(achievement => ({
+                title: achievement.title || achievement.name || '', awarder: achievement.issuer || '', summary: achievement.description || ''
+            })),
+            references: (data.references || []).map(reference => ({
+                name: reference.name || '', reference: reference.reference || reference.description || ''
             }))
         };
 
@@ -776,51 +791,21 @@ const BuildResume = () => {
 
     // Complete and save resume handler
     const handleCompleteResume = async () => {
-        try {
-            const userId = userData.user || localStorage.getItem('user');
-            if (!userId) {
-                alert('Please sign in to save your resume');
-                return;
-            }
-
-            let currentResumeId = localStorage.getItem('currentResumeId');
-            if (!currentResumeId) {
-                currentResumeId = `resume_${Date.now()}`;
-                localStorage.setItem('currentResumeId', currentResumeId);
-            }
-
-            const completeDataPayload = getPreviewData();
-
-            // setJsonPb takes (resumeId, payload)
-            await setJsonPb(currentResumeId, completeDataPayload);
-
-            // Also save resume properties to user subcollection
-            try {
-                await setResumePropertyPerUser(userId, currentResumeId, 'template', currentTemplate);
-                await setResumePropertyPerUser(userId, currentResumeId, 'firstname', completeDataPayload.firstname || '');
-                await setResumePropertyPerUser(userId, currentResumeId, 'lastname', completeDataPayload.lastname || '');
-                await setResumePropertyPerUser(userId, currentResumeId, 'occupation', completeDataPayload.occupation || '');
-            } catch (userErr) {
-                console.warn('User subcollection sync warning:', userErr);
-            }
-
-            showToast('Success');
-
-            // Track analytics completion event
-            trackEvent('resume_completed', 'Documents', currentTemplate, 1);
-
-            // Clean up temporary session flags
-            localStorage.removeItem('currentResumeId');
-            localStorage.removeItem('currentResumeItem');
-
-            // Navigate back to user dashboard after a brief toast delay
-            setTimeout(() => {
-                navigate('/dashboard');
-            }, 1200);
-        } catch (error) {
-            console.error('Error completing resume:', error);
-            alert('Failed to save resume. Please try again.');
+        const userId = userIdRef.current;
+        if (!userId) {
+            alert('Please sign in to save your resume');
+            return;
         }
+        const saved = await persistLatest({ manual: true });
+        if (!saved) {
+            setSaveState(current => ({ ...current, message: current.message || 'Failed to save resume. Please try again.' }));
+            return;
+        }
+        showToast('Success');
+        trackEvent('resume_completed', 'Documents', currentTemplate, 1);
+        localStorage.removeItem('currentResumeId');
+        localStorage.removeItem('currentResumeItem');
+        setTimeout(() => navigate('/dashboard'), 700);
     };
 
     // Fetch global subscription status on component mount
@@ -843,13 +828,17 @@ const BuildResume = () => {
     React.useEffect(() => {
         const authListener = fire.auth().onAuthStateChanged((user) => {
             if (user) {
-                // User is logged in
-                console.log('User logged in:', user.uid);
+                if (userIdRef.current && userIdRef.current !== user.uid) {
+                    hasLoadedRef.current = false;
+                    resumeIdRef.current = null;
+                    revisionRef.current = 0;
+                    setResumeData(normalizeResumeData(EMPTY_RESUME));
+                }
+                userIdRef.current = user.uid;
                 setUserData((prevData) => ({
                     ...prevData,
                     user: user.uid,
                 }));
-                localStorage.setItem('user', user.uid);
 
                 // Fetch user membership information
                 getUserMembership(user.uid)
@@ -879,8 +868,9 @@ const BuildResume = () => {
                         setAuthChecked(true);
                     });
             } else {
-                // User is not logged in
-                console.log('User not logged in');
+                userIdRef.current = null;
+                resumeIdRef.current = null;
+                revisionRef.current = 0;
                 setUserData({
                     user: null,
                     membership: 'Basic',
@@ -896,215 +886,105 @@ const BuildResume = () => {
         return () => authListener();
     }, []); // Empty dependency array to run only on mount
 
-    // Load existing resume or auto pre-fill new resume from Master "My Profile"
+    // Load the owner-scoped canonical draft, with one-time migration from legacy pb data.
     React.useEffect(() => {
-        console.log('[BuildResume debug] useEffect triggered. authChecked:', authChecked, 'user:', userData.user, 'hasLoaded:', hasLoaded);
-        if (!authChecked || hasLoaded) return;
+        if (!authChecked || hasLoadedRef.current) return undefined;
+        let active = true;
+        const applyLoaded = (data, resumeId, revision, dirty = false) => {
+            if (!active) return;
+            const normalized = normalizeResumeData(data);
+            resumeIdRef.current = resumeId;
+            revisionRef.current = revision;
+            resumeDataRef.current = normalized;
+            currentTemplateRef.current = normalized.template || 'Cv1';
+            setResumeData(normalized);
+            setCurrentTemplate(currentTemplateRef.current);
+            localStorage.setItem('currentResumeId', resumeId);
+            localStorage.removeItem('currentResumeItem');
+            localStorage.removeItem('selectedTemplate');
+            changeVersionRef.current = dirty ? 1 : 0;
+            savedVersionRef.current = 0;
+            hasLoadedRef.current = true;
+            setSaveState(dirty ? { status: 'pending', message: 'Recovered unsaved changes' } : { status: 'saved', message: 'All changes saved' });
+            setIsLoading(false);
+            getResumePublication(userIdRef.current, resumeId).then(state => {
+                if (active) setPublicationState({ ...state, status: 'idle', message: '' });
+            }).catch(() => {});
+            if (dirty) setTimeout(() => scheduleSave(0), 0);
+        };
 
-        const resumeId = localStorage.getItem('currentResumeId');
-        console.log('[BuildResume debug] currentResumeId from localStorage:', resumeId);
-        if (resumeId) {
+        const initialize = async () => {
             setIsLoading(true);
-            
-            // Helper to fetch template from subcollection as fallback
-            const fetchSubcollectionTemplate = async () => {
-                try {
-                    const userId = userData.user || localStorage.getItem('user');
-                    if (userId) {
-                        const db = fire.firestore();
-                        const docRef = await db.collection('users').doc(userId).collection('resumes').doc(resumeId).get();
-                        if (docRef.exists && docRef.data().template) {
-                            return docRef.data().template;
-                        }
-                    }
-                } catch (err) {
-                    console.warn('Failed to load template from subcollection:', err);
-                }
-                return null;
-            };
-
-            // Helper: extract resume data from any format (dashboard doc or flat pb object)
-            const extractResumeFields = (parsed) => {
-                // Handle both { id, item: {...} } format (from dashboard) and flat format (from autoSave/pb)
-                const item = parsed.item ? parsed.item : parsed;
-                const employments = parsed.employments || item.employments || [];
-                const educations = parsed.educations || item.educations || [];
-                const rawSkills = parsed.skills || item.skills || [];
-                const languages = parsed.languages || item.languages || [];
-
-                // Map skills to ensure compatibility with skillName key
-                const skills = rawSkills.map((sk, idx) => ({
-                    id: sk.id || `skill_${Date.now()}_${idx}`,
-                    skillName: sk.skillName || sk.name || '',
-                    rating: sk.rating || 50
-                }));
-
-                return { item, employments, educations, skills, languages };
-            };
-
-            // Helper: apply extracted data to state
-            const applyResumeData = (item, employments, educations, skills, languages, parsed, tId = currentTemplate) => {
-                setResumeData({
-                    firstname: item.firstname || '',
-                    lastname: item.lastname || '',
-                    email: item.email || '',
-                    phone: item.phone || '',
-                    occupation: item.occupation || '',
-                    city: item.city || '',
-                    country: item.country || '',
-                    address: item.address || '',
-                    postalcode: item.postalcode || '',
-                    photo: item.photo || null,
-                    employments: employments,
-                    educations: educations,
-                    skills: skills,
-                    languages: languages,
-                    summary: item.summary || '',
-                    completedSteps: item.completedSteps || (parsed && parsed.completedSteps) || [],
-                    colors: (parsed && parsed.colors) || item.colors || getTemplateDefaultColors(tId) || { primary: '#000000', secondary: '#f5f5f5' },
-                });
-            };
-
-            // 1. Try to load from localStorage first for instant response
-            let loadedFromLocalStorage = false;
-            const savedItem = localStorage.getItem('currentResumeItem');
-            console.log('[BuildResume debug] currentResumeItem from localStorage:', savedItem ? `${savedItem.substring(0, 200)}...` : 'null');
-            if (savedItem && savedItem !== 'null' && savedItem !== 'undefined') {
-                try {
-                    const parsed = JSON.parse(savedItem);
-                    if (parsed && typeof parsed === 'object') {
-                        const { item, employments, educations, skills, languages } = extractResumeFields(parsed);
-                        
-                        console.log('[BuildResume debug] Extracted item keys:', item ? Object.keys(item) : 'null');
-                        console.log('[BuildResume debug] Extracted item.firstname:', item?.firstname, 'item.lastname:', item?.lastname);
-                        console.log('[BuildResume debug] Extracted lists - employments:', employments.length, 'educations:', educations.length, 'skills:', skills.length, 'languages:', languages.length);
-                        
-                        // Check if we have ANY meaningful resume data
-                        const hasPersonalInfo = item && (
-                            (item.firstname && item.firstname.trim() !== '') ||
-                            (item.lastname && item.lastname.trim() !== '') ||
-                            (item.email && item.email.trim() !== '') ||
-                            employments.length > 0
-                        );
-
-                        if (hasPersonalInfo) {
-                            console.log('[BuildResume debug] ✅ Successfully loaded resume data from localStorage');
-                            applyResumeData(item, employments, educations, skills, languages, parsed);
-                            loadedFromLocalStorage = true;
-                            
-                            // Determine template (don't let this block loading)
-                            const savedLocalTemp = localStorage.getItem('selectedTemplate');
-                            const immediateTemplate = savedLocalTemp || parsed.template || item.template || 'Cv1';
-                            setCurrentTemplate(immediateTemplate);
-                            localStorage.setItem('selectedTemplate', immediateTemplate);
-                            
-                            // Also try subcollection template as async enhancement only if no template is saved
-                            fetchSubcollectionTemplate().then((subTemp) => {
-                                if (subTemp && subTemp !== immediateTemplate && !parsed.template && !savedLocalTemp) {
-                                    console.log('[BuildResume debug] Upgrading template from subcollection:', subTemp);
-                                    setCurrentTemplate(subTemp);
-                                    localStorage.setItem('selectedTemplate', subTemp);
-                                }
-                            }).catch(() => { /* ignore - we already have a template */ });
-                            
-                            // Data is loaded - stop loading immediately (don't wait for template fetch)
-                            setIsLoading(false);
-                            setHasLoaded(true);
-                            return; // Skip Firestore fallback
-                        } else {
-                            console.log('[BuildResume debug] ⚠️ localStorage data exists but has no meaningful personal info, falling through to Firestore');
-                        }
-                    }
-                } catch (e) {
-                    console.warn('[BuildResume debug] ❌ Failed to parse currentResumeItem:', e);
-                }
-            }
-
-            // 2. Fallback to pulling directly from Firestore pb collection
-            console.log('[BuildResume debug] Falling back to Firestore getJsonById for resumeId:', resumeId);
-            getJsonById(resumeId)
-                .then(async (data) => {
-                    console.log('[BuildResume debug] Firestore getJsonById resolved data:', data ? 'found' : 'null');
-                    
-                    // Fallback to loading from subcollections if not found in global pb collection
-                    if (!data) {
-                        const userId = userData.user || localStorage.getItem('user');
-                        if (userId) {
-                            console.log('[BuildResume debug] Trying to load from subcollections for userId:', userId, 'resumeId:', resumeId);
-                            const subcollectionData = await getResumeById(userId, resumeId);
-                            console.log('[BuildResume debug] Reconstructed subcollection data:', subcollectionData ? 'found' : 'null');
-                            if (subcollectionData) {
-                                data = subcollectionData;
-                            }
-                        }
-                    }
-
-                    if (data) {
-                        const { item, employments, educations, skills, languages } = extractResumeFields(data);
-                        applyResumeData(item, employments, educations, skills, languages, data);
-                        
-                        // Also update localStorage so next time loads faster
-                        try {
-                            localStorage.setItem('currentResumeItem', JSON.stringify(data));
-                        } catch (storageErr) {
-                            console.warn('Could not cache resume to localStorage:', storageErr);
-                        }
-                        
-                        const savedLocalTemp = localStorage.getItem('selectedTemplate');
-                        const templateId = savedLocalTemp || data.template || 'Cv1';
-                        setCurrentTemplate(templateId);
-                        localStorage.setItem('selectedTemplate', templateId);
-                        setHasLoaded(true);
-                    } else {
-                        console.warn('[BuildResume debug] ⚠️ No resume data found in Firestore for resumeId:', resumeId);
-                        setHasLoaded(true);
-                    }
-                })
-                .catch((err) => {
-                    console.error('Failed to load resume from firestore:', err);
-                    setHasLoaded(true);
-                })
-                .finally(() => {
-                    setIsLoading(false);
-                });
-        } else {
-            // New resume - pre-fill from profile if logged in
-            if (userData.user) {
-                setIsLoading(true);
-                getProfileOfUser(userData.user)
-                    .then((profile) => {
-                        if (profile) {
-                            console.log('Auto pre-filling new resume from Master Profile:', profile);
-                            setResumeData((prev) => ({
-                                ...prev,
-                                firstname: prev.firstname || profile.firstname || profile.name?.split(' ')[0] || '',
-                                lastname: prev.lastname || profile.lastname || profile.name?.split(' ').slice(1).join(' ') || '',
-                                email: prev.email || profile.email || '',
-                                phone: prev.phone || profile.phone || '',
-                                occupation: prev.occupation || profile.occupation || '',
-                                city: prev.city || profile.city || '',
-                                country: prev.country || profile.country || '',
-                                address: prev.address || profile.address || '',
-                                postalcode: prev.postalcode || profile.postalCode || '',
-                                photo: prev.photo || profile.selectedImage || profile.photo || null,
-                                employments: prev.employments.length > 0 ? prev.employments : (profile.employments || []),
-                                educations: prev.educations.length > 0 ? prev.educations : (profile.educations || []),
-                                skills: prev.skills.length > 0 ? prev.skills : (profile.skills || []),
-                                summary: prev.summary || profile.summary || '',
-                            }));
-                        }
-                        setHasLoaded(true);
-                    })
-                    .catch((err) => console.error('Error auto-populating master profile:', err))
-                    .finally(() => {
-                        setIsLoading(false);
-                    });
-            } else {
+            const userId = userIdRef.current;
+            if (!userId) {
+                const blank = normalizeResumeData(EMPTY_RESUME);
+                resumeDataRef.current = blank;
+                setResumeData(blank);
+                hasLoadedRef.current = true;
+                    setSaveState({ status: 'idle', message: 'Sign in to save this draft' });
                 setIsLoading(false);
-                setHasLoaded(true);
+                return;
             }
-        }
-    }, [authChecked, userData.user, hasLoaded]);
+
+            let selectedId = localStorage.getItem('currentResumeId');
+            if (selectedId) {
+                try {
+                    let loaded = await loadResumeDraft(userId, selectedId);
+                    // Migrate old flat pb drafts into the owner-scoped canonical document.
+                    if (!loaded) {
+                        const legacy = await getJsonById(selectedId).catch(() => null);
+                        if (legacy) loaded = await createResumeDraft(userId, legacy, { resumeId: selectedId });
+                    } else if (loaded.revision === 0) {
+                        const legacy = await getJsonById(selectedId).catch(() => null);
+                        if (legacy) {
+                            const migrated = normalizeResumeData({ ...loaded.data, ...legacy });
+                            const saved = await saveResumeDraft(userId, selectedId, migrated, { expectedRevision: 0 });
+                            loaded = { id: selectedId, revision: saved.revision, data: migrated };
+                        }
+                    }
+                    if (loaded) {
+                        const recovery = readResumeRecovery(userId, selectedId);
+                        const useRecovery = recovery && recovery.revision >= loaded.revision
+                            && JSON.stringify(recovery.data) !== JSON.stringify(loaded.data);
+                        applyLoaded(useRecovery ? recovery.data : loaded.data, selectedId, loaded.revision, Boolean(useRecovery));
+                        return;
+                    }
+                } catch (error) {
+                    console.warn('[BuildResume] Selected resume could not be loaded:', error.message);
+                }
+                localStorage.removeItem('currentResumeId');
+                selectedId = null;
+            }
+
+            let initial = normalizeResumeData(EMPTY_RESUME);
+            try {
+                const profile = await getProfileOfUser(userId);
+                if (profile) initial = normalizeResumeData({
+                    ...initial,
+                    firstname: profile.firstname || profile.name?.split(' ')[0] || '',
+                    lastname: profile.lastname || profile.name?.split(' ').slice(1).join(' ') || '',
+                    email: profile.email || '', phone: profile.phone || '', occupation: profile.occupation || '',
+                    city: profile.city || '', country: profile.country || '', address: profile.address || '',
+                    postalcode: profile.postalCode || profile.postalcode || '', photo: profile.selectedImage || profile.photo || null,
+                    employments: profile.employments || profile.workExperiences || [], educations: profile.educations || profile.education || [],
+                    skills: profile.skills || [], languages: profile.languages || [], projects: profile.projects || [],
+                    certifications: profile.certifications || [], summary: profile.summary || '',
+                });
+            } catch (error) {
+                console.warn('[BuildResume] Profile prefill unavailable:', error.message);
+            }
+            const created = await createResumeDraft(userId, initial);
+            applyLoaded(created.data, created.id, created.revision, false);
+        };
+
+        initialize().catch(error => {
+            if (!active) return;
+            console.error('[BuildResume] Resume initialization failed:', error);
+            setSaveState({ status: 'error', message: 'Resume could not be loaded. Try refreshing.' });
+            setIsLoading(false);
+        });
+        return () => { active = false; };
+    }, [authChecked, userData.user, scheduleSave, loadRetry]);
 
     // Redirect to first step if on base path
     React.useEffect(() => {
@@ -1118,17 +998,20 @@ const BuildResume = () => {
         }
     }, [location.pathname, navigate]);
 
-    const progressPercentage = Math.round((resumeData.completedSteps.length / steps.length) * 100);
+    const progressPercentage = Math.round((resumeData.completedSteps.length / orderedSteps.length) * 100);
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-slate-50 flex items-center justify-center w-full">
-                <div className="flex flex-col items-center space-y-4">
-                    <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center w-full" aria-busy="true">
+                <div className="flex flex-col items-center space-y-4" role="status">
+                    <div aria-hidden="true" className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                     <p className="text-slate-600 text-sm font-semibold">Loading your resume...</p>
                 </div>
             </div>
         );
+    }
+    if (!hasLoadedRef.current && saveState.status === 'error') {
+        return <main className="min-h-screen bg-slate-50 flex items-center justify-center p-4"><div role="alert" className="max-w-md text-center"><h1 className="text-lg font-semibold text-slate-900">Resume unavailable</h1><p className="mt-2 text-sm text-slate-600">{saveState.message}</p><button type="button" onClick={() => { setSaveState({ status: 'idle', message: '' }); setLoadRetry(value => value + 1); }} className="mt-4 rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white">Try again</button></div></main>;
     }
 
     return (
@@ -1158,6 +1041,24 @@ const BuildResume = () => {
                 )}
             </AnimatePresence>
 
+            {publicationState.message && (
+                <div role="status" aria-live="polite" className={`fixed bottom-4 right-4 z-[70] max-w-sm rounded-lg border bg-white p-3 text-sm shadow-xl ${publicationState.status === 'error' ? 'border-red-200 text-red-800' : 'border-emerald-200 text-emerald-800'}`}>
+                    {publicationState.message}
+                </div>
+            )}
+            {(saveState.status === 'error' || saveState.status === 'conflict') && (
+                <div role="alert" className="fixed top-4 left-1/2 -translate-x-1/2 z-[70] max-w-xl w-[calc(100%_-_2rem)] rounded-lg border border-red-200 bg-white p-3 shadow-xl">
+                    <p className="text-sm font-semibold text-red-800">{saveState.message}</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                        {saveState.status === 'error' && <button type="button" onClick={() => persistLatest({ manual: true })} className="rounded bg-red-700 px-3 py-1.5 text-xs font-semibold text-white">Retry save</button>}
+                        {saveState.status === 'conflict' && <>
+                            <button type="button" onClick={resolveConflictWithRemote} className="rounded bg-slate-700 px-3 py-1.5 text-xs font-semibold text-white">Load newer version</button>
+                            <button type="button" onClick={resolveConflictWithLocal} className="rounded border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-800">Keep my changes</button>
+                        </>}
+                    </div>
+                </div>
+            )}
+
             {/* Mobile Header - Only visible on mobile */}
             <div className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-slate-200 px-4 py-3 z-30 flex items-center justify-between">
                 {/* Mobile Menu Button */}
@@ -1168,9 +1069,12 @@ const BuildResume = () => {
                 </button>
 
                 {/* Logo */}
-                <Link to={userData.user ? "/dashboard2" : "/"}>
-                    <img src={logo} alt="Logo" className="h-8 w-auto object-contain" />
-                </Link>
+                <div className="flex flex-col items-center">
+                    <button type="button" onClick={handleExitBuilder} aria-label="Save and exit to dashboard">
+                        <img src={logo} alt="Logo" className="h-7 w-auto object-contain" />
+                    </button>
+                    <span role="status" aria-live="polite" className={`text-[10px] font-semibold ${saveState.status === 'error' || saveState.status === 'conflict' ? 'text-red-700' : saveState.status === 'saved' ? 'text-emerald-700' : 'text-amber-700'}`}>{saveState.message || 'Draft ready'}</span>
+                </div>
 
                 {/* Mobile Preview Button */}
                 <button onClick={() => setIsMobilePreviewOpen(true)} className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg" aria-label="Open resume preview">
@@ -1202,13 +1106,16 @@ const BuildResume = () => {
                             exit={{ x: '-100%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
                             className="fixed left-0 top-0 bottom-0 w-80 max-w-[85vw] bg-white shadow-xl"
+                            role="dialog"
+                            aria-modal="true"
+                            aria-label="Resume builder navigation"
                             onClick={(e) => e.stopPropagation()}>
                             {/* Mobile Navigation Header */}
                             <div className="px-4 py-6 border-b border-slate-100 flex justify-between items-center">
-                                <Link to={userData.user ? "/dashboard2" : "/"} onClick={() => setIsMobileMenuOpen(false)}>
+                                <button type="button" onClick={async () => { setIsMobileMenuOpen(false); await handleExitBuilder(); }} aria-label="Save and exit to dashboard">
                                     <img src={logo} alt="Logo" className="h-8 w-auto object-contain" />
-                                </Link>
-                                <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-slate-400 hover:text-slate-600 rounded-lg">
+                                </button>
+                                <button type="button" onClick={() => setIsMobileMenuOpen(false)} aria-label="Close navigation menu" className="p-2 text-slate-400 hover:text-slate-600 rounded-lg">
                                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                     </svg>
@@ -1218,7 +1125,7 @@ const BuildResume = () => {
                             {/* Mobile Steps Navigation */}
                             <div className="flex-1 px-3 py-4 overflow-y-auto">
                                 <nav className="space-y-1">
-                                    {steps.map((step, index) => {
+                                    {orderedSteps.map((step, index) => {
                                         const isActive = currentStep.id === step.id;
                                         const isCompleted = isStepCompleted(step.id);
                                         const isPrevious = index < currentStepIndex;
@@ -1292,7 +1199,7 @@ const BuildResume = () => {
                                     </div>
 
                                     <p className="text-xs text-slate-600">
-                                        {resumeData.completedSteps.length}/{steps.length} {t('BuildResume.progress.completed')}
+                                        {resumeData.completedSteps.length}/{orderedSteps.length} {t('BuildResume.progress.completed')}
                                     </p>
                                 </div>
                             </div>
@@ -1428,6 +1335,9 @@ const BuildResume = () => {
                             exit={{ x: '100%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
                             className="fixed right-0 top-0 bottom-0 w-80 max-w-[85vw] bg-white shadow-xl"
+                            role="dialog"
+                            aria-modal="true"
+                            aria-label="Mobile resume preview"
                             onClick={(e) => e.stopPropagation()}>
                             {/* Mobile Preview Header */}
                             <div className="px-4 py-4 border-b border-slate-100 flex justify-between items-center">
@@ -1435,7 +1345,7 @@ const BuildResume = () => {
                                     <h3 className="text-sm font-semibold text-slate-900">{t('BuildResume.preview.livePreview')}</h3>
                                     <p className="text-xs text-slate-600 mt-1">{getTemplateName(currentTemplate)}</p>
                                 </div>
-                                <button onClick={() => setIsMobilePreviewOpen(false)} className="p-2 text-slate-400 hover:text-slate-600 rounded-lg">
+                                <button type="button" onClick={() => setIsMobilePreviewOpen(false)} aria-label="Close mobile preview" className="p-2 text-slate-400 hover:text-slate-600 rounded-lg">
                                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                     </svg>
@@ -1469,7 +1379,7 @@ const BuildResume = () => {
                                             style={{ transform: 'scale(0.35)', transformOrigin: 'top left', width: '285%', height: '285%' }}>
                                             <TemplateRenderer
                                                 templateId={currentTemplate}
-                                                values={getPreviewData()}
+                                                values={previewData}
                                                 language={i18n.language}
                                                 onError={(error) => console.error('Template preview failed:', error)}
                                             />
@@ -1525,6 +1435,10 @@ const BuildResume = () => {
                                         </svg>
                                         <span>{t('BuildResume.preview.viewFullSize')}</span>
                                     </button>
+                                    <button type="button" onClick={handlePublishForReview} disabled={publicationState.status === 'saving'} className="w-full border border-indigo-300 text-indigo-700 py-2.5 px-4 rounded-lg font-medium disabled:opacity-60">
+                                        {publicationState.isPublished ? 'Copy / Update Review Link' : 'Share for Review'}
+                                    </button>
+                                    {publicationState.isPublished && <button type="button" onClick={handleStopSharing} className="w-full text-red-700 py-2 text-sm font-medium">Stop Sharing</button>}
                                 </div>
                             </div>
                         </motion.div>
@@ -1533,32 +1447,37 @@ const BuildResume = () => {
             </AnimatePresence>
 
             {/* Left Sidebar - Steps Navigation - Always Visible */}
-            <div className="flex flex-col w-56 lg:w-64 bg-white border-r border-slate-200 shadow-sm min-h-screen flex-shrink-0 relative z-20">
+            <div className="hidden md:flex flex-col w-56 lg:w-64 bg-white border-r border-slate-200 shadow-sm min-h-screen flex-shrink-0 relative z-20">
                 {/* Header */}
                 <div className="px-4 py-4 border-b border-slate-100 flex-shrink-0 flex items-center justify-between gap-2">
-                    <Link to={userData.user ? "/dashboard" : "/"}>
+                    <button type="button" onClick={handleExitBuilder} aria-label="Save and exit to dashboard">
                         <img src={logo} alt="Logo" className="h-7 w-auto object-contain" />
-                    </Link>
+                    </button>
                     <div className="flex items-center gap-2">
-                        <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-200/60">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                            <span>Saved</span>
+                        <div role="status" aria-live="polite" className={`hidden sm:flex items-center gap-1.5 text-[11px] font-semibold px-2 py-1 rounded-md border ${
+                            saveState.status === 'saved' ? 'text-emerald-700 bg-emerald-50 border-emerald-200' :
+                            saveState.status === 'error' || saveState.status === 'conflict' ? 'text-red-700 bg-red-50 border-red-200' :
+                            'text-amber-700 bg-amber-50 border-amber-200'
+                        }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${saveState.status === 'saved' ? 'bg-emerald-500' : saveState.status === 'error' || saveState.status === 'conflict' ? 'bg-red-500' : 'bg-amber-500 animate-pulse'}`}></span>
+                            <span>{saveState.message || 'Draft ready'}</span>
                         </div>
-                        <Link
-                            to={userData.user ? "/dashboard" : "/"}
+                        <button
+                            type="button"
+                            onClick={handleExitBuilder}
                             className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-indigo-600 bg-slate-100 hover:bg-indigo-50 px-2.5 py-1.5 rounded-lg border border-slate-200/80 transition-all shadow-sm">
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                             </svg>
                             <span>Dashboard</span>
-                        </Link>
+                        </button>
                     </div>
                 </div>
 
                 {/* Steps Navigation */}
                 <div className="flex-1 px-3 py-4 overflow-y-auto">
                     <nav className="space-y-1">
-                        {steps.map((step, index) => {
+                        {orderedSteps.map((step, index) => {
                             const isActive = currentStep.id === step.id;
                             const isCompleted = isStepCompleted(step.id);
                             const isPrevious = index < currentStepIndex;
@@ -1614,6 +1533,20 @@ const BuildResume = () => {
                             );
                         })}
                     </nav>
+                    <details className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-2">
+                        <summary className="cursor-pointer text-xs font-semibold text-slate-700">Reorder sections</summary>
+                        <ul className="mt-2 space-y-1" aria-label="Resume section order">
+                            {orderedSteps.map((step, index) => (
+                                <li key={`order-${step.id}`} className="flex items-center justify-between gap-2 text-xs text-slate-700">
+                                    <label className="flex min-w-0 items-center gap-1"><input type="checkbox" checked={!resumeData.hiddenSections.includes(sectionKeyForPath(step.path))} onChange={() => toggleSectionVisibility(step.path)} /><span className="truncate">{step.name}</span></label>
+                                    <span className="flex gap-1">
+                                        <button type="button" onClick={() => moveSection(step.path, -1)} disabled={index === 0} aria-label={`Move ${step.name} up`} className="rounded border px-1.5 py-0.5 disabled:opacity-40">↑</button>
+                                        <button type="button" onClick={() => moveSection(step.path, 1)} disabled={index === orderedSteps.length - 1} aria-label={`Move ${step.name} down`} className="rounded border px-1.5 py-0.5 disabled:opacity-40">↓</button>
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
+                    </details>
 
                     {/* Real-Time ATS Score Meter Widget */}
                     <div className="mt-4">
@@ -1632,7 +1565,7 @@ const BuildResume = () => {
                         </div>
 
                         <p className="text-xs text-slate-600">
-                            {resumeData.completedSteps.length}/{steps.length} {t('BuildResume.progress.completed')}
+                            {resumeData.completedSteps.length}/{orderedSteps.length} {t('BuildResume.progress.completed')}
                         </p>
                     </div>
                 </div>
@@ -1709,7 +1642,7 @@ const BuildResume = () => {
             </div>
 
             {/* Main Content Area - Responsive Center Section */}
-            <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+            <div className="flex-1 flex flex-col h-full overflow-hidden relative pt-16 md:pt-0">
                 {/* Main Form Content */}
                 <div className="flex-1 bg-white flex flex-col h-full overflow-hidden">
                     {/* Scrollable content area */}
@@ -1732,9 +1665,9 @@ const BuildResume = () => {
                         <div className="flex justify-between items-center max-w-4xl mx-auto">
                             {/* Left side - Progress indicator - Hidden on mobile */}
                             <div className="hidden md:flex items-center space-x-3">
-                                <div className="text-xs text-slate-600">{t('BuildResume.progress.step', { current: currentStepIndex + 1, total: steps.length })}</div>
+                                <div className="text-xs text-slate-600">{t('BuildResume.progress.step', { current: currentStepIndex + 1, total: orderedSteps.length })}</div>
                                 <div className="flex items-center space-x-1">
-                                    {steps.map((_, index) => (
+                                    {orderedSteps.map((_, index) => (
                                         <div key={index} className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${index <= currentStepIndex ? 'bg-blue-500' : 'bg-slate-200'}`} />
                                     ))}
                                 </div>
@@ -1743,10 +1676,10 @@ const BuildResume = () => {
                             {/* Mobile progress indicator */}
                             <div className="md:hidden flex items-center space-x-2">
                                 <span className="text-xs font-medium text-slate-600">
-                                    {currentStepIndex + 1}/{steps.length}
+                                    {currentStepIndex + 1}/{orderedSteps.length}
                                 </span>
                                 <div className="flex items-center space-x-1">
-                                    {steps.map((_, index) => (
+                                    {orderedSteps.map((_, index) => (
                                         <div key={index} className={`w-2 h-2 rounded-full transition-all duration-200 ${index <= currentStepIndex ? 'bg-blue-500' : 'bg-slate-200'}`} />
                                     ))}
                                 </div>
@@ -1785,38 +1718,35 @@ const BuildResume = () => {
 
                                  {/* Revision History Snapshots */}
                                 <button
-                                    onClick={() => showToast('Success')}
-                                    className="hidden xl:flex items-center px-2.5 py-2 border border-slate-300 text-slate-700 font-semibold hover:bg-slate-50 transition-all text-xs rounded-lg">
+                                    disabled
+                                    title="Revision history snapshots are not available yet"
+                                    className="hidden xl:flex items-center px-2.5 py-2 border border-slate-300 text-slate-400 font-semibold cursor-not-allowed transition-all text-xs rounded-lg">
                                     History
                                 </button>
 
                                 {/* Custom Section Creator */}
                                 <button
-                                    onClick={() => {
-                                        const title = prompt("Enter Custom Section Title (e.g. Volunteer Work, Awards, Publications):", "Awards & Honors");
-                                        if (title) showToast('Success');
-                                    }}
+                                    onClick={handleAddCustomSection}
                                     className="hidden xl:flex items-center px-2.5 py-2 border border-indigo-300 text-indigo-700 font-semibold hover:bg-indigo-50 transition-all text-xs rounded-lg">
                                     + Add Custom Section
                                 </button>
 
                                 {/* AI 1-Click Bullet Rewriter & Grammar Check */}
                                 <button
-                                    onClick={() => showToast('Success')}
-                                    className="hidden xl:flex items-center px-2.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold hover:from-blue-700 hover:to-indigo-700 transition-all text-xs rounded-lg shadow-sm">
+                                    disabled
+                                    title="Use the AI enhancement controls inside each work-history entry"
+                                    className="hidden xl:flex items-center px-2.5 py-2 bg-slate-300 text-white font-bold cursor-not-allowed transition-all text-xs rounded-lg shadow-sm">
                                     AI Rewrite Bullets
                                 </button>
 
                                 {/* Share for Mentor Review & Comments */}
                                 <button
-                                    onClick={() => {
-                                        const shareUrl = `${window.location.origin}/shared/${localStorage.getItem('currentResumeId') || 'demo'}`;
-                                        navigator.clipboard.writeText(shareUrl);
-                                        showToast('Success');
-                                    }}
-                                    className="hidden xl:flex items-center px-2.5 py-2 border border-slate-300 text-slate-700 font-semibold hover:bg-slate-50 transition-all text-xs rounded-lg">
-                                    Share Review
+                                    onClick={handlePublishForReview}
+                                    disabled={publicationState.status === 'saving'}
+                                    className="hidden xl:flex items-center px-2.5 py-2 border border-slate-300 text-slate-700 font-semibold hover:bg-slate-50 disabled:opacity-60 transition-all text-xs rounded-lg">
+                                    {publicationState.status === 'saving' ? 'Updating link…' : publicationState.isPublished ? 'Copy / Update Link' : 'Share Review'}
                                 </button>
+                                {publicationState.isPublished && <button type="button" onClick={handleStopSharing} disabled={publicationState.status === 'saving'} className="hidden xl:flex items-center px-2 py-2 text-red-700 text-xs font-semibold disabled:opacity-60">Stop Sharing</button>}
 
                                 {/* Mobile Menu and Preview buttons - Only on mobile */}
                                 <button
@@ -1881,11 +1811,11 @@ const BuildResume = () => {
                                 </button>
 
                                 {/* Next/Complete Button */}
-                                {currentStepIndex < steps.length - 1 ? (
+                                {currentStepIndex < orderedSteps.length - 1 ? (
                                     <button
                                         onClick={handleNext}
                                         className="flex items-center px-3 md:px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200 text-xs shadow-md hover:shadow-lg">
-                                        <span className="hidden sm:inline">{t('BuildResume.navigation.nextStep', { stepName: steps[currentStepIndex + 1]?.name })}</span>
+                                        <span className="hidden sm:inline">{t('BuildResume.navigation.nextStep', { stepName: orderedSteps[currentStepIndex + 1]?.name })}</span>
                                         <span className="sm:hidden">Next</span>
                                         <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -1955,7 +1885,7 @@ const BuildResume = () => {
                                 style={{ transform: 'scale(0.35)', transformOrigin: 'top left', width: '285%', height: '285%' }}>
                                 <TemplateRenderer
                                                 templateId={currentTemplate}
-                                                values={getPreviewData()}
+                                                values={previewData}
                                                 language={i18n.language}
                                                 onError={(error) => console.error('Template preview failed:', error)}
                                             />
@@ -2070,7 +2000,7 @@ const BuildResume = () => {
             <PreviewModal
                 showPreview={showPreview}
                 setShowPreview={setShowPreview}
-                resumeData={getPreviewData()}
+                resumeData={previewData}
                 onDownload={handleDownload}
                 isDownloading={isDownloading}
                 currentTemplate={currentTemplate}
@@ -2082,7 +2012,7 @@ const BuildResume = () => {
                 setShowModal={setShowTemplateSelection}
                 currentTemplate={currentTemplate}
                 onTemplateSelect={handleTemplateSelect}
-                resumeData={getPreviewData()}
+                resumeData={previewData}
             />
 
             <ResumeImportModal

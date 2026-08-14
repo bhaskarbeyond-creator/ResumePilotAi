@@ -54,6 +54,16 @@ test('legacy aliases bind consistently across employment, education, skill, lang
   assert.equal(normalized.languages[0].name, '中文');
 });
 
+test('hidden sections affect presentation without deleting underlying builder data', () => {
+  const source = { summary: 'Private summary', employments: [{ jobTitle: 'Engineer' }], skills: [{ name: 'Node.js' }], hiddenSections: ['summary', 'employment'] };
+  const normalized = normalizeTemplateData(source);
+  assert.equal(normalized.summary, '');
+  assert.deepEqual(normalized.employments, []);
+  assert.equal(normalized.skills.length, 1);
+  assert.equal(source.summary, 'Private summary');
+  assert.equal(source.employments.length, 1);
+});
+
 test('large and long resume diagnostics are deterministic without dropping entries', () => {
   const input = {
     summary: 'x'.repeat(5_000),

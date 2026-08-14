@@ -13,6 +13,7 @@ const { chromium } = require('playwright');
 require('dotenv').config();
 const EmailNotifier = require('./services/emailNotifier');
 const { clearProviderConfigurationCache, loadProviderConfiguration, generateWithProviders } = require('./services/aiRuntime');
+const { createExportRenderToken, consumeExportRenderToken, discardExportRenderToken } = require('./security/exportTokens');
 const app = express();
 const cors = require('cors');
 const cryptoRandom = require('crypto');
@@ -215,7 +216,7 @@ app.use('/api/auth', authLimiter);
 // Zero-trust API boundary. Requests are authenticated unless they are explicitly
 // public protocol endpoints. Route handlers must still enforce their own role/ownership policy.
 const publicApiPaths = new Set([
-    '/stripe-webhook', '/public-export', '/contact', '/auth/custom-password-reset',
+    '/stripe-webhook', '/public-export', '/export-render-data', '/contact', '/auth/custom-password-reset',
     '/auth/verify-email-token', '/auth/set-user-password', '/auth/linkedin', '/auth/linkedin/callback',
     '/auth/github', '/auth/github/callback', '/auth/oauth/exchange'
 ]);
@@ -1127,6 +1128,13 @@ app.post('/api/contact', async (req, res) => {
     return res.status(202).json({ success: true, message: 'Message accepted.' });
 });
 
+app.get('/api/export-render-data', (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, private');
+    const data = consumeExportRenderToken(req.query.token);
+    if (!data) return res.status(404).json({ error: 'Export data not found' });
+    return res.json({ data });
+});
+
 let activeExports = 0;
 const MAX_CONCURRENT_EXPORTS = 5;
 
@@ -1135,24 +1143,44 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
         return res.status(429).json({ error: 'Server is busy processing PDF exports. Please try again in a few seconds.' });
     }
     let browser;
+    let renderToken;
     let slotAcquired = false;
     try {
         const resumeId = String(req.body.resumeId || '');
         const resumeName = String(req.body.resumeName || '');
         const language = String(req.body.language || 'en');
-        if (!/^[A-Za-z0-9_-]{10,128}$/.test(resumeId)
+        if (!/^[A-Za-z0-9_-]{4,128}$/.test(resumeId)
             || !/^Cv(?:[1-9]|[1-4][0-9]|5[0-1])$/.test(resumeName)
             || !/^[a-z]{2}(?:-[A-Z]{2})?$/.test(language)) {
             return res.status(400).json({ error: 'Invalid export request' });
         }
-        if (!db) return res.status(503).json({ error: 'Export authorization unavailable' });
-        const publishedSnap = await db.collection('pb').doc(resumeId).get();
-        const published = publishedSnap.data();
-        if (!publishedSnap.exists || published.isPublished !== true
-            || (req.path !== '/public-export' && published.ownerUid !== req.user?.uid)) {
-            return res.status(404).json({ error: 'Resume not found' });
+        const requestDb = req.app.get('db');
+        if (!requestDb) return res.status(503).json({ error: 'Export authorization unavailable' });
+
+        let stored;
+        let ownerUid;
+        if (req.path === '/public-export') {
+            const publishedSnap = await requestDb.collection('pb').doc(resumeId).get();
+            const published = publishedSnap.data();
+            if (!publishedSnap.exists || published?.isPublished !== true || published?.publicationMode !== 'explicit') return res.status(404).json({ error: 'Resume not found' });
+            ownerUid = published.ownerUid;
+            try { stored = JSON.parse(published.object); } catch { return res.status(422).json({ error: 'Resume data is invalid' }); }
+        } else {
+            ownerUid = req.user?.uid;
+            const privateSnap = await requestDb.collection('users').doc(ownerUid).collection('resumes').doc(resumeId).get();
+            if (privateSnap.exists) {
+                stored = { ...privateSnap.data() };
+                for (const field of ['revision', 'created_at', 'createdAt', 'updatedAt', 'ownerUid', 'userId']) delete stored[field];
+            } else {
+                // Migration fallback for resumes created before owner-scoped canonical drafts.
+                const legacySnap = await requestDb.collection('pb').doc(resumeId).get();
+                const legacy = legacySnap.data();
+                if (!legacySnap.exists || legacy?.ownerUid !== ownerUid) return res.status(404).json({ error: 'Resume not found' });
+                try { stored = JSON.parse(legacy.object); } catch { return res.status(422).json({ error: 'Resume data is invalid' }); }
+            }
         }
-        const ownerSnap = await db.collection('users').doc(published.ownerUid).get();
+
+        const ownerSnap = await requestDb.collection('users').doc(ownerUid).get();
         const owner = ownerSnap.data() || {};
         const membershipEnd = owner.membershipEnds?.toDate?.() || new Date(owner.membershipEnds || 0);
         const entitled = owner.membership === 'Premium'
@@ -1161,9 +1189,8 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
         if (!entitled) {
             return res.status(402).json({ error: { code: 'ACTIVE_SUBSCRIPTION_REQUIRED', message: 'An active subscription is required for PDF export', requestId: res.locals.requestId } });
         }
-        let stored;
-        try { stored = JSON.parse(published.object); } catch (_) { return res.status(422).json({ error: 'Resume data is invalid' }); }
         if (stored?.template && stored.template !== resumeName) return res.status(400).json({ error: 'Template mismatch' });
+        renderToken = createExportRenderToken(stored);
         activeExports++;
         slotAcquired = true;
         const launchOptions = {
@@ -1185,7 +1212,7 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
             return route.abort('blockedbyclient');
         });
         const page = await context.newPage();
-        const targetUrl = `${protocol}://${websiteName}/export/${encodeURIComponent(resumeName)}/${encodeURIComponent(resumeId)}/${encodeURIComponent(language)}`;
+        const targetUrl = `${protocol}://${websiteName}/export/${encodeURIComponent(resumeName)}/${encodeURIComponent(resumeId)}/${encodeURIComponent(language)}#renderToken=${encodeURIComponent(renderToken)}`;
         console.log('Playwright exporting PDF, navigating to: ', targetUrl);
         await page.goto(targetUrl, {
             waitUntil: 'domcontentloaded',
@@ -1234,6 +1261,7 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
         if (browser) await browser.close().catch(() => {});
         res.status(500).json({ error: error.message });
     } finally {
+        if (renderToken) discardExportRenderToken(renderToken);
         if (slotAcquired) activeExports = Math.max(0, activeExports - 1);
     }
 });
@@ -1911,10 +1939,11 @@ app.post('/api/invoice', (req, res) => {
 // Item 41 & 42: PDF Job Queue & DOCX (Word) Document Export Engine Endpoint
 app.post('/api/export-docx', async (req, res) => {
     const { resumeName, resumeId, language } = req.body;
-    if (!db || !/^[A-Za-z0-9_-]{10,128}$/.test(String(resumeId || ''))) return res.status(400).json({ error: 'Invalid resume' });
-    const publishedSnap = await db.collection('pb').doc(String(resumeId)).get();
-    if (!publishedSnap.exists || publishedSnap.data().ownerUid !== req.user.uid) return res.status(404).json({ error: 'Resume not found' });
-    const ownerSnap = await db.collection('users').doc(req.user.uid).get();
+    const requestDb = req.app.get('db');
+    if (!requestDb || !/^[A-Za-z0-9_-]{4,128}$/.test(String(resumeId || ''))) return res.status(400).json({ error: 'Invalid resume' });
+    const resumeSnap = await requestDb.collection('users').doc(req.user.uid).collection('resumes').doc(String(resumeId)).get();
+    if (!resumeSnap.exists) return res.status(404).json({ error: 'Resume not found' });
+    const ownerSnap = await requestDb.collection('users').doc(req.user.uid).get();
     const owner = ownerSnap.data() || {};
     const membershipEnd = owner.membershipEnds?.toDate?.() || new Date(owner.membershipEnds || 0);
     if (owner.membership !== 'Premium' || !['ACTIVE', 'ADMIN_GRANTED'].includes(owner.paymentStatus) || membershipEnd <= new Date()) {

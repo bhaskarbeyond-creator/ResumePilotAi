@@ -24,7 +24,8 @@ before(async () => {
     await setDoc(doc(db, 'jobApplications/application-1'), {
       userId: 'alice', jobId: 'active-job', applicantEmail: 'alice@example.com', email: 'alice@example.com', status: 'pending'
     });
-    await setDoc(doc(db, 'pb/public-resume'), { id: 'public-resume', ownerUid: 'alice', isPublished: true, object: '{}' });
+    await setDoc(doc(db, 'pb/public-resume'), { id: 'public-resume', ownerUid: 'alice', isPublished: true, publicationMode: 'explicit', object: '{}' });
+    await setDoc(doc(db, 'pb/legacy-autosave'), { id: 'legacy-autosave', ownerUid: 'alice', isPublished: true, object: '{"email":"private@example.com"}' });
     await setDoc(doc(db, 'payment_orders/order-a'), { uid: 'alice', status: 'ACTIVE', planId: 'monthly' });
     await setDoc(doc(db, 'data/system_settings'), { ai: { geminiApiKey: 'legacy-secret' } });
     await setDoc(doc(db, 'settings/ai_providers'), { gemini: { apiKey: 'must-not-leak' } });
@@ -65,10 +66,24 @@ test('new users must bind UID and verified token email and cannot self-assign pr
   }));
 });
 
+test('private resume drafts are owner-scoped and cannot be read or overwritten cross-account', async () => {
+  await assertSucceeds(setDoc(doc(alice(), 'users/alice/resumes/resume-1'), { firstname: 'Asha', revision: 1, template: 'Cv1' }));
+  await assertSucceeds(updateDoc(doc(alice(), 'users/alice/resumes/resume-1'), { firstname: 'Asha Rao', revision: 2 }));
+  await assertFails(getDoc(doc(bob(), 'users/alice/resumes/resume-1')));
+  await assertFails(getDoc(doc(anonymous(), 'users/alice/resumes/resume-1')));
+  await assertFails(setDoc(doc(alice(), 'users/bob/resumes/forged'), { firstname: 'Forged' }));
+});
+
 test('portfolio ownership cannot be transferred and public viewers cannot edit content', async () => {
   await assertSucceeds(getDoc(doc(anonymous(), 'pb/public-resume')));
+  await assertFails(getDoc(doc(anonymous(), 'pb/legacy-autosave')));
+  await assertSucceeds(getDoc(doc(alice(), 'pb/legacy-autosave')));
   await assertFails(updateDoc(doc(bob(), 'pb/public-resume'), { object: '{"stolen":true}' }));
   await assertFails(updateDoc(doc(alice(), 'pb/public-resume'), { ownerUid: 'bob' }));
+  await assertSucceeds(updateDoc(doc(alice(), 'pb/public-resume'), { isPublished: false }));
+  await assertFails(getDoc(doc(anonymous(), 'pb/public-resume')));
+  await assertSucceeds(getDoc(doc(alice(), 'pb/public-resume')));
+  await assertSucceeds(updateDoc(doc(alice(), 'pb/public-resume'), { isPublished: true }));
   await assertSucceeds(setDoc(doc(alice(), 'portfolios/portfolio-1'), { userId: 'alice', isPublished: true, views: 0 }));
   await assertFails(updateDoc(doc(alice(), 'portfolios/portfolio-1'), { userId: 'bob' }));
   await assertSucceeds(updateDoc(doc(anonymous(), 'portfolios/portfolio-1'), { views: 1 }));

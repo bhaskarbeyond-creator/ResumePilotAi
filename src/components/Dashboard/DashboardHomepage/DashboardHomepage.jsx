@@ -3,15 +3,16 @@ import {
   getResumes,
   getFavourites,
   getProfileOfUser,
-  removeResume,
   getStatesOfUser,
   IncrementDownloads,
   addOneToNumberOfDocumentsDownloaded,
-  setJsonPb,
   getSystemSettings,
   getUserCoverLetters,
   deleteCoverLetter,
 } from "../../../firestore/dbOperations";
+import fire from '../../../conf/fire';
+import { createResumeDraft, deleteResumeDraft, publishResume, saveResumeDraft } from '../../../services/resumePersistence';
+import { normalizeResumeData } from '../../../utils/resumeData';
 import LoaderAnimation from "../../../assets/animations/lottie-loader.json";
 import { withTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -68,6 +69,7 @@ class DashboardHomepage extends Component {
       isfetcing: false,
       isPaginating: false,
       hasDocuments: false,
+      documentsError: null,
       enableImportModule: false,
       pagination: {
         totalItems: 0,
@@ -139,6 +141,9 @@ class DashboardHomepage extends Component {
     this.getUserStats = this.getUserStats.bind(this);
     this.setActiveTab = this.setActiveTab.bind(this);
     this.downloadResume = this.downloadResume.bind(this);
+    this.shareResume = this.shareResume.bind(this);
+    this.renameResume = this.renameResume.bind(this);
+    this.duplicateResume = this.duplicateResume.bind(this);
     this.openDocumentPreview = this.openDocumentPreview.bind(this);
     this.closeDocumentPreview = this.closeDocumentPreview.bind(this);
   }
@@ -158,6 +163,7 @@ class DashboardHomepage extends Component {
   }
 
   async getAllDocuments(isPagination = false) {
+    this.setState({ documentsError: null });
     // For pagination, don't clear documents and use different loading state
     if (isPagination) {
       this.setState({ isPaginating: true });
@@ -170,47 +176,16 @@ class DashboardHomepage extends Component {
     let response = null;
 
     try {
-      response = await getResumes(
-        localStorage.getItem("user"),
-        pageNumber,
-        perPage
-      );
+      const userId = fire.auth().currentUser?.uid;
+      if (!userId) throw new Error('Authentication is required');
+      response = await getResumes(userId, pageNumber, perPage);
 
       if (response && response.resumes) {
         allDocuments = [...response.resumes];
       }
     } catch (error) {
-      // Error handled silently
-    }
-
-    // Check local draft & cached userResumes fallback if network resumes empty
-    if (allDocuments.length === 0) {
-      const cachedResumes = localStorage.getItem('userResumes');
-      if (cachedResumes) {
-        try {
-          const parsedResumes = JSON.parse(cachedResumes);
-          if (Array.isArray(parsedResumes) && parsedResumes.length > 0) {
-            allDocuments = parsedResumes;
-          }
-        } catch (e) {}
-      }
-
-      if (allDocuments.length === 0) {
-        const localItem = localStorage.getItem('currentResumeItem');
-        if (localItem && localItem !== 'null' && localItem !== 'undefined') {
-          try {
-            const parsed = JSON.parse(localItem);
-            if (parsed && (parsed.firstname || parsed.lastname || parsed.email)) {
-              const localDoc = {
-                id: localStorage.getItem('currentResumeId') || 'draft_resume',
-                item: parsed,
-                template: parsed.template || localStorage.getItem('selectedTemplate') || 'Cv1'
-              };
-              allDocuments = [localDoc];
-            }
-          } catch (e) {}
-        }
-      }
+      this.setState({ documentsError: error.message || 'Resumes could not be loaded.', isfetcing: false, isPaginating: false });
+      return;
     }
 
     if (allDocuments.length === 0) {
@@ -247,7 +222,7 @@ class DashboardHomepage extends Component {
   }
 
   async getProfileOfUserFront() {
-    let profile = await getProfileOfUser(localStorage.getItem("user"));
+    let profile = await getProfileOfUser(fire.auth().currentUser?.uid);
     let stateProfile = this.state.profile;
     for (let key in profile) {
       if (Object.prototype.hasOwnProperty.call(stateProfile, key)) {
@@ -276,14 +251,14 @@ class DashboardHomepage extends Component {
   }
 
   frontGetFavourites() {
-    getFavourites(localStorage.getItem("user")).then((value) => {
+    getFavourites(fire.auth().currentUser?.uid).then((value) => {
       this.setState({ favourites: value });
     });
   }
 
   async getUserStats() {
     try {
-      const userId = localStorage.getItem("user");
+      const userId = fire.auth().currentUser?.uid;
       if (userId) {
         const stats = await getStatesOfUser(userId);
         if (stats) {
@@ -322,12 +297,20 @@ class DashboardHomepage extends Component {
           hasNextPage: false,
           hasPreviousPage: false,
         },
-      },
-      () => {
-        this.getAllDocuments();
-        this.getUserStats();
       }
     );
+    this.unsubscribeAuth = fire.auth().onAuthStateChanged(user => {
+      if (user) {
+        this.getAllDocuments();
+        this.getUserStats();
+      } else {
+        this.setState({ fetchedDocuments: [], displayDocuments: [], hasDocuments: false, isfetcing: false });
+      }
+    });
+  }
+
+  componentWillUnmount() {
+    this.unsubscribeAuth?.();
   }
 
   setPageNumber(pageNumber) {
@@ -355,16 +338,11 @@ class DashboardHomepage extends Component {
     if (searchInput === "") {
       this.getAllDocuments();
     } else {
-      let documents = this.state.fetchedDocuments.filter((document) => {
-        return (
-          document.item.firstname
-            .toLowerCase()
-            .includes(searchInput.toLowerCase()) ||
-          document.item.lastname
-            .toLowerCase()
-            .includes(searchInput.toLowerCase())
-        );
-      });
+      const query = searchInput.toLocaleLowerCase();
+      let documents = this.state.fetchedDocuments.filter(document =>
+        [document.item?.title, document.item?.firstname, document.item?.lastname, document.item?.occupation]
+          .some(value => String(value || '').toLocaleLowerCase().includes(query))
+      );
       this.setState({ displayDocuments: documents });
     }
   }
@@ -386,23 +364,56 @@ class DashboardHomepage extends Component {
     this.setState({ onboardingSteps: updatedSteps });
   }
 
-  setAsCurrentResume(resumeId, document) {
-    // Clear existing localStorage items
-    localStorage.removeItem("currentResumeId");
-    localStorage.removeItem("currentResumeItem");
+  setAsCurrentResume(resumeId) {
+    localStorage.setItem('currentResumeId', resumeId);
+    localStorage.removeItem('currentResumeItem');
+    this.props.navigate('/build-resume/heading');
+  }
 
-    // Set resume data and navigate
-    localStorage.setItem("currentResumeId", resumeId);
+  async shareResume(document) {
+    const userId = fire.auth().currentUser?.uid;
+    if (!userId) return;
+    const previewWindow = window.open('about:blank', '_blank');
+    if (previewWindow) previewWindow.opener = null;
     try {
-      // Store the full document for BuildResume to parse
-      const serialized = JSON.stringify(document);
-      localStorage.setItem("currentResumeItem", serialized);
-      console.log('[Dashboard] Stored currentResumeItem, length:', serialized.length, 'has item.firstname:', !!document?.item?.firstname);
-    } catch (err) {
-      console.error('[Dashboard] Failed to store currentResumeItem:', err);
-      // Even if localStorage fails, still navigate - BuildResume will fetch from Firestore
+      await publishResume(userId, document.id, normalizeResumeData(document.item || document));
+      if (previewWindow) {
+        previewWindow.opener = null;
+        previewWindow.location = `${window.location.origin}/shared/${document.id}`;
+      }
+    } catch (error) {
+      previewWindow?.close();
+      console.error('Unable to share resume:', error);
+      this.props.showToast?.('Resume could not be shared.', 'error');
     }
-    this.props.navigate("/build-resume/heading");
+  }
+
+  async renameResume(document) {
+    const userId = fire.auth().currentUser?.uid;
+    const currentTitle = document.item?.title || 'Untitled Resume';
+    const title = window.prompt('Rename resume', currentTitle);
+    if (!userId || !title?.trim() || title.trim() === currentTitle) return;
+    try {
+      const data = normalizeResumeData({ ...document.item, title: title.trim().slice(0, 160) });
+      const saved = await saveResumeDraft(userId, document.id, data, { expectedRevision: Number(document.item?.revision) || 0 });
+      document.item = { ...saved.data, revision: saved.revision };
+      this.setState(current => ({ displayDocuments: [...current.displayDocuments] }));
+    } catch (error) {
+      this.props.showToast?.(error.code === 'RESUME_CONFLICT' ? 'Resume changed elsewhere. Refresh before renaming.' : 'Resume could not be renamed.', 'error');
+    }
+  }
+
+  async duplicateResume(document) {
+    const userId = fire.auth().currentUser?.uid;
+    if (!userId) return;
+    try {
+      const data = normalizeResumeData({ ...document.item, title: `${document.item?.title || 'Resume'} (Copy)` });
+      const created = await createResumeDraft(userId, data);
+      const copy = { id: created.id, template: created.data.template, item: { ...created.data, revision: created.revision }, employments: created.data.employments, educations: created.data.educations, skills: created.data.skills, languages: created.data.languages, isNewStyle: true };
+      this.setState(current => ({ fetchedDocuments: [copy, ...current.fetchedDocuments], displayDocuments: [copy, ...current.displayDocuments] }));
+    } catch (error) {
+      this.props.showToast?.('Resume could not be duplicated.', 'error');
+    }
   }
 
   // Open delete confirmation modal
@@ -443,8 +454,8 @@ class DashboardHomepage extends Component {
     });
 
     try {
-      const userId = localStorage.getItem("user");
-      await removeResume(userId, deleteModal.resumeId);
+      const userId = fire.auth().currentUser?.uid;
+      await deleteResumeDraft(userId, deleteModal.resumeId);
 
       // Close modal first
       this.closeDeleteModal();
@@ -489,11 +500,9 @@ class DashboardHomepage extends Component {
       const resumeId = document.id;
       const language = document?.item?.language || "en";
 
-      await IncrementDownloads();
-      await addOneToNumberOfDocumentsDownloaded(localStorage.getItem("user"));
-
       // Reconstruct the complete resume data structure that the export expects
       const completeResumeData = {
+        ...document.item,
         // Basic personal information
         firstname: document.item?.firstname || "",
         lastname: document.item?.lastname || "",
@@ -543,19 +552,17 @@ class DashboardHomepage extends Component {
         // Template and export metadata
         template: templateName,
         resumeName: templateName, // This is what the backend might be looking for
-        summary: document.item?.summary || [],
+        summary: document.item?.summary || '',
         components: document.item?.components || [],
         colors: document.item?.colors || this.getTemplateColors(templateName),
         language: language,
       };
 
-      // Save complete data to Firebase for export with 1.5s timeout fallback
-      try {
-        await Promise.race([
-          setJsonPb(resumeId, completeResumeData),
-          new Promise((resolve) => setTimeout(resolve, 1500))
-        ]);
-      } catch (e) {}
+      // Save the canonical owner-scoped draft before export; never publish implicitly.
+      const userId = fire.auth().currentUser?.uid;
+      if (!userId) throw new Error('Authentication is required');
+      const saved = await saveResumeDraft(userId, resumeId, completeResumeData, { expectedRevision: Number(document.item?.revision) || 0 });
+      document.item = { ...saved.data, revision: saved.revision };
 
       // Call the export API
       const response = await axios.post(
@@ -581,10 +588,13 @@ class DashboardHomepage extends Component {
       trackEngagement("document_downloaded", {
         template_name: templateName,
         document_type: "resume",
-        user_id: localStorage.getItem("user"),
       });
 
       download(response.data, fileName, content);
+      await Promise.allSettled([
+        IncrementDownloads(),
+        addOneToNumberOfDocumentsDownloaded(fire.auth().currentUser?.uid),
+      ]);
     } catch (error) {
       // Track download failure
       trackEvent(
@@ -803,14 +813,10 @@ class DashboardHomepage extends Component {
 
   render() {
     const { t } = this.props;
-    const completedSteps = this.state.onboardingSteps.filter(
-      (step) => step.completed
-    ).length;
-    const totalSteps = this.state.onboardingSteps.length;
-
     return (
       <div className="min-h-screen bg-slate-50">
         <div className="mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-4 sm:py-6 max-w-none w-full" style={{maxWidth: '1600px'}}>
+          {this.state.documentsError && <div role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{this.state.documentsError} <button type="button" onClick={() => this.getAllDocuments()} className="ml-2 font-semibold underline">Try again</button></div>}
           {/* Header Section */}
           <div className="mb-6 sm:mb-8">
             <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
@@ -1055,17 +1061,11 @@ class DashboardHomepage extends Component {
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1 min-w-0 pr-2">
                           <h3 className="text-base font-semibold text-slate-900 cursor-pointer hover:text-blue-600 transition-colors truncate" onClick={() => this.setAsCurrentResume(document.id, document)}>
-                            {document.item?.firstname &&
-                            document.item?.lastname
-                              ? `${document.item.firstname} ${document.item.lastname}`
-                              : document.item?.firstname
-                              ? `${document.item.firstname}`
-                              : document.item?.lastname
-                              ? `${document.item.lastname}`
-                              : t(
-                                  "DashboardHomepage.card.untitledResume",
-                                  "Untitled Resume"
-                                )}
+                            {document.item?.title && document.item.title !== 'Untitled Resume'
+                              ? document.item.title
+                              : document.item?.firstname || document.item?.lastname
+                              ? `${document.item?.firstname || ''} ${document.item?.lastname || ''}`.trim()
+                              : t("DashboardHomepage.card.untitledResume", "Untitled Resume")}
                           </h3>
                           <p className="text-sm text-slate-500 mt-1">
                             {t("DashboardHomepage.card.created", "Created")}{" "}
@@ -1096,6 +1096,12 @@ class DashboardHomepage extends Component {
                           {this.state.openDropdownId === document.id && (
                             <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg z-10 border border-slate-200">
                               <div className="py-1">
+                                <button className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.renameResume(document); this.setState({ openDropdownId: null }); }}>
+                                  <FaPencilAlt className="w-3 h-3 mr-3" /><span>Rename</span>
+                                </button>
+                                <button className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.duplicateResume(document); this.setState({ openDropdownId: null }); }}>
+                                  <FaFileAlt className="w-3 h-3 mr-3" /><span>Duplicate</span>
+                                </button>
                                 <button className="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left" onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
@@ -1160,7 +1166,7 @@ class DashboardHomepage extends Component {
                         </button>
 
                         {/* Share Button - Secondary Style */}
-                        <button className="w-full bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 text-sm font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 shadow-sm" onClick={() => window.open(`${window.location.origin}/shared/${document.id}`, "_blank")}>
+                        <button className="w-full bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 text-sm font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 shadow-sm" onClick={() => this.shareResume(document)}>
                           <FaShareAlt className="w-3.5 h-3.5" />
                           <span>
                             {t(
