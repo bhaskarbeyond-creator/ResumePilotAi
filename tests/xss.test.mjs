@@ -46,7 +46,7 @@ test('URL sanitizer rejects parser differentials and active schemes', () => {
 test('print document sink removes executable markup and network-capable CSS', () => {
   const target = new JSDOM('<!doctype html><html><body></body></html>', { url: 'https://app.example.com/' }).window;
   sanitizer.writeSanitizedPrintDocument(target, `<!doctype html><html><head>
-    <style>@import 'https://evil.test/x.css'; .x{background:url(https://evil.test/pixel)}</style>
+    <style>@import 'https://evil.test/x.css'; .x{background:url(https://evil.test/pixel)} .y{background:image-set("https://evil.test/y" 1x)} .z{background:u\\72l(https://evil.test/z)}</style>
     </head><body onload="alert(1)"><script>alert(1)</script><div onclick="alert(1)">Invoice</div></body></html>`);
   const output = target.document.documentElement.outerHTML;
   assert.match(output, /Invoice/);

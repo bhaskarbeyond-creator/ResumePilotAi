@@ -6367,7 +6367,41 @@ export async function getAllAdminTransactions() {
         const invoices = [];
         const seenTxnIds = new Set();
 
-        // 1. Fetch from global 'transactions' collection
+        // Authoritative provider orders are the primary billing ledger.
+        try {
+            const ordersSnap = await db.collection('payment_orders').orderBy('createdAt', 'desc').limit(200).get();
+            for (const orderDoc of ordersSnap.docs) {
+                const data = orderDoc.data();
+                if (seenTxnIds.has(orderDoc.id)) continue;
+                seenTxnIds.add(orderDoc.id);
+                let customerEmail = '';
+                let customerName = '';
+                try {
+                    const user = await db.collection('users').doc(data.uid).get();
+                    customerEmail = user.data()?.email || '';
+                    customerName = user.data()?.displayName || customerEmail.split('@')[0] || data.uid;
+                } catch (_) {}
+                invoices.push({
+                    docId: orderDoc.id,
+                    transactionId: data.providerPaymentId || data.providerOrderId || orderDoc.id,
+                    userId: data.uid,
+                    customerEmail,
+                    customerName,
+                    planType: data.planId || 'Plan',
+                    paimentType: data.provider || 'Payment provider',
+                    price: Number(data.amount || 0) / 100,
+                    currency: data.currency || 'INR',
+                    subtotal: Number(data.amount || 0) / 100,
+                    taxAmount: 0,
+                    status: data.status === 'ACTIVE' ? 'Completed' : (data.status === 'REFUNDED' ? 'Refunded' : data.status),
+                    created_at: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString()
+                });
+            }
+        } catch (error) {
+            console.warn('Payment orders query error:', error);
+        }
+
+        // Legacy global transaction records
         try {
             const txnsSnap = await db.collection('transactions').orderBy('created_at', 'desc').limit(200).get();
             txnsSnap.forEach(doc => {
@@ -6490,32 +6524,17 @@ export async function getAllAdminTransactions() {
     }
 }
 
-export async function refundOrderTransaction(docId, transactionId, userId, reason = 'Customer requested refund') {
+export async function refundOrderTransaction(docId, _transactionId, _userId, reason = 'Customer requested refund') {
     try {
-        const db = fire.firestore();
-        const timestamp = firebase.firestore.Timestamp.now();
-
-        if (docId && !docId.startsWith('USR_') && !docId.startsWith('SUB_')) {
-            await db.collection('transactions').doc(docId).update({
-                status: 'Refunded',
-                refundedAt: timestamp,
-                refundReason: reason
-            }).catch(e => console.warn('Update doc status error:', e));
-        }
-
-        if (userId) {
-            await db.collection('users').doc(userId).update({
-                membership: 'Free',
-                paymentStatus: 'REFUNDED',
-                refundedAt: timestamp,
-                refundReason: reason
-            }).catch(e => console.warn('Update user doc error:', e));
-        }
-
-        return { success: true, message: `Transaction ${transactionId} refunded successfully.` };
-    } catch (err) {
-        console.error('refundOrderTransaction error:', err);
-        return { success: false, error: err.message };
+        const response = await fetch('/api/admin/payments/refund', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ paymentOrderId: docId, reason })
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || 'Refund could not be confirmed by the provider.');
+        return { success: true, message: 'Provider refund confirmed and entitlement reconciled.' };
+    } catch (error) {
+        return { success: false, error: error.message };
     }
 }
 

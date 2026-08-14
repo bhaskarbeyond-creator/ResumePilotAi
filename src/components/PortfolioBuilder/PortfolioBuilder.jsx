@@ -1,8 +1,8 @@
 import React, { useState, useContext, useEffect, useCallback, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Puck } from '@measured/puck';
-import '@measured/puck/dist/index.css';
+import { Puck } from '@puckeditor/core';
+import '@puckeditor/core/puck.css';
 import { AuthContext } from '../../main';
 import { publishPortfolio, updateExistingPortfolio, savePortfolioDraft, getUserPortfolios, updatePortfolioVisibility, deletePortfolio, getPortfolioById } from '../../firestore/dbOperations';
 import {

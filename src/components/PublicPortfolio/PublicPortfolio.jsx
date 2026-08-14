@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Render } from '@measured/puck';
+import { Render } from '@puckeditor/core';
 import { getPortfolioBySlug, incrementPortfolioViews } from '../../firestore/dbOperations';
 import {
     NavbarCategory,

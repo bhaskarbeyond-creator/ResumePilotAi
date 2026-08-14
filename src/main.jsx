@@ -24,8 +24,16 @@ async function getApiAuthorization() {
     return user ? `Bearer ${await user.getIdToken()}` : null;
 }
 
+function isSameOriginApiUrl(value, baseUrl) {
+    if (typeof window === 'undefined' || !value) return false;
+    try {
+        const parsed = new URL(String(value), baseUrl || window.location.origin);
+        return parsed.origin === window.location.origin && parsed.pathname.startsWith('/api/');
+    } catch (_) { return false; }
+}
+
 axios.interceptors.request.use(async (request) => {
-    if (typeof request.url === 'string' && request.url.includes('/api/')) {
+    if (isSameOriginApiUrl(request.url, request.baseURL)) {
         const authorization = await getApiAuthorization();
         if (authorization) request.headers.Authorization = authorization;
     }
@@ -36,7 +44,7 @@ if (typeof window !== 'undefined') {
     const nativeFetch = window.fetch.bind(window);
     window.fetch = async (input, init = {}) => {
         const url = typeof input === 'string' ? input : input?.url;
-        if (!url || !url.includes('/api/')) return nativeFetch(input, init);
+        if (!isSameOriginApiUrl(url)) return nativeFetch(input, init);
         const authorization = await getApiAuthorization();
         const headers = new Headers(init.headers || (typeof input !== 'string' ? input.headers : undefined));
         if (authorization) headers.set('Authorization', authorization);
@@ -79,12 +87,14 @@ const AuthWrapper = () => {
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
-        const oobCode = params.get('oobCode');
-        const mode = params.get('mode');
-        const reset = params.get('reset');
-        const email = params.get('email');
-        const token = params.get('token');
-        const oauthCode = params.get('oauth_code');
+        const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+        const authParam = key => params.get(key) || hashParams.get(key);
+        const oobCode = params.get('oobCode'); // Firebase-managed links continue to use query parameters.
+        const mode = authParam('mode');
+        const reset = authParam('reset');
+        const email = authParam('email');
+        const token = authParam('token');
+        const oauthCode = hashParams.get('oauth_code');
 
         if (mode === 'verifyEmail' && token && email) {
             console.log('[AuthWrapper] Verifying email token for:', email);
@@ -107,7 +117,6 @@ const AuthWrapper = () => {
                 setVerificationBanner({ type: 'error', title: 'Verification Error', text: e.message });
             });
         } else if (oobCode && (mode === 'resetPassword' || !mode)) {
-            console.log('[AuthWrapper] Detected password reset token in URL:', oobCode);
             setResetOobCode(oobCode);
         } else if ((mode === 'resetPassword' || reset === 'true' || token) && email) {
             console.log('[AuthWrapper] Detected tokenized custom reset link for:', email);

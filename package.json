@@ -16,8 +16,8 @@
   },
   "dependencies": {
     "@lexical/react": "^0.32.1",
-    "@measured/puck": "^0.19.1",
     "@paypal/react-paypal-js": "^8.8.3",
+    "@puckeditor/core": "^0.23.0",
     "@react-google-maps/api": "^2.20.7",
     "@stripe/react-stripe-js": "^3.7.0",
     "@stripe/stripe-js": "^7.3.1",

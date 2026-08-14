@@ -80,12 +80,12 @@ This document deliberately does **not** certify the application for production. 
 ### Local evidence
 
 - `npm run test:security`: PASS (XSS/static security tests plus backend unit/integration tests).
-- `npm --prefix backend test`: PASS (19 tests at the time of this report).
+- `npm --prefix backend test`: PASS (21 tests at the time of this report).
 - `npm run build`: PASS.
-- `npm run lint`: PASS with **0 errors and 682 legacy warnings**; warnings remain technical debt.
-- `npm run audit:production`: PASS at the high-severity gate.
-- Frontend production audit: Critical 0, High 0, Moderate 2.
-- Backend production audit: Critical 0, High 0, Moderate 6 (transitive Firebase Admin/Google client chain).
+- `npm run lint`: PASS with **0 errors and 683 legacy warnings**; warnings remain technical debt.
+- `npm run audit:production`: PASS.
+- Frontend production audit: Critical 0, High 0, Moderate 0 (migrated deprecated `@measured/puck` to `@puckeditor/core`).
+- Backend production audit: Critical 0, High 0, Moderate 0 (Firebase transitive UUID advisory constrained to patched `uuid` 11.1.1 and backend tests pass).
 
 ## Implemented but requiring external validation
 
@@ -106,9 +106,9 @@ This document deliberately does **not** certify the application for production. 
 
 ## Known remaining risks / not yet complete
 
-- 682 lint warnings remain; many are unused legacy code and hook dependency warnings. Lint has no errors, but warnings should be burned down rather than hidden indefinitely.
+- 683 lint warnings remain; many are unused legacy code and hook dependency warnings. Lint has no errors, but warnings should be burned down rather than hidden indefinitely.
 - Frontend bundles remain very large; this is primarily performance/availability debt.
-- Six backend and two frontend production `moderate` dependency findings remain transitive. They have no high/critical finding at this time but require upstream monitoring.
+- Production dependency audits are currently clean, but forced transitive overrides and upstream Firebase/Google releases require continuous compatibility and advisory monitoring.
 - The PDF renderer uses Chromium `--no-sandbox` for container compatibility. Egress is blocked at the browser context and HTML is sanitized, but production should run the renderer in a dedicated locked-down sandboxed worker/container.
 - Firebase custom-token OAuth is intentionally blocked from auto-linking existing email/MFA accounts. A separate authenticated account-linking flow is not implemented.
 - Native LinkedIn/GitHub MFA requires configuring those providers through Firebase/Identity Platform OIDC. The custom-token compatibility flow refuses accounts with enrolled MFA instead of bypassing the second factor.

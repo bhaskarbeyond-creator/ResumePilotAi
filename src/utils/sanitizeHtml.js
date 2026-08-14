@@ -98,9 +98,14 @@ export function writeSanitizedPrintDocument(printWindow, markup) {
   // CSS in print templates is application-authored. Remove all network-capable and
   // executable CSS constructs before DOMPurify processes the complete document.
   const withoutActiveCss = String(markup || '')
-    .replace(/@import\b[^;]*(?:;|$)/gi, '')
-    .replace(/url\s*\([^)]*\)/gi, 'none')
-    .replace(/expression\s*\([^)]*\)/gi, '')
+    // CSS escapes can spell `url`, `@import`, or `expression` without a literal match.
+    // Print templates do not require escapes, so remove them before active-CSS checks.
+    .replace(/\\(?:[0-9a-f]{1,6}\s?|.)/gi, '')
+    .replace(/@(?:import|font-face|namespace|document)\b[^;{]*(?:;|\{[^}]*\})/gi, '')
+    .replace(/(?:url|image-set|cross-fade)\s*\([^)]*\)/gi, 'none')
+    .replace(/[a-z-]+\s*\(\s*['"]?https?:[^)]*\)/gi, 'none')
+    .replace(/(?:expression|behavior|-moz-binding)\s*[:(][^;)]*(?:;|\))/gi, '')
+    .replace(/(?:src|content)\s*:\s*['"]?https?:[^;}]+/gi, '')
     .replace(/javascript\s*:/gi, '');
   const clean = DOMPurify.sanitize(withoutActiveCss, PRINT_PROFILE);
   printWindow.document.open();

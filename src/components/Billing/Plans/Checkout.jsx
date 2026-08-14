@@ -192,6 +192,7 @@ class Checkout extends Component {
                             if (!verification.data?.verified || verification.data?.status !== 'ACTIVE') {
                                 throw new Error('PhonePe payment was not activated by the server.');
                             }
+                            this.triggerInvoiceEmail({ paymentOrderId: pending.orderId });
                             this.setState({ step: 3, serverPaymentStatus: 'ENTITLEMENT_ACTIVE' });
                             this.showToast('success', 'PhonePe payment verified and subscription activated.');
                         })
@@ -209,7 +210,9 @@ class Checkout extends Component {
         try {
             const apiBase = '';
             const user = this.getCurrentUser();
+            if (!invDetails.paymentOrderId) return;
             await axios.post(`${apiBase}/api/send-invoice-email`, {
+                paymentOrderId: invDetails.paymentOrderId,
                 customerEmail: user?.email || invDetails.email || '',
                 customerName: user?.displayName || this.state.CardHolder || invDetails.name || 'Candidate',
                 invoiceNumber: invDetails.invoiceNumber || `RPAI/26-27/${Math.floor(1000 + Math.random() * 9000)}`,
@@ -445,7 +448,7 @@ class Checkout extends Component {
             trackSubscription(this.props.selectedPlan, taxCalc.totalPrice);
             trackEvent('subscription_purchase', 'Billing', this.props.selectedPlan, taxCalc.totalPrice);
             trackEngagement('purchase_confirmed', { plan_type: this.props.selectedPlan, payment_method: 'Stripe' });
-            this.triggerInvoiceEmail({ amount: taxCalc.totalPrice, symbol: this.props.currencyCode === 'INR' ? '₹' : '$', planName: this.props.selectedPlan });
+            this.triggerInvoiceEmail({ paymentOrderId, amount: taxCalc.totalPrice, symbol: this.props.currencyCode === 'INR' ? '₹' : '$', planName: this.props.selectedPlan });
             this.setState({ step: 3, serverPaymentStatus: 'ENTITLEMENT_ACTIVE', isLoading: false });
         } catch (err) {
             console.error('Unexpected Submit Error:', err);
@@ -482,6 +485,7 @@ class Checkout extends Component {
         trackSubscription(this.props.selectedPlan, taxCalc.totalPrice);
         trackEvent('subscription_purchase', 'Billing', this.props.selectedPlan, taxCalc.totalPrice);
         trackEngagement('purchase_completed', { plan_type: this.props.selectedPlan, payment_method: 'PayPal', amount: taxCalc.totalPrice, user_id: uid });
+        this.triggerInvoiceEmail({ paymentOrderId: details.paymentOrderId });
 
         this.setState({ step: 3, serverPaymentStatus: 'ENTITLEMENT_ACTIVE' });
     };
@@ -546,6 +550,7 @@ class Checkout extends Component {
                         trackSubscription(this.props.selectedPlan, taxCalc.totalPrice);
                         trackEvent('subscription_purchase', 'Billing', this.props.selectedPlan, taxCalc.totalPrice);
                         trackEngagement('purchase_completed', { plan_type: this.props.selectedPlan, payment_method: 'Razorpay', amount: taxCalc.totalPrice, user_id: uid });
+                        this.triggerInvoiceEmail({ paymentOrderId: orderData.paymentOrderId });
 
                         this.setState({ step: 3, serverPaymentStatus: 'ENTITLEMENT_ACTIVE', isLoading: false });
                     } catch (err) {
@@ -635,6 +640,7 @@ class Checkout extends Component {
                             trackSubscription(this.props.selectedPlan, taxCalc.totalPrice);
                             trackEvent('subscription_purchase', 'Billing', this.props.selectedPlan, taxCalc.totalPrice);
                             trackEngagement('purchase_completed', { plan_type: this.props.selectedPlan, payment_method: 'Paytm', amount: taxCalc.totalPrice, user_id: uid });
+                            this.triggerInvoiceEmail({ paymentOrderId: txnData.paymentOrderId });
                             this.setState({ step: 3, serverPaymentStatus: 'ENTITLEMENT_ACTIVE', isLoading: false });
                         } catch (err) {
                             this.showToast('error', 'Paytm payment verification failed: ' + err.message);

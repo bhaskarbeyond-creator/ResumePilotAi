@@ -1115,10 +1115,23 @@ router.post('/send-email', async (req, res) => {
 // 4. Dedicated PDF Receipt & Tax Invoice Email Dispatcher
 router.post('/send-invoice-email', async (req, res) => {
     const db = req.app.get('db');
-    const { customerEmail, customerName, invoiceNumber, amount, planName, gstin, pdfBase64 } = req.body;
+    const paymentOrderId = String(req.body.paymentOrderId || '');
+    if (!db || !req.user?.uid || !/^[A-Za-z0-9_-]{1,128}$/.test(paymentOrderId)) {
+        return res.status(400).json({ success: false, error: 'A valid payment order is required.' });
+    }
+    const orderSnap = await db.collection('payment_orders').doc(paymentOrderId).get();
+    const order = orderSnap.data();
+    if (!orderSnap.exists || order.uid !== req.user.uid || order.status !== 'ACTIVE') {
+        return res.status(404).json({ success: false, error: 'Active payment order not found.' });
+    }
+    const customerEmail = req.user.email;
+    const customerName = String(req.body.customerName || req.user.email?.split('@')[0] || 'Customer').slice(0, 100);
+    const invoiceNumber = `RPAI-${paymentOrderId.slice(0, 20).toUpperCase()}`;
+    const amount = `${String(order.currency || '').toUpperCase()} ${(Number(order.amount || 0) / 100).toFixed(2)}`;
+    const planName = order.planId;
+    const gstin = String(req.body.gstin || '').slice(0, 20);
 
-    // Fast HTTP response (Non-blocking async execution)
-    res.json({ success: true, message: 'Tax invoice email queued for instant delivery.' });
+    res.json({ success: true, message: 'Tax invoice email queued for delivery.' });
 
     (async () => {
         try {
@@ -1149,13 +1162,7 @@ router.post('/send-invoice-email', async (req, res) => {
                 to: recipient,
                 subject: rendered.subject,
                 html: rendered.html,
-                attachments: pdfBase64 ? [
-                    {
-                        filename: `Invoice_${invoiceNumber || 'Receipt'}.pdf`,
-                        content: pdfBase64.replace(/^data:application\/pdf;base64,/, ''),
-                        encoding: 'base64'
-                    }
-                ] : []
+                attachments: []
             };
 
             const result = await dispatchMailWithFallback(config, mailOptions);

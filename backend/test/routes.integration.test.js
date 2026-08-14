@@ -11,6 +11,7 @@ setTokenVerifierForTests(async token => {
   if (token === 'user') return { uid: 'user-1', email: 'user@example.com', email_verified: true, role: 'USER', auth_time: now };
   if (token === 'unverified') return { uid: 'user-2', email: 'pending@example.com', email_verified: false, role: 'USER', auth_time: now };
   if (token === 'admin') return { uid: 'admin-1', email: 'admin@example.com', email_verified: true, role: 'ADMIN', auth_time: now };
+  if (token === 'stale-admin') return { uid: 'admin-1', email: 'admin@example.com', email_verified: true, role: 'ADMIN', auth_time: now - 3600 };
   throw new Error('invalid token');
 });
 
@@ -42,6 +43,14 @@ test('admin aliases and mail logs reject an ordinary authenticated user', async 
   }
 });
 
+test('stale admin sessions cannot perform refunds or user administration', async () => {
+  for (const [method, route] of [['post', '/api/admin/payments/refund'], ['patch', '/api/admin/users/victim']]) {
+    const response = await request(app)[method](route).set(bearer('stale-admin')).send({ paymentOrderId: 'order', suspended: true });
+    assert.equal(response.status, 403, route);
+    assert.equal(response.body.error.code, 'RECENT_AUTH_REQUIRED', route);
+  }
+});
+
 test('unverified users cannot consume paid AI or payment endpoints', async () => {
   const ai = await request(app).post('/api/generate-summary').set(bearer('unverified')).send({ occupation: 'Engineer' });
   assert.equal(ai.status, 403);
@@ -49,6 +58,15 @@ test('unverified users cannot consume paid AI or payment endpoints', async () =>
   const payment = await request(app).post('/api/pay').set(bearer('unverified')).send({ planId: 'monthly' });
   assert.equal(payment.status, 403);
   assert.equal(payment.body.error.code, 'EMAIL_VERIFICATION_REQUIRED');
+});
+
+test('password reset request is generic and timing-equalized for malformed accounts', async () => {
+  const started = Date.now();
+  const response = await request(app).post('/api/auth/custom-password-reset').send({ email: 'not-an-email' });
+  assert.equal(response.status, 200);
+  assert.equal(response.body.success, true);
+  assert.ok(Date.now() - started >= 275);
+  assert.doesNotMatch(JSON.stringify(response.body), /not-an-email|user.not.found/i);
 });
 
 test('verification and notification dispatch cannot target another account', async () => {

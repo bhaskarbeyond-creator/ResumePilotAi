@@ -270,19 +270,38 @@ async function createProviderOrderRecord({ uid, planId, provider }) {
     });
     return { ref, plan };
 }
-async function createPaymentOrder({ uid, planId }) {
+async function createPaymentOrder({ uid, planId, idempotencyKey }) {
     const plan = PLAN_CATALOG[planId];
     if (!plan) { const err = new Error('INVALID_PLAN'); err.status = 400; throw err; }
     if (!db || !admin) { const err = new Error('PAYMENT_SERVICE_UNAVAILABLE'); err.status = 503; throw err; }
     if (!process.env.STRIPE_SECRET) { const err = new Error('PAYMENT_PROVIDER_UNAVAILABLE'); err.status = 503; throw err; }
-    const orderRef = db.collection('payment_orders').doc();
-    await orderRef.set({ uid, planId, amount: plan.amount, currency: plan.currency, status: 'PENDING_PAYMENT', createdAt: admin.firestore.FieldValue.serverTimestamp() });
+    const deterministicId = idempotencyKey
+        ? crypto.createHash('sha256').update(`${uid}:${planId}:${idempotencyKey}`).digest('hex')
+        : null;
+    const orderRef = deterministicId ? db.collection('payment_orders').doc(deterministicId) : db.collection('payment_orders').doc();
+    try {
+        await orderRef.create({ uid, planId, provider: 'stripe', amount: plan.amount, currency: plan.currency, status: 'PENDING_PAYMENT', createdAt: admin.firestore.FieldValue.serverTimestamp() });
+    } catch (error) {
+        if (error.code !== 6 && error.code !== 'already-exists') throw error;
+        const existing = await orderRef.get();
+        const order = existing.data() || {};
+        if (order.uid !== uid || order.planId !== planId || order.provider !== 'stripe') throw Object.assign(new Error('IDEMPOTENCY_CONFLICT'), { status: 409 });
+        if (order.status === 'PAYMENT_CREATED' && order.providerClientSecret) {
+            return { orderId: orderRef.id, clientSecret: order.providerClientSecret, amount: order.amount, currency: order.currency, replayed: true };
+        }
+        throw Object.assign(new Error('PAYMENT_CREATION_IN_PROGRESS'), { status: 409 });
+    }
     try {
         const intent = await stripe.paymentIntents.create({
             amount: plan.amount, currency: plan.currency,
             metadata: { orderId: orderRef.id, uid, planId }
         }, { idempotencyKey: `order:${orderRef.id}` });
-        await orderRef.update({ provider: 'stripe', providerPaymentIntentId: intent.id, status: 'PAYMENT_CREATED', updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+        await orderRef.update({
+            providerPaymentIntentId: intent.id,
+            providerClientSecret: intent.client_secret,
+            status: 'PAYMENT_CREATED',
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
         return { orderId: orderRef.id, clientSecret: intent.client_secret, amount: plan.amount, currency: plan.currency };
     } catch (err) {
         await orderRef.update({ status: 'FAILED', failureCode: 'PROVIDER_CREATE_FAILED', updatedAt: admin.firestore.FieldValue.serverTimestamp() });
@@ -291,7 +310,9 @@ async function createPaymentOrder({ uid, planId }) {
 }
 app.post('/api/pay', async (req, res) => {
     try {
-        const result = await createPaymentOrder({ uid: req.user.uid, planId: req.body.planId || req.body.plan });
+        const suppliedKey = String(req.get('idempotency-key') || '');
+        const idempotencyKey = /^ck_[A-Za-z0-9_-]{10,100}$/.test(suppliedKey) ? suppliedKey : crypto.randomUUID();
+        const result = await createPaymentOrder({ uid: req.user.uid, planId: req.body.planId || req.body.plan, idempotencyKey });
         return res.status(201).json({ orderId: result.orderId, client_secret: result.clientSecret, amount: result.amount, currency: result.currency, status: 'PAYMENT_PENDING' });
     } catch (err) {
         console.error('[Stripe payment create]', err.message);
@@ -526,6 +547,9 @@ app.post('/api/paypal/verify', async (req, res) => {
 });
 
 app.post('/api/test-create-candidate-subscription', async (req, res) => {
+    if (process.env.NODE_ENV !== 'test') {
+        return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Test fixture route is disabled', requestId: res.locals.requestId } });
+    }
     try {
         const { email, name, plan = 'yearly', customerState = 'Maharashtra', customerStateCode = '27' } = req.body;
         const testUid = `UID_TEST_${Date.now()}_${Math.floor(Math.random()*1000)}`;
@@ -1457,15 +1481,10 @@ async function getSupplierSnapshot() {
 app.post('/api/invoice/generate', async (req, res) => {
     try {
         const {
-            userId = 'guest',
-            amount = 499,
-            currency = 'INR',
-            plan = 'yearly',
-            planTitle = 'Annual Resume Builder AI Subscription – 12 Months',
-            paymentMethod = 'Razorpay UPI',
-            paymentReference = `TXN_${Date.now()}`,
-            customerName = 'Valued Customer',
-            customerEmail = '',
+            paymentOrderId,
+            planTitle = '',
+            customerName: requestedCustomerName = '',
+            customerEmail: requestedCustomerEmail = '',
             customerGstin = '',
             customerCompany = '',
             customerAddress = '',
@@ -1474,6 +1493,26 @@ app.post('/api/invoice/generate', async (req, res) => {
             customerStateCode = '',
             customerCountry = 'India'
         } = req.body;
+
+        if (!/^[A-Za-z0-9_-]{1,128}$/.test(String(paymentOrderId || '')) || !db) {
+            return res.status(400).json({ success: false, error: 'A valid payment order is required.' });
+        }
+        const paymentSnap = await db.collection('payment_orders').doc(String(paymentOrderId)).get();
+        const payment = paymentSnap.data();
+        if (!paymentSnap.exists || !['ACTIVE', 'REFUNDED'].includes(payment.status)) {
+            return res.status(404).json({ success: false, error: 'Verified payment order not found.' });
+        }
+        const customerDoc = await db.collection('users').doc(payment.uid).get();
+        const customer = customerDoc.data() || {};
+        const userId = payment.uid;
+        const amount = Number(payment.amount || 0) / 100;
+        const currency = String(payment.currency || 'INR').toUpperCase();
+        const plan = payment.planId;
+        const paymentMethod = payment.provider;
+        const paymentReference = payment.providerPaymentId || payment.providerOrderId || payment.providerPaymentIntentId || paymentSnap.id;
+        const customerName = requestedCustomerName || customer.displayName || `${customer.firstname || ''} ${customer.lastname || ''}`.trim() || 'Valued Customer';
+        const customerEmail = requestedCustomerEmail || customer.email || '';
+        const finalPlanTitle = planTitle || `${String(plan).toUpperCase()} Resume Builder AI Subscription`;
 
         const supplier = await getSupplierSnapshot();
 
@@ -1516,13 +1555,11 @@ app.post('/api/invoice/generate', async (req, res) => {
         if (db) {
             try {
                 const counterDocRef = db.collection('data').doc('invoice_counter');
-                const counterDoc = await counterDocRef.get();
-                if (counterDoc.exists) {
-                    invoiceSeq = (counterDoc.data().currentSeq || 0) + 1;
-                    await counterDocRef.update({ currentSeq: invoiceSeq });
-                } else {
-                    await counterDocRef.set({ currentSeq: 1 });
-                }
+                await db.runTransaction(async tx => {
+                    const counterDoc = await tx.get(counterDocRef);
+                    invoiceSeq = Number(counterDoc.data()?.currentSeq || 0) + 1;
+                    tx.set(counterDocRef, { currentSeq: invoiceSeq, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+                });
             } catch (e) {
                 console.warn('[Invoice Counter Notice]:', e.message);
             }
@@ -1541,7 +1578,7 @@ app.post('/api/invoice/generate', async (req, res) => {
             userId,
             paymentMethod,
             paymentReference,
-            paymentStatus: 'PAID',
+            paymentStatus: payment.status === 'REFUNDED' ? 'REFUNDED' : 'PAID',
             currency,
             subtotal: taxableAmount,
             taxableAmount,
@@ -1574,7 +1611,7 @@ app.post('/api/invoice/generate', async (req, res) => {
             supplierSnapshot: supplier,
             lineItems: [
                 {
-                    description: planTitle || `${plan.toUpperCase()} Resume Builder AI Subscription`,
+                    description: finalPlanTitle,
                     sacCode: supplier.sacCode,
                     quantity: 1,
                     unitPrice: taxableAmount,
@@ -1603,21 +1640,9 @@ app.post('/api/invoice/generate', async (req, res) => {
     }
 });
 
-// Legacy / Compatibility Endpoint
-app.post('/api/invoice', async (req, res) => {
-    const { userId, invoiceId, amount, date, plan } = req.body;
-    res.json({
-        success: true,
-        invoice: {
-            invoiceId: invoiceId || `INV-${Date.now()}`,
-            userId: userId || 'customer',
-            amount: amount || '₹499.00',
-            date: date || new Date().toLocaleDateString(),
-            plan: plan || 'Premium Subscription',
-            status: 'PAID',
-            downloadUrl: `/api/invoice/download/${invoiceId || 'latest'}`
-        }
-    });
+// Legacy client-authored paid invoices are not accounting records.
+app.post('/api/invoice', (req, res) => {
+    return res.status(410).json({ error: { code: 'LEGACY_INVOICE_ENDPOINT_RETIRED', message: 'Generate invoices from a verified payment order', requestId: res.locals.requestId } });
 });
 
 // Item 41 & 42: PDF Job Queue & DOCX (Word) Document Export Engine Endpoint
@@ -1899,25 +1924,6 @@ app.post('/api/test-grant-admin', async (req, res) => {
     }
 });
 
-// Automated Email Invoice Dispatch Endpoint
-app.post('/api/send-invoice-email', async (req, res) => {
-    try {
-        const { toEmail, customerName, invoiceNumber, planName, amount, currency, transactionId } = req.body;
-        if (!toEmail) return res.status(400).json({ success: false, error: 'Recipient email is required' });
-
-        console.log(`[Invoice Email Dispatch] Sending PDF receipt confirmation for invoice ${invoiceNumber || transactionId} to ${toEmail}`);
-
-        return res.json({
-            success: true,
-            message: `Official GST Tax Invoice & Receipt for ${invoiceNumber || transactionId} queued and dispatched to ${toEmail}`,
-            timestamp: new Date().toISOString()
-        });
-    } catch (err) {
-        console.error('[Invoice Email Error]:', err);
-        return res.status(500).json({ success: false, error: err.message });
-    }
-});
-
 // Automatic Event Notifier API Endpoints (10/10 Coverage)
 app.post('/api/notify/user-signup', async (req, res) => {
     const { userEmail, userName } = req.body;
@@ -2083,7 +2089,7 @@ app.post(['/api/auth/custom-password-reset', '/api/notify/password-reset'], asyn
         batch.set(stateRef, { activeTokenHash: tokenHash, expiresAt, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
         batch.set(tokenRef, { uid: user.uid, email, expiresAt, usedAt: null, createdAt: admin.firestore.FieldValue.serverTimestamp() });
         await batch.commit();
-        const resetLink = `${protocol}://${websiteName}/login?mode=resetPassword&token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
+        const resetLink = `${protocol}://${websiteName}/login#mode=resetPassword&token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
         await EmailNotifier.notifyPasswordReset(db, { userEmail: email, userName: email.split('@')[0], resetLink });
         return respond();
     } catch (err) {
@@ -2112,7 +2118,7 @@ app.post(['/api/auth/send-verification-email', '/api/notify/send-verification-em
         batch.set(stateRef, { activeTokenHash: tokenHash, expiresAt, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
         batch.set(tokenRef, { uid: req.user.uid, email, expiresAt, usedAt: null, createdAt: admin.firestore.FieldValue.serverTimestamp() });
         await batch.commit();
-        const verificationLink = `${protocol}://${websiteName}/login?mode=verifyEmail&token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
+        const verificationLink = `${protocol}://${websiteName}/login#mode=verifyEmail&token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
         await EmailNotifier.notifyEmailVerificationLink(db, {
             userEmail: email,
             userName: String(req.body.userName || email.split('@')[0]).slice(0, 100),
@@ -2172,6 +2178,86 @@ app.post('/api/auth/verify-email-token', async (req, res) => {
             }
         } catch (_) {}
         return res.status(400).json({ success: false, error: 'Invalid or expired email verification link.' });
+    }
+});
+
+app.post('/api/admin/payments/refund', async (req, res) => {
+    const paymentOrderId = String(req.body.paymentOrderId || '');
+    const reason = String(req.body.reason || 'Customer requested refund').trim().slice(0, 500);
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(paymentOrderId) || !db || !admin) {
+        return res.status(400).json({ success: false, error: 'Valid payment order is required.' });
+    }
+    const orderRef = db.collection('payment_orders').doc(paymentOrderId);
+    try {
+        const snap = await orderRef.get();
+        if (!snap.exists) return res.status(404).json({ success: false, error: 'Payment order not found.' });
+        const order = snap.data();
+        if (order.status === 'REFUNDED') return res.json({ success: true, duplicate: true, status: 'REFUNDED' });
+        if (order.status !== 'ACTIVE') return res.status(409).json({ success: false, error: 'Only an active payment can be refunded.' });
+        if (!['stripe', 'paypal', 'razorpay'].includes(order.provider)) {
+            return res.status(501).json({ success: false, error: `${order.provider} refunds require provider webhook/API validation before enablement.` });
+        }
+        // Reserve before contacting the provider so concurrent administrators cannot issue
+        // duplicate refunds. Ambiguous provider timeouts remain pending for reconciliation.
+        await db.runTransaction(async tx => {
+            const current = await tx.get(orderRef);
+            if (!current.exists || current.data().status !== 'ACTIVE') throw new Error('INVALID_ORDER_STATE');
+            tx.update(orderRef, {
+                status: 'REFUND_PENDING', refundReason: reason,
+                refundRequestedBy: req.user.uid,
+                refundRequestedAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+        });
+        let refundId;
+        if (order.provider === 'stripe') {
+            const refund = await stripe.refunds.create({ payment_intent: order.providerPaymentIntentId, reason: 'requested_by_customer' }, { idempotencyKey: `refund:${paymentOrderId}` });
+            refundId = refund.id;
+        } else if (order.provider === 'paypal') {
+            const { clientId, clientSecret, baseUrl } = paypalConfig();
+            const accessToken = await paypalAccessToken(baseUrl, clientId, clientSecret);
+            const providerRes = await fetch(`${baseUrl}/v2/payments/captures/${encodeURIComponent(order.providerPaymentId)}/refund`, {
+                method: 'POST', timeout: 10_000,
+                headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json', 'PayPal-Request-Id': `refund-${paymentOrderId}` },
+                body: JSON.stringify({ amount: { value: (order.amount / 100).toFixed(2), currency_code: order.currency } })
+            });
+            const refund = await providerRes.json();
+            if (!providerRes.ok || !refund.id) throw new Error('PAYPAL_REFUND_FAILED');
+            refundId = refund.id;
+        } else if (order.provider === 'razorpay') {
+            const { keyId, keySecret } = await getRazorpayKeys();
+            if (!keyId || !keySecret) throw new Error('RAZORPAY_REFUND_UNAVAILABLE');
+            const providerRes = await fetch(`https://api.razorpay.com/v1/payments/${encodeURIComponent(order.providerPaymentId)}/refund`, {
+                method: 'POST', timeout: 10_000,
+                headers: { 'Authorization': 'Basic ' + Buffer.from(`${keyId}:${keySecret}`).toString('base64'), 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount: order.amount, notes: { paymentOrderId, reason } })
+            });
+            const refund = await providerRes.json();
+            if (!providerRes.ok || !refund.id) throw new Error('RAZORPAY_REFUND_FAILED');
+            refundId = refund.id;
+        }
+        await db.runTransaction(async tx => {
+            const current = await tx.get(orderRef);
+            if (!current.exists || !['REFUND_PENDING', 'REFUNDED'].includes(current.data().status)) throw new Error('INVALID_ORDER_STATE');
+            if (current.data().status === 'REFUNDED') return;
+            const userRef = db.collection('users').doc(order.uid);
+            const userSnap = await tx.get(userRef);
+            tx.update(orderRef, {
+                status: 'REFUNDED', providerRefundId: refundId, refundReason: reason,
+                refundedAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+            if (userSnap.exists && userSnap.data().lastPaymentOrderId === paymentOrderId) {
+                tx.update(userRef, { membership: 'Basic', paymentStatus: 'REFUNDED', autoRenew: false, membershipEnds: new Date() });
+            }
+            tx.set(db.collection('security_audit_logs').doc(), {
+                action: 'PAYMENT_REFUNDED', actorUid: req.user.uid, targetUid: order.uid,
+                paymentOrderId, provider: order.provider, reason, requestId: res.locals.requestId,
+                createdAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+        });
+        return res.json({ success: true, status: 'REFUNDED', refundId });
+    } catch (error) {
+        console.error('[Payment refund]', error.message);
+        return res.status(502).json({ success: false, error: 'Provider refund could not be confirmed.' });
     }
 });
 
@@ -2570,7 +2656,7 @@ app.get('/api/auth/linkedin/callback', async (req, res) => {
             photoURL: /^https:\/\//.test(profile.picture || '') ? profile.picture : null
         });
         const exchange = await issueOAuthExchange(uid, 'linkedin');
-        return safeRedirect(res, `/dashboard?oauth_code=${encodeURIComponent(exchange)}&provider=linkedin`);
+        return safeRedirect(res, `/dashboard#oauth_code=${encodeURIComponent(exchange)}&provider=linkedin`);
     } catch (error) {
         console.error('[LinkedIn OAuth callback]', error.message);
         return safeRedirect(res, '/login?error=linkedin_callback_failed');
@@ -2606,7 +2692,7 @@ app.get('/api/auth/github/callback', async (req, res) => {
             photoURL: /^https:\/\//.test(profile.avatar_url || '') ? profile.avatar_url : null
         });
         const exchange = await issueOAuthExchange(uid, 'github');
-        return safeRedirect(res, `/dashboard?oauth_code=${encodeURIComponent(exchange)}&provider=github`);
+        return safeRedirect(res, `/dashboard#oauth_code=${encodeURIComponent(exchange)}&provider=github`);
     } catch (error) {
         console.error('[GitHub OAuth callback]', error.message);
         return safeRedirect(res, '/login?error=github_callback_failed');

@@ -56,7 +56,9 @@ function enforceApiPolicy(req, res, next) {
   const pathname = req.path;
   const elevatedPermission = pathname === '/test-grant-admin'
     ? 'users.roles.manage'
-    : (pathname === '/admin/firebase-service-account' ? 'secrets.manage' : null);
+    : (pathname === '/admin/firebase-service-account'
+      ? 'secrets.manage'
+      : (pathname.startsWith('/admin/payments/') ? 'payments.manage' : null));
   if (elevatedPermission && !hasPermission(req, elevatedPermission)) {
     return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Insufficient permission', requestId: res.locals.requestId } });
   }
@@ -66,7 +68,9 @@ function enforceApiPolicy(req, res, next) {
   if (requiresVerifiedEmail(pathname) && !req.user?.emailVerified) {
     return res.status(403).json({ error: { code: 'EMAIL_VERIFICATION_REQUIRED', message: 'A verified email address is required', requestId: res.locals.requestId } });
   }
-  if (RECENT_AUTH_PATHS.has(pathname)) {
+  if (RECENT_AUTH_PATHS.has(pathname)
+      || pathname.startsWith('/admin/users/') || pathname.startsWith('/admin/payments/')
+      || ['/admin/ai-settings', '/admin/save-smtp', '/admin/test-connection'].includes(pathname)) {
     const authTime = Number(req.user?.claims?.auth_time || 0) * 1000;
     const maxAgeMs = Number(process.env.SENSITIVE_AUTH_MAX_AGE_MS || 10 * 60 * 1000);
     if (!authTime || Date.now() - authTime > maxAgeMs) {

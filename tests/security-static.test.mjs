@@ -53,6 +53,13 @@ test('backend contains no soft-verified/demo payment success or disabled TLS ver
   }
 });
 
+test('Firebase bearer interceptor is restricted to same-origin API URLs', () => {
+  const main = read('src/main.jsx');
+  assert.match(main, /parsed\.origin === window\.location\.origin/);
+  assert.match(main, /parsed\.pathname\.startsWith\('\/api\/'\)/);
+  assert.doesNotMatch(main, /url\.includes\('\/api\/'\)/);
+});
+
 test('browser code has no email, hostname, UID-pattern, or Firestore-field admin backdoor', () => {
   const sensitiveFiles = [
     'src/firestore/dbOperations.js',
@@ -76,6 +83,10 @@ test('OAuth never creates unsigned local browser sessions', () => {
   assert.doesNotMatch(backend, /oauth_session|Buffer\.from\(JSON\.stringify\(\{ uid/);
   assert.match(backend, /createCustomToken/);
   assert.match(backend, /rp_oauth_state/);
+  assert.match(backend, /\/dashboard#oauth_code=/);
+  assert.doesNotMatch(backend, /\/dashboard\?oauth_code=/);
+  assert.match(backend, /\/login#mode=resetPassword/);
+  assert.match(backend, /\/login#mode=verifyEmail/);
 });
 
 test('static entry point has an enforcing CSP without inline-script escape hatches', () => {
@@ -87,6 +98,7 @@ test('static entry point has an enforcing CSP without inline-script escape hatch
   assert.match(csp, /object-src 'none'/);
   assert.match(csp, /frame-ancestors 'none'/);
   assert.doesNotMatch(csp, /script-src[^;]*(?:'unsafe-inline'|'unsafe-eval')/);
+  assert.match(apache, /Referrer-Policy \"no-referrer\"/);
 });
 
 test('Firestore deploy config includes both deny-by-default stores', () => {
