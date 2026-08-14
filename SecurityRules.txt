@@ -178,10 +178,14 @@ service cloud.firestore {
     // Public settings must live in the explicitly curated public_config document.
     // system_settings can contain provider credentials and is never client-public.
     match /data/{id} {
-      allow read: if id in ['meta','frontendstats','public_config'] || admin();
+      allow read: if id in ['meta','frontendstats','public_config']
+        || (admin() && !(id in ['system_settings','subscriptions']));
       allow write: if admin() && (!(id in ['system_settings','subscriptions']) || recentAuth());
     }
-    match /settings/{id} { allow read: if admin(); allow write: if admin() && recentAuth(); }
+    match /settings/{id} {
+      allow read: if admin() && !(id in ['ai_providers','payment_providers','oauth_providers']);
+      allow write: if admin() && recentAuth();
+    }
     match /system_settings/{id} { allow read: if admin(); allow write: if admin() && recentAuth(); }
 
     // Reset/verification tokens, provider secrets, audit logs and webhook ledgers are server-only.

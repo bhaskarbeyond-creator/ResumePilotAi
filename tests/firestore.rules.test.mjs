@@ -26,7 +26,8 @@ before(async () => {
     });
     await setDoc(doc(db, 'pb/public-resume'), { id: 'public-resume', ownerUid: 'alice', isPublished: true, object: '{}' });
     await setDoc(doc(db, 'payment_orders/order-a'), { uid: 'alice', status: 'ACTIVE', planId: 'monthly' });
-    await setDoc(doc(db, 'data/system_settings'), { ai: { geminiApiKey: 'must-not-leak' } });
+    await setDoc(doc(db, 'data/system_settings'), { ai: { geminiApiKey: 'legacy-secret' } });
+    await setDoc(doc(db, 'settings/ai_providers'), { gemini: { apiKey: 'must-not-leak' } });
     await setDoc(doc(db, 'password_reset_tokens/token'), { uid: 'alice' });
   });
 });
@@ -117,12 +118,14 @@ test('billing, provider secrets and token registries are server-only', async () 
   await assertFails(getDoc(doc(bob(), 'payment_orders/order-a')));
   await assertFails(updateDoc(doc(alice(), 'payment_orders/order-a'), { status: 'ACTIVE', planId: 'yearly' }));
   await assertFails(getDoc(doc(alice(), 'data/system_settings')));
-  await assertSucceeds(getDoc(doc(admin(), 'data/system_settings')));
+  await assertFails(getDoc(doc(admin(), 'data/system_settings')));
+  await assertFails(getDoc(doc(admin(), 'data/subscriptions')));
   await assertSucceeds(updateDoc(doc(admin(), 'data/system_settings'), { updatedByTest: true }));
   const staleAdmin = env.authenticatedContext('stale-admin', {
     email: 'stale@example.com', role: 'ADMIN', auth_time: Math.floor(Date.now() / 1000) - 3600
   }).firestore();
   await assertFails(updateDoc(doc(staleAdmin, 'data/system_settings'), { staleWrite: true }));
+  await assertFails(getDoc(doc(admin(), 'settings/ai_providers')));
   await assertFails(getDoc(doc(admin(), 'password_reset_tokens/token')));
   await assertFails(deleteDoc(doc(admin(), 'password_reset_tokens/token')));
   await assertFails(setDoc(doc(alice(), 'contact/direct-client-write'), { email: 'alice@example.com', message: 'bypass' }));

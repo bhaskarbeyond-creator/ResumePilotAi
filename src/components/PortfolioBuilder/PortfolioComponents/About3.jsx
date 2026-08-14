@@ -132,7 +132,7 @@ const About3 = {
 
                 if (sharedUrlPattern.test(cleanUrl)) {
                     // It's a valid /shared/resumeId URL from same domain
-                    window.open(cleanUrl, '_blank');
+                    window.open(cleanUrl, '_blank', 'noopener,noreferrer');
                 } else {
                     console.warn('🔒 SECURITY: Only same-domain /shared/ URLs are allowed for resume download');
                     // Show user-friendly message instead of alert

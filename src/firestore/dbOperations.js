@@ -2459,7 +2459,7 @@ export function settWebsiteData(title, description, keywords, language, disabled
 }
 
 // Set Subscriptions Data (Enterprise Grade)
-export function setSubscriptionsData(state, month, quartarly, yearly, onlyPP, currency, razorpayUPI = true, options = {}) {
+export async function setSubscriptionsData(state, month, quartarly, yearly, onlyPP, currency, razorpayUPI = true, options = {}) {
     const subData = {
         state: state,
         monthlyPrice: month,
@@ -2473,6 +2473,7 @@ export function setSubscriptionsData(state, month, quartarly, yearly, onlyPP, cu
         razorpayEnabled: options.razorpayEnabled !== undefined ? options.razorpayEnabled : true,
         paytmEnabled: options.paytmEnabled === true,
         phonepeEnabled: options.phonepeEnabled === true,
+        sandboxMode: options.sandboxMode === true,
         razorpayKeyId: options.razorpayKeyId || '',
         razorpayKeySecret: options.razorpayKeySecret || '',
         stripePublishableKey: options.stripePublishableKey || '',
@@ -2506,19 +2507,21 @@ export function setSubscriptionsData(state, month, quartarly, yearly, onlyPP, cu
         receiptTemplate: options.receiptTemplate || 'modern',
         reverseCharge: options.reverseCharge || 'No',
     };
+    const response = await fetch('/api/admin/payment-settings', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(subData)
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.success) throw new Error(result.error || 'Unable to save payment settings.');
     try {
         if (typeof window !== 'undefined') {
-            localStorage.setItem('subscriptions_cache', JSON.stringify(subData));
+            // Cache only the backend-curated public projection; never persist secrets.
+            localStorage.setItem('subscriptions_cache', JSON.stringify(result.settings || {}));
         }
-    } catch (e) {
-        console.warn('Could not write subscriptions_cache to localStorage:', e);
+    } catch (error) {
+        console.warn('Could not cache public subscription settings:', error);
     }
-
-    const db = fire.firestore();
-    const userRef = db.collection('data').doc('subscriptions');
-    userRef.set(subData, { merge: true }).catch((err) => {
-        console.error('Error saving subscription data to Firestore:', err);
-    });
+    return result;
 }
 
 // Admin Master Invoice Fetcher
@@ -2543,24 +2546,33 @@ export async function grantProSubscriptionAdmin(userId, _planType = 'yearly', du
 }
 
 // get Subscription data
+function redactSubscriptionSecrets(value = {}) {
+    const clean = { ...value };
+    for (const key of ['razorpayKeySecret','stripeSecretKey','paypalClientSecret','paytmMerchantKey','phonepeSaltKey']) delete clean[key];
+    return clean;
+}
+
 export async function getSubscriptionStatus() {
     let localCache = null;
     try {
         const raw = typeof window !== 'undefined' ? localStorage.getItem('subscriptions_cache') : null;
-        if (raw) localCache = JSON.parse(raw);
+        if (raw) {
+            localCache = redactSubscriptionSecrets(JSON.parse(raw));
+            localStorage.setItem('subscriptions_cache', JSON.stringify(localCache));
+        }
     } catch (e) {
         console.warn('Could not read subscriptions_cache from localStorage:', e);
     }
 
     const res = await safeDbOperation(async () => {
         const db = fire.firestore();
-        const userRef = db.collection('data').doc('subscriptions');
+        const userRef = db.collection('data').doc('public_config');
         const snapshot = await userRef.get();
         if (snapshot && snapshot.exists) {
-            var data = snapshot.data();
+            const data = redactSubscriptionSecrets(snapshot.data()?.subscriptions || {});
             return {
-                ...data,
-                ...(localCache || {})
+                ...(localCache || {}),
+                ...data
             };
         }
         return localCache;
@@ -4844,7 +4856,7 @@ export async function getAllReviews() {
 
 export async function get3Reviews() {
     const db = fire.firestore();
-    const reviewsRef = await db.collection('reviews').limit(3).get();
+    const reviewsRef = await db.collection('reviews').where('status', '==', 'approved').limit(3).get();
     const reviews = reviewsRef.docs.map((doc) => {
         return { id: doc.id, ...doc.data() };
     });

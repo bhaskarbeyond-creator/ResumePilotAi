@@ -225,7 +225,7 @@ const Hero5 = {
                                         onClick={() => {
                                             const validUrl = SecureResumeUrl.validate(resumeUrl);
                                             if (validUrl !== '#') {
-                                                window.open(validUrl, '_blank');
+                                                window.open(validUrl, '_blank', 'noopener,noreferrer');
                                             }
                                         }}
                                         className={`group relative px-8 py-4 bg-gradient-to-r ${theme.accent} text-black rounded-lg font-bold text-lg transition-all duration-300 hover:scale-105 shadow-2xl ${theme.glow} overflow-hidden font-mono`}>

@@ -1582,8 +1582,9 @@ class SubscriptionSetting extends Component {
         }
     }
 
-    submitHandler() {
-        setSubscriptionsData(
+    async submitHandler() {
+        try {
+            await setSubscriptionsData(
             this.state.checkedSubscriptions,
             this.state.monthlyPrice,
             this.state.quartarlyPrice,
@@ -1633,9 +1634,12 @@ class SubscriptionSetting extends Component {
             }
         );
         this.setState({ isSuccessOpen: true });
-        setTimeout(() => {
-            this.setState({ isSuccessOpen: false });
-        }, 3000);
+            setTimeout(() => {
+                this.setState({ isSuccessOpen: false });
+            }, 3000);
+        } catch (error) {
+            this.setState({ couponErrorMsg: error.message || 'Unable to save payment settings.' });
+        }
     }
 
     handleClose() {

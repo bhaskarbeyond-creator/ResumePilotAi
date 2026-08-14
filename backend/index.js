@@ -471,18 +471,29 @@ async function paypalAccessToken(baseUrl, clientId, clientSecret) {
     if (!tokenRes.ok || !tokenData.access_token) throw Object.assign(new Error('PAYPAL_AUTH_FAILED'), { status: 502 });
     return tokenData.access_token;
 }
-function paypalConfig() {
-    const clientId = process.env.PAYPAL_CLIENT_ID;
-    const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
+async function paypalConfig() {
+    let clientId = process.env.PAYPAL_CLIENT_ID || '';
+    let clientSecret = process.env.PAYPAL_CLIENT_SECRET || '';
+    let environment = String(process.env.PAYPAL_ENV || 'sandbox').toLowerCase();
+    if ((!clientId || !clientSecret) && db) {
+        const stored = (await db.collection('settings').doc('payment_providers').get()).data()?.paypal || {};
+        clientId = clientId || stored.clientId || '';
+        clientSecret = clientSecret || stored.clientSecret || '';
+        environment = stored.environment || environment;
+        if (!clientId || !clientSecret) {
+            const legacy = (await db.collection('data').doc('subscriptions').get()).data() || {};
+            clientId = clientId || legacy.paypalClientId || '';
+            clientSecret = clientSecret || legacy.paypalClientSecret || '';
+        }
+    }
     if (!clientId || !clientSecret) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
-    const baseUrl = String(process.env.PAYPAL_ENV || 'sandbox').toLowerCase() === 'live'
-        ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
+    const baseUrl = environment === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
     return { clientId, clientSecret, baseUrl };
 }
 app.post('/api/paypal/create-order', async (req, res) => {
     let orderRef;
     try {
-        const { clientId, clientSecret, baseUrl } = paypalConfig();
+        const { clientId, clientSecret, baseUrl } = await paypalConfig();
         const { ref, plan } = await createProviderOrderRecord({ uid: req.user.uid, planId: req.body.planId, provider: 'paypal' });
         orderRef = ref;
         const accessToken = await paypalAccessToken(baseUrl, clientId, clientSecret);
@@ -524,7 +535,7 @@ app.post('/api/paypal/verify', async (req, res) => {
         if (!internalSnap.exists || internal.uid !== req.user.uid || internal.provider !== 'paypal' || internal.providerOrderId !== providerOrderId) {
             return res.status(404).json({ verified: false, error: 'Order not found' });
         }
-        const { clientId, clientSecret, baseUrl } = paypalConfig();
+        const { clientId, clientSecret, baseUrl } = await paypalConfig();
         const accessToken = await paypalAccessToken(baseUrl, clientId, clientSecret);
         const providerRes = await fetch(`${baseUrl}/v2/checkout/orders/${encodeURIComponent(providerOrderId)}`, {
             headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, timeout: 10_000
@@ -1137,6 +1148,79 @@ app.post('/api/admin/ai-settings', async (req, res) => {
     return res.json({ success: true, message: 'AI provider settings saved securely.' });
 });
 
+app.post('/api/admin/payment-settings', async (req, res) => {
+    if (!db || !admin) return res.status(503).json({ success: false, error: 'Settings service unavailable.' });
+    const input = req.body || {};
+    const numberInRange = (value, min, max, fallback) => {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) && parsed >= min && parsed <= max ? parsed : fallback;
+    };
+    const publicSettings = {
+        state: input.state !== false,
+        monthlyPrice: numberInRange(input.monthlyPrice, 0, 1_000_000, 199),
+        quartarlyPrice: numberInRange(input.quartarlyPrice, 0, 1_000_000, 399),
+        yearlyPrice: numberInRange(input.yearlyPrice, 0, 1_000_000, 499),
+        currency: /^[A-Z]{3}$/.test(String(input.currency || '').toUpperCase()) ? String(input.currency).toUpperCase() : 'INR',
+        onlyPP: input.onlyPP === true,
+        sandboxMode: input.sandboxMode === true,
+        razorpayUPI: input.razorpayUPI !== false,
+        ...Object.fromEntries(['stripeEnabled','paypalEnabled','razorpayEnabled','paytmEnabled','phonepeEnabled','enableTax','taxInclusive','requireCustomerTaxId'].map(key => [key, input[key] === true])),
+        taxName: String(input.taxName || 'GST').slice(0, 30),
+        taxRate: numberInRange(input.taxRate, 0, 100, 18),
+        companyTaxId: String(input.companyTaxId || '').slice(0, 30),
+        supplierLegalName: String(input.supplierLegalName || '').slice(0, 150),
+        supplierTradeName: String(input.supplierTradeName || '').slice(0, 150),
+        supplierGstin: String(input.supplierGstin || '').slice(0, 30),
+        supplierPan: String(input.supplierPan || '').slice(0, 30),
+        supplierAddress: String(input.supplierAddress || '').slice(0, 500),
+        supplierCity: String(input.supplierCity || '').slice(0, 100),
+        supplierState: String(input.supplierState || '').slice(0, 100),
+        supplierStateCode: String(input.supplierStateCode || '').slice(0, 10),
+        supplierPincode: String(input.supplierPincode || '').slice(0, 20),
+        sacCode: String(input.sacCode || '').slice(0, 30),
+        invoicePrefix: String(input.invoicePrefix || 'RPAI').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 20),
+        financialYear: String(input.financialYear || '').slice(0, 20),
+        receiptTemplate: ['modern','classic','minimal'].includes(input.receiptTemplate) ? input.receiptTemplate : 'modern',
+        reverseCharge: input.reverseCharge === 'Yes' ? 'Yes' : 'No',
+        stripePublishableKey: String(input.stripePublishableKey || '').slice(0, 200),
+        razorpayKeyId: String(input.razorpayKeyId || '').slice(0, 100),
+        paypalClientId: String(input.paypalClientId || '').slice(0, 200),
+        paytmMid: String(input.paytmMid || '').slice(0, 50),
+        paytmWebsite: String(input.paytmWebsite || 'WEBSTAGING').slice(0, 50),
+        phonepeId: String(input.phonepeId || '').slice(0, 100),
+        phonepeSaltIndex: String(input.phonepeSaltIndex || '1').slice(0, 10)
+    };
+    const secretValue = value => {
+        const text = String(value || '').trim();
+        if (text && (text.length < 8 || text.length > 1000)) throw new Error('Invalid provider secret length.');
+        return text;
+    };
+    try {
+        const providerSecrets = {
+            stripe: { secretKey: secretValue(input.stripeSecretKey) },
+            paypal: { clientSecret: secretValue(input.paypalClientSecret), clientId: publicSettings.paypalClientId, environment: publicSettings.sandboxMode ? 'sandbox' : 'live' },
+            razorpay: { keySecret: secretValue(input.razorpayKeySecret), keyId: publicSettings.razorpayKeyId },
+            paytm: { merchantKey: secretValue(input.paytmMerchantKey), mid: publicSettings.paytmMid, website: publicSettings.paytmWebsite },
+            phonepe: { saltKey: secretValue(input.phonepeSaltKey), merchantId: publicSettings.phonepeId, saltIndex: publicSettings.phonepeSaltIndex }
+        };
+        // Blank secrets are omitted so viewing/saving a masked form never erases live keys.
+        for (const provider of Object.values(providerSecrets)) {
+            for (const [key, value] of Object.entries(provider)) if (value === '') delete provider[key];
+        }
+        const batch = db.batch();
+        batch.set(db.collection('settings').doc('payment_providers'), providerSecrets, { merge: true });
+        batch.set(db.collection('data').doc('public_config'), { subscriptions: publicSettings }, { merge: true });
+        batch.set(db.collection('security_audit_logs').doc(), {
+            action: 'PAYMENT_SETTINGS_UPDATED', actorUid: req.user.uid,
+            requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+        await batch.commit();
+        return res.json({ success: true, settings: publicSettings, message: 'Payment settings saved to split public/secret stores.' });
+    } catch (error) {
+        return res.status(400).json({ success: false, error: error.message });
+    }
+});
+
 // Admin diagnostic test-connection endpoint
 app.post('/api/admin/test-connection', async (req, res) => {
     const { type, apiKey, secretKey, model } = req.body;
@@ -1455,9 +1539,9 @@ async function getSupplierSnapshot() {
 
     if (db) {
         try {
-            const doc = await db.collection('data').doc('subscriptions').get();
+            const doc = await db.collection('data').doc('public_config').get();
             if (doc.exists) {
-                const d = doc.data();
+                const d = doc.data()?.subscriptions || {};
                 if (d.supplierLegalName) defaults.legalName = d.supplierLegalName;
                 if (d.supplierTradeName) defaults.tradeName = d.supplierTradeName;
                 if (d.supplierGstin || d.companyTaxId) defaults.gstin = d.supplierGstin || d.companyTaxId;
@@ -2213,7 +2297,7 @@ app.post('/api/admin/payments/refund', async (req, res) => {
             const refund = await stripe.refunds.create({ payment_intent: order.providerPaymentIntentId, reason: 'requested_by_customer' }, { idempotencyKey: `refund:${paymentOrderId}` });
             refundId = refund.id;
         } else if (order.provider === 'paypal') {
-            const { clientId, clientSecret, baseUrl } = paypalConfig();
+            const { clientId, clientSecret, baseUrl } = await paypalConfig();
             const accessToken = await paypalAccessToken(baseUrl, clientId, clientSecret);
             const providerRes = await fetch(`${baseUrl}/v2/payments/captures/${encodeURIComponent(order.providerPaymentId)}/refund`, {
                 method: 'POST', timeout: 10_000,

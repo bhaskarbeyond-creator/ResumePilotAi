@@ -75,7 +75,9 @@ This document deliberately does **not** certify the application for production. 
 - SMTP/IMAP configuration tests and dispatch reject unencrypted transports.
 - PDF rendering blocks all network requests except the application origin and data/blob resources, preventing stored image/font SSRF.
 - Firebase Admin v14 is used through a narrow modular adapter and supports Workload Identity/Application Default Credentials. Legacy service-account JSON auto-loading was removed.
+- AI/payment provider secrets are split from browser-readable public settings; legacy browser caches are actively redacted and secret-store documents deny client reads, including admins.
 - Local fallback secret files are written atomically with mode `0600`.
+- Resume documents are size/type/signature checked, PDF evaluation is disabled, parser workers are bundled rather than loaded from a CDN, and extracted text is capped. Image resume import fails closed pending a scanned-upload pipeline.
 
 ### Local evidence
 
@@ -114,4 +116,5 @@ This document deliberately does **not** certify the application for production. 
 - Native LinkedIn/GitHub MFA requires configuring those providers through Firebase/Identity Platform OIDC. The custom-token compatibility flow refuses accounts with enrolled MFA instead of bypassing the second factor.
 - Provider refund handling beyond Stripe still requires provider webhook implementations and external contract validation.
 - Local process rate buckets are not a substitute for a distributed Redis/rate-limit service in a horizontally scaled deployment.
-- File upload malware scanning, content disarm/reconstruction, and a quarantined object-storage pipeline remain to be implemented.
+- File upload malware scanning, content disarm/reconstruction, and a quarantined object-storage pipeline remain to be implemented. Image-resume import is intentionally unavailable until that boundary exists.
+- Automatic/interactive account merging and browser-driven backup restore are disabled to prevent cross-provider identity and entitlement corruption; a transactional provider-aware server workflow remains to be implemented.

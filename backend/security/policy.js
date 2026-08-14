@@ -58,7 +58,7 @@ function enforceApiPolicy(req, res, next) {
     ? 'users.roles.manage'
     : (pathname === '/admin/firebase-service-account'
       ? 'secrets.manage'
-      : (pathname.startsWith('/admin/payments/')
+      : (pathname.startsWith('/admin/payments/') || pathname === '/admin/payment-settings'
         ? 'payments.manage'
         : (pathname.startsWith('/admin/employer-applications/') ? 'users.update' : null)));
   if (elevatedPermission && !hasPermission(req, elevatedPermission)) {
@@ -73,7 +73,7 @@ function enforceApiPolicy(req, res, next) {
   if (RECENT_AUTH_PATHS.has(pathname) || pathname === '/account/delete'
       || pathname.startsWith('/admin/users/') || pathname.startsWith('/admin/payments/')
       || pathname.startsWith('/admin/employer-applications/')
-      || ['/admin/ai-settings', '/admin/save-smtp', '/admin/test-connection'].includes(pathname)) {
+      || ['/admin/ai-settings', '/admin/payment-settings', '/admin/save-smtp', '/admin/test-connection'].includes(pathname)) {
     const authTime = Number(req.user?.claims?.auth_time || 0) * 1000;
     const maxAgeMs = Number(process.env.SENSITIVE_AUTH_MAX_AGE_MS || 10 * 60 * 1000);
     if (!authTime || Date.now() - authTime > maxAgeMs) {

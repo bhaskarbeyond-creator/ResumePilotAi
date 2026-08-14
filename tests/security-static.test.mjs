@@ -53,6 +53,24 @@ test('backend contains no soft-verified/demo payment success or disabled TLS ver
   }
 });
 
+test('resume imports use bundled parsers and content signatures, not runtime CDN code', () => {
+  const parser = read('src/services/resumeParser.js');
+  assert.doesNotMatch(parser, /cdn\.jsdelivr\.net|unpkg\.com/);
+  assert.match(parser, /assertResumeFileSignature/);
+  assert.match(parser, /isEvalSupported:\s*false/);
+  assert.match(parser, /File contents do not match/);
+});
+
+test('payment and AI secrets are split from browser-readable settings', () => {
+  const operations = read('src/firestore/dbOperations.js');
+  const rules = read('SecurityRules.txt');
+  assert.match(operations, /\/api\/admin\/payment-settings/);
+  assert.match(operations, /redactSubscriptionSecrets/);
+  assert.doesNotMatch(operations, /subscriptions_cache', JSON\.stringify\(subData\)/);
+  assert.match(rules, /ai_providers','payment_providers','oauth_providers/);
+  assert.match(rules, /system_settings','subscriptions/);
+});
+
 test('Firebase bearer interceptor is restricted to same-origin API URLs', () => {
   const main = read('src/main.jsx');
   assert.match(main, /parsed\.origin === window\.location\.origin/);

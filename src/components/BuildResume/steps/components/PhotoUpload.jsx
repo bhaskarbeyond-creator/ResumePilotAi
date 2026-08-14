@@ -9,7 +9,7 @@ const PhotoUpload = ({ label, value, onChange, required = false }) => {
     const fileInputRef = useRef(null);
 
     const resizeImage = (base64Str, maxWidth = 200, maxHeight = 200) => {
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
             let img = new Image();
             img.src = base64Str;
             img.onload = () => {
@@ -18,6 +18,10 @@ const PhotoUpload = ({ label, value, onChange, required = false }) => {
                 const MAX_HEIGHT = maxHeight;
                 let width = img.width;
                 let height = img.height;
+                if (!width || !height || width * height > 25_000_000) {
+                    reject(new Error('Image dimensions are invalid or too large'));
+                    return;
+                }
 
                 if (width > height) {
                     if (width > MAX_WIDTH) {
@@ -36,6 +40,7 @@ const PhotoUpload = ({ label, value, onChange, required = false }) => {
                 ctx.drawImage(img, 0, 0, width, height);
                 resolve(canvas.toDataURL('image/jpeg', 0.9));
             };
+            img.onerror = () => reject(new Error('Invalid image data'));
         });
     };
 
@@ -44,6 +49,10 @@ const PhotoUpload = ({ label, value, onChange, required = false }) => {
 
         if (file.size > 5 * 1024 * 1024) {
             setError(t('PhotoUpload.errors.sizeLimit'));
+            return;
+        }
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+            setError('Only JPEG, PNG, and WebP images are supported.');
             return;
         }
 
@@ -195,7 +204,7 @@ const PhotoUpload = ({ label, value, onChange, required = false }) => {
             )}
 
             {/* File input */}
-            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleInputChange} className="hidden" />
+            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleInputChange} className="hidden" />
 
             {/* Error message */}
             {error && (

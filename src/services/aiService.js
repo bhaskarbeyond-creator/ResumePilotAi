@@ -64,11 +64,13 @@ export async function generateUserAiContent(endpointName, payload = {}) {
  * local availability fallback and is merged into AI output to avoid dropping real fields.
  */
 export async function parseResumeTextToStructuredData(rawText) {
-    const text = typeof rawText === 'string' ? rawText : '';
+    const text = typeof rawText === 'string' ? rawText.slice(0, 100_000) : '';
+    // Base64 image payloads are intentionally not parsed or sent through JSON. They require
+    // an authenticated object-storage upload and malware/content scanning pipeline.
+    if (!text || text.startsWith('[IMAGE_RESUME_BASE64:')) {
+        return normalizeRawDataToTempJson({}, '');
+    }
     const heuristic = normalizeRawDataToTempJson(extractHeuristicResumeData(text), text);
-    // Base64 image payloads are intentionally not sent through JSON. They require a future
-    // authenticated object-storage upload and malware/content scanning pipeline.
-    if (!text || text.startsWith('[IMAGE_RESUME_BASE64:')) return heuristic;
     try {
         const response = await fetch('/api/parse-resume', {
             method: 'POST',

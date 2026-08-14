@@ -13,11 +13,8 @@ const ALLOWED_TYPES = [
     'application/rtf',
     'text/rtf',
     'text/plain',
-    'image/jpeg',
-    'image/png',
-    'image/webp',
 ];
-const ALLOWED_EXTENSIONS = ['.pdf', '.docx', '.doc', '.txt', '.rtf', '.jpg', '.jpeg', '.png', '.webp'];
+const ALLOWED_EXTENSIONS = ['.pdf', '.docx', '.doc', '.txt', '.rtf'];
 
 const ResumeImportModal = ({
     isOpen,
@@ -51,9 +48,9 @@ const ResumeImportModal = ({
 
             // Validate file type
             const ext = '.' + file.name.split('.').pop()?.toLowerCase();
-            if (!ALLOWED_EXTENSIONS.includes(ext) && !ALLOWED_TYPES.includes(file.type)) {
+            if (!ALLOWED_EXTENSIONS.includes(ext) || (file.type && !ALLOWED_TYPES.includes(file.type))) {
                 setStatus('error');
-                setErrorMessage('Unsupported file format. Please upload PDF, DOCX, DOC, TXT, RTF, JPG, or PNG.');
+                setErrorMessage('Unsupported file format. Please upload PDF, DOCX, DOC, TXT, or RTF.');
                 return;
             }
 
@@ -242,7 +239,7 @@ const ResumeImportModal = ({
                                     Browse Document
                                     <input
                                         type="file"
-                                        accept=".pdf,.docx,.doc,.txt,.rtf,.jpg,.jpeg,.png,.webp,image/*"
+                                        accept=".pdf,.docx,.doc,.txt,.rtf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                                         className="hidden"
                                         ref={fileInputRef}
                                         onChange={(e) => handleFileSelect(e.target.files?.[0])}

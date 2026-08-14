@@ -5,8 +5,8 @@ import mammoth from 'mammoth';
 // 1. Worker configuration
 // ----------------------------------------------
 if (typeof window !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
-    const version = pdfjsLib.version || '3.11.174';
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${version}/build/pdf.worker.min.js`;
+    // Bundle the exact audited worker version; do not execute runtime CDN code.
+    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
 }
 
 // ----------------------------------------------
@@ -16,50 +16,60 @@ const MAX_PDF_PAGES = 100;
 const EXTRACTION_TIMEOUT_MS = 30000;
 const MIN_READABLE_TEXT_LENGTH = 20;
 
+async function assertResumeFileSignature(file, fileName) {
+    const bytes = new Uint8Array(await file.slice(0, 16).arrayBuffer());
+    const starts = (...expected) => expected.every((value, index) => bytes[index] === value);
+    const ascii = new TextDecoder('latin1').decode(bytes);
+    let valid = true;
+    if (fileName.endsWith('.pdf')) valid = ascii.startsWith('%PDF-');
+    else if (fileName.endsWith('.docx')) valid = starts(0x50, 0x4b, 0x03, 0x04) || starts(0x50, 0x4b, 0x05, 0x06);
+    else if (fileName.endsWith('.doc')) valid = starts(0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1);
+    else if (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg')) valid = starts(0xff, 0xd8, 0xff);
+    else if (fileName.endsWith('.png')) valid = starts(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a);
+    else if (fileName.endsWith('.webp')) valid = ascii.startsWith('RIFF') && ascii.slice(8, 12) === 'WEBP';
+    else if (fileName.endsWith('.rtf')) valid = ascii.replace(/^\uFEFF/, '').startsWith('{\\rtf');
+    if (!valid) throw new Error('File contents do not match the selected file type.');
+}
+
 // ----------------------------------------------
 // 3. Main exported function
 // ----------------------------------------------
 export async function extractTextFromResumeFile(file, onProgress, signal) {
     if (!file) throw new Error('No file provided.');
 
-    const MAX_SIZE = 20 * 1024 * 1024;
+    const MAX_SIZE = 10 * 1024 * 1024;
     if (file.size > MAX_SIZE) {
         throw new Error(`File exceeds ${MAX_SIZE / 1024 / 1024} MB limit.`);
     }
 
     const fileName = file.name.toLowerCase();
-    const fileType = file.type || '';
+    await assertResumeFileSignature(file, fileName);
 
     // DOCX
-    if (
-        fileName.endsWith('.docx') ||
-        fileType.includes('word') ||
-        fileType.includes('officedocument')
-    ) {
+    if (fileName.endsWith('.docx')) {
         return await extractDocx(file, onProgress, signal);
     }
 
     // PDF
-    if (fileName.endsWith('.pdf') || fileType.includes('pdf')) {
+    if (fileName.endsWith('.pdf')) {
         return await extractPdf(file, onProgress, signal);
     }
 
     // Images
     if (
         fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') ||
-        fileName.endsWith('.png') || fileName.endsWith('.webp') ||
-        fileType.startsWith('image/')
+        fileName.endsWith('.png') || fileName.endsWith('.webp')
     ) {
         return await extractImageOcr(file, onProgress, signal);
     }
 
     // RTF
-    if (fileName.endsWith('.rtf') || fileType.includes('rtf')) {
+    if (fileName.endsWith('.rtf')) {
         return await extractRtf(file, onProgress, signal);
     }
 
     // Legacy DOC
-    if (fileName.endsWith('.doc') || fileType === 'application/msword') {
+    if (fileName.endsWith('.doc')) {
         return await extractLegacyDoc(file, onProgress, signal);
     }
 
@@ -74,7 +84,11 @@ async function extractDocx(file, onProgress, signal) {
     try {
         const arrayBuffer = await readFileWithSignal(file, signal);
         if (typeof onProgress === 'function') onProgress(30);
-        const result = await mammoth.extractRawText({ arrayBuffer });
+        const result = await withTimeout(
+            mammoth.extractRawText({ arrayBuffer }),
+            EXTRACTION_TIMEOUT_MS,
+            'DOCX extraction timed out.'
+        );
         if (typeof onProgress === 'function') onProgress(80);
         if (result && result.value && result.value.trim().length > MIN_READABLE_TEXT_LENGTH) {
             if (typeof onProgress === 'function') onProgress(100);
@@ -83,8 +97,8 @@ async function extractDocx(file, onProgress, signal) {
         console.warn('Mammoth returned little text, falling back to text reader.');
         return await readTextFile(file, signal);
     } catch (err) {
-        console.warn('DOCX extraction failed, falling back to text reader.', err);
-        return await readTextFile(file, signal);
+        console.warn('DOCX extraction failed.', err);
+        throw new Error('Could not safely parse the DOCX file. Please export it again or use PDF/TXT.');
     }
 }
 
@@ -98,8 +112,6 @@ async function extractPdf(file, onProgress, signal) {
 
         const loadingTask = pdfjsLib.getDocument({
             data: arrayBuffer,
-            cMapUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version || '3.11.174'}/cmaps/`,
-            cMapPacked: true,
             isEvalSupported: false,
         });
 
@@ -131,31 +143,18 @@ async function extractPdf(file, onProgress, signal) {
 
         throw new Error('PDF contains no readable text.');
     } catch (err) {
-        console.warn('PDF extraction failed, falling back to text reader.', err);
-        return await readTextFile(file, signal);
+        console.warn('PDF extraction failed.', err);
+        throw new Error('Could not safely parse the PDF. Confirm it is not encrypted or malformed.');
     }
 }
 
 // ----------------------------------------------
 // 6. Image OCR – returns base64 marker for vision AI
 // ----------------------------------------------
-async function extractImageOcr(file, onProgress, signal) {
-    if (typeof onProgress === 'function') onProgress(10);
-    try {
-        const arrayBuffer = await readFileWithSignal(file, signal);
-        if (typeof onProgress === 'function') onProgress(50);
-        const bytes = new Uint8Array(arrayBuffer);
-        let binary = '';
-        for (let i = 0; i < bytes.length; i++) {
-            binary += String.fromCharCode(bytes[i]);
-        }
-        const base64 = btoa(binary);
-        if (typeof onProgress === 'function') onProgress(100);
-        return `[IMAGE_RESUME_BASE64:${file.type || 'image/jpeg'}]${base64}`;
-    } catch (imgErr) {
-        console.warn('Image processing failed:', imgErr);
-        throw new Error('Could not process image file. Please upload a PDF or DOCX version of your resume.');
-    }
+async function extractImageOcr(_file, _onProgress, _signal) {
+    // Browser-to-provider base64 uploads were retired because they bypassed authentication,
+    // malware/content scanning, quotas, and request-size controls.
+    throw new Error('Image resume import requires the secure scanned-upload pipeline. Please upload a PDF, DOCX, DOC, RTF, or text file.');
 }
 
 // ----------------------------------------------
@@ -315,7 +314,8 @@ function cleanText(text) {
         .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ')
         .replace(/[ \t]+/g, ' ')
         .replace(/\n{4,}/g, '\n\n\n')
-        .trim();
+        .trim()
+        .slice(0, 100_000);
 }
 
 function withTimeout(promise, ms, message) {
