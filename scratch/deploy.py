@@ -249,30 +249,47 @@ ssh.close()
 print("Deployment complete!")
 
 # 4. Automatically purge Cloudflare Edge Cache for instantaneous global updates
-print("Purging Cloudflare Edge Cache...")
+import urllib.request, urllib.error
+import json
+
+CLOUDFLARE_ZONE_ID = "725f3d648139c27172638441415bf9d2"
+CLOUDFLARE_API_TOKEN = "cfut_Su0qFg1y8DIfMAMbGP9hNM89hW87cVhEBqfdVzeH84cb9675"
+CF_PURGE_URL = f"https://api.cloudflare.com/client/v4/zones/{CLOUDFLARE_ZONE_ID}/purge_cache"
+
+# Surgical purge: only bust index.html & root URL — JS/CSS assets are content-hashed so they're safe
+PURGE_PAYLOAD = {
+    "files": [
+        "https://airesume.projectdemo.guru/",
+        "https://airesume.projectdemo.guru/index.html",
+    ]
+}
+
+print("\n🔄 Purging Cloudflare Edge Cache for index.html...")
 try:
-    import urllib.request
-    import json
-    
-    zone_id = "725f3d648139c27172638441415bf9d2"
-    token = "cfut_Su0qFg1y8DIfMAMbGP9hNM89hW87cVhEBqfdVzeH84cb9675"
-    url = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/purge_cache"
-    
     req = urllib.request.Request(
-        url,
-        data=json.dumps({"purge_everything": True}).encode('utf-8'),
+        CF_PURGE_URL,
+        data=json.dumps(PURGE_PAYLOAD).encode("utf-8"),
         headers={
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json"
+            "Authorization": f"Bearer {CLOUDFLARE_API_TOKEN}",
+            "Content-Type": "application/json",
         },
-        method="POST"
+        method="POST",
     )
     with urllib.request.urlopen(req) as resp:
-        res = json.loads(resp.read().decode('utf-8'))
-        if res.get('success'):
-            print("🟢 Cloudflare Edge Cache successfully purged globally! 10/10 Enterprise Sync Complete.")
+        result = json.loads(resp.read().decode("utf-8"))
+        if result.get("success"):
+            print("✅ Cloudflare Edge Cache purged successfully! Users worldwide will get the new version instantly.")
         else:
-            print("Notice: Cloudflare Purge skipped (Token scoped to DNS edit). Edge Cache-Control headers ensure no-cache on index.html.")
+            errors = result.get("errors", [])
+            raise RuntimeError(f"Cloudflare purge API returned success=false. Errors: {errors}")
+except urllib.error.HTTPError as e:
+    body = e.read().decode("utf-8")
+    print(f"\n❌ CRITICAL: Cloudflare purge FAILED with HTTP {e.code}!")
+    print(f"Response body: {body}")
+    print("\n⚠️  ACTION REQUIRED: Go to dash.cloudflare.com → projectdemo.guru → Caching → Purge Everything")
+    print("   OR add 'Zone → Cache Purge → Purge' permission to the API token.")
+    raise SystemExit(1)
 except Exception as e:
-    print("Notice: Cloudflare Edge Cache-Control headers ensure instant update on index.html.")
-
+    print(f"\n❌ CRITICAL: Cloudflare purge FAILED: {e}")
+    print("\n⚠️  ACTION REQUIRED: Go to dash.cloudflare.com → projectdemo.guru → Caching → Purge Everything")
+    raise SystemExit(1)
