@@ -40,14 +40,10 @@ const GoogleMapsProvider = ({ children, apiKey }) => {
             return;
         }
 
-        console.log('Loading Google Maps API with key:', apiKey.substring(0, 10) + '...');
-
         // Create the script URL
         const scriptUrl = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&loading=async`;
-        console.log('Google Maps API URL:', scriptUrl);
 
         // Try to manually test the URL
-        console.log('You can test this URL manually in a new tab:', scriptUrl.replace('&loading=async', ''));
 
         // Load Google Maps script with proper loading attributes
         const script = document.createElement('script');

@@ -2,9 +2,7 @@ const { permissionsFor } = require('./auth');
 
 const ADMIN_PREFIXES = [
   '/admin/',
-  '/email/admin/',
-  '/test-grant-admin',
-  '/test-create-candidate-subscription'
+  '/email/admin/'
 ];
 
 const ADMIN_EXACT = new Set([
@@ -35,8 +33,7 @@ const VERIFIED_PREFIXES = [
 const RECENT_AUTH_PATHS = new Set([
   '/admin/firebase-service-account',
   '/admin/delete-user',
-  '/auth/purge-orphaned-auth',
-  '/test-grant-admin'
+  '/auth/purge-orphaned-auth'
 ]);
 
 function isAdminPath(pathname) {
@@ -55,13 +52,11 @@ function hasPermission(req, permission) {
 /** Route-level authorization policy installed after requireAuth. */
 function enforceApiPolicy(req, res, next) {
   const pathname = req.path;
-  const elevatedPermission = pathname === '/test-grant-admin'
-    ? 'users.roles.manage'
-    : (pathname === '/admin/firebase-service-account'
-      ? 'secrets.manage'
-      : (pathname.startsWith('/admin/payments/') || pathname === '/admin/payment-settings'
-        ? 'payments.manage'
-        : (pathname.startsWith('/admin/employer-applications/') ? 'users.update' : null)));
+  const elevatedPermission = pathname === '/admin/firebase-service-account'
+    ? 'secrets.manage'
+    : (pathname.startsWith('/admin/payments/') || pathname === '/admin/payment-settings'
+      ? 'payments.manage'
+      : (pathname.startsWith('/admin/employer-applications/') ? 'users.update' : null));
   if (elevatedPermission && !hasPermission(req, elevatedPermission)) {
     return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Insufficient permission', requestId: res.locals.requestId } });
   }

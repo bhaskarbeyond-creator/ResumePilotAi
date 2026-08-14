@@ -3,7 +3,6 @@ name: Security CI
 on:
   pull_request:
   push:
-    branches: ["arena/019ffe7b-resumepilotai"]
 
 permissions:
   contents: read
@@ -46,8 +45,8 @@ jobs:
       - name: Security and authorization unit tests
         run: npm run test:security
 
-      - name: Firestore rules adversarial tests
-        run: npm run test:firestore
+      - name: Firebase rules adversarial tests
+        run: npm run test:firebase-rules
 
       - name: Production build
         run: npm run build
@@ -62,7 +61,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if git grep -nIE 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|sk_(live|test)_[A-Za-z0-9]{16,}|AIza[0-9A-Za-z_-]{30,}' -- ':!package-lock.json' ':!backend/package-lock.json' ':!tests/**'; then
+          if git grep -nIE 'sk_(live|test)_[A-Za-z0-9]{16,}|AIza[0-9A-Za-z_-]{30,}|rzp_(live|test)_[A-Za-z0-9]{8,}|nvapi-[A-Za-z0-9_-]{10,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}' -- ':!package-lock.json' ':!backend/package-lock.json' ':!tests/**'; then
             echo 'Potential secret material found in tracked files.' >&2
             exit 1
           fi

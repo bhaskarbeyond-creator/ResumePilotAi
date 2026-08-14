@@ -82,10 +82,10 @@ This document deliberately does **not** certify the application for production. 
 
 ### Local evidence
 
-- `npm run test:security`: PASS (XSS/static security tests plus backend unit/integration tests).
-- `npm --prefix backend test`: PASS (21 tests at the time of this report).
+- `npm run test:security`: PASS — 62 tests total (22 root static/XSS/MFA tests and 40 backend OAuth/payment/reset/auth/RBAC/rate-limit/SSRF/HTTP tests).
+- `npm --prefix backend test`: PASS (40 tests at the time of this report).
 - `npm run build`: PASS.
-- `npm run lint`: PASS with **0 errors and 545 legacy warnings**; warnings remain technical debt.
+- `npm run lint`: PASS with **0 errors and 558 legacy warnings**; warnings remain technical debt.
 - `npm run audit:production`: PASS.
 - Full root and backend audits (including development tooling): Critical 0, High 0, Moderate 0. Firebase CLI transitive packages are constrained to patched versions; `firebase --version` passes, while full Emulator compatibility still requires Java-enabled CI validation.
 - Frontend production audit: Critical 0, High 0, Moderate 0 (migrated deprecated `@measured/puck` to `@puckeditor/core`).
@@ -107,18 +107,20 @@ This document deliberately does **not** certify the application for production. 
 12. Validate Workload Identity/ADC, IAM least privilege, Firestore TTL policies for token/state/quota documents, secret rotation, backups, alerting, centralized logs, and incident response.
 13. Rotate the SSH password that existed in historical `scratch/setup_ssh.py` revisions and remove it from reachable Git history with an approved history-rewrite procedure. The current tree no longer contains the credential and now has a tracked-secret regression test, but source removal does not revoke a leaked credential.
 14. Restrict or rotate the historical Firebase web API key found in old scratch-script revisions; although Firebase web keys are public identifiers, provider restrictions and quotas must be verified.
-15. Run CodeQL and the security CI templates from `docs/ci-templates/`. Arena's GitHub App could push source code but lacked GitHub's `workflows` permission, so workflow files could not be installed under `.github/workflows` in this session.
-16. Perform DAST/SAST, malware/file-upload testing, dependency license review, browser compatibility, accessibility, load/DoS testing, and an independent penetration test in a production-equivalent environment.
+15. Confirm the historical Razorpay test key ID is disabled or intentionally retained; rotate its pair if active and unnecessary.
+16. Run CodeQL and the security CI templates from `docs/ci-templates/`. Arena's GitHub App could push source code but lacked GitHub's `workflows` permission, so workflow files could not be installed under `.github/workflows` in this session.
+17. Perform DAST/SAST, malware/file-upload testing, dependency license review, browser compatibility, accessibility, load/DoS testing, and an independent penetration test in a production-equivalent environment.
 
 ## Known remaining risks / not yet complete
 
-- 545 lint warnings remain; many are unused legacy code and hook dependency warnings. Lint has no errors, but warnings should be burned down rather than hidden indefinitely.
+- 558 lint warnings remain; many are unused legacy code and hook dependency warnings. Lint has no errors, but warnings should be burned down rather than hidden indefinitely.
 - Frontend bundles remain very large; this is primarily performance/availability debt.
 - Dependency audits are currently clean, but forced transitive overrides (including Firebase CLI development tooling) and upstream Firebase/Google releases require continuous compatibility and advisory monitoring.
 - The PDF renderer uses Chromium `--no-sandbox` for container compatibility. Egress is blocked at the browser context and HTML is sanitized, but production should run the renderer in a dedicated locked-down sandboxed worker/container.
 - Firebase custom-token OAuth is intentionally blocked from auto-linking existing email/MFA accounts. A separate authenticated account-linking flow is not implemented.
 - Native LinkedIn/GitHub MFA requires configuring those providers through Firebase/Identity Platform OIDC. The custom-token compatibility flow refuses accounts with enrolled MFA instead of bypassing the second factor.
 - Provider refund handling beyond Stripe still requires provider webhook implementations and external contract validation.
+- Recurring billing is not production-proven: current provider flows primarily create one-time orders/intents, so the `autoRenew` preference must not be represented as an active provider subscription until recurring agreements and renewal/cancellation webhooks are implemented and validated.
 - Local process rate buckets are not a substitute for a distributed Redis/rate-limit service in a horizontally scaled deployment.
 - File upload malware scanning, content disarm/reconstruction, and a quarantined object-storage pipeline remain to be implemented. Image-resume import is intentionally unavailable until that boundary exists.
 - Automatic/interactive account merging and browser-driven backup restore are disabled to prevent cross-provider identity and entitlement corruption; a transactional provider-aware server workflow remains to be implemented.

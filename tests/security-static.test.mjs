@@ -40,6 +40,17 @@ test('tracked files contain no recognizable private credentials', () => {
   assert.deepEqual(findings, []);
 });
 
+test('tracked operational scripts do not disable TLS verification', () => {
+  const tracked = execFileSync('git', ['ls-files', '-z', 'scratch'], { cwd: root }).toString().split('\0').filter(Boolean);
+  const findings = [];
+  for (const file of tracked) {
+    let content;
+    try { content = read(file); } catch (_) { continue; }
+    if (/verify\s*=\s*False|CERT_NONE|check_hostname\s*=\s*False|_create_unverified_context/i.test(content)) findings.push(file);
+  }
+  assert.deepEqual(findings, []);
+});
+
 test('all browser HTML sinks are centralized or import the sanitizer', () => {
   const failures = [];
   for (const file of sourceFiles('src', new Set(['.js', '.jsx']))) {
@@ -56,6 +67,13 @@ test('all browser HTML sinks are centralized or import the sanitizer', () => {
   assert.deepEqual(failures, []);
 });
 
+test('application logs do not dump request bodies or browser API-key URLs', () => {
+  const aiRoutes = read('backend/routes/ai.js');
+  const maps = read('src/components/JobsListings/GoogleMapsProvider.jsx');
+  assert.doesNotMatch(aiRoutes, /console\.(?:log|warn|error)\([^\n]*req\.body/);
+  assert.doesNotMatch(maps, /console\.(?:log|warn|error)\([^\n]*(?:apiKey|scriptUrl)/);
+});
+
 test('client bundles contain no provider secret environment variables or direct AI bearer calls', () => {
   const failures = [];
   for (const file of sourceFiles('src', new Set(['.js', '.jsx']))) {
@@ -67,10 +85,11 @@ test('client bundles contain no provider secret environment variables or direct 
   assert.deepEqual(failures, []);
 });
 
-test('backend contains no soft-verified/demo payment success or disabled TLS verification', () => {
+test('backend contains no soft-verified/demo payment success, privileged test routes, or disabled TLS verification', () => {
   const backend = read('backend/index.js');
   const email = read('backend/routes/email.js');
   assert.doesNotMatch(backend, /soft-verif|demo-soft-verified|demoMode:\s*true/i);
+  assert.doesNotMatch(backend, /\/api\/test-(?:grant-admin|create-candidate-subscription)/);
   assert.doesNotMatch(email, /rejectUnauthorized\s*:\s*false/);
   for (const file of ['api/nvidia.php', 'public/api/nvidia.php', 'nvidia-proxy.php', 'public/nvidia-proxy.php']) {
     assert.match(read(file), /LEGACY_AI_PROXY_RETIRED/);

@@ -18,6 +18,36 @@ const cryptoRandom = require('crypto');
 const { requireAuth, requirePermission, permissionsFor } = require('./security/auth');
 const { enforceApiPolicy } = require('./security/policy');
 const {
+    assertInternalOrder,
+    validateStripePaymentIntent,
+    validatePayPalOrder,
+    validateRazorpaySignature,
+    validateRazorpayPayment,
+    validatePaytmPayment,
+    validatePhonePePayment,
+    isDuplicateProviderEventError,
+    shouldReverseEntitlement,
+    calculateMembershipEnd,
+} = require('./security/payments');
+const {
+    hashOpaque,
+    createPkceChallenge,
+    parseCookies,
+    assertStateBinding,
+    assertStateRecord,
+    assertVerifiedIdentity,
+    assertAccountLinkSafe,
+    assertExchangeRecord,
+} = require('./security/oauth');
+const {
+    hashToken,
+    isOpaqueToken,
+    assertPasswordPolicy,
+    assertTokenRecord,
+    assertLeaseOwner,
+    minimumEnumerationDelay,
+} = require('./security/reset');
+const {
     aiAccountLimiter,
     notificationAccountLimiter,
     exportAccountLimiter,
@@ -218,7 +248,7 @@ app.use('/api/contact', contactAccountLimiter);
 app.use('/api/messages', messagingAccountLimiter);
 // Defense in depth for administrative namespaces. The route policy also protects aliases
 // such as /api/auth/purge-orphaned-auth and modular email routes mounted under /api.
-app.use(['/api/admin', '/api/test-grant-admin', '/api/test-create-candidate-subscription', '/api/email/admin'], requirePermission('system.config.write'));
+app.use(['/api/admin', '/api/email/admin'], requirePermission('system.config.write'));
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET || 'missing');
 // Server-owned catalog. Amounts are smallest currency units and never derive from a browser request.
@@ -330,10 +360,7 @@ async function activateVerifiedOrder(orderRef, gatewayLabel, providerPaymentId) 
         const userRef = db.collection('users').doc(order.uid);
         const userSnap = await tx.get(userRef);
         if (!userSnap.exists) throw new Error('PAYMENT_USER_NOT_FOUND');
-        const existingEnd = userSnap.data().membershipEnds?.toDate?.() || new Date(userSnap.data().membershipEnds || 0);
-        const startDate = existingEnd > new Date() ? existingEnd : new Date();
-        const membershipEnds = new Date(startDate);
-        membershipEnds.setMonth(membershipEnds.getMonth() + plan.months);
+        const membershipEnds = calculateMembershipEnd(userSnap.data().membershipEnds, plan.months);
         tx.update(userRef, {
             membership: 'Premium', membershipEnds, paymentStatus: 'ACTIVE',
             lastPaymentGateway: gatewayLabel, lastPaymentOrderId: orderRef.id, cancellationRequested: false,
@@ -449,7 +476,9 @@ app.post('/api/stripe-webhook', async (req, res) => {
         const orderSnap = await orderRef.get();
         if (!orderSnap.exists) return res.status(400).json({ error: 'Unknown payment order' });
         const order = orderSnap.data();
-        if (order.provider !== 'stripe' || order.providerPaymentIntentId !== paymentData.id || order.amount !== paymentData.amount || order.currency !== String(paymentData.currency).toLowerCase() || order.uid !== paymentData.metadata?.uid || order.planId !== paymentData.metadata?.planId) {
+        try {
+            validateStripePaymentIntent(order, paymentData, orderId);
+        } catch (_) {
             return res.status(400).json({ error: 'Payment order mismatch' });
         }
         const userId = order.uid;
@@ -458,7 +487,7 @@ app.post('/api/stripe-webhook', async (req, res) => {
             // Firestore create is atomic: replayed or concurrent events cannot both claim the event id.
             await eventRef.create({ provider: 'stripe', eventType: event.type, orderId, receivedAt: admin.firestore.FieldValue.serverTimestamp() });
         } catch (err) {
-            if (err.code === 6 || err.code === 'already-exists') return res.json({ received: true, duplicate: true });
+            if (isDuplicateProviderEventError(err)) return res.json({ received: true, duplicate: true });
             throw err;
         }
         console.log(`[Stripe Webhook] verified order ${orderId}`);
@@ -473,10 +502,7 @@ app.post('/api/stripe-webhook', async (req, res) => {
                 const userRef = db.collection('users').doc(userId);
                 const userSnap = await tx.get(userRef);
                 if (!userSnap.exists) throw new Error('PAYMENT_USER_NOT_FOUND');
-                const existingEnd = userSnap.data().membershipEnds?.toDate?.() || new Date(userSnap.data().membershipEnds || 0);
-                const startDate = existingEnd > new Date() ? existingEnd : new Date();
-                const expDate = new Date(startDate);
-                expDate.setMonth(expDate.getMonth() + months);
+                const expDate = calculateMembershipEnd(userSnap.data().membershipEnds, months);
                 tx.update(userRef, {
                     membership: 'Premium', membershipEnds: expDate, autoRenew: true,
                     paymentStatus: 'ACTIVE', lastPaymentGateway: 'Stripe', lastPaymentOrderId: orderId, cancellationRequested: false,
@@ -533,7 +559,7 @@ app.post('/api/stripe-webhook', async (req, res) => {
         try {
             await eventRef.create({ provider: 'stripe', eventType: event.type, orderId: orderRef.id, receivedAt: admin.firestore.FieldValue.serverTimestamp() });
         } catch (error) {
-            if (error.code === 6 || error.code === 'already-exists') return res.json({ received: true, duplicate: true });
+            if (isDuplicateProviderEventError(error)) return res.json({ received: true, duplicate: true });
             throw error;
         }
         await db.runTransaction(async tx => {
@@ -541,7 +567,7 @@ app.post('/api/stripe-webhook', async (req, res) => {
             const userSnap = await tx.get(userRef);
             tx.update(orderRef, { status, reversedAt: admin.firestore.FieldValue.serverTimestamp() });
             // Do not remove a later legitimate purchase when an older order is reversed.
-            if (userSnap.exists && userSnap.data().lastPaymentOrderId === orderRef.id) {
+            if (userSnap.exists && shouldReverseEntitlement(userSnap.data(), orderRef.id)) {
                 tx.update(userRef, {
                     membership: 'Basic', paymentStatus: status, autoRenew: false,
                     membershipEnds: new Date(), lastPaymentSync: admin.firestore.FieldValue.serverTimestamp()
@@ -634,7 +660,10 @@ app.post('/api/paypal/verify', async (req, res) => {
         const orderRef = db.collection('payment_orders').doc(paymentOrderId);
         const internalSnap = await orderRef.get();
         const internal = internalSnap.data();
-        if (!internalSnap.exists || internal.uid !== req.user.uid || internal.provider !== 'paypal' || internal.providerOrderId !== providerOrderId) {
+        try {
+            if (!internalSnap.exists) throw new Error('ORDER_NOT_FOUND');
+            assertInternalOrder(internal, { uid: req.user.uid, provider: 'paypal', providerOrderId });
+        } catch (_) {
             return res.status(404).json({ verified: false, error: 'Order not found' });
         }
         const { clientId, clientSecret, baseUrl } = await paypalConfig();
@@ -643,98 +672,20 @@ app.post('/api/paypal/verify', async (req, res) => {
             headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, timeout: 10_000
         });
         const providerOrder = await providerRes.json();
-        const purchase = providerOrder.purchase_units?.[0];
-        const amount = Math.round(Number(purchase?.amount?.value) * 100);
-        if (!providerRes.ok || providerOrder.status !== 'COMPLETED'
-            || purchase?.reference_id !== paymentOrderId || purchase?.custom_id !== req.user.uid
-            || amount !== internal.amount || String(purchase?.amount?.currency_code).toUpperCase() !== internal.currency) {
+        let captureId;
+        try {
+            if (!providerRes.ok) throw new Error('PAYPAL_PROVIDER_ERROR');
+            captureId = validatePayPalOrder(internal, providerOrder, {
+                uid: req.user.uid, paymentOrderId, providerOrderId
+            });
+        } catch (_) {
             return res.status(400).json({ verified: false, error: 'PayPal order verification failed' });
         }
-        const captureId = purchase?.payments?.captures?.[0]?.id || providerOrderId;
         const active = await activateVerifiedOrder(orderRef, 'PayPal', captureId);
         return res.json({ verified: true, orderId: providerOrderId, paymentOrderId, status: active.status, membershipEnds: active.membershipEnds });
     } catch (err) {
         console.error('[PayPal verify]', err.message);
         return res.status(err.status || 502).json({ verified: false, error: 'PayPal verification unavailable' });
-    }
-});
-
-app.post('/api/test-create-candidate-subscription', async (req, res) => {
-    if (process.env.NODE_ENV !== 'test') {
-        return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Test fixture route is disabled', requestId: res.locals.requestId } });
-    }
-    try {
-        const { email, name, plan = 'yearly', customerState = 'Maharashtra', customerStateCode = '27' } = req.body;
-        const testUid = `UID_TEST_${Date.now()}_${Math.floor(Math.random()*1000)}`;
-        const testTxnId = `TXN_TEST_${Date.now()}`;
-        const invoiceNo = `RPAI/26-27/${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-
-        const invoiceData = {
-            id: testTxnId,
-            invoiceId: testTxnId,
-            invoiceNumber: invoiceNo,
-            transactionId: testTxnId,
-            paymentReference: testTxnId,
-            customerName: name || 'Playwright Test Candidate',
-            customerEmail: email || `test_${Date.now()}@example.com`,
-            customerState: customerState,
-            customerStateCode: customerStateCode,
-            customerCountry: 'India',
-            customerGstin: '',
-            customerType: 'B2C',
-            amount: plan === 'yearly' ? 588.82 : 234.82,
-            subtotal: plan === 'yearly' ? 499.00 : 199.00,
-            taxAmount: plan === 'yearly' ? 89.82 : 35.82,
-            cgstAmount: plan === 'yearly' ? 44.91 : 17.91,
-            sgstAmount: plan === 'yearly' ? 44.91 : 17.91,
-            igstAmount: 0,
-            gstRate: 18,
-            currency: 'INR',
-            paymentMethod: 'Razorpay UPI (Test)',
-            paymentStatus: 'PAID',
-            formattedDate: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-            invoiceDate: new Date().toISOString(),
-            created_at: new Date().toISOString(),
-            userId: testUid,
-            customerSnapshot: {
-                name: name || 'Playwright Test Candidate',
-                email: email,
-                state: customerState,
-                stateCode: customerStateCode,
-                country: 'India',
-                gstin: '',
-                type: 'B2C'
-            }
-        };
-
-        if (db) {
-            await db.collection('invoices').doc(testTxnId).set(invoiceData);
-            await db.collection('users').doc(testUid).collection('transactions').doc(testTxnId).set(invoiceData);
-            await db.collection('users').doc(testUid).set({
-                email: email,
-                displayName: name || 'Playwright Test Candidate',
-                isPro: true,
-                isPremium: true,
-                subscription: {
-                    status: 'ACTIVE',
-                    plan: plan,
-                    membershipTier: 'ANNUAL VIP PRO',
-                    expiresAt: new Date(Date.now() + 365*24*3600*1000).toISOString()
-                }
-            }, { merge: true });
-        }
-
-        return res.json({
-            success: true,
-            uid: testUid,
-            email: email,
-            name: name,
-            txnId: testTxnId,
-            invoiceNo: invoiceNo
-        });
-    } catch (err) {
-        console.error('[test-create-candidate-subscription] Error:', err);
-        return res.status(500).json({ success: false, error: err.message });
     }
 });
 
@@ -805,21 +756,28 @@ app.post('/api/razorpay/verify-payment', async (req, res) => {
         const orderRef = db.collection('payment_orders').doc(paymentOrderId);
         const orderSnap = await orderRef.get();
         const order = orderSnap.data();
-        if (!orderSnap.exists || order.uid !== req.user.uid || order.provider !== 'razorpay' || order.providerOrderId !== providerOrderId) {
+        try {
+            if (!orderSnap.exists) throw new Error('ORDER_NOT_FOUND');
+            assertInternalOrder(order, { uid: req.user.uid, provider: 'razorpay', providerOrderId });
+        } catch (_) {
             return res.status(404).json({ verified: false, error: 'Order not found' });
         }
         const { keyId, keySecret } = await getRazorpayKeys();
         if (!keyId || !keySecret) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
-        const expected = crypto.createHmac('sha256', keySecret).update(`${providerOrderId}|${paymentId}`).digest('hex');
-        const validSignature = signature.length === expected.length && crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
-        if (!validSignature) return res.status(400).json({ verified: false, error: 'Payment signature verification failed' });
+        try {
+            validateRazorpaySignature(keySecret, providerOrderId, paymentId, signature);
+        } catch (_) {
+            return res.status(400).json({ verified: false, error: 'Payment signature verification failed' });
+        }
         // A valid callback signature alone is not proof of capture. Confirm provider state and amount.
         const paymentRes = await fetch(`https://api.razorpay.com/v1/payments/${encodeURIComponent(paymentId)}`, {
             headers: { 'Authorization': 'Basic ' + Buffer.from(`${keyId}:${keySecret}`).toString('base64') }, timeout: 10_000
         });
         const payment = await paymentRes.json();
-        if (!paymentRes.ok || payment.order_id !== providerOrderId || payment.status !== 'captured'
-            || Number(payment.amount) !== order.amount || String(payment.currency).toUpperCase() !== order.currency) {
+        try {
+            if (!paymentRes.ok) throw new Error('RAZORPAY_PROVIDER_ERROR');
+            validateRazorpayPayment(order, payment, providerOrderId);
+        } catch (_) {
             return res.status(400).json({ verified: false, error: 'Provider payment is not captured or does not match the order' });
         }
         const active = await activateVerifiedOrder(orderRef, 'Razorpay', paymentId);
@@ -944,7 +902,10 @@ app.post('/api/paytm/verify-transaction', async (req, res) => {
         const orderRef = db.collection('payment_orders').doc(orderId);
         const snap = await orderRef.get();
         const order = snap.data();
-        if (!snap.exists || order.uid !== req.user.uid || order.provider !== 'paytm' || order.providerOrderId !== orderId) {
+        try {
+            if (!snap.exists) throw new Error('ORDER_NOT_FOUND');
+            assertInternalOrder(order, { uid: req.user.uid, provider: 'paytm', providerOrderId: orderId });
+        } catch (_) {
             return res.status(404).json({ verified: false, error: 'Order not found' });
         }
         const { mid, key, baseUrl } = await getPaytmConfig();
@@ -960,12 +921,14 @@ app.post('/api/paytm/verify-transaction', async (req, res) => {
         });
         const providerData = await providerRes.json();
         const body = providerData?.body || {};
-        const paidSubunits = Math.round(Number(body.txnAmount) * 100);
-        if (!providerRes.ok || body?.resultInfo?.resultStatus !== 'TXN_SUCCESS'
-            || paidSubunits !== order.amount || String(body.currency || order.currency).toUpperCase() !== order.currency) {
+        let providerPaymentId;
+        try {
+            if (!providerRes.ok) throw new Error('PAYTM_PROVIDER_ERROR');
+            providerPaymentId = validatePaytmPayment(order, body);
+        } catch (_) {
             return res.status(400).json({ verified: false, error: 'Provider transaction is not successful or does not match the order' });
         }
-        const active = await activateVerifiedOrder(orderRef, 'Paytm', body.txnId);
+        const active = await activateVerifiedOrder(orderRef, 'Paytm', providerPaymentId);
         return res.json({ verified: true, status: active.status, txnId: body.txnId, orderId, membershipEnds: active.membershipEnds });
     } catch (err) {
         console.error('[Paytm verify]', err.message);
@@ -1023,7 +986,10 @@ app.post('/api/phonepe/status', async (req, res) => {
         const orderRef = db.collection('payment_orders').doc(orderId);
         const snap = await orderRef.get();
         const order = snap.data();
-        if (!snap.exists || order.uid !== req.user.uid || order.provider !== 'phonepe' || order.providerOrderId !== orderId) {
+        try {
+            if (!snap.exists) throw new Error('ORDER_NOT_FOUND');
+            assertInternalOrder(order, { uid: req.user.uid, provider: 'phonepe', providerOrderId: orderId });
+        } catch (_) {
             return res.status(404).json({ verified: false, error: 'Order not found' });
         }
         const { merchantId, saltKey, saltIndex, baseUrl } = await getPhonePeConfig();
@@ -1034,14 +1000,15 @@ app.post('/api/phonepe/status', async (req, res) => {
             timeout: 10_000
         });
         const providerData = await providerRes.json();
-        const payment = providerData?.data || {};
-        if (!providerRes.ok || !providerData?.success || payment.state !== 'COMPLETED'
-            || Number(payment.amount) !== order.amount) {
-            return res.status(400).json({ verified: false, state: payment.state || 'UNKNOWN', error: 'Provider transaction is not complete or does not match the order' });
+        let paymentId;
+        try {
+            if (!providerRes.ok) throw new Error('PHONEPE_PROVIDER_ERROR');
+            paymentId = validatePhonePePayment(order, providerData);
+        } catch (_) {
+            return res.status(400).json({ verified: false, state: providerData?.data?.state || 'UNKNOWN', error: 'Provider transaction is not complete or does not match the order' });
         }
-        const paymentId = payment?.paymentInstrument?.pgTransactionId || orderId;
         const active = await activateVerifiedOrder(orderRef, 'PhonePe', paymentId);
-        return res.json({ verified: true, status: active.status, state: payment.state, paymentId, orderId, membershipEnds: active.membershipEnds });
+        return res.json({ verified: true, status: active.status, state: providerData.data.state, paymentId, orderId, membershipEnds: active.membershipEnds });
     } catch (err) {
         console.error('[PhonePe status]', err.message);
         return res.status(err.status || 502).json({ verified: false, error: 'PhonePe verification unavailable' });
@@ -1077,11 +1044,6 @@ app.post('/api/check', async (req, res) => {
         console.error('[Entitlement check]', error.message);
         return res.status(503).json({ status: 'false', error: 'Entitlement service unavailable' });
     }
-});
-
-app.post('/api/date', async (req, res) => {
-    var current_date = new Date();
-    res.json({ date: current_date });
 });
 
 app.post('/api/messages/conversations', async (req, res) => {
@@ -2093,9 +2055,9 @@ app.post('/api/jobs/naukri', async (req, res) => {
     }
 });
 
-/// Just to check if api is working
-app.get('/api/return', async (req, res) => {
-    res.end('Hello World\n');
+app.get('/healthz', (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    return res.json({ status: 'ok', firebaseAdminConfigured: Boolean(db && admin) });
 });
 
 
@@ -2151,32 +2113,6 @@ app.get('/api/linkedin-scraper', async (req, res) => {
         return res.status(502).json({ success: false, error: 'Job source temporarily unavailable' });
     } finally {
         if (browser) await browser.close().catch(() => {});
-    }
-});
-
-// Legacy URL retained for automation compatibility; privilege authority is a Firebase
-// custom claim and only SUPER_ADMIN (`users.roles.manage`) can assign it.
-app.post('/api/test-grant-admin', async (req, res) => {
-    try {
-        const uid = String(req.body.uid || '');
-        if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid) || !db || !admin?.auth) {
-            return res.status(400).json({ success: false, error: 'Valid UID and Firebase services are required' });
-        }
-        const target = await admin.auth().getUser(uid);
-        const existingClaims = target.customClaims || {};
-        await admin.auth().setCustomUserClaims(uid, { ...existingClaims, role: 'ADMIN' });
-        await admin.auth().revokeRefreshTokens(uid);
-        const batch = db.batch();
-        batch.set(db.collection('users').doc(uid), { role: 'ADMIN', updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
-        batch.set(db.collection('security_audit_logs').doc(), {
-            action: 'ADMIN_ROLE_GRANTED', actorUid: req.user.uid, targetUid: uid,
-            requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp()
-        });
-        await batch.commit();
-        return res.json({ success: true, uid, message: 'Admin role granted. The target must refresh their ID token.' });
-    } catch (err) {
-        console.error('[Role grant]', err.message);
-        return res.status(500).json({ success: false, error: 'Unable to grant role' });
     }
 });
 
@@ -2318,15 +2254,14 @@ app.post('/api/admin/firebase-service-account', async (req, res) => {
 
 // Password reset: only a hash is persisted; raw tokens are never stored server-side.
 const RESET_TOKEN_TTL_MS = 15 * 60 * 1000;
-const hashResetToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 app.post(['/api/auth/custom-password-reset', '/api/notify/password-reset'], async (req, res) => {
     const email = String(req.body.email || req.body.userEmail || '').trim().toLowerCase();
     const startedAt = Date.now();
     // Equalize observable responses for malformed, missing and existing accounts.
     const genericResponse = { success: true, message: 'If an account exists, a password reset email will be sent shortly.' };
     const respond = async () => {
-        const minimumMs = 300 + crypto.randomInt(0, 100);
-        if (Date.now() - startedAt < minimumMs) await new Promise(resolve => setTimeout(resolve, minimumMs - (Date.now() - startedAt)));
+        const delayMs = minimumEnumerationDelay(startedAt, Date.now(), crypto.randomInt(0, 100));
+        if (delayMs > 0) await new Promise(resolve => setTimeout(resolve, delayMs));
         return res.json(genericResponse);
     };
     if (!email || !/^\S+@\S+\.\S+$/.test(email)) return respond();
@@ -2336,7 +2271,7 @@ app.post(['/api/auth/custom-password-reset', '/api/notify/password-reset'], asyn
         try { user = await admin.auth().getUserByEmail(email); }
         catch (err) { if (err.code === 'auth/user-not-found') return respond(); throw err; }
         const token = crypto.randomBytes(32).toString('base64url');
-        const tokenHash = hashResetToken(token);
+        const tokenHash = hashToken(token);
         const expiresAt = Date.now() + RESET_TOKEN_TTL_MS;
         const stateRef = db.collection('password_reset_state').doc(user.uid);
         const tokenRef = db.collection('password_reset_tokens').doc(tokenHash);
@@ -2367,7 +2302,7 @@ app.post(['/api/auth/send-verification-email', '/api/notify/send-verification-em
     try {
         if (!db) throw new Error('Verification service unavailable');
         const token = crypto.randomBytes(32).toString('base64url');
-        const tokenHash = hashResetToken(token);
+        const tokenHash = hashToken(token);
         const expiresAt = Date.now() + VERIFICATION_TOKEN_TTL_MS;
         const stateRef = db.collection('email_verification_state').doc(req.user.uid);
         const tokenRef = db.collection('email_verifications').doc(tokenHash);
@@ -2391,10 +2326,10 @@ app.post(['/api/auth/send-verification-email', '/api/notify/send-verification-em
 app.post('/api/auth/verify-email-token', async (req, res) => {
     const email = String(req.body.email || '').trim().toLowerCase();
     const token = String(req.body.token || '');
-    if (!/^\S+@\S+\.\S+$/.test(email) || !/^[A-Za-z0-9_-]{43}$/.test(token) || !db || !admin?.auth) {
+    if (!/^\S+@\S+\.\S+$/.test(email) || !isOpaqueToken(token) || !db || !admin?.auth) {
         return res.status(400).json({ success: false, error: 'Invalid or expired email verification link.' });
     }
-    const tokenHash = hashResetToken(token);
+    const tokenHash = hashToken(token);
     const tokenRef = db.collection('email_verifications').doc(tokenHash);
     const leaseId = crypto.randomUUID();
     try {
@@ -2405,11 +2340,8 @@ app.post('/api/auth/verify-email-token', async (req, res) => {
             uid = record?.uid;
             const stateRef = uid ? db.collection('email_verification_state').doc(uid) : null;
             const stateSnap = stateRef ? await tx.get(stateRef) : null;
-            const activeLease = record?.leaseId && Number(record.leaseExpiresAt || 0) > Date.now();
-            if (!tokenSnap.exists || !stateSnap?.exists || stateSnap.data().activeTokenHash !== tokenHash
-                || record.email !== email || record.usedAt || Number(record.expiresAt) < Date.now() || activeLease) {
-                throw new Error('INVALID_VERIFICATION_TOKEN');
-            }
+            if (!tokenSnap.exists || !stateSnap?.exists) throw new Error('INVALID_VERIFICATION_TOKEN');
+            assertTokenRecord({ record, state: stateSnap.data(), email, tokenHash });
             tx.update(tokenRef, { leaseId, leaseExpiresAt: Date.now() + 60_000 });
         });
         const user = await admin.auth().getUser(uid);
@@ -2417,7 +2349,8 @@ app.post('/api/auth/verify-email-token', async (req, res) => {
         await admin.auth().updateUser(uid, { emailVerified: true });
         await db.runTransaction(async tx => {
             const latest = await tx.get(tokenRef);
-            if (!latest.exists || latest.data().leaseId !== leaseId) throw new Error('INVALID_VERIFICATION_TOKEN');
+            if (!latest.exists) throw new Error('INVALID_VERIFICATION_TOKEN');
+            assertLeaseOwner(latest.data(), leaseId);
             tx.update(tokenRef, { usedAt: admin.firestore.FieldValue.serverTimestamp(), leaseId: admin.firestore.FieldValue.delete(), leaseExpiresAt: admin.firestore.FieldValue.delete() });
             tx.set(db.collection('email_verification_state').doc(uid), {
                 activeTokenHash: admin.firestore.FieldValue.delete(),
@@ -2502,7 +2435,7 @@ app.post('/api/admin/payments/refund', async (req, res) => {
                 status: 'REFUNDED', providerRefundId: refundId, refundReason: reason,
                 refundedAt: admin.firestore.FieldValue.serverTimestamp()
             });
-            if (userSnap.exists && userSnap.data().lastPaymentOrderId === paymentOrderId) {
+            if (userSnap.exists && shouldReverseEntitlement(userSnap.data(), paymentOrderId)) {
                 tx.update(userRef, { membership: 'Basic', paymentStatus: 'REFUNDED', autoRenew: false, membershipEnds: new Date() });
             }
             tx.set(db.collection('security_audit_logs').doc(), {
@@ -2710,12 +2643,14 @@ app.post('/api/auth/set-user-password', async (req, res) => {
     const email = String(req.body.email || '').trim().toLowerCase();
     const newPassword = String(req.body.newPassword || '');
     const token = String(req.body.token || '');
-    if (!/^\S+@\S+\.\S+$/.test(email) || !/^[A-Za-z0-9_-]{43}$/.test(token)
-        || newPassword.length < 12 || newPassword.length > 128 || newPassword.toLowerCase().includes(email.split('@')[0])) {
+    try {
+        if (!isOpaqueToken(token)) throw new Error('INVALID_RESET_TOKEN');
+        assertPasswordPolicy(email, newPassword);
+    } catch (_) {
         return res.status(400).json({ success: false, error: 'A valid reset token, email, and a password of 12-128 characters not containing the email name are required.' });
     }
     if (!db || !admin?.auth) return res.status(503).json({ success: false, error: 'Password reset service unavailable.' });
-    const tokenHash = hashResetToken(token);
+    const tokenHash = hashToken(token);
     const ref = db.collection('password_reset_tokens').doc(tokenHash);
     const leaseId = crypto.randomUUID();
     try {
@@ -2725,21 +2660,20 @@ app.post('/api/auth/set-user-password', async (req, res) => {
             const record = snap.data();
             const stateRef = record?.uid ? db.collection('password_reset_state').doc(record.uid) : null;
             const stateSnap = stateRef ? await tx.get(stateRef) : null;
-            const activeLease = record?.leaseId && Number(record.leaseExpiresAt || 0) > Date.now();
-            if (!snap.exists || !stateSnap?.exists || stateSnap.data().activeTokenHash !== tokenHash
-                || record.usedAt || record.email !== email || record.expiresAt < Date.now() || activeLease) {
-                throw new Error('INVALID_RESET_TOKEN');
-            }
+            if (!snap.exists || !stateSnap?.exists) throw new Error('INVALID_RESET_TOKEN');
+            assertTokenRecord({ record, state: stateSnap.data(), email, tokenHash });
             tx.update(ref, { leaseId, leaseExpiresAt: Date.now() + 60_000 });
         });
         const user = await admin.auth().getUserByEmail(email);
         const record = (await ref.get()).data();
-        if (!record || record.uid !== user.uid || record.leaseId !== leaseId) throw new Error('INVALID_RESET_TOKEN');
+        if (!record || record.uid !== user.uid) throw new Error('INVALID_RESET_TOKEN');
+        assertLeaseOwner(record, leaseId);
         await admin.auth().updateUser(user.uid, { password: newPassword });
         await admin.auth().revokeRefreshTokens(user.uid);
         await db.runTransaction(async tx => {
             const latest = await tx.get(ref);
-            if (!latest.exists || latest.data().leaseId !== leaseId) throw new Error('INVALID_RESET_TOKEN');
+            if (!latest.exists) throw new Error('INVALID_RESET_TOKEN');
+            assertLeaseOwner(latest.data(), leaseId);
             tx.update(ref, { usedAt: admin.firestore.FieldValue.serverTimestamp(), leaseId: admin.firestore.FieldValue.delete(), leaseExpiresAt: admin.firestore.FieldValue.delete() });
             tx.set(db.collection('password_reset_state').doc(user.uid), {
                 activeTokenHash: admin.firestore.FieldValue.delete(),
@@ -2814,8 +2748,6 @@ app.post('/api/notify/subscription-cancelled', async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const OAUTH_STATE_TTL_MS = 5 * 60 * 1000;
 const OAUTH_EXCHANGE_TTL_MS = 60 * 1000;
-const oauthHash = value => crypto.createHash('sha256').update(String(value)).digest('hex');
-const parseCookies = req => Object.fromEntries(String(req.headers.cookie || '').split(';').map(part => part.trim().split('=').map(decodeURIComponent)).filter(pair => pair.length === 2));
 const oauthCookie = (state, clear = false) => {
     const secure = protocol === 'https' || process.env.NODE_ENV === 'production' ? '; Secure' : '';
     return `rp_oauth_state=${clear ? '' : encodeURIComponent(state)}; Path=/api/auth; HttpOnly; SameSite=Lax; Max-Age=${clear ? 0 : 300}${secure}`;
@@ -2854,8 +2786,8 @@ async function beginOAuth(provider, req, res) {
         if (!clientId) return res.status(503).send('OAuth provider is not configured.');
         const state = crypto.randomBytes(32).toString('base64url');
         const codeVerifier = crypto.randomBytes(32).toString('base64url');
-        const challenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
-        await db.collection('oauth_states').doc(oauthHash(state)).create({ provider, codeVerifier, expiresAt: Date.now() + OAUTH_STATE_TTL_MS });
+        const challenge = createPkceChallenge(codeVerifier);
+        await db.collection('oauth_states').doc(hashOpaque(state)).create({ provider, codeVerifier, expiresAt: Date.now() + OAUTH_STATE_TTL_MS });
         res.setHeader('Set-Cookie', oauthCookie(state));
         const callback = `${protocol}://${websiteName}/api/auth/${provider}/callback`;
         const url = provider === 'linkedin'
@@ -2874,47 +2806,41 @@ async function beginOAuth(provider, req, res) {
 
 async function consumeOAuthState(provider, req) {
     const state = typeof req.query.state === 'string' ? req.query.state : '';
-    const cookieState = parseCookies(req).rp_oauth_state || '';
-    const a = Buffer.from(state);
-    const b = Buffer.from(cookieState);
-    if (!state || a.length !== b.length || !crypto.timingSafeEqual(a, b)) throw new Error('OAUTH_STATE_INVALID');
-    const ref = db.collection('oauth_states').doc(oauthHash(state));
+    const cookieState = parseCookies(req.headers.cookie).rp_oauth_state || '';
+    assertStateBinding(state, cookieState);
+    const ref = db.collection('oauth_states').doc(hashOpaque(state));
     let record;
     await db.runTransaction(async tx => {
         const snap = await tx.get(ref);
         record = snap.data();
-        if (!snap.exists || record.provider !== provider || Number(record.expiresAt) < Date.now()) throw new Error('OAUTH_STATE_INVALID');
+        if (!snap.exists) throw new Error('OAUTH_STATE_INVALID');
+        assertStateRecord(record, provider);
         tx.delete(ref);
     });
     return record;
 }
 
 async function upsertFederatedIdentity({ provider, providerId, email, emailVerified, displayName, photoURL }) {
-    if (!admin?.auth || !db || !providerId || !email || emailVerified !== true) throw new Error('OAUTH_IDENTITY_INVALID');
-    const normalizedEmail = email.trim().toLowerCase();
-    let user;
-    let isNew = false;
+    if (!admin?.auth || !db) throw new Error('OAUTH_IDENTITY_INVALID');
+    const normalizedEmail = assertVerifiedIdentity({ provider, providerId, email, emailVerified });
     const providerUid = `${provider}:${String(providerId)}`.slice(0, 128);
-    try {
-        user = await admin.auth().getUser(providerUid);
-        if (String(user.email || '').toLowerCase() !== normalizedEmail) throw new Error('OAUTH_IDENTITY_CONFLICT');
-    } catch (uidError) {
-        if (uidError.code !== 'auth/user-not-found') throw uidError;
-        // Never auto-link by email: that would let a custom-token social flow bypass an
-        // existing account's password/MFA policy. Linking requires an authenticated flow.
-        try {
-            await admin.auth().getUserByEmail(normalizedEmail);
-            throw new Error('OAUTH_ACCOUNT_LINK_REQUIRED');
-        } catch (emailError) {
-            if (emailError.message === 'OAUTH_ACCOUNT_LINK_REQUIRED') throw emailError;
-            if (emailError.code !== 'auth/user-not-found') throw emailError;
-        }
-        user = await admin.auth().createUser({ uid: providerUid, email: normalizedEmail, emailVerified: true, displayName: displayName.slice(0, 100), photoURL: photoURL || undefined });
-        isNew = true;
+    let providerUser = null;
+    let emailOwner = null;
+    try { providerUser = await admin.auth().getUser(providerUid); }
+    catch (error) { if (error.code !== 'auth/user-not-found') throw error; }
+    if (!providerUser) {
+        try { emailOwner = await admin.auth().getUserByEmail(normalizedEmail); }
+        catch (error) { if (error.code !== 'auth/user-not-found') throw error; }
     }
-    if (user.multiFactor?.enrolledFactors?.length) {
-        throw new Error('OAUTH_MFA_REQUIRES_PRIMARY_SIGN_IN');
-    }
+    assertAccountLinkSafe({ providerUid, providerUser, emailOwner, normalizedEmail });
+    const isNew = !providerUser;
+    const user = providerUser || await admin.auth().createUser({
+        uid: providerUid,
+        email: normalizedEmail,
+        emailVerified: true,
+        displayName: String(displayName || 'User').slice(0, 100),
+        photoURL: photoURL || undefined
+    });
     if (!user.emailVerified) await admin.auth().updateUser(user.uid, { emailVerified: true });
     const parts = String(displayName || 'User').trim().split(/\s+/);
     const userRef = db.collection('users').doc(user.uid);
@@ -2936,7 +2862,7 @@ async function upsertFederatedIdentity({ provider, providerId, email, emailVerif
 
 async function issueOAuthExchange(uid, provider) {
     const code = crypto.randomBytes(32).toString('base64url');
-    await db.collection('oauth_exchange_codes').doc(oauthHash(code)).create({ uid, provider, expiresAt: Date.now() + OAUTH_EXCHANGE_TTL_MS, usedAt: null });
+    await db.collection('oauth_exchange_codes').doc(hashOpaque(code)).create({ uid, provider, expiresAt: Date.now() + OAUTH_EXCHANGE_TTL_MS, usedAt: null });
     return code;
 }
 
@@ -3012,14 +2938,15 @@ app.get('/api/auth/github/callback', async (req, res) => {
 
 app.post('/api/auth/oauth/exchange', async (req, res) => {
     const code = String(req.body.code || '');
-    if (!/^[A-Za-z0-9_-]{43}$/.test(code) || !db || !admin?.auth) return res.status(400).json({ error: 'Invalid OAuth exchange code' });
-    const ref = db.collection('oauth_exchange_codes').doc(oauthHash(code));
+    if (!isOpaqueToken(code) || !db || !admin?.auth) return res.status(400).json({ error: 'Invalid OAuth exchange code' });
+    const ref = db.collection('oauth_exchange_codes').doc(hashOpaque(code));
     try {
         let record;
         await db.runTransaction(async tx => {
             const snap = await tx.get(ref);
             record = snap.data();
-            if (!snap.exists || record.usedAt || Number(record.expiresAt) < Date.now()) throw new Error('INVALID_EXCHANGE_CODE');
+            if (!snap.exists) throw new Error('INVALID_EXCHANGE_CODE');
+            assertExchangeRecord(record);
             tx.update(ref, { usedAt: admin.firestore.FieldValue.serverTimestamp() });
         });
         const customToken = await admin.auth().createCustomToken(record.uid, { signInProvider: record.provider });
