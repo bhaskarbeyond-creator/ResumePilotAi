@@ -39,13 +39,13 @@ const View = () => {
 };
 
 // PayPal Button Component
-const PayPalButtonWrapper = ({ amount, currency, onSuccess, onError, selectedPlan }) => {
+const PayPalButtonWrapper = ({ amount, currency, onSuccess, onError, selectedPlan, couponCode }) => {
     const [{ isPending, isResolved, isRejected }] = usePayPalScriptReducer();
     const paymentOrderIdRef = React.useRef(null);
 
     const createOrder = async () => {
         const apiBase = `${conf.provider || 'http'}://${conf.backendUrl}`;
-        const response = await axios.post(`${apiBase}/api/paypal/create-order`, { planId: selectedPlan });
+        const response = await axios.post(`${apiBase}/api/paypal/create-order`, { planId: selectedPlan, couponCode });
         paymentOrderIdRef.current = response.data.paymentOrderId;
         return response.data.orderId;
     };
@@ -409,6 +409,7 @@ class Checkout extends Component {
             // Step 1: Create Stripe Payment Intent on backend (with idempotency key)
             const payRes = await axios.post(`${apiBase}/api/pay`, {
                 planId: this.props.selectedPlan,
+                couponCode: this.props.couponCode || null,
             }, {
                 headers: { 'Idempotency-Key': this.state.idempotencyKey },
             });
@@ -510,6 +511,7 @@ class Checkout extends Component {
             const apiBase = `${conf.provider || 'http'}://${conf.backendUrl}`;
             const orderRes = await axios.post(`${apiBase}/api/razorpay/create-order`, {
                 planId: this.props.selectedPlan,
+                couponCode: this.props.couponCode || null,
             });
 
             const orderData = orderRes.data;
@@ -594,6 +596,7 @@ class Checkout extends Component {
             const apiBase = `${conf.provider || 'http'}://${conf.backendUrl}`;
             const txnRes = await axios.post(`${apiBase}/api/paytm/initiate-transaction`, {
                 planId: this.props.selectedPlan,
+                couponCode: this.props.couponCode || null,
             });
 
             const txnData = txnRes.data;
@@ -678,6 +681,7 @@ class Checkout extends Component {
             const apiBase = `${conf.provider || 'http'}://${conf.backendUrl}`;
             const ppRes = await axios.post(`${apiBase}/api/phonepe/initiate`, {
                 planId: this.props.selectedPlan,
+                couponCode: this.props.couponCode || null,
             });
 
             const ppData = ppRes.data;
@@ -1541,6 +1545,7 @@ class Checkout extends Component {
                                                                     amount={price}
                                                                     currency={this.props.currencyCode || 'USD'}
                                                                     selectedPlan={this.props.selectedPlan}
+                                                                    couponCode={this.props.couponCode}
                                                                     onSuccess={this.handlePayPalSuccess}
                                                                     onError={this.handlePayPalError}
                                                                 />
@@ -2182,7 +2187,7 @@ class Checkout extends Component {
                                         <span className="text-sm font-black text-amber-900">{this.props.currency}{price}</span>
                                     </div>
                                     <div className="p-4">
-                                        <PayPalButtonWrapper amount={price} currency={this.props.currencyCode || 'USD'} selectedPlan={this.props.selectedPlan} onSuccess={this.handlePayPalSuccess} onError={this.handlePayPalError} />
+                                        <PayPalButtonWrapper amount={price} currency={this.props.currencyCode || 'USD'} selectedPlan={this.props.selectedPlan} couponCode={this.props.couponCode} onSuccess={this.handlePayPalSuccess} onError={this.handlePayPalError} />
                                     </div>
                                 </div>
 

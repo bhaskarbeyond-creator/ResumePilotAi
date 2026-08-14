@@ -254,23 +254,9 @@ const PlansPage = (props) => {
         setPublicStep(0);
     };
 
-    // Calculate Pro-Rated Upgrade Credit for existing active Premium Pro users
-    const getProRatedCredit = () => {
-        if (!userCurrentMembership.includes('Premium') || userCurrentMembership.includes('Expired')) return 0;
-        if (!membershipExpiryDate) return 0;
-        
-        const now = new Date();
-        const diffMs = membershipExpiryDate.getTime() - now.getTime();
-        if (diffMs <= 0) return 0;
-        
-        const remainingDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-        const dailyRate = subscriptionConfig.monthlyPrice / 30;
-        const credit = Math.round(remainingDays * dailyRate);
-        const subtotal = getRawSubtotal();
-        
-        // Cap credit at 50% of new plan subtotal to preserve platform margin
-        return Math.min(credit, Math.round(subtotal * 0.5));
-    };
+    // Existing paid time is preserved by extending the new term from membershipEnds on
+    // the server, so no client-calculated monetary credit is applied.
+    const getProRatedCredit = () => 0;
 
     // Pricing calculations for Dashboard View
     const getBaseMonthlyRate = () => {
@@ -857,6 +843,7 @@ const PlansPage = (props) => {
                                                 paytmEnabled={subscriptionConfig.paytmEnabled}
                                                 phonepeEnabled={subscriptionConfig.phonepeEnabled}
                                                 sandboxMode={subscriptionConfig.sandboxMode}
+                                                couponCode={appliedCoupon?.code || null}
                                                 previousStep={handlePublicPreviousStep}
                                                 stripe={stripe}
                                                 elements={elements}
@@ -1284,6 +1271,7 @@ const PlansPage = (props) => {
                                                     paytmEnabled={subscriptionConfig.paytmEnabled}
                                                     phonepeEnabled={subscriptionConfig.phonepeEnabled}
                                                     sandboxMode={subscriptionConfig.sandboxMode}
+                                                    couponCode={appliedCoupon?.code || null}
                                                     previousStep={() => setStep(1)}
                                                     stripe={stripe}
                                                     elements={elements}

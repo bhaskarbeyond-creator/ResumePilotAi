@@ -60,6 +60,7 @@ This document deliberately does **not** certify the application for production. 
 ### Payments
 
 - Stripe, PayPal, Razorpay, Paytm, and PhonePe use server-owned catalogs and verified caller UID; browser amount/currency/user fields are ignored.
+- Coupon codes are revalidated against server-owned records, discount arithmetic is server-side, single-use redemptions are reserved per account/order, and usage increments idempotently only after activation. Existing paid time is extended rather than converted to a client-calculated credit.
 - Missing credentials fail closed; demo/soft-verification success paths were removed.
 - PayPal and Razorpay orders are created on the server and bound to internal orders.
 - Razorpay requires a timing-safe signature check plus provider-side captured-payment/amount verification.
@@ -84,7 +85,7 @@ This document deliberately does **not** certify the application for production. 
 - `npm run test:security`: PASS (XSS/static security tests plus backend unit/integration tests).
 - `npm --prefix backend test`: PASS (21 tests at the time of this report).
 - `npm run build`: PASS.
-- `npm run lint`: PASS with **0 errors and 543 legacy warnings**; warnings remain technical debt.
+- `npm run lint`: PASS with **0 errors and 544 legacy warnings**; warnings remain technical debt.
 - `npm run audit:production`: PASS.
 - Frontend production audit: Critical 0, High 0, Moderate 0 (migrated deprecated `@measured/puck` to `@puckeditor/core`).
 - Backend production audit: Critical 0, High 0, Moderate 0 (Firebase transitive UUID advisory constrained to patched `uuid` 11.1.1 and backend tests pass).
@@ -108,7 +109,7 @@ This document deliberately does **not** certify the application for production. 
 
 ## Known remaining risks / not yet complete
 
-- 543 lint warnings remain; many are unused legacy code and hook dependency warnings. Lint has no errors, but warnings should be burned down rather than hidden indefinitely.
+- 544 lint warnings remain; many are unused legacy code and hook dependency warnings. Lint has no errors, but warnings should be burned down rather than hidden indefinitely.
 - Frontend bundles remain very large; this is primarily performance/availability debt.
 - Production dependency audits are currently clean, but forced transitive overrides and upstream Firebase/Google releases require continuous compatibility and advisory monitoring.
 - The PDF renderer uses Chromium `--no-sandbox` for container compatibility. Egress is blocked at the browser context and HTML is sanitized, but production should run the renderer in a dedicated locked-down sandboxed worker/container.

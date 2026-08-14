@@ -233,6 +233,82 @@ function providerPlan(planId, provider) {
     if (!plan) { const err = new Error('INVALID_PLAN'); err.status = 400; throw err; }
     return plan;
 }
+
+async function applyServerCoupon({ uid, orderId, plan, couponCode }) {
+    const code = String(couponCode || '').trim().toUpperCase();
+    if (!code) return { ...plan, originalAmount: plan.amount, couponCode: null, couponDiscount: 0 };
+    if (!/^[A-Z0-9_-]{3,32}$/.test(code) || !db) throw Object.assign(new Error('INVALID_COUPON'), { status: 400 });
+    const couponRef = db.collection('coupons').doc(code);
+    const redemptionId = crypto.createHash('sha256').update(`${code}:${uid}`).digest('hex');
+    const redemptionRef = db.collection('coupon_redemptions').doc(redemptionId);
+    let resolved;
+    await db.runTransaction(async tx => {
+        const couponSnap = await tx.get(couponRef);
+        if (!couponSnap.exists) throw Object.assign(new Error('INVALID_COUPON'), { status: 400 });
+        const coupon = couponSnap.data();
+        const expiry = coupon.expiryDate?.toDate?.() || new Date(coupon.expiryDate || 0);
+        const discount = Number(coupon.discount || 0);
+        if (coupon.active === false || !Number.isFinite(discount) || discount <= 0 || discount > 100
+            || (coupon.expiryDate && expiry <= new Date())
+            || (Number(coupon.maxUses || 0) > 0 && Number(coupon.usedCount || 0) >= Number(coupon.maxUses))) {
+            throw Object.assign(new Error('COUPON_UNAVAILABLE'), { status: 409 });
+        }
+        if (coupon.singleUsePerUser) {
+            const existing = await tx.get(redemptionRef);
+            const existingData = existing.data();
+            const activeReservation = existingData?.status === 'RESERVED'
+                && Number(existingData.expiresAt || 0) > Date.now()
+                && existingData.orderId !== orderId;
+            if (existingData?.status === 'USED' || activeReservation) {
+                throw Object.assign(new Error('COUPON_ALREADY_REDEEMED'), { status: 409 });
+            }
+            tx.set(redemptionRef, {
+                uid, couponCode: code, orderId, status: 'RESERVED',
+                expiresAt: Date.now() + 30 * 60 * 1000,
+                updatedAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+        }
+        const discountedAmount = Math.max(1, Math.round(plan.amount * (100 - discount) / 100));
+        resolved = { ...plan, amount: discountedAmount, originalAmount: plan.amount, couponCode: code, couponDiscount: discount, singleUsePerUser: coupon.singleUsePerUser === true };
+    });
+    return resolved;
+}
+
+async function releaseCouponReservation(order) {
+    if (!order?.couponCode || !order?.singleUsePerUser || !db) return;
+    const redemptionId = crypto.createHash('sha256').update(`${order.couponCode}:${order.uid}`).digest('hex');
+    const ref = db.collection('coupon_redemptions').doc(redemptionId);
+    await db.runTransaction(async tx => {
+        const snap = await tx.get(ref);
+        if (snap.exists && snap.data().status === 'RESERVED' && snap.data().orderId === order.id) tx.delete(ref);
+    }).catch(() => {});
+}
+
+async function releaseCouponForRef(ref) {
+    if (!ref) return;
+    const snapshot = await ref.get().catch(() => null);
+    if (snapshot?.exists) await releaseCouponReservation({ ...snapshot.data(), id: ref.id });
+}
+
+async function consumeCouponRedemption(orderId, order) {
+    if (!order?.couponCode || !db) return;
+    const couponRef = db.collection('coupons').doc(order.couponCode);
+    const redemptionScope = order.singleUsePerUser ? order.uid : orderId;
+    const redemptionId = crypto.createHash('sha256').update(`${order.couponCode}:${redemptionScope}`).digest('hex');
+    const redemptionRef = db.collection('coupon_redemptions').doc(redemptionId);
+    await db.runTransaction(async tx => {
+        const couponSnap = await tx.get(couponRef);
+        if (!couponSnap.exists) return;
+        const redemption = await tx.get(redemptionRef);
+        if (redemption.data()?.status === 'USED') return;
+        tx.set(redemptionRef, {
+            uid: order.uid, couponCode: order.couponCode, orderId,
+            status: 'USED', usedAt: admin.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+        tx.update(couponRef, { usedCount: admin.firestore.FieldValue.increment(1) });
+    });
+}
+
 async function activateVerifiedOrder(orderRef, gatewayLabel, providerPaymentId) {
     if (!db || !admin) throw Object.assign(new Error('PAYMENT_SERVICE_UNAVAILABLE'), { status: 503 });
     await db.runTransaction(async tx => {
@@ -261,29 +337,40 @@ async function activateVerifiedOrder(orderRef, gatewayLabel, providerPaymentId) 
             activatedAt: admin.firestore.FieldValue.serverTimestamp()
         });
     });
-    return (await orderRef.get()).data();
+    const activatedOrder = (await orderRef.get()).data();
+    await consumeCouponRedemption(orderRef.id, activatedOrder);
+    return activatedOrder;
 }
-async function createProviderOrderRecord({ uid, planId, provider }) {
-    const plan = providerPlan(planId, provider);
+async function createProviderOrderRecord({ uid, planId, provider, couponCode }) {
+    const basePlan = providerPlan(planId, provider);
     if (!db || !admin) throw Object.assign(new Error('PAYMENT_SERVICE_UNAVAILABLE'), { status: 503 });
     const ref = db.collection('payment_orders').doc();
-    await ref.set({
-        uid, planId, provider, amount: plan.amount, currency: plan.currency,
+    const plan = await applyServerCoupon({ uid, orderId: ref.id, plan: basePlan, couponCode });
+    await ref.create({
+        uid, planId, provider, amount: plan.amount, originalAmount: plan.originalAmount,
+        currency: plan.currency, couponCode: plan.couponCode, couponDiscount: plan.couponDiscount,
+        singleUsePerUser: plan.singleUsePerUser === true,
         status: 'PENDING_PAYMENT', createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
     return { ref, plan };
 }
-async function createPaymentOrder({ uid, planId, idempotencyKey }) {
-    const plan = PLAN_CATALOG[planId];
-    if (!plan) { const err = new Error('INVALID_PLAN'); err.status = 400; throw err; }
+async function createPaymentOrder({ uid, planId, idempotencyKey, couponCode }) {
+    const basePlan = PLAN_CATALOG[planId];
+    if (!basePlan) { const err = new Error('INVALID_PLAN'); err.status = 400; throw err; }
     if (!db || !admin) { const err = new Error('PAYMENT_SERVICE_UNAVAILABLE'); err.status = 503; throw err; }
     if (!process.env.STRIPE_SECRET) { const err = new Error('PAYMENT_PROVIDER_UNAVAILABLE'); err.status = 503; throw err; }
     const deterministicId = idempotencyKey
-        ? crypto.createHash('sha256').update(`${uid}:${planId}:${idempotencyKey}`).digest('hex')
+        ? crypto.createHash('sha256').update(`${uid}:${planId}:${String(couponCode || '').toUpperCase()}:${idempotencyKey}`).digest('hex')
         : null;
     const orderRef = deterministicId ? db.collection('payment_orders').doc(deterministicId) : db.collection('payment_orders').doc();
+    const plan = await applyServerCoupon({ uid, orderId: orderRef.id, plan: basePlan, couponCode });
     try {
-        await orderRef.create({ uid, planId, provider: 'stripe', amount: plan.amount, currency: plan.currency, status: 'PENDING_PAYMENT', createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        await orderRef.create({
+            uid, planId, provider: 'stripe', amount: plan.amount, originalAmount: plan.originalAmount,
+            currency: plan.currency, couponCode: plan.couponCode, couponDiscount: plan.couponDiscount,
+            singleUsePerUser: plan.singleUsePerUser === true,
+            status: 'PENDING_PAYMENT', createdAt: admin.firestore.FieldValue.serverTimestamp()
+        });
     } catch (error) {
         if (error.code !== 6 && error.code !== 'already-exists') throw error;
         const existing = await orderRef.get();
@@ -308,6 +395,7 @@ async function createPaymentOrder({ uid, planId, idempotencyKey }) {
         return { orderId: orderRef.id, clientSecret: intent.client_secret, amount: plan.amount, currency: plan.currency };
     } catch (err) {
         await orderRef.update({ status: 'FAILED', failureCode: 'PROVIDER_CREATE_FAILED', updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+        await releaseCouponForRef(orderRef);
         throw err;
     }
 }
@@ -315,7 +403,7 @@ app.post('/api/pay', async (req, res) => {
     try {
         const suppliedKey = String(req.get('idempotency-key') || '');
         const idempotencyKey = /^ck_[A-Za-z0-9_-]{10,100}$/.test(suppliedKey) ? suppliedKey : crypto.randomUUID();
-        const result = await createPaymentOrder({ uid: req.user.uid, planId: req.body.planId || req.body.plan, idempotencyKey });
+        const result = await createPaymentOrder({ uid: req.user.uid, planId: req.body.planId || req.body.plan, idempotencyKey, couponCode: req.body.couponCode });
         return res.status(201).json({ orderId: result.orderId, client_secret: result.clientSecret, amount: result.amount, currency: result.currency, status: 'PAYMENT_PENDING' });
     } catch (err) {
         console.error('[Stripe payment create]', err.message);
@@ -395,6 +483,7 @@ app.post('/api/stripe-webhook', async (req, res) => {
             throw err;
         }
         const activated = (await orderRef.get()).data();
+        await consumeCouponRedemption(orderId, activated);
         const expDate = activated.membershipEnds?.toDate?.() || new Date(activated.membershipEnds);
         return res.json({
             received: true,
@@ -497,7 +586,7 @@ app.post('/api/paypal/create-order', async (req, res) => {
     let orderRef;
     try {
         const { clientId, clientSecret, baseUrl } = await paypalConfig();
-        const { ref, plan } = await createProviderOrderRecord({ uid: req.user.uid, planId: req.body.planId, provider: 'paypal' });
+        const { ref, plan } = await createProviderOrderRecord({ uid: req.user.uid, planId: req.body.planId, provider: 'paypal', couponCode: req.body.couponCode });
         orderRef = ref;
         const accessToken = await paypalAccessToken(baseUrl, clientId, clientSecret);
         const providerRes = await fetch(`${baseUrl}/v2/checkout/orders`, {
@@ -519,7 +608,10 @@ app.post('/api/paypal/create-order', async (req, res) => {
         await ref.update({ providerOrderId: providerOrder.id, status: 'PAYMENT_CREATED', updatedAt: admin.firestore.FieldValue.serverTimestamp() });
         return res.status(201).json({ orderId: providerOrder.id, paymentOrderId: ref.id, amount: plan.amount, currency: plan.currency });
     } catch (err) {
-        if (orderRef) await orderRef.update({ status: 'FAILED', failureCode: 'PROVIDER_CREATE_FAILED' }).catch(() => {});
+        if (orderRef) {
+            await orderRef.update({ status: 'FAILED', failureCode: 'PROVIDER_CREATE_FAILED' }).catch(() => {});
+            await releaseCouponForRef(orderRef);
+        }
         console.error('[PayPal create]', err.message);
         return res.status(err.status || 502).json({ error: { code: err.message, message: 'Unable to create PayPal order', requestId: res.locals.requestId } });
     }
@@ -666,7 +758,7 @@ app.post('/api/razorpay/create-order', async (req, res) => {
     try {
         const { keyId, keySecret } = await getRazorpayKeys();
         if (!keyId || !keySecret) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
-        const { ref, plan } = await createProviderOrderRecord({ uid: req.user.uid, planId: req.body.planId || req.body.plan, provider: 'razorpay' });
+        const { ref, plan } = await createProviderOrderRecord({ uid: req.user.uid, planId: req.body.planId || req.body.plan, provider: 'razorpay', couponCode: req.body.couponCode });
         internalRef = ref;
         const providerRes = await fetch('https://api.razorpay.com/v1/orders', {
             method: 'POST',
@@ -687,7 +779,10 @@ app.post('/api/razorpay/create-order', async (req, res) => {
         await ref.update({ providerOrderId: providerOrder.id, status: 'PAYMENT_CREATED', updatedAt: admin.firestore.FieldValue.serverTimestamp() });
         return res.status(201).json({ id: providerOrder.id, paymentOrderId: ref.id, amount: plan.amount, currency: plan.currency, key: keyId });
     } catch (err) {
-        if (internalRef) await internalRef.update({ status: 'FAILED', failureCode: 'PROVIDER_CREATE_FAILED' }).catch(() => {});
+        if (internalRef) {
+            await internalRef.update({ status: 'FAILED', failureCode: 'PROVIDER_CREATE_FAILED' }).catch(() => {});
+            await releaseCouponForRef(internalRef);
+        }
         console.error('[Razorpay create]', err.message);
         return res.status(err.status || 502).json({ error: { code: err.message, message: 'Unable to create Razorpay order', requestId: res.locals.requestId } });
     }
@@ -799,7 +894,7 @@ app.post('/api/paytm/initiate-transaction', async (req, res) => {
     try {
         const { mid, key, website, channelId, baseUrl, isLive } = await getPaytmConfig();
         if (!mid || !key) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
-        const { ref, plan } = await createProviderOrderRecord({ uid: req.user.uid, planId: req.body.planId || req.body.plan, provider: 'paytm' });
+        const { ref, plan } = await createProviderOrderRecord({ uid: req.user.uid, planId: req.body.planId || req.body.plan, provider: 'paytm', couponCode: req.body.couponCode });
         orderRef = ref;
         const providerOrderId = ref.id;
         const txnAmount = (plan.amount / 100).toFixed(2);
@@ -826,7 +921,10 @@ app.post('/api/paytm/initiate-transaction', async (req, res) => {
         await ref.update({ providerOrderId, status: 'PAYMENT_CREATED', updatedAt: admin.firestore.FieldValue.serverTimestamp() });
         return res.status(201).json({ success: true, txnToken: providerData.body.txnToken, orderId: providerOrderId, paymentOrderId: ref.id, mid, amount: txnAmount, isLive });
     } catch (err) {
-        if (orderRef) await orderRef.update({ status: 'FAILED', failureCode: 'PROVIDER_CREATE_FAILED' }).catch(() => {});
+        if (orderRef) {
+            await orderRef.update({ status: 'FAILED', failureCode: 'PROVIDER_CREATE_FAILED' }).catch(() => {});
+            await releaseCouponForRef(orderRef);
+        }
         console.error('[Paytm create]', err.message);
         return res.status(err.status || 502).json({ success: false, error: 'Unable to create Paytm transaction' });
     }
@@ -874,7 +972,7 @@ app.post('/api/phonepe/initiate', async (req, res) => {
     try {
         const { merchantId, saltKey, saltIndex, baseUrl, isLive } = await getPhonePeConfig();
         if (!merchantId || !saltKey) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
-        const { ref, plan } = await createProviderOrderRecord({ uid: req.user.uid, planId: req.body.planId || req.body.plan, provider: 'phonepe' });
+        const { ref, plan } = await createProviderOrderRecord({ uid: req.user.uid, planId: req.body.planId || req.body.plan, provider: 'phonepe', couponCode: req.body.couponCode });
         orderRef = ref;
         const payload = {
             merchantId, merchantTransactionId: ref.id, merchantUserId: req.user.uid,
@@ -902,7 +1000,10 @@ app.post('/api/phonepe/initiate', async (req, res) => {
         await ref.update({ providerOrderId: ref.id, status: 'PAYMENT_CREATED', updatedAt: admin.firestore.FieldValue.serverTimestamp() });
         return res.status(201).json({ success: true, orderId: ref.id, paymentOrderId: ref.id, redirectUrl: parsedRedirect.href, isLive });
     } catch (err) {
-        if (orderRef) await orderRef.update({ status: 'FAILED', failureCode: 'PROVIDER_CREATE_FAILED' }).catch(() => {});
+        if (orderRef) {
+            await orderRef.update({ status: 'FAILED', failureCode: 'PROVIDER_CREATE_FAILED' }).catch(() => {});
+            await releaseCouponForRef(orderRef);
+        }
         console.error('[PhonePe create]', err.message);
         return res.status(err.status || 502).json({ success: false, error: 'Unable to create PhonePe transaction' });
     }
