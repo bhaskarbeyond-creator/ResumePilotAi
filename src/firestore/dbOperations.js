@@ -3,6 +3,7 @@ import axios from 'axios';
 import config from '../conf/configuration';
 import firebase from 'firebase/compat/app';
 import { JOB_TRACKER_STATUSES, normalizeTrackedJob, validateTrackedJob } from '../utils/jobTracker';
+import { blogPostFitsFirestore, normalizeBlogPost } from '../utils/blogData';
 
 // Utility function to wait for authentication state
 export const waitForAuth = () => {
@@ -2992,30 +2993,37 @@ export async function createBlogPost(userId, postData) {
     const db = fire.firestore();
     try {
         const postRef = db.collection('blog_posts').doc();
+        if (!blogPostFitsFirestore(postData)) return { success: false, error: 'Post is too large to save.' };
+        const normalized = normalizeBlogPost(postData);
+        if (!normalized.title) return { success: false, error: 'Post title is required.' };
         // A document-derived suffix avoids a collection-wide uniqueness query that members
         // are not authorized to run against other authors' pending posts.
-        const slugBase = generateSlug(postData.slug || postData.title) || 'article';
-        const slug = `${slugBase}-${postRef.id.slice(0, 8).toLowerCase()}`;
+        const slugSuffix = `-${postRef.id.slice(0, 8).toLowerCase()}`;
+        const slugBase = (generateSlug(postData.slug || normalized.title) || 'article').slice(0, 180 - slugSuffix.length);
+        const slug = `${slugBase}${slugSuffix}`;
 
         const finalPostData = {
-            title: postData.title,
+            title: normalized.title,
             slug: slug,
-            content: postData.content,
-            excerpt: postData.excerpt || generateExcerpt(postData.content),
-            categoryId: postData.categoryId,
+            content: normalized.content,
+            excerpt: normalized.excerpt || generateExcerpt(normalized.content),
+            categoryId: normalized.categoryId,
             authorUid: userId,
-            status: 'pending', // Always pending for new posts from members
+            status: normalized.status === 'pending' ? 'pending' : 'draft',
+            revision: 1,
+            seoTitle: normalized.seoTitle || normalized.title,
+            seoDescription: normalized.seoDescription || normalized.excerpt || generateExcerpt(normalized.content),
             createdAt: new Date(),
             updatedAt: new Date(),
             publishedAt: null,
             viewCount: 0,
-            tags: postData.tags || [],
-            featuredImage: postData.featuredImage || null,
+            tags: normalized.tags || [],
+            featuredImage: normalized.featuredImage || null,
         };
 
         await postRef.set(finalPostData);
 
-        return { success: true, postId: postRef.id, slug: slug };
+        return { success: true, postId: postRef.id, slug, revision: 1, status: finalPostData.status };
     } catch (error) {
         console.error('❌ Error creating blog post:', error);
         return { success: false, error: error.message };
@@ -3023,50 +3031,85 @@ export async function createBlogPost(userId, postData) {
 }
 
 // Update a blog post
-export async function updateBlogPost(postId, updateData, userId = null) {
+export async function updateBlogPost(postId, updateData, userId = null, expectedRevision = null) {
     const db = fire.firestore();
     try {
-        if (userId) {
-            const existing = await db.collection('blog_posts').doc(postId).get();
-            if (!existing.exists || existing.data().authorUid !== userId) {
-                return { success: false, error: 'Post not found or access denied.' };
-            }
-            const allowedFields = ['title', 'content', 'excerpt', 'categoryId', 'tags', 'featuredImage'];
-            updateData = Object.fromEntries(Object.entries(updateData).filter(([key]) => allowedFields.includes(key)));
-            updateData.status = 'pending';
-        }
-
-        // If slug is being updated, check for conflicts (admin-managed slugs only).
-        if (updateData.slug) {
-            const existingPost = await db.collection('blog_posts')
-                .where('slug', '==', updateData.slug)
-                .where(firebase.firestore.FieldPath.documentId(), '!=', postId)
-                .get();
-            if (!existingPost.empty) {
-                return { success: false, error: 'A post with this slug already exists.' };
-            }
-        }
-
-        const finalUpdateData = {
-            ...updateData,
-            updatedAt: new Date(),
-        };
-
-        // Set publishedAt when status changes to approved
-        if (updateData.status === 'approved') {
-            const postDoc = await db.collection('blog_posts').doc(postId).get();
-            const currentPost = postDoc.data();
-            if (currentPost && currentPost.status !== 'approved') {
-                finalUpdateData.publishedAt = new Date();
+        if (!blogPostFitsFirestore(updateData)) return { success: false, error: 'Post update is too large to save.' };
+        const reference = db.collection('blog_posts').doc(postId);
+        if (!userId && updateData.slug) {
+            const candidateSlug = generateSlug(updateData.slug).slice(0, 180);
+            if (!candidateSlug) return { success: false, error: 'A valid post slug is required.' };
+            const duplicates = await db.collection('blog_posts').where('slug', '==', candidateSlug).get();
+            if (duplicates.docs.some(document => document.id !== postId)) return { success: false, error: 'A post with this slug already exists.' };
+            updateData = { ...updateData, slug: candidateSlug };
+        } else if (!userId && ['approved', 'scheduled'].includes(updateData.status)) {
+            const currentSnapshot = await reference.get();
+            if (!currentSnapshot.exists) return { success: false, error: 'Blog post not found.' };
+            const currentSlug = currentSnapshot.data()?.slug;
+            if (currentSlug) {
+                const duplicates = await db.collection('blog_posts').where('slug', '==', currentSlug).get();
+                if (duplicates.docs.some(document => document.id !== postId)) {
+                    const suffix = `-${postId.toLowerCase()}`;
+                    updateData = { ...updateData, slug: `${generateSlug(currentSlug).slice(0, 180 - suffix.length)}${suffix}` };
+                }
             }
         }
-
-        await db.collection('blog_posts').doc(postId).update(finalUpdateData);
-
-        console.log('✅ Blog post updated successfully!');
-        return { success: true };
+        const allowedMemberFields = ['title', 'content', 'excerpt', 'categoryId', 'tags', 'featuredImage', 'seoTitle', 'seoDescription'];
+        let result;
+        await db.runTransaction(async transaction => {
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists) throw new Error('Post not found.');
+            const existing = snapshot.data() || {};
+            const currentRevision = Number(existing.revision) || 0;
+            if (expectedRevision !== null && expectedRevision !== undefined && Number(expectedRevision) !== currentRevision) {
+                const conflict = new Error('This post changed in another tab or device.');
+                conflict.code = 'BLOG_CONFLICT';
+                conflict.remoteRevision = currentRevision;
+                conflict.remoteStatus = existing.status;
+                throw conflict;
+            }
+            let changes = { ...updateData };
+            if (userId) {
+                if (existing.authorUid !== userId) throw new Error('Post not found or access denied.');
+                if (existing.status === 'approved') throw new Error('Published posts must be revised through the moderation workflow.');
+                if (!blogPostFitsFirestore(changes)) throw new Error('Post is too large to save.');
+                const normalized = normalizeBlogPost(changes);
+                changes = Object.fromEntries(allowedMemberFields.filter(key => Object.hasOwn(updateData, key)).map(key => [key, normalized[key]]));
+                changes.status = updateData.status === 'pending' ? 'pending' : 'draft';
+            } else {
+                const statuses = ['draft', 'pending', 'approved', 'rejected', 'scheduled'];
+                if (changes.status && !statuses.includes(changes.status)) throw new Error('Invalid post status.');
+                if (changes.slug) changes.slug = generateSlug(changes.slug) || existing.slug;
+                if (['approved', 'scheduled'].includes(changes.status)) changes.featuredImage = normalizeBlogPost(existing).featuredImage || null;
+                if (changes.status === 'approved' && existing.status !== 'approved') changes.publishedAt = new Date();
+                if (changes.status !== 'scheduled') changes.scheduledAt = null;
+            }
+            const revision = currentRevision + 1;
+            changes = { ...changes, authorUid: existing.authorUid, revision, updatedAt: new Date() };
+            transaction.update(reference, changes);
+            result = { success: true, revision, status: changes.status || existing.status };
+        });
+        return result;
     } catch (error) {
-        console.error('❌ Error updating blog post:', error);
+        console.error('Error updating blog post:', error);
+        return { success: false, error: error.message, code: error.code, remoteRevision: error.remoteRevision, remoteStatus: error.remoteStatus };
+    }
+}
+
+// Fetch one author-owned post without scanning the user's full CMS history.
+export async function getBlogPostByIdForAuthor(postId, userId) {
+    try {
+        const snapshot = await fire.firestore().collection('blog_posts').doc(postId).get();
+        if (!snapshot.exists || snapshot.data()?.authorUid !== userId) return { success: false, error: 'Post not found or access denied.' };
+        const data = snapshot.data();
+        return { success: true, post: {
+            id: snapshot.id, ...data,
+            createdAt: data.createdAt?.toDate?.() || data.createdAt,
+            updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
+            publishedAt: data.publishedAt?.toDate?.() || data.publishedAt,
+            scheduledAt: data.scheduledAt?.toDate?.() || data.scheduledAt,
+        } };
+    } catch (error) {
         return { success: false, error: error.message };
     }
 }
@@ -3266,9 +3309,11 @@ export async function listBlogPosts(options = {}) {
             const statsSnapshot = await db.collection('blog_posts').get();
             const stats = {
                 total: 0,
+                draft: 0,
                 approved: 0,
                 pending: 0,
-                rejected: 0
+                rejected: 0,
+                scheduled: 0,
             };
             
             statsSnapshot.forEach((doc) => {
@@ -3288,19 +3333,28 @@ export async function listBlogPosts(options = {}) {
 }
 
 // Delete a blog post
-export async function deleteBlogPost(postId) {
+export async function deleteBlogPost(postId, userId = null, expectedRevision = null) {
     const db = fire.firestore();
     try {
-        console.log('=== DELETING BLOG POST ===');
-        console.log('Post ID:', postId);
-
-        await db.collection('blog_posts').doc(postId).delete();
-
-        console.log('✅ Blog post deleted successfully!');
+        const reference = db.collection('blog_posts').doc(postId);
+        await db.runTransaction(async transaction => {
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists) throw new Error('Post not found.');
+            const existing = snapshot.data() || {};
+            if (expectedRevision !== null && expectedRevision !== undefined && Number(expectedRevision) !== (Number(existing.revision) || 0)) {
+                const conflict = new Error('This post changed before deletion. Reload and confirm again.');
+                conflict.code = 'BLOG_CONFLICT';
+                throw conflict;
+            }
+            if (userId && (existing.authorUid !== userId || existing.status === 'approved' || existing.status === 'scheduled')) {
+                throw new Error('Only private drafts or review submissions can be deleted by their author.');
+            }
+            transaction.delete(reference);
+        });
         return { success: true };
     } catch (error) {
-        console.error('❌ Error deleting blog post:', error);
-        return { success: false, error: error.message };
+        console.error('Error deleting blog post:', error);
+        return { success: false, error: error.message, code: error.code };
     }
 }
 
@@ -3782,29 +3836,21 @@ export async function getResumes(userId, page = 1, itemsPerPage = 5) {
     const totalItems = countSnapshot.size;
     const totalPages = Math.ceil(totalItems / itemsPerPage);
 
-    // Apply pagination using orderBy, limit and startAfter for consistent ordering
-    // Important: We use 'created_at' as a stable sorting key to ensure consistency
-    const paginatedQuery = userRef.orderBy('created_at', 'desc').limit(itemsPerPage);
-
-    // If not the first page, use startAfter with a document snapshot
-    let paginatedSnapshot;
-    if (page > 1) {
-        // Get the document at the previous page's last position
-        // This approach gives us consistent pagination without skipping or duplicating items
-        const previousPageQuery = userRef.orderBy('created_at', 'desc').limit((page - 1) * itemsPerPage);
-        const previousPageSnapshot = await previousPageQuery.get();
-
-        if (!previousPageSnapshot.empty) {
-            const lastVisible = previousPageSnapshot.docs[previousPageSnapshot.docs.length - 1];
-            paginatedSnapshot = await paginatedQuery.startAfter(lastVisible).get();
-        } else {
-            // Fallback to first page if we can't get a cursor
-            paginatedSnapshot = await paginatedQuery.get();
-        }
-    } else {
-        // First page case
-        paginatedSnapshot = await paginatedQuery.get();
-    }
+    // The count read already contains every owner document. Reuse it so legacy resumes
+    // without created_at are not excluded by Firestore orderBy and avoid a duplicate page read.
+    const sortedDocuments = [...countSnapshot.docs].sort((left, right) => {
+        const leftData = left.data() || {};
+        const rightData = right.data() || {};
+        const leftTime = leftData.updatedAt?.toMillis?.() || leftData.created_at?.toMillis?.() || 0;
+        const rightTime = rightData.updatedAt?.toMillis?.() || rightData.created_at?.toMillis?.() || 0;
+        return rightTime - leftTime || left.id.localeCompare(right.id);
+    });
+    const startIndex = Math.max(0, (page - 1) * itemsPerPage);
+    const pageDocuments = sortedDocuments.slice(startIndex, startIndex + itemsPerPage);
+    const paginatedSnapshot = {
+        empty: pageDocuments.length === 0,
+        forEach(callback) { pageDocuments.forEach(callback); },
+    };
 
     // Handle empty results case
     if (paginatedSnapshot.empty) {
@@ -3824,20 +3870,24 @@ export async function getResumes(userId, page = 1, itemsPerPage = 5) {
     const resumes = [];
     paginatedSnapshot.forEach((doc) => {
         // Create a NEW object for each resume to avoid reference issues
+        const stored = doc.data() || {};
+        const isCanonical = Number(stored.revision) > 0 || ['employments', 'educations', 'skills', 'languages'].some(key => Array.isArray(stored[key]));
         const resume = {
             id: doc.id,
-            template: doc.data().template,
-            item: doc.data(),
-            employments: [],
-            educations: [],
-            languages: [],
-            skills: [],
+            template: stored.template,
+            item: stored,
+            employments: isCanonical && Array.isArray(stored.employments) ? stored.employments : [],
+            educations: isCanonical && Array.isArray(stored.educations) ? stored.educations : [],
+            languages: isCanonical && Array.isArray(stored.languages) ? stored.languages : [],
+            skills: isCanonical && Array.isArray(stored.skills) ? stored.skills : [],
+            isNewStyle: isCanonical,
         };
         resumes.push(resume);
     });
 
     // Pull from global pb collection for new-style flat resume objects
     for (let index = 0; index < resumes.length; index++) {
+        if (resumes[index].isNewStyle) continue;
         try {
             const pbDoc = await db.collection('pb').doc(resumes[index].id).get();
             if (pbDoc.exists && pbDoc.data().object) {
@@ -3859,9 +3909,9 @@ export async function getResumes(userId, page = 1, itemsPerPage = 5) {
     }
 
     ////////////////////// After getting all resumes we loop throu each resume Id  and get the emploments
-    var employmentIndex = 0; // this index will represent the index of each employment inside resumeObject
     for (let index = 0; index < resumes.length; index++) {
         if (resumes[index].isNewStyle) continue;
+        let employmentIndex = 0;
         const employmentRef = db.collection('users').doc(userId).collection('resumes').doc(resumes[index].id).collection('employments'); // Getting all employments inside the resume
         const employmentSnapshot = await employmentRef.get();
         if (!employmentSnapshot.empty) {
@@ -3876,9 +3926,9 @@ export async function getResumes(userId, page = 1, itemsPerPage = 5) {
     }
 
     ////////////////////// After getting all resumes we loop throu each resume Id  and get the eductions
-    var educationIndex = 0; // this index will represent the index of each employment inside resumeObject
     for (let index = 0; index < resumes.length; index++) {
         if (resumes[index].isNewStyle) continue;
+        let educationIndex = 0;
         const educationRef = db.collection('users').doc(userId).collection('resumes').doc(resumes[index].id).collection('educations'); // Getting all employments inside the resume
         const educationSnapshot = await educationRef.get();
         if (!educationSnapshot.empty) {
@@ -3894,9 +3944,9 @@ export async function getResumes(userId, page = 1, itemsPerPage = 5) {
         }
     }
     ////////////////////// After getting all resumes we loop throu each resume Id  and get the eductions
-    var skillIndex = 0; // this index will represent the index of each employment inside resumeObject
     for (let index = 0; index < resumes.length; index++) {
         if (resumes[index].isNewStyle) continue;
+        let skillIndex = 0;
         const skillRef = db.collection('users').doc(userId).collection('resumes').doc(resumes[index].id).collection('skills'); // Getting all employments inside the resume
         const skillSnapshot = await skillRef.get();
         if (!skillSnapshot.empty) {
@@ -3913,9 +3963,9 @@ export async function getResumes(userId, page = 1, itemsPerPage = 5) {
     }
 
     ////////////////////// After getting all resumes we loop throu each resume Id  and get the eductions
-    var languageIndex = 0; // this index will represent the index of each employment inside resumeObject
     for (let index = 0; index < resumes.length; index++) {
         if (resumes[index].isNewStyle) continue;
+        let languageIndex = 0;
         const skillRef = db.collection('users').doc(userId).collection('resumes').doc(resumes[index].id).collection('languages'); // Getting all employments inside the resume
         const skillSnapshot = await skillRef.get();
         if (!skillSnapshot.empty) {
@@ -4291,21 +4341,32 @@ export async function getJsonById(resumeId) {
     }
 }
 
-export async function setJsonPb(resumeId, resumeObject) {
+export async function setJsonPb(resumeId, resumeObject, { isPublished = false } = {}) {
     const db = fire.firestore();
-    // Create a shallow copy to avoid mutating the caller's object
-    const objectToSave = { ...resumeObject, user: null };
-    console.log(objectToSave);
-    await db
-        .collection('pb')
-        .doc(resumeId)
-        .set({
-            id: resumeId,
-            ownerUid: fire.auth().currentUser?.uid || null,
-            isPublished: true,
-            object: JSON.stringify(objectToSave),
+    const ownerUid = fire.auth().currentUser?.uid;
+    if (!ownerUid) throw new Error('Authentication is required');
+    const objectToSave = { ...resumeObject };
+    delete objectToSave.user;
+    if (isPublished === true) {
+        await db.collection('pb').doc(resumeId).set({
+            id: resumeId, ownerUid, isPublished: true, publicationMode: 'explicit', object: JSON.stringify(objectToSave),
+            publishedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        });
+        return;
+    }
+    const isCover = String(objectToSave.template || objectToSave.resumeName || '').startsWith('Cover');
+    const collectionName = isCover ? 'covers' : 'resumes';
+    const reference = db.collection('users').doc(ownerUid).collection(collectionName).doc(resumeId);
+    await db.runTransaction(async transaction => {
+        const snapshot = await transaction.get(reference);
+        const existing = snapshot.exists ? snapshot.data() || {} : {};
+        transaction.set(reference, {
+            ...objectToSave,
+            revision: Number(existing.revision || 0) + 1,
+            created_at: existing.created_at || firebase.firestore.Timestamp.now(),
             updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
         });
+    });
 }
 
 export async function checkIfResumeIdAvailable(userId) {
@@ -5207,6 +5268,14 @@ export async function removePhraseFromCategory(categoryName, phrase) {
 export default addResume;
 
 // Portfolio operations
+function assertPortfolioSize(data) {
+    const bytes = new Blob([JSON.stringify(data || {})]).size;
+    if (bytes <= 900_000) return;
+    const error = new Error('Portfolio is too large to save. Remove oversized embedded images or content.');
+    error.code = 'PORTFOLIO_TOO_LARGE';
+    throw error;
+}
+
 export async function publishPortfolio(userId, portfolioData, theme = 'default') {
     const db = fire.firestore();
 
@@ -5247,6 +5316,7 @@ export async function publishPortfolio(userId, portfolioData, theme = 'default')
             }
             return component;
         });
+        assertPortfolioSize(cleanPortfolioData);
 
         const portfolioDoc = {
             userId: userId,
@@ -5258,6 +5328,7 @@ export async function publishPortfolio(userId, portfolioData, theme = 'default')
             publishedAt: firebase.firestore.Timestamp.now(),
             updatedAt: firebase.firestore.Timestamp.now(),
             views: 0,
+            revision: 1,
             metadata: {
                 description: portfolioData.description || '',
                 tags: portfolioData.tags || [],
@@ -5277,17 +5348,18 @@ export async function publishPortfolio(userId, portfolioData, theme = 'default')
             theme: theme,
             publishedAt: portfolioDoc.publishedAt,
             isPublished: true,
+            revision: 1,
         });
         await batch.commit();
 
-        return { id: docRef.id, slug: slug };
+        return { id: docRef.id, slug: slug, revision: 1 };
     } catch (error) {
         console.error('Error publishing portfolio:', error);
         throw error;
     }
 }
 
-export async function updateExistingPortfolio(portfolioId, userId, portfolioData, theme = 'default') {
+export async function updateExistingPortfolio(portfolioId, userId, portfolioData, theme = 'default', expectedRevision = null) {
     const db = fire.firestore();
 
     try {
@@ -5327,6 +5399,7 @@ export async function updateExistingPortfolio(portfolioId, userId, portfolioData
             }
             return component;
         });
+        assertPortfolioSize(cleanPortfolioData);
 
         let updateData = {
             title: portfolioData.title || 'My Portfolio',
@@ -5376,15 +5449,29 @@ export async function updateExistingPortfolio(portfolioId, userId, portfolioData
             subCollectionUpdate.slug = updateData.slug;
         }
 
-        const batch = db.batch();
-        batch.update(db.collection('portfolios').doc(portfolioId), updateData);
-        batch.set(db.collection('users').doc(userId).collection('portfolios').doc(portfolioId), subCollectionUpdate, { merge: true });
-        await batch.commit();
+        const mainReference = db.collection('portfolios').doc(portfolioId);
+        const userReference = db.collection('users').doc(userId).collection('portfolios').doc(portfolioId);
+        let revision;
+        await db.runTransaction(async transaction => {
+            const latestSnapshot = await transaction.get(mainReference);
+            if (!latestSnapshot.exists || latestSnapshot.data()?.userId !== userId) throw new Error('Portfolio not found or access denied');
+            const latestRevision = Number(latestSnapshot.data()?.revision) || 0;
+            if (expectedRevision !== null && Number(expectedRevision) !== latestRevision) {
+                const conflict = new Error('This portfolio changed in another tab or device. Reload before publishing.');
+                conflict.code = 'PORTFOLIO_CONFLICT';
+                conflict.remoteRevision = latestRevision;
+                throw conflict;
+            }
+            revision = latestRevision + 1;
+            transaction.update(mainReference, { ...updateData, revision });
+            transaction.set(userReference, { ...subCollectionUpdate, revision }, { merge: true });
+        });
 
         return {
             id: portfolioId,
             slug: updateData.slug || existingPortfolio.slug,
             isNewlyPublished: !existingPortfolio.isPublished,
+            revision,
         };
     } catch (error) {
         console.error('Error updating existing portfolio:', error);
@@ -5392,7 +5479,7 @@ export async function updateExistingPortfolio(portfolioId, userId, portfolioData
     }
 }
 
-export async function savePortfolioDraft(userId, portfolioData, portfolioId = null, theme = 'default') {
+export async function savePortfolioDraft(userId, portfolioData, portfolioId = null, theme = 'default', expectedRevision = null) {
     const db = fire.firestore();
 
     try {
@@ -5423,6 +5510,7 @@ export async function savePortfolioDraft(userId, portfolioData, portfolioId = nu
             }
             return component;
         });
+        assertPortfolioSize(cleanPortfolioData);
 
         const portfolioDoc = {
             userId: userId,
@@ -5440,32 +5528,38 @@ export async function savePortfolioDraft(userId, portfolioData, portfolioId = nu
         };
 
         if (portfolioId) {
-            const existingPortfolio = await getPortfolioById(portfolioId);
-            if (!existingPortfolio || existingPortfolio.userId !== userId) {
-                throw new Error('Portfolio not found or access denied');
-            }
-            const updateData = existingPortfolio.isPublished ? {
-                draftData: cleanPortfolioData,
-                draftTitle: portfolioDoc.title,
-                draftMetadata: portfolioDoc.metadata,
-                hasUnpublishedChanges: true,
-                updatedAt: portfolioDoc.updatedAt,
-            } : portfolioDoc;
-            const batch = db.batch();
-            batch.update(db.collection('portfolios').doc(portfolioId), updateData);
-            batch.set(db.collection('users').doc(userId).collection('portfolios').doc(portfolioId), {
-                portfolioId,
-                title: portfolioDoc.title,
-                theme,
-                isPublished: Boolean(existingPortfolio.isPublished),
-                hasUnpublishedChanges: Boolean(existingPortfolio.isPublished),
-                updatedAt: portfolioDoc.updatedAt,
-            }, { merge: true });
-            await batch.commit();
-            return { id: portfolioId, hasUnpublishedChanges: Boolean(existingPortfolio.isPublished) };
+            const mainReference = db.collection('portfolios').doc(portfolioId);
+            const userReference = db.collection('users').doc(userId).collection('portfolios').doc(portfolioId);
+            let nextRevision = 0;
+            let published = false;
+            await db.runTransaction(async transaction => {
+                const snapshot = await transaction.get(mainReference);
+                if (!snapshot.exists || snapshot.data()?.userId !== userId) throw new Error('Portfolio not found or access denied');
+                const existingPortfolio = snapshot.data() || {};
+                const currentRevision = Number(existingPortfolio.revision) || 0;
+                if (expectedRevision !== null && Number(expectedRevision) !== currentRevision) {
+                    const conflict = new Error('This portfolio changed in another tab or device. Reload before saving.');
+                    conflict.code = 'PORTFOLIO_CONFLICT';
+                    conflict.remoteRevision = currentRevision;
+                    throw conflict;
+                }
+                published = existingPortfolio.isPublished === true;
+                nextRevision = currentRevision + 1;
+                const updateData = published ? {
+                    draftData: cleanPortfolioData, draftTitle: portfolioDoc.title, draftMetadata: portfolioDoc.metadata,
+                    hasUnpublishedChanges: true, updatedAt: portfolioDoc.updatedAt, revision: nextRevision,
+                } : { ...portfolioDoc, revision: nextRevision };
+                transaction.update(mainReference, updateData);
+                transaction.set(userReference, {
+                    portfolioId, title: portfolioDoc.title, theme, isPublished: published,
+                    hasUnpublishedChanges: published, updatedAt: portfolioDoc.updatedAt, revision: nextRevision,
+                }, { merge: true });
+            });
+            return { id: portfolioId, revision: nextRevision, hasUnpublishedChanges: published };
         }
 
         portfolioDoc.createdAt = firebase.firestore.Timestamp.now();
+        portfolioDoc.revision = 1;
         const docRef = db.collection('portfolios').doc();
         const batch = db.batch();
         batch.set(docRef, portfolioDoc);
@@ -5476,13 +5570,66 @@ export async function savePortfolioDraft(userId, portfolioData, portfolioId = nu
             createdAt: portfolioDoc.createdAt,
             updatedAt: portfolioDoc.updatedAt,
             isPublished: false,
+            revision: 1,
         });
         await batch.commit();
-        return { id: docRef.id };
+        return { id: docRef.id, revision: 1 };
     } catch (error) {
         console.error('Error saving portfolio draft:', error);
         throw error;
     }
+}
+
+export async function duplicatePortfolio(userId, portfolioId) {
+    const existing = await getPortfolioById(portfolioId);
+    if (!existing || existing.userId !== userId) throw new Error('Portfolio not found or access denied');
+    const source = JSON.parse(JSON.stringify(existing.draftData || existing.data || {}));
+    const title = `${existing.draftTitle || existing.title || 'Portfolio'} (Copy)`;
+    source.root = source.root || { props: {} };
+    source.root.props = { ...(source.root.props || {}), title };
+    return savePortfolioDraft(userId, {
+        ...source,
+        title,
+        description: existing.draftMetadata?.description || existing.metadata?.description || '',
+        tags: existing.draftMetadata?.tags || existing.metadata?.tags || [],
+        seoTitle: title,
+        seoDescription: existing.draftMetadata?.seoDescription || existing.metadata?.seoDescription || '',
+    }, null, existing.theme || 'default', null);
+}
+
+export async function renamePortfolio(userId, portfolioId, title, expectedRevision = null) {
+    const cleanTitle = String(title || '').trim().slice(0, 160);
+    if (!cleanTitle) throw new Error('Portfolio title is required');
+    const db = fire.firestore();
+    const mainReference = db.collection('portfolios').doc(portfolioId);
+    const userReference = db.collection('users').doc(userId).collection('portfolios').doc(portfolioId);
+    let revision;
+    await db.runTransaction(async transaction => {
+        const snapshot = await transaction.get(mainReference);
+        if (!snapshot.exists || snapshot.data()?.userId !== userId) throw new Error('Portfolio not found or access denied');
+        const existing = snapshot.data() || {};
+        const currentRevision = Number(existing.revision) || 0;
+        if (expectedRevision !== null && Number(expectedRevision) !== currentRevision) {
+            const conflict = new Error('This portfolio changed in another tab or device.');
+            conflict.code = 'PORTFOLIO_CONFLICT';
+            conflict.remoteRevision = currentRevision;
+            throw conflict;
+        }
+        revision = currentRevision + 1;
+        if (existing.isPublished) {
+            const draftData = JSON.parse(JSON.stringify(existing.draftData || existing.data || {}));
+            draftData.root = draftData.root || { props: {} };
+            draftData.root.props = { ...(draftData.root.props || {}), title: cleanTitle };
+            transaction.update(mainReference, { draftTitle: cleanTitle, draftData, hasUnpublishedChanges: true, revision, updatedAt: firebase.firestore.Timestamp.now() });
+        } else {
+            const data = JSON.parse(JSON.stringify(existing.data || {}));
+            data.root = data.root || { props: {} };
+            data.root.props = { ...(data.root.props || {}), title: cleanTitle };
+            transaction.update(mainReference, { title: cleanTitle, data, revision, updatedAt: firebase.firestore.Timestamp.now() });
+        }
+        transaction.set(userReference, { title: cleanTitle, revision, hasUnpublishedChanges: existing.isPublished === true }, { merge: true });
+    });
+    return { id: portfolioId, title: cleanTitle, revision };
 }
 
 export async function getPortfolioBySlug(slug) {
@@ -5587,6 +5734,15 @@ export async function updatePortfolioVisibility(userId, portfolioId, isPublished
 
         if (isPublished) {
             updateData.publishedAt = firebase.firestore.Timestamp.now();
+            if (!portfolio.slug) {
+                let slug;
+                let attempts = 0;
+                do {
+                    slug = generatePortfolioSlug(portfolio.title || 'portfolio');
+                    attempts += 1;
+                } while (attempts < 3 && await getPortfolioBySlug(slug));
+                updateData.slug = slug;
+            }
         }
 
         const batch = db.batch();
@@ -5594,7 +5750,7 @@ export async function updatePortfolioVisibility(userId, portfolioId, isPublished
         batch.set(db.collection('users').doc(userId).collection('portfolios').doc(portfolioId), {
             isPublished: isPublished,
             updatedAt: updateData.updatedAt,
-            ...(isPublished ? { publishedAt: updateData.publishedAt } : {}),
+            ...(isPublished ? { publishedAt: updateData.publishedAt, slug: updateData.slug || portfolio.slug } : {}),
         }, { merge: true });
         await batch.commit();
 

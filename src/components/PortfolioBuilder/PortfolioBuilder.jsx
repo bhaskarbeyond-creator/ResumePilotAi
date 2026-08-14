@@ -4,7 +4,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Puck } from '@puckeditor/core';
 import '@puckeditor/core/puck.css';
 import { AuthContext } from '../../main';
-import { publishPortfolio, updateExistingPortfolio, savePortfolioDraft, getUserPortfolios, updatePortfolioVisibility, deletePortfolio, getPortfolioById } from '../../firestore/dbOperations';
+import { publishPortfolio, updateExistingPortfolio, savePortfolioDraft, getUserPortfolios, updatePortfolioVisibility, deletePortfolio, duplicatePortfolio, renamePortfolio, getPortfolioById } from '../../firestore/dbOperations';
 import {
     NavbarCategory,
     HeroCategory,
@@ -225,12 +225,16 @@ const PortfolioBuilder = () => {
     const navigate = useNavigate();
     const [portfolioData, setPortfolioData] = useState(initialData);
     const [currentPortfolioId, setCurrentPortfolioId] = useState(null);
+    const [currentPortfolioRevision, setCurrentPortfolioRevision] = useState(null);
     const [userPortfolios, setUserPortfolios] = useState([]);
     const [isPublishing, setIsPublishing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const [portfolioConflict, setPortfolioConflict] = useState(false);
     const debounceTimeoutRef = useRef(null);
     const lastDataRef = useRef(portfolioData);
+    const activeUserIdRef = useRef(user?.uid || null);
+    const modalCloseRef = useRef(null);
     const [showManageModal, setShowManageModal] = useState(false);
     const [loadingPortfolios, setLoadingPortfolios] = useState(false);
     const [showWelcomeGuide, setShowWelcomeGuide] = useState(false);
@@ -287,6 +291,21 @@ const PortfolioBuilder = () => {
             });
         }
     }, [user, navigate]);
+
+    useEffect(() => {
+        const nextUserId = user?.uid || null;
+        if (activeUserIdRef.current === nextUserId) return;
+        activeUserIdRef.current = nextUserId;
+        const resetData = JSON.parse(JSON.stringify(initialData));
+        lastDataRef.current = resetData;
+        setPortfolioData(resetData);
+        setCurrentPortfolioId(null);
+        setCurrentPortfolioRevision(null);
+        setUserPortfolios([]);
+        setPortfolioConflict(false);
+        setHasUnsavedChanges(false);
+        setRenderKey(key => key + 1);
+    }, [user?.uid]);
 
     // Show toast notification
     const showToast = (type, customMessage = '') => {
@@ -382,6 +401,20 @@ const PortfolioBuilder = () => {
         return () => window.removeEventListener('beforeunload', warnAboutUnsavedChanges);
     }, [hasUnsavedChanges]);
 
+    useEffect(() => {
+        const modalOpen = showManageModal || confirmModal.show || publishSuccessModal.show;
+        if (!modalOpen) return undefined;
+        modalCloseRef.current?.focus();
+        const closeOnEscape = event => {
+            if (event.key !== 'Escape') return;
+            if (confirmModal.show) hideConfirmModal();
+            else if (publishSuccessModal.show) hidePublishSuccessModal();
+            else setShowManageModal(false);
+        };
+        document.addEventListener('keydown', closeOnEscape);
+        return () => document.removeEventListener('keydown', closeOnEscape);
+    }, [showManageModal, confirmModal.show, publishSuccessModal.show]);
+
     const checkShowWelcomeGuide = async () => {
         try {
             // Don't show welcome guide if we're loading a portfolio from URL
@@ -426,6 +459,7 @@ const PortfolioBuilder = () => {
             return;
         }
 
+        const ownerId = user.uid;
         setIsSaving(true);
         try {
             // Capture Puck's latest edit even if the UI debounce has not committed React state yet.
@@ -467,17 +501,21 @@ const PortfolioBuilder = () => {
                 ...sanitizedSettings,
             };
 
-            const result = await savePortfolioDraft(user.uid, dataToSave, currentPortfolioId, 'default');
+            const result = await savePortfolioDraft(ownerId, dataToSave, currentPortfolioId, 'default', currentPortfolioRevision);
+            if (activeUserIdRef.current !== ownerId) return;
 
-            if (!currentPortfolioId) {
-                setCurrentPortfolioId(result.id);
-            }
+            if (!currentPortfolioId) setCurrentPortfolioId(result.id);
+            setCurrentPortfolioRevision(result.revision);
 
             await loadUserPortfolios();
+            setPortfolioConflict(false);
             setHasUnsavedChanges(false);
             showToast('Success');
         } catch (error) {
-            showToast('Error', 'Error saving portfolio draft: ' + error.message);
+            if (error.code === 'PORTFOLIO_CONFLICT') setPortfolioConflict({ remoteRevision: error.remoteRevision });
+            showToast('Error', error.code === 'PORTFOLIO_CONFLICT'
+                ? 'This portfolio changed in another tab. Reload it before saving to avoid overwriting newer work.'
+                : 'Error saving portfolio draft: ' + error.message);
         } finally {
             setIsSaving(false);
         }
@@ -497,6 +535,7 @@ const PortfolioBuilder = () => {
             return;
         }
 
+        const ownerId = user.uid;
         setIsPublishing(true);
         try {
             // Create a deep copy of portfolioData to avoid mutations
@@ -578,7 +617,8 @@ const PortfolioBuilder = () => {
 
             // Check if we have a current portfolio to update
             if (currentPortfolioId) {
-                result = await updateExistingPortfolio(currentPortfolioId, user.uid, dataToPublish, 'default');
+                result = await updateExistingPortfolio(currentPortfolioId, ownerId, dataToPublish, 'default', currentPortfolioRevision);
+                if (activeUserIdRef.current !== ownerId) return;
                 const portfolioUrl = `${window.location.origin}/portfolio/${result.slug}`;
 
                 // Show success modal instead of toast
@@ -589,7 +629,8 @@ const PortfolioBuilder = () => {
                     portfolioTitle: sanitizedSettings.title,
                 });
             } else {
-                result = await publishPortfolio(user.uid, dataToPublish, 'default');
+                result = await publishPortfolio(ownerId, dataToPublish, 'default');
+                if (activeUserIdRef.current !== ownerId) return;
                 const portfolioUrl = `${window.location.origin}/portfolio/${result.slug}`;
 
                 // Automatically dispatch Web Portfolio Published Email to User
@@ -619,20 +660,26 @@ const PortfolioBuilder = () => {
                 setCurrentPortfolioId(result.id);
             }
 
+            if (activeUserIdRef.current !== ownerId) return;
+            setCurrentPortfolioRevision(result.revision || currentPortfolioRevision);
+            setPortfolioConflict(false);
             await loadUserPortfolios();
             setHasUnsavedChanges(false);
         } catch (error) {
-            showToast('Error', error.message || 'Error publishing portfolio');
+            if (error.code === 'PORTFOLIO_CONFLICT') setPortfolioConflict({ remoteRevision: error.remoteRevision });
+            showToast('Error', error.code === 'PORTFOLIO_CONFLICT' ? 'Portfolio changed elsewhere. Reload or save your work as a copy before publishing.' : error.message || 'Error publishing portfolio');
         } finally {
             setIsPublishing(false);
         }
     };
 
     const handleLoadPortfolio = async (portfolioId) => {
+        const ownerId = user?.uid;
         try {
             const portfolio = await getPortfolioById(portfolioId);
+            if (activeUserIdRef.current !== ownerId) return;
 
-            if (portfolio?.userId === user.uid) {
+            if (portfolio?.userId === ownerId) {
                 // Owners resume unpublished edits without replacing the currently published snapshot.
                 let newPortfolioData = portfolio.draftData || portfolio.data || initialData;
 
@@ -677,6 +724,7 @@ const PortfolioBuilder = () => {
                 lastDataRef.current = newPortfolioData;
                 setPortfolioData(newPortfolioData);
                 setCurrentPortfolioId(portfolioId);
+                setCurrentPortfolioRevision(Number(portfolio.revision) || 0);
                 setPortfolioSettings({
                     title: editableTitle,
                     description: editableMetadata.description || '',
@@ -684,6 +732,7 @@ const PortfolioBuilder = () => {
                     seoTitle: editableMetadata.seoTitle || '',
                     seoDescription: editableMetadata.seoDescription || '',
                 });
+                setPortfolioConflict(false);
                 setHasUnsavedChanges(false);
 
                 // Only close modal if it's open (when called from manage modal)
@@ -698,6 +747,75 @@ const PortfolioBuilder = () => {
         }
     };
 
+    const handleReloadPortfolioConflict = async () => {
+        if (!currentPortfolioId || !window.confirm('Reload the newer saved portfolio? Your unsaved local changes will be discarded.')) return;
+        setPortfolioConflict(false);
+        await handleLoadPortfolio(currentPortfolioId);
+    };
+
+    const handleSaveConflictAsCopy = async () => {
+        if (!user?.uid) return;
+        setIsSaving(true);
+        try {
+            const localData = JSON.parse(JSON.stringify(lastDataRef.current || portfolioData));
+            localData.content = (localData.content || []).map(component => SecurityUtils.sanitizeComponentProps(component));
+            const originalTitle = localData.root?.props?.title || portfolioSettings.title || 'My Portfolio';
+            const copyTitle = `${SecurityUtils.sanitizeText(originalTitle)} (Recovered Copy)`;
+            localData.root = localData.root || { props: {} };
+            localData.root.props = { ...(localData.root.props || {}), title: copyTitle };
+            const result = await savePortfolioDraft(user.uid, {
+                ...localData,
+                title: copyTitle,
+                description: SecurityUtils.sanitizeText(localData.root.props.description || portfolioSettings.description),
+                tags: Array.isArray(portfolioSettings.tags) ? portfolioSettings.tags.map(tag => SecurityUtils.sanitizeText(tag)).filter(Boolean) : [],
+                seoTitle: SecurityUtils.sanitizeText(portfolioSettings.seoTitle || copyTitle),
+                seoDescription: SecurityUtils.sanitizeText(portfolioSettings.seoDescription || portfolioSettings.description),
+            }, null, 'default', null);
+            setCurrentPortfolioId(result.id);
+            setCurrentPortfolioRevision(result.revision);
+            setPortfolioConflict(false);
+            setHasUnsavedChanges(false);
+            await loadUserPortfolios();
+            showToast('Success', 'Recovered changes were saved as a separate portfolio.');
+        } catch (error) {
+            showToast('Error', error.message || 'Unable to save a recovered copy.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleDuplicatePortfolio = async portfolio => {
+        try {
+            await duplicatePortfolio(user.uid, portfolio.id);
+            await loadUserPortfolios();
+            showToast('Success', 'Portfolio duplicated as a private draft.');
+        } catch (error) {
+            showToast('Error', error.message || 'Unable to duplicate portfolio.');
+        }
+    };
+
+    const handleRenamePortfolio = async portfolio => {
+        const title = window.prompt('Rename portfolio', portfolio.draftTitle || portfolio.title || 'Portfolio');
+        if (!title?.trim()) return;
+        try {
+            const result = await renamePortfolio(user.uid, portfolio.id, title, Number(portfolio.revision) || 0);
+            if (currentPortfolioId === portfolio.id) {
+                const updated = JSON.parse(JSON.stringify(lastDataRef.current || portfolioData));
+                updated.root = updated.root || { props: {} };
+                updated.root.props = { ...(updated.root.props || {}), title: result.title };
+                lastDataRef.current = updated;
+                setPortfolioData(updated);
+                setCurrentPortfolioRevision(result.revision);
+                setPortfolioSettings(current => ({ ...current, title: result.title }));
+                setHasUnsavedChanges(false);
+            }
+            await loadUserPortfolios();
+            showToast('Success', 'Portfolio renamed. Published content remains unchanged until you publish the draft.');
+        } catch (error) {
+            showToast('Error', error.code === 'PORTFOLIO_CONFLICT' ? 'Portfolio changed elsewhere. Reload before renaming.' : error.message);
+        }
+    };
+
     const handleDeletePortfolio = async (portfolioId) => {
         showConfirmModal(
             'Delete Portfolio',
@@ -708,6 +826,8 @@ const PortfolioBuilder = () => {
                     await loadUserPortfolios();
                     if (currentPortfolioId === portfolioId) {
                         setCurrentPortfolioId(null);
+
+                        setCurrentPortfolioRevision(null);
                         setPortfolioData(initialData);
                         setPortfolioSettings({
                             title: 'My Portfolio',
@@ -748,6 +868,8 @@ const PortfolioBuilder = () => {
                 () => {
                     const newPortfolioData = JSON.parse(JSON.stringify(initialData));
                     setCurrentPortfolioId(null);
+
+                    setCurrentPortfolioRevision(null);
                     lastDataRef.current = newPortfolioData;
                     setPortfolioData(newPortfolioData);
                     setRenderKey((prev) => prev + 1); // Force Puck to re-render
@@ -769,6 +891,8 @@ const PortfolioBuilder = () => {
         } else {
             const newPortfolioData = JSON.parse(JSON.stringify(initialData));
             setCurrentPortfolioId(null);
+
+            setCurrentPortfolioRevision(null);
             lastDataRef.current = newPortfolioData;
             setPortfolioData(newPortfolioData);
             setRenderKey((prev) => prev + 1);
@@ -839,8 +963,8 @@ const PortfolioBuilder = () => {
                                     </span>
                                 )}
                             </div>
-                            <span className={`text-xs font-medium ${hasUnsavedChanges ? 'text-amber-700' : 'text-green-700'}`} role="status">
-                                {hasUnsavedChanges ? 'Unsaved' : 'Saved'}
+                            <span className={`text-xs font-medium ${portfolioConflict ? 'text-red-700' : hasUnsavedChanges ? 'text-amber-700' : 'text-green-700'}`} role="status">
+                                {portfolioConflict ? 'Conflict' : hasUnsavedChanges ? 'Unsaved' : 'Saved'}
                             </span>
                             <button
                                 onClick={() => setShowTemplateSelector(true)}
@@ -918,7 +1042,7 @@ const PortfolioBuilder = () => {
                 </>
             );
         },
-        [headerActionProps, currentPortfolioId, isSaving, hasUnsavedChanges]
+        [headerActionProps, currentPortfolioId, isSaving, hasUnsavedChanges, portfolioConflict]
     );
 
     // Template Selection Functions
@@ -931,6 +1055,7 @@ const PortfolioBuilder = () => {
 
             // Use the utility function to load the template
             const result = await loadTemplate(templateKey, initialData, setPortfolioData, setCurrentPortfolioId, setPortfolioSettings, setRenderKey);
+            setCurrentPortfolioRevision(null);
             setHasUnsavedChanges(true);
 
             // Show success notification
@@ -968,11 +1093,11 @@ const PortfolioBuilder = () => {
     // Create optimized onChange handler with smart debouncing
     const handlePuckChange = useCallback((data) => {
         setHasUnsavedChanges(true);
-        lastDataRef.current = data;
-        // Simple heuristic to detect typing vs structural changes
+        // Compare before replacing the latest ref so drag/drop changes update immediately.
         const currentContentLength = data?.content?.length || 0;
         const lastContentLength = lastDataRef.current?.content?.length || 0;
         const isStructuralChange = currentContentLength !== lastContentLength;
+        lastDataRef.current = data;
 
         if (isStructuralChange) {
             // Structural changes (drag/drop, add/remove components) - update immediately
@@ -994,6 +1119,12 @@ const PortfolioBuilder = () => {
         }
     }, []);
 
+    useEffect(() => {
+        if (!hasUnsavedChanges || !currentPortfolioId || !user?.uid || isSaving || isPublishing || portfolioConflict) return undefined;
+        const timer = setTimeout(() => handleSaveDraft(), 2500);
+        return () => clearTimeout(timer);
+    }, [hasUnsavedChanges, currentPortfolioId, currentPortfolioRevision, portfolioData, user?.uid, isSaving, isPublishing, portfolioConflict]);
+
     if (user === null) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -1008,6 +1139,16 @@ const PortfolioBuilder = () => {
     return (
         <>
             <div className="min-h-screen bg-gray-50">
+                {portfolioConflict && (
+                    <div role="alert" className="fixed left-1/2 top-4 z-[100001] w-[calc(100%_-_2rem)] max-w-xl -translate-x-1/2 rounded-lg border border-amber-300 bg-white p-4 shadow-xl">
+                        <p className="text-sm font-semibold text-amber-900">This portfolio was updated in another tab or device.</p>
+                        <p className="mt-1 text-xs text-slate-600">Reload revision {portfolioConflict.remoteRevision}, or preserve this tab’s changes as a separate draft.</p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                            <button type="button" onClick={handleReloadPortfolioConflict} className="rounded-md bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white">Reload newer version</button>
+                            <button type="button" onClick={handleSaveConflictAsCopy} disabled={isSaving} className="rounded-md border border-amber-400 px-3 py-1.5 text-xs font-semibold text-amber-900 disabled:opacity-60">Save my changes as a copy</button>
+                        </div>
+                    </div>
+                )}
                 {/* Portfolio Builder */}
                 <Puck
                     key={`portfolio-${currentPortfolioId || 'new'}-${renderKey}`}
@@ -1031,6 +1172,9 @@ const PortfolioBuilder = () => {
                     createPortal(
                         <div
                             className="fixed inset-0 overflow-y-auto"
+                            role="dialog"
+                            aria-modal="true"
+                            aria-labelledby="manage-portfolios-title"
                             style={{
                                 zIndex: 99999,
                                 backgroundColor: 'rgba(0,0,0,0.75)',
@@ -1054,7 +1198,7 @@ const PortfolioBuilder = () => {
                                                         d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
                                                     />
                                                 </svg>
-                                                <h3 className="text-xl font-semibold text-white">My Portfolios</h3>
+                                                <h3 id="manage-portfolios-title" className="text-xl font-semibold text-white">My Portfolios</h3>
                                             </div>
                                             <div className="flex items-center space-x-3">
                                                 <button
@@ -1071,7 +1215,7 @@ const PortfolioBuilder = () => {
                                                     </svg>
                                                     {loadingPortfolios ? 'Loading...' : 'Refresh'}
                                                 </button>
-                                                <button onClick={() => setShowManageModal(false)} className=" cursor-pointer text-white/80 hover:text-white transition-colors p-1">
+                                                <button ref={modalCloseRef} type="button" aria-label="Close portfolio manager" onClick={() => setShowManageModal(false)} className="cursor-pointer text-white/80 hover:text-white transition-colors p-1">
                                                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                                     </svg>
@@ -1100,8 +1244,9 @@ const PortfolioBuilder = () => {
                                                                 {/* Portfolio Header */}
                                                                 <div className="flex items-start justify-between mb-3">
                                                                     <div className="flex-1 min-w-0">
-                                                                        <h4 className="font-semibold text-gray-900 text-lg truncate">{portfolio.title}</h4>
+                                                                        <h4 className="font-semibold text-gray-900 text-lg truncate">{portfolio.draftTitle || portfolio.title}</h4>
                                                                         <p className="text-sm text-gray-500 mt-1">Theme: {portfolio.theme || 'Default'}</p>
+                                                                        {portfolio.hasUnpublishedChanges && <p className="mt-1 text-xs font-medium text-amber-700">Unpublished changes</p>}
                                                                     </div>
                                                                     <div className="flex-shrink-0 ml-3">
                                                                         {portfolio.isPublished ? (
@@ -1138,7 +1283,7 @@ const PortfolioBuilder = () => {
                                                                 )}
 
                                                                 {/* Action Buttons */}
-                                                                <div className="flex space-x-2">
+                                                                <div className="flex flex-wrap gap-2">
                                                                     <button
                                                                         onClick={() => handleLoadPortfolio(portfolio.id)}
                                                                         className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 hover:border-blue-300 transition-colors">
@@ -1171,9 +1316,12 @@ const PortfolioBuilder = () => {
                                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                                                             )}
                                                                         </svg>
-                                                                        {portfolio.isPublished ? 'Hide' : 'Publish'}
+                                                                        {portfolio.isPublished ? 'Hide' : portfolio.hasUnpublishedChanges ? 'Show Previous Version' : 'Publish'}
                                                                     </button>
+                                                                    <button type="button" onClick={() => handleRenamePortfolio(portfolio)} className="px-3 py-2 text-sm font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-md hover:bg-slate-100">Rename</button>
+                                                                    <button type="button" onClick={() => handleDuplicatePortfolio(portfolio)} className="px-3 py-2 text-sm font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-md hover:bg-purple-100">Duplicate</button>
                                                                     <button
+                                                                        aria-label={`Delete ${portfolio.draftTitle || portfolio.title || 'portfolio'}`}
                                                                         onClick={() => handleDeletePortfolio(portfolio.id)}
                                                                         className="px-3 py-2 text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 hover:border-red-300 transition-colors">
                                                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1449,7 +1597,7 @@ const PortfolioBuilder = () => {
                 {/* Publish Success Modal */}
                 {publishSuccessModal.show &&
                     createPortal(
-                        <div className="fixed inset-0 overflow-y-auto" style={{ zIndex: 99999, backgroundColor: 'rgba(0,0,0,0.75)' }}>
+                        <div className="fixed inset-0 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="portfolio-published-title" style={{ zIndex: 99999, backgroundColor: 'rgba(0,0,0,0.75)' }}>
                             <div className="flex items-center justify-center min-h-screen p-4">
                                 <div className="bg-white rounded-xl shadow-2xl w-full max-w-md" style={{ zIndex: 100000 }}>
                                     <div className="p-6">
@@ -1461,7 +1609,7 @@ const PortfolioBuilder = () => {
                                                 </svg>
                                             </div>
                                             <div>
-                                                <h3 className="text-xl font-semibold text-gray-900">{publishSuccessModal.isNewlyPublished ? 'Portfolio Published!' : 'Portfolio Updated!'}</h3>
+                                                <h3 id="portfolio-published-title" className="text-xl font-semibold text-gray-900">{publishSuccessModal.isNewlyPublished ? 'Portfolio Published!' : 'Portfolio Updated!'}</h3>
                                                 <p className="text-sm text-gray-600 mt-1">Your portfolio is now live</p>
                                             </div>
                                         </div>
@@ -1492,12 +1640,14 @@ const PortfolioBuilder = () => {
                                         {/* Action Buttons */}
                                         <div className="flex space-x-3">
                                             <button
+                                                ref={modalCloseRef}
+                                                type="button"
                                                 onClick={hidePublishSuccessModal}
                                                 className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
                                                 Continue Editing
                                             </button>
                                             <button
-                                                onClick={() => window.open(publishSuccessModal.portfolioUrl, '_blank')}
+                                                onClick={() => window.open(publishSuccessModal.portfolioUrl, '_blank', 'noopener,noreferrer')}
                                                 className="flex-1 inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-green-600 to-blue-600 border border-transparent rounded-md hover:from-green-700 hover:to-blue-700 transition-all duration-200 shadow-sm">
                                                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path
@@ -1520,7 +1670,7 @@ const PortfolioBuilder = () => {
                 {/* Confirmation Modal */}
                 {confirmModal.show &&
                     createPortal(
-                        <div className="fixed inset-0 overflow-y-auto" style={{ zIndex: 99999, backgroundColor: 'rgba(0,0,0,0.75)' }}>
+                        <div className="fixed inset-0 overflow-y-auto" role="alertdialog" aria-modal="true" aria-labelledby="portfolio-confirm-title" style={{ zIndex: 99999, backgroundColor: 'rgba(0,0,0,0.75)' }}>
                             <div className="flex items-center justify-center min-h-screen p-4">
                                 <div className="bg-white rounded-xl shadow-2xl w-full max-w-md" style={{ zIndex: 100000 }}>
                                     <div className="p-6">
@@ -1535,11 +1685,13 @@ const PortfolioBuilder = () => {
                                                     />
                                                 </svg>
                                             </div>
-                                            <h3 className="text-lg font-semibold text-gray-900">{confirmModal.title}</h3>
+                                            <h3 id="portfolio-confirm-title" className="text-lg font-semibold text-gray-900">{confirmModal.title}</h3>
                                         </div>
                                         <p className="text-gray-600 mb-6">{confirmModal.message}</p>
                                         <div className="flex space-x-3 justify-end">
                                             <button
+                                                ref={modalCloseRef}
+                                                type="button"
                                                 onClick={hideConfirmModal}
                                                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
                                                 {confirmModal.cancelText}

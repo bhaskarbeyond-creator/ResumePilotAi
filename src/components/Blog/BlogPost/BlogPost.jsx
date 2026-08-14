@@ -20,7 +20,6 @@ import {
     FiClock, 
     FiArrowLeft,
     FiShare2,
-    FiEdit3,
     FiBookmark
 } from 'react-icons/fi';
 
@@ -127,12 +126,30 @@ const BlogPost = () => {
         setMeta('meta[property="og:description"]', { property: 'og:description', content: description });
         setMeta('meta[property="og:type"]', { property: 'og:type', content: 'article' });
         setMeta('meta[property="og:url"]', { property: 'og:url', content: canonical });
+        setMeta('meta[name="twitter:card"]', { name: 'twitter:card', content: post.featuredImage ? 'summary_large_image' : 'summary' });
+        setMeta('meta[name="twitter:title"]', { name: 'twitter:title', content: title });
+        setMeta('meta[name="twitter:description"]', { name: 'twitter:description', content: description });
+        setMeta('meta[name="robots"]', { name: 'robots', content: 'index,follow' });
         setMeta('link[rel="canonical"]', { rel: 'canonical', href: canonical });
         const image = sanitizeImageUrl(post.featuredImage);
-        if (image) setMeta('meta[property="og:image"]', { property: 'og:image', content: image });
+        if (image) {
+            setMeta('meta[property="og:image"]', { property: 'og:image', content: image });
+            setMeta('meta[name="twitter:image"]', { name: 'twitter:image', content: image });
+        }
+        const structuredData = document.createElement('script');
+        structuredData.type = 'application/ld+json';
+        structuredData.dataset.blogStructuredData = 'true';
+        structuredData.textContent = JSON.stringify({
+            '@context': 'https://schema.org', '@type': 'BlogPosting', headline: title, description,
+            datePublished: post.publishedAt || post.createdAt || undefined,
+            dateModified: post.updatedAt || post.publishedAt || undefined,
+            mainEntityOfPage: canonical, image: image || undefined,
+        }).replace(/</g, '\\u003c');
+        document.head.appendChild(structuredData);
 
         return () => {
             document.title = previousTitle;
+            structuredData.remove();
             for (const { element, created, previous } of changed) {
                 if (created) element.remove();
                 else for (const [key, value] of Object.entries(previous)) {
@@ -369,14 +386,8 @@ const BlogPost = () => {
 
                     {/* Author Actions */}
                     {canEdit && (
-                        <div className="mb-6">
-                            <Link
-                                to={`/blog-editor/${post.id}`}
-                                className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 shadow-sm"
-                            >
-                                <FiEdit3 className="w-4 h-4 mr-2" />
-                                Edit Article
-                            </Link>
+                        <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900" role="note">
+                            This article is published. An administrator must return it for revision before its author draft can be edited.
                         </div>
                     )}
 

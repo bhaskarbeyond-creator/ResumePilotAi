@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { 
     listBlogPosts, 
@@ -24,6 +24,7 @@ import {
     FiRefreshCw
 } from 'react-icons/fi';
 import BlogPreviewModal from './BlogPreviewModal';
+import fire from '../../../conf/fire';
 
 const BlogManagement = () => {
     const [posts, setPosts] = useState([]);
@@ -46,9 +47,11 @@ const BlogManagement = () => {
     const [pagination, setPagination] = useState(null);
     const [stats, setStats] = useState({
         total: 0,
+        draft: 0,
         pending: 0,
         approved: 0,
-        rejected: 0
+        rejected: 0,
+        scheduled: 0
     });
 
     // Expanded rows for viewing content
@@ -57,6 +60,10 @@ const BlogManagement = () => {
     // Preview modal state
     const [previewPost, setPreviewPost] = useState(null);
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+    const [schedulePost, setSchedulePost] = useState(null);
+    const [scheduleValue, setScheduleValue] = useState('');
+    const [confirmation, setConfirmation] = useState(null);
+    const loadRequestRef = useRef(0);
 
     useEffect(() => {
         loadData();
@@ -67,6 +74,7 @@ const BlogManagement = () => {
     }, []);
 
     const loadData = async () => {
+        const requestId = ++loadRequestRef.current;
         setLoading(true);
         
         try {
@@ -83,19 +91,21 @@ const BlogManagement = () => {
             const result = await listBlogPosts(options);
             
             if (result.success) {
-                // Enrich posts with author data
-                const enrichedPosts = await Promise.all(
-                    result.posts.map(async (post) => {
-                        const authorData = await getUserData(post.authorUid);
-                        return {
-                            ...post,
-                            authorName: authorData ? 
-                                `${authorData.firstname || ''} ${authorData.lastname || ''}`.trim() || 'Unknown' 
-                                : 'Unknown'
-                        };
-                    })
-                );
+                // Fetch each unique author once rather than once per row.
+                const authorIds = [...new Set(result.posts.map(post => post.authorUid).filter(Boolean))];
+                const authorEntries = await Promise.all(authorIds.map(async uid => [uid, await getUserData(uid)]));
+                const authors = new Map(authorEntries);
+                const enrichedPosts = result.posts.map(post => {
+                    const authorData = authors.get(post.authorUid);
+                    return {
+                        ...post,
+                        authorName: authorData
+                            ? `${authorData.firstname || ''} ${authorData.lastname || ''}`.trim() || 'Unknown'
+                            : 'Unknown'
+                    };
+                });
                 
+                if (requestId !== loadRequestRef.current) return;
                 setPosts(enrichedPosts);
                 setPagination(result.pagination);
                 if (result.stats) {
@@ -104,9 +114,9 @@ const BlogManagement = () => {
             }
         } catch (error) {
             console.error('Error loading blog posts:', error);
-            showNotification('Failed to load blog posts', 'error');
+            if (requestId === loadRequestRef.current) showNotification('Failed to load blog posts', 'error');
         } finally {
-            setLoading(false);
+            if (requestId === loadRequestRef.current) setLoading(false);
         }
     };
 
@@ -124,16 +134,21 @@ const BlogManagement = () => {
         setTimeout(() => setNotification(null), 5000);
     };
 
-    const handleStatusUpdate = async (postId, newStatus, customMessage = '') => {
+    const handleStatusUpdate = async (postId, newStatus, expectedRevision, confirmed = false) => {
+        if (!confirmed) {
+            const publishing = newStatus === 'approved';
+            setConfirmation({
+                title: publishing ? 'Publish post now?' : 'Return post for revision?',
+                message: publishing ? 'This post will immediately become public and indexable.' : 'This post will become private and return to the author for revision.',
+                onConfirm: () => handleStatusUpdate(postId, newStatus, expectedRevision, true),
+            });
+            return;
+        }
+        setConfirmation(null);
         setProcessing(true);
         
         try {
-            const updateData = { status: newStatus };
-            if (customMessage) {
-                updateData.adminNotes = customMessage;
-            }
-
-            const result = await updateBlogPost(postId, updateData);
+            const result = await updateBlogPost(postId, { status: newStatus }, null, expectedRevision);
             
             if (result.success) {
                 showNotification(
@@ -151,55 +166,107 @@ const BlogManagement = () => {
         }
     };
 
-    const handleBulkAction = async (action) => {
+    const handleSchedulePost = post => {
+        const localDefault = new Date(Date.now() + 3600000);
+        localDefault.setMinutes(localDefault.getMinutes() - localDefault.getTimezoneOffset());
+        setScheduleValue(localDefault.toISOString().slice(0, 16));
+        setSchedulePost(post);
+    };
+
+    const confirmSchedulePost = async event => {
+        event.preventDefault();
+        const scheduledAt = new Date(scheduleValue);
+        if (!Number.isFinite(scheduledAt.getTime()) || scheduledAt <= new Date()) {
+            showNotification('Choose a valid future publication time.', 'error');
+            return;
+        }
+        setProcessing(true);
+        try {
+            const result = await updateBlogPost(schedulePost.id, { status: 'scheduled', scheduledAt }, null, schedulePost.revision);
+            if (!result.success) throw new Error(result.error);
+            showNotification('Post scheduled successfully.');
+            setSchedulePost(null);
+            await loadData();
+        } catch (error) {
+            showNotification(error.message || 'Unable to schedule post.', 'error');
+            await loadData();
+        } finally {
+            setProcessing(false);
+        }
+    };
+
+    const handlePublishDue = async () => {
+        setProcessing(true);
+        try {
+            const response = await fetch('/api/admin/blog/publish-due', { method: 'POST' });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result.success) throw new Error(result.error || 'Scheduler failed');
+            showNotification(`${result.published} scheduled post(s) published.`);
+            await loadData();
+        } catch (error) {
+            showNotification(error.message || 'Unable to publish scheduled posts.', 'error');
+        } finally {
+            setProcessing(false);
+        }
+    };
+
+    const handleBulkAction = async (action, confirmed = false) => {
         if (selectedPosts.length === 0) {
             showNotification('Please select posts to perform bulk action', 'error');
             return;
         }
-
-        const confirmation = window.confirm(
-            `Are you sure you want to ${action} ${selectedPosts.length} post(s)?`
-        );
-        
-        if (!confirmation) return;
-
+        const selectedRecords = selectedPosts.map(postId => posts.find(item => item.id === postId));
+        if (selectedRecords.some(post => !post)) {
+            showNotification('One or more selected posts are stale. Refresh and select them again.', 'error');
+            await loadData();
+            return;
+        }
+        if (['approve', 'reject'].includes(action) && selectedRecords.some(post => post.status !== 'pending')) {
+            showNotification(`Only pending posts can be bulk ${action}d. No changes were made.`, 'error');
+            return;
+        }
+        if (!confirmed) {
+            setConfirmation({ title: `Confirm ${action}`, message: `Are you sure you want to ${action} ${selectedPosts.length} post(s)?`, onConfirm: () => handleBulkAction(action, true) });
+            return;
+        }
+        setConfirmation(null);
         setProcessing(true);
         
         try {
             const promises = selectedPosts.map(postId => {
-                if (action === 'approve') {
-                    return updateBlogPost(postId, { status: 'approved' });
-                } else if (action === 'reject') {
-                    return updateBlogPost(postId, { status: 'rejected' });
-                } else if (action === 'delete') {
-                    return deleteBlogPost(postId);
-                }
+                const post = posts.find(item => item.id === postId);
+                if (!post) return Promise.resolve({ success: false, error: 'Post is no longer in the current result set.' });
+                if (action === 'approve') return updateBlogPost(postId, { status: 'approved' }, null, post.revision);
+                if (action === 'reject') return updateBlogPost(postId, { status: 'rejected' }, null, post.revision);
+                if (action === 'delete') return deleteBlogPost(postId, null, post.revision);
+                return Promise.resolve({ success: false, error: 'Unsupported bulk action.' });
             });
 
-            await Promise.all(promises);
-            
+            const results = await Promise.all(promises);
+            const failures = results.filter(result => !result?.success);
+            if (failures.length) throw new Error(`${failures.length} post(s) changed or failed. The list will be refreshed.`);
             showNotification(`Successfully ${action}d ${selectedPosts.length} post(s)!`);
             setSelectedPosts([]);
             await loadData();
         } catch (error) {
             console.error('Error performing bulk action:', error);
-            showNotification('Failed to perform bulk action', 'error');
+            showNotification(error.message || 'Failed to perform bulk action', 'error');
+            await loadData();
         } finally {
             setProcessing(false);
         }
     };
     
-    const handleDeletePost = async (postId, postTitle) => {
-        const confirmation = window.confirm(
-            `Are you sure you want to delete the post "${postTitle}"? This action cannot be undone.`
-        );
-        
-        if (!confirmation) return;
-
+    const handleDeletePost = async (postId, postTitle, expectedRevision, confirmed = false) => {
+        if (!confirmed) {
+            setConfirmation({ title: 'Delete post?', message: `Delete “${postTitle}”? This action cannot be undone.`, onConfirm: () => handleDeletePost(postId, postTitle, expectedRevision, true) });
+            return;
+        }
+        setConfirmation(null);
         setProcessing(true);
         
         try {
-            const result = await deleteBlogPost(postId);
+            const result = await deleteBlogPost(postId, null, expectedRevision);
             
             if (result.success) {
                 showNotification('Post deleted successfully!');
@@ -255,9 +322,11 @@ const BlogManagement = () => {
 
     const getStatusBadge = (status) => {
         const badges = {
+            draft: { color: 'bg-slate-100 text-slate-800', text: 'Draft' },
             pending: { color: 'bg-yellow-100 text-yellow-800', text: 'Pending' },
             approved: { color: 'bg-green-100 text-green-800', text: 'Approved' },
-            rejected: { color: 'bg-red-100 text-red-800', text: 'Rejected' }
+            rejected: { color: 'bg-red-100 text-red-800', text: 'Rejected' },
+            scheduled: { color: 'bg-purple-100 text-purple-800', text: 'Scheduled' }
         };
         
         const badge = badges[status] || badges.pending;
@@ -323,7 +392,7 @@ const BlogManagement = () => {
 
             {/* Notification */}
             {notification && (
-                <div className={`p-4 rounded-lg ${
+                <div role={notification.type === 'success' ? 'status' : 'alert'} aria-live="polite" className={`p-4 rounded-lg ${
                     notification.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
                 }`}>
                     <div className="flex items-center">
@@ -355,22 +424,26 @@ const BlogManagement = () => {
                 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <label htmlFor="blog-status-filter" className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                         <select
+                            id="blog-status-filter"
                             value={filters.status}
                             onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         >
                             <option value="all">All Status</option>
+                            <option value="draft">Draft</option>
                             <option value="pending">Pending</option>
                             <option value="approved">Approved</option>
+                            <option value="scheduled">Scheduled</option>
                             <option value="rejected">Rejected</option>
                         </select>
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                        <label htmlFor="blog-category-filter" className="block text-sm font-medium text-gray-700 mb-1">Category</label>
                         <select
+                            id="blog-category-filter"
                             value={filters.category}
                             onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value }))}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -385,12 +458,13 @@ const BlogManagement = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                        <label htmlFor="blog-search-filter" className="block text-sm font-medium text-gray-700 mb-1">Filter titles on this page</label>
                         <div className="relative">
                             <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                             <input
+                                id="blog-search-filter"
                                 type="text"
-                                placeholder="Search titles..."
+                                placeholder="Filter visible titles..."
                                 value={filters.search}
                                 onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
                                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -399,16 +473,21 @@ const BlogManagement = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Author</label>
+                        <label htmlFor="blog-author-filter" className="block text-sm font-medium text-gray-700 mb-1">Filter authors on this page</label>
                         <input
+                            id="blog-author-filter"
                             type="text"
-                            placeholder="Filter by author..."
+                            placeholder="Filter visible authors..."
                             value={filters.author}
                             onChange={(e) => setFilters(prev => ({ ...prev, author: e.target.value }))}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
                     </div>
                 </div>
+            </div>
+
+            <div className="flex justify-end">
+                <button type="button" onClick={handlePublishDue} disabled={processing} className="rounded-md border border-purple-300 bg-purple-50 px-3 py-2 text-sm font-medium text-purple-800 disabled:opacity-50">Publish due scheduled posts</button>
             </div>
 
             {/* Bulk Actions */}
@@ -516,6 +595,7 @@ const BlogManagement = () => {
                                                         <button
                                                             onClick={() => toggleRowExpansion(post.id)}
                                                             className="ml-3 p-1.5 hover:bg-gray-200 rounded-md transition-colors flex-shrink-0"
+                                                            aria-label="Toggle content preview"
                                                             title="Toggle content preview"
                                                         >
                                                             {expandedRows.has(post.id) ? (
@@ -583,6 +663,7 @@ const BlogManagement = () => {
                                                             to={`/blog/${post.slug}`}
                                                             target="_blank"
                                                             className="inline-flex items-center p-2 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                                                            aria-label="View live post"
                                                             title="View live post"
                                                         >
                                                             <FiEye className="w-4 h-4" />
@@ -592,48 +673,68 @@ const BlogManagement = () => {
                                                         <button
                                                             onClick={() => handlePreviewPost(post)}
                                                             className="inline-flex items-center p-2 text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
+                                                            aria-label="Preview post"
                                                             title="Preview post"
                                                         >
                                                             <FiEye className="w-4 h-4" />
                                                         </button>
                                                     )}
                                                     
-                                                    {/* Edit button */}
-                                                    <Link
-                                                        to={`/blog-editor/${post.id}`}
-                                                        className="inline-flex items-center p-2 text-gray-600 hover:bg-gray-50 rounded-md transition-colors"
-                                                        title="Edit post"
-                                                    >
-                                                        <FiEdit3 className="w-4 h-4" />
-                                                    </Link>
+                                                    {/* The author editor can only load the signed-in user's own drafts. */}
+                                                    {post.authorUid === fire.auth().currentUser?.uid && ['draft', 'pending', 'rejected'].includes(post.status) && (
+                                                        <Link
+                                                            to={`/blog-editor/${post.id}`}
+                                                            className="inline-flex items-center p-2 text-gray-600 hover:bg-gray-50 rounded-md transition-colors"
+                                                            aria-label="Edit your post"
+                                                            title="Edit your post"
+                                                        >
+                                                            <FiEdit3 className="w-4 h-4" />
+                                                        </Link>
+                                                    )}
 
                                                     {/* Status action buttons for pending posts */}
                                                     {post.status === 'pending' && (
                                                         <>
                                                             <button
-                                                                onClick={() => handleStatusUpdate(post.id, 'approved')}
+                                                                onClick={() => handleStatusUpdate(post.id, 'approved', post.revision)}
                                                                 disabled={processing}
                                                                 className="inline-flex items-center p-2 text-green-600 hover:bg-green-50 rounded-md disabled:opacity-50 transition-colors"
+                                                                aria-label="Approve post"
                                                                 title="Approve post"
                                                             >
                                                                 <FiCheck className="w-4 h-4" />
                                                             </button>
                                                             <button
-                                                                onClick={() => handleStatusUpdate(post.id, 'rejected')}
+                                                                onClick={() => handleSchedulePost(post)}
+                                                                disabled={processing}
+                                                                className="inline-flex items-center px-2 py-1 text-xs font-medium text-purple-700 hover:bg-purple-50 rounded-md disabled:opacity-50"
+                                                                aria-label="Schedule publication"
+                                                                title="Schedule publication"
+                                                            >Schedule</button>
+                                                            <button
+                                                                onClick={() => handleStatusUpdate(post.id, 'rejected', post.revision)}
                                                                 disabled={processing}
                                                                 className="inline-flex items-center p-2 text-red-600 hover:bg-red-50 rounded-md disabled:opacity-50 transition-colors"
+                                                                aria-label="Reject post"
                                                                 title="Reject post"
                                                             >
                                                                 <FiX className="w-4 h-4" />
                                                             </button>
                                                         </>
                                                     )}
+                                                    {post.status === 'approved' && (
+                                                        <button onClick={() => handleStatusUpdate(post.id, 'rejected', post.revision)} disabled={processing} className="inline-flex items-center px-2 py-1 text-xs font-medium text-amber-700 hover:bg-amber-50 rounded-md disabled:opacity-50" aria-label="Unpublish and return for revision" title="Unpublish and return for revision">Unpublish</button>
+                                                    )}
+                                                    {post.status === 'scheduled' && (
+                                                        <button onClick={() => handleStatusUpdate(post.id, 'rejected', post.revision)} disabled={processing} className="inline-flex items-center px-2 py-1 text-xs font-medium text-amber-700 hover:bg-amber-50 rounded-md disabled:opacity-50" aria-label="Cancel scheduled publication" title="Cancel scheduled publication">Cancel schedule</button>
+                                                    )}
                                                     
                                                     {/* Delete button */}
                                                     <button
-                                                        onClick={() => handleDeletePost(post.id, post.title)}
+                                                        onClick={() => handleDeletePost(post.id, post.title, post.revision)}
                                                         disabled={processing}
                                                         className="inline-flex items-center p-2 text-red-600 hover:bg-red-50 rounded-md disabled:opacity-50 transition-colors"
+                                                        aria-label="Delete post"
                                                         title="Delete post"
                                                     >
                                                         <FiTrash2 className="w-4 h-4" />
@@ -684,12 +785,12 @@ const BlogManagement = () => {
                                                                         >
                                                                             Full Preview
                                                                         </button>
-                                                                        {post.slug && (
+                                                                        {post.authorUid === fire.auth().currentUser?.uid && ['draft', 'pending', 'rejected'].includes(post.status) && (
                                                                             <Link
                                                                                 to={`/blog-editor/${post.id}`}
                                                                                 className="w-full inline-block px-3 py-2 bg-gray-100 text-gray-700 rounded-md text-sm font-medium text-center hover:bg-gray-200 transition-colors"
                                                                             >
-                                                                                Edit Post
+                                                                                Edit Your Post
                                                                             </Link>
                                                                         )}
                                                                     </div>
@@ -739,6 +840,34 @@ const BlogManagement = () => {
                 )}
             </div>
             
+            {confirmation && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="presentation" onKeyDown={event => { if (event.key === 'Escape' && !processing) setConfirmation(null); }}>
+                    <div role="alertdialog" aria-modal="true" aria-labelledby="cms-confirm-title" aria-describedby="cms-confirm-message" className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+                        <h2 id="cms-confirm-title" className="text-lg font-semibold text-gray-900">{confirmation.title}</h2>
+                        <p id="cms-confirm-message" className="mt-2 text-sm text-gray-600">{confirmation.message}</p>
+                        <div className="mt-6 flex justify-end gap-3">
+                            <button type="button" autoFocus onClick={() => setConfirmation(null)} disabled={processing} className="rounded-md border border-gray-300 px-4 py-2 text-sm">Cancel</button>
+                            <button type="button" onClick={confirmation.onConfirm} disabled={processing} className="rounded-md bg-red-700 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">Confirm</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {schedulePost && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="presentation" onKeyDown={event => { if (event.key === 'Escape' && !processing) setSchedulePost(null); }}>
+                    <form role="dialog" aria-modal="true" aria-labelledby="schedule-dialog-title" onSubmit={confirmSchedulePost} className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+                        <h2 id="schedule-dialog-title" className="text-lg font-semibold text-gray-900">Schedule publication</h2>
+                        <p className="mt-2 text-sm text-gray-600">Confirm when “{schedulePost.title}” should become public. The trusted backend publishes it at or after this time.</p>
+                        <label htmlFor="schedule-date" className="mt-4 block text-sm font-medium text-gray-700">Publication date and time</label>
+                        <input id="schedule-date" type="datetime-local" value={scheduleValue} onChange={event => setScheduleValue(event.target.value)} autoFocus required className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2" />
+                        <div className="mt-6 flex justify-end gap-3">
+                            <button type="button" onClick={() => setSchedulePost(null)} disabled={processing} className="rounded-md border border-gray-300 px-4 py-2 text-sm">Cancel</button>
+                            <button type="submit" disabled={processing} className="rounded-md bg-purple-700 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">{processing ? 'Scheduling…' : 'Confirm schedule'}</button>
+                        </div>
+                    </form>
+                </div>
+            )}
+
             {/* Preview Modal */}
             <BlogPreviewModal 
                 post={previewPost}

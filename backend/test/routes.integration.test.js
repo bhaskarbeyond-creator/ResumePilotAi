@@ -34,6 +34,14 @@ test('protected endpoint rejects absent and invalid Firebase tokens', async () =
   assert.equal(invalid.body.error.code, 'INVALID_AUTH_TOKEN');
 });
 
+test('one-time export render data endpoint is public only through an opaque token', async () => {
+  const missing = await request(app).get('/api/export-render-data');
+  assert.equal(missing.status, 404);
+  assert.equal(missing.headers['cache-control'], 'no-store, private');
+  const forged = await request(app).get('/api/export-render-data?token=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
+  assert.equal(forged.status, 404);
+});
+
 test('valid authenticated user reaches an ordinary route', async () => {
   const response = await request(app).get('/api/rtl-font-config').set(bearer('user'));
   assert.equal(response.status, 200);
@@ -42,7 +50,7 @@ test('valid authenticated user reaches an ordinary route', async () => {
 });
 
 test('admin aliases and mail logs reject an ordinary authenticated user', async () => {
-  for (const route of ['/api/auth/purge-orphaned-auth', '/api/email/logs', '/api/email/admin/test-imap', '/api/send-sms']) {
+  for (const route of ['/api/auth/purge-orphaned-auth', '/api/email/logs', '/api/email/admin/test-imap', '/api/send-sms', '/api/admin/blog/publish-due']) {
     const method = route.includes('logs') ? 'get' : 'post';
     const response = await request(app)[method](route).set(bearer('user')).send({});
     assert.equal(response.status, 403, route);

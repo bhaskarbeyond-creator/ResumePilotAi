@@ -21,7 +21,12 @@ export default function Exporter({ resumeName }) {
         let active = true;
         document.documentElement.removeAttribute('data-export-ready');
         document.documentElement.removeAttribute('data-export-error');
-        getJsonById(resumeId)
+        const renderToken = new URLSearchParams(window.location.hash.replace(/^#/, '')).get('renderToken');
+        const dataRequest = renderToken
+            ? fetch(`/api/export-render-data?token=${encodeURIComponent(renderToken)}`, { cache: 'no-store' })
+                .then(async response => response.ok ? (await response.json()).data : null)
+            : getJsonById(resumeId);
+        dataRequest
             .then((data) => {
                 if (!active) return;
                 if (!data) {

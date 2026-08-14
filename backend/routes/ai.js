@@ -38,8 +38,15 @@ async function getGeminiApiKey(req) {
     }
 }
 
-// Provider credentials are server-owned. Bound prompt inputs before any paid provider call.
+// Provider credentials are server-owned. Scope validation strictly to AI routes because this
+// router is mounted at /api for legacy endpoint compatibility.
+const AI_ROUTE_PATHS = new Set([
+    '/generate-resume', '/generate-summary', '/generate-interview', '/generate-work-description',
+    '/generate-education-description', '/generate-skills', '/check-grammar', '/generate-content',
+    '/parse-resume', '/test-ai-config',
+]);
 router.use((req, res, next) => {
+    if (!AI_ROUTE_PATHS.has(req.path)) return next();
     const requestController = new AbortController();
     req.aiAbortSignal = requestController.signal;
     req.once('aborted', () => requestController.abort());

@@ -24,7 +24,8 @@ before(async () => {
     await setDoc(doc(db, 'jobApplications/application-1'), {
       userId: 'alice', jobId: 'active-job', applicantEmail: 'alice@example.com', email: 'alice@example.com', status: 'pending'
     });
-    await setDoc(doc(db, 'pb/public-resume'), { id: 'public-resume', ownerUid: 'alice', isPublished: true, object: '{}' });
+    await setDoc(doc(db, 'pb/public-resume'), { id: 'public-resume', ownerUid: 'alice', isPublished: true, publicationMode: 'explicit', object: '{}' });
+    await setDoc(doc(db, 'pb/legacy-autosave'), { id: 'legacy-autosave', ownerUid: 'alice', isPublished: true, object: '{"email":"private@example.com"}' });
     await setDoc(doc(db, 'payment_orders/order-a'), { uid: 'alice', status: 'ACTIVE', planId: 'monthly' });
     await setDoc(doc(db, 'data/system_settings'), { ai: { geminiApiKey: 'legacy-secret' } });
     await setDoc(doc(db, 'settings/ai_providers'), { gemini: { apiKey: 'must-not-leak' } });
@@ -65,10 +66,24 @@ test('new users must bind UID and verified token email and cannot self-assign pr
   }));
 });
 
+test('private resume drafts are owner-scoped and cannot be read or overwritten cross-account', async () => {
+  await assertSucceeds(setDoc(doc(alice(), 'users/alice/resumes/resume-1'), { firstname: 'Asha', revision: 1, template: 'Cv1' }));
+  await assertSucceeds(updateDoc(doc(alice(), 'users/alice/resumes/resume-1'), { firstname: 'Asha Rao', revision: 2 }));
+  await assertFails(getDoc(doc(bob(), 'users/alice/resumes/resume-1')));
+  await assertFails(getDoc(doc(anonymous(), 'users/alice/resumes/resume-1')));
+  await assertFails(setDoc(doc(alice(), 'users/bob/resumes/forged'), { firstname: 'Forged' }));
+});
+
 test('portfolio ownership cannot be transferred and public viewers cannot edit content', async () => {
   await assertSucceeds(getDoc(doc(anonymous(), 'pb/public-resume')));
+  await assertFails(getDoc(doc(anonymous(), 'pb/legacy-autosave')));
+  await assertSucceeds(getDoc(doc(alice(), 'pb/legacy-autosave')));
   await assertFails(updateDoc(doc(bob(), 'pb/public-resume'), { object: '{"stolen":true}' }));
   await assertFails(updateDoc(doc(alice(), 'pb/public-resume'), { ownerUid: 'bob' }));
+  await assertSucceeds(updateDoc(doc(alice(), 'pb/public-resume'), { isPublished: false }));
+  await assertFails(getDoc(doc(anonymous(), 'pb/public-resume')));
+  await assertSucceeds(getDoc(doc(alice(), 'pb/public-resume')));
+  await assertSucceeds(updateDoc(doc(alice(), 'pb/public-resume'), { isPublished: true }));
   await assertSucceeds(setDoc(doc(alice(), 'portfolios/portfolio-1'), { userId: 'alice', isPublished: true, views: 0 }));
   await assertFails(updateDoc(doc(alice(), 'portfolios/portfolio-1'), { userId: 'bob' }));
   await assertSucceeds(updateDoc(doc(anonymous(), 'portfolios/portfolio-1'), { views: 1 }));
@@ -123,6 +138,31 @@ test('job applications bind applicant identity and only job owner may change sta
   await assertSucceeds(updateDoc(doc(employer(), 'jobApplications/application-1'), { status: 'interview', statusUpdatedAt: new Date() }));
   await assertFails(updateDoc(doc(alice(), 'jobApplications/application-1'), { status: 'accepted' }));
   await assertFails(updateDoc(doc(employer(), 'jobApplications/application-1'), { userId: 'bob', status: 'accepted' }));
+});
+
+test('blog drafts are private and direct writes enforce revisions, fields, bounds, and trusted publication', async () => {
+  const basePost = (status, title) => ({
+    authorUid: 'alice', status, title, slug: title.toLowerCase(), content: '', excerpt: '', categoryId: '', revision: 1,
+    createdAt: new Date(), updatedAt: new Date(), publishedAt: null, viewCount: 0, tags: [], featuredImage: null,
+  });
+  await assertSucceeds(setDoc(doc(alice(), 'blog_posts/alice_draft'), basePost('draft', 'Draft')));
+  await assertFails(getDoc(doc(bob(), 'blog_posts/alice_draft')));
+  await assertFails(setDoc(doc(alice(), 'blog_posts/extra_field'), { ...basePost('draft', 'Extra'), injected: true }));
+  await assertFails(setDoc(doc(alice(), 'blog_posts/too_large'), { ...basePost('draft', 'Large'), title: 'x'.repeat(201) }));
+  await assertFails(setDoc(doc(alice(), 'blog_posts/unsafe_media'), { ...basePost('draft', 'Media'), featuredImage: 'data:image/svg+xml,<svg/>' }));
+  await assertFails(updateDoc(doc(alice(), 'blog_posts/alice_draft'), { status: 'pending', content: 'Ready', revision: 1, updatedAt: new Date() }));
+  await assertFails(updateDoc(doc(alice(), 'blog_posts/alice_draft'), { status: 'approved', revision: 2, updatedAt: new Date() }));
+  await assertSucceeds(updateDoc(doc(alice(), 'blog_posts/alice_draft'), { status: 'pending', content: 'Ready', revision: 2, updatedAt: new Date() }));
+  await assertFails(updateDoc(doc(bob(), 'blog_posts/alice_draft'), { status: 'draft', content: 'Stolen', revision: 3, updatedAt: new Date() }));
+  await assertSucceeds(deleteDoc(doc(alice(), 'blog_posts/alice_draft')));
+
+  await assertSucceeds(setDoc(doc(alice(), 'blog_posts/alice_review'), basePost('pending', 'Review')));
+  await assertFails(updateDoc(doc(alice(), 'blog_posts/alice_review'), { status: 'scheduled', scheduledAt: new Date(Date.now() + 60000), revision: 2, updatedAt: new Date() }));
+  await assertSucceeds(updateDoc(doc(admin(), 'blog_posts/alice_review'), { status: 'scheduled', scheduledAt: new Date(Date.now() + 60000), publishedAt: null, revision: 2, updatedAt: new Date() }));
+  await assertFails(getDoc(doc(anonymous(), 'blog_posts/alice_review')));
+  await assertSucceeds(updateDoc(doc(admin(), 'blog_posts/alice_review'), { status: 'approved', scheduledAt: null, publishedAt: new Date(), revision: 3, updatedAt: new Date() }));
+  await assertFails(deleteDoc(doc(alice(), 'blog_posts/alice_review')));
+  await assertSucceeds(getDoc(doc(anonymous(), 'blog_posts/alice_review')));
 });
 
 test('billing, provider secrets and token registries are server-only', async () => {

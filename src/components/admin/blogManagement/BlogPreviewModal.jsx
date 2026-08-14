@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FiX, FiCalendar, FiUser, FiTag, FiClock, FiEye, FiExternalLink } from 'react-icons/fi';
-import { sanitizeBlogHtml } from '../../../utils/sanitizeHtml';
+import { sanitizeBlogHtml, sanitizeImageUrl } from '../../../utils/sanitizeHtml';
 import { listBlogCategories } from '../../../firestore/dbOperations';
 import '../../../components/Blog/BlogPost/BlogContent.css';
 
@@ -27,13 +27,7 @@ const BlogPreviewModal = ({ post, onClose, isOpen }) => {
         }
     }, [isOpen, post]);
     
-    // Debug logging
-    console.log('BlogPreviewModal render:', { isOpen, post: !!post });
-    
-    if (!isOpen || !post) {
-        console.log('BlogPreviewModal: not rendering - isOpen:', isOpen, 'post:', !!post);
-        return null;
-    }
+    if (!isOpen || !post) return null;
 
     const formatDate = (date) => {
         if (!date) return 'Unknown';
@@ -69,10 +63,8 @@ const BlogPreviewModal = ({ post, onClose, isOpen }) => {
 
     const sanitizeHtmlContent = sanitizeBlogHtml;
 
-    console.log('BlogPreviewModal: rendering with post:', post.title);
-    
     return (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="blog-preview-title" tabIndex={-1} autoFocus onKeyDown={event => { if (event.key === 'Escape') onClose(); }}>
             <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
                 {/* Background overlay */}
                 <div 
@@ -95,7 +87,7 @@ const BlogPreviewModal = ({ post, onClose, isOpen }) => {
                                 <FiEye className="w-5 h-5 text-indigo-600" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-semibold text-gray-900">
+                                <h3 id="blog-preview-title" className="text-lg font-semibold text-gray-900">
                                     Blog Post Preview
                                 </h3>
                                 <p className="text-sm text-gray-600 mt-0.5">
@@ -105,13 +97,17 @@ const BlogPreviewModal = ({ post, onClose, isOpen }) => {
                             <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
                                 post.status === 'pending' ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' :
                                 post.status === 'approved' ? 'bg-green-100 text-green-700 border border-green-200' :
+                                post.status === 'scheduled' ? 'bg-purple-100 text-purple-700 border border-purple-200' :
+                                post.status === 'draft' ? 'bg-slate-100 text-slate-700 border border-slate-200' :
                                 'bg-red-100 text-red-700 border border-red-200'
                             }`}>
                                 {post.status?.toUpperCase()}
                             </span>
                         </div>
                         <button
+                            type="button"
                             onClick={onClose}
+                            aria-label="Close preview"
                             className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all"
                         >
                             <FiX className="w-5 h-5" />
@@ -172,10 +168,10 @@ const BlogPreviewModal = ({ post, onClose, isOpen }) => {
                             </div>
 
                             {/* Featured Image */}
-                            {post.featuredImage && (
+                            {sanitizeImageUrl(post.featuredImage) && (
                                 <div className="mb-8">
                                     <img
-                                        src={post.featuredImage}
+                                        src={sanitizeImageUrl(post.featuredImage)}
                                         alt={post.title}
                                         className="w-full h-64 md:h-80 object-cover rounded-xl shadow-lg"
                                     />

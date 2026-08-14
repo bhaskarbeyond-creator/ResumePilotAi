@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdDelete, MdAdd, MdCheck, MdTranslate, MdLanguage } from 'react-icons/md';
 import InputField from './components/InputField';
+import { duplicateResumeItem, moveResumeItem } from '../../../utils/resumeData';
 
 const POPULAR_LANGUAGES = [
     'English',
@@ -56,6 +57,13 @@ const LanguagesStep = ({ resumeData, updateResumeData }) => {
     const removeLanguage = (id) => {
         setLanguages((prev) => prev.filter((lang) => lang.id !== id && lang.date !== id));
     };
+
+    const moveLanguage = (id, direction) => setLanguages(current => moveResumeItem(current, id, direction));
+
+    const duplicateLanguage = id => setLanguages(current => {
+        const source = current.find(item => item.id === id || item.date === id);
+        return duplicateResumeItem(current, id, { name: `${source?.name || source?.language || 'Language'} (Copy)` });
+    });
 
     const updateLanguage = (id, field, value) => {
         setLanguages((prev) =>
@@ -189,6 +197,10 @@ const LanguagesStep = ({ resumeData, updateResumeData }) => {
                                         </select>
                                     </div>
                                 </div>
+                                <div className="flex items-center gap-1 self-end md:self-center">
+                                    <button type="button" onClick={() => moveLanguage(itemKey, -1)} disabled={index === 0} aria-label={`Move ${langName || 'language'} up`} className="p-2 text-slate-500 disabled:opacity-30">↑</button>
+                                    <button type="button" onClick={() => moveLanguage(itemKey, 1)} disabled={index === languages.length - 1} aria-label={`Move ${langName || 'language'} down`} className="p-2 text-slate-500 disabled:opacity-30">↓</button>
+                                    <button type="button" onClick={() => duplicateLanguage(itemKey)} aria-label={`Duplicate ${langName || 'language'}`} className="p-2 text-slate-500">⧉</button>
                                 <button
                                     type="button"
                                     onClick={() => removeLanguage(itemKey)}
@@ -197,6 +209,7 @@ const LanguagesStep = ({ resumeData, updateResumeData }) => {
                                 >
                                     <MdDelete className="w-5 h-5" />
                                 </button>
+                                </div>
                             </div>
                         );
                     })

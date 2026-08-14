@@ -5,6 +5,7 @@ import EducationSuggestionModal from './components/EducationSuggestionModal';
 import InputField from './components/InputField';
 import AutocompleteInputField from './components/AutocompleteInputField';
 import RichTextEditor from './components/RichTextEditor';
+import { duplicateResumeItem, moveResumeItem } from '../../../utils/resumeData';
 
 const EducationStep = ({ resumeData, updateResumeData }) => {
     const { t } = useTranslation('common');
@@ -45,6 +46,13 @@ const EducationStep = ({ resumeData, updateResumeData }) => {
             return newSet;
         });
     };
+
+    const moveEducation = (id, direction) => setEducations(current => moveResumeItem(current, id, direction));
+
+    const duplicateEducation = id => setEducations(current => {
+        const source = current.find(item => item.id === id);
+        return duplicateResumeItem(current, id, { degree: `${source?.degree || 'Degree'} (Copy)` });
+    });
 
     const toggleCardExpansion = (id) => {
         setExpandedCards((prev) => {
@@ -90,12 +98,11 @@ const EducationStep = ({ resumeData, updateResumeData }) => {
         // Mark step as completed if at least one education is filled
         const hasValidEducation = educations.some((edu) => edu.school.trim() !== '' && edu.degree.trim() !== '');
 
-        if (hasValidEducation) {
-            const completedSteps = [...(resumeData.completedSteps || [])];
-            if (!completedSteps.includes(3)) {
-                completedSteps.push(3);
-                updateResumeData({ educations, completedSteps });
-            }
+        const completedSteps = [...(resumeData.completedSteps || [])];
+        if (hasValidEducation && !completedSteps.includes(3)) {
+            updateResumeData({ educations, completedSteps: [...completedSteps, 3] });
+        } else if (!hasValidEducation && completedSteps.includes(3)) {
+            updateResumeData({ educations, completedSteps: completedSteps.filter(step => step !== 3) });
         }
     };
 
@@ -107,16 +114,6 @@ const EducationStep = ({ resumeData, updateResumeData }) => {
 
         return () => clearTimeout(timeoutId);
     }, [educations]);
-
-    // Add first education if none exist
-    useEffect(() => {
-        if (educations.length === 0) {
-            const newEducation = createNewEducation();
-            setEducations([newEducation]);
-            // Auto-expand the first education card
-            setExpandedCards(new Set([newEducation.id]));
-        }
-    }, []);
 
     // Auto-expand only the first card when there's only one education
     useEffect(() => {
@@ -194,6 +191,10 @@ const EducationStep = ({ resumeData, updateResumeData }) => {
                                 {/* Status Indicator */}
                                 <div className={`w-3 h-3 rounded-full ${education.degree && education.school ? 'bg-green-400' : 'bg-gray-300'}`}></div>
 
+                                <button type="button" onClick={(e) => { e.stopPropagation(); moveEducation(education.id, -1); }} disabled={index === 0} aria-label={`Move ${education.degree || 'education'} up`} className="p-1 text-slate-500 disabled:opacity-30">↑</button>
+                                <button type="button" onClick={(e) => { e.stopPropagation(); moveEducation(education.id, 1); }} disabled={index === educations.length - 1} aria-label={`Move ${education.degree || 'education'} down`} className="p-1 text-slate-500 disabled:opacity-30">↓</button>
+                                <button type="button" onClick={(e) => { e.stopPropagation(); duplicateEducation(education.id); }} aria-label={`Duplicate ${education.degree || 'education'}`} className="p-1 text-slate-500">⧉</button>
+
                                 {/* Expand/Collapse Button */}
                                 <button
                                     className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded-lg"
@@ -205,18 +206,16 @@ const EducationStep = ({ resumeData, updateResumeData }) => {
                                     <MdKeyboardArrowDown className={`w-5 h-5 ${expandedCards.has(education.id) ? 'rotate-180' : ''}`} />
                                 </button>
 
-                                {/* Delete button */}
-                                {educations.length > 1 && (
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            removeEducation(education.id);
-                                        }}
-                                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg sm:opacity-100"
-                                        title={t('EducationStep.actions.remove')}>
-                                        <MdDelete className="w-4 h-4" />
-                                    </button>
-                                )}
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        removeEducation(education.id);
+                                    }}
+                                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg sm:opacity-100"
+                                    title={t('EducationStep.actions.remove')}>
+                                    <MdDelete className="w-4 h-4" />
+                                </button>
                             </div>
                         </div>
 

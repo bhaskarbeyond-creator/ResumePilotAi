@@ -62,6 +62,22 @@ test('published portfolio normalization is immutable, bounded, Unicode-safe, and
   assert.equal(normalized.data.content[0].props.description, 'Safe text');
 });
 
+test('public portfolio rendering includes canonical SEO and deduplicates session view counting', async () => {
+  const source = await import('node:fs/promises').then(fs => fs.readFile('src/components/PublicPortfolio/PublicPortfolio.jsx', 'utf8'));
+  assert.match(source, /rel:\s*'canonical'/);
+  assert.match(source, /application\/ld\+json/);
+  assert.match(source, /index,follow/);
+  assert.match(source, /portfolio_viewed:/);
+});
+
+test('portfolio persistence uses revisions for drafts and publishing', async () => {
+  const source = await import('node:fs/promises').then(fs => fs.readFile('src/firestore/dbOperations.js', 'utf8'));
+  assert.match(source, /PORTFOLIO_CONFLICT/);
+  assert.match(source, /updateExistingPortfolio[\s\S]{0,3000}expectedRevision/);
+  assert.match(source, /savePortfolioDraft[\s\S]{0,3000}expectedRevision/);
+  assert.match(source, /PORTFOLIO_TOO_LARGE/);
+});
+
 test('malformed portfolio data fails closed and oversized collections are capped', () => {
   assert.equal(normalizePublishedPortfolio(null, {}), null);
   assert.equal(normalizePublishedPortfolio({ data: null }, {}), null);

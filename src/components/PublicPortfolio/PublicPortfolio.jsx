@@ -66,9 +66,14 @@ const PublicPortfolio = () => {
                     return;
                 }
                 setPortfolio(normalized);
-                incrementPortfolioViews(normalized.id).catch((viewError) => {
-                    console.warn('Unable to record portfolio view', viewError);
-                });
+                const viewKey = `portfolio_viewed:${normalized.id}`;
+                let alreadyCounted = false;
+                try { alreadyCounted = sessionStorage.getItem(viewKey) === 'true'; } catch { /* storage is optional */ }
+                if (!alreadyCounted) {
+                    incrementPortfolioViews(normalized.id).then(success => {
+                        if (success) try { sessionStorage.setItem(viewKey, 'true'); } catch { /* storage is optional */ }
+                    }).catch(() => {});
+                }
             } catch (loadError) {
                 if (!active) return;
                 console.error('Error loading public portfolio', loadError);
@@ -112,10 +117,20 @@ const PublicPortfolio = () => {
         setMeta('meta[property="og:description"]', { property: 'og:description', content: description });
         setMeta('meta[property="og:type"]', { property: 'og:type', content: 'profile' });
         setMeta('meta[property="og:url"]', { property: 'og:url', content: canonical });
+        setMeta('meta[name="twitter:card"]', { name: 'twitter:card', content: 'summary' });
+        setMeta('meta[name="twitter:title"]', { name: 'twitter:title', content: title });
+        setMeta('meta[name="twitter:description"]', { name: 'twitter:description', content: description });
+        setMeta('meta[name="robots"]', { name: 'robots', content: 'index,follow' });
         setMeta('link[rel="canonical"]', { rel: 'canonical', href: canonical });
+        const structuredData = document.createElement('script');
+        structuredData.type = 'application/ld+json';
+        structuredData.dataset.portfolioStructuredData = 'true';
+        structuredData.textContent = JSON.stringify({ '@context': 'https://schema.org', '@type': 'ProfilePage', name: title, description, url: canonical }).replace(/</g, '\\u003c');
+        document.head.appendChild(structuredData);
 
         return () => {
             document.title = previousTitle;
+            structuredData.remove();
             for (const { element, created, previous } of touched) {
                 if (created) element.remove();
                 else for (const [name, value] of Object.entries(previous)) {

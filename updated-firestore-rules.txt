@@ -128,7 +128,7 @@ service cloud.firestore {
     }
 
     match /pb/{id} {
-      allow read: if resource.data.isPublished == true
+      allow read: if (resource.data.isPublished == true && resource.data.publicationMode == 'explicit')
         || (signedIn() && resource.data.ownerUid == request.auth.uid) || admin();
       allow create: if signedIn()
         && request.resource.data.ownerUid == request.auth.uid
@@ -157,17 +157,87 @@ service cloud.firestore {
     match /coupons/{id} { allow read: if signedIn(); allow write: if admin(); }
 
     match /blog_posts/{id} {
+      function validBlogFields(data) {
+        return data.keys().hasOnly(['title', 'slug', 'content', 'excerpt', 'categoryId', 'authorUid', 'authorName', 'status', 'revision', 'seoTitle', 'seoDescription', 'createdAt', 'updatedAt', 'publishedAt', 'scheduledAt', 'viewCount', 'tags', 'featuredImage', 'adminNotes', 'rejectionReason', 'reviewedAt', 'reviewedBy'])
+          && data.title is string && data.title.size() > 0 && data.title.size() <= 200
+          && data.slug is string && data.slug.size() > 0 && data.slug.size() <= 180
+          && data.content is string && data.content.size() <= 500000
+          && data.excerpt is string && data.excerpt.size() <= 500
+          && data.categoryId is string && data.categoryId.size() <= 128
+          && data.authorUid is string && data.authorUid.size() > 0 && data.authorUid.size() <= 128
+          && data.status in ['draft', 'pending', 'approved', 'rejected', 'scheduled']
+          && data.revision is int && data.revision > 0
+          && data.createdAt is timestamp && data.updatedAt is timestamp
+          && data.viewCount is int && data.viewCount >= 0
+          && (!data.keys().hasAny(['publishedAt']) || data.publishedAt == null || data.publishedAt is timestamp)
+          && (!data.keys().hasAny(['scheduledAt']) || data.scheduledAt == null || data.scheduledAt is timestamp)
+          && (!data.keys().hasAny(['seoTitle']) || (data.seoTitle is string && data.seoTitle.size() <= 120))
+          && (!data.keys().hasAny(['seoDescription']) || (data.seoDescription is string && data.seoDescription.size() <= 320))
+          && (!data.keys().hasAny(['authorName']) || (data.authorName is string && data.authorName.size() <= 160))
+          && (!data.keys().hasAny(['adminNotes']) || (data.adminNotes is string && data.adminNotes.size() <= 2000))
+          && (!data.keys().hasAny(['rejectionReason']) || (data.rejectionReason is string && data.rejectionReason.size() <= 1000))
+          && (!data.keys().hasAny(['reviewedBy']) || (data.reviewedBy is string && data.reviewedBy.size() <= 128))
+          && (!data.keys().hasAny(['reviewedAt']) || data.reviewedAt == null || data.reviewedAt is timestamp)
+          && (!data.keys().hasAny(['tags']) || (data.tags is list && data.tags.size() <= 30))
+          && (!data.keys().hasAny(['featuredImage']) || data.featuredImage == null || (data.featuredImage is string && data.featuredImage.size() <= 2048 && (data.featuredImage.matches('^https://[^\\s]+$') || data.featuredImage.matches('^/[^/].*$'))));
+      }
+      function currentRevision() {
+        return resource.data.get('revision', 0);
+      }
+      function advancesRevision() {
+        return request.resource.data.revision == currentRevision() + 1;
+      }
+      function memberFieldsOnly() {
+        return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'title', 'slug', 'content', 'excerpt', 'categoryId', 'tags', 'featuredImage',
+          'seoTitle', 'seoDescription', 'status', 'updatedAt', 'revision'
+        ]);
+      }
+      function adminFieldsOnly() {
+        return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'title', 'slug', 'content', 'excerpt', 'categoryId', 'tags', 'featuredImage',
+          'seoTitle', 'seoDescription', 'status', 'scheduledAt', 'publishedAt',
+          'updatedAt', 'revision', 'adminNotes', 'rejectionReason', 'reviewedAt', 'reviewedBy'
+        ]);
+      }
+      function validAdminPublication() {
+        return (request.resource.data.status == 'scheduled'
+            && request.resource.data.scheduledAt is timestamp
+            && request.resource.data.scheduledAt > request.time
+            && request.resource.data.publishedAt == null)
+          || (request.resource.data.status == 'approved'
+            && request.resource.data.scheduledAt == null
+            && request.resource.data.publishedAt is timestamp)
+          || (request.resource.data.status in ['draft', 'pending', 'rejected']
+            && request.resource.data.scheduledAt == null
+            && request.resource.data.publishedAt == resource.data.publishedAt);
+      }
+
       allow read: if resource.data.status == 'approved'
         || (signedIn() && resource.data.authorUid == request.auth.uid) || admin();
       allow create: if signedIn()
         && request.resource.data.authorUid == request.auth.uid
-        && request.resource.data.status == 'pending';
-      allow update: if admin() || (signedIn()
-        && resource.data.authorUid == request.auth.uid
+        && request.resource.data.status in ['draft', 'pending']
+        && request.resource.data.revision == 1
+        && request.resource.data.publishedAt == null
+        && !request.resource.data.keys().hasAny(['scheduledAt', 'adminNotes', 'rejectionReason', 'reviewedAt', 'reviewedBy'])
+        && validBlogFields(request.resource.data);
+      allow update: if validBlogFields(request.resource.data)
         && request.resource.data.authorUid == resource.data.authorUid
-        && resource.data.status in ['pending','rejected']
-        && request.resource.data.status == 'pending');
-      allow delete: if admin();
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.viewCount == resource.data.viewCount
+        && advancesRevision()
+        && ((admin() && adminFieldsOnly() && validAdminPublication())
+          || (signedIn()
+            && resource.data.authorUid == request.auth.uid
+            && resource.data.status in ['draft', 'pending', 'rejected']
+            && request.resource.data.status in ['draft', 'pending']
+            && request.resource.data.publishedAt == resource.data.publishedAt
+            && request.resource.data.get('scheduledAt', null) == resource.data.get('scheduledAt', null)
+            && memberFieldsOnly()));
+      allow delete: if admin() || (signedIn()
+        && resource.data.authorUid == request.auth.uid
+        && resource.data.status in ['draft', 'pending', 'rejected']);
     }
     match /blog_categories/{id} { allow read: if true; allow write: if admin(); }
     match /pages/{id} { allow read: if true; allow write: if admin(); }

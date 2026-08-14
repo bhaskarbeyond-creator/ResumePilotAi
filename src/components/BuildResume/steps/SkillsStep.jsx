@@ -4,6 +4,7 @@ import { MdDelete, MdKeyboardArrowDown, MdAdd, MdCheck, MdLightbulb } from 'reac
 import InputField from './components/InputField';
 import AutocompleteInputField from './components/AutocompleteInputField';
 import { generateUserAiContent } from '../../../services/aiService';
+import { duplicateResumeItem, moveResumeItem } from '../../../utils/resumeData';
 
 const SkillsStep = ({ resumeData, updateResumeData }) => {
     const { t } = useTranslation('common');
@@ -50,6 +51,13 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
             return newSet;
         });
     };
+
+    const moveSkill = (id, direction) => setSkills(current => moveResumeItem(current, id, direction));
+
+    const duplicateSkill = id => setSkills(current => {
+        const source = current.find(item => item.id === id);
+        return duplicateResumeItem(current, id, { skillName: `${source?.skillName || 'Skill'} (Copy)` });
+    });
 
     const toggleCardExpansion = (id) => {
         setExpandedCards((prev) => {
@@ -155,16 +163,6 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
         return () => clearTimeout(timeoutId);
     }, [skills]);
 
-    // Add initial skills if none exist
-    useEffect(() => {
-        if (skills.length === 0) {
-            const newSkills = [createNewSkill(), createNewSkill(), createNewSkill()];
-            setSkills(newSkills);
-            // Auto-expand the first skill card
-            setExpandedCards(new Set([newSkills[0].id]));
-        }
-    }, []);
-
     // Auto-expand only the first card when there's only one skill
     useEffect(() => {
         if (skills.length === 1) {
@@ -246,6 +244,10 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
                                 {/* Status Indicator */}
                                 <div className={`w-3 h-3 rounded-full ${skill.skillName && skill.skillName.trim() !== '' ? 'bg-green-400' : 'bg-gray-300'}`}></div>
 
+                                <button type="button" onClick={(e) => { e.stopPropagation(); moveSkill(skill.id, -1); }} disabled={index === 0} aria-label={`Move ${skill.skillName || 'skill'} up`} className="p-1 text-slate-500 disabled:opacity-30">↑</button>
+                                <button type="button" onClick={(e) => { e.stopPropagation(); moveSkill(skill.id, 1); }} disabled={index === skills.length - 1} aria-label={`Move ${skill.skillName || 'skill'} down`} className="p-1 text-slate-500 disabled:opacity-30">↓</button>
+                                <button type="button" onClick={(e) => { e.stopPropagation(); duplicateSkill(skill.id); }} aria-label={`Duplicate ${skill.skillName || 'skill'}`} className="p-1 text-slate-500">⧉</button>
+
                                 {/* Expand/Collapse Button */}
                                 <button
                                     className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded-lg"
@@ -257,18 +259,16 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
                                     <MdKeyboardArrowDown className={`w-5 h-5 ${expandedCards.has(skill.id) ? 'rotate-180' : ''}`} />
                                 </button>
 
-                                {/* Delete button */}
-                                {skills.length > 1 && (
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            removeSkill(skill.id);
-                                        }}
-                                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg sm:opacity-100"
-                                        title={t('SkillsStep.actions.remove')}>
-                                        <MdDelete className="w-4 h-4" />
-                                    </button>
-                                )}
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        removeSkill(skill.id);
+                                    }}
+                                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg sm:opacity-100"
+                                    title={t('SkillsStep.actions.remove')}>
+                                    <MdDelete className="w-4 h-4" />
+                                </button>
                             </div>
                         </div>
 

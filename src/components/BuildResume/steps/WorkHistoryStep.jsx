@@ -7,6 +7,7 @@ import AutocompleteInputField from './components/AutocompleteInputField';
 import RichTextEditor from './components/RichTextEditor';
 import MonthYearPicker from '../../Form/MonthYearPicker';
 import BulletPointsEditor from '../../Form/BulletPointsEditor';
+import { duplicateResumeItem, moveResumeItem } from '../../../utils/resumeData';
 
 const WorkHistoryStep = ({ resumeData, updateResumeData }) => {
     const { t } = useTranslation('common');
@@ -48,6 +49,13 @@ const WorkHistoryStep = ({ resumeData, updateResumeData }) => {
             return newSet;
         });
     };
+
+    const moveEmployment = (id, direction) => setEmployments(current => moveResumeItem(current, id, direction));
+
+    const duplicateEmployment = id => setEmployments(current => {
+        const source = current.find(item => item.id === id);
+        return duplicateResumeItem(current, id, { jobTitle: `${source?.jobTitle || 'Position'} (Copy)` });
+    });
 
     const toggleCardExpansion = (id) => {
         setExpandedCards((prev) => {
@@ -93,12 +101,11 @@ const WorkHistoryStep = ({ resumeData, updateResumeData }) => {
         // Mark step as completed if at least one employment is filled
         const hasValidEmployment = employments.some((emp) => emp.jobTitle.trim() !== '' && emp.employer.trim() !== '');
 
-        if (hasValidEmployment) {
-            const completedSteps = [...(resumeData.completedSteps || [])];
-            if (!completedSteps.includes(2)) {
-                completedSteps.push(2);
-                updateResumeData({ employments, completedSteps });
-            }
+        const completedSteps = [...(resumeData.completedSteps || [])];
+        if (hasValidEmployment && !completedSteps.includes(2)) {
+            updateResumeData({ employments, completedSteps: [...completedSteps, 2] });
+        } else if (!hasValidEmployment && completedSteps.includes(2)) {
+            updateResumeData({ employments, completedSteps: completedSteps.filter(step => step !== 2) });
         }
     };
 
@@ -110,16 +117,6 @@ const WorkHistoryStep = ({ resumeData, updateResumeData }) => {
 
         return () => clearTimeout(timeoutId);
     }, [employments]);
-
-    // Add first employment if none exist
-    useEffect(() => {
-        if (employments.length === 0) {
-            const newEmployment = createNewEmployment();
-            setEmployments([newEmployment]);
-            // Auto-expand the first employment card
-            setExpandedCards(new Set([newEmployment.id]));
-        }
-    }, []);
 
     // Auto-expand only the first card when there's only one employment
     useEffect(() => {
@@ -200,6 +197,10 @@ const WorkHistoryStep = ({ resumeData, updateResumeData }) => {
                                 {/* Status Indicator */}
                                 <div className={`w-3 h-3 rounded-full ${employment.jobTitle && employment.employer ? 'bg-green-400' : 'bg-gray-300'}`}></div>
 
+                                <button type="button" onClick={(e) => { e.stopPropagation(); moveEmployment(employment.id, -1); }} disabled={index === 0} aria-label={`Move ${employment.jobTitle || 'employment'} up`} className="p-1 text-slate-500 disabled:opacity-30">↑</button>
+                                <button type="button" onClick={(e) => { e.stopPropagation(); moveEmployment(employment.id, 1); }} disabled={index === employments.length - 1} aria-label={`Move ${employment.jobTitle || 'employment'} down`} className="p-1 text-slate-500 disabled:opacity-30">↓</button>
+                                <button type="button" onClick={(e) => { e.stopPropagation(); duplicateEmployment(employment.id); }} aria-label={`Duplicate ${employment.jobTitle || 'employment'}`} className="p-1 text-slate-500">⧉</button>
+
                                 {/* Expand/Collapse Button */}
                                 <button
                                     className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded-lg"
@@ -211,18 +212,16 @@ const WorkHistoryStep = ({ resumeData, updateResumeData }) => {
                                     <MdKeyboardArrowDown className={`w-5 h-5 ${expandedCards.has(employment.id) ? 'rotate-180' : ''}`} />
                                 </button>
 
-                                {/* Delete button */}
-                                {employments.length > 1 && (
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            removeEmployment(employment.id);
-                                        }}
-                                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg sm:opacity-100"
-                                        title={t('WorkHistoryStep.actions.remove')}>
-                                        <MdDelete className="w-4 h-4" />
-                                    </button>
-                                )}
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        removeEmployment(employment.id);
+                                    }}
+                                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg sm:opacity-100"
+                                    title={t('WorkHistoryStep.actions.remove')}>
+                                    <MdDelete className="w-4 h-4" />
+                                </button>
                             </div>
                         </div>
 

@@ -109,6 +109,18 @@ export function normalizeTemplateData(input = {}) {
     };
     // Preserve every known array contract even when a future caller supplies null.
     for (const field of ARRAY_FIELDS) if (!Array.isArray(normalized[field])) normalized[field] = [];
+    const hidden = new Set(Array.isArray(raw.hiddenSections) ? raw.hiddenSections : []);
+    if (hidden.has('heading')) {
+        for (const field of ['firstname', 'lastname', 'name', 'occupation', 'email', 'phone', 'address', 'city', 'country', 'postalcode', 'website', 'linkedin', 'github']) normalized[field] = '';
+        normalized.photo = null;
+    }
+    if (hidden.has('summary')) normalized.summary = '';
+    if (hidden.has('employment') || hidden.has('employments')) normalized.employments = [];
+    if (hidden.has('education') || hidden.has('educations')) normalized.educations = [];
+    if (hidden.has('skills')) normalized.skills = [];
+    if (hidden.has('languages')) normalized.languages = [];
+    if (hidden.has('projects')) normalized.projects = [];
+    if (hidden.has('certifications')) normalized.certifications = [];
     return normalized;
 }
 
