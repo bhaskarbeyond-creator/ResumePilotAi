@@ -12,6 +12,7 @@ setTokenVerifierForTests(async token => {
   if (token === 'user') return { uid: 'user-1', email: 'user@example.com', email_verified: true, role: 'USER', auth_time: now };
   if (token === 'unverified') return { uid: 'user-2', email: 'pending@example.com', email_verified: false, role: 'USER', auth_time: now };
   if (token === 'admin') return { uid: 'admin-1', email: 'admin@example.com', email_verified: true, role: 'ADMIN', auth_time: now };
+  if (token === 'employer') return { uid: 'employer-1', email: 'employer@example.com', email_verified: true, role: 'EMPLOYER', auth_time: now };
   if (token === 'unverified-admin') return { uid: 'admin-2', email: 'admin2@example.com', email_verified: false, role: 'ADMIN', auth_time: now };
   if (token === 'super-admin') return { uid: 'super-1', email: 'super@example.com', email_verified: true, role: 'SUPER_ADMIN', auth_time: now };
   if (token === 'stale-admin') return { uid: 'admin-1', email: 'admin@example.com', email_verified: true, role: 'ADMIN', auth_time: now - 3600 };
@@ -192,6 +193,58 @@ test('Ads create and revision-safe delete persist through audited backend routes
   }
 });
 
+test('job application submission and employer status transitions are atomic, audited, and revision safe', async () => {
+  const store = new Map([
+    ['jobs/active-job', { employerId: 'employer-1', status: 'active', applicationsCount: 0, title: 'Engineer', company: 'Example Co' }],
+    ['users/user-1/resumes/resume-1', { title: 'Primary resume', summary: 'Owned candidate resume' }],
+  ]);
+  let automaticId = 0;
+  const ref = (path, id) => ({
+    id, path,
+    collection(name) { return { doc(childId = `auto-${automaticId++}`) { return ref(`${path}/${name}/${childId}`, childId); } }; },
+    async get() { const data = store.get(path); return { exists: data !== undefined, data: () => data }; },
+  });
+  const fakeDb = {
+    collection(name) { return { doc(id = `auto-${automaticId++}`) { return ref(`${name}/${id}`, id); } }; },
+    runTransaction: callback => callback({
+      get: reference => reference.get(),
+      set(reference, value, options) { store.set(reference.path, options?.merge ? { ...(store.get(reference.path) || {}), ...value } : value); },
+      update(reference, value) { store.set(reference.path, { ...(store.get(reference.path) || {}), ...value }); },
+    }),
+  };
+  const originalDb = app.get('db');
+  app.set('db', fakeDb);
+  try {
+    const submitted = await request(app).post('/api/jobs/active-job/applications').set(bearer('user')).send({
+      fullName: 'Candidate One', phone: '+14155552671', coverLetter: `<p>${'A'.repeat(80)}</p>`, resumeId: 'resume-1', linkedinUrl: 'https://linkedin.example/candidate',
+    });
+    assert.equal(submitted.status, 201);
+    assert.equal(submitted.body.revision, 1);
+    const applicationId = submitted.body.applicationId;
+    const application = store.get(`jobApplications/${applicationId}`);
+    assert.equal(application.userId, 'user-1');
+    assert.equal(application.applicantEmail, 'user@example.com');
+    assert.equal(application.selectedResume.data.summary, 'Owned candidate resume');
+    assert.equal(store.get('jobs/active-job').applicationsCount, 1);
+    assert.ok([...store.keys()].some(key => key.startsWith('security_audit_logs/')));
+    const duplicate = await request(app).post('/api/jobs/active-job/applications').set(bearer('user')).send({
+      fullName: 'Candidate One', phone: '+14155552671', coverLetter: `<p>${'A'.repeat(80)}</p>`,
+    });
+    assert.equal(duplicate.status, 409);
+
+    const updated = await request(app).patch(`/api/job-applications/${encodeURIComponent(applicationId)}/status`).set(bearer('employer')).send({ status: 'interview', expectedStatus: 'pending', expectedRevision: 1 });
+    assert.equal(updated.status, 200);
+    assert.equal(updated.body.revision, 2);
+    assert.equal(store.get(`jobApplications/${applicationId}`).status, 'interview');
+    const stale = await request(app).patch(`/api/job-applications/${encodeURIComponent(applicationId)}/status`).set(bearer('employer')).send({ status: 'accepted', expectedStatus: 'pending', expectedRevision: 1 });
+    assert.equal(stale.status, 409);
+    const outsider = await request(app).patch(`/api/job-applications/${encodeURIComponent(applicationId)}/status`).set(bearer('user')).send({ status: 'accepted', expectedStatus: 'interview', expectedRevision: 2 });
+    assert.equal(outsider.status, 404);
+  } finally {
+    app.set('db', originalDb);
+  }
+});
+
 test('generic settings preserve omitted and blank backend secrets without browser disclosure', async () => {
   const store = new Map([['settings/admin_configuration', {
     socialAuth: { linkedinClientId: 'existing-client', linkedinClientSecret: 'fixture-existing-client-secret', nested: { accessToken: 'fixture-existing-access-token' } },
@@ -324,6 +377,12 @@ test('unverified users cannot consume paid AI or payment endpoints', async () =>
   const participant = await request(app).get('/api/messages/conversations/conversation/participant-profile').set(bearer('unverified'));
   assert.equal(participant.status, 403);
   assert.equal(participant.body.error.code, 'EMAIL_VERIFICATION_REQUIRED');
+  const application = await request(app).post('/api/jobs/active-job/applications').set(bearer('unverified')).send({});
+  assert.equal(application.status, 403);
+  assert.equal(application.body.error.code, 'EMAIL_VERIFICATION_REQUIRED');
+  const applicationStatus = await request(app).patch('/api/job-applications/application/status').set(bearer('unverified')).send({});
+  assert.equal(applicationStatus.status, 403);
+  assert.equal(applicationStatus.body.error.code, 'EMAIL_VERIFICATION_REQUIRED');
 });
 
 test('password reset request is generic and timing-equalized for malformed accounts', async () => {

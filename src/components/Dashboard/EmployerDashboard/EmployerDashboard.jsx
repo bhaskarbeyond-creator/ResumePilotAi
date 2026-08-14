@@ -26,7 +26,7 @@ import {
     FaChevronDown,
     FaChevronUp,
 } from 'react-icons/fa';
-import { getEmployerJobs, getJobApplications, updateJobPosting, deleteJobPosting, updateApplicationStatus } from '../../../firestore/dbOperations';
+import { getEmployerJobs, getJobApplications, updateJobPosting, deleteJobPosting } from '../../../firestore/dbOperations';
 import { AuthContext } from '../../../main';
 import JobApplicationsModal from './JobApplicationsModal';
 import AddCompanyModal from './AddCompanyModal';
@@ -194,9 +194,10 @@ const EmployerDashboard = ({ showToast, sidebarCollapsed, t }) => {
         setApplications([]);
     };
 
-    const handleUpdateApplicationStatus = (applicationId, newStatus) => {
-        setApplications((prev) => prev.map((app) => (app.id === applicationId ? { ...app, status: newStatus } : app)));
-        showToast && showToast('success', 'Success', `Application status updated to ${newStatus}`);
+    const handleUpdateApplicationStatus = (applicationId, newStatus, revision) => {
+        setApplications(previous => previous.map(application => application.id === applicationId
+            ? { ...application, status: newStatus, revision }
+            : application));
     };
 
     const toggleJobExpansion = (jobId) => {

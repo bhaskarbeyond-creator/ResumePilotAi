@@ -154,6 +154,8 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
     const [loadedTemplates, setLoadedTemplates] = useState({});
     const [showPreviewModal, setShowPreviewModal] = useState(false);
     const [previewResume, setPreviewResume] = useState(null);
+    const submissionGeneration = useRef(0);
+    const closeTimer = useRef(null);
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
@@ -223,10 +225,13 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
 
     // Reset form when modal opens
     useEffect(() => {
+        submissionGeneration.current += 1;
+        if (closeTimer.current) clearTimeout(closeTimer.current);
+        closeTimer.current = null;
         if (isOpen) {
             setApplicationData({
-                fullName: '',
-                email: '',
+                fullName: user?.displayName || '',
+                email: user?.email || '',
                 phone: '',
                 linkedinUrl: '',
                 githubUrl: '',
@@ -251,7 +256,11 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
                 hasPreviousPage: false,
             });
         }
-    }, [isOpen]);
+        return () => {
+            submissionGeneration.current += 1;
+            if (closeTimer.current) clearTimeout(closeTimer.current);
+        };
+    }, [isOpen, job?.id, user?.displayName, user?.email]);
 
     // Prevent background scrolling
     useEffect(() => {
@@ -594,45 +603,35 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
             return;
         }
 
+        const generation = ++submissionGeneration.current;
+        const accountUid = user.uid;
+        const targetJobId = job.id;
         setIsSubmitting(true);
         setErrors({});
 
         try {
-            console.log('🔍 Submitting application for job:', job.id);
-
-            // Sanitize application data to remove undefined values
+            // Build the bounded application payload; identity and resume data are resolved by the backend.
             const sanitizedApplicationData = {
                 fullName: applicationData.fullName || '',
-                email: applicationData.email || '',
                 phone: applicationData.phone || '',
                 linkedinUrl: applicationData.linkedinUrl || '',
                 githubUrl: applicationData.githubUrl || '',
                 coverLetter: applicationData.coverLetter || '',
-                selectedResume: applicationData.selectedResume ? {
-                    id: applicationData.selectedResume.id || '',
-                    name: applicationData.selectedResume.name || '',
-                    shareableLink: applicationData.selectedResume.shareableLink || '',
-                    data: applicationData.selectedResume.data || null
-                } : null,
+                selectedResume: applicationData.selectedResume ? { id: applicationData.selectedResume.id || '' } : null,
             };
 
-
-            // Submit the application to the database
-            const result = await submitJobApplication(user.uid, job.id, sanitizedApplicationData);
-
+            const result = await submitJobApplication(accountUid, targetJobId, sanitizedApplicationData);
+            if (generation !== submissionGeneration.current || user.uid !== accountUid || job.id !== targetJobId) return;
             if (result.success) {
-                console.log('✅ Application submitted successfully:', result.applicationId);
                 setIsSubmitted(true);
-                setTimeout(() => onClose(), 2500);
+                closeTimer.current = setTimeout(() => onClose(), 2500);
             } else {
-                console.error('❌ Application submission failed:', result.error);
                 setErrors({ submit: result.error || 'Failed to submit application. Please try again.' });
             }
         } catch (error) {
-            console.error('❌ Error submitting application:', error);
-            setErrors({ submit: 'An unexpected error occurred. Please try again.' });
+            if (generation === submissionGeneration.current) setErrors({ submit: error.message || 'An unexpected error occurred. Please try again.' });
         } finally {
-            setIsSubmitting(false);
+            if (generation === submissionGeneration.current) setIsSubmitting(false);
         }
     };
 
@@ -645,10 +644,12 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
                     initial="hidden"
                     animate="visible"
                     exit="exit"
+                    role="presentation"
+                    onKeyDown={event => { if (event.key === 'Escape' && !isSubmitting) onClose(); }}
                     onClick={(e) => e.target === e.currentTarget && !isSubmitting && onClose()}>
                     <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
 
-                    <motion.div className="relative bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[98vh] overflow-hidden" variants={modalVariants} onClick={(e) => e.stopPropagation()}>
+                    <motion.div role="dialog" aria-modal="true" aria-labelledby={isSubmitted ? 'job-application-success-title' : 'job-application-title'} className="relative bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[98vh] overflow-hidden" variants={modalVariants} onClick={(e) => e.stopPropagation()}>
                         <AnimatePresence mode="wait">
                             {isSubmitted ? (
                                 <motion.div key="success" className="p-6 text-center" variants={successVariants} initial="hidden" animate="visible">
@@ -659,7 +660,7 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
                                         transition={{ delay: 0.1, type: 'spring' }}>
                                         <FaCheckCircle className="w-6 h-6 text-green-600" />
                                     </motion.div>
-                                    <h3 className="text-lg font-bold text-slate-900 mb-2">{t('JobsUpdate.JobApplicationModal.success.title', 'Application Submitted!')}</h3>
+                                    <h3 id="job-application-success-title" className="text-lg font-bold text-slate-900 mb-2">{t('JobsUpdate.JobApplicationModal.success.title', 'Application Submitted!')}</h3>
                                     <p className="text-slate-600 text-sm">
                                         {t('JobsUpdate.JobApplicationModal.success.message', "Your application has been successfully submitted. We'll be in touch soon.")}
                                     </p>
@@ -673,11 +674,11 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
                                                 <FaBriefcase className="w-3 h-3 text-white" />
                                             </div>
                                             <div>
-                                                <h2 className="text-base font-bold text-slate-900">{t('JobsUpdate.JobApplicationModal.title', 'Apply for {{jobTitle}}', { jobTitle: '' })}</h2>
+                                                <h2 id="job-application-title" className="text-base font-bold text-slate-900">{t('JobsUpdate.JobApplicationModal.title', 'Apply for {{jobTitle}}', { jobTitle: '' })}</h2>
                                                 <p className="text-xs text-slate-600 truncate max-w-48">{job?.title}</p>
                                             </div>
                                         </div>
-                                        <button onClick={onClose} className="p-1.5 hover:bg-white/50 rounded-md transition-colors" disabled={isSubmitting}>
+                                        <button type="button" onClick={onClose} aria-label="Close job application" className="p-1.5 hover:bg-white/50 rounded-md transition-colors" disabled={isSubmitting}>
                                             <FaTimes className="w-3.5 h-3.5 text-slate-500" />
                                         </button>
                                     </div>
@@ -706,7 +707,8 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
                                                             type="email"
                                                             name="email"
                                                             value={applicationData.email}
-                                                            onChange={handleInputChange}
+                                                            readOnly
+                                                            title="Applications use your verified account email"
                                                             className={`w-full px-2.5 py-2 text-sm border rounded-md focus:outline-none ${
                                                                 errors.email ? 'border-red-300 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'
                                                             }`}

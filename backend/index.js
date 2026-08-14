@@ -1050,9 +1050,144 @@ app.post('/api/check', async (req, res) => {
     }
 });
 
+function jobApplicationNotification(status, jobTitle, companyName, notes = '') {
+    const suffix = notes ? ` ${notes}` : '';
+    if (status === 'interview') return { type: 'application_interview', title: 'Interview invitation', message: `You have been invited to interview for ${jobTitle} at ${companyName}.${suffix}` };
+    if (status === 'accepted') return { type: 'application_accepted', title: 'Application accepted', message: `Your application for ${jobTitle} at ${companyName} was accepted.${suffix}` };
+    if (status === 'rejected') return { type: 'application_rejected', title: 'Application update', message: `Your application for ${jobTitle} at ${companyName} was not selected.${suffix}` };
+    return { type: 'application_status_update', title: 'Application status updated', message: `Your application for ${jobTitle} at ${companyName} is now ${status}.${suffix}` };
+}
+
+app.post('/api/jobs/:jobId/applications', async (req, res) => {
+    const requestDb = req.app.get('db');
+    const jobId = String(req.params.jobId || '');
+    const fullName = String(req.body?.fullName || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, 120);
+    const phone = String(req.body?.phone || '').replace(/\p{Cc}/gu, '').trim().slice(0, 30);
+    const linkedInUrl = safePublicUrl(req.body?.linkedinUrl);
+    const githubUrl = safePublicUrl(req.body?.githubUrl);
+    const coverLetter = String(req.body?.coverLetter || '').slice(0, 20_000);
+    const coverText = coverLetter.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const resumeId = String(req.body?.resumeId || '').trim();
+    if (!requestDb || !admin || !/^[A-Za-z0-9_-]{1,128}$/.test(jobId)) return res.status(400).json({ success: false, error: 'A valid job is required.' });
+    if (!String(req.user.email || '').trim()) return res.status(403).json({ success: false, error: 'A verified account email is required.' });
+    if (!fullName || !/^\+?[0-9 ()-]{7,30}$/.test(phone) || coverText.length < 50 || coverText.length > 1000) {
+        return res.status(400).json({ success: false, error: 'Valid name, phone, and a 50–1000 character cover letter are required.' });
+    }
+    if ((req.body?.linkedinUrl && (!linkedInUrl || !linkedInUrl.startsWith('https:'))) || (req.body?.githubUrl && (!githubUrl || !githubUrl.startsWith('https:')))) {
+        return res.status(400).json({ success: false, error: 'Profile links must use HTTPS.' });
+    }
+    if (resumeId && !/^[A-Za-z0-9_-]{1,128}$/.test(resumeId)) return res.status(400).json({ success: false, error: 'Invalid resume selection.' });
+    const applicationId = `${req.user.uid}_${jobId}`;
+    const applicationRef = requestDb.collection('jobApplications').doc(applicationId);
+    const jobRef = requestDb.collection('jobs').doc(jobId);
+    const resumeRef = resumeId ? requestDb.collection('users').doc(req.user.uid).collection('resumes').doc(resumeId) : null;
+    try {
+        let responseData;
+        await requestDb.runTransaction(async transaction => {
+            const reads = [transaction.get(applicationRef), transaction.get(jobRef), ...(resumeRef ? [transaction.get(resumeRef)] : [])];
+            const [existing, jobSnapshot, resumeSnapshot] = await Promise.all(reads);
+            if (existing.exists) { const duplicate = new Error('You have already applied to this job.'); duplicate.code = 'ALREADY_APPLIED'; throw duplicate; }
+            if (!jobSnapshot.exists || jobSnapshot.data()?.status !== 'active') { const unavailable = new Error('This job is no longer accepting applications.'); unavailable.code = 'JOB_UNAVAILABLE'; throw unavailable; }
+            if (resumeRef && !resumeSnapshot?.exists) { const invalidResume = new Error('The selected resume was not found.'); invalidResume.code = 'RESUME_NOT_FOUND'; throw invalidResume; }
+            const job = jobSnapshot.data() || {};
+            const resume = resumeSnapshot?.data() || null;
+            if (resume && Buffer.byteLength(JSON.stringify(resume), 'utf8') > 600_000) { const oversized = new Error('The selected resume is too large to attach.'); oversized.code = 'RESUME_TOO_LARGE'; throw oversized; }
+            const email = String(req.user.email || '').trim().toLowerCase();
+            const jobTitle = String(job.title || 'Job').replace(/\p{Cc}/gu, ' ').trim().slice(0, 160);
+            const companyName = String(job.company || 'Company').replace(/\p{Cc}/gu, ' ').trim().slice(0, 160);
+            const application = {
+                userId: req.user.uid, jobId, applicantName: fullName, fullName,
+                applicantEmail: email, email, phone,
+                linkedinUrl: linkedInUrl || '', githubUrl: githubUrl || '', coverLetter,
+                selectedResume: resume ? { id: resumeId, name: String(resume.title || resume.name || 'Resume').slice(0, 120), data: resume } : null,
+                resumeId: resumeId || '', resumeUrl: '', status: 'pending', revision: 1,
+                skills: [], experience: '',
+                appliedAt: admin.firestore.FieldValue.serverTimestamp(), createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                jobSnapshot: {
+                    title: jobTitle, company: companyName,
+                    location: String(job.location || '').slice(0, 200), country: String(job.country || '').slice(0, 100),
+                    minSalary: Number.isFinite(Number(job.minSalary)) ? Number(job.minSalary) : null,
+                    maxSalary: Number.isFinite(Number(job.maxSalary)) ? Number(job.maxSalary) : null,
+                    jobType: String(job.jobType || job.type || '').slice(0, 80), workMode: String(job.workMode || '').slice(0, 80),
+                    description: String(job.description || '').slice(0, 10_000), requirements: Array.isArray(job.requirements) ? job.requirements.slice(0, 50).map(item => String(item).slice(0, 500)) : [],
+                },
+            };
+            transaction.set(applicationRef, application);
+            transaction.update(jobRef, { applicationsCount: Number(job.applicationsCount || 0) + 1, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+            transaction.set(requestDb.collection('notifications').doc(req.user.uid).collection('userNotifications').doc(), {
+                type: 'job_application', title: 'Application submitted', message: `Your application for ${jobTitle} at ${companyName} was submitted.`,
+                data: { jobId, applicationId, jobTitle, company: companyName }, read: false,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+            if (job.employerId) transaction.set(requestDb.collection('notifications').doc(job.employerId).collection('userNotifications').doc(), {
+                type: 'job_application_received', title: 'New job application', message: `${fullName} applied for ${jobTitle}.`,
+                data: { jobId, applicationId, jobTitle }, read: false,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+            transaction.set(requestDb.collection('security_audit_logs').doc(), {
+                action: 'JOB_APPLICATION_SUBMITTED', actorUid: req.user.uid, jobId, applicationId,
+                requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+            responseData = { applicationId, revision: 1 };
+        });
+        return res.status(201).json({ success: true, ...responseData });
+    } catch (error) {
+        const status = error.code === 'ALREADY_APPLIED' ? 409 : ['JOB_UNAVAILABLE', 'RESUME_NOT_FOUND'].includes(error.code) ? 404 : error.code === 'RESUME_TOO_LARGE' ? 413 : 500;
+        return res.status(status).json({ success: false, code: error.code, error: status === 500 ? 'Unable to submit application.' : error.message });
+    }
+});
+
+app.patch('/api/job-applications/:applicationId/status', async (req, res) => {
+    const requestDb = req.app.get('db');
+    const applicationId = String(req.params.applicationId || '');
+    const status = String(req.body?.status || '').toLowerCase();
+    const notes = String(req.body?.notes || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, 1000);
+    const expectedStatus = String(req.body?.expectedStatus || '');
+    const expectedRevision = Number(req.body?.expectedRevision || 0);
+    if (!requestDb || !admin || !/^[A-Za-z0-9:_-]{1,300}$/.test(applicationId) || !['interview', 'accepted', 'rejected'].includes(status)
+        || !Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid application status request.' });
+    const allowedTransitions = { pending: new Set(['interview', 'rejected']), interview: new Set(['accepted', 'rejected']) };
+    try {
+        let responseData;
+        await requestDb.runTransaction(async transaction => {
+            const applicationRef = requestDb.collection('jobApplications').doc(applicationId);
+            const applicationSnapshot = await transaction.get(applicationRef);
+            if (!applicationSnapshot.exists) { const missing = new Error('Application not found.'); missing.code = 'NOT_FOUND'; throw missing; }
+            const application = applicationSnapshot.data() || {};
+            const jobRef = requestDb.collection('jobs').doc(application.jobId);
+            const jobSnapshot = await transaction.get(jobRef);
+            if (!jobSnapshot.exists || jobSnapshot.data()?.employerId !== req.user.uid) { const missing = new Error('Application not found.'); missing.code = 'NOT_FOUND'; throw missing; }
+            const currentStatus = String(application.status || 'pending');
+            const currentRevision = Number(application.revision || 0);
+            if ((expectedStatus && expectedStatus !== currentStatus) || expectedRevision !== currentRevision) { const conflict = new Error('This application changed after the list loaded. Refresh before updating it.'); conflict.code = 'APPLICATION_CHANGED'; throw conflict; }
+            if (!allowedTransitions[currentStatus]?.has(status)) { const transition = new Error(`An application cannot move from ${currentStatus} to ${status}.`); transition.code = 'INVALID_STATUS_TRANSITION'; throw transition; }
+            const job = jobSnapshot.data() || {};
+            const jobTitle = String(job.title || application.jobSnapshot?.title || 'Job').replace(/\p{Cc}/gu, ' ').slice(0, 160);
+            const companyName = String(job.company || application.jobSnapshot?.company || 'Company').replace(/\p{Cc}/gu, ' ').slice(0, 160);
+            const nextRevision = currentRevision + 1;
+            transaction.update(applicationRef, { status, employerNotes: notes, revision: nextRevision, statusUpdatedAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+            const notification = jobApplicationNotification(status, jobTitle, companyName, notes);
+            transaction.set(requestDb.collection('notifications').doc(application.userId).collection('userNotifications').doc(), {
+                ...notification, data: { jobId: application.jobId, applicationId, jobTitle, company: companyName, status }, read: false,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+            transaction.set(requestDb.collection('security_audit_logs').doc(), {
+                action: 'JOB_APPLICATION_STATUS_UPDATED', actorUid: req.user.uid, applicationId, jobId: application.jobId,
+                previousStatus: currentStatus, status, revision: nextRevision, requestId: res.locals.requestId,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+            responseData = { status, revision: nextRevision };
+        });
+        return res.json({ success: true, ...responseData });
+    } catch (error) {
+        const responseStatus = error.code === 'APPLICATION_CHANGED' ? 409 : error.code === 'INVALID_STATUS_TRANSITION' ? 400 : error.code === 'NOT_FOUND' ? 404 : 500;
+        return res.status(responseStatus).json({ success: false, code: error.code, error: responseStatus === 500 ? 'Unable to update application.' : error.message });
+    }
+});
+
 app.post('/api/messages/conversations', async (req, res) => {
     const applicationId = String(req.body.applicationId || '');
-    if (!/^[A-Za-z0-9_-]{1,128}$/.test(applicationId) || !db || !admin?.database) {
+    if (!/^[A-Za-z0-9:_-]{1,300}$/.test(applicationId) || !db || !admin?.database) {
         return res.status(400).json({ success: false, error: 'Valid job application is required.' });
     }
     try {

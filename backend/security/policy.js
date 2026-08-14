@@ -26,7 +26,7 @@ const ADMIN_EXACT = new Set([
 const VERIFIED_PREFIXES = [
   '/generate-', '/check-grammar', '/ai/', '/pay', '/paypal/', '/razorpay/',
   '/paytm/', '/phonepe/', '/export', '/invoice', '/send-invoice-email',
-  '/linkedin-scraper', '/subscription/', '/account/', '/messages/', '/notify/', '/admin/ai'
+  '/linkedin-scraper', '/subscription/', '/account/', '/messages/', '/jobs/', '/job-applications/', '/notify/', '/admin/ai'
 ];
 
 const RECENT_AUTH_PATHS = new Set([

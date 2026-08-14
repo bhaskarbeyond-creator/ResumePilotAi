@@ -112,34 +112,16 @@ service cloud.firestore {
         && resource.data.employerId == request.auth.uid
         && request.resource.data.employerId == resource.data.employerId
         && request.resource.data.status == 'pending';
-      // Applications are separate protected documents; this exception changes metrics only.
-      allow update: if signedIn()
-        && changedOnly(['applicationsCount','updatedAt'])
-        && request.resource.data.applicationsCount == resource.data.applicationsCount + 1;
       allow delete: if employer() && resource.data.employerId == request.auth.uid;
     }
 
     match /jobApplications/{id} {
-      // Allows an applicant transaction to check its deterministic, ownership-bound
-      // document before creation without granting collection/list access.
-      allow get: if signedIn() && id.matches('^' + request.auth.uid + '_.*$');
-      allow create: if signedIn()
-        && id.matches('^' + request.auth.uid + '_.*$')
-        && request.resource.data.userId == request.auth.uid
-        && ownEmail(request.resource.data.applicantEmail)
-        && request.resource.data.email == request.auth.token.email
-        && request.resource.data.status == 'pending'
-        && get(/databases/$(database)/documents/jobs/$(request.resource.data.jobId)).data.status == 'active';
       allow read: if admin()
         || (signedIn() && resource.data.userId == request.auth.uid)
         || jobOwner(resource.data.jobId);
-      allow update: if admin() || (jobOwner(resource.data.jobId)
-        && request.resource.data.userId == resource.data.userId
-        && request.resource.data.jobId == resource.data.jobId
-        && changedOnly(['status','statusUpdatedAt','employerNotes','updatedAt']));
-      allow delete: if admin() || (signedIn()
-        && resource.data.userId == request.auth.uid
-        && resource.data.status == 'pending');
+      // Submission, status transitions, counter updates, notifications and audits are
+      // one backend transaction; browsers cannot split or forge that lifecycle.
+      allow create, update, delete: if false;
     }
 
     match /pb/{id} {

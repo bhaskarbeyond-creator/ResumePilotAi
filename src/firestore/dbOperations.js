@@ -1550,153 +1550,29 @@ export async function getJobApplications(jobId) {
     }
 }
 
-// Submit a job application
+// Submit a job application through the ownership-bound backend transaction.
 export async function submitJobApplication(userId, jobId, applicationData) {
-    const db = fire.firestore();
+    const currentUser = fire.auth().currentUser;
+    if (!currentUser || currentUser.uid !== userId) return { success: false, error: 'Sign in again before applying.' };
     try {
-        // Validate required fields
-        if (!userId) {
-            return { success: false, error: 'User ID is required' };
-        }
-        if (!jobId) {
-            return { success: false, error: 'Job ID is required' };
-        }
-        if (!applicationData.fullName || !applicationData.email) {
-            return { success: false, error: 'Full name and email are required' };
-        }
-
-        // Check if user has already applied to this job
-        const existingApplicationQuery = await db.collection('jobApplications').where('userId', '==', userId).where('jobId', '==', jobId).get();
-
-        if (!existingApplicationQuery.empty) {
-            return { success: false, error: 'You have already applied to this job' };
-        }
-
-        // Get job details for notification
-        const jobDoc = await db.collection('jobs').doc(jobId).get();
-        const jobData = jobDoc.exists ? jobDoc.data() : null;
-
-        // Prepare application data - ensure no undefined values
-        const finalApplicationData = {
-            userId: userId || '',
-            jobId: jobId || '',
-            applicantName: applicationData.fullName || '',
-            applicantEmail: applicationData.email || '',
-            fullName: applicationData.fullName || '',
-            email: applicationData.email || '',
-            phone: applicationData.phone || '',
-            linkedinUrl: applicationData.linkedinUrl || '',
-            githubUrl: applicationData.githubUrl || '',
-            coverLetter: applicationData.coverLetter || '',
-            selectedResume: applicationData.selectedResume ? {
-                id: applicationData.selectedResume.id || '',
-                name: applicationData.selectedResume.name || '',
-                shareableLink: applicationData.selectedResume.shareableLink || '',
-                data: applicationData.selectedResume.data || null
-            } : null,
-            resumeId: applicationData.selectedResume?.id || '',
-            resumeUrl: applicationData.selectedResume?.shareableLink || '',
-            status: 'pending',
-            appliedAt: new Date(),
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            jobSnapshot: jobData ? {
-                title: jobData.title || '',
-                company: jobData.company || '',
-                location: jobData.location || '',
-                country: jobData.country || '',
-                minSalary: jobData.minSalary ?? null,
-                maxSalary: jobData.maxSalary ?? null,
-                jobType: jobData.jobType || jobData.type || '',
-                workMode: jobData.workMode || '',
-                description: String(jobData.description || '').slice(0, 10000),
-                requirements: Array.isArray(jobData.requirements) ? jobData.requirements.slice(0, 50) : [],
-            } : null,
-            // Add fields that might be missing to prevent undefined values
-            skills: [], // Initialize as empty array
-            experience: '', // Initialize as empty string
-            appliedDate: new Date(), // Ensure we have a date field
-        };
-
-        // Deep sanitization function to remove undefined values recursively
-        const sanitizeObject = (obj) => {
-            if (obj === null || obj === undefined) {
-                return null;
-            }
-            
-            if (Array.isArray(obj)) {
-                return obj.map(item => sanitizeObject(item));
-            }
-            
-            if (typeof obj === 'object') {
-                const sanitized = {};
-                Object.keys(obj).forEach(key => {
-                    const value = obj[key];
-                    if (value !== undefined) {
-                        sanitized[key] = sanitizeObject(value);
-                    }
-                });
-                return sanitized;
-            }
-            
-            return obj;
-        };
-
-        // Apply deep sanitization
-        const sanitizedApplicationData = sanitizeObject(finalApplicationData);
-
-        // Deterministic ownership-bound IDs plus a transaction prevent simultaneous tabs
-        // from creating duplicate applications or double-incrementing the job counter.
-        const applicationRef = db.collection('jobApplications').doc(`${userId}_${jobId}`);
-        const jobRef = db.collection('jobs').doc(jobId);
-        await db.runTransaction(async (transaction) => {
-            const existing = await transaction.get(applicationRef);
-            if (existing.exists) {
-                const duplicateError = new Error('You have already applied to this job');
-                duplicateError.code = 'already-exists';
-                throw duplicateError;
-            }
-            transaction.set(applicationRef, sanitizedApplicationData);
-            transaction.update(jobRef, {
-                applicationsCount: firebase.firestore.FieldValue.increment(1),
-                updatedAt: new Date(),
-            });
+        const response = await fetch(`/api/jobs/${encodeURIComponent(jobId)}/applications`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                fullName: applicationData.fullName,
+                phone: applicationData.phone,
+                linkedinUrl: applicationData.linkedinUrl,
+                githubUrl: applicationData.githubUrl,
+                coverLetter: applicationData.coverLetter,
+                resumeId: applicationData.selectedResume?.id || '',
+            }),
         });
-
-        // Create notification for job application
-        const jobTitle = jobData?.title || 'Unknown Job';
-        const companyName = jobData?.company || 'Unknown Company';
-        try {
-            await createNotification(userId, {
-                type: 'job_application',
-                title: 'Application Submitted',
-                message: `Your application for ${jobTitle} at ${companyName} has been submitted successfully.`,
-                data: {
-                    jobId: jobId,
-                    applicationId: applicationRef.id,
-                    jobTitle: jobTitle,
-                    company: companyName
-                }
-            });
-        } catch (notificationError) {
-            console.warn('Application saved but confirmation notification failed', notificationError);
-        }
-
-        return { success: true, applicationId: applicationRef.id };
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success
+            ? result
+            : { success: false, error: result.error?.message || result.error || 'Unable to submit application.', code: result.code };
     } catch (error) {
-        console.error('❌ Error submitting job application:', error);
-        console.error('❌ Error details:', error.message);
-        console.error('❌ Error code:', error.code);
-
-        // Provide more specific error messages
-        let errorMessage = error.message;
-        if (error.code === 'permission-denied') {
-            errorMessage = 'Permission denied. Please make sure you are logged in.';
-        } else if (error.code === 'unavailable') {
-            errorMessage = 'Service temporarily unavailable. Please try again later.';
-        }
-
-        return { success: false, error: errorMessage };
+        return { success: false, error: error.message || 'Unable to submit application.' };
     }
 }
 
@@ -1879,87 +1755,29 @@ export async function getUserJobApplications(userId) {
     }
 }
 
-// Update application status
-export async function updateApplicationStatus(applicationId, status, notes = '') {
-    const db = fire.firestore();
+// Update an application through the employer-owned, revision-safe backend transaction.
+export async function updateApplicationStatus(applicationId, status, notes = '', expected = {}) {
     try {
-        // Get the application and job details for the notification
-        const applicationDoc = await db.collection('jobApplications').doc(applicationId).get();
-        if (!applicationDoc.exists) {
-            return { success: false, error: 'Application not found' };
-        }
-        
-        const applicationData = applicationDoc.data();
-        const jobDoc = await db.collection('jobs').doc(applicationData.jobId).get();
-        const jobData = jobDoc.exists ? jobDoc.data() : null;
-        
-        // Update the application status
-        await db.collection('jobApplications').doc(applicationId).update({
-            status: status,
-            statusUpdatedAt: new Date(),
-            employerNotes: notes,
+        const response = await fetch(`/api/job-applications/${encodeURIComponent(applicationId)}/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                status, notes,
+                expectedStatus: expected.status || '',
+                expectedRevision: Number(expected.revision || 0),
+            }),
         });
-
-        // Create notification for the applicant
-        const jobTitle = jobData?.title || 'Unknown Job';
-        const companyName = jobData?.company || 'Unknown Company';
-        
-        let notificationData = {
-            data: {
-                jobId: applicationData.jobId,
-                applicationId: applicationId,
-                jobTitle: jobTitle,
-                company: companyName
-            }
-        };
-        
-        switch (status) {
-            case 'interview':
-                notificationData = {
-                    ...notificationData,
-                    type: 'application_interview',
-                    title: 'Interview Invitation',
-                    message: `Good news! You've been invited for an interview for ${jobTitle} at ${companyName}.${notes ? ' Additional notes: ' + notes : ''}`
-                };
-                break;
-            case 'accepted':
-                notificationData = {
-                    ...notificationData,
-                    type: 'application_accepted',
-                    title: 'Application Accepted',
-                    message: `Congratulations! Your application for ${jobTitle} at ${companyName} has been accepted.${notes ? ' Additional notes: ' + notes : ''}`
-                };
-                break;
-            case 'rejected':
-                notificationData = {
-                    ...notificationData,
-                    type: 'application_rejected',
-                    title: 'Application Update',
-                    message: `Thank you for your interest in ${jobTitle} at ${companyName}. Unfortunately, we have decided to move forward with other candidates.${notes ? ' Feedback: ' + notes : ''}`
-                };
-                break;
-            default:
-                notificationData = {
-                    ...notificationData,
-                    type: 'application_status_update',
-                    title: 'Application Status Update',
-                    message: `Your application status for ${jobTitle} at ${companyName} has been updated to ${status}.${notes ? ' Notes: ' + notes : ''}`
-                };
-        }
-        
-        // Send notification to the applicant
-        await createNotification(applicationData.userId, notificationData);
-        
-        return { success: true };
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success
+            ? result
+            : { success: false, error: result.error?.message || result.error || 'Unable to update application.', code: result.code };
     } catch (error) {
-        console.error('Error updating application status:', error);
-        return { success: false, error: error.message };
+        return { success: false, error: error.message || 'Unable to update application.' };
     }
 }
 
-// Update application status with custom rejection message
-export async function updateApplicationStatusWithMessage(applicationId, status, customMessage = '') {
-    return await updateApplicationStatus(applicationId, status, customMessage);
+export async function updateApplicationStatusWithMessage(applicationId, status, customMessage = '', expected = {}) {
+    return updateApplicationStatus(applicationId, status, customMessage, expected);
 }
 
 // Admin function: Get all jobs with pagination and filtering
