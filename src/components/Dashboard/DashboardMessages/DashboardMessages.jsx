@@ -1,9 +1,19 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { withTranslation } from 'react-i18next';
 import { FiSearch, FiPaperclip, FiSend, FiMoreVertical, FiEdit, FiChevronUp, FiMessageCircle, FiUser, FiUsers } from 'react-icons/fi';
-import { getConversations, getMessages, getMessagesPaginated, sendMessage, getUserData } from '../../../firestore/dbOperations';
+import { getConversationParticipantProfile, getConversations, getMessages, getMessagesPaginated, sendMessage } from '../../../firestore/dbOperations';
 import fire from '../../../conf/fire';
 import userPlaceholder from '../../../assets/user.png';
+
+function formatMessageTime(timestamp, t) {
+    if (!timestamp) return t('JobsUpdate.DashboardMessages.time.now', 'Now');
+    const date = new Date(timestamp);
+    const diffInMinutes = Math.floor((Date.now() - date.getTime()) / (1000 * 60));
+    if (diffInMinutes < 1) return t('JobsUpdate.DashboardMessages.time.now', 'Now');
+    if (diffInMinutes < 60) return t('JobsUpdate.DashboardMessages.time.minutes', '{{count}}min ago', { count: diffInMinutes });
+    if (diffInMinutes < 1440) return t('JobsUpdate.DashboardMessages.time.hours', '{{count}}hr ago', { count: Math.floor(diffInMinutes / 60) });
+    return date.toLocaleDateString();
+}
 
 const DashboardMessages = ({ t }) => {
     const [conversations, setConversations] = useState([]);
@@ -15,67 +25,74 @@ const DashboardMessages = ({ t }) => {
     const [hasMoreMessages, setHasMoreMessages] = useState(true);
     const [messagesError, setMessagesError] = useState(null);
 
-    const [unsubscribeConversations, setUnsubscribeConversations] = useState(null);
-    const [unsubscribeMessages, setUnsubscribeMessages] = useState(null);
+    const unsubscribeConversationsRef = useRef(null);
+    const unsubscribeMessagesRef = useRef(null);
+    const activeAccountUidRef = useRef(null);
+    const selectedConversationIdRef = useRef(null);
     const chatContainerRef = useRef(null);
 
-    // Initialize Firebase auth listener and load conversations
+    // Initialize Firebase auth listener and keep listener ownership account-scoped.
     useEffect(() => {
-        const unsubscribeAuth = fire.auth().onAuthStateChanged(async (user) => {
-            if (user) {
-                setCurrentUser(user);
-                // Load user's conversations
-                const unsubConv = getConversations(user.uid, async (conversations) => {
-                    try {
-                        // Enhance conversations with user data
-                        const enhancedConversations = await Promise.all(
-                            conversations.map(async (conv, index) => {
-                                const participantIds = Object.keys(conv.participants).filter((id) => id !== user.uid);
-                                const otherUserId = participantIds[0];
+        let mounted = true;
+        let conversationLoadGeneration = 0;
+        const stopRealtimeListeners = () => {
+            unsubscribeConversationsRef.current?.();
+            unsubscribeMessagesRef.current?.();
+            unsubscribeConversationsRef.current = null;
+            unsubscribeMessagesRef.current = null;
+        };
+        const unsubscribeAuth = fire.auth().onAuthStateChanged(user => {
+            stopRealtimeListeners();
+            const userId = user?.uid || null;
+            activeAccountUidRef.current = userId;
+            setCurrentUser(user || null);
+            setConversations([]);
+            setMessages([]);
+            setSelectedConversation(null);
+            selectedConversationIdRef.current = null;
+            setMessagesError(null);
+            if (!userId) return;
 
-                                if (otherUserId) {
-                                    const userData = await getUserData(otherUserId);
-                                    return {
-                                        id: conv.id,
-                                        name: userData?.profile?.name || t('JobsUpdate.DashboardMessages.user.unknown', 'Unknown User'),
-                                        avatar: userData?.profile?.image || userPlaceholder,
-                                        time: conv.lastMessage ? formatTime(conv.lastMessage.timestamp) : t('JobsUpdate.DashboardMessages.time.now', 'Now'),
-                                        lastMessage: conv.lastMessage?.text || t('JobsUpdate.DashboardMessages.conversation.noMessages', 'No messages yet'),
-                                        unread: 0,
-                                        participants: conv.participants,
-                                    };
-                                }
-                                return null;
-                            })
-                        );
-
-                        const filteredConversations = enhancedConversations.filter(Boolean);
-                        setConversations(filteredConversations);
-                    } catch (error) {
-                        // Handle error silently
+            unsubscribeConversationsRef.current = getConversations(userId, async conversationList => {
+                const loadGeneration = ++conversationLoadGeneration;
+                if (!mounted || activeAccountUidRef.current !== userId || fire.auth().currentUser?.uid !== userId) return;
+                try {
+                    const enhancedConversations = await Promise.all(conversationList.map(async conversation => {
+                        const hasOtherParticipant = Object.keys(conversation.participants || {}).some(id => id !== userId);
+                        if (!hasOtherParticipant) return null;
+                        const participantProfile = await getConversationParticipantProfile(conversation.id);
+                        return {
+                            id: conversation.id,
+                            name: participantProfile.name || t('JobsUpdate.DashboardMessages.user.unknown', 'Unknown User'),
+                            avatar: participantProfile.avatar || userPlaceholder,
+                            time: conversation.lastMessage ? formatMessageTime(conversation.lastMessage.timestamp, t) : t('JobsUpdate.DashboardMessages.time.now', 'Now'),
+                            lastMessage: conversation.lastMessage?.text || t('JobsUpdate.DashboardMessages.conversation.noMessages', 'No messages yet'),
+                            unread: 0,
+                            participants: conversation.participants,
+                        };
+                    }));
+                    if (mounted && loadGeneration === conversationLoadGeneration && activeAccountUidRef.current === userId && fire.auth().currentUser?.uid === userId) {
+                        setConversations(enhancedConversations.filter(Boolean));
                     }
-                });
-
-                setUnsubscribeConversations(() => unsubConv);
-            } else {
-                setCurrentUser(null);
-                setConversations([]);
-                setMessages([]);
-                setSelectedConversation(null);
-            }
+                } catch {
+                    if (mounted && loadGeneration === conversationLoadGeneration && activeAccountUidRef.current === userId) setConversations([]);
+                }
+            });
         });
 
         return () => {
+            mounted = false;
+            activeAccountUidRef.current = null;
             unsubscribeAuth();
-            if (unsubscribeConversations) unsubscribeConversations();
-            if (unsubscribeMessages) unsubscribeMessages();
+            stopRealtimeListeners();
         };
-    }, []);
+    }, [t]);
 
     // Load initial messages when conversation is selected
     const loadInitialMessages = useCallback(
         async (conversationId) => {
             if (!conversationId || !currentUser) return;
+            const userId = currentUser.uid;
 
             try {
                 setIsLoadingMessages(true);
@@ -84,19 +101,21 @@ const DashboardMessages = ({ t }) => {
                 setHasMoreMessages(true);
 
                 const result = await getMessagesPaginated(conversationId, 10);
+                if (activeAccountUidRef.current !== userId || fire.auth().currentUser?.uid !== userId) return;
 
                 const formattedMessages = result.messages.map((msg) => ({
                     id: msg.id,
                     text: msg.text,
-                    time: formatTime(msg.timestamp),
+                    time: formatMessageTime(msg.timestamp, t),
                     timestamp: msg.timestamp,
-                    sender: msg.senderId === currentUser.uid ? 'me' : 'other',
+                    sender: msg.senderId === userId ? 'me' : 'other',
                 }));
 
                 setMessages(formattedMessages);
                 setHasMoreMessages(result.hasMore);
 
             } catch (error) {
+                if (activeAccountUidRef.current !== userId) return;
                 setMessagesError(error.message);
                 setMessages([
                     {
@@ -108,15 +127,16 @@ const DashboardMessages = ({ t }) => {
                     },
                 ]);
             } finally {
-                setIsLoadingMessages(false);
+                if (activeAccountUidRef.current === userId) setIsLoadingMessages(false);
             }
         },
-        [currentUser]
+        [currentUser, t]
     );
 
     // Load more messages (pagination)
     const loadMoreMessages = useCallback(async () => {
         if (!selectedConversation || !hasMoreMessages || isLoadingMessages || !currentUser) return;
+        const userId = currentUser.uid;
 
         try {
             setIsLoadingMessages(true);
@@ -126,13 +146,14 @@ const DashboardMessages = ({ t }) => {
             const startAfter = oldestMessage?.timestamp;
 
             const result = await getMessagesPaginated(selectedConversation.id, 20, startAfter);
+            if (activeAccountUidRef.current !== userId || fire.auth().currentUser?.uid !== userId) return;
 
             const formattedNewMessages = result.messages.map((msg) => ({
                 id: msg.id,
                 text: msg.text,
-                time: formatTime(msg.timestamp),
+                time: formatMessageTime(msg.timestamp, t),
                 timestamp: msg.timestamp,
-                sender: msg.senderId === currentUser.uid ? 'me' : 'other',
+                sender: msg.senderId === userId ? 'me' : 'other',
             }));
 
             // Prepend new messages to the beginning of the array (older messages)
@@ -140,20 +161,22 @@ const DashboardMessages = ({ t }) => {
             setHasMoreMessages(result.hasMore);
 
         } catch (error) {
-            // Don't replace all messages on error, just show a toast or similar
+            if (activeAccountUidRef.current === userId) setMessagesError(error.message || 'Older messages could not be loaded.');
         } finally {
-            setIsLoadingMessages(false);
+            if (activeAccountUidRef.current === userId) setIsLoadingMessages(false);
         }
-    }, [selectedConversation, hasMoreMessages, isLoadingMessages, currentUser, messages]);
+    }, [selectedConversation, hasMoreMessages, isLoadingMessages, currentUser, messages, t]);
 
     // Set up real-time listener for new messages (separate from initial loading)
     const setupRealTimeListener = useCallback(
         (conversationId) => {
-            if (!conversationId || !currentUser) return;
+            if (!conversationId || !currentUser) return () => {};
+            const userId = currentUser.uid;
 
             const unsubMsg = getMessages(
                 conversationId,
                 (liveMessages) => {
+                    if (activeAccountUidRef.current !== userId || fire.auth().currentUser?.uid !== userId) return;
                     // Only add messages that we don't already have and are newer than our newest message
                     setMessages((prevMessages) => {
                         if (prevMessages.length === 0) return prevMessages; // Don't add if no initial messages loaded
@@ -168,9 +191,9 @@ const DashboardMessages = ({ t }) => {
                             .map((msg) => ({
                                 id: msg.id,
                                 text: msg.text,
-                                time: formatTime(msg.timestamp),
+                                time: formatMessageTime(msg.timestamp, t),
                                 timestamp: msg.timestamp,
-                                sender: msg.senderId === currentUser.uid ? 'me' : 'other',
+                                sender: msg.senderId === userId ? 'me' : 'other',
                             }));
 
                         if (newMessages.length > 0) {
@@ -181,34 +204,38 @@ const DashboardMessages = ({ t }) => {
                         return prevMessages;
                     });
                 },
-                (error) => {
-                    console.error('Error with real-time messages:', error);
+                error => {
+                    if (activeAccountUidRef.current === userId) setMessagesError(error.message || 'Live messages are unavailable.');
                 }
             );
 
             return unsubMsg;
         },
-        [currentUser]
+        [currentUser, t]
     );
 
-    // Load messages when conversation is selected
+    // Load messages when conversation is selected.
     useEffect(() => {
-        if (selectedConversation && currentUser) {
-            // Clean up previous message subscription
-            if (unsubscribeMessages) unsubscribeMessages();
+        unsubscribeMessagesRef.current?.();
+        unsubscribeMessagesRef.current = null;
+        selectedConversationIdRef.current = selectedConversation?.id || null;
+        if (!selectedConversation || !currentUser) return undefined;
+        let cancelled = false;
+        const conversationId = selectedConversation.id;
+        const userId = currentUser.uid;
+        setMessages([]);
+        setHasMoreMessages(true);
+        setMessagesError(null);
 
-            // Reset message state
-            setMessages([]);
-            setHasMoreMessages(true);
-            setMessagesError(null);
-
-            // Load initial messages using pagination
-            loadInitialMessages(selectedConversation.id).then(() => {
-                // Set up real-time listener after initial messages are loaded
-                const unsubMsg = setupRealTimeListener(selectedConversation.id);
-                setUnsubscribeMessages(() => unsubMsg);
-            });
-        }
+        loadInitialMessages(conversationId).then(() => {
+            if (cancelled || activeAccountUidRef.current !== userId || fire.auth().currentUser?.uid !== userId) return;
+            unsubscribeMessagesRef.current = setupRealTimeListener(conversationId);
+        });
+        return () => {
+            cancelled = true;
+            unsubscribeMessagesRef.current?.();
+            unsubscribeMessagesRef.current = null;
+        };
     }, [selectedConversation, currentUser, loadInitialMessages, setupRealTimeListener]);
 
     // Auto-scroll logic
@@ -216,14 +243,15 @@ const DashboardMessages = ({ t }) => {
         if (chatContainerRef.current) {
             // If we are loading more messages, we want to maintain the scroll position
             if (isLoadingMessages && hasMoreMessages) {
-                const previousScrollHeight = chatContainerRef.current.scrollHeight;
-                const previousScrollTop = chatContainerRef.current.scrollTop;
+                const container = chatContainerRef.current;
+                const previousScrollHeight = container.scrollHeight;
+                const previousScrollTop = container.scrollTop;
 
-                // After messages are prepended, restore the scroll position
-                // Use a timeout to allow the DOM to update
+                // After messages are prepended, restore the scroll position.
                 setTimeout(() => {
-                    const newScrollHeight = chatContainerRef.current.scrollHeight;
-                    chatContainerRef.current.scrollTop = newScrollHeight - previousScrollHeight + previousScrollTop;
+                    if (chatContainerRef.current !== container) return;
+                    const newScrollHeight = container.scrollHeight;
+                    container.scrollTop = newScrollHeight - previousScrollHeight + previousScrollTop;
                 }, 0);
             } else {
                 // Otherwise, scroll to the bottom for new messages
@@ -232,33 +260,21 @@ const DashboardMessages = ({ t }) => {
         }
     }, [messages, isLoadingMessages, hasMoreMessages]);
 
-    // Helper function to format timestamp
-    const formatTime = (timestamp) => {
-        if (!timestamp) return t('JobsUpdate.DashboardMessages.time.now', 'Now');
-        const date = new Date(timestamp);
-        const now = new Date();
-        const diffInMinutes = Math.floor((now - date) / (1000 * 60));
-
-        if (diffInMinutes < 1) return t('JobsUpdate.DashboardMessages.time.now', 'Now');
-        if (diffInMinutes < 60) return t('JobsUpdate.DashboardMessages.time.minutes', '{{count}}min ago', { count: diffInMinutes });
-        if (diffInMinutes < 1440) return t('JobsUpdate.DashboardMessages.time.hours', '{{count}}hr ago', { count: Math.floor(diffInMinutes / 60) });
-        return date.toLocaleDateString();
-    };
-
-    const handleSendMessage = async (e) => {
-        e.preventDefault();
-        if (message.trim() && selectedConversation && currentUser) {
-            try {
-                await sendMessage(selectedConversation.id, currentUser.uid, message.trim());
+    const handleSendMessage = async event => {
+        event.preventDefault();
+        const text = message.trim();
+        if (!text || !selectedConversation || !currentUser) return;
+        const userId = currentUser.uid;
+        const conversationId = selectedConversation.id;
+        try {
+            const result = await sendMessage(conversationId, userId, text);
+            if (!result.success) throw new Error(result.error || t('JobsUpdate.DashboardMessages.errors.sendFailed', 'Failed to send message. Please try again.'));
+            if (activeAccountUidRef.current === userId && fire.auth().currentUser?.uid === userId && selectedConversationIdRef.current === conversationId) {
                 setMessage('');
-
-                // The real-time listener will automatically pick up the new message
-                // No need to manually reload messages
-                console.log('✅ Message sent successfully');
-            } catch (error) {
-                console.error('Failed to send message:', error);
-                alert(t('JobsUpdate.DashboardMessages.errors.sendFailed', 'Failed to send message. Please try again.'));
+                setMessagesError(null);
             }
+        } catch (error) {
+            if (activeAccountUidRef.current === userId) setMessagesError(error.message || t('JobsUpdate.DashboardMessages.errors.sendFailed', 'Failed to send message. Please try again.'));
         }
     };
 

@@ -1070,8 +1070,13 @@ app.post('/api/messages/conversations', async (req, res) => {
         const realtime = admin.database();
         const lookupRef = realtime.ref(`conversation-participants/${lookupKey}`);
         const existing = await lookupRef.get();
-        if (existing.exists()) return res.json({ success: true, conversationId: existing.val(), existing: true });
-        const conversationId = realtime.ref('conversations').push().key;
+        const existingId = String(existing.val() || '');
+        if (existing.exists() && /^[A-Za-z0-9_-]{1,128}$/.test(existingId)) {
+            return res.json({ success: true, conversationId: existingId, existing: true });
+        }
+        // A deterministic first ID makes concurrent create requests idempotent. Legacy
+        // random IDs remain available through the protected lookup above.
+        const conversationId = lookupKey;
         const timestamp = { '.sv': 'timestamp' };
         await realtime.ref().update({
             [`conversations/${conversationId}`]: {
@@ -1087,6 +1092,33 @@ app.post('/api/messages/conversations', async (req, res) => {
     } catch (error) {
         console.error('[Create conversation]', error.message);
         return res.status(503).json({ success: false, error: 'Messaging service unavailable.' });
+    }
+});
+
+app.get('/api/messages/conversations/:conversationId/participant-profile', async (req, res) => {
+    const conversationId = String(req.params.conversationId || '');
+    const requestDb = req.app.get('db');
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(conversationId) || !requestDb || !admin?.database) {
+        return res.status(404).json({ success: false, error: 'Conversation not found.' });
+    }
+    try {
+        const conversation = await admin.database().ref(`conversations/${conversationId}`).get();
+        if (!conversation.exists() || conversation.child(`participants/${req.user.uid}`).val() !== true) {
+            return res.status(404).json({ success: false, error: 'Conversation not found.' });
+        }
+        const participantIds = Object.keys(conversation.child('participants').val() || {});
+        const otherUserId = participantIds.find(uid => uid !== req.user.uid);
+        if (!otherUserId) return res.status(404).json({ success: false, error: 'Participant not found.' });
+        const userSnapshot = await requestDb.collection('users').doc(otherUserId).get();
+        const user = userSnapshot.data() || {};
+        const profile = user.profile || {};
+        const name = String(profile.name || user.displayName || `${user.firstname || ''} ${user.lastname || ''}`.trim() || 'User').replace(/\p{Cc}/gu, ' ').trim().slice(0, 100);
+        const avatar = safePublicUrl(profile.image || user.photoURL || '');
+        res.setHeader('Cache-Control', 'no-store, private');
+        return res.json({ success: true, profile: { name, avatar } });
+    } catch (error) {
+        console.error('[Message participant profile]', error.message);
+        return res.status(503).json({ success: false, error: 'Participant profile is unavailable.' });
     }
 });
 

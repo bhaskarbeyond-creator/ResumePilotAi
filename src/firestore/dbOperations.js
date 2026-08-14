@@ -4692,6 +4692,17 @@ export async function createConversation(applicationId) {
     }
 }
 
+export async function getConversationParticipantProfile(conversationId) {
+    try {
+        const response = await fetch(`/api/messages/conversations/${encodeURIComponent(conversationId)}/participant-profile`);
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.success) throw new Error(result.error || 'Participant profile is unavailable.');
+        return result.profile || { name: '', avatar: '' };
+    } catch (error) {
+        return { name: '', avatar: '', error: error.message };
+    }
+}
+
 export async function sendMessage(conversationId, _senderId, text) {
     try {
         const response = await fetch('/api/messages/send', {
