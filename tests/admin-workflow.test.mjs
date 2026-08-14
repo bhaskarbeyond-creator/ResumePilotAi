@@ -111,6 +111,22 @@ test('company moderation is backend-only, stale-safe, reasoned, and confirmation
   assert.doesNotMatch(rules.match(/match \/companies\/\{id\}[\s\S]*?match \/jobs/)?.[0] || '', /allow update: if admin\(\)/);
 });
 
+test('review and rating administration is validated, confirmed, audited, and backend-only', async () => {
+  const [reviews, operations, backend, rules] = await Promise.all([
+    fs.readFile('src/components/admin/reviews/Reviews.jsx', 'utf8'),
+    fs.readFile('src/firestore/dbOperations.js', 'utf8'),
+    fs.readFile('backend/index.js', 'utf8'),
+    fs.readFile('SecurityRules.txt', 'utf8'),
+  ]);
+  assert.match(reviews, /role="alertdialog"/);
+  assert.match(reviews, /validRatings/);
+  assert.match(operations, /\/api\/admin\/reviews/);
+  assert.match(backend, /REVIEW_CREATED/);
+  assert.match(backend, /REVIEW_DELETED/);
+  assert.match(backend, /GLOBAL_RATING_UPDATED/);
+  assert.match(rules, /match \/reviews\/\{id\}[^\n]+allow write: if false/);
+});
+
 test('user CSV export neutralizes spreadsheet formulas', async () => {
   const users = await fs.readFile('src/components/admin/usersManager/UsersManager.jsx', 'utf8');
   assert.match(users, /\^\[=\+\\-@\]/);

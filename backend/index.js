@@ -2726,6 +2726,59 @@ function firestoreTimeMillis(value) {
     return date && Number.isFinite(date.getTime()) ? date.getTime() : null;
 }
 
+app.post('/api/admin/reviews', async (req, res) => {
+    if (!db || !admin) return res.status(503).json({ success: false, error: 'Review service unavailable.' });
+    const clean = (value, max) => String(value || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, max);
+    const name = clean(req.body?.name, 120);
+    const occupation = clean(req.body?.occupation, 160);
+    const review = clean(req.body?.review, 2_000);
+    const rating = Number(req.body?.rating);
+    let imageUrl = clean(req.body?.imageUrl, 2_048);
+    if (imageUrl) {
+        try { const parsed = new URL(imageUrl); if (parsed.protocol !== 'https:' || parsed.username || parsed.password) imageUrl = ''; }
+        catch { imageUrl = ''; }
+    }
+    if (!name || !review || !Number.isFinite(rating) || rating < 1 || rating > 5) return res.status(400).json({ success: false, error: 'Name, review, and rating from 1 to 5 are required.' });
+    const reference = db.collection('reviews').doc();
+    const batch = db.batch();
+    batch.set(reference, { name, occupation, review, rating, imageUrl, status: 'approved', revision: 1, createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+    batch.set(db.collection('security_audit_logs').doc(), { action: 'REVIEW_CREATED', actorUid: req.user.uid, reviewId: reference.id, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+    await batch.commit();
+    return res.json({ success: true, id: reference.id, revision: 1 });
+});
+
+app.delete('/api/admin/reviews/:reviewId', async (req, res) => {
+    if (!db || !admin) return res.status(503).json({ success: false, error: 'Review service unavailable.' });
+    const reviewId = String(req.params.reviewId || '');
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(reviewId)) return res.status(400).json({ success: false, error: 'Invalid review ID.' });
+    try {
+        await db.runTransaction(async transaction => {
+            const reference = db.collection('reviews').doc(reviewId);
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists) { const missing = new Error('Review not found.'); missing.code = 'NOT_FOUND'; throw missing; }
+            const currentRevision = Number(snapshot.data()?.revision || 0);
+            if (Number(req.body?.expectedRevision || 0) !== currentRevision) { const conflict = new Error('This review changed after the page loaded. Refresh before deleting it.'); conflict.code = 'ADMIN_TARGET_CHANGED'; throw conflict; }
+            transaction.delete(reference);
+            transaction.set(db.collection('security_audit_logs').doc(), { action: 'REVIEW_DELETED', actorUid: req.user.uid, reviewId, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        });
+        return res.json({ success: true });
+    } catch (error) {
+        const status = error.code === 'ADMIN_TARGET_CHANGED' ? 409 : error.code === 'NOT_FOUND' ? 404 : 500;
+        return res.status(status).json({ success: false, code: error.code, error: status === 500 ? 'Unable to delete review.' : error.message });
+    }
+});
+
+app.post('/api/admin/global-rating', async (req, res) => {
+    if (!db || !admin) return res.status(503).json({ success: false, error: 'Rating service unavailable.' });
+    const rating = Number(req.body?.rating);
+    if (!Number.isFinite(rating) || rating < 1 || rating > 5) return res.status(400).json({ success: false, error: 'Rating must be from 1 to 5.' });
+    const batch = db.batch();
+    batch.set(db.collection('data').doc('meta'), { rating, ratingUpdatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    batch.set(db.collection('security_audit_logs').doc(), { action: 'GLOBAL_RATING_UPDATED', actorUid: req.user.uid, rating, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+    await batch.commit();
+    return res.json({ success: true, rating });
+});
+
 app.patch('/api/admin/companies/:companyId', async (req, res) => {
     if (!db || !admin) return res.status(503).json({ success: false, error: 'Company administration unavailable.' });
     const companyId = String(req.params.companyId || '');

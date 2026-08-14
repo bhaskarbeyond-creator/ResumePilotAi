@@ -242,7 +242,7 @@ service cloud.firestore {
     match /blog_categories/{id} { allow read: if true; allow write: if admin(); }
     match /pages/{id} { allow read: if true; allow write: if admin(); }
     match /ads/{id} { allow read: if true; allow write: if admin(); }
-    match /reviews/{id} { allow read: if resource.data.status == 'approved' || admin(); allow write: if admin(); }
+    match /reviews/{id} { allow read: if resource.data.status == 'approved' || admin(); allow write: if false; }
     match /trustedBy/{id} { allow read: if true; allow write: if admin(); }
     match /contact/{id} { allow read, update, delete: if admin(); allow create: if false; }
     match /notifications/{uid}/{document=**} {

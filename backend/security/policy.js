@@ -71,6 +71,7 @@ function enforceApiPolicy(req, res, next) {
       || pathname.startsWith('/admin/users/') || pathname.startsWith('/admin/payments/')
       || pathname.startsWith('/admin/employer-applications/') || pathname.startsWith('/admin/settings/')
       || pathname.startsWith('/admin/jobs/') || pathname.startsWith('/admin/companies/')
+      || pathname.startsWith('/admin/reviews') || pathname === '/admin/global-rating'
       || pathname.startsWith('/email/admin/')
       || ['/admin/ai-settings', '/admin/payment-settings', '/admin/save-smtp', '/admin/test-connection'].includes(pathname)) {
     const authTime = Number(req.user?.claims?.auth_time || 0) * 1000;

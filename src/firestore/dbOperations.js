@@ -4794,10 +4794,11 @@ export async function getSkillsOfUser(uid) {
 // date: new Date()
 
 export async function addReview(review) {
-    const db = fire.firestore();
-    const reviewRef = await db.collection('reviews').doc();
-    reviewRef.set(review);
-    return true;
+    try {
+        const response = await fetch('/api/admin/reviews', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(review) });
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success ? result : { success: false, error: result.error || 'Unable to add review.' };
+    } catch (error) { return { success: false, error: error.message }; }
 }
 
 // add a trusted by
@@ -4845,25 +4846,11 @@ export async function updateTrustedBy(id, trustedBy) {
 // make sure to note remove the current data that is in meta
 
 export async function addGlobalRating(rating) {
-    const db = fire.firestore();
-    const metaRef = await db.collection('data').doc('meta');
-    const meta = await metaRef.get();
-    if (meta.exists) {
-        var metaRating = meta.data().rating;
-        if (metaRating === undefined) {
-            metaRating = 0;
-        }
-        metaRating = rating;
-        metaRef.set(
-            {
-                rating: metaRating,
-            },
-            { merge: true }
-        );
-        return true;
-    } else {
-        return false;
-    }
+    try {
+        const response = await fetch('/api/admin/global-rating', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rating }) });
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success ? result : { success: false, error: result.error || 'Unable to update rating.' };
+    } catch (error) { return { success: false, error: error.message }; }
 }
 
 // get all reviews make sure every id is with there response
@@ -4890,11 +4877,12 @@ export async function get3Reviews() {
 
 // delete a review
 
-export async function deleteReview(id) {
-    const db = fire.firestore();
-    const reviewRef = await db.collection('reviews').doc(id);
-    reviewRef.delete();
-    return true;
+export async function deleteReview(id, expectedRevision = 0) {
+    try {
+        const response = await fetch(`/api/admin/reviews/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expectedRevision }) });
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success ? result : { success: false, error: result.error || 'Unable to delete review.', code: result.code };
+    } catch (error) { return { success: false, error: error.message }; }
 }
 
 //
