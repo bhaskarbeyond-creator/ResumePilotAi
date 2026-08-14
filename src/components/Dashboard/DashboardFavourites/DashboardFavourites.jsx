@@ -7,6 +7,7 @@ import { getCoverById, getFavourites, getResumeById } from '../../../firestore/d
 import { AiFillStar } from 'react-icons/ai';
 import { FaTrash } from 'react-icons/fa';
 import { withTranslation } from 'react-i18next';
+import fire from '../../../conf/fire';
 
 import { AiOutlineExclamationCircle } from 'react-icons/ai';
 function DashboardFavourites(props) {
@@ -25,30 +26,25 @@ function DashboardFavourites(props) {
         setFavourites([]);
         setFavouritesContent([]);
 
-        getFavourites(localStorage.getItem('user')).then((data) => {
-            if (data.length > 0) {
-                setFavourites(data);
-                // for each id in data get the data from firebase`
-                data.forEach((id) => {
-                    if (id !== undefined) {
-                        if (id.length > 9) {
-                            getCoverById(localStorage.getItem('user'), id).then((data) => {
-                                if (data !== null) setFavouritesContent((prev) => [...prev, data]);
-                            });
-                        } else if (id.length <= 9) {
-                            getResumeById(localStorage.getItem('user'), id).then((data) => {
-                                if (data !== null) setFavouritesContent((prev) => [...prev, data]);
-                            });
-                        }
-                    }
-                });
+        const userId = fire.auth().currentUser?.uid;
+        let active = true;
+        if (userId) getFavourites(userId).then((data) => {
+            if (!active || fire.auth().currentUser?.uid !== userId || data.length === 0) return;
+            setFavourites(data);
+            for (const id of data) {
+                if (id === undefined) continue;
+                const load = id.length > 9 ? getCoverById(userId, id) : getResumeById(userId, id);
+                load.then(item => {
+                    if (active && fire.auth().currentUser?.uid === userId && item !== null) setFavouritesContent(previous => [...previous, item]);
+                }).catch(() => {});
             }
-        });
+        }).catch(() => {});
 
         // add event listener to handle click outside of modal
         document.addEventListener('click', handleClickOutside);
         // remove event listener when component is unmounted
         return () => {
+            active = false;
             document.removeEventListener('click', handleClickOutside);
         };
     }, [props.isFavoritesShowed]);

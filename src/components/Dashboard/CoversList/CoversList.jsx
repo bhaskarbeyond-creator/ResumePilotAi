@@ -54,9 +54,7 @@ class CoversList extends Component {
         localStorage.removeItem('currentCoverItem');
 
         localStorage.setItem('currentCoverId', coverId);
-        localStorage.setItem('currentCoverItem', data);
-        console.log('Data of cover:', data);
-        var coverData = JSON.parse(localStorage.getItem('currentCoverItem'));
+        localStorage.setItem('currentCoverItem', typeof data === 'string' ? data : JSON.stringify(data));
     }
     //// List all covers for that specific user
     returnCovers() {
@@ -78,7 +76,7 @@ class CoversList extends Component {
                                 {' '}
                                 Go To Cover Letter
                             </Link>
-                            <a onClick={() => this.deleteCover(localStorage.getItem('user'), this.state.covers[index].id, index)} className="btn-default btn-removeResume">
+                            <a onClick={() => this.deleteCover(fire.auth().currentUser?.uid, this.state.covers[index].id, index)} className="btn-default btn-removeResume">
                                 Remove
                             </a>
                         </div>

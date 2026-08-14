@@ -23,6 +23,7 @@ import { withTranslation } from 'react-i18next';
 import axios from 'axios';
 import download from 'downloadjs';
 import config from '../../../conf/configuration';
+import fire from '../../../conf/fire';
 
 // Icons
 import { FaEye, FaDownload, FaSave, FaPalette } from 'react-icons/fa';
@@ -153,19 +154,20 @@ class BoardFilling extends Component {
     }
 
     async download() {
-        var self = this;
+        const userId = fire.auth().currentUser?.uid;
+        if (!userId) throw new Error('Sign in before downloading an account document.');
         const templateName = this.props.currentResumeName;
         const documentType = this.props.currentStep === 'Cover Filling' ? 'cover_letter' : 'resume';
 
         if (localStorage.getItem('currentResumeId') === null) {
             localStorage.setItem('currentResumeId', Math.floor(Math.random() * 20000).toString() + 'xknd');
             console.log(localStorage.getItem('currentResumeId'));
-            this.saveToDatabase();
+            await this.saveToDatabase();
         } else {
-            this.saveToDatabase();
+            await this.saveToDatabase();
         }
         await IncrementDownloads();
-        await addOneToNumberOfDocumentsDownloaded(localStorage.getItem('user'));
+        await addOneToNumberOfDocumentsDownloaded(userId);
 
         setJsonPb(localStorage.getItem('currentResumeId'), this.props.values);
 
@@ -191,7 +193,7 @@ class BoardFilling extends Component {
                 trackEngagement('document_downloaded', {
                     template_name: templateName,
                     document_type: documentType,
-                    user_id: localStorage.getItem('user'),
+                    user_id: userId,
                 });
 
                 download(response.data, 'resume.pdf', content);
@@ -240,22 +242,15 @@ class BoardFilling extends Component {
     }
 
     async saveCoverToDatabase(values) {
-        console.log('saveCoverToDatabase called with values:', values);
-        console.log('user id is:', localStorage.getItem('user'));
-        console.log('currentCoverId is:', localStorage.getItem('currentCoverId'));
-
-        if (!localStorage.getItem('user')) {
-            throw new Error('User ID is not available in localStorage');
-        }
-
-        await addCoverLetter(localStorage.getItem('user'), values);
-        console.log('Cover letter saved successfully');
+        const userId = fire.auth().currentUser?.uid;
+        if (!userId) throw new Error('Sign in before saving a cover letter.');
+        await addCoverLetter(userId, values);
     }
 
     async saveToDatabase(event) {
-        console.log('saveToDatabase called');
-
-        event == !undefined && event.preventDefault();
+        event !== undefined && event.preventDefault();
+        const userId = fire.auth().currentUser?.uid;
+        if (!userId) throw new Error('Sign in before saving a resume.');
 
         if (this.props.currentStep === 'Cover Filling') {
             // Generate currentCoverId if it doesn't exist
@@ -307,8 +302,8 @@ class BoardFilling extends Component {
             this.setState({ isSaving: true });
             if (!localStorage.getItem('currentResumeItem')) {
                 this.currentResume = {};
-                if (localStorage.getItem('user') !== null) {
-                    await addOneToNumberOfDocumentsGenerated(localStorage.getItem('user'));
+                if (userId !== null) {
+                    await addOneToNumberOfDocumentsGenerated(userId);
                 }
             } else {
                 this.currentResume = JSON.parse(localStorage.getItem('currentResumeItem'));
@@ -316,83 +311,86 @@ class BoardFilling extends Component {
 
             if (localStorage.getItem('currentResumeId') === null) {
                 localStorage.setItem('currentResumeId', Math.floor(Math.random() * 20000).toString() + 'xknd');
-                setJsonPb(localStorage.getItem('currentResumeId'), this.props.values);
-                setResumePropertyPerUser(localStorage.getItem('user'), localStorage.getItem('currentResumeId'), 'pbId', localStorage.getItem('currentResumeId'));
             }
-            setResumePropertyPerUser(localStorage.getItem('user'), localStorage.getItem('currentResumeId'), 'template', this.props.values.resumeName);
-            setResumePropertyPerUser(localStorage.getItem('user'), localStorage.getItem('currentResumeId'), 'title', this.props.values.title);
+            const resumeId = localStorage.getItem('currentResumeId');
+            setJsonPb(resumeId, this.props.values);
+            setResumePropertyPerUser(userId, resumeId, 'pbId', resumeId);
+            setResumePropertyPerUser(userId, resumeId, 'template', this.props.values.resumeName);
+            setResumePropertyPerUser(userId, resumeId, 'title', this.props.values.title);
 
             setTimeout(() => {
+                if (fire.auth().currentUser?.uid !== userId || localStorage.getItem('currentResumeId') !== resumeId) return;
                 if (this.currentResume.firstname !== this.props.values.firstname || this.currentResume.firstname == undefined) {
                     console.log('Firstname need to be changed in database');
-                    setResumePropertyPerUser(localStorage.getItem('user'), localStorage.getItem('currentResumeId'), 'firstname', this.props.values.firstname);
+                    setResumePropertyPerUser(userId, resumeId, 'firstname', this.props.values.firstname);
                 }
                 if (this.currentResume.lastname !== this.props.values.lastname || this.currentResume.lastname == undefined) {
                     console.log('Lastname need to be changed in database');
-                    setResumePropertyPerUser(localStorage.getItem('user'), localStorage.getItem('currentResumeId'), 'lastname', this.props.values.lastname);
+                    setResumePropertyPerUser(userId, resumeId, 'lastname', this.props.values.lastname);
                 }
                 if (this.currentResume.email !== this.props.values.email || this.currentResume.email == undefined) {
                     console.log('Email need to be changed in database');
-                    setResumePropertyPerUser(localStorage.getItem('user'), localStorage.getItem('currentResumeId'), 'email', this.props.values.email);
+                    setResumePropertyPerUser(userId, resumeId, 'email', this.props.values.email);
                 }
                 if (this.currentResume.phone !== this.props.values.phone || this.currentResume.phone == undefined) {
                     console.log('Phone need to be changed in database');
-                    setResumePropertyPerUser(localStorage.getItem('user'), localStorage.getItem('currentResumeId'), 'phone', this.props.values.phone);
+                    setResumePropertyPerUser(userId, resumeId, 'phone', this.props.values.phone);
                 }
                 if (this.currentResume.occupation !== this.props.values.occupation || this.currentResume.occupation == undefined) {
                     console.log('Occupation need to be changed in database');
-                    setResumePropertyPerUser(localStorage.getItem('user'), localStorage.getItem('currentResumeId'), 'occupation', this.props.values.occupation);
+                    setResumePropertyPerUser(userId, resumeId, 'occupation', this.props.values.occupation);
                 }
                 if (this.currentResume.country !== this.props.values.country || this.currentResume.country == undefined) {
                     console.log('Country need to be changed in database');
-                    setResumePropertyPerUser(localStorage.getItem('user'), localStorage.getItem('currentResumeId'), 'country', this.props.values.country);
+                    setResumePropertyPerUser(userId, resumeId, 'country', this.props.values.country);
                 }
                 if (this.currentResume.city !== this.props.values.city || this.currentResume.city == undefined) {
                     console.log('City need to be changed in database');
-                    setResumePropertyPerUser(localStorage.getItem('user'), localStorage.getItem('currentResumeId'), 'city', this.props.values.city);
+                    setResumePropertyPerUser(userId, resumeId, 'city', this.props.values.city);
                 }
                 if (this.currentResume.address !== this.props.values.address || this.currentResume.address == undefined) {
                     console.log('Address need to be changed in database');
-                    setResumePropertyPerUser(localStorage.getItem('user'), localStorage.getItem('currentResumeId'), 'address', this.props.values.address);
+                    setResumePropertyPerUser(userId, resumeId, 'address', this.props.values.address);
                 }
                 if (this.currentResume.postalcode !== this.props.values.postalcode || this.currentResume.postalcode == undefined) {
                     console.log('Postal code need to be changed in database');
-                    setResumePropertyPerUser(localStorage.getItem('user'), localStorage.getItem('currentResumeId'), 'postalcode', this.props.values.postalcode);
+                    setResumePropertyPerUser(userId, resumeId, 'postalcode', this.props.values.postalcode);
                 }
                 if (this.currentResume.dateofbirth !== this.props.values.dateofbirth || this.currentResume.dateofbirth == undefined) {
                     console.log('Date of birth need to be changed in database');
-                    setResumePropertyPerUser(localStorage.getItem('user'), localStorage.getItem('currentResumeId'), 'dateofbirth', this.props.values.dateofbirth);
+                    setResumePropertyPerUser(userId, resumeId, 'dateofbirth', this.props.values.dateofbirth);
                 }
                 if (this.currentResume.drivinglicense !== this.props.values.drivinglicense || this.currentResume.drivinglicense == undefined) {
                     console.log('Driving license need to be changed in database');
-                    setResumePropertyPerUser(localStorage.getItem('user'), localStorage.getItem('currentResumeId'), 'drivinglicense', this.props.values.drivinglicense);
+                    setResumePropertyPerUser(userId, resumeId, 'drivinglicense', this.props.values.drivinglicense);
                 }
                 if (this.currentResume.nationality !== this.props.values.nationality || this.currentResume.nationality == undefined) {
                     console.log('Nationality need to be changed in database');
-                    setResumePropertyPerUser(localStorage.getItem('user'), localStorage.getItem('currentResumeId'), 'nationality', this.props.values.nationality);
+                    setResumePropertyPerUser(userId, resumeId, 'nationality', this.props.values.nationality);
                 }
                 if (this.currentResume.summary !== this.props.values.summary || this.currentResume.summary == undefined) {
                     console.log('Summary need to be changed in database');
-                    setResumePropertyPerUser(localStorage.getItem('user'), localStorage.getItem('currentResumeId'), 'summary', this.props.values.summary);
+                    setResumePropertyPerUser(userId, resumeId, 'summary', this.props.values.summary);
                 }
 
                 // Save colors to database
                 if (this.currentResume.colors !== this.props.values.colors || this.currentResume.colors == undefined) {
                     console.log('Colors need to be changed in database');
-                    setResumePropertyPerUser(localStorage.getItem('user'), localStorage.getItem('currentResumeId'), 'colors', this.props.values.colors);
+                    setResumePropertyPerUser(userId, resumeId, 'colors', this.props.values.colors);
                 }
 
-                addEmployments(localStorage.getItem('user'), localStorage.getItem('currentResumeId'), this.props.values.employments);
-                addEducations(localStorage.getItem('user'), localStorage.getItem('currentResumeId'), this.props.values.educations);
-                addSkills(localStorage.getItem('user'), localStorage.getItem('currentResumeId'), this.props.values.skills);
-                addLanguages(localStorage.getItem('user'), localStorage.getItem('currentResumeId'), this.props.values.languages);
+                addEmployments(userId, resumeId, this.props.values.employments);
+                addEducations(userId, resumeId, this.props.values.educations);
+                addSkills(userId, resumeId, this.props.values.skills);
+                addLanguages(userId, resumeId, this.props.values.languages);
 
-                getResumeById(localStorage.getItem('user'), localStorage.getItem('currentResumeId')).then((data) => {
+                getResumeById(userId, resumeId).then((data) => {
+                    if (fire.auth().currentUser?.uid !== userId || localStorage.getItem('currentResumeId') !== resumeId) return;
                     if (data != null) {
                         localStorage.setItem(
                             'currentResumeItem',
                             JSON.stringify({
-                                id: localStorage.getItem('currentResumeId'),
+                                id: resumeId,
                                 item: data,
                                 employments: data.employments,
                                 educations: data.educations,
@@ -404,7 +402,7 @@ class BoardFilling extends Component {
                 });
             }, 1000);
 
-            setJsonPb(localStorage.getItem('currentResumeId'), this.props.values);
+            setJsonPb(resumeId, this.props.values);
             this.ShowToast('Success');
 
             setTimeout(() => {
@@ -660,7 +658,7 @@ class BoardFilling extends Component {
                                         {supportsColors && <div className="h-6 w-px bg-gray-300"></div>}
 
                                         {/* Save Button */}
-                                        {localStorage.getItem('user') && (
+                                        {fire.auth().currentUser?.uid && (
                                             <motion.button
                                                 whileHover={{ scale: 1.02 }}
                                                 whileTap={{ scale: 0.98 }}

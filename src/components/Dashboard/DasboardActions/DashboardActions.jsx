@@ -6,6 +6,7 @@ import { FiDownloadCloud } from 'react-icons/fi';
 import { MdAdsClick } from 'react-icons/md';
 import { Link } from 'react-router-dom';
 import { withTranslation } from 'react-i18next';
+import fire from '../../../conf/fire';
 
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
  function DashboardActions(props) {
@@ -26,11 +27,14 @@ import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 
     // get states of user from firestore
     React.useEffect(() => {
-        getStatesOfUser(localStorage.getItem('user')).then((res) => {
-            setStates(res);
-            //set loading
-            setStates((prev) => ({ ...prev, isLoading: false }));
-        });
+        const userId = fire.auth().currentUser?.uid;
+        let active = true;
+        if (userId) getStatesOfUser(userId).then(res => {
+            if (!active || fire.auth().currentUser?.uid !== userId) return;
+            setStates({ ...res, isLoading: false });
+        }).catch(() => { if (active) setStates(previous => ({ ...previous, isLoading: false })); });
+        else setStates(previous => ({ ...previous, isLoading: false }));
+        return () => { active = false; };
     }, []);
 
     const { t } = props;
