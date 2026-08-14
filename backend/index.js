@@ -2262,6 +2262,19 @@ app.get('/healthz', (req, res) => {
     return res.json({ status: 'ok', firebaseAdminConfigured: Boolean(db && admin) });
 });
 
+app.get('/readyz', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    const firebaseReady = Boolean(db && admin?.auth);
+    return res.status(firebaseReady ? 200 : 503).json({
+        status: firebaseReady ? 'ready' : 'not_ready',
+        checks: {
+            firebaseAdmin: firebaseReady ? 'READY' : 'UNAVAILABLE',
+            aiProviders: 'NOT_CHECKED', paymentProviders: 'NOT_CHECKED', smtp: 'NOT_CHECKED',
+            cmsScheduler: process.env.CMS_SCHEDULER_ENABLED === 'true' ? 'CONFIGURED' : 'DISABLED',
+        },
+    });
+});
+
 
 // Start a listener only for the executable entry point; integration tests import the Express app.
 if (require.main === module) {

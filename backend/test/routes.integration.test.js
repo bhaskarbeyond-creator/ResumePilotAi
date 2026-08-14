@@ -25,6 +25,14 @@ test('minimal health endpoint is public and does not cache', async () => {
   assert.equal(response.headers['cache-control'], 'no-store');
 });
 
+test('readiness is truthful and marks unprobed providers as not checked', async () => {
+  const response = await request(app).get('/readyz');
+  assert.equal(response.status, 503);
+  assert.equal(response.body.status, 'not_ready');
+  assert.equal(response.body.checks.aiProviders, 'NOT_CHECKED');
+  assert.equal(response.headers['cache-control'], 'no-store');
+});
+
 test('protected endpoint rejects absent and invalid Firebase tokens', async () => {
   const absent = await request(app).get('/api/rtl-font-config');
   assert.equal(absent.status, 401);
