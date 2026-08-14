@@ -28,8 +28,15 @@ const {
     bindNotificationRecipient
 } = require('./security/abuse');
 const port = process.env.PORT || 8080;
-const websiteName = process.env.WEBSITE_NAME || 'airesume.projectdemo.guru';
-const protocol = process.env.PROTOCOL || 'https';
+const configuredWebsiteName = String(process.env.WEBSITE_NAME || 'airesume.projectdemo.guru').trim().toLowerCase();
+if (!/^(?:[a-z0-9](?:[a-z0-9-]{0,62})\.)*[a-z0-9][a-z0-9-]{0,62}(?::\d{1,5})?$/.test(configuredWebsiteName)) {
+    throw new Error('WEBSITE_NAME must be a valid hostname');
+}
+const websiteName = configuredWebsiteName;
+const protocol = String(process.env.PROTOCOL || 'https').toLowerCase();
+if (!['http', 'https'].includes(protocol) || (process.env.NODE_ENV === 'production' && protocol !== 'https')) {
+    throw new Error('PROTOCOL must be https in production');
+}
 
 // Safe Module-Level Firebase Admin Initialization
 let admin = null;

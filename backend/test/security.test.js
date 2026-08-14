@@ -44,6 +44,7 @@ test('route policy classifies aliases and sensitive operations', () => {
   assert.equal(isAdminPath('/auth/purge-orphaned-auth'), true);
   assert.equal(isAdminPath('/email/logs'), true);
   assert.equal(isAdminPath('/admin/firebase-service-account'), true);
+  assert.equal(isAdminPath('/email/admin/save-smtp'), true);
   assert.equal(isAdminPath('/generate-summary'), false);
   assert.equal(requiresVerifiedEmail('/generate-summary'), true);
   assert.equal(requiresVerifiedEmail('/pay'), true);

@@ -2,6 +2,7 @@ const { permissionsFor } = require('./auth');
 
 const ADMIN_PREFIXES = [
   '/admin/',
+  '/email/admin/',
   '/test-grant-admin',
   '/test-create-candidate-subscription'
 ];
@@ -14,7 +15,7 @@ const ADMIN_EXACT = new Set([
   '/auth/purge-orphaned-auth',
   '/auth/linkedin/test-credentials',
   '/auth/github/test-credentials',
-  '/test-ai-config',
+  '/test-ai-config', '/ai/test-ai-config',
   '/email/logs', '/logs',
   '/email/resend', '/resend',
   '/email/templates', '/templates',
@@ -73,6 +74,7 @@ function enforceApiPolicy(req, res, next) {
   if (RECENT_AUTH_PATHS.has(pathname) || pathname === '/account/delete'
       || pathname.startsWith('/admin/users/') || pathname.startsWith('/admin/payments/')
       || pathname.startsWith('/admin/employer-applications/')
+      || pathname.startsWith('/email/admin/')
       || ['/admin/ai-settings', '/admin/payment-settings', '/admin/save-smtp', '/admin/test-connection'].includes(pathname)) {
     const authTime = Number(req.user?.claims?.auth_time || 0) * 1000;
     const maxAgeMs = Number(process.env.SENSITIVE_AUTH_MAX_AGE_MS || 10 * 60 * 1000);
