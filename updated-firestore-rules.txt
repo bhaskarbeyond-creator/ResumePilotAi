@@ -93,15 +93,15 @@ service cloud.firestore {
         && request.resource.data.employerId == request.auth.uid
         && request.resource.data.status == 'pending'
         && request.resource.data.applicationsCount == 0;
-      allow update: if admin() || (employer()
+      allow update: if employer()
         && resource.data.employerId == request.auth.uid
         && request.resource.data.employerId == resource.data.employerId
-        && request.resource.data.status == 'pending');
+        && request.resource.data.status == 'pending';
       // Applications are separate protected documents; this exception changes metrics only.
       allow update: if signedIn()
         && changedOnly(['applicationsCount','updatedAt'])
         && request.resource.data.applicationsCount == resource.data.applicationsCount + 1;
-      allow delete: if admin() || (employer() && resource.data.employerId == request.auth.uid);
+      allow delete: if employer() && resource.data.employerId == request.auth.uid;
     }
 
     match /jobApplications/{id} {
@@ -258,8 +258,8 @@ service cloud.firestore {
       allow write: if admin() && (!(id in ['system_settings','subscriptions']) || recentAuth());
     }
     match /settings/{id} {
-      allow read: if admin() && !(id in ['ai_providers','payment_providers','oauth_providers']);
-      allow write: if admin() && recentAuth();
+      allow read: if admin() && !(id in ['ai_providers','payment_providers','oauth_providers','admin_configuration']);
+      allow write: if admin() && recentAuth() && !(id in ['ai_providers','payment_providers','oauth_providers','admin_configuration']);
     }
     match /system_settings/{id} { allow read: if admin(); allow write: if admin() && recentAuth(); }
 

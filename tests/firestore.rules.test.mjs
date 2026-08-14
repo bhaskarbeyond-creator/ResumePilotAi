@@ -117,6 +117,8 @@ test('jobs expose active listings only and employer edits cannot self-approve', 
     employerId: 'employer', status: 'active', applicationsCount: 0, title: 'Bypass'
   }));
   await assertFails(updateDoc(doc(employer(), 'jobs/draft-job'), { status: 'active' }));
+  await assertFails(updateDoc(doc(admin(), 'jobs/draft-job'), { status: 'active' }));
+  await assertFails(deleteDoc(doc(admin(), 'jobs/draft-job')));
 });
 
 test('job applications bind applicant identity and only job owner may change status', async () => {
@@ -178,6 +180,8 @@ test('billing, provider secrets and token registries are server-only', async () 
   }).firestore();
   await assertFails(updateDoc(doc(staleAdmin, 'data/system_settings'), { staleWrite: true }));
   await assertFails(getDoc(doc(admin(), 'settings/ai_providers')));
+  await assertFails(getDoc(doc(admin(), 'settings/admin_configuration')));
+  await assertFails(setDoc(doc(admin(), 'settings/admin_configuration'), { smtp: { password: 'browser-secret' } }));
   await assertFails(getDoc(doc(admin(), 'password_reset_tokens/token')));
   await assertFails(deleteDoc(doc(admin(), 'password_reset_tokens/token')));
   await assertFails(setDoc(doc(alice(), 'contact/direct-client-write'), { email: 'alice@example.com', message: 'bypass' }));

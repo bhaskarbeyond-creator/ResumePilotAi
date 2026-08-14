@@ -60,6 +60,41 @@ test('administrative user and employer changes carry stale-target preconditions 
   assert.match(backend, /SYSTEM_HEALTH_SETTINGS_UPDATED/);
 });
 
+test('generic admin settings use audited backend persistence without cross-account browser cache or secret responses', async () => {
+  const [operations, backend, rules, email] = await Promise.all([
+    fs.readFile('src/firestore/dbOperations.js', 'utf8'),
+    fs.readFile('backend/index.js', 'utf8'),
+    fs.readFile('SecurityRules.txt', 'utf8'),
+    fs.readFile('src/components/admin/settings/EmailSmtpSettings.jsx', 'utf8'),
+  ]);
+  assert.doesNotMatch(operations, /localStorage\.(?:getItem|setItem)\('system_settings_cache'/);
+  assert.match(operations, /\/api\/admin\/settings\//);
+  assert.match(backend, /ADMIN_SETTINGS_UPDATED/);
+  assert.match(backend, /ADMIN_SETTINGS_CONFLICT/);
+  assert.match(operations, /expectedRevision/);
+  assert.match(backend, /publicAdminSettings/);
+  assert.match(rules, /admin_configuration/);
+  assert.match(email, /if \(!response\.ok \|\| !result\.success\)/);
+});
+
+test('job moderation is stale-safe, audited, confirmation-gated, and preserves applications', async () => {
+  const [jobs, operations, backend, rules] = await Promise.all([
+    fs.readFile('src/components/admin/jobsManager/JobsManager.jsx', 'utf8'),
+    fs.readFile('src/firestore/dbOperations.js', 'utf8'),
+    fs.readFile('backend/index.js', 'utf8'),
+    fs.readFile('SecurityRules.txt', 'utf8'),
+  ]);
+  assert.doesNotMatch(jobs, /window\.confirm|createNotification/);
+  assert.match(jobs, /role="alertdialog"/);
+  assert.match(jobs, /expectedUpdatedAt/);
+  assert.match(jobs, /setTimeout\(\(\) => this\.loadJobs\(1\), 350\)/);
+  assert.match(operations, /\/api\/admin\/jobs\//);
+  assert.match(backend, /JOB_STATUS_UPDATED/);
+  assert.match(backend, /JOB_HAS_APPLICATIONS/);
+  assert.match(backend, /transaction\.get\(applicationsQuery\)/);
+  assert.doesNotMatch(rules.match(/match \/jobs\/\{id\}[\s\S]*?match \/jobApplications/)?.[0] || '', /allow update: if admin\(\)/);
+});
+
 test('user CSV export neutralizes spreadsheet formulas', async () => {
   const users = await fs.readFile('src/components/admin/usersManager/UsersManager.jsx', 'utf8');
   assert.match(users, /\^\[=\+\\-@\]/);

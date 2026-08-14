@@ -64,6 +64,8 @@ test('stale admin sessions cannot perform refunds or user administration', async
     ['patch', '/api/admin/users/victim'],
     ['patch', '/api/admin/employer-applications/victim'],
     ['post', '/api/admin/system-health-settings'],
+    ['post', '/api/admin/settings/modules'],
+    ['patch', '/api/admin/jobs/job-1'],
     ['post', '/api/account/delete']
   ]) {
     const response = await request(app)[method](route).set(bearer('stale-admin')).send({ paymentOrderId: 'order', suspended: true });

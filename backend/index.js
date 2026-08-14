@@ -1379,6 +1379,88 @@ app.post('/api/admin/system-health-settings', async (req, res) => {
     return res.json({ success: true, settings: systemHealth });
 });
 
+const GENERIC_ADMIN_SETTING_CATEGORIES = new Set([
+    'modules', 'auth', 'ai', 'watermark', 'templateManager', 'security', 'jobScraper',
+    'exportPdf', 'branding', 'geoSeo', 'llmGeo', 'enabledTemplates', 'integrations',
+    'socialAuth', 'google', 'facebook', 'payments', 'smtp', 'fallbackSmtp', 'imap',
+    'twilio', 'storage', 'codeInjection'
+]);
+
+function normalizeAdminSettingValue(value, depth = 0) {
+    if (depth > 6) throw new Error('Settings nesting is too deep.');
+    if (value === null || typeof value === 'boolean') return value;
+    if (typeof value === 'number') {
+        if (!Number.isFinite(value)) throw new Error('Settings contain an invalid number.');
+        return value;
+    }
+    if (typeof value === 'string') return value.replace(/\p{Cc}/gu, ' ').slice(0, 10_000);
+    if (Array.isArray(value)) {
+        if (value.length > 200) throw new Error('Settings list is too large.');
+        return value.map(item => normalizeAdminSettingValue(item, depth + 1));
+    }
+    if (value && typeof value === 'object') {
+        const entries = Object.entries(value);
+        if (entries.length > 200) throw new Error('Settings object is too large.');
+        return Object.fromEntries(entries.filter(([key]) => /^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(key))
+            .map(([key, item]) => [key, normalizeAdminSettingValue(item, depth + 1)]));
+    }
+    throw new Error('Settings contain an unsupported value.');
+}
+
+function publicAdminSettings(category, data) {
+    if (category === 'codeInjection') return {};
+    if (['smtp', 'fallbackSmtp', 'imap'].includes(category)) return { enabled: data.enabled === true };
+    if (category === 'twilio') return { enableSmsAlerts: data.enableSmsAlerts === true };
+    const publicApiKeys = new Set(['apiKey', 'googleMapsApiKey', 'cloudinaryApiKey']);
+    const hideKey = key => /(?:secret|password|privateKey|authToken|clientToken|accessToken|refreshToken|serviceAccount|merchantKey|saltKey|keySecret|s3AccessKeyId)/i.test(key)
+        || (/apiKey$/i.test(key) && !publicApiKeys.has(key))
+        || (category === 'exportPdf' && ['chromiumPath', 'backendExportUrl'].includes(key));
+    const redact = value => {
+        if (Array.isArray(value)) return value.map(redact);
+        if (!value || typeof value !== 'object') return value;
+        return Object.fromEntries(Object.entries(value).filter(([key]) => !hideKey(key)).map(([key, item]) => [key, redact(item)]));
+    };
+    return redact(data);
+}
+
+app.post('/api/admin/settings/:category', async (req, res) => {
+    if (!db || !admin) return res.status(503).json({ success: false, error: 'Settings service unavailable.' });
+    const category = String(req.params.category || '');
+    if (!GENERIC_ADMIN_SETTING_CATEGORIES.has(category) || !req.body?.data || typeof req.body.data !== 'object' || Array.isArray(req.body.data)) {
+        return res.status(400).json({ success: false, error: 'Unsupported settings category or payload.' });
+    }
+    try {
+        if (Buffer.byteLength(JSON.stringify(req.body.data), 'utf8') > 100_000) throw new Error('Settings payload is too large.');
+        const normalized = normalizeAdminSettingValue(req.body.data);
+        const publicSettings = publicAdminSettings(category, normalized);
+        const expectedRevision = Number(req.body.expectedRevision || 0);
+        if (!Number.isInteger(expectedRevision) || expectedRevision < 0) throw new Error('Invalid settings revision.');
+        const secretRef = db.collection('settings').doc('admin_configuration');
+        const publicRef = db.collection('data').doc('public_config');
+        const revision = await db.runTransaction(async transaction => {
+            const snapshot = await transaction.get(secretRef);
+            const currentRevision = Number(snapshot.data()?._revisions?.[category] || 0);
+            if (expectedRevision !== currentRevision) {
+                const stale = new Error('These settings changed after the panel loaded. Refresh before saving.');
+                stale.code = 'ADMIN_SETTINGS_CONFLICT';
+                throw stale;
+            }
+            const nextRevision = currentRevision + 1;
+            transaction.set(secretRef, { [category]: normalized, _revisions: { [category]: nextRevision } }, { merge: true });
+            transaction.set(publicRef, { [category]: publicSettings, _settingsRevisions: { [category]: nextRevision } }, { merge: true });
+            transaction.set(db.collection('security_audit_logs').doc(), {
+                action: 'ADMIN_SETTINGS_UPDATED', actorUid: req.user.uid, category, revision: nextRevision,
+                changedFields: Object.keys(normalized).slice(0, 200), requestId: res.locals.requestId,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+            return nextRevision;
+        });
+        return res.json({ success: true, settings: publicSettings, revision, message: `${category} settings saved.` });
+    } catch (error) {
+        return res.status(error.code === 'ADMIN_SETTINGS_CONFLICT' ? 409 : 400).json({ success: false, code: error.code, error: error.message });
+    }
+});
+
 app.post('/api/admin/gdpr-settings', async (req, res) => {
     if (!db) return res.status(503).json({ success: false, error: 'Settings service unavailable' });
     const input = req.body || {};
@@ -2636,6 +2718,92 @@ app.patch('/api/admin/employer-applications/:uid', async (req, res) => {
     } catch (error) {
         console.error('[Employer review]', error.message);
         return res.status(error.code === 'auth/user-not-found' ? 404 : 500).json({ success: false, error: 'Unable to review employer application.' });
+    }
+});
+
+function firestoreTimeMillis(value) {
+    const date = value?.toDate?.() || (value ? new Date(value) : null);
+    return date && Number.isFinite(date.getTime()) ? date.getTime() : null;
+}
+
+app.patch('/api/admin/jobs/:jobId', async (req, res) => {
+    if (!db || !admin) return res.status(503).json({ success: false, error: 'Job administration unavailable.' });
+    const jobId = String(req.params.jobId || '');
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(jobId)) return res.status(400).json({ success: false, error: 'Invalid job ID.' });
+    const hasStatus = Object.hasOwn(req.body, 'status');
+    const hasFeatured = Object.hasOwn(req.body, 'isFeatured');
+    if (Number(hasStatus) + Number(hasFeatured) !== 1) return res.status(400).json({ success: false, error: 'Exactly one job change is allowed per request.' });
+    const status = String(req.body.status || '').toLowerCase();
+    if (hasStatus && !['active', 'pending', 'inactive', 'archived'].includes(status)) return res.status(400).json({ success: false, error: 'Invalid job status.' });
+    if (hasFeatured && typeof req.body.isFeatured !== 'boolean') return res.status(400).json({ success: false, error: 'Invalid featured state.' });
+    const reference = db.collection('jobs').doc(jobId);
+    try {
+        const result = await db.runTransaction(async transaction => {
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists) {
+                const missing = new Error('Job not found.'); missing.code = 'NOT_FOUND'; throw missing;
+            }
+            const job = snapshot.data() || {};
+            const expectedUpdatedAt = req.body.expectedUpdatedAt === undefined ? null : Number(req.body.expectedUpdatedAt);
+            const stale = (Object.hasOwn(req.body, 'expectedStatus') && String(job.status || 'pending') !== String(req.body.expectedStatus))
+                || (Object.hasOwn(req.body, 'expectedFeatured') && Boolean(job.isFeatured) !== Boolean(req.body.expectedFeatured))
+                || (expectedUpdatedAt !== null && expectedUpdatedAt !== firestoreTimeMillis(job.updatedAt));
+            if (stale) { const conflict = new Error('This job changed after the page loaded. Refresh before changing it.'); conflict.code = 'ADMIN_TARGET_CHANGED'; throw conflict; }
+            const changes = hasStatus
+                ? { status, updatedAt: admin.firestore.FieldValue.serverTimestamp() }
+                : { isFeatured: req.body.isFeatured, featuredAt: req.body.isFeatured ? admin.firestore.FieldValue.serverTimestamp() : null, updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+            transaction.update(reference, changes);
+            if (hasStatus && job.employerId) {
+                const safeTitle = String(job.title || 'Job posting').replace(/\p{Cc}/gu, ' ').slice(0, 160);
+                const notificationRef = db.collection('notifications').doc(job.employerId).collection('userNotifications').doc();
+                transaction.set(notificationRef, {
+                    type: 'job_status_update', title: 'Job status updated',
+                    message: `Your job posting “${safeTitle}” is now ${status}.`,
+                    data: { jobId, status }, read: false,
+                    createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                });
+            }
+            transaction.set(db.collection('security_audit_logs').doc(), {
+                action: hasStatus ? 'JOB_STATUS_UPDATED' : 'JOB_FEATURED_UPDATED', actorUid: req.user.uid,
+                jobId, ...(hasStatus ? { status } : { isFeatured: req.body.isFeatured }), requestId: res.locals.requestId,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+            return { status: hasStatus ? status : job.status, isFeatured: hasFeatured ? req.body.isFeatured : Boolean(job.isFeatured) };
+        });
+        return res.json({ success: true, ...result });
+    } catch (error) {
+        const responseStatus = error.code === 'ADMIN_TARGET_CHANGED' ? 409 : error.code === 'NOT_FOUND' ? 404 : 500;
+        return res.status(responseStatus).json({ success: false, code: error.code, error: responseStatus === 500 ? 'Unable to update job.' : error.message });
+    }
+});
+
+app.delete('/api/admin/jobs/:jobId', async (req, res) => {
+    if (!db || !admin) return res.status(503).json({ success: false, error: 'Job administration unavailable.' });
+    const jobId = String(req.params.jobId || '');
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(jobId)) return res.status(400).json({ success: false, error: 'Invalid job ID.' });
+    try {
+        const reference = db.collection('jobs').doc(jobId);
+        const applicationsQuery = db.collection('jobApplications').where('jobId', '==', jobId).limit(1);
+        await db.runTransaction(async transaction => {
+            const [snapshot, applications] = await Promise.all([transaction.get(reference), transaction.get(applicationsQuery)]);
+            if (!snapshot.exists) { const missing = new Error('Job not found.'); missing.code = 'NOT_FOUND'; throw missing; }
+            if (!applications.empty) { const conflict = new Error('This job has applications and must be archived instead of deleted.'); conflict.code = 'JOB_HAS_APPLICATIONS'; throw conflict; }
+            const job = snapshot.data() || {};
+            const expectedUpdatedAt = req.body?.expectedUpdatedAt === undefined ? null : Number(req.body.expectedUpdatedAt);
+            if ((Object.hasOwn(req.body || {}, 'expectedStatus') && String(job.status || 'pending') !== String(req.body.expectedStatus))
+                || (expectedUpdatedAt !== null && expectedUpdatedAt !== firestoreTimeMillis(job.updatedAt))) {
+                const conflict = new Error('This job changed after the page loaded. Refresh before deleting it.'); conflict.code = 'ADMIN_TARGET_CHANGED'; throw conflict;
+            }
+            transaction.delete(reference);
+            transaction.set(db.collection('security_audit_logs').doc(), {
+                action: 'JOB_DELETED', actorUid: req.user.uid, jobId, previousStatus: job.status || 'pending',
+                requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+        });
+        return res.json({ success: true });
+    } catch (error) {
+        const responseStatus = ['ADMIN_TARGET_CHANGED', 'JOB_HAS_APPLICATIONS'].includes(error.code) ? 409 : error.code === 'NOT_FOUND' ? 404 : 500;
+        return res.status(responseStatus).json({ success: false, code: error.code, error: responseStatus === 500 ? 'Unable to delete job.' : error.message });
     }
 });
 

@@ -15,6 +15,8 @@ Validated on 2026-08-14 against the reachable grafted history and the protected 
 | Employer review | Approve/reject/reactivate executed immediately and did not verify loaded application status; rejection reason was normally empty. | Confirmation identifies the target and loaded status. Reject/revoke requires a bounded reason. Backend compares expected status before custom-claim changes, returns a stale-target conflict, revokes tokens, and audits the result. |
 | User deletion | Related cleanup exceptions were swallowed and the endpoint still claimed all owned data was deleted. Auth/profile deletion order made retry difficult; authored CMS posts were orphaned. | UID/email and SUPER_ADMIN checks use Auth plus profile fallback. Portfolio, published portfolio, applications, employer record, notifications, blog posts, and profile-tree cleanup are tracked. Partial cleanup creates `USER_DELETION_INCOMPLETE`, returns failure with retry guidance, and keeps the profile row until related cleanup succeeds where possible. Success lists only the stores actually handled. |
 | CSV export | Spreadsheet formula values could execute when an admin opened CSV output; object URLs were not released. | Every cell is quoted/escaped and formula-leading values are neutralized; the object URL is revoked and no-data feedback is accessible. |
+| Generic settings | Panels wrote directly to an unreadable Firestore document, cached redacted settings across accounts in `localStorage`, ignored `{success:false}`, and could overwrite stale categories. | Generic categories use a recent-auth backend endpoint, bounded normalization, secret/public split stores, changed-field audit records, per-category revisions, and conflict rejection. Browser cache recovery was removed. Secret storage documents now deny browser reads and writes. SMTP runtime save results are checked before success. |
+| Job moderation | Admin job status/feature/delete used direct SDK writes with no audit or stale check. Notifications usually failed under owner-scoped rules, delete could orphan applications, search fired a full collection read per keypress, and confirmation used `window.confirm`. | Recent-auth backend transactions verify loaded state, allow one mutation, write employer notifications and audit events, and reject stale rows. Jobs with applications must be archived. Direct admin SDK mutation is denied by rules. Dialogs are accessible, search is debounced, stale loads are ignored, status filters reduce reads, and pagination clamps after deletes. |
 
 ## Security and integrity controls
 
@@ -25,6 +27,8 @@ Validated on 2026-08-14 against the reachable grafted history and the protected 
 - Membership remains a server-side administrative entitlement with bounded duration and `payments.manage` authorization.
 - Stale-target checks happen before side effects. Multi-field user mutations are rejected to avoid partial mixed operations.
 - Deletion audit records distinguish complete from incomplete cleanup.
+- Generic configuration secrets are written only to a server-owned document denied to browser reads/writes; curated redacted fields alone enter `public_config`.
+- Job moderation is backend-only for administrators; employer-owned pending edits retain their existing rule path.
 - No analytics metric is used as billing, entitlement, or user-state truth.
 
 ## Performance measurements
@@ -34,22 +38,23 @@ These are operation-count/critical-path improvements, not synthetic production l
 - Dashboard’s three independent reads changed from sequential callbacks to one `Promise.allSettled` critical path (sum of three response times becomes approximately their maximum while preserving partial-error reporting).
 - Exact UID lookup changed from an ineffective email collection query to one document read.
 - Sidebar and Settings headers no longer issue duplicate settings reads solely to calculate unverified colored dots.
-- Final production build for this slice passed in 3.92 seconds in the local build invocation; dependency chunk warnings are unchanged.
+- Job text search now performs at most one collection operation after a 350 ms idle period instead of one operation per keystroke; status equality is applied in Firestore before in-memory text filtering.
+- Final production build passed in 3.78 seconds (4.136 seconds wall time); dependency chunk warnings are unchanged.
 
 ## Validation
 
-- Admin targeted tests: 5/5.
-- Product suite: 47/47 plus template render 1/1.
+- Admin targeted tests: 7/7.
+- Product suite: 49/49 plus template render 1/1.
 - Security suite: static/browser 22/22 plus backend 64/64.
-- Backend integration covers stale-session rejection for the maintenance settings route and ordinary-user rejection for admin routes.
-- Production build: passed (3.92 seconds).
-- ESLint: 0 errors, 500 warnings (down from the protected 505-warning baseline).
+- Backend integration covers stale-session rejection for maintenance, generic-settings, job, user, and employer operations and ordinary-user rejection for admin routes.
+- Production build: passed in 3.78 seconds (4.136 seconds wall time).
+- ESLint: 0 errors, 499 warnings (down from the protected 505-warning baseline).
 - `git diff --check`: passed.
 
 ## Remaining limitations for continued Phase 3 work
 
-- Generic legacy settings persistence still needs category-by-category normalization, truthful backend results, removal of cross-account browser cache behavior, and secure split storage for every remaining secret-bearing panel.
-- Jobs, companies, reviews, messages, landing pages, trusted-by content, invoice/order tables, and their bulk/search/pagination workflows remain under active audit and are not certified by this slice.
+- Some category-specific settings panels still need deeper semantic validation and runtime-provider integration tests even though their generic persistence boundary is now revisioned, audited, bounded, and split.
+- Companies, reviews, messages, landing pages, trusted-by content, invoice/order tables, and their bulk/search/pagination workflows remain under active audit and are not certified by this slice.
 - Firebase Auth and Firestore cannot be committed atomically together. Server failures are reported, but production reconciliation/alerting remains required for rare cross-service partial failures.
 - Financial ledgers and legally retained billing records are intentionally not deleted by the user-admin cleanup endpoint; the later account-lifecycle evidence must define retention and erasure policy precisely.
 - Account merge/restore functions remain intentionally disabled because no provider-aware transactional identity workflow exists; the UI still needs a focused disabled-state cleanup.

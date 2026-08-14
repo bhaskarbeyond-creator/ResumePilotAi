@@ -1676,14 +1676,26 @@ export async function updateJobPosting(jobId, updateData) {
     }
 }
 
-// Delete job posting
+// Delete an employer-owned job posting (ownership is enforced by Firestore rules).
 export async function deleteJobPosting(jobId) {
     const db = fire.firestore();
     try {
         await db.collection('jobs').doc(jobId).delete();
         return { success: true };
     } catch (error) {
-        console.error('Error deleting job posting:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+// Administrative deletion is server-authoritative, stale-target checked, and audited.
+export async function deleteJobByAdmin(jobId, expected = {}) {
+    try {
+        const response = await fetch(`/api/admin/jobs/${encodeURIComponent(jobId)}`, {
+            method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(expected),
+        });
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success ? result : { success: false, error: result.error || 'Unable to delete job.', code: result.code };
+    } catch (error) {
         return { success: false, error: error.message };
     }
 }
@@ -2126,10 +2138,10 @@ export async function updateApplicationStatusWithMessage(applicationId, status, 
 export async function getAllJobs(page = 1, itemsPerPage = 10, filters = {}) {
     const db = fire.firestore();
     try {
-        console.log('Fetching all jobs for admin - page:', page, 'itemsPerPage:', itemsPerPage, 'filters:', filters);
-
-        // Get all jobs (not just active ones)
-        const allJobsQuery = db.collection('jobs');
+        // Status equality is applied in Firestore to reduce reads; text search remains
+        // page-consistent in memory because Firestore has no native substring query.
+        let allJobsQuery = db.collection('jobs');
+        if (filters.status && filters.status !== 'all') allJobsQuery = allJobsQuery.where('status', '==', filters.status);
         const allJobsSnapshot = await allJobsQuery.get();
 
         // Convert to array and apply server-side filtering
@@ -2192,12 +2204,11 @@ export async function getAllJobs(page = 1, itemsPerPage = 10, filters = {}) {
         const totalItems = filteredJobs.length;
         const totalPages = Math.ceil(totalItems / itemsPerPage);
 
-        // Apply pagination
-        const startIndex = (page - 1) * itemsPerPage;
+        // Apply pagination and clamp stale page numbers after deletes/filter changes.
+        const currentPage = Math.min(Math.max(1, Number(page) || 1), Math.max(1, totalPages));
+        const startIndex = (currentPage - 1) * itemsPerPage;
         const endIndex = startIndex + itemsPerPage;
         const paginatedJobs = filteredJobs.slice(startIndex, endIndex);
-
-        console.log(`✅ Fetched ${paginatedJobs.length} jobs for admin page ${page} (${totalItems} total after filtering)`);
 
         return {
             success: true,
@@ -2205,9 +2216,9 @@ export async function getAllJobs(page = 1, itemsPerPage = 10, filters = {}) {
             pagination: {
                 totalItems,
                 totalPages,
-                currentPage: page,
-                hasNextPage: page < totalPages,
-                hasPreviousPage: page > 1,
+                currentPage,
+                hasNextPage: currentPage < totalPages,
+                hasPreviousPage: currentPage > 1,
             },
         };
     } catch (error) {
@@ -2216,40 +2227,24 @@ export async function getAllJobs(page = 1, itemsPerPage = 10, filters = {}) {
     }
 }
 
-// Admin function: Update job status
-export async function updateJobStatus(jobId, status) {
-    const db = fire.firestore();
+async function updateJobByAdminApi(jobId, changes) {
     try {
-        await db.collection('jobs').doc(jobId).update({
-            status: status,
-            updatedAt: new Date(),
+        const response = await fetch(`/api/admin/jobs/${encodeURIComponent(jobId)}`, {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(changes),
         });
-
-        return { success: true };
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success ? result : { success: false, error: result.error || 'Unable to update job.', code: result.code };
     } catch (error) {
-        console.error('Error updating job status:', error);
         return { success: false, error: error.message };
     }
 }
 
-// Admin function: Toggle job featured status
-export async function toggleJobFeatured(jobId, isFeatured) {
-    const db = fire.firestore();
-    try {
-        console.log(`🌟 Toggling job featured status: ${jobId} -> ${isFeatured}`);
-        
-        await db.collection('jobs').doc(jobId).update({
-            isFeatured: isFeatured,
-            featuredAt: isFeatured ? new Date() : null,
-            updatedAt: new Date(),
-        });
+export async function updateJobStatus(jobId, status, expected = {}) {
+    return updateJobByAdminApi(jobId, { status, ...expected });
+}
 
-        console.log('✅ Job featured status updated successfully');
-        return { success: true };
-    } catch (error) {
-        console.error('❌ Error updating job featured status:', error);
-        return { success: false, error: error.message };
-    }
+export async function toggleJobFeatured(jobId, isFeatured, expected = {}) {
+    return updateJobByAdminApi(jobId, { isFeatured, ...expected });
 }
 
 // Get a single job by ID
@@ -5824,6 +5819,7 @@ export async function getPublicPortfolios(limit = 10, theme = null) {
 }
 
 // System Settings DB Operations
+let systemSettingsRevisions = {};
 function redactClientSecrets(settings = {}) {
     const copy = typeof structuredClone === 'function' ? structuredClone(settings) : JSON.parse(JSON.stringify(settings || {}));
     const secretFields = [
@@ -5843,13 +5839,9 @@ function redactClientSecrets(settings = {}) {
 }
 
 export async function getSystemSettings() {
-    let localCache = {};
-    try {
-        const raw = typeof window !== 'undefined' ? localStorage.getItem('system_settings_cache') : null;
-        if (raw) localCache = redactClientSecrets(JSON.parse(raw));
-    } catch (e) {
-        console.warn('Could not read system_settings_cache from localStorage:', e);
-    }
+    // Admin configuration is never recovered from cross-account browser storage.
+    // Browser-readable state comes only from curated public_config plus static defaults.
+    const localCache = {};
 
     // Default initial settings derived from environment variables and static configuration
     const envDefaults = {
@@ -6092,6 +6084,8 @@ export async function getSystemSettings() {
                 let remoteData = {};
                 if (snapshot && snapshot.exists) {
                     remoteData = redactClientSecrets(snapshot.data() || {});
+                    systemSettingsRevisions = { ...(remoteData._settingsRevisions || {}) };
+                    delete remoteData._settingsRevisions;
                 }
 
                 const allKeys = new Set([
@@ -6108,13 +6102,6 @@ export async function getSystemSettings() {
                         ...(remoteData[key] || {})
                     };
                 }
-                try {
-                    if (typeof window !== 'undefined') {
-                        localStorage.setItem('system_settings_cache', JSON.stringify(merged));
-                    }
-                } catch (e) {
-                    // ignore local storage errors
-                }
                 return merged;
             }, false),
             new Promise((resolve) => setTimeout(() => resolve(null), 1200))
@@ -6128,28 +6115,15 @@ export async function getSystemSettings() {
 }
 
 export async function saveSystemSettings(category, data) {
-    // 1. Update local cache immediately for guaranteed persistence across reloads
-    try {
-        if (typeof window !== 'undefined') {
-            const raw = localStorage.getItem('system_settings_cache');
-            const cache = raw ? JSON.parse(raw) : {};
-            cache[category] = redactClientSecrets({ [category]: data })[category] || {};
-            localStorage.setItem('system_settings_cache', JSON.stringify(cache));
-        }
-    } catch (e) {
-        console.warn('Could not write system_settings_cache to localStorage:', e);
-    }
-
-    // 2. Dispatch custom event for real-time reactivity
-    // 3. Save to Firestore (passing false for requireAuth so unauthenticated or dev admin sessions persist safely)
-    return safeDbOperation(async () => {
-        const db = fire.firestore();
-        const docRef = db.collection('data').doc('system_settings');
-        await docRef.set({
-            [category]: data
-        }, { merge: true });
-        return true;
-    }, false);
+    const response = await fetch(`/api/admin/settings/${encodeURIComponent(category)}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data, expectedRevision: Number(systemSettingsRevisions[category] || 0) }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.success) throw new Error(result.error?.message || result.error || 'Unable to save settings.');
+    systemSettingsRevisions = { ...systemSettingsRevisions, [category]: result.revision };
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('systemSettingsUpdated', { detail: { category, revision: result.revision } }));
+    return result;
 }
 
 export async function getAllAdminTransactions() {
