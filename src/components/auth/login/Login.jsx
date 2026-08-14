@@ -23,13 +23,56 @@ const GitHubIcon = () => (
 class Login extends Component {
     constructor(props) {
         super(props);
+        let cachedSettings = null;
+        try {
+            const raw = localStorage.getItem('system_settings');
+            if (raw) cachedSettings = JSON.parse(raw);
+        } catch (e) {}
+
+        const modules = cachedSettings?.modules || {};
+        const socialAuth = cachedSettings?.socialAuth || {};
+        const googleSettings = cachedSettings?.google || {};
+        const fbSettings = cachedSettings?.facebook || {};
+
+        const enableGoogle = modules.enableGoogleAuthModule !== undefined 
+            ? !!modules.enableGoogleAuthModule 
+            : (modules.enableGoogle !== undefined 
+                ? !!modules.enableGoogle 
+                : (googleSettings.enableGoogleLogin !== undefined 
+                    ? !!googleSettings.enableGoogleLogin 
+                    : (socialAuth.enableGoogleLogin !== undefined ? !!socialAuth.enableGoogleLogin : true)));
+
+        const enableFacebook = modules.enableFacebookAuthModule !== undefined 
+            ? !!modules.enableFacebookAuthModule 
+            : (modules.enableFacebook !== undefined 
+                ? !!modules.enableFacebook 
+                : (fbSettings.enableFacebookLogin !== undefined 
+                    ? !!fbSettings.enableFacebookLogin 
+                    : (socialAuth.enableFacebookLogin !== undefined ? !!socialAuth.facebookAppId : true)));
+
+        const enableLinkedIn = modules.enableLinkedinAuthModule !== undefined 
+            ? !!modules.enableLinkedinAuthModule 
+            : (modules.enableLinkedinLogin !== undefined 
+                ? !!modules.enableLinkedinLogin 
+                : (socialAuth.enableLinkedinLogin !== undefined 
+                    ? !!socialAuth.enableLinkedinLogin 
+                    : (modules.enableLinkedIn !== undefined ? !!modules.enableLinkedIn : true)));
+
+        const enableGitHub = modules.enableGithubAuthModule !== undefined 
+            ? !!modules.enableGithubAuthModule 
+            : (modules.enableGithubLogin !== undefined 
+                ? !!modules.enableGithubLogin 
+                : (socialAuth.enableGithubLogin !== undefined 
+                    ? !!socialAuth.enableGithubLogin 
+                    : (modules.enableGitHub !== undefined ? !!modules.enableGitHub : true)));
+
         this.state = {
             email: "",
             password: "",
-            enableGoogle: true,
-            enableFacebook: true,
-            enableLinkedIn: true,
-            enableGitHub: true,
+            enableGoogle,
+            enableFacebook,
+            enableLinkedIn,
+            enableGitHub,
             oauthLoading: null, // tracks which provider is loading
         };
         this.handleInputs = this.handleInputs.bind(this);
@@ -44,6 +87,10 @@ class Login extends Component {
     componentDidMount() {
         import('../../../firestore/dbOperations').then(({ getSystemSettings }) => {
             getSystemSettings().then(settings => {
+                try {
+                    localStorage.setItem('system_settings', JSON.stringify(settings));
+                } catch (e) {}
+
                 const modules = settings?.modules || {};
                 const socialAuth = settings?.socialAuth || {};
                 const googleSettings = settings?.google || {};
