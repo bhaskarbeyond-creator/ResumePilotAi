@@ -282,7 +282,13 @@ class Register extends Component {
                 console.warn('[Register] Email verification notice:', verifyErr.message);
             }
 
-            if (this.props.closeModal) this.props.closeModal();
+            // ✅ Show success notification to user
+            if (this.props.throwSuccess) this.props.throwSuccess(`Welcome aboard! Your account has been created. Check your inbox for a verification email.`);
+
+            // Delay close so user sees the success toast
+            setTimeout(() => {
+                if (this.props.closeModal) this.props.closeModal();
+            }, 2000);
         } catch (error) {
             let msg = error.message;
             if (error.code === 'auth/email-already-in-use') {

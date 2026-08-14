@@ -10,7 +10,7 @@ class RecoverPassword extends Component {
         super(props);
         this.state = {
             email: "",
-            isSuccessToastShowed: true,
+            isSubmitting: false,
         }
         this.handleInputs = this.handleInputs.bind(this);
         this.recoverPassword = this.recoverPassword.bind(this);
@@ -35,6 +35,8 @@ class RecoverPassword extends Component {
             return;
         }
 
+        this.setState({ isSubmitting: true });
+
         try {
             // Primary: Dispatch branded password reset email via Hostinger SMTP server
             const res = await fetch('/api/auth/custom-password-reset', {
@@ -48,11 +50,15 @@ class RecoverPassword extends Component {
                 throw new Error(data.error || 'Failed to dispatch custom password reset email.');
             }
 
-            const successMsg = `A password reset email has been sent to ${emailAddress} from your custom mail server! Please check your inbox.`;
+            const successMsg = `Password reset link sent to ${emailAddress}! Please check your inbox.`;
             if (this.props.throwSuccess) this.props.throwSuccess(successMsg);
             else alert(successMsg);
 
-            if (this.props.closeModal) this.props.closeModal();
+            this.setState({ isSubmitting: false });
+            // Delay closing so user can see the success toast
+            setTimeout(() => {
+                if (this.props.closeModal) this.props.closeModal();
+            }, 2500);
         } catch (err) {
             console.error('[Password Recovery Error]:', err);
             
@@ -62,8 +68,12 @@ class RecoverPassword extends Component {
                 const fallbackMsg = `Password reset link sent to ${emailAddress}! Please check your inbox.`;
                 if (this.props.throwSuccess) this.props.throwSuccess(fallbackMsg);
                 else alert(fallbackMsg);
-                if (this.props.closeModal) this.props.closeModal();
+                this.setState({ isSubmitting: false });
+                setTimeout(() => {
+                    if (this.props.closeModal) this.props.closeModal();
+                }, 2500);
             } catch (fbErr) {
+                this.setState({ isSubmitting: false });
                 const errMsg = fbErr.message || err.message;
                 if (this.props.throwError) this.props.throwError(errMsg);
                 else alert(errMsg);
@@ -72,15 +82,24 @@ class RecoverPassword extends Component {
     }
     render() {
         const { t } = this.props;
+        const { isSubmitting } = this.state;
         return (
             <div className="auth">
                 <div className="head">
-                    <span> {t("login.passwordRecovery")}</span>
+                    <div className="brandBadge">🔒 Password Recovery</div>
+                    <span>{t("login.passwordRecovery")}</span>
+                    <p>Enter your email and we'll send you a reset link instantly.</p>
                 </div>
                 <div className="body">
-                    <form onSubmit={this.recoverPassword} className="registerForm">
-                        <Input  name='Email' title={t("login.email")} handleInputs={this.handleInputs} />
-                        <input className="inputSubmit" value={t("login.recoverMyPassword")} type="submit" />
+                    <form onSubmit={this.recoverPassword} className="w-full flex flex-col">
+                        <Input name='Email' title={t("login.email")} value={this.state.email} handleInputs={this.handleInputs} />
+                        <input
+                            className="inputSubmit mt-2"
+                            value={isSubmitting ? "Sending reset link…" : t("login.recoverMyPassword")}
+                            type="submit"
+                            disabled={isSubmitting}
+                            style={{ opacity: isSubmitting ? 0.7 : 1, cursor: isSubmitting ? 'not-allowed' : 'pointer' }}
+                        />
                     </form>
                 </div>
                 {/* Modal Footer */}

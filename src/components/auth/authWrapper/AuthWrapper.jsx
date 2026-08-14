@@ -13,7 +13,8 @@ class AuthWrapper extends Component {
             isRecoverPasswordShowed: false,
             isErrorToastShowed: false,
             isSuccessToastShowed: false,
-            errorMessage: ""
+            errorMessage: "",
+            successMessage: ""
         }
         this.handleClickOutside = this.handleClickOutside.bind(this)
         this.handleNavigationClick = this.handleNavigationClick.bind(this);
@@ -49,17 +50,19 @@ class AuthWrapper extends Component {
             this.setState({
                 isErrorToastShowed: false
             });
-        }, 2000);
+        }, 4000);
     }
-    throwSuccess() {
+    throwSuccess(message) {
         this.setState({
             isSuccessToastShowed: true,
+            successMessage: message || ''
         });
         setTimeout(() => {
             this.setState({
-                isSuccessToastShowed: false
+                isSuccessToastShowed: false,
+                successMessage: ''
             });
-        }, 2000);
+        }, 5000);
     }
     render() {
         return (
@@ -78,11 +81,12 @@ class AuthWrapper extends Component {
                 <AnimatePresence>
                     {this.state.isSuccessToastShowed && (
                         <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
+                            initial={{ opacity: 0, y: -20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            transition={{ duration: 0.3 }}
                         >
-                            <Toast type="SuccessEmail" />
+                            <Toast type="SuccessEmail" message={this.state.successMessage} />
                         </motion.div>
                     )}
                 </AnimatePresence>
@@ -98,7 +102,7 @@ class AuthWrapper extends Component {
                         {
                             this.state.isLoggedInShowed === false && this.state.isRecoverPasswordShowed === false &&
                             <motion.div key="register" className="motionDivAuth" initial={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}>
-                                <Register closeModal={this.props.closeModal} throwError={this.throwError} handleNavigationClick={this.handleNavigationClick} />
+                                <Register closeModal={this.props.closeModal} throwError={this.throwError} throwSuccess={this.throwSuccess} handleNavigationClick={this.handleNavigationClick} />
                             </motion.div>
                         }
                         {

@@ -34,6 +34,17 @@ const ErrorView = () => {
     return View;
 };
 
+const SuccessEmailView = () => {
+    const opts = {
+        loop: false,
+        autoplay: true,
+        animationData: successAnimation,
+        rendererSettings: { preserveAspectRatio: 'xMidYMid slice' },
+    };
+    const { View } = useLottie(opts);
+    return View;
+};
+
 class Toasts extends Component {
     render() {
         const deleteOptions = {
@@ -70,6 +81,7 @@ class Toasts extends Component {
                     {this.props.type == 'Download' ? <SuccessView /> : <></>}
                     {this.props.type == 'Upgrade' ? <SuccessView /> : <></>}
                     {this.props.type == 'Error' ? <ErrorView /> : <></>}
+                    {this.props.type == 'SuccessEmail' ? <SuccessEmailView /> : <></>}
                 </div>
                 <div className="toastDetails">
                     <span className="toastTitle">
@@ -101,7 +113,9 @@ class Toasts extends Component {
                                 ? 'Your download is being prepared.'
                                 : this.props.type == 'Upgrade'
                                 ? 'You need a Premium subscription to access this feature.'
-                                : this.props.type == 'SuccessEmail' && 'An email has been sent successfully.')}{' '}
+                                : this.props.type == 'SuccessEmail'
+                                ? 'Email sent successfully! Please check your inbox.'
+                                : '')}{' '}
                     </span>
                 </div>
             </div>
