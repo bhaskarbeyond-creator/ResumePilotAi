@@ -75,6 +75,13 @@ test('portfolio ownership cannot be transferred and public viewers cannot edit c
   await assertFails(updateDoc(doc(anonymous(), 'portfolios/portfolio-1'), { views: 2, title: 'Injected' }));
 });
 
+test('personal job tracker records are isolated by account', async () => {
+  await assertSucceeds(setDoc(doc(alice(), 'users/alice/jobTracker/tracked-1'), { title: 'Engineer', status: 'wishlist' }));
+  await assertSucceeds(updateDoc(doc(alice(), 'users/alice/jobTracker/tracked-1'), { status: 'applied' }));
+  await assertFails(getDoc(doc(bob(), 'users/alice/jobTracker/tracked-1')));
+  await assertFails(setDoc(doc(alice(), 'users/bob/jobTracker/forged'), { title: 'Forged' }));
+});
+
 test('employer applications are owner-bound and cannot self-approve', async () => {
   await assertSucceeds(setDoc(doc(alice(), 'employerApplications/alice'), {
     userId: 'alice', status: 'pending', contactEmail: 'alice@example.com', reasonForJoining: 'Hiring'
@@ -98,13 +105,18 @@ test('jobs expose active listings only and employer edits cannot self-approve', 
 });
 
 test('job applications bind applicant identity and only job owner may change status', async () => {
-  await assertSucceeds(setDoc(doc(alice(), 'jobApplications/application-2'), {
+  await assertSucceeds(getDoc(doc(alice(), 'jobApplications/alice_active-job')));
+  await assertFails(getDoc(doc(bob(), 'jobApplications/alice_active-job')));
+  await assertSucceeds(setDoc(doc(alice(), 'jobApplications/alice_application-2'), {
     userId: 'alice', jobId: 'active-job', applicantEmail: 'alice@example.com', email: 'alice@example.com', status: 'pending'
   }));
-  await assertFails(setDoc(doc(alice(), 'jobApplications/forged-applicant'), {
+  await assertFails(setDoc(doc(alice(), 'jobApplications/alice_forged-applicant'), {
     userId: 'bob', jobId: 'active-job', applicantEmail: 'bob@example.com', email: 'bob@example.com', status: 'pending'
   }));
-  await assertFails(setDoc(doc(alice(), 'jobApplications/draft-application'), {
+  await assertFails(setDoc(doc(bob(), 'jobApplications/alice_reserved-by-bob'), {
+    userId: 'bob', jobId: 'active-job', applicantEmail: 'bob@example.com', email: 'bob@example.com', status: 'pending'
+  }));
+  await assertFails(setDoc(doc(alice(), 'jobApplications/alice_draft-application'), {
     userId: 'alice', jobId: 'draft-job', applicantEmail: 'alice@example.com', email: 'alice@example.com', status: 'pending'
   }));
   await assertSucceeds(getDoc(doc(employer(), 'jobApplications/application-1')));
