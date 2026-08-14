@@ -28,9 +28,7 @@ import TwilioSmsSettings from './TwilioSmsSettings';
 import GeoSeoSettings from './GeoSeoSettings';
 import LlmGeoSettings from './LlmGeoSettings';
 import ModulesSettings from './ModulesSettings';
-import { getSystemSettings } from '../../../firestore/dbOperations';
-import fire from '../../../conf/fire';
-import { FaCircle, FaSlidersH, FaShieldAlt, FaCheckCircle } from 'react-icons/fa';
+import { FaCircle } from 'react-icons/fa';
 
 // All settings metadata
 const ALL_SETTINGS = [
@@ -64,64 +62,10 @@ const ALL_SETTINGS = [
 ];
 
 class SettingsContent extends Component {
-    constructor(props) {
-        super(props);
-        this.state = { systemSettings: null };
-        this.loadSettings = this.loadSettings.bind(this);
-    }
-
-    componentDidMount() {
-        this.loadSettings();
-        this.updateListener = () => this.loadSettings();
-        window.addEventListener('systemSettingsUpdated', this.updateListener);
-    }
-
-    componentWillUnmount() {
-        if (this.updateListener) window.removeEventListener('systemSettingsUpdated', this.updateListener);
-    }
-
-    loadSettings() {
-        getSystemSettings().then((settings) => {
-            if (settings) this.setState({ systemSettings: settings });
-        });
-    }
-
-    getStatusBadge(key) {
-        const s = this.state.systemSettings;
-        const activeFirebaseKey = s?.firebase?.apiKey || fire?.apps?.[0]?.options?.apiKey || import.meta.env.VITE_FIREBASE_KEY;
-        const activeGeminiKey = s?.ai?.geminiApiKey || '';
-        const activeRazorpayKey = s?.payments?.razorpayKeyId || import.meta.env.VITE_RAZORPAY_KEY_ID;
-
-        switch (key) {
-            case 'modulesSettings': { const m=s?.modules||{}; const ai=s?.ai||{}; const on=m.enableImportModule!==undefined?m.enableImportModule:ai.enableImportModule; return on?{color:'green',label:'Import Enabled'}:{color:'amber',label:'Import Disabled'}; }
-            case 'firebaseSettings': return activeFirebaseKey?{color:'green',label:'Connected & Active'}:{color:'red',label:'Missing Firebase Key'};
-            case 'aiSettings': { const ai=s?.ai||{}; const p=ai.provider||'gemini'; if(p==='nvidia'&&(ai.nvidiaApiKey||''))return{color:'green',label:'NVIDIA NIM Active'}; if(p==='openai'&&(ai.openaiApiKey||''))return{color:'green',label:'OpenAI Active'}; if(p==='groq'&&(ai.groqApiKey||''))return{color:'green',label:'Groq Active'}; if(p==='openrouter'&&(ai.openrouterApiKey||''))return{color:'green',label:'OpenRouter Active'}; if(p==='deepseek'&&(ai.deepseekApiKey||''))return{color:'green',label:'DeepSeek Active'}; if(p==='ollama')return{color:'green',label:'Local Ollama'}; return activeGeminiKey?{color:'green',label:'Gemini 2.0 Active'}:{color:'red',label:'AI Key Missing'}; }
-            case 'paymentSettings':
-            case 'subscriptionsSettings': return (activeRazorpayKey||s?.payments?.stripePublishableKey)?{color:'green',label:'Razorpay & Stripe Active'}:{color:'amber',label:'Sandbox Mode'};
-            case 'geoSeoSettings': return s?.geoSeo?.enableGeoSeo!==false?{color:'green',label:'Geo-SEO Active'}:{color:'red',label:'Disabled'};
-            case 'llmGeoSettings': return s?.llmGeo?.enableLlmGeo!==false?{color:'green',label:'LLM GEO Active'}:{color:'red',label:'Disabled'};
-            case 'facebookAuthSettings': if(!s?.facebook?.facebookAppId)return{color:'amber',label:'Not Configured'}; return s?.facebook?.enableFacebookLogin?{color:'green',label:'Facebook Active'}:{color:'amber',label:'Disabled'};
-            case 'socialAuthSettings': if(s?.socialAuth?.linkedinClientId&&s?.socialAuth?.githubClientId)return{color:'green',label:'OAuth Ready'}; if(s?.socialAuth?.linkedinClientId||s?.socialAuth?.githubClientId)return{color:'amber',label:'Partial OAuth'}; return{color:'amber',label:'Not Configured'};
-            case 'emailSettings': return(s?.smtp?.username&&s?.smtp?.password)?{color:'green',label:'SMTP & IMAP Connected (10/10)'}:{color:'green',label:'Enterprise Mailer Ready'};
-            case 'systemHealthSettings': return s?.systemHealth?.maintenanceMode?{color:'red',label:'Maintenance Mode ON'}:{color:'green',label:'Operational (100%)'};
-            case 'codeInjectionSettings': return(s?.codeInjection?.headerScripts||s?.codeInjection?.footerScripts)?{color:'green',label:'Scripts Injected'}:{color:'amber',label:'No Scripts'};
-            case 'gdprLegalSettings': return s?.gdpr?.enableCookieBanner!==false?{color:'green',label:'GDPR Active'}:{color:'amber',label:'Banner Off'};
-            case 'twilioSmsSettings': if(!s?.twilio?.accountSid)return{color:'amber',label:'Not Configured'}; return s?.twilio?.enableSmsAlerts?{color:'green',label:'SMS Active'}:{color:'amber',label:'Disabled'};
-            case 'watermarkSettings': return s?.watermark?.enableFreeWatermark!==false?{color:'green',label:'Free Watermark ON'}:{color:'amber',label:'Watermark Off'};
-            case 'integrationsSettings': return(s?.integrations?.googleMapsApiKey||s?.integrations?.gaMeasurementId)?{color:'green',label:'Integrations Connected'}:{color:'amber',label:'Optional Keys Missing'};
-            default: return{color:'green',label:'Connected & Active'};
-        }
-    }
-
     render() {
         const step = this.props.activeTab || 'modulesSettings';
         const current = ALL_SETTINGS.find(s => s.key === step) || ALL_SETTINGS[0];
-        const badge = this.getStatusBadge(current.key);
-        const badgeClass = badge.color === 'green'
-            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-            : badge.color === 'amber'
-            ? 'bg-amber-50 text-amber-800 border-amber-200'
-            : 'bg-rose-50 text-rose-800 border-rose-200';
+        const badgeClass = 'bg-slate-50 text-slate-700 border-slate-200';
 
         return (
             <div className="space-y-6">
@@ -131,8 +75,8 @@ class SettingsContent extends Component {
                         <div className="flex items-center gap-3">
                             <h1 className="text-xl font-black text-slate-900 tracking-tight">{current.label}</h1>
                             <span className={`px-3 py-1 text-xs font-black rounded-full flex items-center gap-1.5 border ${badgeClass}`}>
-                                <FaCircle className="w-2 h-2 animate-pulse" />
-                                {badge.label}
+                                <FaCircle className="w-2 h-2" aria-hidden="true" />
+                                Configuration panel
                             </span>
                         </div>
                         <p className="text-xs text-slate-500 font-medium">{current.description}</p>

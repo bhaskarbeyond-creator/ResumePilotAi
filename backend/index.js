@@ -1334,6 +1334,51 @@ app.post('/api/admin/blog/publish-due', async (req, res) => {
     }
 });
 
+app.get('/api/admin/health-summary', async (_req, res) => {
+    if (!db || !admin) return res.status(503).json({ success: false, error: 'Health services unavailable.' });
+    try {
+        const [publicConfig, aiProviders, paymentProviders] = await Promise.all([
+            db.collection('data').doc('public_config').get(),
+            db.collection('settings').doc('ai_providers').get(),
+            db.collection('settings').doc('payment_providers').get(),
+        ]);
+        const ai = aiProviders.data() || {};
+        const payments = paymentProviders.data() || {};
+        return res.json({
+            success: true,
+            checkedAt: new Date().toISOString(),
+            services: {
+                backend: { reachable: true }, firebaseAdmin: { configured: true },
+                aiProviders: Object.fromEntries(['gemini', 'nvidia', 'openai', 'groq', 'openrouter', 'deepseek'].map(provider => [provider, { configured: Boolean(ai[provider]?.apiKey || process.env[`${provider.toUpperCase()}_API_KEY`]) }])),
+                payments: {
+                    stripe: { configured: Boolean(payments.stripe?.secretKey || process.env.STRIPE_SECRET) },
+                    razorpay: { configured: Boolean(payments.razorpay?.keySecret || process.env.RAZORPAY_KEY_SECRET) },
+                },
+            },
+            settings: publicConfig.data()?.systemHealth || { maintenanceMode: false, maintenanceMessage: '' },
+        });
+    } catch (error) {
+        console.error('[Admin health summary]', error.message);
+        return res.status(503).json({ success: false, error: 'Unable to read service health configuration.' });
+    }
+});
+
+app.post('/api/admin/system-health-settings', async (req, res) => {
+    if (!db || !admin) return res.status(503).json({ success: false, error: 'Settings service unavailable.' });
+    const maintenanceMode = req.body?.maintenanceMode === true;
+    const maintenanceMessage = String(req.body?.maintenanceMessage || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, 500);
+    if (maintenanceMode && !maintenanceMessage) return res.status(400).json({ success: false, error: 'A maintenance message is required while maintenance mode is enabled.' });
+    const systemHealth = { maintenanceMode, maintenanceMessage };
+    const batch = db.batch();
+    batch.set(db.collection('data').doc('public_config'), { systemHealth }, { merge: true });
+    batch.set(db.collection('security_audit_logs').doc(), {
+        action: 'SYSTEM_HEALTH_SETTINGS_UPDATED', actorUid: req.user.uid, maintenanceMode,
+        requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    await batch.commit();
+    return res.json({ success: true, settings: systemHealth });
+});
+
 app.post('/api/admin/gdpr-settings', async (req, res) => {
     if (!db) return res.status(503).json({ success: false, error: 'Settings service unavailable' });
     const input = req.body || {};
@@ -2551,8 +2596,10 @@ app.post('/api/admin/payments/refund', async (req, res) => {
 app.patch('/api/admin/employer-applications/:uid', async (req, res) => {
     const uid = String(req.params.uid || '');
     const status = String(req.body.status || '').toLowerCase();
+    const expectedStatus = req.body.expectedStatus === undefined ? null : String(req.body.expectedStatus).toLowerCase();
     const reason = String(req.body.reason || '').trim().slice(0, 500);
     if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid) || !['approved', 'rejected', 'active'].includes(status)
+        || (expectedStatus !== null && !['pending', 'approved', 'rejected', 'active'].includes(expectedStatus))
         || !db || !admin?.auth) {
         return res.status(400).json({ success: false, error: 'Valid application, user, and status are required.' });
     }
@@ -2561,6 +2608,9 @@ app.patch('/api/admin/employer-applications/:uid', async (req, res) => {
         const applicationRef = db.collection('employerApplications').doc(uid);
         const [application, target] = await Promise.all([applicationRef.get(), admin.auth().getUser(uid)]);
         if (!application.exists || application.data().userId !== uid) return res.status(404).json({ success: false, error: 'Employer application not found.' });
+        if (expectedStatus !== null && String(application.data().status || 'pending').toLowerCase() !== expectedStatus) {
+            return res.status(409).json({ success: false, code: 'ADMIN_TARGET_CHANGED', error: 'This application changed after the page loaded. Refresh before reviewing it.' });
+        }
         const enabled = status === 'approved' || status === 'active';
         await admin.auth().setCustomUserClaims(uid, { ...(target.customClaims || {}), employer: enabled });
         await admin.auth().revokeRefreshTokens(uid);
@@ -2601,7 +2651,22 @@ app.patch('/api/admin/users/:uid', async (req, res) => {
     const updates = {};
     const auditChanges = [];
     try {
-        const target = await admin.auth().getUser(uid);
+        const [target, userSnapshot] = await Promise.all([
+            admin.auth().getUser(uid), db.collection('users').doc(uid).get(),
+        ]);
+        const userData = userSnapshot.data() || {};
+        const currentRole = String(target.customClaims?.role || userData.role || 'USER').toUpperCase();
+        const currentMembership = String(userData.membership || 'Basic');
+        if (Object.hasOwn(req.body, 'expectedSuspended') && typeof req.body.expectedSuspended !== 'boolean') return res.status(400).json({ success: false, error: 'Invalid expected suspension state.' });
+        if (Object.hasOwn(req.body, 'expectedRole') && !['ADMIN', 'USER'].includes(req.body.expectedRole)) return res.status(400).json({ success: false, error: 'Invalid expected role.' });
+        if (Object.hasOwn(req.body, 'expectedMembership') && !['Basic', 'Premium'].includes(req.body.expectedMembership)) return res.status(400).json({ success: false, error: 'Invalid expected membership.' });
+        const staleTarget = (Object.hasOwn(req.body, 'expectedSuspended') && req.body.expectedSuspended !== Boolean(target.disabled))
+            || (Object.hasOwn(req.body, 'expectedRole') && req.body.expectedRole !== currentRole)
+            || (Object.hasOwn(req.body, 'expectedMembership') && req.body.expectedMembership !== currentMembership);
+        if (staleTarget) return res.status(409).json({ success: false, code: 'ADMIN_TARGET_CHANGED', error: 'This user changed after the page loaded. Refresh before trying again.' });
+        const requestedChanges = ['suspended', 'membership', 'role'].filter(field => Object.hasOwn(req.body, field));
+        if (requestedChanges.length !== 1) return res.status(400).json({ success: false, error: 'Exactly one administrative user change is allowed per request.' });
+
         if (typeof req.body.suspended === 'boolean') {
             if (!allowed('users.update')) return res.status(403).json({ success: false, error: 'Insufficient permission.' });
             if (uid === req.user.uid && req.body.suspended) return res.status(400).json({ success: false, error: 'Self-suspension is prohibited.' });
@@ -2698,38 +2763,54 @@ app.post(['/api/admin/delete-user', '/api/auth/purge-orphaned-auth'], async (req
         const targetUid = target?.uid || requestedUid;
         if (!/^[A-Za-z0-9:_-]{1,128}$/.test(targetUid)) return res.status(400).json({ success: false, error: 'Invalid user UID.' });
         if (targetUid === req.user.uid) return res.status(400).json({ success: false, error: 'Self-deletion through the admin endpoint is prohibited.' });
-        if (target && requestedEmail && String(target.email || '').toLowerCase() !== requestedEmail) {
+        const profileSnapshot = await db.collection('users').doc(targetUid).get();
+        const profileData = profileSnapshot.data() || {};
+        const authoritativeEmail = String(target?.email || profileData.email || '').toLowerCase();
+        if (requestedEmail && authoritativeEmail && authoritativeEmail !== requestedEmail) {
             return res.status(400).json({ success: false, error: 'UID/email identity mismatch.' });
         }
-        const targetRole = String(target?.customClaims?.role || '').toUpperCase();
+        const targetRole = String(target?.customClaims?.role || profileData.role || '').toUpperCase();
         if (targetRole === 'SUPER_ADMIN' && !permissionsFor(req.user).has('*')) {
             return res.status(403).json({ success: false, error: 'Only SUPER_ADMIN can delete another SUPER_ADMIN.' });
         }
         if (target) await admin.auth().deleteUser(targetUid);
 
-        await db.recursiveDelete(db.collection('users').doc(targetUid));
+        const cleanupFailures = [];
         const relatedQueries = [
-            db.collection('portfolios').where('userId', '==', targetUid),
-            db.collection('pb').where('ownerUid', '==', targetUid),
-            db.collection('jobApplications').where('userId', '==', targetUid)
+            ['portfolios', db.collection('portfolios').where('userId', '==', targetUid)],
+            ['published portfolios', db.collection('pb').where('ownerUid', '==', targetUid)],
+            ['job applications', db.collection('jobApplications').where('userId', '==', targetUid)],
+            ['blog posts', db.collection('blog_posts').where('authorUid', '==', targetUid)],
         ];
-        for (const query of relatedQueries) {
+        for (const [label, query] of relatedQueries) {
             try {
-                if (typeof query.get === 'function') {
-                    const snapshot = await query.get();
-                    for (const item of snapshot.docs) await db.recursiveDelete(item.ref);
-                }
+                const snapshot = await query.get();
+                for (const item of snapshot.docs) await db.recursiveDelete(item.ref);
             } catch (error) {
-                console.warn('[User deletion related data]', error.message);
+                cleanupFailures.push(label);
+                console.warn(`[User deletion ${label}]`, error.message);
             }
         }
-        await db.recursiveDelete(db.collection('employerApplications').doc(targetUid)).catch(() => {});
-        await db.recursiveDelete(db.collection('notifications').doc(targetUid)).catch(() => {});
+        for (const [label, reference] of [
+            ['employer application', db.collection('employerApplications').doc(targetUid)],
+            ['notifications', db.collection('notifications').doc(targetUid)],
+        ]) {
+            try { await db.recursiveDelete(reference); } catch { cleanupFailures.push(label); }
+        }
+        if (!cleanupFailures.length) {
+            try { await db.recursiveDelete(db.collection('users').doc(targetUid)); }
+            catch { cleanupFailures.push('user profile tree'); }
+        }
         await db.collection('security_audit_logs').add({
-            action: 'USER_DELETED', actorUid: req.user.uid, targetUid,
+            action: cleanupFailures.length ? 'USER_DELETION_INCOMPLETE' : 'USER_DELETED',
+            actorUid: req.user.uid, targetUid, cleanupFailures,
             requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp()
         });
-        return res.json({ success: true, deletedFromAuth: Boolean(target), message: 'User identity and owned data deleted.' });
+        if (cleanupFailures.length) return res.status(500).json({
+            success: false, code: 'USER_CLEANUP_INCOMPLETE',
+            error: `Identity is absent or was deleted, but cleanup failed for: ${cleanupFailures.join(', ')}. Retry this operation.`,
+        });
+        return res.json({ success: true, deletedFromAuth: Boolean(target), message: 'User identity, profile tree, portfolios, applications, notifications, and authored blog posts were deleted.' });
     } catch (error) {
         console.error('[Admin delete user]', error.message);
         return res.status(error.code === 'auth/user-not-found' ? 404 : 500).json({ success: false, error: 'Unable to delete user.' });

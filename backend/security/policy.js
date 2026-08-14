@@ -33,6 +33,7 @@ const VERIFIED_PREFIXES = [
 const RECENT_AUTH_PATHS = new Set([
   '/admin/firebase-service-account',
   '/admin/delete-user',
+  '/admin/system-health-settings',
   '/auth/purge-orphaned-auth'
 ]);
 

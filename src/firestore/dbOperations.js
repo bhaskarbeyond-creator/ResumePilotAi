@@ -461,16 +461,17 @@ export async function getAllUsers() {
     const db = fire.firestore();
     const snapshot = await db.collection('users').get();
     if (!snapshot.empty) {
-        var users = [];
-        snapshot.forEach((doc) => users.push(doc.data()));
+        const users = [];
+        snapshot.forEach((doc) => {
+            const data = doc.data() || {};
+            users.push({ id: doc.id, ...data, userId: data.userId || doc.id });
+        });
         return users;
-    } else {
-        console.log('makan walo');
-        return null;
     }
+    return [];
 }
 
-// Get All Subscriptuins
+// Get all subscriptions
 export async function getAllSubscriptions() {
     const db = fire.firestore();
     const snapshot = await db.collection('subscriptions').orderBy('created_at', 'desc').limit(7).get();
@@ -494,38 +495,27 @@ export async function checkIfAdmin(uid) {
         return false;
     }
 }
-// Get User by id
-export async function getUserById(id) {
+// Get one user by exact UID or email without logging personal data.
+export async function getUserById(identifier) {
     const db = fire.firestore();
-    console.log(id);
-    var user = null;
-    await db
-        .collection('users')
-        .where('email', '==', id)
-        .get()
-        .then((snapshot) => {
-            snapshot.forEach((doc) => {
-                console.log(doc.data());
-                user = doc.data();
-            });
-        });
-
-    if (user !== null) {
-        return user;
-    } else {
-        return false;
+    const value = String(identifier || '').trim();
+    if (!value || value.length > 320) return false;
+    if (/^[A-Za-z0-9:_-]{1,128}$/.test(value)) {
+        const snapshot = await db.collection('users').doc(value).get();
+        if (!snapshot.exists) return false;
+        const data = snapshot.data() || {};
+        return { id: snapshot.id, ...data, userId: data.userId || snapshot.id };
     }
-
-    // console.log(snapshot);
-
-    // if (snapshot.exists) {
-    //   console.log(snapshot.data());
-    //   return snapshot.data()
-    // } else {
-    //   console.log("not foiund");
-
-    //   return false
-    // }
+    const candidates = [...new Set([value, value.toLowerCase()])];
+    for (const email of candidates) {
+        const query = await db.collection('users').where('email', '==', email).limit(1).get();
+        if (!query.empty) {
+            const document = query.docs[0];
+            const data = document.data() || {};
+            return { id: document.id, ...data, userId: data.userId || document.id };
+        }
+    }
+    return false;
 }
 // Adding user to firestore safely with merge protection for Social OAuth login
 export function addUser(userId, firstname, lastname, email) {
@@ -595,18 +585,18 @@ export async function checkIfSuspended(uid) {
 }
 
 // Function to suspend or activate a user account by Admin
-export async function toggleUserSuspension(userId, suspend) {
+export async function toggleUserSuspension(userId, suspend, expectedSuspended = undefined) {
     try {
-        await updateUserByAdminApi(userId, { suspended: Boolean(suspend) });
+        await updateUserByAdminApi(userId, { suspended: Boolean(suspend), ...(expectedSuspended === undefined ? {} : { expectedSuspended: Boolean(expectedSuspended) }) });
         return { success: true, message: `User account ${suspend ? 'suspended' : 'reactivated'} successfully.` };
     } catch (error) {
         return { success: false, error: error.message };
     }
 }
 
-export async function setUserAdminStatus(userId, isAdmin) {
+export async function setUserAdminStatus(userId, isAdmin, expectedIsAdmin = undefined) {
     try {
-        await updateUserByAdminApi(userId, { role: isAdmin ? 'ADMIN' : 'USER' });
+        await updateUserByAdminApi(userId, { role: isAdmin ? 'ADMIN' : 'USER', ...(expectedIsAdmin === undefined ? {} : { expectedRole: expectedIsAdmin ? 'ADMIN' : 'USER' }) });
         return { success: true, message: `Admin status set to ${Boolean(isAdmin)}` };
     } catch (error) {
         return { success: false, error: error.message };
@@ -859,9 +849,9 @@ export async function cancelUserSubscription(_userId, reason) {
 }
 
 // Function to quickly toggle user membership plan
-export async function updateUserSubscription(userId, membership) {
+export async function updateUserSubscription(userId, membership, expectedMembership = undefined) {
     try {
-        await updateUserByAdminApi(userId, { membership });
+        await updateUserByAdminApi(userId, { membership, ...(expectedMembership === undefined ? {} : { expectedMembership }) });
         return { success: true, message: `Subscription plan updated to ${membership}.` };
     } catch (error) {
         return { success: false, error: error.message };
@@ -1034,34 +1024,34 @@ export async function getAllEmployerApplications() {
         }
     } catch (error) {
         console.error('Error getting employer applications:', error);
-        return [];
+        throw error;
     }
 }
 
-async function reviewEmployerApplication(userId, status, reason = '') {
+async function reviewEmployerApplication(userId, status, reason = '', expectedStatus = undefined) {
     try {
         const response = await fetch(`/api/admin/employer-applications/${encodeURIComponent(userId)}`, {
             method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status, reason })
+            body: JSON.stringify({ status, reason, ...(expectedStatus ? { expectedStatus } : {}) })
         });
         const result = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(result.error || 'Unable to review employer application.');
+        if (!response.ok) return { success: false, error: result.error || 'Unable to review employer application.', code: result.code, status: response.status };
         return result;
     } catch (error) {
         return { success: false, error: error.message };
     }
 }
 
-export async function approveEmployerApplication(userId) {
-    return reviewEmployerApplication(userId, 'approved');
+export async function approveEmployerApplication(userId, expectedStatus = undefined) {
+    return reviewEmployerApplication(userId, 'approved', '', expectedStatus);
 }
 
-export async function rejectEmployerApplication(userId, reason = '') {
-    return reviewEmployerApplication(userId, 'rejected', reason);
+export async function rejectEmployerApplication(userId, reason = '', expectedStatus = undefined) {
+    return reviewEmployerApplication(userId, 'rejected', reason, expectedStatus);
 }
 
-export async function reactivateEmployerApplication(userId) {
-    return reviewEmployerApplication(userId, 'active');
+export async function reactivateEmployerApplication(userId, expectedStatus = undefined) {
+    return reviewEmployerApplication(userId, 'active', '', expectedStatus);
 }
 
 // ==================== COMPANY MANAGEMENT FUNCTIONS ====================
