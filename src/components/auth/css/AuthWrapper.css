@@ -283,4 +283,28 @@
   color: #694AFF;
   cursor: pointer;
 }
+
+@media (max-width: 640px) {
+  .wrapper .authWrapper {
+    padding: 12px !important;
+  }
+  .wrapper .authModal {
+    padding: 24px 20px 20px 20px !important;
+    border-radius: 20px !important;
+    max-height: calc(100vh - 28px) !important;
+    overflow-y: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .wrapper .auth .head span {
+    font-size: 22px !important;
+  }
+  .wrapper .auth .socialAuth .googleAuthItem,
+  .wrapper .auth .socialAuth .facebookAuthItem,
+  .wrapper .auth .socialAuth .linkedinAuthItem,
+  .wrapper .auth .socialAuth .githubAuthItem {
+    height: 44px !important;
+    max-width: 68px !important;
+  }
+}
 /*# sourceMappingURL=AuthWrapper.css.map */

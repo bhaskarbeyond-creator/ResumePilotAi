@@ -337,22 +337,22 @@ class Login extends Component {
                             <Input name="Email" title={t("login.email")} value={this.state.email} handleInputs={this.handleInputs} />
                             <Input name="Password" type="Password" title={t("login.password")} value={this.state.password} handleInputs={this.handleInputs} />
                             
-                            {/* Remember Me & Recover Password Row */}
-                            <div className="flex items-center justify-between my-2 text-[13px] text-[#475569]">
-                                <label className="flex items-center gap-2 cursor-pointer select-none font-medium">
+                            {/* Remember Me & Forgot Password Row */}
+                            <div className="flex items-center justify-between my-2.5 text-[13.5px] text-[#475569]">
+                                <label className="flex items-center gap-2 cursor-pointer select-none font-medium hover:text-[#1e293b] transition-colors">
                                     <input 
                                         type="checkbox" 
                                         checked={this.state.rememberMe} 
                                         onChange={this.toggleRememberMe}
-                                        className="w-4 h-4 rounded border-slate-300 text-[#6366f1] focus:ring-[#6366f1]/20 accent-[#6366f1] cursor-pointer"
+                                        className="w-4 h-4 rounded-md border-slate-300 text-[#6366f1] focus:ring-[#6366f1]/20 accent-[#6366f1] cursor-pointer"
                                     />
                                     <span>Remember me</span>
                                 </label>
                                 <a 
                                     onClick={() => this.props.showPasswordRecovery && this.props.showPasswordRecovery()}
-                                    className="text-[#6366f1] hover:text-[#4f46e5] font-semibold cursor-pointer transition-colors"
+                                    className="text-[#6366f1] hover:text-[#4f46e5] font-semibold text-[13px] hover:underline cursor-pointer transition-all duration-200"
                                 >
-                                    {t("login.recoverPassword")}
+                                    Forgot password?
                                 </a>
                             </div>
 
@@ -362,7 +362,6 @@ class Login extends Component {
                 {/* Modal Footer */}
                 <div className="modalFooter">
                     <span>{t("login.dontHaveAcc")}<a onClick={() => this.props.handleNavigationClick()}>{t("login.signup")}</a></span>
-                    <span>{t("login.passwordLost")} <a onClick={() => this.props.showPasswordRecovery()}>{t("login.recoverPassword")}</a></span>
                 </div>
             </div>
         );
