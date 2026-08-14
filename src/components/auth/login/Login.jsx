@@ -351,9 +351,16 @@ class Login extends Component {
                         </div>
                     )}
                         {/* Login Form */}
-                        <form onSubmit={this.login} className="w-full flex flex-col">
+                        <form onSubmit={this.login} className="w-full flex flex-col" autoComplete="on">
                             <Input name="Email" title={t("login.email")} value={this.state.email} handleInputs={this.handleInputs} />
-                            <Input name="Password" type="Password" title={t("login.password")} value={this.state.password} handleInputs={this.handleInputs} />
+                            {/* Password: don't pass value if empty so browser autofill can set it */}
+                            <Input
+                                name="Password"
+                                type="Password"
+                                title={t("login.password")}
+                                value={this.state.password}
+                                handleInputs={this.handleInputs}
+                            />
                             
                             {/* Remember Me & Forgot Password Row */}
                             <div className="flex items-center justify-between my-2.5 text-[13.5px] text-[#475569]">

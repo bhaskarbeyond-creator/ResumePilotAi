@@ -1,3 +1,9 @@
+/* Browser autofill detection — triggers onAnimationStart in React so state updates */
+@keyframes onAutoFillStart { from {} to {} }
+@keyframes onAutoFillCancel { from {} to {} }
+input:-webkit-autofill { animation-name: onAutoFillStart; animation-duration: 0.001s; }
+input:not(:-webkit-autofill) { animation-name: onAutoFillCancel; animation-duration: 0.001s; }
+
 /* Reset some Vite defaults that conflict with the app */
 :root {
     font-family: 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
