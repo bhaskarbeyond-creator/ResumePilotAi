@@ -119,7 +119,7 @@ function interviewReducer(state, action) {
                 isLoading: false,
                 loadingError: action.error,
             };
-        case 'ANSWER_QUESTION':
+        case 'ANSWER_QUESTION': {
             const currentTime = Date.now();
             const timeSpent = state.questionStartTime ? currentTime - state.questionStartTime : 0;
 
@@ -138,7 +138,8 @@ function interviewReducer(state, action) {
                 timePerQuestion: updatedTimePerQuestion,
                 questionStartTime: currentTime, // Reset timer for next interaction
             };
-        case 'NAVIGATE_QUESTION':
+        }
+        case 'NAVIGATE_QUESTION': {
             // Save time spent on current question before navigating
             const navTime = Date.now();
             const navTimeSpent = state.questionStartTime ? navTime - state.questionStartTime : 0;
@@ -157,7 +158,8 @@ function interviewReducer(state, action) {
                 questionStartTime: navTime,
                 timePerQuestion: navUpdatedTimePerQuestion,
             };
-        case 'TOGGLE_FLAG':
+        }
+        case 'TOGGLE_FLAG': {
             const newFlagged = new Set(state.flaggedQuestions);
             if (newFlagged.has(action.questionId)) {
                 newFlagged.delete(action.questionId);
@@ -168,6 +170,7 @@ function interviewReducer(state, action) {
                 ...state,
                 flaggedQuestions: newFlagged,
             };
+        }
         case 'PAUSE_INTERVIEW':
             if (state.isPaused) {
                 // Resuming
@@ -211,7 +214,7 @@ function interviewReducer(state, action) {
                 ...state,
                 timeRemaining: state.timeRemaining - 1,
             };
-        case 'COMPLETE_INTERVIEW':
+        case 'COMPLETE_INTERVIEW': {
             // Save final time for current question
             const completeTime = Date.now();
             const completeTimeSpent = state.questionStartTime ? completeTime - state.questionStartTime : 0;
@@ -232,6 +235,7 @@ function interviewReducer(state, action) {
                 performanceMetrics: action.performanceMetrics,
                 timePerQuestion: finalTimePerQuestion,
             };
+        }
         case 'RESET_INTERVIEW':
             return {
                 ...initialState,

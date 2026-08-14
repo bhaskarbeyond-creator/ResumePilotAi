@@ -3086,18 +3086,11 @@ export async function getUserLoginHistory(uid, maxResults = 10) {
 }
 
 // Send Twilio SMS Notification
-export async function sendSmsNotification(toPhone, messageBody, twilioOverride = null) {
+export async function sendSmsNotification(toPhone, messageBody, _twilioOverride = null) {
     if (!toPhone || !messageBody) return { success: false, error: 'Phone number and message are required' };
     try {
         const payload = { toPhone, messageBody };
-        if (twilioOverride) {
-            payload.accountSid = twilioOverride.accountSid;
-            payload.authToken = twilioOverride.authToken;
-            payload.fromPhoneNumber = twilioOverride.fromPhoneNumber;
-        }
-
-        const backendUrl = conf.backendUrl || '';
-        const res = await fetch(`${backendUrl}/api/send-sms`, {
+        const res = await fetch('/api/send-sms', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
@@ -4756,14 +4749,6 @@ export async function setResumePropertyPerUser(userId, resumeId, propertyName, v
                 { merge: true }
             );
             break;
-        case 'dateofbirth':
-            res = await user.set(
-                {
-                    dateofbirth: value,
-                },
-                { merge: true }
-            );
-            break;
         default:
             break;
     }
@@ -5358,7 +5343,6 @@ export function getConversations(userId, callback) {
                     if (lastMessageSnapshot.exists()) {
                         const [lastMessage] = Object.values(lastMessageSnapshot.val());
                         conversation.lastMessage = lastMessage;
-                    } else {
                     }
 
                     return conversation;
@@ -6076,22 +6060,22 @@ export async function getSystemSettings() {
         ai: {
             provider: 'gemini',
             enableGemini: true,
-            geminiApiKey: '' || '',
+            geminiApiKey: '',
             model: 'gemini-2.0-flash',
             enableNvidia: true,
-            nvidiaApiKey: '' || '',
+            nvidiaApiKey: '',
             nvidiaModel: 'meta/llama-3.1-8b-instruct',
             nvidiaBaseUrl: '',
             enableOpenai: false,
-            openaiApiKey: '' || '',
+            openaiApiKey: '',
             openaiModel: 'gpt-4o-mini',
             openaiBaseUrl: '',
             enableGroq: false,
-            groqApiKey: '' || '',
+            groqApiKey: '',
             enableOpenrouter: false,
-            openrouterApiKey: '' || '',
+            openrouterApiKey: '',
             enableDeepseek: false,
-            deepseekApiKey: '' || '',
+            deepseekApiKey: '',
             enableOllama: false,
             ollamaBaseUrl: 'http://localhost:11434/v1',
             temperature: 0.7,

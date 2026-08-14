@@ -1161,7 +1161,7 @@ const BuildResume = () => {
                         }
                         
                         const savedLocalTemp = localStorage.getItem('selectedTemplate');
-                        const templateId = savedLocalTemp || data.template || subTemp || 'Cv1';
+                        const templateId = savedLocalTemp || data.template || 'Cv1';
                         setCurrentTemplate(templateId);
                         localStorage.setItem('selectedTemplate', templateId);
                         setHasLoaded(true);
@@ -1905,7 +1905,7 @@ const BuildResume = () => {
 
                                  {/* Revision History Snapshots */}
                                 <button
-                                    onClick={() => props.showToast ? props.showToast('Draft Revision History: Snapshot saved. Version history available.', 'success') : console.log('History snapshot saved')}
+                                    onClick={() => showToast('Success')}
                                     className="hidden xl:flex items-center px-2.5 py-2 border border-slate-300 text-slate-700 font-semibold hover:bg-slate-50 transition-all text-xs rounded-lg">
                                     History
                                 </button>
@@ -1914,7 +1914,7 @@ const BuildResume = () => {
                                 <button
                                     onClick={() => {
                                         const title = prompt("Enter Custom Section Title (e.g. Volunteer Work, Awards, Publications):", "Awards & Honors");
-                                        if (title && props.showToast) props.showToast(`Custom section "${title}" added to resume builder!`, 'success');
+                                        if (title) showToast('Success');
                                     }}
                                     className="hidden xl:flex items-center px-2.5 py-2 border border-indigo-300 text-indigo-700 font-semibold hover:bg-indigo-50 transition-all text-xs rounded-lg">
                                     + Add Custom Section
@@ -1922,7 +1922,7 @@ const BuildResume = () => {
 
                                 {/* AI 1-Click Bullet Rewriter & Grammar Check */}
                                 <button
-                                    onClick={() => props.showToast ? props.showToast('AI Bullet Rewriter Active: All bullet points optimized with metric targets!', 'success') : console.log('AI rewriter active')}
+                                    onClick={() => showToast('Success')}
                                     className="hidden xl:flex items-center px-2.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold hover:from-blue-700 hover:to-indigo-700 transition-all text-xs rounded-lg shadow-sm">
                                     AI Rewrite Bullets
                                 </button>
@@ -1932,7 +1932,7 @@ const BuildResume = () => {
                                     onClick={() => {
                                         const shareUrl = `${window.location.origin}/shared/${localStorage.getItem('currentResumeId') || 'demo'}`;
                                         navigator.clipboard.writeText(shareUrl);
-                                        if (props.showToast) props.showToast('Public Mentor Review Link Copied to Clipboard!', 'success');
+                                        showToast('Success');
                                     }}
                                     className="hidden xl:flex items-center px-2.5 py-2 border border-slate-300 text-slate-700 font-semibold hover:bg-slate-50 transition-all text-xs rounded-lg">
                                     Share Review

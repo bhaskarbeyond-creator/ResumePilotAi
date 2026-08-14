@@ -12,7 +12,8 @@ import { getFrontendStats } from '../../firestore/dbOperations';
 const defaultSentences = ['Find your dream job today', 'Connect with top employers', 'Advance your career journey', 'Discover remote opportunities', 'Join leading companies'];
 
 const JobsLandingHero = ({ t, authBtnHandler, user: propUser }) => {
-    const user = propUser || useContext(AuthContext);
+    const contextUser = useContext(AuthContext);
+    const user = propUser || contextUser;
     const navigate = useNavigate();
     const [displayText, setDisplayText] = useState('');
     const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);

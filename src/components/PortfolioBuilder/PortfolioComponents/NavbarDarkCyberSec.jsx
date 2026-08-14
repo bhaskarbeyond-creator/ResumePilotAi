@@ -33,7 +33,7 @@ const NavbarDarkCyberSec = {
         securityLevel: 'high',
         encryptionStyle: 'hexadecimal',
     },
-    render: ({ logoText, logoImage, menuItems, securityLevel, encryptionStyle }) => {
+    render: function NavbarDarkCyberSecurityRender({ logoText, logoImage, menuItems, securityLevel, encryptionStyle }) {
         const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
         const [encryptedText, setEncryptedText] = useState('');
         const [authStatus, setAuthStatus] = useState('authenticated');

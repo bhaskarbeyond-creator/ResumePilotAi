@@ -398,7 +398,7 @@ export const loadTemplate = async (templateKey, initialData, setPortfolioData, s
 
 // Validate if template exists
 export const isValidTemplate = (templateKey) => {
-    return TEMPLATE_PRESETS.hasOwnProperty(templateKey);
+    return Object.prototype.hasOwnProperty.call(TEMPLATE_PRESETS, templateKey);
 };
 
 // Get template list for selection
@@ -535,7 +535,7 @@ export const validateTemplatesSecurity = () => {
 };
 
 // 🔒 SECURITY: Auto-run security validation in development
-if (process.env.NODE_ENV === 'development') {
+if (import.meta.env.DEV) {
     // Run validation after a short delay to ensure all templates are loaded
     setTimeout(() => {
         validateTemplatesSecurity();

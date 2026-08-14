@@ -4,6 +4,26 @@ import { CSSTransition } from "react-transition-group";
 import { withTranslation } from "react-i18next";
 import { FiSearch, FiStar, FiFilter, FiArrowLeft, FiArrowRight, FiEye } from "react-icons/fi";
 import { motion } from "framer-motion";
+import Cv1Image from "../../../assets/1.JPG";
+import Cv2Image from "../../../assets/resumesNew/Cv2.JPG";
+import Cv6Image from "../../../assets/6.JPG";
+import Cv3Image from "../../../assets/3.JPG";
+import Cv4Image from "../../../assets/4.jpg";
+import Cv5Image from "../../../assets/5.JPG";
+import Cv7Image from "../../../assets/7.JPG";
+import Cv8Image from "../../../assets/8.jpg";
+import Cv9Image from "../../../assets/9.jpg";
+import Cv10Image from "../../../assets/10.JPG";
+import Cv11Image from "../../../assets/resumesNew/Cv11.JPG";
+import Cv12Image from "../../../assets/resumesNew/Cv12.JPG";
+import Cv13Image from "../../../assets/resumesNew/Cv13.JPG";
+import Cv14Image from "../../../assets/resumesNew/Cv14.JPG";
+import Cv15Image from "../../../assets/resumesNew/Cv15.JPG";
+import Cover1Image from "../../../assets/coversNew/Cover1.JPG";
+import Cover2Image from "../../../assets/coversNew/Cover2.JPG";
+import Cover3Image from "../../../assets/coversNew/Cover3.JPG";
+import Cover4Image from "../../../assets/coversNew/Cover4.JPG";
+
 
 class BoardSelection extends Component {
   constructor(props) {
@@ -235,21 +255,21 @@ class BoardSelection extends Component {
 
     if (currentStep === "Template Selection") {
       const templates = [
-        { id: "Cv1", src: require("../../../assets/1.JPG"), category: "professional" },
-        { id: "Cv2", src: require("../../../assets/resumesNew/Cv2.JPG"), category: "modern" },
-        { id: "Cv6", src: require("../../../assets/6.JPG"), category: "simple" },
-        { id: "Cv3", src: require("../../../assets/3.JPG"), category: "creative" },
-        { id: "Cv4", src: require("../../../assets/4.jpg"), category: "professional" },
-        { id: "Cv5", src: require("../../../assets/5.JPG"), category: "modern" },
-        { id: "Cv7", src: require("../../../assets/7.JPG"), category: "creative" },
-        { id: "Cv8", src: require("../../../assets/8.jpg"), category: "simple" },
-        { id: "Cv9", src: require("../../../assets/9.jpg"), category: "professional" },
-        { id: "Cv10", src: require("../../../assets/10.JPG"), category: "modern" },
-        { id: "Cv11", src: require("../../../assets/resumesNew/Cv11.JPG"), category: "creative" },
-        { id: "Cv12", src: require("../../../assets/resumesNew/Cv12.JPG"), category: "simple" },
-        { id: "Cv13", src: require("../../../assets/resumesNew/Cv13.JPG"), category: "professional" },
-        { id: "Cv14", src: require("../../../assets/resumesNew/Cv14.JPG"), category: "modern" },
-        { id: "Cv15", src: require("../../../assets/resumesNew/Cv15.JPG"), category: "creative" },
+        { id: "Cv1", src: Cv1Image, category: "professional" },
+        { id: "Cv2", src: Cv2Image, category: "modern" },
+        { id: "Cv6", src: Cv6Image, category: "simple" },
+        { id: "Cv3", src: Cv3Image, category: "creative" },
+        { id: "Cv4", src: Cv4Image, category: "professional" },
+        { id: "Cv5", src: Cv5Image, category: "modern" },
+        { id: "Cv7", src: Cv7Image, category: "creative" },
+        { id: "Cv8", src: Cv8Image, category: "simple" },
+        { id: "Cv9", src: Cv9Image, category: "professional" },
+        { id: "Cv10", src: Cv10Image, category: "modern" },
+        { id: "Cv11", src: Cv11Image, category: "creative" },
+        { id: "Cv12", src: Cv12Image, category: "simple" },
+        { id: "Cv13", src: Cv13Image, category: "professional" },
+        { id: "Cv14", src: Cv14Image, category: "modern" },
+        { id: "Cv15", src: Cv15Image, category: "creative" },
       ];
 
       // Filter based on search and category
@@ -355,10 +375,10 @@ class BoardSelection extends Component {
       );
     } else if (currentStep === "Action Cover Selection") {
       const coverTemplates = [
-        { id: "Cover1", src: require("../../../assets/coversNew/Cover1.JPG"), category: "standard" },
-        { id: "Cover2", src: require("../../../assets/coversNew/Cover2.JPG"), category: "modern" },
-        { id: "Cover3", src: require("../../../assets/coversNew/Cover3.JPG"), category: "standard" },
-        { id: "Cover4", src: require("../../../assets/coversNew/Cover4.JPG"), category: "modern" },
+        { id: "Cover1", src: Cover1Image, category: "standard" },
+        { id: "Cover2", src: Cover2Image, category: "modern" },
+        { id: "Cover3", src: Cover3Image, category: "standard" },
+        { id: "Cover4", src: Cover4Image, category: "modern" },
       ];
 
       // Filter based on search and category

@@ -25,7 +25,7 @@ class AnalyticsSettings extends Component {
     }
     handleChange(event, inputName) {
         switch (inputName) {
-            case 'Tracking Code':
+            case 'Tracking Code': {
                 const trackingCode = event.target.value.trim();
                 const isValid = !trackingCode || trackingCode.match(/^(G-[A-Z0-9]{10}|UA-[0-9]+-[0-9]+)$/) !== null;
                 this.setState({
@@ -33,6 +33,7 @@ class AnalyticsSettings extends Component {
                     isValidCode: isValid,
                 });
                 break;
+            }
             default:
                 break;
         }

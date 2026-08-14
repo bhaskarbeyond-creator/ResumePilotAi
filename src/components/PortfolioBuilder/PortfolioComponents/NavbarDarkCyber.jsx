@@ -34,7 +34,7 @@ const NavbarDarkCyber = {
         glitchEffect: 'medium',
         neonColor: 'cyan',
     },
-    render: ({ logoText, logoImage, menuItems, glitchEffect, neonColor }) => {
+    render: function NavbarDarkCyberRender({ logoText, logoImage, menuItems, glitchEffect, neonColor }) {
         const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
         const [glitchActive, setGlitchActive] = useState(false);
         const menuList = menuItems.split('\n').filter((item) => item.trim());

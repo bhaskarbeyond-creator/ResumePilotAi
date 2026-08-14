@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import addResume, { getResumes, removeResume } from '../../../firestore/dbOperations';
+import addResume, { getResumes, removeResume, setJsonPb } from '../../../firestore/dbOperations';
 import { Link } from 'react-router-dom';
 import addResumesImage from '../../../assets/undraw_add_document_0hek.svg';
 import fire from '../../../conf/fire';

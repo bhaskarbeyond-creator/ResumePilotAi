@@ -1,11 +1,6 @@
-import {getWebsiteData} from '../firestore/dbOperations'
-export    function Analytics(page){
-        getWebsiteData().then((value)=>{
-                if(value !== undefined)
-                if(value.trackingCode !== undefined){
-                       
-                    
-                }
-        })
-  
+import { getWebsiteData } from '../firestore/dbOperations';
+
+// Compatibility helper for callers that need the current analytics configuration.
+export async function Analytics() {
+    return getWebsiteData();
 }

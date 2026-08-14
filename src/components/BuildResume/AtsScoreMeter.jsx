@@ -241,7 +241,7 @@ const AtsScoreMeter = ({ resumeData }) => {
                     })}
 
                     {/* Target Job Description Matcher */}
-                    <JdMatcherSection resumeData={data} />
+                    <JdMatcherSection resumeData={resumeData} />
                 </div>
             )}
         </div>

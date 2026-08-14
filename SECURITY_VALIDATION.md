@@ -82,7 +82,7 @@ This document deliberately does **not** certify the application for production. 
 - `npm run test:security`: PASS (XSS/static security tests plus backend unit/integration tests).
 - `npm --prefix backend test`: PASS (21 tests at the time of this report).
 - `npm run build`: PASS.
-- `npm run lint`: PASS with **0 errors and 683 legacy warnings**; warnings remain technical debt.
+- `npm run lint`: PASS with **0 errors and 546 legacy warnings**; warnings remain technical debt.
 - `npm run audit:production`: PASS.
 - Frontend production audit: Critical 0, High 0, Moderate 0 (migrated deprecated `@measured/puck` to `@puckeditor/core`).
 - Backend production audit: Critical 0, High 0, Moderate 0 (Firebase transitive UUID advisory constrained to patched `uuid` 11.1.1 and backend tests pass).
@@ -106,7 +106,7 @@ This document deliberately does **not** certify the application for production. 
 
 ## Known remaining risks / not yet complete
 
-- 683 lint warnings remain; many are unused legacy code and hook dependency warnings. Lint has no errors, but warnings should be burned down rather than hidden indefinitely.
+- 546 lint warnings remain; many are unused legacy code and hook dependency warnings. Lint has no errors, but warnings should be burned down rather than hidden indefinitely.
 - Frontend bundles remain very large; this is primarily performance/availability debt.
 - Production dependency audits are currently clean, but forced transitive overrides and upstream Firebase/Google releases require continuous compatibility and advisory monitoring.
 - The PDF renderer uses Chromium `--no-sandbox` for container compatibility. Egress is blocked at the browser context and HTML is sanitized, but production should run the renderer in a dedicated locked-down sandboxed worker/container.

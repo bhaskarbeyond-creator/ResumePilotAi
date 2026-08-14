@@ -35,7 +35,7 @@ const Navbar2 = {
         backgroundColor: 'bg-gradient-to-br from-indigo-50/95 via-white/95 to-cyan-50/95 backdrop-blur-md border-b border-indigo-100/30',
         textColor: 'text-gray-800',
     },
-    render: ({ logoText, logoImage, menuItems, backgroundColor, textColor }) => {
+    render: function NavbarTwoRender({ logoText, logoImage, menuItems, backgroundColor, textColor }) {
         const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
         const menuList = menuItems.split('\n').filter((item) => item.trim());
 

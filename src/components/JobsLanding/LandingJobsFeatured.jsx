@@ -128,7 +128,7 @@ const LandingJobsFeatured = ({ t }) => {
                 console.error('❌ Error fetching data:', err);
                 setError(err.message);
                 // Keep mock data as fallback
-                setFeaturedJobs(mockFeaturedJobs);
+                setFeaturedJobs([]);
             } finally {
                 setLoading(false);
             }

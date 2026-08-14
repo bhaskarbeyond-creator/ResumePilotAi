@@ -31,7 +31,7 @@ const NavbarDarkTerminal = {
         terminalStyle: 'matrix',
         showCursor: true,
     },
-    render: ({ logoText, logoImage, menuItems, terminalStyle, showCursor }) => {
+    render: function NavbarDarkTerminalRender({ logoText, logoImage, menuItems, terminalStyle, showCursor }) {
         const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
         const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString());
         const [typingText, setTypingText] = useState('');

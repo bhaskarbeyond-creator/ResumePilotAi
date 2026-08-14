@@ -10,7 +10,7 @@ export const initGA = (trackingId) => {
 
     try {
         ReactGA.initialize(trackingId, {
-            debug: process.env.NODE_ENV === 'development', // Enable debug mode in development
+            debug: import.meta.env.DEV, // Enable debug mode in development
             gtagOptions: {
                 send_page_view: false, // We'll send page views manually
             },

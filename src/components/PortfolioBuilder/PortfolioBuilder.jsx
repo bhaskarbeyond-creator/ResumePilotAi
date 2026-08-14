@@ -172,7 +172,7 @@ const config = {
                             <p className="mt-1 text-sm text-gray-500">Choose a professional template or drag components from the left panel to begin</p>
                             <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
                                 <button
-                                    onClick={() => setShowTemplateSelector(true)}
+                                    onClick={() => window.dispatchEvent(new CustomEvent('openPortfolioTemplateSelector'))}
                                     className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 border border-transparent rounded-md hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-sm">
                                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path
@@ -244,6 +244,12 @@ const PortfolioBuilder = () => {
         seoDescription: '',
     });
 
+    useEffect(() => {
+        const openTemplates = () => setShowTemplateSelector(true);
+        window.addEventListener('openPortfolioTemplateSelector', openTemplates);
+        return () => window.removeEventListener('openPortfolioTemplateSelector', openTemplates);
+    }, []);
+
     // Toast notification state
     const [toast, setToast] = useState({ show: false, type: '', message: '' });
 
@@ -278,18 +284,6 @@ const PortfolioBuilder = () => {
             });
         }
     }, [user, navigate]);
-
-    // Show loading while checking auth state
-    if (user === null) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600 font-medium">Checking authentication...</p>
-                </div>
-            </div>
-        );
-    }
 
     // Show toast notification
     const showToast = (type, customMessage = '') => {
@@ -961,6 +955,17 @@ const PortfolioBuilder = () => {
             }, 100); // Short debounce for better responsiveness
         }
     }, []);
+
+    if (user === null) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600 font-medium">Checking authentication...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <>

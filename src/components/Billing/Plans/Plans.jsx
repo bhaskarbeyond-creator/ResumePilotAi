@@ -244,19 +244,6 @@ const PlansPage = (props) => {
         return () => unsubscribe();
     }, []);
 
-    // Check for PhonePe or Paytm redirect callback query params on page mount
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const urlParams = new URLSearchParams(window.location.search);
-            const orderId = urlParams.get('order');
-            if (urlParams.has('phonepe_callback') || urlParams.has('phonepe_demo')) {
-                toast.success(`🎉 PhonePe Payment Verified! Order ${orderId || ''} activated successfully.`);
-            } else if (urlParams.has('paytm_callback') || urlParams.has('paytm_demo')) {
-                toast.success(`🎉 Paytm Payment Verified! Order ${orderId || ''} activated successfully.`);
-            }
-        }
-    }, []);
-
     // Classic Public View Handlers
     const handlePublicNextStep = (plan) => {
         setPublicSelectedPlan(plan);

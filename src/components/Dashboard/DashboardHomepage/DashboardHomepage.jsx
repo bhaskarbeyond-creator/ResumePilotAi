@@ -250,7 +250,7 @@ class DashboardHomepage extends Component {
     let profile = await getProfileOfUser(localStorage.getItem("user"));
     let stateProfile = this.state.profile;
     for (let key in profile) {
-      if (stateProfile.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(stateProfile, key)) {
         stateProfile[key] = profile[key];
       }
     }

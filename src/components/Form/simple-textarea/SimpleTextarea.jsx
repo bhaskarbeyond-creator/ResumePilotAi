@@ -1702,7 +1702,7 @@ class SimpleTextarea extends Component {
                     <button
                       onClick={this.addGeneratedSummary} // Corrected: No arrow function needed if bound or simple call
                       className={`flex-1 bg-[#4a6cf7] hover:bg-[#3a5ce7] text-white py-2 px-4 rounded-[3px] flex items-center justify-center ${
-                        !!this.state.generationError
+                        this.state.generationError
                           ? "opacity-50 cursor-not-allowed"
                           : ""
                       }`}

@@ -35,7 +35,7 @@ const Navbar1 = {
         backgroundColor: 'bg-white/95 backdrop-blur-md border-b border-gray-100/50',
         textColor: 'text-gray-800',
     },
-    render: ({ logoText, logoImage, menuItems, backgroundColor, textColor }) => {
+    render: function NavbarOneRender({ logoText, logoImage, menuItems, backgroundColor, textColor }) {
         const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
         const menuList = menuItems.split('\n').filter((item) => item.trim());
 

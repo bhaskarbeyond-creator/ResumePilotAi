@@ -5,15 +5,15 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 
 const hygieneWarnings = {
   'no-unused-vars': ['warn', { varsIgnorePattern: '^[A-Z_]', argsIgnorePattern: '^_' }],
-  'no-empty': 'warn',
+  'no-empty': ['error', { allowEmptyCatch: true }],
   'no-useless-escape': 'warn',
-  'no-case-declarations': 'warn',
-  'no-constant-binary-expression': 'warn',
+  'no-case-declarations': 'error',
+  'no-constant-binary-expression': 'error',
   'no-control-regex': 'warn',
-  'no-prototype-builtins': 'warn',
-  'no-undef': 'warn',
-  'no-extra-boolean-cast': 'warn',
-  'no-duplicate-case': 'warn',
+  'no-prototype-builtins': 'error',
+  'no-undef': 'error',
+  'no-extra-boolean-cast': 'error',
+  'no-duplicate-case': 'error',
 }
 
 export default [
@@ -37,10 +37,14 @@ export default [
       ...hygieneWarnings,
       // Legacy components are being incrementally migrated; these remain visible without
       // making security/build gates unusable for unrelated changes.
-      'react-hooks/rules-of-hooks': 'warn',
+      'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
     },
+  },
+  {
+    files: ['src/**/*.test.{js,jsx}'],
+    languageOptions: { globals: { ...globals.browser, ...globals.jest } },
   },
   {
     files: ['backend/**/*.js'],
