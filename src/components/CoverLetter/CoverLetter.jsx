@@ -5,7 +5,7 @@ import { withTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { saveCoverLetter, getUserCoverLetters, deleteCoverLetter, getProfileOfUser } from '../../firestore/dbOperations';
 import fire from '../../conf/fire';
-import Cover1 from '../../cv-templates/cover1/Cover1';
+import TemplateRenderer from '../TemplateRenderer';
 
 class CoverLetter extends Component {
     constructor(props) {
@@ -425,7 +425,7 @@ class CoverLetter extends Component {
                                 <div className="bg-slate-100 p-6 rounded-xl border border-slate-200 max-h-[600px] overflow-y-auto shadow-inner">
                                     <div className="bg-white text-slate-900 rounded shadow-md max-w-2xl mx-auto p-4 scale-95 origin-top border border-slate-200">
                                         {/* Official Cover1 Template Rendering */}
-                                        <Cover1 values={templateValues} />
+                                        <TemplateRenderer templateId={this.state.templateId || 'Cover1'} values={templateValues} language={this.props.i18n?.language || 'en'} />
                                     </div>
                                 </div>
                             ) : (
@@ -464,7 +464,7 @@ class CoverLetter extends Component {
                                 {/* Visual Preview Card */}
                                 <div className="bg-slate-100 p-4 rounded-xl border border-slate-200 max-h-[450px] overflow-y-auto">
                                     <div className="bg-white text-slate-900 rounded p-3 scale-90 origin-top shadow-md">
-                                        <Cover1 values={templateValues} />
+                                        <TemplateRenderer templateId={this.state.templateId || 'Cover1'} values={templateValues} language={this.props.i18n?.language || 'en'} />
                                     </div>
                                 </div>
 

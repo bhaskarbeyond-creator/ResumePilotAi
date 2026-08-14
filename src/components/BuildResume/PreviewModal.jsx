@@ -1,9 +1,12 @@
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
+import TemplateRenderer from '../TemplateRenderer';
 import { useTranslation } from 'react-i18next';
 
-const PreviewModal = ({ showPreview, setShowPreview, resumeData, onDownload, isDownloading, currentTemplate = 'Cv1', getTemplateComponent, getTemplateName }) => {
+const PreviewModal = ({ showPreview, setShowPreview, resumeData, onDownload, isDownloading, currentTemplate = 'Cv1', getTemplateName }) => {
     const { t, i18n } = useTranslation('common');
     const [isVisible, setIsVisible] = useState(false);
+    const dialogRef = useRef(null);
+    const returnFocusRef = useRef(null);
 
     useEffect(() => {
         if (showPreview) {
@@ -19,10 +22,13 @@ const PreviewModal = ({ showPreview, setShowPreview, resumeData, onDownload, isD
         };
     }, [showPreview]);
 
-    const handleClose = () => {
+    const handleClose = useCallback(() => {
         setIsVisible(false);
-        setTimeout(() => setShowPreview(false), 300);
-    };
+        setTimeout(() => {
+            setShowPreview(false);
+            returnFocusRef.current?.focus?.();
+        }, 300);
+    }, [setShowPreview]);
 
     const handleBackdropClick = (e) => {
         if (e.target === e.currentTarget) {
@@ -30,18 +36,28 @@ const PreviewModal = ({ showPreview, setShowPreview, resumeData, onDownload, isD
         }
     };
 
-    const handleEscapeKey = (e) => {
-        if (e.key === 'Escape') {
-            handleClose();
-        }
-    };
-
     useEffect(() => {
-        if (showPreview) {
-            document.addEventListener('keydown', handleEscapeKey);
-            return () => document.removeEventListener('keydown', handleEscapeKey);
-        }
-    }, [showPreview]);
+        if (!showPreview) return undefined;
+        returnFocusRef.current = document.activeElement;
+        requestAnimationFrame(() => dialogRef.current?.querySelector('button')?.focus());
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape') handleClose();
+            if (event.key !== 'Tab' || !dialogRef.current) return;
+            const focusable = [...dialogRef.current.querySelectorAll('button:not([disabled]), a[href], input:not([disabled]), [tabindex]:not([tabindex="-1"])')];
+            if (!focusable.length) return;
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [showPreview, handleClose]);
 
     if (!showPreview) return null;
 
@@ -58,6 +74,11 @@ const PreviewModal = ({ showPreview, setShowPreview, resumeData, onDownload, isD
 
             {/* Modal Container with enhanced animations and mobile responsiveness */}
             <div
+                ref={dialogRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="resume-preview-title"
+                tabIndex={-1}
                 className={`relative w-full max-w-7xl max-h-[95vh] sm:max-h-[90vh] bg-white/95 backdrop-blur-xl rounded-lg sm:rounded-2xl shadow-2xl border border-white/20 transform transition-all duration-500 ease-out ${
                     isVisible ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-8 opacity-0 scale-95'
                 }`}
@@ -79,7 +100,7 @@ const PreviewModal = ({ showPreview, setShowPreview, resumeData, onDownload, isD
                                 </svg>
                             </div>
                             <div className="min-w-0 flex-1">
-                                <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-900 tracking-tight truncate">{t('PreviewModal.title')}</h2>
+                                <h2 id="resume-preview-title" className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-900 tracking-tight truncate">{t('PreviewModal.title')}</h2>
                                 <p className="text-xs sm:text-sm text-slate-600 mt-0.5 sm:mt-1 font-medium truncate">
                                     {t('PreviewModal.subtitle', { templateName: getTemplateName ? getTemplateName(currentTemplate) : currentTemplate })}
                                 </p>
@@ -149,35 +170,12 @@ const PreviewModal = ({ showPreview, setShowPreview, resumeData, onDownload, isD
                                     width: '794px',
                                     boxShadow: '0 20px 40px -12px rgba(0, 0, 0, 0.15), 0 8px 32px -8px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05)',
                                 }}>
-                                {(() => {
-                                    try {
-                                        if (!getTemplateComponent) {
-                                            return (
-                                                <div className="flex items-center justify-center h-full bg-gray-100 text-gray-500">
-                                                    <div className="text-center p-4">
-                                                        <div className="text-sm sm:text-base">{t('PreviewModal.errors.noTemplate')}</div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        }
-                                        const TemplateComponent = getTemplateComponent(currentTemplate);
-                                        return (
-                                            <Suspense fallback={<div className="flex items-center justify-center p-12 text-slate-400 text-xs font-bold">Loading Template...</div>}>
-                                                <TemplateComponent values={resumeData} language={i18n.language} />
-                                            </Suspense>
-                                        );
-                                    } catch (error) {
-                                        console.error('Error rendering template in preview modal:', error);
-                                        return (
-                                            <div className="flex items-center justify-center h-full bg-gray-100 text-gray-500">
-                                                <div className="text-center p-4">
-                                                    <div className="text-sm sm:text-base">{t('PreviewModal.errors.templateError')}</div>
-                                                    <div className="text-xs sm:text-sm mt-1">{t('PreviewModal.errors.tryDifferent')}</div>
-                                                </div>
-                                            </div>
-                                        );
-                                    }
-                                })()}
+                                <TemplateRenderer
+                                    templateId={currentTemplate}
+                                    values={resumeData}
+                                    language={i18n.language}
+                                    onError={(error) => console.error('Template modal render failed:', error)}
+                                />
                             </div>
                         </div>
                     </div>

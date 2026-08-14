@@ -129,21 +129,12 @@ const BlogList = () => {
         }
     };
 
-    const filteredPosts = posts.filter(post => 
-        searchTerm === '' || 
-        post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        post.excerpt.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    const formatDate = (date) => {
-        if (!date) return 'Recently';
-        const postDate = date instanceof Date ? date : new Date(date);
-        return postDate.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-    };
+    const normalizedSearch = searchTerm.trim().toLocaleLowerCase();
+    const filteredPosts = posts.filter((post) => {
+        if (!normalizedSearch) return true;
+        return String(post.title || '').toLocaleLowerCase().includes(normalizedSearch)
+            || String(post.excerpt || '').toLocaleLowerCase().includes(normalizedSearch);
+    });
 
     if (loading) {
         return (

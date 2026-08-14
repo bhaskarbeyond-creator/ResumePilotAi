@@ -887,7 +887,7 @@
       "passingScore": "Lágmarksstig:",
       "errorGenerating": "Villa við að búa til viðtal:",
       "tryAgainError": "Vinsamlegast reyndu aftur eða prófaðu annað starf.",
-      "generatingQuestions": "Býr til {(count}} persónulegar viðtalspurningar...",
+      "generatingQuestions": "Býr til {{count}} persónulegar viðtalspurningar...",
       "generatingHint": "Þetta gæti tekið nokkrar sekúndur. Við erum að útbúa spurningar sem eru sérstakar fyrir þitt starf.",
       "back": "Til baka",
       "startAssessment": "Byrja Mat",

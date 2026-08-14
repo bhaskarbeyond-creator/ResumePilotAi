@@ -197,7 +197,7 @@ class Cv7 extends Component {
                             {/* Languages */}
                             <div className="cv7-languages">
                                 <div className="cv7-title">
-                                    <h3 class="cv7-titleText" style={{ color: primaryColor }}>
+                                    <h3 className="cv7-titleText" style={{ color: primaryColor }}>
                                         {t('resume.languages')}
                                     </h3>
                                 </div>

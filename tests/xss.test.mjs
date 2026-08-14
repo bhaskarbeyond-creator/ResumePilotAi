@@ -41,6 +41,11 @@ test('URL sanitizer rejects parser differentials and active schemes', () => {
   assert.equal(sanitizer.sanitizeUrl('/shared/abc_123'), '/shared/abc_123');
   assert.equal(sanitizer.sanitizeUrl('https://example.com/path').startsWith('https://example.com/path'), true);
   assert.equal(sanitizer.sanitizeUrl('mailto:user@example.com'), 'mailto:user@example.com');
+  assert.equal(sanitizer.sanitizeImageUrl('https://cdn.example.com/photo.jpg'), 'https://cdn.example.com/photo.jpg');
+  assert.equal(sanitizer.sanitizeImageUrl('/uploads/photo.webp'), '/uploads/photo.webp');
+  for (const value of ['http://cdn.example.com/photo.jpg', 'data:image/svg+xml,<svg/>', 'https://user:pass@example.com/x', '//evil.example/x']) {
+    assert.equal(sanitizer.sanitizeImageUrl(value), '', value);
+  }
 });
 
 test('print document sink removes executable markup and network-capable CSS', () => {

@@ -19,7 +19,7 @@ class Cover3Template extends Component {
             for (let i = 0; i < this.props.values.components.length; i++) {
                 if (this.props.values.components[i].type == 'Paragraph') {
                     array.push(
-                        <div className="cover3-paragraph">
+                        <div key={`component-${i}`} className="cover3-paragraph">
                             <p>{this.props.values.components[i].content}</p>
                         </div>
                     );
@@ -27,7 +27,7 @@ class Cover3Template extends Component {
                     let list = this.props.values.components[i].content;
 
                     array.push(
-                        <div className="cover3-skills">
+                        <div key={`component-${i}`} className="cover3-skills">
                             <h3>{this.props.values.components[i].name}</h3>
                             <ul>
                                 {list.map((item, index) => {

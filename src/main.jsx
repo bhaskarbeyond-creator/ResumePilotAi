@@ -10,10 +10,9 @@ import './i18n'; // Import i18n configuration
 import * as serviceWorker from './serviceWorker';
 import Spinner from './components/Spinner/Spinner';
 import PublicResume from './components/PublicResume/PublicResume';
-import Cover4 from './cv-templates/cover4/Cover4';
 import fire from './conf/fire'; // Import fire
 import GA4Provider from './components/GA4Provider';
-import i18n from './i18n';
+import i18n, { SUPPORTED_LANGUAGES } from './i18n';
 import GoogleMapsProvider from './components/JobsListings/GoogleMapsProvider';
 import axios from 'axios';
 
@@ -184,9 +183,16 @@ const AuthWrapper = () => {
     // Add global language change listener to persist language changes
     useEffect(() => {
         const handleLanguageChanged = (lng) => {
-            // Save language preference whenever it changes
-            localStorage.setItem('preferredLanguage', lng);
+            const language = SUPPORTED_LANGUAGES.includes(lng) ? lng : 'en';
+            try {
+                localStorage.setItem('preferredLanguage', language);
+            } catch {
+                // Language switching still works when storage is unavailable.
+            }
+            document.documentElement.lang = language;
+            document.documentElement.dir = i18n.dir(language);
         };
+        handleLanguageChanged(i18n.resolvedLanguage || i18n.language);
 
         // Listen for language changes
         i18n.on('languageChanged', handleLanguageChanged);
@@ -293,8 +299,6 @@ const AuthWrapper = () => {
                             {Array.from({ length: 4 }, (_, i) => i + 1).map((num) => (
                                 <Route key={`cover-route-${num}`} path={`/export/Cover${num}/:resumeId/:language`} element={<Exporter resumeName={`Cover${num}`} export={true} />} />
                             ))}
-                            {/* just a route  to test a n */}
-                            <Route path="/cvtest" element={<Cover4 />} />
                         </Routes>
                     </Suspense>
                 </GA4Provider>

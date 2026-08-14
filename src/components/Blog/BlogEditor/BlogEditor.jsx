@@ -15,8 +15,7 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import { 
     createBlogPost,
-    updateBlogPost, 
-    getBlogPostBySlug,
+    updateBlogPost,
     listBlogCategories,
     getUserBlogPosts,
     deleteBlogPost
@@ -26,7 +25,7 @@ import Spinner from '../../Spinner/Spinner';
 import HomepageNavbar from '../../Dashboard2/elements/HomepageNavbar';
 import HomepageFooter from '../../Dashboard2/elements/HomepageFooter';
 import fire from '../../../conf/fire';
-import { sanitizeBlogHtml, sanitizePlainText } from '../../../utils/sanitizeHtml';
+import { sanitizeBlogHtml, sanitizeImageUrl, sanitizePlainText, sanitizeUrl } from '../../../utils/sanitizeHtml';
 import './TiptapEditor.css';
 import { 
     FiSave, 
@@ -77,8 +76,8 @@ const BlogEditor = () => {
     const [userPosts, setUserPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [showPreview, setShowPreview] = useState(false);
     const [errors, setErrors] = useState({});
     const [tagInput, setTagInput] = useState('');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -127,6 +126,7 @@ const BlogEditor = () => {
         content: post.content,
         onUpdate: ({ editor }) => {
             setPost(prev => ({ ...prev, content: editor.getHTML() }));
+            setHasUnsavedChanges(true);
         },
         editorProps: {
             attributes: {
@@ -159,10 +159,26 @@ const BlogEditor = () => {
     }, [user, postId]);
 
     useEffect(() => {
-        // Update document title
+        const previousTitle = document.title;
+        return () => {
+            document.title = previousTitle;
+        };
+    }, []);
+
+    useEffect(() => {
         const title = isEditing && post.title ? `Edit: ${post.title}` : 'Create New Post';
         document.title = `${title} - Blog Editor`;
     }, [isEditing, post.title]);
+
+    useEffect(() => {
+        const warnAboutUnsavedChanges = (event) => {
+            if (!hasUnsavedChanges) return;
+            event.preventDefault();
+            event.returnValue = '';
+        };
+        window.addEventListener('beforeunload', warnAboutUnsavedChanges);
+        return () => window.removeEventListener('beforeunload', warnAboutUnsavedChanges);
+    }, [hasUnsavedChanges]);
 
     // Sync editor content when post content changes
     useEffect(() => {
@@ -233,6 +249,7 @@ const BlogEditor = () => {
             console.error('Error initializing editor:', error);
             showNotification('Failed to load editor. Please try again.', 'error');
         } finally {
+            setHasUnsavedChanges(false);
             setLoading(false);
         }
     };
@@ -298,11 +315,9 @@ const BlogEditor = () => {
             // Validate and sanitize featured image URL
             let sanitizedFeaturedImage = '';
             if (post.featuredImage) {
-                const imageUrlRegex = /^https?:\/\//i;
-                if (imageUrlRegex.test(post.featuredImage)) {
-                    sanitizedFeaturedImage = post.featuredImage.trim();
-                } else {
-                    showNotification('Featured image must be a valid URL starting with http:// or https://', 'error');
+                sanitizedFeaturedImage = sanitizeImageUrl(post.featuredImage);
+                if (!sanitizedFeaturedImage) {
+                    showNotification('Featured image must use a valid HTTPS URL.', 'error');
                     setSaving(false);
                     return;
                 }
@@ -325,6 +340,7 @@ const BlogEditor = () => {
             }
 
             if (result.success) {
+                setHasUnsavedChanges(false);
                 showNotification(
                     isEditing 
                         ? 'Post updated successfully! Changes are pending approval.'
@@ -366,6 +382,7 @@ const BlogEditor = () => {
             const result = await deleteBlogPost(postId);
             
             if (result.success) {
+                setHasUnsavedChanges(false);
                 showNotification('Post deleted successfully.', 'success');
                 setTimeout(() => navigate('/blog-editor'), 1000);
             } else {
@@ -386,6 +403,7 @@ const BlogEditor = () => {
                 ...prev,
                 tags: [...prev.tags, tagInput.trim()]
             }));
+            setHasUnsavedChanges(true);
             setTagInput('');
         }
     };
@@ -395,6 +413,7 @@ const BlogEditor = () => {
             ...prev,
             tags: prev.tags.filter(tag => tag !== tagToRemove)
         }));
+        setHasUnsavedChanges(true);
     };
 
     const handleTagInputKeyPress = (e) => {
@@ -407,17 +426,14 @@ const BlogEditor = () => {
     // Image insertion handler
     const handleImageInsert = () => {
         if (imageUrl && editor) {
-            // Validate image URL
-            const urlRegex = /^https?:\/\//i;
-            
-            if (!urlRegex.test(imageUrl)) {
-                showNotification('Please enter a valid image URL starting with http:// or https://', 'error');
+            const safeImageUrl = sanitizeImageUrl(imageUrl);
+            if (!safeImageUrl) {
+                showNotification('Please enter a valid HTTPS image URL.', 'error');
                 return;
             }
-            
-            // Insert image with loading attribute for performance
-            editor.chain().focus().setImage({ 
-                src: imageUrl,
+
+            editor.chain().focus().setImage({
+                src: safeImageUrl,
                 alt: 'Inserted image',
                 loading: 'lazy'
             }).run();
@@ -429,25 +445,23 @@ const BlogEditor = () => {
     // Link insertion handler
     const handleLinkInsert = () => {
         if (linkUrl && editor) {
-            // Validate and sanitize the URL
-            const urlRegex = /^https?:\/\/|^mailto:|^tel:|^#/i;
-            
-            if (!urlRegex.test(linkUrl)) {
-                showNotification('Please enter a valid URL starting with http://, https://, mailto:, tel:, or #', 'error');
+            const safeLinkUrl = sanitizeUrl(linkUrl);
+            if (!safeLinkUrl) {
+                showNotification('Please enter a valid web, email, phone, or page link.', 'error');
                 return;
             }
-            
-            // Sanitize the link text if provided
+
             const sanitizedLinkText = linkText ? sanitizeText(linkText) : '';
-            
             if (sanitizedLinkText) {
-                // Use sanitized content for manual link insertion
-                const sanitizedHtml = `<a href="${linkUrl}" target="_blank" rel="noopener noreferrer">${sanitizedLinkText}</a>`;
-                editor.chain().focus().insertContent(sanitizedHtml).run();
+                // Structured Tiptap content avoids constructing an HTML injection sink.
+                editor.chain().focus().insertContent({
+                    type: 'text',
+                    text: sanitizedLinkText,
+                    marks: [{ type: 'link', attrs: { href: safeLinkUrl, target: '_blank', rel: 'noopener noreferrer' } }],
+                }).run();
             } else {
-                // Use Tiptap's built-in link command for selected text
-                editor.chain().focus().setLink({ 
-                    href: linkUrl, 
+                editor.chain().focus().setLink({
+                    href: safeLinkUrl,
                     target: '_blank', 
                     rel: 'noopener noreferrer' 
                 }).run();
@@ -594,7 +608,7 @@ const BlogEditor = () => {
                                         type="text"
                                         id="title"
                                         value={post.title}
-                                        onChange={(e) => setPost(prev => ({ ...prev, title: e.target.value }))}
+                                        onChange={(e) => { setPost(prev => ({ ...prev, title: e.target.value })); setHasUnsavedChanges(true); }}
                                         placeholder="Enter your post title here..."
                                         className={`w-full px-0 py-3 text-3xl font-bold placeholder-gray-300 border-0 focus:outline-none focus:ring-0 bg-transparent ${
                                             errors.title ? 'text-red-600' : 'text-gray-900'
@@ -905,7 +919,7 @@ const BlogEditor = () => {
                                     <textarea
                                         id="excerpt"
                                         value={post.excerpt}
-                                        onChange={(e) => setPost(prev => ({ ...prev, excerpt: e.target.value }))}
+                                        onChange={(e) => { setPost(prev => ({ ...prev, excerpt: e.target.value })); setHasUnsavedChanges(true); }}
                                         placeholder="Write a compelling excerpt that summarizes your post and entices readers..."
                                         rows={4}
                                         className="w-full border-0 focus:outline-none resize-none text-gray-800 leading-6 placeholder-gray-400 bg-transparent"
@@ -1035,7 +1049,7 @@ const BlogEditor = () => {
                                     <select
                                         id="category"
                                         value={post.categoryId}
-                                        onChange={(e) => setPost(prev => ({ ...prev, categoryId: e.target.value }))}
+                                        onChange={(e) => { setPost(prev => ({ ...prev, categoryId: e.target.value })); setHasUnsavedChanges(true); }}
                                         className={`w-full px-4 py-3 border text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
                                             errors.categoryId ? 'border-red-300 bg-red-50' : 'border-gray-200 hover:border-gray-300'
                                         }`}
@@ -1124,7 +1138,7 @@ const BlogEditor = () => {
                                         type="url"
                                         id="featuredImage"
                                         value={post.featuredImage}
-                                        onChange={(e) => setPost(prev => ({ ...prev, featuredImage: e.target.value }))}
+                                        onChange={(e) => { setPost(prev => ({ ...prev, featuredImage: e.target.value })); setHasUnsavedChanges(true); }}
                                         placeholder="https://example.com/image.jpg"
                                         className="w-full px-4 py-3 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent hover:border-gray-300 transition-all duration-200"
                                     />

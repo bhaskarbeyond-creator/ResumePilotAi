@@ -25,7 +25,7 @@ class Cv14 extends Component {
 
         for (let index = 0; index < tempEmployments.length; index++) {
             elements.push(
-                <div className="cv14-work-history-item">
+                <div key={`item-${index}`} className="cv14-work-history-item">
                     <div className="cv14-work-history-item-left">
                         <p>{tempEmployments[index].employer}</p>
                         <p>
@@ -50,7 +50,7 @@ class Cv14 extends Component {
 
         for (let index = 0; index < tempEducations.length; index++) {
             elements.push(
-                <div className="cv14-work-history-item">
+                <div key={`item-${index}`} className="cv14-work-history-item">
                     <div className="cv14-work-history-item-left">
                         <p>
                             {tempEducations[index].started} - {tempEducations[index].finished}
@@ -74,7 +74,7 @@ class Cv14 extends Component {
         });
         for (let index = 0; index < tempSkills.length; index++) {
             elements.push(
-                <div className="cv14-skills-item">
+                <div key={`skill-${index}`} className="cv14-skills-item">
                     <p>{this.props.values.skills[index].name}</p>
                     <div className="cv14-skills-item-bar">
                         <div className="cv14-skills-item-bar-inner" style={{ width: this.props.values.skills[index].rating + '%' }}></div>
@@ -92,7 +92,7 @@ class Cv14 extends Component {
         });
         for (let index = 0; index < tempLanguages.length; index++) {
             elements.push(
-                <div className="cv14-languages-item">
+                <div key={`language-${index}`} className="cv14-languages-item">
                     <p>{tempLanguages[index].name}</p>
                     <p>{tempLanguages[index].level}</p>
                 </div>
