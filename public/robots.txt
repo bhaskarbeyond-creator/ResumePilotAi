@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /dashboard2
+Disallow: /build-resume
+Disallow: /create-resume
+Disallow: /adm
+Disallow: /blog-editor
+Disallow: /portfolio/builder
+Disallow: /export
+Disallow: /shared
+Disallow: /login
+Sitemap: https://airesume.projectdemo.guru/sitemap.xml

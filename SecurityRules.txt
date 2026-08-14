@@ -23,6 +23,16 @@ service cloud.firestore {
 
     // Identity, role, verification, suspension, billing and entitlements are server-owned.
     match /users/{uid} {
+      function validPreferences() {
+        return request.resource.data.preferences.keys().hasOnly(['language','emailNotifications','securityNotifications','productUpdates','profileDiscoverable','revision'])
+          && request.resource.data.preferences.language is string
+          && request.resource.data.preferences.language.size() <= 10
+          && request.resource.data.preferences.emailNotifications is bool
+          && request.resource.data.preferences.securityNotifications is bool
+          && request.resource.data.preferences.productUpdates is bool
+          && request.resource.data.preferences.profileDiscoverable is bool
+          && request.resource.data.preferences.revision == resource.data.get('preferences', {}).get('revision', 0) + 1;
+      }
       allow create: if owner(uid)
         && request.resource.data.keys().hasOnly([
           'userId','firstname','lastname','email','displayName','photoURL','profile',
@@ -33,8 +43,9 @@ service cloud.firestore {
         && (!('membership' in request.resource.data) || request.resource.data.membership == 'Basic');
       allow read: if owner(uid) || admin();
       allow update: if owner(uid) && changedOnly([
-        'firstname','lastname','displayName','photoURL','profile','preferences','lastLoginAt','authProvider'
-      ]);
+        'firstname','lastname','email','displayName','photoURL','profile','preferences','lastLoginAt','authProvider'
+      ]) && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['email']) || ownEmail(request.resource.data.email))
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['preferences']) || validPreferences());
       allow delete: if false;
 
       match /resumes/{resumeId} { allow read, create, update, delete: if owner(uid); }
@@ -42,7 +53,11 @@ service cloud.firestore {
       match /coverLetters/{coverId} { allow read, create, update, delete: if owner(uid); }
       match /favourites/{id} { allow read, create, update, delete: if owner(uid); }
       match /portfolios/{id} { allow read, create, update, delete: if owner(uid); }
-      match /jobTracker/{id} { allow read, create, update, delete: if owner(uid); }
+      match /jobTracker/{id} {
+        allow read, delete: if owner(uid);
+        allow create: if owner(uid) && request.resource.data.revision == 1;
+        allow update: if owner(uid) && request.resource.data.revision == resource.data.get('revision', 0) + 1;
+      }
       match /invoices/{id} { allow read: if owner(uid) || admin(); allow write: if false; }
       match /transactions/{id} { allow read: if owner(uid) || admin(); allow write: if false; }
     }
@@ -243,7 +258,7 @@ service cloud.firestore {
     match /pages/{id} { allow read: if true; allow write: if admin(); }
     match /ads/{id} { allow read: if true; allow write: if admin(); }
     match /reviews/{id} { allow read: if resource.data.status == 'approved' || admin(); allow write: if false; }
-    match /trustedBy/{id} { allow read: if true; allow write: if admin(); }
+    match /trustedBy/{id} { allow read: if true; allow write: if false; }
     match /contact/{id} { allow read, update, delete: if admin(); allow create: if false; }
     match /notifications/{uid}/{document=**} {
       allow read, update, delete: if owner(uid);
@@ -255,7 +270,7 @@ service cloud.firestore {
     match /data/{id} {
       allow read: if id in ['meta','frontendstats','public_config']
         || (admin() && !(id in ['system_settings','subscriptions']));
-      allow write: if admin() && (!(id in ['system_settings','subscriptions']) || recentAuth());
+      allow write: if admin() && id != 'frontendstats' && (!(id in ['system_settings','subscriptions']) || recentAuth());
     }
     match /settings/{id} {
       allow read: if admin() && !(id in ['ai_providers','payment_providers','oauth_providers','admin_configuration']);

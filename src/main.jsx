@@ -1,7 +1,7 @@
 import './bootstrap';
 import React, { Suspense, lazy, useState, useEffect, createContext } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import './tailwind.css';
 import './index.scss';
 import './cv-templates/css/globalTemplateEnhancements.css';
@@ -76,7 +76,10 @@ const MainJobListings = lazy(() => import('./components/JobsListings/MainJobList
 const BlogList = lazy(() => import('./components/Blog/BlogList/BlogList'));
 const BlogPost = lazy(() => import('./components/Blog/BlogPost/BlogPost'));
 const BlogEditor = lazy(() => import('./components/Blog/BlogEditor/BlogEditor'));
+const NotFound = () => <main className="flex min-h-screen items-center justify-center bg-slate-50 p-6"><div className="text-center"><h1 className="text-3xl font-bold text-slate-900">Page not found</h1><p className="mt-3 text-slate-600">The requested page does not exist or is no longer available.</p><Link to="/" className="mt-5 inline-block rounded-lg bg-slate-900 px-4 py-2 text-white">Return home</Link></div></main>;
 import ResetPasswordModal from './components/auth/resetPassword/ResetPasswordModal';
+import RouteSeo from './components/RouteSeo';
+import RouteFocus from './components/RouteFocus';
 
 const AuthWrapper = () => {         
     const [user, setUser] = useState(null);
@@ -84,6 +87,7 @@ const AuthWrapper = () => {
     const [resetOobCode, setResetOobCode] = useState(null);
     const [directResetEmail, setDirectResetEmail] = useState(null);
     const [verificationBanner, setVerificationBanner] = useState(null);
+    const [maintenance, setMaintenance] = useState({ loading: true, enabled: false, message: '', admin: false });
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -181,6 +185,24 @@ const AuthWrapper = () => {
         return () => unsubscribe();
     }, []);
 
+    useEffect(() => {
+        if (authLoading) return undefined;
+        let active = true;
+        Promise.all([
+            fire.firestore().collection('data').doc('public_config').get(),
+            user?.getIdTokenResult?.().catch(() => null) || Promise.resolve(null),
+        ]).then(([snapshot, token]) => {
+            if (!active) return;
+            const config = snapshot.data()?.systemHealth || {};
+            const role = String(token?.claims?.role || '').toUpperCase();
+            setMaintenance({ loading: false, enabled: config.maintenanceMode === true, message: String(config.maintenanceMessage || 'Scheduled maintenance is in progress.'), admin: ['ADMIN', 'SUPER_ADMIN'].includes(role) });
+        }).catch(() => {
+            // Fail open if public configuration is unavailable; infrastructure health controls remain independent.
+            if (active) setMaintenance({ loading: false, enabled: false, message: '', admin: false });
+        });
+        return () => { active = false; };
+    }, [authLoading, user]);
+
     // Add global language change listener to persist language changes
     useEffect(() => {
         const handleLanguageChanged = (lng) => {
@@ -204,8 +226,11 @@ const AuthWrapper = () => {
         };
     }, []);
 
-    if (authLoading) {
-        return <Spinner />; // Or any loading indicator
+    if (authLoading || maintenance.loading) return <Spinner />;
+
+    const emergencyPath = window.location.pathname === '/login' || window.location.pathname.startsWith('/adm');
+    if (maintenance.enabled && !maintenance.admin && !emergencyPath) {
+        return <main className="flex min-h-screen items-center justify-center bg-slate-950 p-6 text-white"><div className="max-w-lg rounded-2xl border border-slate-700 bg-slate-900 p-8 text-center shadow-2xl" role="status"><h1 className="text-2xl font-bold">Scheduled maintenance</h1><p className="mt-4 text-slate-300">{maintenance.message}</p><p className="mt-6 text-sm text-slate-400">Administrators can use the protected console during maintenance.</p><a href="/login" className="mt-5 inline-block rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900">Administrator sign in</a></div></main>;
     }
 
     return (
@@ -256,6 +281,8 @@ const AuthWrapper = () => {
             <GoogleMapsProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || import.meta.env.VITE_APP_GOOGLE_MAPS_API_KEY}>
             <BrowserRouter>
                 <GA4Provider>
+                    <RouteSeo />
+                    <RouteFocus />
                     <Suspense fallback={<Spinner />}>
                         <Routes>
                             <Route path="/" element={<Welcome />} />
@@ -300,6 +327,7 @@ const AuthWrapper = () => {
                             {Array.from({ length: 4 }, (_, i) => i + 1).map((num) => (
                                 <Route key={`cover-route-${num}`} path={`/export/Cover${num}/:resumeId/:language`} element={<Exporter resumeName={`Cover${num}`} export={true} />} />
                             ))}
+                            <Route path="*" element={<NotFound />} />
                         </Routes>
                     </Suspense>
                     <PrivacyConsentBanner />

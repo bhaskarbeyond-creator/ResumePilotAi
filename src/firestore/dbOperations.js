@@ -4,6 +4,7 @@ import config from '../conf/configuration';
 import firebase from 'firebase/compat/app';
 import { JOB_TRACKER_STATUSES, normalizeTrackedJob, validateTrackedJob } from '../utils/jobTracker';
 import { blogPostFitsFirestore, normalizeBlogPost } from '../utils/blogData';
+import { normalizeProfileData, profileFitsFirestore } from '../utils/profileData';
 
 // Utility function to wait for authentication state
 export const waitForAuth = () => {
@@ -1873,28 +1874,42 @@ export async function createTrackedJob(userId, input) {
     if (!valid) throw new Error(Object.values(errors)[0]);
     const now = firebase.firestore.Timestamp.now();
     const reference = fire.firestore().collection('users').doc(userId).collection('jobTracker').doc();
-    await reference.set({ ...job, createdAt: now, updatedAt: now });
-    return { id: reference.id, ...job, createdAt: now.toDate(), updatedAt: now.toDate() };
+    await reference.set({ ...job, revision: 1, createdAt: now, updatedAt: now });
+    return { id: reference.id, ...job, revision: 1, createdAt: now.toDate(), updatedAt: now.toDate() };
 }
 
-export async function updateTrackedJob(userId, jobId, patch) {
+export async function updateTrackedJob(userId, jobId, patch, expectedRevision = null) {
     if (!userId || !jobId) throw new Error('A tracked job and authenticated user are required');
-    const allowed = Object.fromEntries(Object.entries(patch || {}).filter(([key]) =>
-        ['title', 'company', 'location', 'url', 'notes', 'deadline', 'status', 'order'].includes(key)));
+    const allowed = Object.fromEntries(Object.entries(patch || {}).filter(([key]) => ['title','company','location','url','notes','deadline','status','order'].includes(key)));
     if (allowed.status && !JOB_TRACKER_STATUSES.includes(allowed.status)) throw new Error('Invalid tracker status');
     const normalized = normalizeTrackedJob(allowed);
     if (Object.hasOwn(allowed, 'title') && !normalized.title) throw new Error('Job title is required');
     if (Object.hasOwn(allowed, 'company') && !normalized.company) throw new Error('Company is required');
     if (allowed.url && !normalized.url) throw new Error('Use a valid web address');
-    const update = Object.fromEntries(Object.keys(allowed).map((key) => [key, normalized[key]]));
-    update.updatedAt = firebase.firestore.Timestamp.now();
-    await fire.firestore().collection('users').doc(userId).collection('jobTracker').doc(jobId).update(update);
-    return update;
+    const reference = fire.firestore().collection('users').doc(userId).collection('jobTracker').doc(jobId);
+    let result;
+    await fire.firestore().runTransaction(async transaction => {
+        const snapshot = await transaction.get(reference);
+        if (!snapshot.exists) throw new Error('Tracked job not found.');
+        const revision = Number(snapshot.data()?.revision || 0);
+        if (expectedRevision !== null && Number(expectedRevision) !== revision) { const error = new Error('This tracked job changed elsewhere. Refresh before saving.'); error.code = 'TRACKER_CONFLICT'; throw error; }
+        const update = Object.fromEntries(Object.keys(allowed).map(key => [key, normalized[key]]));
+        update.revision = revision + 1; update.updatedAt = firebase.firestore.Timestamp.now();
+        transaction.update(reference, update); result = update;
+    });
+    return result;
 }
 
-export async function deleteTrackedJob(userId, jobId) {
+export async function deleteTrackedJob(userId, jobId, expectedRevision = null) {
     if (!userId || !jobId) throw new Error('A tracked job and authenticated user are required');
-    await fire.firestore().collection('users').doc(userId).collection('jobTracker').doc(jobId).delete();
+    const reference = fire.firestore().collection('users').doc(userId).collection('jobTracker').doc(jobId);
+    await fire.firestore().runTransaction(async transaction => {
+        const snapshot = await transaction.get(reference);
+        if (!snapshot.exists) throw new Error('Tracked job not found.');
+        const revision = Number(snapshot.data()?.revision || 0);
+        if (expectedRevision !== null && Number(expectedRevision) !== revision) { const error = new Error('This tracked job changed elsewhere. Refresh before deleting.'); error.code = 'TRACKER_CONFLICT'; throw error; }
+        transaction.delete(reference);
+    });
     return true;
 }
 
@@ -2504,14 +2519,6 @@ export async function setSubscriptionsData(state, month, quartarly, yearly, only
     });
     const result = await response.json().catch(() => ({}));
     if (!response.ok || !result.success) throw new Error(result.error || 'Unable to save payment settings.');
-    try {
-        if (typeof window !== 'undefined') {
-            // Cache only the backend-curated public projection; never persist secrets.
-            localStorage.setItem('subscriptions_cache', JSON.stringify(result.settings || {}));
-        }
-    } catch (error) {
-        console.warn('Could not cache public subscription settings:', error);
-    }
     return result;
 }
 
@@ -2544,51 +2551,21 @@ function redactSubscriptionSecrets(value = {}) {
 }
 
 export async function getSubscriptionStatus() {
-    let localCache = null;
-    try {
-        const raw = typeof window !== 'undefined' ? localStorage.getItem('subscriptions_cache') : null;
-        if (raw) {
-            localCache = redactSubscriptionSecrets(JSON.parse(raw));
-            localStorage.setItem('subscriptions_cache', JSON.stringify(localCache));
-        }
-    } catch (e) {
-        console.warn('Could not read subscriptions_cache from localStorage:', e);
-    }
-
-    const res = await safeDbOperation(async () => {
-        const db = fire.firestore();
-        const userRef = db.collection('data').doc('public_config');
-        const snapshot = await userRef.get();
-        if (snapshot && snapshot.exists) {
-            const data = redactSubscriptionSecrets(snapshot.data()?.subscriptions || {});
-            return {
-                ...(localCache || {}),
-                ...data
-            };
-        }
-        return localCache;
-    }, false);
-
-    return res || localCache || {
-        state: true,
-        monthlyPrice: 199,
-        quartarlyPrice: 399,
-        yearlyPrice: 499,
-        onlyPP: false,
-        currency: 'INR',
-        razorpayUPI: true,
-        stripeEnabled: true,
-        paypalEnabled: true,
-        razorpayEnabled: true,
-        sandboxMode: false,
-        enableTax: true,
-        taxName: 'GST',
-        taxRate: 18,
-        taxInclusive: false,
-        companyTaxId: '27AAAAA0000A1Z5',
-        requireCustomerTaxId: false,
-        receiptTemplate: 'modern',
+    const defaults = {
+        state: true, monthlyPrice: 199, quartarlyPrice: 399, yearlyPrice: 499,
+        onlyPP: false, currency: 'INR', razorpayUPI: false,
+        stripeEnabled: false, paypalEnabled: false, razorpayEnabled: false,
+        paytmEnabled: false, phonepeEnabled: false, sandboxMode: true,
+        enableTax: true, taxName: 'GST', taxRate: 18, taxInclusive: false,
+        companyTaxId: '', requireCustomerTaxId: false, receiptTemplate: 'modern',
     };
+    try {
+        const snapshot = await fire.firestore().collection('data').doc('public_config').get();
+        return snapshot.exists ? { ...defaults, ...redactSubscriptionSecrets(snapshot.data()?.subscriptions || {}) } : defaults;
+    } catch (error) {
+        console.warn('Public subscription configuration unavailable:', error.message);
+        return defaults;
+    }
 }
 
 // Re-authenticate user with password
@@ -2629,10 +2606,9 @@ export async function updateUserEmail(currentPassword, newEmail) {
         await reauthenticateUser(currentPassword);
     }
     await user.updateEmail(newEmail);
+    await user.getIdToken(true);
     const db = fire.firestore();
-    await db.collection('users').doc(user.uid).update({
-        email: newEmail
-    }).catch(() => {});
+    await db.collection('users').doc(user.uid).update({ email: newEmail });
     return true;
 }
 
@@ -2648,7 +2624,7 @@ export async function deleteUserAccountPermanently(currentPassword) {
     const result = await response.json().catch(() => ({}));
     if (!response.ok || !result.success) throw new Error(result.error || 'Unable to delete account.');
     await fire.auth().signOut().catch(() => {});
-    return true;
+    return result;
 }
 
 // Export all user data as JSON (GDPR Compliant Data Portability)
@@ -2680,13 +2656,18 @@ export async function exportUserDataJSON(uid) {
         console.warn('Transactions export notice:', e);
     }
 
+    const readOwned = async (collection, field) => {
+        try { const snapshot = await db.collection(collection).where(field, '==', uid).get(); return snapshot.docs.map(document => ({ id: document.id, ...document.data() })); }
+        catch { return []; }
+    };
+    const [portfolios, publishedPortfolios, blogPosts, jobApplications, jobs, companies] = await Promise.all([
+        readOwned('portfolios', 'userId'), readOwned('pb', 'ownerUid'), readOwned('blog_posts', 'authorUid'),
+        readOwned('jobApplications', 'userId'), readOwned('jobs', 'employerId'), readOwned('companies', 'employerId'),
+    ]);
     return {
-        exportDate: new Date().toISOString(),
-        userId: uid,
-        profile: profile,
-        resumes: resumes,
-        coverLetters: coverLetters,
-        transactions: transactions
+        exportDate: new Date().toISOString(), userId: uid, profile,
+        resumes, coverLetters, portfolios, publishedPortfolios, blogPosts, jobApplications, jobs, companies, transactions,
+        note: 'Provider-held identity, payment-provider records, security audit logs, and legally retained billing records require provider/support export channels.'
     };
 }
 
@@ -2910,15 +2891,12 @@ export async function getFrontendStats() {
 }
 
 // Set frontend stats for landing pages
-export async function setFrontendStats(stats) {
-    const db = fire.firestore();
-    const statsRef = db.collection('data').doc('frontendstats');
+export async function setFrontendStats(stats, expectedRevision = 0) {
     try {
-        await statsRef.set(stats);
-        return { success: true };
-    } catch (error) {
-        return { success: false, message: error.message };
-    }
+        const response = await fetch('/api/admin/landing-content', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: stats, expectedRevision }) });
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success ? result : { success: false, message: result.error || 'Unable to save landing content.', code: result.code };
+    } catch (error) { return { success: false, message: error.message }; }
 }
 // Get ads
 export async function getAds() {
@@ -4618,24 +4596,24 @@ export async function getStatesOfUser(uid) {
 }
 
 // a function that take data url and add image to firebase /users/uid/profile
-export async function uploadImageToFirebase(dataUrl, uid) {
+export async function uploadImageToFirebase(dataUrl, uid, expectedRevision = null) {
     const db = fire.firestore();
-    const userRef = await db.collection('users').doc(uid);
-    const user = await userRef.get();
-    if (user.exists) {
-        var profile = user.data().profile;
-        if (profile == undefined) {
-            profile = {};
-        }
-        // Save under 'selectedImage' — consistent with the front-end state key
-        profile.selectedImage = dataUrl;
-        userRef.set(
-            {
-                profile: profile,
-            },
-            { merge: true }
-        );
-    }
+    const reference = db.collection('users').doc(uid);
+    let result;
+    try {
+        await db.runTransaction(async transaction => {
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists) throw new Error('Profile not found.');
+            const current = normalizeProfileData(snapshot.data()?.profile || {});
+            if (expectedRevision !== null && Number(expectedRevision) !== current.revision) { const error = new Error('Profile changed elsewhere. Reload before replacing the avatar.'); error.code = 'PROFILE_CONFLICT'; error.remoteRevision = current.revision; throw error; }
+            const selectedImage = normalizeProfileData({ selectedImage: dataUrl }).selectedImage;
+            if (!selectedImage) throw new Error('Avatar must be a bounded PNG, JPEG, or WebP image.');
+            const profile = { ...current, selectedImage, revision: current.revision + 1 };
+            transaction.set(reference, { profile }, { merge: true });
+            result = { success: true, revision: profile.revision, selectedImage };
+        });
+        return result;
+    } catch (error) { return { success: false, error: error.message, code: error.code, remoteRevision: error.remoteRevision }; }
 }
 
 // create a function that take as a parameters uid,field,value
@@ -4685,26 +4663,53 @@ export async function getProfileOfUser(uid) {
 // country: '',
 // selectedImage: null
 
-export async function addProfileToUser(uid, profile) {
+export async function addProfileToUser(uid, profile, expectedRevision = null) {
+    if (!profileFitsFirestore(profile)) return { success: false, error: 'Profile is too large to save.' };
     const db = fire.firestore();
-    const userRef = await db.collection('users').doc(uid);
-    const user = await userRef.get();
-    if (user.exists) {
-        userRef.set(
-            {
-                profile: profile,
-            },
-            { merge: true }
-        );
-        return true;
-    } else {
-        return false;
-    }
+    const reference = db.collection('users').doc(uid);
+    let result;
+    try {
+        await db.runTransaction(async transaction => {
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists) throw new Error('Profile not found.');
+            const current = normalizeProfileData(snapshot.data()?.profile || {});
+            if (expectedRevision !== null && Number(expectedRevision) !== current.revision) { const error = new Error('Profile changed in another tab or device.'); error.code = 'PROFILE_CONFLICT'; error.remoteRevision = current.revision; throw error; }
+            const normalized = normalizeProfileData(profile);
+            normalized.revision = current.revision + 1;
+            transaction.set(reference, { profile: normalized }, { merge: true });
+            result = { success: true, revision: normalized.revision, profile: normalized };
+        });
+        return result;
+    } catch (error) { return { success: false, error: error.message, code: error.code, remoteRevision: error.remoteRevision }; }
 }
 
 // get account info
 
 // /users/uid
+
+export async function saveUserPreferences(uid, preferences, expectedRevision = 0) {
+    const allowedLanguages = ['en','hi','es','fr','de','it','pt','nl','pl','ru','ja','ko','zh','ar','tr','sv','da','no','fi','is','ro','el'];
+    const normalized = {
+        language: allowedLanguages.includes(preferences?.language) ? preferences.language : 'en',
+        emailNotifications: preferences?.emailNotifications !== false,
+        securityNotifications: preferences?.securityNotifications !== false,
+        productUpdates: preferences?.productUpdates === true,
+        profileDiscoverable: preferences?.profileDiscoverable === true,
+    };
+    const reference = fire.firestore().collection('users').doc(uid);
+    try {
+        let revision;
+        await fire.firestore().runTransaction(async transaction => {
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists) throw new Error('Account not found.');
+            const currentRevision = Number(snapshot.data()?.preferences?.revision || 0);
+            if (Number(expectedRevision) !== currentRevision) { const error = new Error('Preferences changed elsewhere. Reload before saving.'); error.code = 'PREFERENCES_CONFLICT'; throw error; }
+            revision = currentRevision + 1;
+            transaction.set(reference, { preferences: { ...normalized, revision } }, { merge: true });
+        });
+        return { success: true, preferences: { ...normalized, revision } };
+    } catch (error) { return { success: false, error: error.message, code: error.code }; }
+}
 
 export async function getAccountInfo(uid) {
     const db = fire.firestore();
@@ -4797,43 +4802,37 @@ export async function addReview(review) {
 
 // add a trusted by
 
-export async function addTrustedBy(trustedBy) {
-    const db = fire.firestore();
-    const trustedByRef = await db.collection('trustedBy').doc();
-    trustedByRef.set(trustedBy);
-    return true;
-}
-
-// get trusted by
-
-export async function getTrustedBy() {
-    const db = fire.firestore();
-    const trustedByRef = await db.collection('trustedBy').get();
-    const trustedBy = trustedByRef.docs.map((doc) => doc.data());
-    return trustedBy;
-}
-
-// remove trusted by where id ==
-
-export async function removeTrustedBy(id) {
+export async function addTrustedBy(data) {
     try {
-        const db = fire.firestore();
-        const trustedByRef = await db.collection('trustedBy').where('id', '==', id).get();
-        trustedByRef.docs.forEach((doc) => doc.ref.delete());
-        return true;
-    } catch (error) {
-        console.log(error);
-        return false;
-    }
+        const response = await fetch('/api/admin/trusted-by', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success ? result : { success: false, error: result.error || 'Unable to add logo.' };
+    } catch (error) { return { success: false, error: error.message }; }
 }
 
-// update trusted by  we need to use where id ==
+export async function getTrustedBy({ includeUnpublished = false } = {}) {
+    const snapshot = await fire.firestore().collection('trustedBy').get();
+    return snapshot.docs.map(document => {
+        const data = document.data() || {};
+        return { id: document.id, ...data, revision: Number(data.revision || 0) };
+    }).filter(item => includeUnpublished || item.published !== false)
+      .sort((a, b) => Number(a.order || 0) - Number(b.order || 0) || String(a.name || '').localeCompare(String(b.name || '')));
+}
 
-export async function updateTrustedBy(id, trustedBy) {
-    const db = fire.firestore();
-    const trustedByRef = await db.collection('trustedBy').where('id', '==', id).get();
-    trustedByRef.docs.forEach((doc) => doc.ref.update(trustedBy));
-    return true;
+export async function removeTrustedBy(id, expectedRevision = 0) {
+    try {
+        const response = await fetch(`/api/admin/trusted-by/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expectedRevision }) });
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success ? result : { success: false, error: result.error || 'Unable to delete logo.', code: result.code };
+    } catch (error) { return { success: false, error: error.message }; }
+}
+
+export async function updateTrustedBy(id, data, expectedRevision = 0) {
+    try {
+        const response = await fetch(`/api/admin/trusted-by/${encodeURIComponent(id)}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...data, expectedRevision }) });
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success ? result : { success: false, error: result.error || 'Unable to update logo.', code: result.code };
+    } catch (error) { return { success: false, error: error.message }; }
 }
 
 // add global rating to a /data/meta
@@ -6081,166 +6080,33 @@ export async function saveSystemSettings(category, data) {
 }
 
 export async function getAllAdminTransactions() {
-    try {
-        const db = fire.firestore();
-        const invoices = [];
-        const seenTxnIds = new Set();
-
-        // Authoritative provider orders are the primary billing ledger.
-        try {
-            const ordersSnap = await db.collection('payment_orders').orderBy('createdAt', 'desc').limit(200).get();
-            for (const orderDoc of ordersSnap.docs) {
-                const data = orderDoc.data();
-                if (seenTxnIds.has(orderDoc.id)) continue;
-                seenTxnIds.add(orderDoc.id);
-                let customerEmail = '';
-                let customerName = '';
-                try {
-                    const user = await db.collection('users').doc(data.uid).get();
-                    customerEmail = user.data()?.email || '';
-                    customerName = user.data()?.displayName || customerEmail.split('@')[0] || data.uid;
-                } catch (_) {}
-                invoices.push({
-                    docId: orderDoc.id,
-                    transactionId: data.providerPaymentId || data.providerOrderId || orderDoc.id,
-                    userId: data.uid,
-                    customerEmail,
-                    customerName,
-                    planType: data.planId || 'Plan',
-                    paimentType: data.provider || 'Payment provider',
-                    price: Number(data.amount || 0) / 100,
-                    currency: data.currency || 'INR',
-                    subtotal: Number(data.amount || 0) / 100,
-                    taxAmount: 0,
-                    status: data.status === 'ACTIVE' ? 'Completed' : (data.status === 'REFUNDED' ? 'Refunded' : data.status),
-                    created_at: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString()
-                });
-            }
-        } catch (error) {
-            console.warn('Payment orders query error:', error);
-        }
-
-        // Legacy global transaction records
-        try {
-            const txnsSnap = await db.collection('transactions').orderBy('created_at', 'desc').limit(200).get();
-            txnsSnap.forEach(doc => {
-                const data = doc.data();
-                const id = data.transactionId || doc.id;
-                if (!seenTxnIds.has(id)) {
-                    seenTxnIds.add(id);
-
-                    let status = 'Completed';
-                    const rawStatus = (data.status || data.paymentStatus || '').toUpperCase();
-                    if (rawStatus === 'REFUNDED') status = 'Refunded';
-                    else if (rawStatus === 'FAILED' || rawStatus === 'CANCELLED' || rawStatus === 'DECLINED') status = 'Failed';
-                    else if (rawStatus === 'PENDING' || rawStatus === 'INITIATED') status = 'Pending';
-                    else if (rawStatus === 'COMPLETED' || rawStatus === 'SUCCESS' || rawStatus === 'PAID') status = 'Completed';
-
-                    invoices.push({
-                        docId: doc.id,
-                        ...data,
-                        status: status,
-                        created_at: data.created_at ? (data.created_at.toDate ? data.created_at.toDate().toISOString() : data.created_at) : new Date().toISOString()
-                    });
-                }
-            });
-        } catch (e) {
-            console.warn('Global transactions collection query error:', e);
-        }
-
-        // 2. Fetch from global 'subscriptions' collection
-        try {
-            const subsSnap = await db.collection('subscriptions').limit(200).get();
-            subsSnap.forEach(doc => {
-                const data = doc.data();
-                const id = data.transactionId || `SUB_${doc.id}`;
-                if (!seenTxnIds.has(id)) {
-                    seenTxnIds.add(id);
-
-                    let status = 'Completed';
-                    const rawStatus = (data.status || data.paymentStatus || '').toUpperCase();
-                    if (rawStatus === 'REFUNDED') status = 'Refunded';
-                    else if (rawStatus === 'FAILED' || rawStatus === 'CANCELLED') status = 'Failed';
-                    else if (rawStatus === 'PENDING') status = 'Pending';
-
-                    invoices.push({
-                        docId: doc.id,
-                        transactionId: id,
-                        userId: data.userId,
-                        planType: data.type || 'Pro Plan',
-                        paimentType: data.paimentType || 'Card/UPI',
-                        price: data.price || 199,
-                        currency: data.currency || 'INR',
-                        subtotal: data.price || 199,
-                        taxAmount: 0,
-                        status: status,
-                        created_at: data.created_at ? (data.created_at.toDate ? data.created_at.toDate().toISOString() : data.created_at) : new Date().toISOString()
-                    });
-                }
-            });
-        } catch (e) {
-            console.warn('Global subscriptions collection query error:', e);
-        }
-
-        // 3. Scan 'users' collection to capture all user transactions
-        try {
-            const usersSnap = await db.collection('users').get();
-            for (const userDoc of usersSnap.docs) {
-                const uData = userDoc.data();
-                const uid = userDoc.id;
-                
-                if (uData.lastPaymentAmount || uData.membership === 'Premium') {
-                    const fallbackTxnId = `TXN_${uData.lastPaymentDate ? (uData.lastPaymentDate.toMillis ? uData.lastPaymentDate.toMillis() : Date.now()) : Date.now()}_${uid.substring(0,5).toUpperCase()}`;
-                    if (!seenTxnIds.has(fallbackTxnId)) {
-                        seenTxnIds.add(fallbackTxnId);
-
-                        let status = 'Failed';
-                        const rawStatus = (uData.paymentStatus || uData.lastPaymentStatus || uData.status || '').toUpperCase();
-                        
-                        if (rawStatus === 'REFUNDED') {
-                            status = 'Refunded';
-                        } else if (rawStatus === 'ACTIVE' || rawStatus === 'PAID' || rawStatus === 'SUCCESS' || rawStatus === 'COMPLETED') {
-                            status = 'Completed';
-                        } else if (rawStatus === 'FAILED' || rawStatus === 'CANCELLED' || rawStatus === 'DECLINED') {
-                            status = 'Failed';
-                        } else if (rawStatus === 'PENDING' || rawStatus === 'INITIATED') {
-                            status = 'Pending';
-                        } else if (uData.membership === 'Premium' && uData.lastPaymentAmount > 0) {
-                            status = 'Completed';
-                        } else {
-                            status = 'Failed';
-                        }
-
-                        const displayName = uData.name || uData.displayName || (uData.email ? uData.email.split('@')[0] : `Candidate (${uid.substring(0,6)})`);
-
-                        invoices.push({
-                            docId: `USR_${uid}`,
-                            transactionId: fallbackTxnId,
-                            userId: uid,
-                            customerName: displayName,
-                            customerEmail: uData.email || '',
-                            customerGstin: uData.gstin || '',
-                            planType: uData.membership || 'Pro',
-                            paimentType: uData.lastPaymentGateway || 'Razorpay UPI',
-                            price: uData.lastPaymentAmount || 199,
-                            currency: uData.lastPaymentCurrency || 'INR',
-                            subtotal: uData.lastPaymentAmount || 199,
-                            taxAmount: 0,
-                            status: status,
-                            created_at: uData.lastPaymentDate ? (uData.lastPaymentDate.toDate ? uData.lastPaymentDate.toDate().toISOString() : uData.lastPaymentDate) : new Date().toISOString()
-                        });
-                    }
-                }
-            }
-        } catch (e) {
-            console.warn('Users scanner error:', e);
-        }
-
-        return invoices;
-    } catch (err) {
-        console.error('getAllAdminTransactions error:', err);
-        return [];
+    const db = fire.firestore();
+    const records = [];
+    const seen = new Set();
+    const statusLabel = raw => {
+        const status = String(raw || 'UNKNOWN').toUpperCase();
+        return status === 'ACTIVE' ? 'Completed' : status === 'REFUNDED' ? 'Refunded' : ['FAILED','CANCELLED','DECLINED'].includes(status) ? 'Failed' : ['PENDING','PENDING_PAYMENT','PAYMENT_CREATED','INITIATED'].includes(status) ? 'Pending' : ['PAID','SUCCESS','COMPLETED'].includes(status) ? 'Completed' : 'Unknown';
+    };
+    const dateValue = value => { const candidate = value?.toDate?.() || (value ? new Date(value) : null); return candidate && Number.isFinite(candidate.getTime?.()) ? candidate.toISOString() : null; };
+    const [ordersResult, invoicesResult, legacyResult] = await Promise.allSettled([
+        db.collection('payment_orders').orderBy('createdAt', 'desc').limit(200).get(),
+        db.collection('invoices').orderBy('createdAt', 'desc').limit(200).get(),
+        db.collection('transactions').orderBy('created_at', 'desc').limit(200).get(),
+    ]);
+    if (ordersResult.status === 'fulfilled') for (const document of ordersResult.value.docs) {
+        const data = document.data() || {}; seen.add(document.id);
+        records.push({ docId: document.id, source: 'payment_orders', transactionId: data.providerPaymentId || data.providerOrderId || document.id, providerReference: data.providerPaymentId || data.providerOrderId || '', userId: data.uid || '', customerEmail: data.customerEmail || '', customerName: data.customerName || '', customerGstin: data.customerGstin || '', planType: data.planId || 'Unknown', paimentType: data.provider || 'Unknown', price: Number(data.amount || 0) / 100, originalAmount: Number(data.originalAmount || data.amount || 0) / 100, discountAmount: Number(data.couponDiscount || 0) / 100, currency: String(data.currency || 'UNKNOWN').toUpperCase(), subtotal: Number(data.subtotal ?? data.amount ?? 0) / 100, taxAmount: Number(data.taxAmount || 0) / 100, taxRate: Number(data.taxRate || 0), sacCode: data.sacCode || '', invoiceNumber: data.invoiceNumber || '', status: statusLabel(data.status), rawStatus: String(data.status || 'UNKNOWN'), created_at: dateValue(data.createdAt), refundedAt: dateValue(data.refundedAt), refundReason: data.refundReason || '' });
     }
+    if (invoicesResult.status === 'fulfilled') for (const document of invoicesResult.value.docs) {
+        const data = document.data() || {}; const id = data.paymentOrderId || data.transactionId || document.id; if (seen.has(id)) continue; seen.add(id);
+        records.push({ docId: data.paymentOrderId || document.id, source: 'invoices', transactionId: data.transactionId || id, providerReference: data.providerReference || '', userId: data.userId || '', customerEmail: data.customerEmail || '', customerName: data.customerName || '', customerGstin: data.customerGstin || '', planType: data.planId || data.planType || 'Unknown', paimentType: data.provider || data.paymentProvider || 'Unknown', price: Number(data.total ?? data.amount ?? 0), originalAmount: Number(data.originalAmount ?? data.total ?? data.amount ?? 0), discountAmount: Number(data.discountAmount || 0), currency: String(data.currency || 'UNKNOWN').toUpperCase(), subtotal: Number(data.subtotal || 0), taxAmount: Number(data.taxAmount || 0), taxRate: Number(data.taxRate || 0), sacCode: data.sacCode || '', invoiceNumber: data.invoiceNumber || document.id, status: statusLabel(data.status || data.paymentStatus), rawStatus: String(data.status || data.paymentStatus || 'UNKNOWN'), created_at: dateValue(data.createdAt || data.created_at), refundedAt: dateValue(data.refundedAt), refundReason: data.refundReason || '' });
+    }
+    if (legacyResult.status === 'fulfilled') for (const document of legacyResult.value.docs) {
+        const data = document.data() || {}; const id = data.transactionId || document.id; if (seen.has(id)) continue; seen.add(id);
+        records.push({ docId: document.id, source: 'legacy_transactions', transactionId: id, providerReference: data.providerReference || '', userId: data.userId || '', customerEmail: data.customerEmail || '', customerName: data.customerName || '', customerGstin: data.customerGstin || '', planType: data.planType || data.type || 'Unknown', paimentType: data.provider || data.paimentType || 'Unknown', price: Number(data.total ?? data.price ?? data.amount ?? 0), originalAmount: Number(data.originalAmount ?? data.total ?? data.price ?? data.amount ?? 0), discountAmount: Number(data.discountAmount || 0), currency: String(data.currency || 'UNKNOWN').toUpperCase(), subtotal: Number(data.subtotal ?? data.price ?? 0), taxAmount: Number(data.taxAmount || 0), taxRate: Number(data.taxRate || 0), sacCode: data.sacCode || '', invoiceNumber: data.invoiceNumber || '', status: statusLabel(data.status || data.paymentStatus), rawStatus: String(data.status || data.paymentStatus || 'UNKNOWN'), created_at: dateValue(data.created_at || data.createdAt), refundedAt: dateValue(data.refundedAt), refundReason: data.refundReason || '' });
+    }
+    if ([ordersResult, invoicesResult, legacyResult].every(result => result.status === 'rejected')) throw new Error('Billing ledgers are unavailable.');
+    return records.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
 }
 
 export async function refundOrderTransaction(docId, _transactionId, _userId, reason = 'Customer requested refund') {

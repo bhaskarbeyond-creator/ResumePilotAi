@@ -139,6 +139,66 @@ test('contact messages expose truthful loading, error, search, filter, paginatio
   assert.match(operations, /id: document\.id/);
 });
 
+test('Trusted By lifecycle is revisioned, publish-aware, audited, sanitized, and backend-only', async () => {
+  const [adminView, publicView, operations, backend, rules] = await Promise.all([
+    fs.readFile('src/components/admin/TrustedBy/TrustedBy.jsx', 'utf8'),
+    fs.readFile('src/components/Dashboard2/elements/HomepageTrustedBy.jsx', 'utf8'),
+    fs.readFile('src/firestore/dbOperations.js', 'utf8'),
+    fs.readFile('backend/index.js', 'utf8'),
+    fs.readFile('SecurityRules.txt', 'utf8'),
+  ]);
+  assert.match(adminView, /role="alertdialog"/);
+  assert.match(adminView, /Private draft/);
+  assert.match(publicView, /sanitizeImageUrl/);
+  assert.match(operations, /includeUnpublished/);
+  assert.match(backend, /TRUSTED_LOGO_CREATED/);
+  assert.match(backend, /TRUSTED_LOGO_UPDATED/);
+  assert.match(backend, /TRUSTED_LOGO_DELETED/);
+  assert.match(rules, /match \/trustedBy\/\{id\}[^\n]+allow write: if false/);
+});
+
+test('landing marketing content is honestly labelled, revisioned, confirmed, audited, and backend-only', async () => {
+  const [view, operations, backend, rules] = await Promise.all([
+    fs.readFile('src/components/admin/landingPages/LandingPages.jsx', 'utf8'),
+    fs.readFile('src/firestore/dbOperations.js', 'utf8'),
+    fs.readFile('backend/index.js', 'utf8'),
+    fs.readFile('SecurityRules.txt', 'utf8'),
+  ]);
+  assert.match(view, /not live operational statistics/);
+  assert.match(view, /role="alertdialog"/);
+  assert.match(operations, /expectedRevision/);
+  assert.match(backend, /LANDING_CONTENT_UPDATED/);
+  assert.match(rules, /id != 'frontendstats'/);
+});
+
+test('billing admin uses authoritative ledgers without inferred user/subscription payments or fabricated invoices', async () => {
+  const [operations, invoices, backend] = await Promise.all([
+    fs.readFile('src/firestore/dbOperations.js', 'utf8'),
+    fs.readFile('src/components/admin/settings/subscriptionsSettings.jsx', 'utf8'),
+    fs.readFile('backend/index.js', 'utf8'),
+  ]);
+  const ledger = operations.match(/export async function getAllAdminTransactions\(\)[\s\S]*?export async function refundOrderTransaction/)?.[0] || '';
+  assert.match(ledger, /payment_orders/);
+  assert.match(ledger, /collection\('invoices'\)/);
+  assert.doesNotMatch(ledger, /collection\('users'\)|collection\('subscriptions'\)|price \|\| 199|Date\.now/);
+  assert.doesNotMatch(operations, /subscriptions_cache/);
+  assert.match(invoices, /Server-Verified Payment Receipt/);
+  assert.match(invoices, /inv\.source === 'payment_orders'/);
+  assert.match(invoices, /Multiple currencies/);
+  assert.match(backend, /order\.status !== 'ACTIVE'/);
+});
+
+test('maintenance configuration is enforced by the web shell with a claim-based admin bypass', async () => {
+  const [main, health] = await Promise.all([
+    fs.readFile('src/main.jsx', 'utf8'),
+    fs.readFile('src/components/admin/settings/SystemHealthSettings.jsx', 'utf8'),
+  ]);
+  assert.match(main, /maintenance\.enabled && !maintenance\.admin/);
+  assert.match(main, /getIdTokenResult/);
+  assert.match(main, /startsWith\('\/adm'\)/);
+  assert.match(health, /web shell blocks non-admin routes/);
+});
+
 test('user CSV export neutralizes spreadsheet formulas', async () => {
   const users = await fs.readFile('src/components/admin/usersManager/UsersManager.jsx', 'utf8');
   assert.match(users, /\^\[=\+\\-@\]/);

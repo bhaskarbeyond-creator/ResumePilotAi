@@ -2,7 +2,7 @@ import { writeSanitizedPrintDocument } from '../../../utils/sanitizeHtml';
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { uploadImageToFirebase, getProfileOfUser, addProfileToUser, getAccountInfo, changePassword, updateUserEmail, getSystemSettings, getWebsiteData, getSubscriptionStatus, getUserTransactions, deleteUserAccountPermanently, exportUserDataJSON, beginUserTotp2FA, saveUserTotp2FA, disableUserTotp2FA, getUserTotpStatus, reauthenticateUser, recordUserLoginEvent, getUserLoginHistory, sendSmsNotification } from '../../../firestore/dbOperations';
+import { uploadImageToFirebase, getProfileOfUser, addProfileToUser, getAccountInfo, saveUserPreferences, changePassword, updateUserEmail, getWebsiteData, getSubscriptionStatus, getUserTransactions, deleteUserAccountPermanently, exportUserDataJSON, beginUserTotp2FA, saveUserTotp2FA, disableUserTotp2FA, getUserTotpStatus, reauthenticateUser, recordUserLoginEvent, getUserLoginHistory, sendSmsNotification } from '../../../firestore/dbOperations';
 import { generateUserAiContent, cleanSkillName } from '../../../services/aiService';
 import { FaUser, FaCog, FaCamera, FaTrash, FaUserCircle, FaKey, FaCalendarAlt, FaEnvelope, FaCreditCard, FaUpload, FaCheckCircle, FaExclamationTriangle, FaBriefcase, FaGraduationCap, FaTools, FaGlobe, FaPlus, FaCheck, FaShieldAlt, FaDesktop, FaDownload, FaCertificate, FaProjectDiagram, FaMagic, FaLinkedin, FaGithub, FaLink, FaSyncAlt, FaExternalLinkAlt, FaUnlink, FaLock, FaEye, FaEyeSlash, FaCrown, FaMobileAlt, FaQrcode, FaCopy, FaPrint, FaHistory } from 'react-icons/fa';
 import fire from '../../../conf/fire';
@@ -13,9 +13,10 @@ import AutocompleteInputField from '../../BuildResume/steps/components/Autocompl
 import ImageCropModal from './ImageCropModal';
 import SubscriptionModal from './SubscriptionModal';
 import { inferCountryFromCity } from '../../../utils/locationHelper';
+import { normalizeProfileImage } from '../../../utils/profileData';
 
 function DashboardSettings(props) {
-    const { t } = useTranslation('common');
+    const { i18n } = useTranslation('common');
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -40,6 +41,11 @@ function DashboardSettings(props) {
     const [summaryTone, setSummaryTone] = useState('executive');
     const [skillFilter, setSkillFilter] = useState('all');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [profileSaveState, setProfileSaveState] = useState('loading');
+    const [profileConflict, setProfileConflict] = useState(null);
+    const persistProfileRef = useRef(null);
+    const skipNextAutosaveRef = useRef(false);
+    const loadedProfileUidRef = useRef(null);
     const [isAiGenerating, setIsAiGenerating] = useState(false);
     const aiRequestControllerRef = useRef(null);
     const [toastState, setToastState] = useState(null);
@@ -75,6 +81,8 @@ function DashboardSettings(props) {
     const [deleteInputText, setDeleteInputText] = useState('');
     const [deletePassword, setDeletePassword] = useState('');
     const [userTransactions, setUserTransactions] = useState([]);
+    const [preferences, setPreferences] = useState({ language: 'en', emailNotifications: true, securityNotifications: true, productUpdates: false, profileDiscoverable: false, revision: 0 });
+    const [savingPreferences, setSavingPreferences] = useState(false);
     const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
 
     // TOTP 2FA State Management
@@ -113,6 +121,7 @@ function DashboardSettings(props) {
         languages: [],
         certifications: [],
         projects: [],
+        revision: 0,
     });
 
     const [isDragging, setIsDragging] = useState(false);
@@ -203,11 +212,12 @@ function DashboardSettings(props) {
             const userProfile = await getProfileOfUser(currentUser.uid);
             if (userProfile) {
                 const parts = (userProfile.name || currentUser.displayName || '').split(' ');
+                skipNextAutosaveRef.current = true;
                 setProfile({
                     firstname: userProfile.firstname || parts[0] || '',
                     lastname: userProfile.lastname || parts.slice(1).join(' ') || '',
                     name: userProfile.name || currentUser.displayName || '',
-                    email: userProfile.email || currentUser.email || '',
+                    email: currentUser.email || userProfile.email || '',
                     phone: userProfile.phone || '',
                     address: userProfile.address || '',
                     city: userProfile.city || '',
@@ -227,7 +237,9 @@ function DashboardSettings(props) {
                     languages: normalizeLanguages(userProfile.languages),
                     certifications: normalizeCertifications(userProfile.certifications),
                     projects: normalizeProjects(userProfile.projects),
+                    revision: Number(userProfile.revision) || 0,
                 });
+                setProfileSaveState('saved');
             }
         }
     };
@@ -244,6 +256,7 @@ function DashboardSettings(props) {
                             membership: accInfo.membership || 'Basic',
                             membershipEnds: accInfo.membershipEnds || '',
                         });
+                        setPreferences(current => ({ ...current, ...(accInfo.preferences || {}), revision: Number(accInfo.preferences?.revision || 0) }));
                     }
                     const txns = await getUserTransactions(currentUser.uid);
                     setUserTransactions(txns);
@@ -453,9 +466,17 @@ function DashboardSettings(props) {
     };
 
     useEffect(() => {
-        getProfileOfUserFront();
-        getAccountInfoFront();
-    }, []);
+        const unsubscribe = fire.auth().onAuthStateChanged(async currentUser => {
+            if (!currentUser) { loadedProfileUidRef.current = null; navigate('/'); return; }
+            if (loadedProfileUidRef.current && loadedProfileUidRef.current !== currentUser.uid) {
+                setProfile(current => ({ ...current, firstname: '', lastname: '', name: '', email: '', phone: '', address: '', city: '', postalCode: '', country: '', occupation: '', linkedinUrl: '', githubUrl: '', websiteUrl: '', summary: '', selectedImage: null, workExperiences: [], education: [], skills: [], languages: [], certifications: [], projects: [], revision: 0 }));
+                setUserTransactions([]); setLoginHistory([]); setPreferences({ language: 'en', emailNotifications: true, securityNotifications: true, productUpdates: false, profileDiscoverable: false, revision: 0 }); setProfileConflict(null); setProfileSaveState('loading');
+            }
+            loadedProfileUidRef.current = currentUser.uid;
+            await Promise.all([getProfileOfUserFront(), getAccountInfoFront()]);
+        });
+        return unsubscribe;
+    }, [navigate]);
 
     const handleInputChange = (e) => {
         const field = e.target.name;
@@ -481,21 +502,40 @@ function DashboardSettings(props) {
         setAccountSettings((prev) => ({ ...prev, [field]: value }));
     };
 
-    const handleSubmit = async (e) => {
-        if (e) e.preventDefault();
-        setIsSubmitting(true);
+    const persistProfile = async ({ notify = false } = {}) => {
         const currentUser = fire.auth().currentUser;
-        if (currentUser) {
-            const profileToSave = { ...profile, postalcode: profile.postalCode || '', website: profile.websiteUrl || '' };
-            await addProfileToUser(currentUser.uid, profileToSave);
-            window.dispatchEvent(new CustomEvent('profileUpdated', { detail: profileToSave }));
-            triggerNotification('Master User Profile saved securely! Ready for 1-click Resume & Cover Letter creation.');
+        if (!currentUser) throw new Error('Sign in again before saving your profile.');
+        if (profileConflict) throw new Error('Resolve the newer profile revision before saving.');
+        setProfileSaveState('saving');
+        const profileToSave = { ...profile, postalcode: profile.postalCode || '', website: profile.websiteUrl || '' };
+        const result = await addProfileToUser(currentUser.uid, profileToSave, profile.revision);
+        if (!result.success) {
+            if (result.code === 'PROFILE_CONFLICT') { setProfileConflict({ remoteRevision: result.remoteRevision }); setProfileSaveState('conflict'); }
+            else setProfileSaveState('failed');
+            throw new Error(result.error || 'Profile save failed.');
         }
-        setIsSubmitting(false);
+        skipNextAutosaveRef.current = true;
+        setProfile(result.profile);
+        setProfileSaveState('saved');
+        window.dispatchEvent(new CustomEvent('profileUpdated', { detail: result.profile }));
+        if (notify) triggerNotification('Master Profile saved successfully.');
+        return result;
+    };
+    persistProfileRef.current = persistProfile;
+    const reloadProfileConflict = async () => { setProfileConflict(null); setProfileSaveState('loading'); await getProfileOfUserFront(); triggerNotification('Latest profile loaded.'); };
+    const overwriteProfileConflict = () => { setProfile(current => ({ ...current, revision: profileConflict.remoteRevision })); setProfileConflict(null); setProfileSaveState('pending'); triggerNotification('Conflict acknowledged. Your local profile will save as the next revision.'); };
+
+    const handleSubmit = async (e) => {
+        e?.preventDefault?.();
+        setIsSubmitting(true);
+        try { await persistProfile({ notify: true }); return true; }
+        catch (error) { triggerNotification(error.message || 'Failed to save profile.', 'error'); return false; }
+        finally { setIsSubmitting(false); }
     };
 
     const handleSaveAndNext = async () => {
-        await handleSubmit();
+        const saved = await handleSubmit();
+        if (!saved) return;
         const currentIdx = SUB_TAB_ORDER.indexOf(profileSubTab);
         const nextTab = SUB_TAB_ORDER[currentIdx + 1];
         if (nextTab) {
@@ -528,8 +568,8 @@ function DashboardSettings(props) {
 
             // 2. Password update
             if (isPasswordChanged) {
-                if (accountPasswordState.newPassword.length < 8) {
-                    triggerNotification('New password must be at least 8 characters long.', 'error');
+                if (accountPasswordState.newPassword.length < 12) {
+                    triggerNotification('New password must be at least 12 characters long.', 'error');
                     setIsSubmitting(false);
                     return;
                 }
@@ -558,6 +598,19 @@ function DashboardSettings(props) {
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handlePreferencesSave = async () => {
+        const user = fire.auth().currentUser;
+        if (!user) return;
+        setSavingPreferences(true);
+        const result = await saveUserPreferences(user.uid, preferences, preferences.revision);
+        if (result.success) {
+            setPreferences(result.preferences);
+            if (result.preferences.language && result.preferences.language !== i18n.language) await i18n.changeLanguage(result.preferences.language);
+            triggerNotification('Preferences saved successfully.');
+        } else triggerNotification(result.error || 'Unable to save preferences.', 'error');
+        setSavingPreferences(false);
     };
 
     const handleSendVerificationEmail = async () => {
@@ -603,8 +656,9 @@ function DashboardSettings(props) {
     const handleDeleteAccountConfirmed = async () => {
         try {
             setIsSubmitting(true);
-            await deleteUserAccountPermanently(deletePassword);
-            triggerNotification('Account & all personal data deleted successfully.');
+            const result = await deleteUserAccountPermanently(deletePassword);
+            const retained = result.retainedRecordTypes?.length ? ` Legally/operationally retained records: ${result.retainedRecordTypes.join(', ')}.` : '';
+            triggerNotification(`${result.message}${retained}`);
             setDeleteAccountModalOpen(false);
             setTimeout(() => {
                 window.location.href = '/';
@@ -686,27 +740,16 @@ function DashboardSettings(props) {
     // Automatic background auto-saver for Master Profile Settings
     const isFirstProfileLoadRef = React.useRef(true);
     useEffect(() => {
-        if (isFirstProfileLoadRef.current) {
-            isFirstProfileLoadRef.current = false;
-            return;
-        }
-
+        if (isFirstProfileLoadRef.current) { isFirstProfileLoadRef.current = false; return undefined; }
+        if (skipNextAutosaveRef.current) { skipNextAutosaveRef.current = false; return undefined; }
+        if (profileConflict) return undefined;
+        setProfileSaveState('pending');
         const timer = setTimeout(async () => {
-            const currentUser = fire.auth().currentUser;
-            if (currentUser && profile && Object.keys(profile).length > 0) {
-                try {
-                    const profileToSave = { ...profile, postalcode: profile.postalCode || '', website: profile.websiteUrl || '' };
-                    await addProfileToUser(currentUser.uid, profileToSave);
-                    window.dispatchEvent(new CustomEvent('profileUpdated', { detail: profileToSave }));
-                    console.log('✔ Master User Profile auto-saved background sync completed.');
-                } catch (err) {
-                    console.warn('Master profile auto-save warning:', err);
-                }
-            }
+            try { await persistProfileRef.current?.(); }
+            catch (error) { triggerNotification(error.message || 'Profile autosave failed. Retry with Save.', 'error'); }
         }, 1500);
-
         return () => clearTimeout(timer);
-    }, [profile]);
+    }, [profile, profileConflict]);
 
     // Dynamic Experience Calculator: Merges overlapping work history date intervals into exact total experience span
     const calculateYearsOfExperience = (experiences) => {
@@ -1150,19 +1193,29 @@ function DashboardSettings(props) {
         if (e.target.files && e.target.files[0]) processImageFile(e.target.files[0]);
     };
     const processImageFile = (imageFile) => {
-        // Open crop modal — don't compress until after the user crops
+        if (!['image/png', 'image/jpeg', 'image/webp'].includes(imageFile?.type)) { triggerNotification('Avatar must be a PNG, JPEG, or WebP image.', 'error'); return; }
+        if (imageFile.size > 5 * 1024 * 1024) { triggerNotification('Avatar must be 5 MB or smaller.', 'error'); return; }
         const reader = new FileReader();
+        reader.onerror = () => triggerNotification('Unable to read that image. Try another file.', 'error');
         reader.onloadend = () => setCropModalSrc(reader.result);
         reader.readAsDataURL(imageFile);
     };
     const handleCroppedImage = async (croppedDataUrl) => {
         setCropModalSrc(null);
         const currentUser = fire.auth().currentUser;
-        // Update local state immediately so avatar shows at once
-        setProfile((prev) => ({ ...prev, selectedImage: croppedDataUrl }));
-        if (currentUser) {
-            await uploadImageToFirebase(croppedDataUrl, currentUser.uid);
+        if (!currentUser) { triggerNotification('Sign in again before uploading an avatar.', 'error'); return; }
+        setProfileSaveState('saving');
+        const result = await uploadImageToFirebase(croppedDataUrl, currentUser.uid, profile.revision);
+        if (!result.success) {
+            setProfileSaveState(result.code === 'PROFILE_CONFLICT' ? 'conflict' : 'failed');
+            if (result.code === 'PROFILE_CONFLICT') setProfileConflict({ remoteRevision: result.remoteRevision });
+            triggerNotification(result.error || 'Avatar upload failed.', 'error');
+            return;
         }
+        skipNextAutosaveRef.current = true;
+        setProfile(prev => ({ ...prev, selectedImage: result.selectedImage, revision: result.revision }));
+        setProfileSaveState('saved');
+        triggerNotification('Avatar updated successfully.');
     };
 
     const getPasswordStrength = (password) => {
@@ -1191,17 +1244,17 @@ function DashboardSettings(props) {
                             <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
                                 <div className="relative">
                                     <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-50 to-purple-50 border-2 border-indigo-100 shadow-xs flex items-center justify-center">
-                                        {profile.selectedImage ? (
-                                            <img src={profile.selectedImage} alt="Avatar" className="w-full h-full object-cover" />
+                                        {normalizeProfileImage(profile.selectedImage) ? (
+                                            <img src={normalizeProfileImage(profile.selectedImage)} alt="Profile avatar" className="w-full h-full object-cover" />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-600 to-purple-600 text-white font-extrabold text-xl">
                                                 {candidateFullName ? candidateFullName.charAt(0).toUpperCase() : 'U'}
                                             </div>
                                         )}
                                     </div>
-                                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center shadow-2xs" title="Verified User">
+                                    {fire.auth().currentUser?.emailVerified && <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center shadow-2xs" title="Email verified" aria-label="Email verified">
                                         <FaCheck className="w-2.5 h-2.5 text-white" />
-                                    </div>
+                                    </div>}
                                 </div>
 
                                 {/* Membership Badge — directly UNDER avatar image */}
@@ -1278,9 +1331,11 @@ function DashboardSettings(props) {
                     </div>
                 </div>
 
+                {selectedSettings === 'Profile' && <div className={`rounded-xl border p-3 text-sm ${profileSaveState === 'failed' || profileSaveState === 'conflict' ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-slate-200 bg-white text-slate-600'}`} aria-live="polite"><strong>Profile save:</strong> {profileSaveState === 'saving' ? 'Saving…' : profileSaveState === 'pending' ? 'Pending autosave' : profileSaveState === 'saved' ? 'Saved' : profileSaveState === 'conflict' ? 'Conflict—action required' : profileSaveState === 'failed' ? 'Failed—retry with Save' : 'Loading…'}{profileConflict && <div className="mt-2 flex flex-wrap gap-2"><button type="button" onClick={reloadProfileConflict} className="rounded border border-amber-400 bg-white px-3 py-1">Discard local changes and load latest</button><button type="button" onClick={overwriteProfileConflict} className="rounded bg-amber-800 px-3 py-1 text-white">Overwrite latest with local profile</button></div>}</div>}
+
                 {/* Inline Toast Banner */}
                 {toastState && (
-                    <div className={`p-4 rounded-xl border text-xs font-semibold flex items-center justify-between shadow-xs animate-in fade-in duration-200 ${
+                    <div role={toastState.type === 'error' ? 'alert' : 'status'} aria-live="polite" className={`p-4 rounded-xl border text-xs font-semibold flex items-center justify-between shadow-xs animate-in fade-in duration-200 ${
                         toastState.type === 'error' ? 'bg-red-50 border-red-200 text-red-900' : 'bg-emerald-50 border-emerald-200 text-emerald-900'
                     }`}>
                         <div className="flex items-center gap-2">
@@ -1353,7 +1408,7 @@ function DashboardSettings(props) {
                                             </div>
                                         </div>
                                         <label className="cursor-pointer">
-                                            <input type="file" onChange={handleImageUpload} className="sr-only" accept="image/*" />
+                                            <input type="file" onChange={handleImageUpload} className="sr-only" accept="image/png,image/jpeg,image/webp" />
                                             <span className="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all">
                                                 <FaUpload className="w-3 h-3 mr-2" /> Upload Photo
                                             </span>
@@ -2354,6 +2409,13 @@ function DashboardSettings(props) {
                             )}
                         </div>
 
+                        <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4">
+                            <div><h3 className="text-sm font-bold text-slate-900">Preferences &amp; Privacy</h3><p className="text-xs text-slate-500">These account-scoped choices do not change analytics consent or payment state.</p></div>
+                            <label className="block text-xs font-bold text-slate-700" htmlFor="account-language">Language<select id="account-language" value={preferences.language} onChange={event => setPreferences(current => ({ ...current, language: event.target.value }))} className="mt-1 w-full rounded-xl border border-slate-300 p-3 text-sm font-normal"><option value="en">English</option><option value="hi">हिन्दी</option><option value="es">Español</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="pt">Português</option><option value="it">Italiano</option><option value="nl">Nederlands</option></select></label>
+                            <div className="grid gap-3 sm:grid-cols-2">{[['emailNotifications','Email notifications'],['securityNotifications','Security notifications'],['productUpdates','Product updates'],['profileDiscoverable','Discoverable public profile']].map(([key,label]) => <label key={key} className="flex items-center gap-2 rounded-xl border border-slate-200 p-3 text-xs font-semibold"><input type="checkbox" checked={Boolean(preferences[key])} onChange={event => setPreferences(current => ({ ...current, [key]: event.target.checked }))} />{label}</label>)}</div>
+                            <button type="button" onClick={handlePreferencesSave} disabled={savingPreferences} className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white disabled:opacity-50">{savingPreferences ? 'Saving…' : 'Save preferences'}</button>
+                        </div>
+
                         {/* Card 5: GDPR Data Portability & Export */}
                         <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4">
                             <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
@@ -2363,7 +2425,7 @@ function DashboardSettings(props) {
                                     </div>
                                     <div>
                                         <h3 className="text-sm font-bold text-slate-900">GDPR Data Portability &amp; Backup</h3>
-                                        <p className="text-xs text-slate-500">Download a complete JSON export of your master profile, resumes, cover letters, and payments.</p>
+                                        <p className="text-xs text-slate-500">Download JSON for your profile, resumes, cover letters, Portfolios, CMS posts, employer content, applications, and accessible transactions. Provider-held identity/billing/audit records may require support export channels.</p>
                                     </div>
                                 </div>
                                 <button
@@ -2529,14 +2591,14 @@ function DashboardSettings(props) {
 
         {/* Danger Zone Account Deletion Confirmation Modal */}
         {deleteAccountModalOpen && (
-            <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-                <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4 border border-slate-200">
+            <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4" role="presentation" onKeyDown={event => { if (event.key === 'Escape' && !isSubmitting) setDeleteAccountModalOpen(false); }}>
+                <div role="alertdialog" aria-modal="true" aria-labelledby="delete-account-title" aria-describedby="delete-account-description" className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4 border border-slate-200">
                     <div className="flex items-center gap-3 text-red-600">
                         <FaExclamationTriangle className="w-6 h-6 shrink-0" />
-                        <h3 className="text-base font-bold text-slate-900">Confirm Permanent Account Deletion</h3>
+                        <h3 id="delete-account-title" className="text-base font-bold text-slate-900">Confirm Permanent Account Deletion</h3>
                     </div>
-                    <p className="text-xs text-slate-600 leading-relaxed">
-                        This action is <strong>irreversible</strong>. All your master profile data, AI resume builds, cover letters, and subscription details will be permanently purged from our servers.
+                    <p id="delete-account-description" className="text-xs text-slate-600 leading-relaxed">
+                        This action is <strong>irreversible</strong>. Your identity and owned profile, resume, cover-letter, Portfolio, CMS, employer, job, application, and notification data will be removed. Payment, invoice, transaction, subscription, and security-audit records may be retained for legal, fraud-prevention, and accounting obligations.
                     </p>
                     <div className="space-y-3">
                         {usesPasswordProvider ? (
@@ -2563,6 +2625,7 @@ function DashboardSettings(props) {
                     <div className="flex items-center justify-end gap-2 pt-2">
                         <button
                             type="button"
+                            autoFocus
                             onClick={() => { setDeleteAccountModalOpen(false); setDeleteInputText(''); setDeletePassword(''); }}
                             className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer">
                             Cancel
@@ -2581,8 +2644,8 @@ function DashboardSettings(props) {
 
         {/* TOTP 2FA Setup Wizard Modal */}
         {totpSetupModalOpen && (
-            <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-                <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl space-y-5 border border-slate-200 my-8">
+            <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto" role="presentation" onKeyDown={event => { if (event.key === 'Escape' && !isSubmitting) setTotpSetupModalOpen(false); }}>
+                <div role="dialog" aria-modal="true" aria-labelledby="totp-setup-title" className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl space-y-5 border border-slate-200 my-8">
                     {/* Header */}
                     <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                         <div className="flex items-center gap-2.5">
@@ -2590,7 +2653,7 @@ function DashboardSettings(props) {
                                 <FaQrcode className="w-5 h-5" />
                             </div>
                             <div>
-                                <h3 className="text-base font-bold text-slate-900">Set Up Authenticator App (2FA)</h3>
+                                <h3 id="totp-setup-title" className="text-base font-bold text-slate-900">Set Up Authenticator App (2FA)</h3>
                                 <p className="text-[11px] text-slate-500">Step {totpSetupStep} of 3 • Google Authenticator / Authy</p>
                             </div>
                         </div>
@@ -2709,11 +2772,11 @@ function DashboardSettings(props) {
 
         {/* Disable TOTP 2FA Confirmation Modal */}
         {totpDisableModalOpen && (
-            <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-                <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4 border border-slate-200">
+            <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4" role="presentation" onKeyDown={event => { if (event.key === 'Escape' && !isSubmitting) setTotpDisableModalOpen(false); }}>
+                <div role="alertdialog" aria-modal="true" aria-labelledby="totp-disable-title" className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4 border border-slate-200">
                     <div className="flex items-center gap-3 text-red-600">
                         <FaExclamationTriangle className="w-6 h-6 shrink-0" />
-                        <h3 className="text-base font-bold text-slate-900">Disable Two-Factor Authentication</h3>
+                        <h3 id="totp-disable-title" className="text-base font-bold text-slate-900">Disable Two-Factor Authentication</h3>
                     </div>
                     <p className="text-xs text-slate-600 leading-relaxed">
                         Disabling 2FA reduces your account security. Reauthenticate with your account provider to confirm.

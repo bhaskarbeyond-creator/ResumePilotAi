@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getTrustedBy } from '../../../firestore/dbOperations';
 import { useTranslation } from 'react-i18next';
+import { sanitizeImageUrl } from '../../../utils/sanitizeHtml';
 
 const HomepageCompatibility = () => {
     const { t } = useTranslation('common');
@@ -38,17 +39,17 @@ const HomepageCompatibility = () => {
                                 {/* Animated logo marquee - with duplication for continuous effect */}
                                 <div className={`flex gap-8 items-center ${shouldAnimate ? 'animate-marquee' : 'justify-center w-full'}`}>
                                     {/* Original set of logos */}
-                                    {trustedCompanies.map((company, index) => (
-                                        <div key={`original-${index}`} className="w-[120px] flex-shrink-0">
-                                            <img src={company.imageUrl} alt={company.name} className="object-contain h-12 mx-auto" />
+                                    {trustedCompanies.map((company) => sanitizeImageUrl(company.imageUrl) && (
+                                        <div key={`original-${company.id}`} className="w-[120px] flex-shrink-0">
+                                            <img src={sanitizeImageUrl(company.imageUrl)} alt={`${company.name} logo`} loading="lazy" className="object-contain h-12 mx-auto" />
                                         </div>
                                     ))}
 
                                     {/* Duplicate logos for continuous animation effect when there are enough logos */}
                                     {shouldAnimate &&
-                                        trustedCompanies.map((company, index) => (
-                                            <div key={`duplicate-${index}`} className="w-[120px] flex-shrink-0">
-                                                <img src={company.imageUrl} alt={`${company.name}-dup`} className="object-contain h-12 mx-auto" />
+                                        trustedCompanies.map((company) => sanitizeImageUrl(company.imageUrl) && (
+                                            <div key={`duplicate-${company.id}`} className="w-[120px] flex-shrink-0" aria-hidden="true">
+                                                <img src={sanitizeImageUrl(company.imageUrl)} alt="" loading="lazy" className="object-contain h-12 mx-auto" />
                                             </div>
                                         ))}
                                 </div>

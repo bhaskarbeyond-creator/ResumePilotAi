@@ -2262,6 +2262,19 @@ app.get('/healthz', (req, res) => {
     return res.json({ status: 'ok', firebaseAdminConfigured: Boolean(db && admin) });
 });
 
+app.get('/readyz', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    const firebaseReady = Boolean(db && admin?.auth);
+    return res.status(firebaseReady ? 200 : 503).json({
+        status: firebaseReady ? 'ready' : 'not_ready',
+        checks: {
+            firebaseAdmin: firebaseReady ? 'READY' : 'UNAVAILABLE',
+            aiProviders: 'NOT_CHECKED', paymentProviders: 'NOT_CHECKED', smtp: 'NOT_CHECKED',
+            cmsScheduler: process.env.CMS_SCHEDULER_ENABLED === 'true' ? 'CONFIGURED' : 'DISABLED',
+        },
+    });
+});
+
 
 // Start a listener only for the executable entry point; integration tests import the Express app.
 if (require.main === module) {
@@ -2726,6 +2739,88 @@ function firestoreTimeMillis(value) {
     return date && Number.isFinite(date.getTime()) ? date.getTime() : null;
 }
 
+function normalizeTrustedLogo(input = {}) {
+    const name = String(input.name || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, 120);
+    const rawUrl = String(input.imageUrl || '').trim().slice(0, 2048);
+    let imageUrl = '';
+    if (rawUrl.startsWith('/') && !rawUrl.startsWith('//')) imageUrl = rawUrl;
+    else try { const parsed = new URL(rawUrl); if (parsed.protocol === 'https:' && !parsed.username && !parsed.password) imageUrl = parsed.href; } catch { /* invalid URL */ }
+    const order = Math.max(0, Math.min(10_000, Number(input.order) || 0));
+    if (!name || !imageUrl) throw new Error('A company name and valid HTTPS or site-relative image URL are required.');
+    return { name, imageUrl, order, published: input.published !== false };
+}
+
+app.post('/api/admin/landing-content', async (req, res) => {
+    if (!db || !admin) return res.status(503).json({ success: false, error: 'Landing-content service unavailable.' });
+    const fields = ['activeJobs', 'rating', 'partnerCompanies', 'successfulHires', 'featuredJobs', 'successRate', 'topCompanies'];
+    const content = Object.fromEntries(fields.map(field => [field, String(req.body?.content?.[field] || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, 40)]));
+    if (Object.values(content).some(value => !value || !/^[\p{L}\p{N}\s.,%+/-]{1,40}$/u.test(value))) return res.status(400).json({ success: false, error: 'All landing claims are required and must contain only short display text.' });
+    const reference = db.collection('data').doc('frontendstats');
+    try {
+        let revision;
+        await db.runTransaction(async transaction => {
+            const snapshot = await transaction.get(reference);
+            const currentRevision = Number(snapshot.data()?.revision || 0);
+            if (Number(req.body.expectedRevision || 0) !== currentRevision) { const error = new Error('Landing content changed after this page loaded. Refresh before saving.'); error.code = 'ADMIN_TARGET_CHANGED'; throw error; }
+            revision = currentRevision + 1;
+            transaction.set(reference, { ...content, revision, updatedAt: admin.firestore.FieldValue.serverTimestamp(), updatedBy: req.user.uid });
+            transaction.set(db.collection('security_audit_logs').doc(), { action: 'LANDING_CONTENT_UPDATED', actorUid: req.user.uid, revision, changedFields: fields, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        });
+        return res.json({ success: true, content: { ...content, revision } });
+    } catch (error) { return res.status(error.code === 'ADMIN_TARGET_CHANGED' ? 409 : 500).json({ success: false, code: error.code, error: error.code ? error.message : 'Unable to save landing content.' }); }
+});
+
+app.post('/api/admin/trusted-by', async (req, res) => {
+    if (!db || !admin) return res.status(503).json({ success: false, error: 'Trusted-logo service unavailable.' });
+    try {
+        const data = normalizeTrustedLogo(req.body);
+        const reference = db.collection('trustedBy').doc();
+        const batch = db.batch();
+        batch.set(reference, { ...data, id: reference.id, revision: 1, createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+        batch.set(db.collection('security_audit_logs').doc(), { action: 'TRUSTED_LOGO_CREATED', actorUid: req.user.uid, logoId: reference.id, published: data.published, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        await batch.commit();
+        return res.json({ success: true, item: { ...data, id: reference.id, revision: 1 } });
+    } catch (error) { return res.status(400).json({ success: false, error: error.message }); }
+});
+
+app.patch('/api/admin/trusted-by/:logoId', async (req, res) => {
+    if (!db || !admin) return res.status(503).json({ success: false, error: 'Trusted-logo service unavailable.' });
+    const logoId = String(req.params.logoId || '');
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(logoId)) return res.status(400).json({ success: false, error: 'Invalid logo ID.' });
+    try {
+        const data = normalizeTrustedLogo(req.body);
+        let result;
+        await db.runTransaction(async transaction => {
+            const reference = db.collection('trustedBy').doc(logoId);
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists) { const error = new Error('Logo not found.'); error.code = 'NOT_FOUND'; throw error; }
+            const revision = Number(snapshot.data()?.revision || 0);
+            if (Number(req.body.expectedRevision || 0) !== revision) { const error = new Error('This logo changed after the page loaded. Refresh before saving.'); error.code = 'ADMIN_TARGET_CHANGED'; throw error; }
+            result = { ...data, id: logoId, revision: revision + 1 };
+            transaction.update(reference, { ...data, id: logoId, revision: revision + 1, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+            transaction.set(db.collection('security_audit_logs').doc(), { action: 'TRUSTED_LOGO_UPDATED', actorUid: req.user.uid, logoId, revision: revision + 1, published: data.published, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        });
+        return res.json({ success: true, item: result });
+    } catch (error) { const status = error.code === 'ADMIN_TARGET_CHANGED' ? 409 : error.code === 'NOT_FOUND' ? 404 : 400; return res.status(status).json({ success: false, code: error.code, error: error.message }); }
+});
+
+app.delete('/api/admin/trusted-by/:logoId', async (req, res) => {
+    if (!db || !admin) return res.status(503).json({ success: false, error: 'Trusted-logo service unavailable.' });
+    const logoId = String(req.params.logoId || '');
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(logoId)) return res.status(400).json({ success: false, error: 'Invalid logo ID.' });
+    try {
+        await db.runTransaction(async transaction => {
+            const reference = db.collection('trustedBy').doc(logoId);
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists) { const error = new Error('Logo not found.'); error.code = 'NOT_FOUND'; throw error; }
+            if (Number(req.body?.expectedRevision || 0) !== Number(snapshot.data()?.revision || 0)) { const error = new Error('This logo changed after the page loaded. Refresh before deleting.'); error.code = 'ADMIN_TARGET_CHANGED'; throw error; }
+            transaction.delete(reference);
+            transaction.set(db.collection('security_audit_logs').doc(), { action: 'TRUSTED_LOGO_DELETED', actorUid: req.user.uid, logoId, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        });
+        return res.json({ success: true });
+    } catch (error) { const status = error.code === 'ADMIN_TARGET_CHANGED' ? 409 : error.code === 'NOT_FOUND' ? 404 : 500; return res.status(status).json({ success: false, code: error.code, error: status === 500 ? 'Unable to delete logo.' : error.message }); }
+});
+
 app.post('/api/admin/reviews', async (req, res) => {
     if (!db || !admin) return res.status(503).json({ success: false, error: 'Review service unavailable.' });
     const clean = (value, max) => String(value || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, max);
@@ -2991,27 +3086,45 @@ app.patch('/api/admin/users/:uid', async (req, res) => {
 app.post('/api/account/delete', async (req, res) => {
     if (!db || !admin?.auth) return res.status(503).json({ success: false, error: 'Account deletion service unavailable.' });
     const uid = req.user.uid;
+    const failures = [];
     try {
-        await db.recursiveDelete(db.collection('users').doc(uid));
-        for (const query of [
-            db.collection('portfolios').where('userId', '==', uid),
-            db.collection('pb').where('ownerUid', '==', uid),
-            db.collection('jobApplications').where('userId', '==', uid)
-        ]) {
-            const snapshot = await query.get();
-            for (const item of snapshot.docs) await db.recursiveDelete(item.ref);
+        const jobs = await db.collection('jobs').where('employerId', '==', uid).get().catch(() => { failures.push('employer jobs'); return { docs: [] }; });
+        for (const job of jobs.docs) {
+            try {
+                const applications = await db.collection('jobApplications').where('jobId', '==', job.id).get();
+                for (const application of applications.docs) await db.recursiveDelete(application.ref);
+                await db.recursiveDelete(job.ref);
+            } catch { failures.push(`job:${job.id}`); }
         }
-        await db.recursiveDelete(db.collection('employerApplications').doc(uid)).catch(() => {});
-        await db.recursiveDelete(db.collection('notifications').doc(uid)).catch(() => {});
-        await admin.auth().deleteUser(uid);
-        await db.collection('security_audit_logs').add({
-            action: 'ACCOUNT_SELF_DELETED', targetUid: uid,
-            requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp()
-        });
-        return res.json({ success: true, message: 'Account and owned application data deleted.' });
+        const queries = [
+            ['portfolios', db.collection('portfolios').where('userId', '==', uid)],
+            ['published portfolios', db.collection('pb').where('ownerUid', '==', uid)],
+            ['job applications', db.collection('jobApplications').where('userId', '==', uid)],
+            ['blog posts', db.collection('blog_posts').where('authorUid', '==', uid)],
+            ['companies', db.collection('companies').where('employerId', '==', uid)],
+        ];
+        for (const [label, query] of queries) {
+            try { const snapshot = await query.get(); for (const item of snapshot.docs) await db.recursiveDelete(item.ref); }
+            catch { failures.push(label); }
+        }
+        for (const [label, reference] of [['employer application', db.collection('employerApplications').doc(uid)], ['notifications', db.collection('notifications').doc(uid)]]) {
+            try { await db.recursiveDelete(reference); } catch { failures.push(label); }
+        }
+        if (!failures.length) try { await db.recursiveDelete(db.collection('users').doc(uid)); } catch { failures.push('user profile tree'); }
+        if (failures.length) {
+            await db.collection('security_audit_logs').add({ action: 'ACCOUNT_SELF_DELETION_INCOMPLETE', targetUid: uid, cleanupFailures: failures, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+            return res.status(500).json({ success: false, code: 'ACCOUNT_CLEANUP_INCOMPLETE', error: `Cleanup failed for: ${failures.join(', ')}. Your identity remains active; retry deletion.` });
+        }
+        try { await admin.auth().deleteUser(uid); }
+        catch {
+            await db.collection('security_audit_logs').add({ action: 'ACCOUNT_SELF_DELETION_INCOMPLETE', targetUid: uid, cleanupFailures: ['firebase identity'], requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+            return res.status(500).json({ success: false, code: 'ACCOUNT_IDENTITY_DELETE_FAILED', error: 'Owned application data was removed, but the Firebase identity could not be deleted. Contact support immediately.' });
+        }
+        await db.collection('security_audit_logs').add({ action: 'ACCOUNT_SELF_DELETED', targetUid: uid, retainedRecordTypes: ['payment_orders', 'invoices', 'transactions', 'subscriptions', 'security_audit_logs'], requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        return res.json({ success: true, message: 'Identity and owned profile, resume, portfolio, CMS, employer, job, application, and notification data were deleted.', retainedRecordTypes: ['payment_orders', 'invoices', 'transactions', 'subscriptions', 'security_audit_logs'] });
     } catch (error) {
         console.error('[Account self-delete]', error.message);
-        return res.status(500).json({ success: false, error: 'Unable to delete account.' });
+        return res.status(500).json({ success: false, error: 'Unable to complete account deletion. Identity remains active unless the response explicitly confirms success.' });
     }
 });
 
