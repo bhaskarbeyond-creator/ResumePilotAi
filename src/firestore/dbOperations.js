@@ -64,16 +64,10 @@ function formatSalaryRange(minSalary, maxSalary) {
 export async function getAllMessages() {
     const db = fire.firestore();
     const snapshot = await db.collection('contact').get();
-    if (!snapshot.empty) {
-        var messages = [];
-        snapshot.forEach((doc) => {
-            messages.push(doc.data());
-        });
-        return messages;
-    } else {
-        // if there is no documents return null
-        return null;
-    }
+    return snapshot.docs.map(document => {
+        const data = document.data() || {};
+        return { id: document.id, ...data, createdAt: data.created_at?.toDate?.() || data.createdAt?.toDate?.() || data.created_at || data.createdAt || null };
+    });
 }
 
 // Contact submissions cross the rate-limited server boundary; clients cannot write the
@@ -461,16 +455,17 @@ export async function getAllUsers() {
     const db = fire.firestore();
     const snapshot = await db.collection('users').get();
     if (!snapshot.empty) {
-        var users = [];
-        snapshot.forEach((doc) => users.push(doc.data()));
+        const users = [];
+        snapshot.forEach((doc) => {
+            const data = doc.data() || {};
+            users.push({ id: doc.id, ...data, userId: data.userId || doc.id });
+        });
         return users;
-    } else {
-        console.log('makan walo');
-        return null;
     }
+    return [];
 }
 
-// Get All Subscriptuins
+// Get all subscriptions
 export async function getAllSubscriptions() {
     const db = fire.firestore();
     const snapshot = await db.collection('subscriptions').orderBy('created_at', 'desc').limit(7).get();
@@ -494,38 +489,27 @@ export async function checkIfAdmin(uid) {
         return false;
     }
 }
-// Get User by id
-export async function getUserById(id) {
+// Get one user by exact UID or email without logging personal data.
+export async function getUserById(identifier) {
     const db = fire.firestore();
-    console.log(id);
-    var user = null;
-    await db
-        .collection('users')
-        .where('email', '==', id)
-        .get()
-        .then((snapshot) => {
-            snapshot.forEach((doc) => {
-                console.log(doc.data());
-                user = doc.data();
-            });
-        });
-
-    if (user !== null) {
-        return user;
-    } else {
-        return false;
+    const value = String(identifier || '').trim();
+    if (!value || value.length > 320) return false;
+    if (/^[A-Za-z0-9:_-]{1,128}$/.test(value)) {
+        const snapshot = await db.collection('users').doc(value).get();
+        if (!snapshot.exists) return false;
+        const data = snapshot.data() || {};
+        return { id: snapshot.id, ...data, userId: data.userId || snapshot.id };
     }
-
-    // console.log(snapshot);
-
-    // if (snapshot.exists) {
-    //   console.log(snapshot.data());
-    //   return snapshot.data()
-    // } else {
-    //   console.log("not foiund");
-
-    //   return false
-    // }
+    const candidates = [...new Set([value, value.toLowerCase()])];
+    for (const email of candidates) {
+        const query = await db.collection('users').where('email', '==', email).limit(1).get();
+        if (!query.empty) {
+            const document = query.docs[0];
+            const data = document.data() || {};
+            return { id: document.id, ...data, userId: data.userId || document.id };
+        }
+    }
+    return false;
 }
 // Adding user to firestore safely with merge protection for Social OAuth login
 export function addUser(userId, firstname, lastname, email) {
@@ -595,18 +579,18 @@ export async function checkIfSuspended(uid) {
 }
 
 // Function to suspend or activate a user account by Admin
-export async function toggleUserSuspension(userId, suspend) {
+export async function toggleUserSuspension(userId, suspend, expectedSuspended = undefined) {
     try {
-        await updateUserByAdminApi(userId, { suspended: Boolean(suspend) });
+        await updateUserByAdminApi(userId, { suspended: Boolean(suspend), ...(expectedSuspended === undefined ? {} : { expectedSuspended: Boolean(expectedSuspended) }) });
         return { success: true, message: `User account ${suspend ? 'suspended' : 'reactivated'} successfully.` };
     } catch (error) {
         return { success: false, error: error.message };
     }
 }
 
-export async function setUserAdminStatus(userId, isAdmin) {
+export async function setUserAdminStatus(userId, isAdmin, expectedIsAdmin = undefined) {
     try {
-        await updateUserByAdminApi(userId, { role: isAdmin ? 'ADMIN' : 'USER' });
+        await updateUserByAdminApi(userId, { role: isAdmin ? 'ADMIN' : 'USER', ...(expectedIsAdmin === undefined ? {} : { expectedRole: expectedIsAdmin ? 'ADMIN' : 'USER' }) });
         return { success: true, message: `Admin status set to ${Boolean(isAdmin)}` };
     } catch (error) {
         return { success: false, error: error.message };
@@ -859,9 +843,9 @@ export async function cancelUserSubscription(_userId, reason) {
 }
 
 // Function to quickly toggle user membership plan
-export async function updateUserSubscription(userId, membership) {
+export async function updateUserSubscription(userId, membership, expectedMembership = undefined) {
     try {
-        await updateUserByAdminApi(userId, { membership });
+        await updateUserByAdminApi(userId, { membership, ...(expectedMembership === undefined ? {} : { expectedMembership }) });
         return { success: true, message: `Subscription plan updated to ${membership}.` };
     } catch (error) {
         return { success: false, error: error.message };
@@ -1034,34 +1018,34 @@ export async function getAllEmployerApplications() {
         }
     } catch (error) {
         console.error('Error getting employer applications:', error);
-        return [];
+        throw error;
     }
 }
 
-async function reviewEmployerApplication(userId, status, reason = '') {
+async function reviewEmployerApplication(userId, status, reason = '', expectedStatus = undefined) {
     try {
         const response = await fetch(`/api/admin/employer-applications/${encodeURIComponent(userId)}`, {
             method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status, reason })
+            body: JSON.stringify({ status, reason, ...(expectedStatus ? { expectedStatus } : {}) })
         });
         const result = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(result.error || 'Unable to review employer application.');
+        if (!response.ok) return { success: false, error: result.error || 'Unable to review employer application.', code: result.code, status: response.status };
         return result;
     } catch (error) {
         return { success: false, error: error.message };
     }
 }
 
-export async function approveEmployerApplication(userId) {
-    return reviewEmployerApplication(userId, 'approved');
+export async function approveEmployerApplication(userId, expectedStatus = undefined) {
+    return reviewEmployerApplication(userId, 'approved', '', expectedStatus);
 }
 
-export async function rejectEmployerApplication(userId, reason = '') {
-    return reviewEmployerApplication(userId, 'rejected', reason);
+export async function rejectEmployerApplication(userId, reason = '', expectedStatus = undefined) {
+    return reviewEmployerApplication(userId, 'rejected', reason, expectedStatus);
 }
 
-export async function reactivateEmployerApplication(userId) {
-    return reviewEmployerApplication(userId, 'active');
+export async function reactivateEmployerApplication(userId, expectedStatus = undefined) {
+    return reviewEmployerApplication(userId, 'active', '', expectedStatus);
 }
 
 // ==================== COMPANY MANAGEMENT FUNCTIONS ====================
@@ -1281,61 +1265,33 @@ export async function getAllCompanies() {
         }
     } catch (error) {
         console.error('Error getting all companies:', error);
-        return [];
+        throw error;
     }
 }
 
-// Approve company (admin function)
-export async function approveCompany(companyId) {
-    const db = fire.firestore();
+// Company moderation is server-authoritative, stale-target checked, and audited.
+async function updateCompanyByAdminApi(companyId, changes) {
     try {
-        await db.collection('companies').doc(companyId).update({
-            status: 'approved',
-            approvedAt: new Date(),
+        const response = await fetch(`/api/admin/companies/${encodeURIComponent(companyId)}`, {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(changes),
         });
-        return { success: true };
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success ? result : { success: false, error: result.error || 'Unable to update company.', code: result.code };
     } catch (error) {
-        console.error('Error approving company:', error);
         return { success: false, error: error.message };
     }
 }
 
-// Reject company (admin function)
-export async function rejectCompany(companyId, reason = '') {
-    const db = fire.firestore();
-    try {
-        await db.collection('companies').doc(companyId).update({
-            status: 'rejected',
-            rejectedAt: new Date(),
-            rejectionReason: reason,
-        });
-        return { success: true };
-    } catch (error) {
-        console.error('Error rejecting company:', error);
-        return { success: false, error: error.message };
-    }
+export async function approveCompany(companyId, expected = {}) {
+    return updateCompanyByAdminApi(companyId, { status: 'approved', ...expected });
 }
 
-// Toggle company featured status (admin function)
-export async function toggleCompanyFeatured(companyId, featured = true) {
-    const db = fire.firestore();
-    try {
-        const updateData = {
-            featured: featured,
-            updatedAt: new Date(),
-        };
-        
-        if (featured) {
-            updateData.featuredAt = new Date();
-        }
-        
-        await db.collection('companies').doc(companyId).update(updateData);
-        console.log(`Company ${companyId} featured status updated to: ${featured}`);
-        return { success: true };
-    } catch (error) {
-        console.error('Error updating company featured status:', error);
-        return { success: false, error: error.message };
-    }
+export async function rejectCompany(companyId, reason = '', expected = {}) {
+    return updateCompanyByAdminApi(companyId, { status: 'rejected', reason, ...expected });
+}
+
+export async function toggleCompanyFeatured(companyId, featured = true, expected = {}) {
+    return updateCompanyByAdminApi(companyId, { featured, ...expected });
 }
 
 // Get featured companies for public display
@@ -1686,14 +1642,26 @@ export async function updateJobPosting(jobId, updateData) {
     }
 }
 
-// Delete job posting
+// Delete an employer-owned job posting (ownership is enforced by Firestore rules).
 export async function deleteJobPosting(jobId) {
     const db = fire.firestore();
     try {
         await db.collection('jobs').doc(jobId).delete();
         return { success: true };
     } catch (error) {
-        console.error('Error deleting job posting:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+// Administrative deletion is server-authoritative, stale-target checked, and audited.
+export async function deleteJobByAdmin(jobId, expected = {}) {
+    try {
+        const response = await fetch(`/api/admin/jobs/${encodeURIComponent(jobId)}`, {
+            method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(expected),
+        });
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success ? result : { success: false, error: result.error || 'Unable to delete job.', code: result.code };
+    } catch (error) {
         return { success: false, error: error.message };
     }
 }
@@ -2136,10 +2104,10 @@ export async function updateApplicationStatusWithMessage(applicationId, status, 
 export async function getAllJobs(page = 1, itemsPerPage = 10, filters = {}) {
     const db = fire.firestore();
     try {
-        console.log('Fetching all jobs for admin - page:', page, 'itemsPerPage:', itemsPerPage, 'filters:', filters);
-
-        // Get all jobs (not just active ones)
-        const allJobsQuery = db.collection('jobs');
+        // Status equality is applied in Firestore to reduce reads; text search remains
+        // page-consistent in memory because Firestore has no native substring query.
+        let allJobsQuery = db.collection('jobs');
+        if (filters.status && filters.status !== 'all') allJobsQuery = allJobsQuery.where('status', '==', filters.status);
         const allJobsSnapshot = await allJobsQuery.get();
 
         // Convert to array and apply server-side filtering
@@ -2202,12 +2170,11 @@ export async function getAllJobs(page = 1, itemsPerPage = 10, filters = {}) {
         const totalItems = filteredJobs.length;
         const totalPages = Math.ceil(totalItems / itemsPerPage);
 
-        // Apply pagination
-        const startIndex = (page - 1) * itemsPerPage;
+        // Apply pagination and clamp stale page numbers after deletes/filter changes.
+        const currentPage = Math.min(Math.max(1, Number(page) || 1), Math.max(1, totalPages));
+        const startIndex = (currentPage - 1) * itemsPerPage;
         const endIndex = startIndex + itemsPerPage;
         const paginatedJobs = filteredJobs.slice(startIndex, endIndex);
-
-        console.log(`✅ Fetched ${paginatedJobs.length} jobs for admin page ${page} (${totalItems} total after filtering)`);
 
         return {
             success: true,
@@ -2215,9 +2182,9 @@ export async function getAllJobs(page = 1, itemsPerPage = 10, filters = {}) {
             pagination: {
                 totalItems,
                 totalPages,
-                currentPage: page,
-                hasNextPage: page < totalPages,
-                hasPreviousPage: page > 1,
+                currentPage,
+                hasNextPage: currentPage < totalPages,
+                hasPreviousPage: currentPage > 1,
             },
         };
     } catch (error) {
@@ -2226,40 +2193,24 @@ export async function getAllJobs(page = 1, itemsPerPage = 10, filters = {}) {
     }
 }
 
-// Admin function: Update job status
-export async function updateJobStatus(jobId, status) {
-    const db = fire.firestore();
+async function updateJobByAdminApi(jobId, changes) {
     try {
-        await db.collection('jobs').doc(jobId).update({
-            status: status,
-            updatedAt: new Date(),
+        const response = await fetch(`/api/admin/jobs/${encodeURIComponent(jobId)}`, {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(changes),
         });
-
-        return { success: true };
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success ? result : { success: false, error: result.error || 'Unable to update job.', code: result.code };
     } catch (error) {
-        console.error('Error updating job status:', error);
         return { success: false, error: error.message };
     }
 }
 
-// Admin function: Toggle job featured status
-export async function toggleJobFeatured(jobId, isFeatured) {
-    const db = fire.firestore();
-    try {
-        console.log(`🌟 Toggling job featured status: ${jobId} -> ${isFeatured}`);
-        
-        await db.collection('jobs').doc(jobId).update({
-            isFeatured: isFeatured,
-            featuredAt: isFeatured ? new Date() : null,
-            updatedAt: new Date(),
-        });
+export async function updateJobStatus(jobId, status, expected = {}) {
+    return updateJobByAdminApi(jobId, { status, ...expected });
+}
 
-        console.log('✅ Job featured status updated successfully');
-        return { success: true };
-    } catch (error) {
-        console.error('❌ Error updating job featured status:', error);
-        return { success: false, error: error.message };
-    }
+export async function toggleJobFeatured(jobId, isFeatured, expected = {}) {
+    return updateJobByAdminApi(jobId, { isFeatured, ...expected });
 }
 
 // Get a single job by ID
@@ -4837,10 +4788,11 @@ export async function getSkillsOfUser(uid) {
 // date: new Date()
 
 export async function addReview(review) {
-    const db = fire.firestore();
-    const reviewRef = await db.collection('reviews').doc();
-    reviewRef.set(review);
-    return true;
+    try {
+        const response = await fetch('/api/admin/reviews', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(review) });
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success ? result : { success: false, error: result.error || 'Unable to add review.' };
+    } catch (error) { return { success: false, error: error.message }; }
 }
 
 // add a trusted by
@@ -4888,25 +4840,11 @@ export async function updateTrustedBy(id, trustedBy) {
 // make sure to note remove the current data that is in meta
 
 export async function addGlobalRating(rating) {
-    const db = fire.firestore();
-    const metaRef = await db.collection('data').doc('meta');
-    const meta = await metaRef.get();
-    if (meta.exists) {
-        var metaRating = meta.data().rating;
-        if (metaRating === undefined) {
-            metaRating = 0;
-        }
-        metaRating = rating;
-        metaRef.set(
-            {
-                rating: metaRating,
-            },
-            { merge: true }
-        );
-        return true;
-    } else {
-        return false;
-    }
+    try {
+        const response = await fetch('/api/admin/global-rating', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rating }) });
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success ? result : { success: false, error: result.error || 'Unable to update rating.' };
+    } catch (error) { return { success: false, error: error.message }; }
 }
 
 // get all reviews make sure every id is with there response
@@ -4933,11 +4871,12 @@ export async function get3Reviews() {
 
 // delete a review
 
-export async function deleteReview(id) {
-    const db = fire.firestore();
-    const reviewRef = await db.collection('reviews').doc(id);
-    reviewRef.delete();
-    return true;
+export async function deleteReview(id, expectedRevision = 0) {
+    try {
+        const response = await fetch(`/api/admin/reviews/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expectedRevision }) });
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success ? result : { success: false, error: result.error || 'Unable to delete review.', code: result.code };
+    } catch (error) { return { success: false, error: error.message }; }
 }
 
 //
@@ -5834,6 +5773,7 @@ export async function getPublicPortfolios(limit = 10, theme = null) {
 }
 
 // System Settings DB Operations
+let systemSettingsRevisions = {};
 function redactClientSecrets(settings = {}) {
     const copy = typeof structuredClone === 'function' ? structuredClone(settings) : JSON.parse(JSON.stringify(settings || {}));
     const secretFields = [
@@ -5853,13 +5793,9 @@ function redactClientSecrets(settings = {}) {
 }
 
 export async function getSystemSettings() {
-    let localCache = {};
-    try {
-        const raw = typeof window !== 'undefined' ? localStorage.getItem('system_settings_cache') : null;
-        if (raw) localCache = redactClientSecrets(JSON.parse(raw));
-    } catch (e) {
-        console.warn('Could not read system_settings_cache from localStorage:', e);
-    }
+    // Admin configuration is never recovered from cross-account browser storage.
+    // Browser-readable state comes only from curated public_config plus static defaults.
+    const localCache = {};
 
     // Default initial settings derived from environment variables and static configuration
     const envDefaults = {
@@ -6102,6 +6038,8 @@ export async function getSystemSettings() {
                 let remoteData = {};
                 if (snapshot && snapshot.exists) {
                     remoteData = redactClientSecrets(snapshot.data() || {});
+                    systemSettingsRevisions = { ...(remoteData._settingsRevisions || {}) };
+                    delete remoteData._settingsRevisions;
                 }
 
                 const allKeys = new Set([
@@ -6118,13 +6056,6 @@ export async function getSystemSettings() {
                         ...(remoteData[key] || {})
                     };
                 }
-                try {
-                    if (typeof window !== 'undefined') {
-                        localStorage.setItem('system_settings_cache', JSON.stringify(merged));
-                    }
-                } catch (e) {
-                    // ignore local storage errors
-                }
                 return merged;
             }, false),
             new Promise((resolve) => setTimeout(() => resolve(null), 1200))
@@ -6138,28 +6069,15 @@ export async function getSystemSettings() {
 }
 
 export async function saveSystemSettings(category, data) {
-    // 1. Update local cache immediately for guaranteed persistence across reloads
-    try {
-        if (typeof window !== 'undefined') {
-            const raw = localStorage.getItem('system_settings_cache');
-            const cache = raw ? JSON.parse(raw) : {};
-            cache[category] = redactClientSecrets({ [category]: data })[category] || {};
-            localStorage.setItem('system_settings_cache', JSON.stringify(cache));
-        }
-    } catch (e) {
-        console.warn('Could not write system_settings_cache to localStorage:', e);
-    }
-
-    // 2. Dispatch custom event for real-time reactivity
-    // 3. Save to Firestore (passing false for requireAuth so unauthenticated or dev admin sessions persist safely)
-    return safeDbOperation(async () => {
-        const db = fire.firestore();
-        const docRef = db.collection('data').doc('system_settings');
-        await docRef.set({
-            [category]: data
-        }, { merge: true });
-        return true;
-    }, false);
+    const response = await fetch(`/api/admin/settings/${encodeURIComponent(category)}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data, expectedRevision: Number(systemSettingsRevisions[category] || 0) }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.success) throw new Error(result.error?.message || result.error || 'Unable to save settings.');
+    systemSettingsRevisions = { ...systemSettingsRevisions, [category]: result.revision };
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('systemSettingsUpdated', { detail: { category, revision: result.revision } }));
+    return result;
 }
 
 export async function getAllAdminTransactions() {

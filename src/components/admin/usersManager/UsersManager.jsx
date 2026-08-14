@@ -9,6 +9,7 @@ class UsersManager extends Component {
         super(props);
         this.state = {
             showUsers: false,
+            loadingUsers: false,
             rows: null,
             isRedirectToUser: false,
             enteredUser: '',
@@ -16,6 +17,8 @@ class UsersManager extends Component {
             isAddingAdmin: false,
             statusMessage: null,
             userToDelete: null, // confirmation modal target
+            pendingUserAction: null,
+            isUserActionRunning: false,
             isDeleting: false,
             mergeTarget: null, // { keepId, deleteId, email } for merge modal
             isMerging: false,
@@ -49,16 +52,23 @@ class UsersManager extends Component {
 
     exportUsersToCsv() {
         if (!this.state.rows || this.state.rows.length === 0) {
-            alert('No user data available for export.');
+            this.setState({ statusMessage: { type: 'error', text: 'No user data is available for export.' } });
             return;
         }
+        const csvCell = value => {
+            let text = String(value ?? '').replaceAll('"', '""');
+            if (/^[=+\-@]/.test(text)) text = `'${text}`;
+            return `"${text}"`;
+        };
         let csv = 'User ID,Email,Membership Plan,Is Admin,Suspended\n';
-        this.state.rows.forEach(r => {
-            csv += `"${r.id}","${r.email}","${r.subscription}",${r.isA},${r.suspended}\n`;
+        this.state.rows.forEach(row => {
+            csv += [row.id, row.email, row.subscription, row.isA, row.suspended].map(csvCell).join(',') + '\n';
         });
-        const blob = new Blob([csv], { type: 'text/csv' });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = 'admin-users-report.csv'; a.click();
+        const anchor = document.createElement('a');
+        anchor.href = url; anchor.download = 'admin-users-report.csv'; anchor.click();
+        URL.revokeObjectURL(url);
     }
 
     isSelfAccount(userId, email) {
@@ -72,11 +82,12 @@ class UsersManager extends Component {
     }
 
     // Load users without mutating identities as a side effect.
-    showTable() {
-        getAllUsers().then((value) => {
-            if (!value) return;
-            const rows = value.map((element) => this.createData(
-                element.userId,
+    async showTable() {
+        this.setState({ loadingUsers: true });
+        try {
+            const value = await getAllUsers();
+            const rows = (value || []).map((element) => this.createData(
+                element.userId || element.id,
                 element.email !== undefined ? element.email : 'Not Provided',
                 element.membership !== undefined ? element.membership : 'Basic',
                 Boolean(element.isA || ['ADMIN', 'SUPER_ADMIN'].includes(String(element.role || '').toUpperCase())),
@@ -86,9 +97,12 @@ class UsersManager extends Component {
             // Duplicate accounts require an explicit, provider-aware server operation.
             // Never mutate or delete identities automatically while rendering a table.
             this.setState({ rows, showUsers: true });
-        }).catch((error) => {
+        } catch (error) {
             console.error('Error fetching users:', error);
-        });
+            this.setState({ statusMessage: { type: 'error', text: 'Unable to load users. Retry when the data service is available.' } });
+        } finally {
+            this.setState({ loadingUsers: false });
+        }
     }
 
     // Redirect to user edit page
@@ -135,17 +149,25 @@ class UsersManager extends Component {
         this.setState({ [inputName]: value });
     }
 
-    async handleToggleAdmin(userId, email, currentIsA) {
+    async handleToggleAdmin(userId, email, currentIsA, confirmed = false) {
         const newIsA = !currentIsA;
         if (!newIsA && this.isSelfAccount(userId, email)) {
-            this.setState({
-                statusMessage: { type: 'error', text: 'You cannot revoke your own Admin status to ensure one admin remains active.' }
-            });
+            this.setState({ statusMessage: { type: 'error', text: 'You cannot revoke your own Admin status to ensure one admin remains active.' } });
             setTimeout(() => this.setState({ statusMessage: null }), 4000);
             return;
         }
+        if (!confirmed) {
+            this.setState({ pendingUserAction: {
+                title: newIsA ? 'Grant administrator access?' : 'Revoke administrator access?',
+                message: `${email} will ${newIsA ? 'receive privileged administrative access' : 'lose administrative access'}. The current target state will be verified before applying this change.`,
+                confirmLabel: newIsA ? 'Grant access' : 'Revoke access',
+                onConfirm: () => this.handleToggleAdmin(userId, email, currentIsA, true),
+            } });
+            return;
+        }
+        this.setState({ isUserActionRunning: true });
         try {
-            const res = await setUserAdminStatus(userId, newIsA);
+            const res = await setUserAdminStatus(userId, newIsA, currentIsA);
             if (res.success) {
                 this.setState({
                     statusMessage: { type: 'success', text: `Successfully ${newIsA ? 'granted' : 'revoked'} Admin access!` }
@@ -157,11 +179,12 @@ class UsersManager extends Component {
         } catch (err) {
             this.setState({ statusMessage: { type: 'error', text: err.message } });
         } finally {
+            this.setState({ isUserActionRunning: false, pendingUserAction: null });
             setTimeout(() => this.setState({ statusMessage: null }), 4000);
         }
     }
 
-    async handleToggleSuspension(userId, email, currentSuspended) {
+    async handleToggleSuspension(userId, email, currentSuspended, confirmed = false) {
         const newSuspended = !currentSuspended;
         if (newSuspended && this.isSelfAccount(userId, email)) {
             this.setState({
@@ -170,8 +193,18 @@ class UsersManager extends Component {
             setTimeout(() => this.setState({ statusMessage: null }), 4000);
             return;
         }
+        if (!confirmed) {
+            this.setState({ pendingUserAction: {
+                title: newSuspended ? 'Suspend user account?' : 'Reactivate user account?',
+                message: `${email} will be ${newSuspended ? 'disabled and signed out of active sessions' : 'allowed to authenticate again'}. The current target state will be verified first.`,
+                confirmLabel: newSuspended ? 'Suspend account' : 'Reactivate account',
+                onConfirm: () => this.handleToggleSuspension(userId, email, currentSuspended, true),
+            } });
+            return;
+        }
+        this.setState({ isUserActionRunning: true });
         try {
-            const res = await toggleUserSuspension(userId, newSuspended);
+            const res = await toggleUserSuspension(userId, newSuspended, currentSuspended);
             if (res.success) {
                 this.setState({
                     statusMessage: { type: 'success', text: res.message }
@@ -183,14 +216,25 @@ class UsersManager extends Component {
         } catch (err) {
             this.setState({ statusMessage: { type: 'error', text: err.message } });
         } finally {
+            this.setState({ isUserActionRunning: false, pendingUserAction: null });
             setTimeout(() => this.setState({ statusMessage: null }), 4000);
         }
     }
 
-    async handleTogglePlan(userId, currentPlan) {
+    async handleTogglePlan(userId, email, currentPlan, confirmed = false) {
         const newPlan = currentPlan === 'Premium' ? 'Basic' : 'Premium';
+        if (!confirmed) {
+            this.setState({ pendingUserAction: {
+                title: `Change membership to ${newPlan}?`,
+                message: `${email} will be changed from ${currentPlan} to ${newPlan}. Premium grants default to 12 months and this administrative entitlement change is audited.`,
+                confirmLabel: `Change to ${newPlan}`,
+                onConfirm: () => this.handleTogglePlan(userId, email, currentPlan, true),
+            } });
+            return;
+        }
+        this.setState({ isUserActionRunning: true });
         try {
-            const res = await updateUserSubscription(userId, newPlan);
+            const res = await updateUserSubscription(userId, newPlan, currentPlan);
             if (res.success) {
                 this.setState({
                     statusMessage: { type: 'success', text: res.message }
@@ -202,16 +246,27 @@ class UsersManager extends Component {
         } catch (err) {
             this.setState({ statusMessage: { type: 'error', text: err.message } });
         } finally {
+            this.setState({ isUserActionRunning: false, pendingUserAction: null });
             setTimeout(() => this.setState({ statusMessage: null }), 4000);
         }
     }
 
-    async handleAddAdminByEmail(e) {
-        e.preventDefault();
-        if (!this.state.newAdminEmail || !this.state.newAdminEmail.trim()) return;
-        this.setState({ isAddingAdmin: true, statusMessage: null });
+    async handleAddAdminByEmail(e, confirmed = false) {
+        e?.preventDefault?.();
+        const email = this.state.newAdminEmail.trim();
+        if (!email) return;
+        if (!confirmed) {
+            this.setState({ pendingUserAction: {
+                title: 'Grant administrator access?',
+                message: `${email} will receive privileged administrative access. The backend requires role-management permission and audits the change.`,
+                confirmLabel: 'Grant access',
+                onConfirm: () => this.handleAddAdminByEmail(null, true),
+            } });
+            return;
+        }
+        this.setState({ isAddingAdmin: true, isUserActionRunning: true, statusMessage: null });
         try {
-            const res = await makeUserAdminByEmail(this.state.newAdminEmail.trim());
+            const res = await makeUserAdminByEmail(email);
             if (res.success) {
                 this.setState({
                     statusMessage: { type: 'success', text: res.message },
@@ -224,7 +279,7 @@ class UsersManager extends Component {
         } catch (err) {
             this.setState({ statusMessage: { type: 'error', text: err.message } });
         } finally {
-            this.setState({ isAddingAdmin: false });
+            this.setState({ isAddingAdmin: false, isUserActionRunning: false, pendingUserAction: null });
             setTimeout(() => this.setState({ statusMessage: null }), 5000);
         }
     }
@@ -244,7 +299,7 @@ class UsersManager extends Component {
             const res = await deleteUserByAdmin(this.state.userToDelete.id, this.state.userToDelete.email);
             if (res.success) {
                 this.setState({
-                    statusMessage: { type: 'success', text: `User ${this.state.userToDelete.email} deleted successfully.` },
+                    statusMessage: { type: 'success', text: res.message || `User ${this.state.userToDelete.email} deleted successfully.` },
                     userToDelete: null
                 });
                 this.showTable();
@@ -375,20 +430,37 @@ class UsersManager extends Component {
                     />
                 )}
 
+                {this.state.pendingUserAction && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm" role="presentation" onKeyDown={event => { if (event.key === 'Escape' && !this.state.isUserActionRunning) this.setState({ pendingUserAction: null }); }}>
+                        <div role="alertdialog" aria-modal="true" aria-labelledby="user-action-title" aria-describedby="user-action-message" className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-2xl">
+                            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 text-amber-700"><FaExclamationTriangle aria-hidden="true" /></div>
+                            <h2 id="user-action-title" className="text-center text-lg font-bold text-slate-900">{this.state.pendingUserAction.title}</h2>
+                            <p id="user-action-message" className="mt-2 text-center text-sm text-slate-600">{this.state.pendingUserAction.message}</p>
+                            <div className="mt-6 flex gap-3">
+                                <button type="button" autoFocus onClick={() => this.setState({ pendingUserAction: null })} disabled={this.state.isUserActionRunning} className="flex-1 rounded-lg bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-700 disabled:opacity-50">Cancel</button>
+                                <button type="button" onClick={this.state.pendingUserAction.onConfirm} disabled={this.state.isUserActionRunning} className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-amber-700 px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50">
+                                    {this.state.isUserActionRunning && <FaSpinner className="animate-spin" aria-hidden="true" />}{this.state.pendingUserAction.confirmLabel}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Delete Confirmation Modal */}
                 {this.state.userToDelete && (
-                    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in duration-200">
+                    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="presentation" onKeyDown={event => { if (event.key === 'Escape' && !this.state.isDeleting) this.setState({ userToDelete: null }); }}>
+                        <div role="alertdialog" aria-modal="true" aria-labelledby="delete-user-title" aria-describedby="delete-user-message" className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in duration-200">
                             <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600 mb-4 mx-auto">
                                 <FaTrashAlt className="w-6 h-6" />
                             </div>
-                            <h3 className="text-lg font-bold text-slate-900 text-center mb-2">Delete User Account</h3>
-                            <p className="text-sm text-slate-500 text-center mb-6">
+                            <h3 id="delete-user-title" className="text-lg font-bold text-slate-900 text-center mb-2">Delete User Account</h3>
+                            <p id="delete-user-message" className="text-sm text-slate-500 text-center mb-6">
                                 Are you sure you want to permanently delete account <strong className="text-slate-800">{this.state.userToDelete.email}</strong>? This action cannot be undone.
                             </p>
                             <div className="flex items-center space-x-3">
                                 <button
                                     type="button"
+                                    autoFocus
                                     onClick={() => this.setState({ userToDelete: null })}
                                     className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-lg transition-colors"
                                 >
@@ -539,11 +611,11 @@ class UsersManager extends Component {
                                     <table className="min-w-full divide-y divide-slate-200 text-xs">
                                         <thead className="bg-slate-50">
                                             <tr>
-                                                <th className="px-3 py-2 text-left font-semibold text-slate-500">Email</th>
-                                                <th className="px-3 py-2 text-left font-semibold text-slate-500">Original UID</th>
-                                                <th className="px-3 py-2 text-center font-semibold text-slate-500">Reason</th>
-                                                <th className="px-3 py-2 text-center font-semibold text-slate-500">Plan</th>
-                                                <th className="px-3 py-2 text-center font-semibold text-slate-500">Actions</th>
+                                                <th scope="col" className="px-3 py-2 text-left font-semibold text-slate-500">Email</th>
+                                                <th scope="col" className="px-3 py-2 text-left font-semibold text-slate-500">Original UID</th>
+                                                <th scope="col" className="px-3 py-2 text-center font-semibold text-slate-500">Reason</th>
+                                                <th scope="col" className="px-3 py-2 text-center font-semibold text-slate-500">Plan</th>
+                                                <th scope="col" className="px-3 py-2 text-center font-semibold text-slate-500">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100 bg-white">
@@ -691,7 +763,7 @@ class UsersManager extends Component {
 
                 {/* Status Message */}
                 {this.state.statusMessage && (
-                    <div className={`p-4 rounded-lg flex items-center justify-between text-sm mb-6 ${
+                    <div role={this.state.statusMessage.type === 'success' ? 'status' : 'alert'} aria-live="polite" className={`p-4 rounded-lg flex items-center justify-between text-sm mb-6 ${
                         this.state.statusMessage.type === 'success' ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-red-50 border border-red-200 text-red-800'
                     }`}>
                         <div className="flex items-center space-x-2">
@@ -752,10 +824,11 @@ class UsersManager extends Component {
                         <div className="flex-1 relative">
                             <FaEnvelope className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <input
-                                type="email"
+                                type="search"
+                                aria-label="User email or UID"
                                 value={this.state.enteredUser}
                                 onChange={(event) => this.handleInput('enteredUser', event.target.value)}
-                                placeholder="Enter user email or ID"
+                                placeholder="Enter exact user email or UID"
                                 className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                             />
                         </div>
@@ -776,15 +849,19 @@ class UsersManager extends Component {
                             <p className="text-sm text-slate-500">Perform user edits, plan upgrades, account suspension/activation, or account deletion</p>
                         </div>
                         <button
+                            type="button"
                             onClick={() => this.showTable()}
-                            className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors flex items-center space-x-1"
+                            disabled={this.state.loadingUsers}
+                            className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors flex items-center space-x-1 disabled:opacity-50"
                         >
-                            <FaUsers className="w-4 h-4" />
-                            <span>Refresh Users</span>
+                            {this.state.loadingUsers ? <FaSpinner className="w-4 h-4 animate-spin" aria-hidden="true" /> : <FaUsers className="w-4 h-4" aria-hidden="true" />}
+                            <span>{this.state.loadingUsers ? 'Refreshing…' : 'Refresh Users'}</span>
                         </button>
                     </div>
 
-                    {!this.state.showUsers ? (
+                    {this.state.loadingUsers && !this.state.showUsers ? (
+                        <div className="py-12 text-center text-sm text-slate-500" role="status"><FaSpinner className="mx-auto mb-3 animate-spin" aria-hidden="true" />Loading users…</div>
+                    ) : !this.state.showUsers ? (
                         <div className="text-center py-12">
                             <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <FaUsers className="w-8 h-8 text-slate-400" />
@@ -803,15 +880,16 @@ class UsersManager extends Component {
                             <table className="min-w-full">
                                 <thead className="bg-slate-50">
                                     <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">User ID</th>
-                                        <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Email</th>
-                                        <th className="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                                        <th className="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Role</th>
-                                        <th className="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Subscription</th>
-                                        <th className="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">User ID</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Email</th>
+                                        <th scope="col" className="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                                        <th scope="col" className="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Role</th>
+                                        <th scope="col" className="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Subscription</th>
+                                        <th scope="col" className="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-slate-200">
+                                    {this.state.rows?.length === 0 && <tr><td colSpan="6" className="px-6 py-10 text-center text-sm text-slate-500">No users matched this view.</td></tr>}
                                     {this.state.rows?.map((row, index) => {
                                         const isSelf = this.isSelfAccount(row.id, row.email);
                                         const isDuplicate = row.email && row.email !== 'Not Provided' && this.getDuplicateEmails().has(row.email.toLowerCase().trim());
@@ -919,7 +997,7 @@ class UsersManager extends Component {
                                                         {/* Toggle Plan Action */}
                                                         <button
                                                             type="button"
-                                                            onClick={() => this.handleTogglePlan(row.id, row.subscription)}
+                                                            onClick={() => this.handleTogglePlan(row.id, row.email, row.subscription)}
                                                             className={`px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center space-x-1 ${
                                                                 row.subscription === 'Premium'
                                                                     ? 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'

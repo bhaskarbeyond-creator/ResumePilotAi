@@ -14,28 +14,31 @@ const Reviews = () => {
 
     const [reviews, setReviews] = useState([]);
     const [successMessage, setSuccessMessage] = useState('');
+    const [errorMessage, setErrorMessage] = useState('');
+    const [reviewToDelete, setReviewToDelete] = useState(null);
+    const [confirmRating, setConfirmRating] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
-    React.useEffect(() => {
-        getAllReviews().then((result) => {
-            setReviews(result);
-        });
+    const loadReviews = React.useCallback(async () => {
+        try { setReviews(await getAllReviews()); }
+        catch (error) { setErrorMessage(error.message || 'Unable to load reviews.'); }
     }, []);
 
-    const handleDelete = (id) => {
+    React.useEffect(() => { loadReviews(); }, [loadReviews]);
+
+    const handleDelete = async () => {
+        if (!reviewToDelete) return;
         setIsLoading(true);
-        deleteReview(id).then((result) => {
-            if (result) {
-                getAllReviews().then((result) => {
-                    setReviews(result);
-                    setSuccessMessage('Review deleted successfully');
-                    setTimeout(() => setSuccessMessage(''), 3000);
-                    setIsLoading(false);
-                });
-            } else {
-                setIsLoading(false);
-            }
-        });
+        const result = await deleteReview(reviewToDelete.id, Number(reviewToDelete.revision || 0));
+        if (result.success) {
+            setReviewToDelete(null);
+            await loadReviews();
+            setSuccessMessage('Review deleted and audited.');
+        } else {
+            setErrorMessage(result.error || 'Unable to delete review.');
+            if (result.code === 'ADMIN_TARGET_CHANGED') { setReviewToDelete(null); await loadReviews(); }
+        }
+        setIsLoading(false);
     };
 
     const handleChange = (event, inputName) => {
@@ -63,40 +66,31 @@ const Reviews = () => {
         }
     };
 
-    const handleReviewSubmit = () => {
+    const handleReviewSubmit = async () => {
         setIsLoading(true);
-        addReview(review).then((result) => {
-            if (result) {
-                getAllReviews().then((result) => {
-                    setReviews(result);
-                    setReview({ imageUrl: '', name: '', occupation: '', review: '', rating: '', ratingOf: 0 });
-                    setSuccessMessage('Review added successfully');
-                    setTimeout(() => setSuccessMessage(''), 3000);
-                    setIsLoading(false);
-                });
-            } else {
-                setIsLoading(false);
-            }
-        });
+        const result = await addReview(review);
+        if (result.success) {
+            await loadReviews();
+            setReview({ imageUrl: '', name: '', occupation: '', review: '', rating: '', ratingOf: 0 });
+            setSuccessMessage('Review added, published, and audited.');
+        } else setErrorMessage(result.error || 'Unable to add review.');
+        setIsLoading(false);
     };
 
-    const handleRatingSubmit = () => {
-        if (review.ratingOf === 0 || review.ratingOf > 5) {
-            setSuccessMessage('');
+    const handleRatingSubmit = async () => {
+        const rating = Number(review.ratingOf);
+        if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
+            setErrorMessage('Rating must be from 1 to 5.');
             return;
         }
-
         setIsLoading(true);
-        addGlobalRating(review.ratingOf).then((result) => {
-            if (result) {
-                setReview({ ...review, ratingOf: 0 });
-                setSuccessMessage('Global rating added successfully');
-                setTimeout(() => setSuccessMessage(''), 3000);
-                setIsLoading(false);
-            } else {
-                setIsLoading(false);
-            }
-        });
+        const result = await addGlobalRating(rating);
+        if (result.success) {
+            setReview(current => ({ ...current, ratingOf: 0 }));
+            setConfirmRating(false);
+            setSuccessMessage('Global rating updated and audited.');
+        } else setErrorMessage(result.error || 'Unable to update global rating.');
+        setIsLoading(false);
     };
 
     const renderStars = (rating) => {
@@ -120,8 +114,21 @@ const Reviews = () => {
         return stars;
     };
 
+    const validRatings = reviews.map(item => Number(item.rating)).filter(value => Number.isFinite(value) && value >= 1 && value <= 5);
+    const averageRating = validRatings.length ? (validRatings.reduce((total, value) => total + value, 0) / validRatings.length).toFixed(1) : '—';
+
     return (
         <div className="min-h-screen bg-slate-50 p-4 sm:p-6">
+            {(reviewToDelete || confirmRating) && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" role="presentation" onKeyDown={event => { if (event.key === 'Escape' && !isLoading) { setReviewToDelete(null); setConfirmRating(false); } }}>
+                    <div role="alertdialog" aria-modal="true" aria-labelledby="review-confirm-title" aria-describedby="review-confirm-message" className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
+                        <h2 id="review-confirm-title" className="text-lg font-bold text-slate-900">{reviewToDelete ? 'Delete review?' : 'Update global rating?'}</h2>
+                        <p id="review-confirm-message" className="mt-2 text-sm text-slate-600">{reviewToDelete ? `Delete the review by ${reviewToDelete.name || 'Anonymous'}? This action is audited and cannot be undone.` : `Set the global displayed rating to ${review.ratingOf}? This administrative change is audited.`}</p>
+                        <div className="mt-6 flex justify-end gap-3"><button type="button" autoFocus onClick={() => { setReviewToDelete(null); setConfirmRating(false); }} disabled={isLoading} className="rounded-lg border border-slate-300 px-4 py-2 text-sm">Cancel</button><button type="button" onClick={reviewToDelete ? handleDelete : handleRatingSubmit} disabled={isLoading} className="rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{isLoading ? 'Applying…' : 'Confirm'}</button></div>
+                    </div>
+                </div>
+            )}
+            {errorMessage && <div role="alert" className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">{errorMessage}<button type="button" onClick={() => setErrorMessage('')} className="ml-3 underline">Dismiss</button></div>}
             {/* Header Section */}
             <div className="bg-white border border-slate-200 rounded-lg p-6 mb-6">
                 <div className="flex items-center space-x-3 mb-4">
@@ -148,26 +155,21 @@ const Reviews = () => {
                             <FaStar className="w-4 h-4 text-amber-500" />
                             <span className="text-sm text-slate-600">Avg Rating</span>
                         </div>
-                        <p className="text-lg font-semibold text-slate-900">
-                            {reviews.length > 0 
-                                ? (reviews.reduce((acc, rev) => acc + parseInt(rev.rating), 0) / reviews.length).toFixed(1)
-                                : '—'
-                            }
-                        </p>
+                        <p className="text-lg font-semibold text-slate-900">{averageRating}</p>
                     </div>
                     <div className="bg-slate-50 rounded-lg p-4">
                         <div className="flex items-center space-x-2">
                             <FaCheck className="w-4 h-4 text-emerald-500" />
-                            <span className="text-sm text-slate-600">Status</span>
+                            <span className="text-sm text-slate-600">Published</span>
                         </div>
-                        <p className="text-lg font-semibold text-slate-900">Active</p>
+                        <p className="text-lg font-semibold text-slate-900">{reviews.filter(item => item.status === 'approved').length}</p>
                     </div>
                 </div>
             </div>
 
             {/* Success Message */}
             {successMessage && (
-                <div className="bg-white border border-emerald-200 rounded-lg p-4 mb-6">
+                <div role="status" aria-live="polite" className="bg-white border border-emerald-200 rounded-lg p-4 mb-6">
                     <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center">
                             <FaCheck className="w-4 h-4 text-emerald-600" />
@@ -217,7 +219,7 @@ const Reviews = () => {
                             </div>
                             <button 
                                 type="button" 
-                                onClick={handleRatingSubmit}
+                                onClick={() => setConfirmRating(true)}
                                 disabled={isLoading || !review.ratingOf || review.ratingOf < 1 || review.ratingOf > 5}
                                 className="w-full flex items-center justify-center space-x-2 bg-amber-600 hover:bg-amber-700 disabled:bg-slate-400 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200"
                             >
@@ -388,7 +390,7 @@ const Reviews = () => {
                                                 <span>{reviewItem.rating}/5 Stars</span>
                                             </div>
                                             <button
-                                                onClick={() => handleDelete(reviewItem.id)}
+                                                onClick={() => setReviewToDelete(reviewItem)}
                                                 disabled={isLoading}
                                                 className="flex items-center space-x-1 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-medium px-3 py-1 rounded-lg transition-colors duration-200 disabled:opacity-50"
                                             >

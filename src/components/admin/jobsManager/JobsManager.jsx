@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { getAllJobs, updateJobStatus, deleteJobPosting, createNotification, toggleJobFeatured } from '../../../firestore/dbOperations';
+import { getAllJobs, updateJobStatus, deleteJobByAdmin, toggleJobFeatured } from '../../../firestore/dbOperations';
 import {
     FaBriefcase,
     FaBuilding,
@@ -46,14 +46,21 @@ class JobsManager extends Component {
                 hasPreviousPage: false,
             },
             jobsPerPage: 10,
+            pendingAction: null,
         };
+        this.loadRequest = 0;
     }
 
     componentDidMount() {
         this.loadJobs();
     }
 
+    componentWillUnmount() {
+        if (this.searchTimer) clearTimeout(this.searchTimer);
+    }
+
     loadJobs = async (page = 1) => {
+        const requestId = ++this.loadRequest;
         this.setState({ loading: true });
         try {
             const filters = {
@@ -62,12 +69,13 @@ class JobsManager extends Component {
             };
 
             const result = await getAllJobs(page, this.state.jobsPerPage, filters);
+            if (requestId !== this.loadRequest) return;
 
             if (result.success) {
                 this.setState({
                     jobs: result.jobs,
                     loading: false,
-                    currentPage: page,
+                    currentPage: result.pagination.currentPage,
                     pagination: result.pagination,
                 });
             } else {
@@ -78,7 +86,7 @@ class JobsManager extends Component {
             }
         } catch (error) {
             console.error('Error loading jobs:', error);
-            this.setState({
+            if (requestId === this.loadRequest) this.setState({
                 loading: false,
                 errorMessage: 'Failed to load jobs. Please try again.',
             });
@@ -91,31 +99,30 @@ class JobsManager extends Component {
             // Find the job details before updating status
             const job = this.state.jobs.find(j => j.id === jobId);
             
-            const result = await updateJobStatus(jobId, newStatus);
+            if (!job) {
+                this.setState({ errorMessage: 'The selected job is no longer on this page.', processingAction: null, pendingAction: null });
+                await this.loadJobs(this.state.currentPage);
+                return;
+            }
+            const result = await updateJobStatus(jobId, newStatus, {
+                expectedStatus: job.status || 'pending',
+                ...(job.updatedAt ? { expectedUpdatedAt: new Date(job.updatedAt).getTime() } : {}),
+            });
             if (result.success) {
-                // Send notification to the employer about the status change
-                if (job && job.employerId) {
-                    const notificationData = this.getStatusChangeNotification(newStatus, job);
-                    try {
-                        await createNotification(job.employerId, notificationData);
-                        console.log('✅ Notification sent to employer:', job.employerId);
-                    } catch (notificationError) {
-                        console.error('❌ Failed to send notification to employer:', notificationError);
-                        // Don't fail the entire operation if notification fails
-                    }
-                }
-                
                 this.setState({
-                    successMessage: `Job status updated to ${newStatus} successfully!`,
+                    successMessage: `Job status updated to ${newStatus}. The employer notification and audit record were created by the backend.`,
                     processingAction: null,
+                    pendingAction: null,
                 });
                 // Reload jobs to reflect changes
                 this.loadJobs(this.state.currentPage);
             } else {
                 this.setState({
-                    errorMessage: 'Failed to update job status. Please try again.',
+                    errorMessage: result.error || 'Failed to update job status. Please try again.',
                     processingAction: null,
+                    ...(result.code === 'ADMIN_TARGET_CHANGED' ? { pendingAction: null } : {}),
                 });
+                if (result.code === 'ADMIN_TARGET_CHANGED') this.loadJobs(this.state.currentPage);
             }
         } catch (error) {
             console.error('Error updating job status:', error);
@@ -126,26 +133,28 @@ class JobsManager extends Component {
         }
     };
 
-    handleDeleteJob = async (jobId) => {
-        if (!window.confirm('Are you sure you want to delete this job? This action cannot be undone.')) {
-            return;
-        }
-
-        this.setState({ processingAction: jobId });
+    handleDeleteJob = async (job) => {
+        this.setState({ processingAction: job.id });
         try {
-            const result = await deleteJobPosting(jobId);
+            const result = await deleteJobByAdmin(job.id, {
+                expectedStatus: job.status || 'pending',
+                ...(job.updatedAt ? { expectedUpdatedAt: new Date(job.updatedAt).getTime() } : {}),
+            });
             if (result.success) {
                 this.setState({
-                    successMessage: 'Job deleted successfully!',
+                    successMessage: 'Job deleted and the action was audited.',
                     processingAction: null,
+                    pendingAction: null,
                 });
                 // Reload jobs to reflect changes
                 this.loadJobs(this.state.currentPage);
             } else {
                 this.setState({
-                    errorMessage: 'Failed to delete job. Please try again.',
+                    errorMessage: result.error || 'Failed to delete job. Please try again.',
                     processingAction: null,
+                    ...(result.code === 'ADMIN_TARGET_CHANGED' ? { pendingAction: null } : {}),
                 });
+                if (result.code === 'ADMIN_TARGET_CHANGED') this.loadJobs(this.state.currentPage);
             }
         } catch (error) {
             console.error('Error deleting job:', error);
@@ -156,22 +165,28 @@ class JobsManager extends Component {
         }
     };
 
-    handleToggleFeatured = async (jobId, isFeatured) => {
-        this.setState({ processingAction: jobId });
+    handleToggleFeatured = async (job, isFeatured) => {
+        this.setState({ processingAction: job.id });
         try {
-            const result = await toggleJobFeatured(jobId, isFeatured);
+            const result = await toggleJobFeatured(job.id, isFeatured, {
+                expectedFeatured: Boolean(job.isFeatured),
+                ...(job.updatedAt ? { expectedUpdatedAt: new Date(job.updatedAt).getTime() } : {}),
+            });
             if (result.success) {
                 this.setState({
-                    successMessage: `Job ${isFeatured ? 'featured' : 'unfeatured'} successfully!`,
+                    successMessage: `Job ${isFeatured ? 'featured' : 'unfeatured'} and the action was audited.`,
                     processingAction: null,
+                    pendingAction: null,
                 });
                 // Reload jobs to reflect changes
                 this.loadJobs(this.state.currentPage);
             } else {
                 this.setState({
-                    errorMessage: 'Failed to update job featured status. Please try again.',
+                    errorMessage: result.error || 'Failed to update job featured status. Please try again.',
                     processingAction: null,
+                    ...(result.code === 'ADMIN_TARGET_CHANGED' ? { pendingAction: null } : {}),
                 });
+                if (result.code === 'ADMIN_TARGET_CHANGED') this.loadJobs(this.state.currentPage);
             }
         } catch (error) {
             console.error('Error toggling job featured status:', error);
@@ -182,9 +197,30 @@ class JobsManager extends Component {
         }
     };
 
+    requestJobAction = (job, action, value = null) => {
+        const labels = {
+            status: `Change status to ${value}?`,
+            featured: value ? 'Feature this job?' : 'Remove featured status?',
+            delete: 'Permanently delete this job?',
+        };
+        const details = action === 'delete'
+            ? 'Deletion is allowed only when no applications exist; otherwise archive the job to preserve application records.'
+            : 'The backend will verify the loaded job state, apply one change, create an audit record, and notify the employer for status changes.';
+        this.setState({ pendingAction: {
+            title: labels[action], message: `${job.title || 'Untitled job'} — ${details}`,
+            confirmLabel: action === 'delete' ? 'Delete job' : 'Confirm change',
+            onConfirm: () => action === 'status' ? this.handleStatusChange(job.id, value) : action === 'featured' ? this.handleToggleFeatured(job, value) : this.handleDeleteJob(job),
+        } });
+    };
+
     handleFilterChange = (filterType, value) => {
         this.setState({ [filterType]: value }, () => {
-            this.loadJobs(1); // Reset to first page when filtering
+            if (filterType !== 'searchTerm') {
+                this.loadJobs(1);
+                return;
+            }
+            if (this.searchTimer) clearTimeout(this.searchTimer);
+            this.searchTimer = setTimeout(() => this.loadJobs(1), 350);
         });
     };
 
@@ -200,79 +236,6 @@ class JobsManager extends Component {
 
     dismissMessage = () => {
         this.setState({ successMessage: '', errorMessage: '' });
-    };
-
-    getStatusChangeNotification = (newStatus, job) => {
-        const jobTitle = job.title || 'Your Job';
-        const companyName = job.company || 'Your Company';
-        
-        switch (newStatus) {
-            case 'active':
-                return {
-                    type: 'job_status_update',
-                    title: 'Job Approved',
-                    message: `Great news! Your job posting "${jobTitle}" at ${companyName} has been approved and is now active. Job seekers can now view and apply to your position.`,
-                    data: {
-                        jobId: job.id,
-                        jobTitle: jobTitle,
-                        company: companyName,
-                        status: newStatus,
-                        action: 'approved'
-                    }
-                };
-            case 'inactive':
-                return {
-                    type: 'job_status_update',
-                    title: 'Job Deactivated',
-                    message: `Your job posting "${jobTitle}" at ${companyName} has been temporarily deactivated by our admin team. It is no longer visible to job seekers. Please contact support if you have any questions.`,
-                    data: {
-                        jobId: job.id,
-                        jobTitle: jobTitle,
-                        company: companyName,
-                        status: newStatus,
-                        action: 'deactivated'
-                    }
-                };
-            case 'archived':
-                return {
-                    type: 'job_status_update',
-                    title: 'Job Archived',
-                    message: `Your job posting "${jobTitle}" at ${companyName} has been archived by our admin team. This job is no longer accepting applications and has been moved to your archived jobs.`,
-                    data: {
-                        jobId: job.id,
-                        jobTitle: jobTitle,
-                        company: companyName,
-                        status: newStatus,
-                        action: 'archived'
-                    }
-                };
-            case 'pending':
-                return {
-                    type: 'job_status_update',
-                    title: 'Job Under Review',
-                    message: `Your job posting "${jobTitle}" at ${companyName} is currently under review by our admin team. We'll notify you once the review is complete.`,
-                    data: {
-                        jobId: job.id,
-                        jobTitle: jobTitle,
-                        company: companyName,
-                        status: newStatus,
-                        action: 'under_review'
-                    }
-                };
-            default:
-                return {
-                    type: 'job_status_update',
-                    title: 'Job Status Updated',
-                    message: `The status of your job posting "${jobTitle}" at ${companyName} has been updated to ${newStatus}.`,
-                    data: {
-                        jobId: job.id,
-                        jobTitle: jobTitle,
-                        company: companyName,
-                        status: newStatus,
-                        action: 'status_changed'
-                    }
-                };
-        }
     };
 
     getStatusBadge = (status) => {
@@ -324,9 +287,22 @@ class JobsManager extends Component {
 
         return (
             <div className="min-h-screen bg-slate-50 px-4 py-6">
+                {this.state.pendingAction && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" role="presentation" onKeyDown={event => { if (event.key === 'Escape' && !processingAction) this.setState({ pendingAction: null }); }}>
+                        <div role="alertdialog" aria-modal="true" aria-labelledby="job-action-title" aria-describedby="job-action-message" className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
+                            <h2 id="job-action-title" className="text-lg font-bold text-slate-900">{this.state.pendingAction.title}</h2>
+                            <p id="job-action-message" className="mt-2 text-sm text-slate-600">{this.state.pendingAction.message}</p>
+                            <div className="mt-6 flex justify-end gap-3">
+                                <button type="button" autoFocus onClick={() => this.setState({ pendingAction: null })} disabled={Boolean(processingAction)} className="rounded-lg border border-slate-300 px-4 py-2 text-sm disabled:opacity-50">Cancel</button>
+                                <button type="button" onClick={this.state.pendingAction.onConfirm} disabled={Boolean(processingAction)} className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{processingAction ? 'Applying…' : this.state.pendingAction.confirmLabel}</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Success/Error Messages */}
                 {(successMessage || errorMessage) && (
-                    <div className={`mb-4 p-4 rounded-lg ${successMessage ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+                    <div role={successMessage ? 'status' : 'alert'} aria-live="polite" className={`mb-4 p-4 rounded-lg ${successMessage ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
                         <div className="flex items-center justify-between">
                             <span>{successMessage || errorMessage}</span>
                             <button onClick={this.dismissMessage} className="text-sm underline">
@@ -365,7 +341,9 @@ class JobsManager extends Component {
                             <div className="relative">
                                 <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
                                 <input
-                                    type="text"
+                                    id="admin-job-search"
+                                    type="search"
+                                    aria-label="Search jobs"
                                     placeholder="Search jobs by title, company, or description..."
                                     value={this.state.searchTerm}
                                     onChange={(e) => this.handleFilterChange('searchTerm', e.target.value)}
@@ -375,6 +353,8 @@ class JobsManager extends Component {
                         </div>
                         <div className="flex gap-2">
                             <select
+                                id="admin-job-status"
+                                aria-label="Filter jobs by status"
                                 value={this.state.filterStatus}
                                 onChange={(e) => this.handleFilterChange('filterStatus', e.target.value)}
                                 className="px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
@@ -405,12 +385,12 @@ class JobsManager extends Component {
                             <table className="min-w-full">
                                 <thead className="bg-slate-50 border-b border-slate-200">
                                     <tr>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-slate-600">Job Details</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-slate-600">Company</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-slate-600">Location</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-slate-600">Posted</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-slate-600">Status</th>
-                                        <th className="px-4 py-3 text-right text-xs font-medium text-slate-600">Actions</th>
+                                        <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-slate-600">Job Details</th>
+                                        <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-slate-600">Company</th>
+                                        <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-slate-600">Location</th>
+                                        <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-slate-600">Posted</th>
+                                        <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-slate-600">Status</th>
+                                        <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-slate-600">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-200">
@@ -425,7 +405,7 @@ class JobsManager extends Component {
                                                         <div className="min-w-0 flex-1">
                                                             <div className="flex items-center">
                                                                 <p className="text-sm font-medium text-slate-900 truncate">{job.title}</p>
-                                                                <button onClick={() => this.toggleRowExpansion(job.id)} className="ml-2 text-slate-400 hover:text-slate-600">
+                                                                <button type="button" onClick={() => this.toggleRowExpansion(job.id)} aria-label={expandedRow === job.id ? `Collapse ${job.title}` : `Expand ${job.title}`} className="ml-2 text-slate-400 hover:text-slate-600">
                                                                     {expandedRow === job.id ? <FaChevronUp className="w-3 h-3" /> : <FaChevronDown className="w-3 h-3" />}
                                                                 </button>
                                                             </div>
@@ -459,43 +439,48 @@ class JobsManager extends Component {
                                                 <td className="px-4 py-3 text-right">
                                                     <div className="flex items-center justify-end space-x-2">
                                                         <button
-                                                            onClick={() => this.handleToggleFeatured(job.id, !job.isFeatured)}
+                                                            onClick={() => this.requestJobAction(job, 'featured', !job.isFeatured)}
                                                             disabled={processingAction === job.id}
                                                             className={`${job.isFeatured ? 'text-yellow-500 hover:text-yellow-600' : 'text-gray-400 hover:text-yellow-500'} disabled:opacity-50 transition-colors`}
+                                                            aria-label={job.isFeatured ? 'Remove from featured' : 'Make featured'}
                                                             title={job.isFeatured ? 'Remove from featured' : 'Make featured'}>
                                                             <FaStar className="w-4 h-4" />
                                                         </button>
 
                                                         {job.status === 'active' ? (
                                                             <button
-                                                                onClick={() => this.handleStatusChange(job.id, 'inactive')}
+                                                                onClick={() => this.requestJobAction(job, 'status', 'inactive')}
                                                                 disabled={processingAction === job.id}
                                                                 className="text-yellow-600 hover:text-yellow-800 disabled:opacity-50"
+                                                                aria-label="Deactivate Job"
                                                                 title="Deactivate Job">
                                                                 <FaPause className="w-4 h-4" />
                                                             </button>
                                                         ) : (
                                                             <button
-                                                                onClick={() => this.handleStatusChange(job.id, 'active')}
+                                                                onClick={() => this.requestJobAction(job, 'status', 'active')}
                                                                 disabled={processingAction === job.id}
                                                                 className="text-green-600 hover:text-green-800 disabled:opacity-50"
+                                                                aria-label="Activate Job"
                                                                 title="Activate Job">
                                                                 <FaPlay className="w-4 h-4" />
                                                             </button>
                                                         )}
 
                                                         <button
-                                                            onClick={() => this.handleStatusChange(job.id, 'archived')}
+                                                            onClick={() => this.requestJobAction(job, 'status', 'archived')}
                                                             disabled={processingAction === job.id}
                                                             className="text-orange-600 hover:text-orange-800 disabled:opacity-50"
+                                                            aria-label="Archive Job"
                                                             title="Archive Job">
                                                             <FaArchive className="w-4 h-4" />
                                                         </button>
 
                                                         <button
-                                                            onClick={() => this.handleDeleteJob(job.id)}
+                                                            onClick={() => this.requestJobAction(job, 'delete')}
                                                             disabled={processingAction === job.id}
                                                             className="text-red-600 hover:text-red-800 disabled:opacity-50"
+                                                            aria-label="Delete Job"
                                                             title="Delete Job">
                                                             <FaTrash className="w-4 h-4" />
                                                         </button>

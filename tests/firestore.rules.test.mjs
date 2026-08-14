@@ -21,6 +21,7 @@ before(async () => {
     await setDoc(doc(db, 'users/bob'), { userId: 'bob', email: 'bob@example.com', membership: 'Basic' });
     await setDoc(doc(db, 'jobs/active-job'), { employerId: 'employer', status: 'active', applicationsCount: 0, title: 'Engineer' });
     await setDoc(doc(db, 'jobs/draft-job'), { employerId: 'employer', status: 'pending', applicationsCount: 0, title: 'Draft' });
+    await setDoc(doc(db, 'companies/draft-company'), { employerId: 'employer', status: 'pending', name: 'Draft Co' });
     await setDoc(doc(db, 'jobApplications/application-1'), {
       userId: 'alice', jobId: 'active-job', applicantEmail: 'alice@example.com', email: 'alice@example.com', status: 'pending'
     });
@@ -107,6 +108,14 @@ test('employer applications are owner-bound and cannot self-approve', async () =
   await assertFails(setDoc(doc(alice(), 'employerApplications/bob'), { userId: 'bob', status: 'pending' }));
 });
 
+test('company moderation is backend-only while employer-owned pending edits remain available', async () => {
+  await assertSucceeds(getDoc(doc(admin(), 'companies/draft-company')));
+  await assertSucceeds(updateDoc(doc(employer(), 'companies/draft-company'), { name: 'Updated Draft Co' }));
+  await assertFails(updateDoc(doc(employer(), 'companies/draft-company'), { status: 'approved' }));
+  await assertFails(updateDoc(doc(admin(), 'companies/draft-company'), { status: 'approved' }));
+  await assertFails(deleteDoc(doc(admin(), 'companies/draft-company')));
+});
+
 test('jobs expose active listings only and employer edits cannot self-approve', async () => {
   await assertSucceeds(getDoc(doc(anonymous(), 'jobs/active-job')));
   await assertFails(getDoc(doc(anonymous(), 'jobs/draft-job')));
@@ -117,6 +126,8 @@ test('jobs expose active listings only and employer edits cannot self-approve', 
     employerId: 'employer', status: 'active', applicationsCount: 0, title: 'Bypass'
   }));
   await assertFails(updateDoc(doc(employer(), 'jobs/draft-job'), { status: 'active' }));
+  await assertFails(updateDoc(doc(admin(), 'jobs/draft-job'), { status: 'active' }));
+  await assertFails(deleteDoc(doc(admin(), 'jobs/draft-job')));
 });
 
 test('job applications bind applicant identity and only job owner may change status', async () => {
@@ -178,6 +189,9 @@ test('billing, provider secrets and token registries are server-only', async () 
   }).firestore();
   await assertFails(updateDoc(doc(staleAdmin, 'data/system_settings'), { staleWrite: true }));
   await assertFails(getDoc(doc(admin(), 'settings/ai_providers')));
+  await assertFails(getDoc(doc(admin(), 'settings/admin_configuration')));
+  await assertFails(setDoc(doc(admin(), 'settings/admin_configuration'), { smtp: { password: 'browser-secret' } }));
+  await assertFails(setDoc(doc(admin(), 'reviews/direct-admin-review'), { status: 'approved', review: 'bypass' }));
   await assertFails(getDoc(doc(admin(), 'password_reset_tokens/token')));
   await assertFails(deleteDoc(doc(admin(), 'password_reset_tokens/token')));
   await assertFails(setDoc(doc(alice(), 'contact/direct-client-write'), { email: 'alice@example.com', message: 'bypass' }));

@@ -35,6 +35,8 @@ class EmployerApplications extends Component {
             errorMessage: '',
             filterStatus: 'all',
             searchTerm: '',
+            reviewConfirmation: null,
+            reviewReason: '',
         };
     }
 
@@ -56,23 +58,32 @@ class EmployerApplications extends Component {
         }
     };
 
-    handleApprove = async (userId) => {
+    handleReviewFailure = (result, fallback) => {
+        const stale = result?.code === 'ADMIN_TARGET_CHANGED';
+        this.setState({
+            errorMessage: result?.error || fallback,
+            processingAction: null,
+            ...(stale ? { reviewConfirmation: null, reviewReason: '' } : {}),
+        });
+        if (stale) this.loadApplications();
+        setTimeout(() => this.setState({ errorMessage: '' }), 5000);
+    };
+
+    handleApprove = async (userId, expectedStatus) => {
         this.setState({ processingAction: `approve-${userId}` });
         try {
-            const result = await approveEmployerApplication(userId);
+            const result = await approveEmployerApplication(userId, expectedStatus);
             if (result.success) {
                 this.setState({
                     successMessage: 'Application approved successfully!',
                     processingAction: null,
+                    reviewConfirmation: null,
+                    reviewReason: '',
                 });
                 setTimeout(() => this.setState({ successMessage: '' }), 3000);
                 this.loadApplications(); // Refresh the list
             } else {
-                this.setState({
-                    errorMessage: result.error || 'Failed to approve application',
-                    processingAction: null,
-                });
-                setTimeout(() => this.setState({ errorMessage: '' }), 3000);
+                this.handleReviewFailure(result, 'Failed to approve application');
             }
         } catch (error) {
             console.error('Error approving application:', error);
@@ -84,23 +95,21 @@ class EmployerApplications extends Component {
         }
     };
 
-    handleReject = async (userId, reason = '') => {
+    handleReject = async (userId, reason = '', expectedStatus = undefined) => {
         this.setState({ processingAction: `reject-${userId}` });
         try {
-            const result = await rejectEmployerApplication(userId, reason);
+            const result = await rejectEmployerApplication(userId, reason, expectedStatus);
             if (result.success) {
                 this.setState({
                     successMessage: 'Application rejected successfully!',
                     processingAction: null,
+                    reviewConfirmation: null,
+                    reviewReason: '',
                 });
                 setTimeout(() => this.setState({ successMessage: '' }), 3000);
                 this.loadApplications(); // Refresh the list
             } else {
-                this.setState({
-                    errorMessage: result.error || 'Failed to reject application',
-                    processingAction: null,
-                });
-                setTimeout(() => this.setState({ errorMessage: '' }), 3000);
+                this.handleReviewFailure(result, 'Failed to reject application');
             }
         } catch (error) {
             console.error('Error rejecting application:', error);
@@ -112,29 +121,44 @@ class EmployerApplications extends Component {
         }
     };
 
+    requestReview = (application, action) => {
+        this.setState({ reviewConfirmation: { application, action }, reviewReason: '' });
+    };
+
+    confirmReview = async () => {
+        const confirmation = this.state.reviewConfirmation;
+        if (!confirmation) return;
+        const { application, action } = confirmation;
+        if (action === 'reject' && !this.state.reviewReason.trim()) {
+            this.setState({ errorMessage: 'A reason is required when rejecting or revoking employer access.' });
+            return;
+        }
+        if (action === 'approve') await this.handleApprove(application.userId, application.status);
+        else if (action === 'reject') await this.handleReject(application.userId, this.state.reviewReason.trim(), application.status);
+        else await this.handleReactivate(application.userId, application.status);
+    };
+
     toggleExpandRow = (applicationId) => {
         this.setState((prevState) => ({
             expandedRow: prevState.expandedRow === applicationId ? null : applicationId,
         }));
 };
 
-    handleReactivate = async (userId) => {
+    handleReactivate = async (userId, expectedStatus) => {
         this.setState({ processingAction: `reactivate-${userId}` });
         try {
-            const result = await reactivateEmployerApplication(userId);
+            const result = await reactivateEmployerApplication(userId, expectedStatus);
             if (result.success) {
                 this.setState({
                     successMessage: 'Access reactivated successfully!',
                     processingAction: null,
+                    reviewConfirmation: null,
+                    reviewReason: '',
                 });
                 setTimeout(() => this.setState({ successMessage: '' }), 3000);
                 this.loadApplications(); // Refresh the list
             } else {
-                this.setState({
-                    errorMessage: result.error || 'Failed to reactivate access',
-                    processingAction: null,
-                });
-                setTimeout(() => this.setState({ errorMessage: '' }), 3000);
+                this.handleReviewFailure(result, 'Failed to reactivate access');
             }
         } catch (error) {
             console.error('Error reactivating access:', error);
@@ -241,9 +265,32 @@ class EmployerApplications extends Component {
 
         return (
             <div className="min-h-screen bg-slate-50 px-4 py-6">
+                {this.state.reviewConfirmation && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" role="presentation" onKeyDown={event => { if (event.key === 'Escape' && !processingAction) this.setState({ reviewConfirmation: null, reviewReason: '' }); }}>
+                        <div role="alertdialog" aria-modal="true" aria-labelledby="employer-review-title" aria-describedby="employer-review-message" className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl">
+                            <h2 id="employer-review-title" className="text-lg font-bold text-slate-900">
+                                {this.state.reviewConfirmation.action === 'approve' ? 'Approve employer application?' : this.state.reviewConfirmation.action === 'reject' ? 'Reject or revoke employer access?' : 'Reactivate employer access?'}
+                            </h2>
+                            <p id="employer-review-message" className="mt-2 text-sm text-slate-600">
+                                Target: {this.state.reviewConfirmation.application.companyName || this.state.reviewConfirmation.application.contactEmail || this.state.reviewConfirmation.application.userId}. The loaded status ({this.state.reviewConfirmation.application.status}) will be verified before changing authentication claims.
+                            </p>
+                            {this.state.reviewConfirmation.action === 'reject' && (
+                                <div className="mt-4">
+                                    <label htmlFor="employer-review-reason" className="block text-sm font-medium text-slate-700">Reason</label>
+                                    <textarea id="employer-review-reason" autoFocus required maxLength={500} rows={3} value={this.state.reviewReason} onChange={event => this.setState({ reviewReason: event.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 p-3 text-sm" />
+                                </div>
+                            )}
+                            <div className="mt-6 flex justify-end gap-3">
+                                <button type="button" autoFocus={this.state.reviewConfirmation.action !== 'reject'} onClick={() => this.setState({ reviewConfirmation: null, reviewReason: '' })} disabled={Boolean(processingAction)} className="rounded-lg border border-slate-300 px-4 py-2 text-sm disabled:opacity-50">Cancel</button>
+                                <button type="button" onClick={this.confirmReview} disabled={Boolean(processingAction)} className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{processingAction ? 'Applying…' : 'Confirm change'}</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Success/Error Messages */}
                 {successMessage && (
-                    <div className="mb-4 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-lg">
+                    <div role="status" aria-live="polite" className="mb-4 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-lg">
                         <div className="flex items-center">
                             <FaCheck className="w-4 h-4 mr-2" />
                             {successMessage}
@@ -252,7 +299,7 @@ class EmployerApplications extends Component {
                 )}
 
                 {errorMessage && (
-                    <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                    <div role="alert" className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
                         <div className="flex items-center">
                             <FaExclamationTriangle className="w-4 h-4 mr-2" />
                             {errorMessage}
@@ -388,7 +435,7 @@ class EmployerApplications extends Component {
                                                         {/* Show approve button only for pending applications */}
                                                         {application.status === 'pending' && (
                                                             <button
-                                                                onClick={() => this.handleApprove(application.userId)}
+                                                                onClick={() => this.requestReview(application, 'approve')}
                                                                 disabled={processingAction === `approve-${application.userId}`}
                                                                 className="flex items-center space-x-1 text-emerald-600 hover:text-emerald-700 transition-colors disabled:opacity-50">
                                                                 <FaCheck className="w-3 h-3" />
@@ -399,7 +446,7 @@ class EmployerApplications extends Component {
 {/* Show reject button for pending, approved, and active applications */}
 {(application.status === 'pending' || application.status === 'approved' || application.status === 'active') && (
     <button
-        onClick={() => this.handleReject(application.userId)}
+        onClick={() => this.requestReview(application, 'reject')}
         disabled={processingAction === `reject-${application.userId}`}
         className="flex items-center space-x-1 text-red-600 hover:text-red-700 transition-colors disabled:opacity-50"
     >
@@ -417,7 +464,7 @@ class EmployerApplications extends Component {
 {/* Show activate button for rejected applications */}
 {application.status === 'rejected' && (
     <button
-        onClick={() => this.handleReactivate(application.userId)}
+        onClick={() => this.requestReview(application, 'reactivate')}
         disabled={processingAction === `reactivate-${application.userId}`}
         className="flex items-center space-x-1 text-emerald-600 hover:text-emerald-700 transition-colors disabled:opacity-50"
     >

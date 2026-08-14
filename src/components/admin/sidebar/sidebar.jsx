@@ -15,66 +15,13 @@ import {
 import { GoSidebarCollapse, GoSidebarExpand } from 'react-icons/go';
 import { MdOutlineReviews } from 'react-icons/md';
 import fire from '../../../conf/fire';
-import { getSystemSettings } from '../../../firestore/dbOperations';
 
-// Helper for status dots
-const getStatusDotColor = (key, s) => {
-    const activeFirebaseKey = s?.firebase?.apiKey || fire?.apps?.[0]?.options?.apiKey || import.meta.env.VITE_FIREBASE_KEY;
-    const activeGeminiKey = s?.ai?.geminiApiKey || '';
-    const activeRazorpayKey = s?.payments?.razorpayKeyId || import.meta.env.VITE_RAZORPAY_KEY_ID;
-
-    switch (key) {
-        case 'modulesSettings': {
-            const m = s?.modules || {};
-            const ai = s?.ai || {};
-            const on = m.enableImportModule !== undefined ? m.enableImportModule : ai.enableImportModule;
-            return on ? 'bg-emerald-500' : 'bg-amber-400';
-        }
-        case 'firebaseSettings':
-            return activeFirebaseKey ? 'bg-emerald-500' : 'bg-red-500';
-        case 'aiSettings': {
-            const ai = s?.ai || {};
-            const p = ai.provider || 'gemini';
-            if (p === 'nvidia' && (ai.nvidiaApiKey || '')) return 'bg-emerald-500';
-            if (p === 'openai' && (ai.openaiApiKey || '')) return 'bg-emerald-500';
-            if (p === 'groq' && (ai.groqApiKey || '')) return 'bg-emerald-500';
-            if (p === 'openrouter' && (ai.openrouterApiKey || '')) return 'bg-emerald-500';
-            if (p === 'deepseek' && (ai.deepseekApiKey || '')) return 'bg-emerald-500';
-            if (p === 'ollama') return 'bg-emerald-500';
-            return activeGeminiKey ? 'bg-emerald-500' : 'bg-red-500';
-        }
-        case 'subscriptionsSettings':
-        case 'paymentSettings':
-            return (activeRazorpayKey || s?.payments?.stripePublishableKey) ? 'bg-emerald-500' : 'bg-amber-400';
-        case 'geoSeoSettings':
-            return s?.geoSeo?.enableGeoSeo !== false ? 'bg-emerald-500' : 'bg-red-500';
-        case 'llmGeoSettings':
-            return s?.llmGeo?.enableLlmGeo !== false ? 'bg-emerald-500' : 'bg-red-500';
-        case 'facebookAuthSettings':
-            if (!s?.facebook?.facebookAppId) return 'bg-amber-400';
-            return s?.facebook?.enableFacebookLogin ? 'bg-emerald-500' : 'bg-amber-400';
-        case 'socialAuthSettings':
-            if (s?.socialAuth?.linkedinClientId && s?.socialAuth?.githubClientId) return 'bg-emerald-500';
-            if (s?.socialAuth?.linkedinClientId || s?.socialAuth?.githubClientId) return 'bg-amber-400';
-            return 'bg-amber-400';
-        case 'emailSettings':
-            return (s?.smtp?.username && s?.smtp?.password) ? 'bg-emerald-500' : 'bg-amber-400';
-        case 'systemHealthSettings':
-            return s?.systemHealth?.maintenanceMode ? 'bg-red-500' : 'bg-emerald-500';
-        case 'codeInjectionSettings':
-            return (s?.codeInjection?.headerScripts || s?.codeInjection?.footerScripts) ? 'bg-emerald-500' : 'bg-amber-400';
-        case 'gdprLegalSettings':
-            return s?.gdpr?.enableCookieBanner !== false ? 'bg-emerald-500' : 'bg-amber-400';
-        case 'twilioSmsSettings':
-            if (!s?.twilio?.accountSid) return 'bg-amber-400';
-            return s?.twilio?.enableSmsAlerts ? 'bg-emerald-500' : 'bg-amber-400';
-        case 'watermarkSettings':
-            return s?.watermark?.enableFreeWatermark !== false ? 'bg-emerald-500' : 'bg-amber-400';
-        case 'integrationsSettings':
-            return (s?.integrations?.googleMapsApiKey || s?.integrations?.gaMeasurementId) ? 'bg-emerald-500' : 'bg-amber-400';
-        default:
-            return 'bg-emerald-500';
-    }
+// Navigation dots indicate selection only; provider and service health is shown by verified API views.
+const readSidebarPreference = () => {
+    try { return localStorage.getItem('adminSidebarCollapsed'); } catch { return null; }
+};
+const writeSidebarPreference = value => {
+    try { localStorage.setItem('adminSidebarCollapsed', String(value)); } catch { /* preference storage is optional */ }
 };
 
 // Helper function for toggling content area classes (similar to ProfileDisplay)
@@ -141,9 +88,10 @@ const SETTINGS_GROUPS = [
 ];
 
 const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: notifyParentOfToggle }) => {
-    const [sidebarCollapsed, setSidebarCollapsed] = useState(
-        localStorage.getItem('adminSidebarCollapsed') === 'true'
-    );
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+        const stored = readSidebarPreference();
+        return stored === null ? Boolean(initialSidebarCollapsed) : stored === 'true';
+    });
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [collapsedGroups, setCollapsedGroups] = useState(() =>
         Object.fromEntries(SETTINGS_GROUPS.map(g => [g.label, true]))
@@ -155,37 +103,13 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
     const searchParams = new URLSearchParams(location.search);
     const activeTab = searchParams.get('tab') || 'modulesSettings';
 
-    const [systemSettings, setSystemSettings] = useState(null);
-
-    useEffect(() => {
-        getSystemSettings().then((s) => { if (s) setSystemSettings(s); });
-        const updateListener = () => {
-            getSystemSettings().then((s) => { if (s) setSystemSettings(s); });
-        };
-        window.addEventListener('systemSettingsUpdated', updateListener);
-        return () => window.removeEventListener('systemSettingsUpdated', updateListener);
-    }, []);
-
     // Auto-open settings accordion when on settings page
     useEffect(() => {
         if (isSettingsPage) setSettingsOpen(true);
     }, [isSettingsPage]);
 
     useEffect(() => {
-        const savedState = localStorage.getItem('adminSidebarCollapsed');
-        let isCollapsed = false;
-        if (savedState !== null) {
-            isCollapsed = savedState === 'true';
-        } else if (initialSidebarCollapsed !== undefined) {
-            isCollapsed = initialSidebarCollapsed;
-        }
-        setSidebarCollapsed(isCollapsed);
-        if (notifyParentOfToggle) notifyParentOfToggle(isCollapsed);
-        toggleContentAreaClasses(isCollapsed);
-    }, []);
-
-    useEffect(() => {
-        localStorage.setItem('adminSidebarCollapsed', sidebarCollapsed);
+        writeSidebarPreference(sidebarCollapsed);
         if (notifyParentOfToggle) notifyParentOfToggle(sidebarCollapsed);
         toggleContentAreaClasses(sidebarCollapsed);
     }, [sidebarCollapsed, notifyParentOfToggle]);
@@ -378,7 +302,6 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
                                                 {!isGroupCollapsed && group.items.map((item) => {
                                                     const Icon = item.icon;
                                                     const isActive = activeTab === item.key && isSettingsPage;
-                                                    const dotColor = getStatusDotColor(item.key, systemSettings);
                                                     return (
                                                         <button
                                                             key={item.key}
@@ -390,7 +313,7 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
                                                                     : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
                                                             }`}
                                                         >
-                                                            <span className={`w-2 h-2 rounded-full shrink-0 ${dotColor}`} title={item.label} />
+                                                            <span className={`w-2 h-2 rounded-full shrink-0 ${isActive ? 'bg-purple-500' : 'bg-slate-300'}`} aria-hidden="true" />
                                                             <Icon className="w-3 h-3 shrink-0" />
                                                             <span className="truncate">{item.label}</span>
                                                         </button>

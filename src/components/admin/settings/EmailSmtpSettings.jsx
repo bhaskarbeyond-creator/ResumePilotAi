@@ -468,18 +468,16 @@ const EmailSmtpSettings = () => {
             await saveSystemSettings('imap', imapConfig);
             await saveSystemSettings('enabledTemplates', enabledTemplates);
 
-            // Also persist to backend server (local JSON file — works without Firebase Admin)
-            try {
-                await fetch('/api/admin/save-smtp', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ smtp: smtpConfig, fallbackSmtp, imap: imapConfig, enabledTemplates })
-                });
-            } catch (backendErr) {
-                console.warn('Backend save-smtp notice:', backendErr.message);
-            }
+            // Persist the runtime mail configuration on the trusted backend and inspect its result.
+            const response = await fetch('/api/admin/save-smtp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ smtp: smtpConfig, fallbackSmtp, imap: imapConfig, enabledTemplates })
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result.success) throw new Error(result.error || 'Runtime email configuration was not saved.');
 
-            setStatusMessage({ type: 'success', text: 'All Outbound SMTP, Fallback Relay, Inbound IMAP, and Template On/Off Toggles saved successfully!' });
+            setStatusMessage({ type: 'success', text: 'SMTP, fallback relay, IMAP, and template settings were saved to the trusted runtime.' });
         } catch (error) {
             setStatusMessage({ type: 'error', text: `Failed to save settings: ${error.message}` });
         } finally {

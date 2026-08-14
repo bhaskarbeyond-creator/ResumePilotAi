@@ -1334,6 +1334,133 @@ app.post('/api/admin/blog/publish-due', async (req, res) => {
     }
 });
 
+app.get('/api/admin/health-summary', async (_req, res) => {
+    if (!db || !admin) return res.status(503).json({ success: false, error: 'Health services unavailable.' });
+    try {
+        const [publicConfig, aiProviders, paymentProviders] = await Promise.all([
+            db.collection('data').doc('public_config').get(),
+            db.collection('settings').doc('ai_providers').get(),
+            db.collection('settings').doc('payment_providers').get(),
+        ]);
+        const ai = aiProviders.data() || {};
+        const payments = paymentProviders.data() || {};
+        return res.json({
+            success: true,
+            checkedAt: new Date().toISOString(),
+            services: {
+                backend: { reachable: true }, firebaseAdmin: { configured: true },
+                aiProviders: Object.fromEntries(['gemini', 'nvidia', 'openai', 'groq', 'openrouter', 'deepseek'].map(provider => [provider, { configured: Boolean(ai[provider]?.apiKey || process.env[`${provider.toUpperCase()}_API_KEY`]) }])),
+                payments: {
+                    stripe: { configured: Boolean(payments.stripe?.secretKey || process.env.STRIPE_SECRET) },
+                    razorpay: { configured: Boolean(payments.razorpay?.keySecret || process.env.RAZORPAY_KEY_SECRET) },
+                },
+            },
+            settings: publicConfig.data()?.systemHealth || { maintenanceMode: false, maintenanceMessage: '' },
+        });
+    } catch (error) {
+        console.error('[Admin health summary]', error.message);
+        return res.status(503).json({ success: false, error: 'Unable to read service health configuration.' });
+    }
+});
+
+app.post('/api/admin/system-health-settings', async (req, res) => {
+    if (!db || !admin) return res.status(503).json({ success: false, error: 'Settings service unavailable.' });
+    const maintenanceMode = req.body?.maintenanceMode === true;
+    const maintenanceMessage = String(req.body?.maintenanceMessage || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, 500);
+    if (maintenanceMode && !maintenanceMessage) return res.status(400).json({ success: false, error: 'A maintenance message is required while maintenance mode is enabled.' });
+    const systemHealth = { maintenanceMode, maintenanceMessage };
+    const batch = db.batch();
+    batch.set(db.collection('data').doc('public_config'), { systemHealth }, { merge: true });
+    batch.set(db.collection('security_audit_logs').doc(), {
+        action: 'SYSTEM_HEALTH_SETTINGS_UPDATED', actorUid: req.user.uid, maintenanceMode,
+        requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    await batch.commit();
+    return res.json({ success: true, settings: systemHealth });
+});
+
+const GENERIC_ADMIN_SETTING_CATEGORIES = new Set([
+    'modules', 'auth', 'ai', 'watermark', 'templateManager', 'security', 'jobScraper',
+    'exportPdf', 'branding', 'geoSeo', 'llmGeo', 'enabledTemplates', 'integrations',
+    'socialAuth', 'google', 'facebook', 'payments', 'smtp', 'fallbackSmtp', 'imap',
+    'twilio', 'storage', 'codeInjection'
+]);
+
+function normalizeAdminSettingValue(value, depth = 0) {
+    if (depth > 6) throw new Error('Settings nesting is too deep.');
+    if (value === null || typeof value === 'boolean') return value;
+    if (typeof value === 'number') {
+        if (!Number.isFinite(value)) throw new Error('Settings contain an invalid number.');
+        return value;
+    }
+    if (typeof value === 'string') return value.replace(/\p{Cc}/gu, ' ').slice(0, 10_000);
+    if (Array.isArray(value)) {
+        if (value.length > 200) throw new Error('Settings list is too large.');
+        return value.map(item => normalizeAdminSettingValue(item, depth + 1));
+    }
+    if (value && typeof value === 'object') {
+        const entries = Object.entries(value);
+        if (entries.length > 200) throw new Error('Settings object is too large.');
+        return Object.fromEntries(entries.filter(([key]) => /^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(key))
+            .map(([key, item]) => [key, normalizeAdminSettingValue(item, depth + 1)]));
+    }
+    throw new Error('Settings contain an unsupported value.');
+}
+
+function publicAdminSettings(category, data) {
+    if (category === 'codeInjection') return {};
+    if (['smtp', 'fallbackSmtp', 'imap'].includes(category)) return { enabled: data.enabled === true };
+    if (category === 'twilio') return { enableSmsAlerts: data.enableSmsAlerts === true };
+    const publicApiKeys = new Set(['apiKey', 'googleMapsApiKey', 'cloudinaryApiKey']);
+    const hideKey = key => /(?:secret|password|privateKey|authToken|clientToken|accessToken|refreshToken|serviceAccount|merchantKey|saltKey|keySecret|s3AccessKeyId)/i.test(key)
+        || (/apiKey$/i.test(key) && !publicApiKeys.has(key))
+        || (category === 'exportPdf' && ['chromiumPath', 'backendExportUrl'].includes(key));
+    const redact = value => {
+        if (Array.isArray(value)) return value.map(redact);
+        if (!value || typeof value !== 'object') return value;
+        return Object.fromEntries(Object.entries(value).filter(([key]) => !hideKey(key)).map(([key, item]) => [key, redact(item)]));
+    };
+    return redact(data);
+}
+
+app.post('/api/admin/settings/:category', async (req, res) => {
+    if (!db || !admin) return res.status(503).json({ success: false, error: 'Settings service unavailable.' });
+    const category = String(req.params.category || '');
+    if (!GENERIC_ADMIN_SETTING_CATEGORIES.has(category) || !req.body?.data || typeof req.body.data !== 'object' || Array.isArray(req.body.data)) {
+        return res.status(400).json({ success: false, error: 'Unsupported settings category or payload.' });
+    }
+    try {
+        if (Buffer.byteLength(JSON.stringify(req.body.data), 'utf8') > 100_000) throw new Error('Settings payload is too large.');
+        const normalized = normalizeAdminSettingValue(req.body.data);
+        const publicSettings = publicAdminSettings(category, normalized);
+        const expectedRevision = Number(req.body.expectedRevision || 0);
+        if (!Number.isInteger(expectedRevision) || expectedRevision < 0) throw new Error('Invalid settings revision.');
+        const secretRef = db.collection('settings').doc('admin_configuration');
+        const publicRef = db.collection('data').doc('public_config');
+        const revision = await db.runTransaction(async transaction => {
+            const snapshot = await transaction.get(secretRef);
+            const currentRevision = Number(snapshot.data()?._revisions?.[category] || 0);
+            if (expectedRevision !== currentRevision) {
+                const stale = new Error('These settings changed after the panel loaded. Refresh before saving.');
+                stale.code = 'ADMIN_SETTINGS_CONFLICT';
+                throw stale;
+            }
+            const nextRevision = currentRevision + 1;
+            transaction.set(secretRef, { [category]: normalized, _revisions: { [category]: nextRevision } }, { merge: true });
+            transaction.set(publicRef, { [category]: publicSettings, _settingsRevisions: { [category]: nextRevision } }, { merge: true });
+            transaction.set(db.collection('security_audit_logs').doc(), {
+                action: 'ADMIN_SETTINGS_UPDATED', actorUid: req.user.uid, category, revision: nextRevision,
+                changedFields: Object.keys(normalized).slice(0, 200), requestId: res.locals.requestId,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+            return nextRevision;
+        });
+        return res.json({ success: true, settings: publicSettings, revision, message: `${category} settings saved.` });
+    } catch (error) {
+        return res.status(error.code === 'ADMIN_SETTINGS_CONFLICT' ? 409 : 400).json({ success: false, code: error.code, error: error.message });
+    }
+});
+
 app.post('/api/admin/gdpr-settings', async (req, res) => {
     if (!db) return res.status(503).json({ success: false, error: 'Settings service unavailable' });
     const input = req.body || {};
@@ -2551,8 +2678,10 @@ app.post('/api/admin/payments/refund', async (req, res) => {
 app.patch('/api/admin/employer-applications/:uid', async (req, res) => {
     const uid = String(req.params.uid || '');
     const status = String(req.body.status || '').toLowerCase();
+    const expectedStatus = req.body.expectedStatus === undefined ? null : String(req.body.expectedStatus).toLowerCase();
     const reason = String(req.body.reason || '').trim().slice(0, 500);
     if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid) || !['approved', 'rejected', 'active'].includes(status)
+        || (expectedStatus !== null && !['pending', 'approved', 'rejected', 'active'].includes(expectedStatus))
         || !db || !admin?.auth) {
         return res.status(400).json({ success: false, error: 'Valid application, user, and status are required.' });
     }
@@ -2561,6 +2690,9 @@ app.patch('/api/admin/employer-applications/:uid', async (req, res) => {
         const applicationRef = db.collection('employerApplications').doc(uid);
         const [application, target] = await Promise.all([applicationRef.get(), admin.auth().getUser(uid)]);
         if (!application.exists || application.data().userId !== uid) return res.status(404).json({ success: false, error: 'Employer application not found.' });
+        if (expectedStatus !== null && String(application.data().status || 'pending').toLowerCase() !== expectedStatus) {
+            return res.status(409).json({ success: false, code: 'ADMIN_TARGET_CHANGED', error: 'This application changed after the page loaded. Refresh before reviewing it.' });
+        }
         const enabled = status === 'approved' || status === 'active';
         await admin.auth().setCustomUserClaims(uid, { ...(target.customClaims || {}), employer: enabled });
         await admin.auth().revokeRefreshTokens(uid);
@@ -2589,6 +2721,193 @@ app.patch('/api/admin/employer-applications/:uid', async (req, res) => {
     }
 });
 
+function firestoreTimeMillis(value) {
+    const date = value?.toDate?.() || (value ? new Date(value) : null);
+    return date && Number.isFinite(date.getTime()) ? date.getTime() : null;
+}
+
+app.post('/api/admin/reviews', async (req, res) => {
+    if (!db || !admin) return res.status(503).json({ success: false, error: 'Review service unavailable.' });
+    const clean = (value, max) => String(value || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, max);
+    const name = clean(req.body?.name, 120);
+    const occupation = clean(req.body?.occupation, 160);
+    const review = clean(req.body?.review, 2_000);
+    const rating = Number(req.body?.rating);
+    let imageUrl = clean(req.body?.imageUrl, 2_048);
+    if (imageUrl) {
+        try { const parsed = new URL(imageUrl); if (parsed.protocol !== 'https:' || parsed.username || parsed.password) imageUrl = ''; }
+        catch { imageUrl = ''; }
+    }
+    if (!name || !review || !Number.isFinite(rating) || rating < 1 || rating > 5) return res.status(400).json({ success: false, error: 'Name, review, and rating from 1 to 5 are required.' });
+    const reference = db.collection('reviews').doc();
+    const batch = db.batch();
+    batch.set(reference, { name, occupation, review, rating, imageUrl, status: 'approved', revision: 1, createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+    batch.set(db.collection('security_audit_logs').doc(), { action: 'REVIEW_CREATED', actorUid: req.user.uid, reviewId: reference.id, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+    await batch.commit();
+    return res.json({ success: true, id: reference.id, revision: 1 });
+});
+
+app.delete('/api/admin/reviews/:reviewId', async (req, res) => {
+    if (!db || !admin) return res.status(503).json({ success: false, error: 'Review service unavailable.' });
+    const reviewId = String(req.params.reviewId || '');
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(reviewId)) return res.status(400).json({ success: false, error: 'Invalid review ID.' });
+    try {
+        await db.runTransaction(async transaction => {
+            const reference = db.collection('reviews').doc(reviewId);
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists) { const missing = new Error('Review not found.'); missing.code = 'NOT_FOUND'; throw missing; }
+            const currentRevision = Number(snapshot.data()?.revision || 0);
+            if (Number(req.body?.expectedRevision || 0) !== currentRevision) { const conflict = new Error('This review changed after the page loaded. Refresh before deleting it.'); conflict.code = 'ADMIN_TARGET_CHANGED'; throw conflict; }
+            transaction.delete(reference);
+            transaction.set(db.collection('security_audit_logs').doc(), { action: 'REVIEW_DELETED', actorUid: req.user.uid, reviewId, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        });
+        return res.json({ success: true });
+    } catch (error) {
+        const status = error.code === 'ADMIN_TARGET_CHANGED' ? 409 : error.code === 'NOT_FOUND' ? 404 : 500;
+        return res.status(status).json({ success: false, code: error.code, error: status === 500 ? 'Unable to delete review.' : error.message });
+    }
+});
+
+app.post('/api/admin/global-rating', async (req, res) => {
+    if (!db || !admin) return res.status(503).json({ success: false, error: 'Rating service unavailable.' });
+    const rating = Number(req.body?.rating);
+    if (!Number.isFinite(rating) || rating < 1 || rating > 5) return res.status(400).json({ success: false, error: 'Rating must be from 1 to 5.' });
+    const batch = db.batch();
+    batch.set(db.collection('data').doc('meta'), { rating, ratingUpdatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    batch.set(db.collection('security_audit_logs').doc(), { action: 'GLOBAL_RATING_UPDATED', actorUid: req.user.uid, rating, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+    await batch.commit();
+    return res.json({ success: true, rating });
+});
+
+app.patch('/api/admin/companies/:companyId', async (req, res) => {
+    if (!db || !admin) return res.status(503).json({ success: false, error: 'Company administration unavailable.' });
+    const companyId = String(req.params.companyId || '');
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(companyId)) return res.status(400).json({ success: false, error: 'Invalid company ID.' });
+    const hasStatus = Object.hasOwn(req.body, 'status');
+    const hasFeatured = Object.hasOwn(req.body, 'featured');
+    if (Number(hasStatus) + Number(hasFeatured) !== 1) return res.status(400).json({ success: false, error: 'Exactly one company change is allowed per request.' });
+    const status = String(req.body.status || '').toLowerCase();
+    if (hasStatus && !['approved', 'rejected'].includes(status)) return res.status(400).json({ success: false, error: 'Invalid company status.' });
+    if (hasStatus && status === 'rejected' && !String(req.body.reason || '').trim()) return res.status(400).json({ success: false, error: 'A rejection reason is required.' });
+    if (hasFeatured && typeof req.body.featured !== 'boolean') return res.status(400).json({ success: false, error: 'Invalid featured state.' });
+    const reference = db.collection('companies').doc(companyId);
+    try {
+        const result = await db.runTransaction(async transaction => {
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists) { const missing = new Error('Company not found.'); missing.code = 'NOT_FOUND'; throw missing; }
+            const company = snapshot.data() || {};
+            const expectedUpdatedAt = req.body.expectedUpdatedAt === undefined ? null : Number(req.body.expectedUpdatedAt);
+            const stale = (Object.hasOwn(req.body, 'expectedStatus') && String(company.status || 'pending') !== String(req.body.expectedStatus))
+                || (Object.hasOwn(req.body, 'expectedFeatured') && Boolean(company.featured) !== Boolean(req.body.expectedFeatured))
+                || (expectedUpdatedAt !== null && expectedUpdatedAt !== firestoreTimeMillis(company.updatedAt));
+            if (stale) { const conflict = new Error('This company changed after the page loaded. Refresh before changing it.'); conflict.code = 'ADMIN_TARGET_CHANGED'; throw conflict; }
+            const reason = String(req.body.reason || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, 500);
+            const changes = hasStatus
+                ? { status, ...(status === 'approved' ? { approvedAt: admin.firestore.FieldValue.serverTimestamp(), rejectionReason: null } : { rejectedAt: admin.firestore.FieldValue.serverTimestamp(), rejectionReason: reason }), updatedAt: admin.firestore.FieldValue.serverTimestamp() }
+                : { featured: req.body.featured, featuredAt: req.body.featured ? admin.firestore.FieldValue.serverTimestamp() : null, updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+            transaction.update(reference, changes);
+            if (hasStatus && company.employerId) {
+                const name = String(company.name || 'Company').replace(/\p{Cc}/gu, ' ').slice(0, 160);
+                transaction.set(db.collection('notifications').doc(company.employerId).collection('userNotifications').doc(), {
+                    type: 'company_status_update', title: 'Company review updated', message: `${name} is now ${status}.`,
+                    data: { companyId, status }, read: false, createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                });
+            }
+            transaction.set(db.collection('security_audit_logs').doc(), {
+                action: hasStatus ? 'COMPANY_STATUS_UPDATED' : 'COMPANY_FEATURED_UPDATED', actorUid: req.user.uid, companyId,
+                ...(hasStatus ? { status, reason: reason || null } : { featured: req.body.featured }), requestId: res.locals.requestId,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+            return { status: hasStatus ? status : company.status, featured: hasFeatured ? req.body.featured : Boolean(company.featured) };
+        });
+        return res.json({ success: true, ...result });
+    } catch (error) {
+        const responseStatus = error.code === 'ADMIN_TARGET_CHANGED' ? 409 : error.code === 'NOT_FOUND' ? 404 : 500;
+        return res.status(responseStatus).json({ success: false, code: error.code, error: responseStatus === 500 ? 'Unable to update company.' : error.message });
+    }
+});
+
+app.patch('/api/admin/jobs/:jobId', async (req, res) => {
+    if (!db || !admin) return res.status(503).json({ success: false, error: 'Job administration unavailable.' });
+    const jobId = String(req.params.jobId || '');
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(jobId)) return res.status(400).json({ success: false, error: 'Invalid job ID.' });
+    const hasStatus = Object.hasOwn(req.body, 'status');
+    const hasFeatured = Object.hasOwn(req.body, 'isFeatured');
+    if (Number(hasStatus) + Number(hasFeatured) !== 1) return res.status(400).json({ success: false, error: 'Exactly one job change is allowed per request.' });
+    const status = String(req.body.status || '').toLowerCase();
+    if (hasStatus && !['active', 'pending', 'inactive', 'archived'].includes(status)) return res.status(400).json({ success: false, error: 'Invalid job status.' });
+    if (hasFeatured && typeof req.body.isFeatured !== 'boolean') return res.status(400).json({ success: false, error: 'Invalid featured state.' });
+    const reference = db.collection('jobs').doc(jobId);
+    try {
+        const result = await db.runTransaction(async transaction => {
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists) {
+                const missing = new Error('Job not found.'); missing.code = 'NOT_FOUND'; throw missing;
+            }
+            const job = snapshot.data() || {};
+            const expectedUpdatedAt = req.body.expectedUpdatedAt === undefined ? null : Number(req.body.expectedUpdatedAt);
+            const stale = (Object.hasOwn(req.body, 'expectedStatus') && String(job.status || 'pending') !== String(req.body.expectedStatus))
+                || (Object.hasOwn(req.body, 'expectedFeatured') && Boolean(job.isFeatured) !== Boolean(req.body.expectedFeatured))
+                || (expectedUpdatedAt !== null && expectedUpdatedAt !== firestoreTimeMillis(job.updatedAt));
+            if (stale) { const conflict = new Error('This job changed after the page loaded. Refresh before changing it.'); conflict.code = 'ADMIN_TARGET_CHANGED'; throw conflict; }
+            const changes = hasStatus
+                ? { status, updatedAt: admin.firestore.FieldValue.serverTimestamp() }
+                : { isFeatured: req.body.isFeatured, featuredAt: req.body.isFeatured ? admin.firestore.FieldValue.serverTimestamp() : null, updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+            transaction.update(reference, changes);
+            if (hasStatus && job.employerId) {
+                const safeTitle = String(job.title || 'Job posting').replace(/\p{Cc}/gu, ' ').slice(0, 160);
+                const notificationRef = db.collection('notifications').doc(job.employerId).collection('userNotifications').doc();
+                transaction.set(notificationRef, {
+                    type: 'job_status_update', title: 'Job status updated',
+                    message: `Your job posting “${safeTitle}” is now ${status}.`,
+                    data: { jobId, status }, read: false,
+                    createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                });
+            }
+            transaction.set(db.collection('security_audit_logs').doc(), {
+                action: hasStatus ? 'JOB_STATUS_UPDATED' : 'JOB_FEATURED_UPDATED', actorUid: req.user.uid,
+                jobId, ...(hasStatus ? { status } : { isFeatured: req.body.isFeatured }), requestId: res.locals.requestId,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+            return { status: hasStatus ? status : job.status, isFeatured: hasFeatured ? req.body.isFeatured : Boolean(job.isFeatured) };
+        });
+        return res.json({ success: true, ...result });
+    } catch (error) {
+        const responseStatus = error.code === 'ADMIN_TARGET_CHANGED' ? 409 : error.code === 'NOT_FOUND' ? 404 : 500;
+        return res.status(responseStatus).json({ success: false, code: error.code, error: responseStatus === 500 ? 'Unable to update job.' : error.message });
+    }
+});
+
+app.delete('/api/admin/jobs/:jobId', async (req, res) => {
+    if (!db || !admin) return res.status(503).json({ success: false, error: 'Job administration unavailable.' });
+    const jobId = String(req.params.jobId || '');
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(jobId)) return res.status(400).json({ success: false, error: 'Invalid job ID.' });
+    try {
+        const reference = db.collection('jobs').doc(jobId);
+        const applicationsQuery = db.collection('jobApplications').where('jobId', '==', jobId).limit(1);
+        await db.runTransaction(async transaction => {
+            const [snapshot, applications] = await Promise.all([transaction.get(reference), transaction.get(applicationsQuery)]);
+            if (!snapshot.exists) { const missing = new Error('Job not found.'); missing.code = 'NOT_FOUND'; throw missing; }
+            if (!applications.empty) { const conflict = new Error('This job has applications and must be archived instead of deleted.'); conflict.code = 'JOB_HAS_APPLICATIONS'; throw conflict; }
+            const job = snapshot.data() || {};
+            const expectedUpdatedAt = req.body?.expectedUpdatedAt === undefined ? null : Number(req.body.expectedUpdatedAt);
+            if ((Object.hasOwn(req.body || {}, 'expectedStatus') && String(job.status || 'pending') !== String(req.body.expectedStatus))
+                || (expectedUpdatedAt !== null && expectedUpdatedAt !== firestoreTimeMillis(job.updatedAt))) {
+                const conflict = new Error('This job changed after the page loaded. Refresh before deleting it.'); conflict.code = 'ADMIN_TARGET_CHANGED'; throw conflict;
+            }
+            transaction.delete(reference);
+            transaction.set(db.collection('security_audit_logs').doc(), {
+                action: 'JOB_DELETED', actorUid: req.user.uid, jobId, previousStatus: job.status || 'pending',
+                requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+        });
+        return res.json({ success: true });
+    } catch (error) {
+        const responseStatus = ['ADMIN_TARGET_CHANGED', 'JOB_HAS_APPLICATIONS'].includes(error.code) ? 409 : error.code === 'NOT_FOUND' ? 404 : 500;
+        return res.status(responseStatus).json({ success: false, code: error.code, error: responseStatus === 500 ? 'Unable to delete job.' : error.message });
+    }
+});
+
 // Audited server-authoritative user administration. Firestore rules never permit these
 // identity/entitlement fields to be changed directly by a browser.
 app.patch('/api/admin/users/:uid', async (req, res) => {
@@ -2601,7 +2920,22 @@ app.patch('/api/admin/users/:uid', async (req, res) => {
     const updates = {};
     const auditChanges = [];
     try {
-        const target = await admin.auth().getUser(uid);
+        const [target, userSnapshot] = await Promise.all([
+            admin.auth().getUser(uid), db.collection('users').doc(uid).get(),
+        ]);
+        const userData = userSnapshot.data() || {};
+        const currentRole = String(target.customClaims?.role || userData.role || 'USER').toUpperCase();
+        const currentMembership = String(userData.membership || 'Basic');
+        if (Object.hasOwn(req.body, 'expectedSuspended') && typeof req.body.expectedSuspended !== 'boolean') return res.status(400).json({ success: false, error: 'Invalid expected suspension state.' });
+        if (Object.hasOwn(req.body, 'expectedRole') && !['ADMIN', 'USER'].includes(req.body.expectedRole)) return res.status(400).json({ success: false, error: 'Invalid expected role.' });
+        if (Object.hasOwn(req.body, 'expectedMembership') && !['Basic', 'Premium'].includes(req.body.expectedMembership)) return res.status(400).json({ success: false, error: 'Invalid expected membership.' });
+        const staleTarget = (Object.hasOwn(req.body, 'expectedSuspended') && req.body.expectedSuspended !== Boolean(target.disabled))
+            || (Object.hasOwn(req.body, 'expectedRole') && req.body.expectedRole !== currentRole)
+            || (Object.hasOwn(req.body, 'expectedMembership') && req.body.expectedMembership !== currentMembership);
+        if (staleTarget) return res.status(409).json({ success: false, code: 'ADMIN_TARGET_CHANGED', error: 'This user changed after the page loaded. Refresh before trying again.' });
+        const requestedChanges = ['suspended', 'membership', 'role'].filter(field => Object.hasOwn(req.body, field));
+        if (requestedChanges.length !== 1) return res.status(400).json({ success: false, error: 'Exactly one administrative user change is allowed per request.' });
+
         if (typeof req.body.suspended === 'boolean') {
             if (!allowed('users.update')) return res.status(403).json({ success: false, error: 'Insufficient permission.' });
             if (uid === req.user.uid && req.body.suspended) return res.status(400).json({ success: false, error: 'Self-suspension is prohibited.' });
@@ -2698,38 +3032,54 @@ app.post(['/api/admin/delete-user', '/api/auth/purge-orphaned-auth'], async (req
         const targetUid = target?.uid || requestedUid;
         if (!/^[A-Za-z0-9:_-]{1,128}$/.test(targetUid)) return res.status(400).json({ success: false, error: 'Invalid user UID.' });
         if (targetUid === req.user.uid) return res.status(400).json({ success: false, error: 'Self-deletion through the admin endpoint is prohibited.' });
-        if (target && requestedEmail && String(target.email || '').toLowerCase() !== requestedEmail) {
+        const profileSnapshot = await db.collection('users').doc(targetUid).get();
+        const profileData = profileSnapshot.data() || {};
+        const authoritativeEmail = String(target?.email || profileData.email || '').toLowerCase();
+        if (requestedEmail && authoritativeEmail && authoritativeEmail !== requestedEmail) {
             return res.status(400).json({ success: false, error: 'UID/email identity mismatch.' });
         }
-        const targetRole = String(target?.customClaims?.role || '').toUpperCase();
+        const targetRole = String(target?.customClaims?.role || profileData.role || '').toUpperCase();
         if (targetRole === 'SUPER_ADMIN' && !permissionsFor(req.user).has('*')) {
             return res.status(403).json({ success: false, error: 'Only SUPER_ADMIN can delete another SUPER_ADMIN.' });
         }
         if (target) await admin.auth().deleteUser(targetUid);
 
-        await db.recursiveDelete(db.collection('users').doc(targetUid));
+        const cleanupFailures = [];
         const relatedQueries = [
-            db.collection('portfolios').where('userId', '==', targetUid),
-            db.collection('pb').where('ownerUid', '==', targetUid),
-            db.collection('jobApplications').where('userId', '==', targetUid)
+            ['portfolios', db.collection('portfolios').where('userId', '==', targetUid)],
+            ['published portfolios', db.collection('pb').where('ownerUid', '==', targetUid)],
+            ['job applications', db.collection('jobApplications').where('userId', '==', targetUid)],
+            ['blog posts', db.collection('blog_posts').where('authorUid', '==', targetUid)],
         ];
-        for (const query of relatedQueries) {
+        for (const [label, query] of relatedQueries) {
             try {
-                if (typeof query.get === 'function') {
-                    const snapshot = await query.get();
-                    for (const item of snapshot.docs) await db.recursiveDelete(item.ref);
-                }
+                const snapshot = await query.get();
+                for (const item of snapshot.docs) await db.recursiveDelete(item.ref);
             } catch (error) {
-                console.warn('[User deletion related data]', error.message);
+                cleanupFailures.push(label);
+                console.warn(`[User deletion ${label}]`, error.message);
             }
         }
-        await db.recursiveDelete(db.collection('employerApplications').doc(targetUid)).catch(() => {});
-        await db.recursiveDelete(db.collection('notifications').doc(targetUid)).catch(() => {});
+        for (const [label, reference] of [
+            ['employer application', db.collection('employerApplications').doc(targetUid)],
+            ['notifications', db.collection('notifications').doc(targetUid)],
+        ]) {
+            try { await db.recursiveDelete(reference); } catch { cleanupFailures.push(label); }
+        }
+        if (!cleanupFailures.length) {
+            try { await db.recursiveDelete(db.collection('users').doc(targetUid)); }
+            catch { cleanupFailures.push('user profile tree'); }
+        }
         await db.collection('security_audit_logs').add({
-            action: 'USER_DELETED', actorUid: req.user.uid, targetUid,
+            action: cleanupFailures.length ? 'USER_DELETION_INCOMPLETE' : 'USER_DELETED',
+            actorUid: req.user.uid, targetUid, cleanupFailures,
             requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp()
         });
-        return res.json({ success: true, deletedFromAuth: Boolean(target), message: 'User identity and owned data deleted.' });
+        if (cleanupFailures.length) return res.status(500).json({
+            success: false, code: 'USER_CLEANUP_INCOMPLETE',
+            error: `Identity is absent or was deleted, but cleanup failed for: ${cleanupFailures.join(', ')}. Retry this operation.`,
+        });
+        return res.json({ success: true, deletedFromAuth: Boolean(target), message: 'User identity, profile tree, portfolios, applications, notifications, and authored blog posts were deleted.' });
     } catch (error) {
         console.error('[Admin delete user]', error.message);
         return res.status(error.code === 'auth/user-not-found' ? 404 : 500).json({ success: false, error: 'Unable to delete user.' });

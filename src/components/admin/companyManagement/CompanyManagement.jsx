@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import { getAllCompanies, approveCompany, rejectCompany, toggleCompanyFeatured } from '../../../firestore/dbOperations';
+import { sanitizeImageUrl } from '../../../utils/sanitizeHtml';
 import {
     FaBuilding,
     FaUser,
@@ -39,6 +40,8 @@ class CompanyManagement extends Component {
             errorMessage: '',
             filterStatus: 'all',
             searchTerm: '',
+            pendingAction: null,
+            rejectionReason: '',
         };
     }
 
@@ -60,14 +63,19 @@ class CompanyManagement extends Component {
         }
     };
 
-    handleApprove = async (companyId) => {
-        this.setState({ processingAction: `approve-${companyId}` });
+    handleApprove = async (company) => {
+        this.setState({ processingAction: `approve-${company.id}` });
         try {
-            const result = await approveCompany(companyId);
+            const result = await approveCompany(company.id, {
+                expectedStatus: company.status || 'pending',
+                ...(company.updatedAt ? { expectedUpdatedAt: (company.updatedAt.toDate?.() || new Date(company.updatedAt)).getTime() } : {}),
+            });
             if (result.success) {
                 this.setState({
                     successMessage: 'Company approved successfully!',
                     processingAction: null,
+                    pendingAction: null,
+                    rejectionReason: '',
                 });
                 setTimeout(() => this.setState({ successMessage: '' }), 3000);
                 this.loadCompanies(); // Refresh the list
@@ -75,7 +83,9 @@ class CompanyManagement extends Component {
                 this.setState({
                     errorMessage: result.error || 'Failed to approve company',
                     processingAction: null,
+                    ...(result.code === 'ADMIN_TARGET_CHANGED' ? { pendingAction: null } : {}),
                 });
+                if (result.code === 'ADMIN_TARGET_CHANGED') this.loadCompanies();
                 setTimeout(() => this.setState({ errorMessage: '' }), 3000);
             }
         } catch (error) {
@@ -88,14 +98,19 @@ class CompanyManagement extends Component {
         }
     };
 
-    handleReject = async (companyId, reason = '') => {
-        this.setState({ processingAction: `reject-${companyId}` });
+    handleReject = async (company, reason = '') => {
+        this.setState({ processingAction: `reject-${company.id}` });
         try {
-            const result = await rejectCompany(companyId, reason);
+            const result = await rejectCompany(company.id, reason, {
+                expectedStatus: company.status || 'pending',
+                ...(company.updatedAt ? { expectedUpdatedAt: (company.updatedAt.toDate?.() || new Date(company.updatedAt)).getTime() } : {}),
+            });
             if (result.success) {
                 this.setState({
                     successMessage: 'Company rejected successfully!',
                     processingAction: null,
+                    pendingAction: null,
+                    rejectionReason: '',
                 });
                 setTimeout(() => this.setState({ successMessage: '' }), 3000);
                 this.loadCompanies(); // Refresh the list
@@ -103,7 +118,9 @@ class CompanyManagement extends Component {
                 this.setState({
                     errorMessage: result.error || 'Failed to reject company',
                     processingAction: null,
+                    ...(result.code === 'ADMIN_TARGET_CHANGED' ? { pendingAction: null } : {}),
                 });
+                if (result.code === 'ADMIN_TARGET_CHANGED') this.loadCompanies();
                 setTimeout(() => this.setState({ errorMessage: '' }), 3000);
             }
         } catch (error) {
@@ -116,15 +133,20 @@ class CompanyManagement extends Component {
         }
     };
 
-    handleToggleFeatured = async (companyId, currentFeaturedStatus) => {
-        const newFeaturedStatus = !currentFeaturedStatus;
-        this.setState({ processingAction: `featured-${companyId}` });
+    handleToggleFeatured = async (company) => {
+        const newFeaturedStatus = !company.featured;
+        this.setState({ processingAction: `featured-${company.id}` });
         try {
-            const result = await toggleCompanyFeatured(companyId, newFeaturedStatus);
+            const result = await toggleCompanyFeatured(company.id, newFeaturedStatus, {
+                expectedFeatured: Boolean(company.featured),
+                ...(company.updatedAt ? { expectedUpdatedAt: (company.updatedAt.toDate?.() || new Date(company.updatedAt)).getTime() } : {}),
+            });
             if (result.success) {
                 this.setState({
                     successMessage: `Company ${newFeaturedStatus ? 'marked as featured' : 'removed from featured'} successfully!`,
                     processingAction: null,
+                    pendingAction: null,
+                    rejectionReason: '',
                 });
                 setTimeout(() => this.setState({ successMessage: '' }), 3000);
                 this.loadCompanies(); // Refresh the list
@@ -132,7 +154,9 @@ class CompanyManagement extends Component {
                 this.setState({
                     errorMessage: result.error || 'Failed to update featured status',
                     processingAction: null,
+                    ...(result.code === 'ADMIN_TARGET_CHANGED' ? { pendingAction: null } : {}),
                 });
+                if (result.code === 'ADMIN_TARGET_CHANGED') this.loadCompanies();
                 setTimeout(() => this.setState({ errorMessage: '' }), 3000);
             }
         } catch (error) {
@@ -143,6 +167,22 @@ class CompanyManagement extends Component {
             });
             setTimeout(() => this.setState({ errorMessage: '' }), 3000);
         }
+    };
+
+    requestCompanyAction = (company, action) => {
+        this.setState({ pendingAction: { company, action }, rejectionReason: '' });
+    };
+
+    confirmCompanyAction = async () => {
+        const pending = this.state.pendingAction;
+        if (!pending) return;
+        if (pending.action === 'reject' && !this.state.rejectionReason.trim()) {
+            this.setState({ errorMessage: 'A reason is required when rejecting or revoking a company.' });
+            return;
+        }
+        if (pending.action === 'approve') await this.handleApprove(pending.company);
+        else if (pending.action === 'reject') await this.handleReject(pending.company, this.state.rejectionReason.trim());
+        else await this.handleToggleFeatured(pending.company);
     };
 
     toggleExpandRow = (companyId) => {
@@ -240,9 +280,20 @@ class CompanyManagement extends Component {
 
         return (
             <div className="min-h-screen bg-slate-50 px-4 py-6">
+                {this.state.pendingAction && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" role="presentation" onKeyDown={event => { if (event.key === 'Escape' && !processingAction) this.setState({ pendingAction: null, rejectionReason: '' }); }}>
+                        <div role="alertdialog" aria-modal="true" aria-labelledby="company-action-title" aria-describedby="company-action-message" className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
+                            <h2 id="company-action-title" className="text-lg font-bold text-slate-900">{this.state.pendingAction.action === 'approve' ? 'Approve company?' : this.state.pendingAction.action === 'reject' ? 'Reject or revoke company?' : this.state.pendingAction.company.featured ? 'Remove featured company?' : 'Feature company?'}</h2>
+                            <p id="company-action-message" className="mt-2 text-sm text-slate-600">Target: {this.state.pendingAction.company.name || this.state.pendingAction.company.id}. The loaded state will be verified and the change audited.</p>
+                            {this.state.pendingAction.action === 'reject' && <div className="mt-4"><label htmlFor="company-rejection-reason" className="text-sm font-medium text-slate-700">Reason</label><textarea id="company-rejection-reason" autoFocus required maxLength={500} rows={3} value={this.state.rejectionReason} onChange={event => this.setState({ rejectionReason: event.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 p-3 text-sm" /></div>}
+                            <div className="mt-6 flex justify-end gap-3"><button type="button" autoFocus={this.state.pendingAction.action !== 'reject'} onClick={() => this.setState({ pendingAction: null, rejectionReason: '' })} disabled={Boolean(processingAction)} className="rounded-lg border border-slate-300 px-4 py-2 text-sm">Cancel</button><button type="button" onClick={this.confirmCompanyAction} disabled={Boolean(processingAction)} className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{processingAction ? 'Applying…' : 'Confirm change'}</button></div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Success/Error Messages */}
                 {successMessage && (
-                    <div className="mb-4 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-lg">
+                    <div role="status" aria-live="polite" className="mb-4 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-lg">
                         <div className="flex items-center">
                             <FaCheck className="w-4 h-4 mr-2" />
                             {successMessage}
@@ -251,7 +302,7 @@ class CompanyManagement extends Component {
                 )}
 
                 {errorMessage && (
-                    <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                    <div role="alert" className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
                         <div className="flex items-center">
                             <FaExclamationTriangle className="w-4 h-4 mr-2" />
                             {errorMessage}
@@ -349,9 +400,9 @@ class CompanyManagement extends Component {
                                                 <td className="px-4 py-3">
                                                     <div className="flex items-center space-x-3">
                                                         <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                                                            {company.companyImage ? (
+                                                            {sanitizeImageUrl(company.companyImage) ? (
                                                                 <img
-                                                                    src={company.companyImage}
+                                                                    src={sanitizeImageUrl(company.companyImage)}
                                                                     alt={company.name}
                                                                     className="w-6 h-6 object-contain rounded"
                                                                     onError={(e) => {
@@ -360,7 +411,7 @@ class CompanyManagement extends Component {
                                                                     }}
                                                                 />
                                                             ) : null}
-                                                            <FaBuilding className="w-4 h-4 text-blue-600" style={{ display: company.companyImage ? 'none' : 'block' }} />
+                                                            <FaBuilding className="w-4 h-4 text-blue-600" style={{ display: sanitizeImageUrl(company.companyImage) ? 'none' : 'block' }} />
                                                         </div>
                                                         <div>
                                                             <p className="text-sm font-medium text-slate-900">{company.name || 'N/A'}</p>
@@ -394,7 +445,7 @@ class CompanyManagement extends Component {
                                                         {/* Show approve button only for pending companies */}
                                                         {company.status === 'pending' && (
                                                             <button
-                                                                onClick={() => this.handleApprove(company.id)}
+                                                                onClick={() => this.requestCompanyAction(company, 'approve')}
                                                                 disabled={processingAction === `approve-${company.id}`}
                                                                 className="flex items-center space-x-1 text-emerald-600 hover:text-emerald-700 transition-colors disabled:opacity-50">
                                                                 <FaCheck className="w-3 h-3" />
@@ -405,7 +456,7 @@ class CompanyManagement extends Component {
                                                         {/* Show reject button for pending and approved companies */}
                                                         {(company.status === 'pending' || company.status === 'approved') && (
                                                             <button
-                                                                onClick={() => this.handleReject(company.id)}
+                                                                onClick={() => this.requestCompanyAction(company, 'reject')}
                                                                 disabled={processingAction === `reject-${company.id}`}
                                                                 className="flex items-center space-x-1 text-red-600 hover:text-red-700 transition-colors disabled:opacity-50">
                                                                 <FaTimes className="w-3 h-3" />
@@ -422,7 +473,7 @@ class CompanyManagement extends Component {
                                                         {/* Show featured toggle button for approved companies */}
                                                         {company.status === 'approved' && (
                                                             <button
-                                                                onClick={() => this.handleToggleFeatured(company.id, company.featured)}
+                                                                onClick={() => this.requestCompanyAction(company, 'featured')}
                                                                 disabled={processingAction === `featured-${company.id}`}
                                                                 className={`flex items-center space-x-1 transition-colors disabled:opacity-50 ${
                                                                     company.featured 
@@ -472,14 +523,14 @@ class CompanyManagement extends Component {
                                                                                 <p className="text-slate-700">{company.size || 'N/A'}</p>
                                                                             </div>
                                                                         </div>
-                                                                        {company.companyImage && (
+                                                                        {sanitizeImageUrl(company.companyImage) && (
                                                                             <div className="flex items-start space-x-2">
                                                                                 <FaImage className="w-3 h-3 text-slate-400 mt-0.5 flex-shrink-0" />
                                                                                 <div className="min-w-0 flex-1">
                                                                                     <span className="text-slate-500">Logo:</span>
                                                                                     <div className="mt-1">
                                                                                         <img
-                                                                                            src={company.companyImage}
+                                                                                            src={sanitizeImageUrl(company.companyImage)}
                                                                                             alt={`${company.name} logo`}
                                                                                             className="w-16 h-16 object-contain border border-slate-200 rounded-md bg-white shadow-sm"
                                                                                             onError={(e) => {
