@@ -70,9 +70,11 @@ class AuthWrapper extends Component {
                 <AnimatePresence>
                     {this.state.isErrorToastShowed && (
                         <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
+                            style={{ position: 'fixed', top: 24, right: 24, zIndex: 100000, pointerEvents: 'none' }}
+                            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
                         >
                             <Toast type="Error" message={this.state.errorMessage}></Toast>
                         </motion.div>
@@ -81,10 +83,11 @@ class AuthWrapper extends Component {
                 <AnimatePresence>
                     {this.state.isSuccessToastShowed && (
                         <motion.div
-                            initial={{ opacity: 0, y: -20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            transition={{ duration: 0.3 }}
+                            style={{ position: 'fixed', top: 24, right: 24, zIndex: 100000, pointerEvents: 'none' }}
+                            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
                         >
                             <Toast type="SuccessEmail" message={this.state.successMessage} />
                         </motion.div>

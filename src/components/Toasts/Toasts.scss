@@ -1,39 +1,66 @@
 @use '../variables' as *;
 @use 'sass:color';
 .toast {
-    position: absolute;
-  transform: translateY(40px);
-  top: 40px;
-   right: 20px;
-    z-index: 1000;
-    width: 400px;
-    height: 70px;
-    background-color:white;
-    border-radius: 3px;
+    position: relative;
+    top: 0;
+    right: 0;
+    z-index: 100000;
+    width: 380px;
+    max-width: calc(100vw - 32px);
+    min-height: 64px;
+    background-color: #ffffff;
+    border-radius: 16px;
     display: flex;
-    .iconAnimation{
-        height: 100%;
-        width: 80px;
-        padding:10px;
+    align-items: center;
+    padding: 12px 16px;
+    box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(226, 232, 240, 0.9);
+    backdrop-filter: blur(12px);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-sizing: border-box;
+
+    .iconAnimation {
+        height: 48px;
+        width: 48px;
+        flex-shrink: 0;
+        padding: 4px;
         display: flex;
-        box-sizing: border-box;
         align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
     }
-    .toastDetails{
+
+    .toastDetails {
         display: flex;
         flex-direction: column;
         justify-content: center;
         font-family: $font;
-        color: black;
-        .toastTitle{
+        color: #0f172a;
+        margin-left: 8px;
+        flex-grow: 1;
+
+        .toastTitle {
             font-size: 14px;
-            font-weight: 600;
+            font-weight: 700;
+            color: #0f172a;
+            letter-spacing: -0.2px;
         }
-        .toastMessage{
+
+        .toastMessage {
             font-size: 13px;
+            color: #475569;
+            margin-top: 2px;
+            line-height: 1.4;
         }
     }
 }
+
 .success {
-    border-left: 3px solid #2ecc71;
+    border-left: 4px solid #10b981;
+}
+
+@media (max-width: 640px) {
+    .toast {
+        width: calc(100vw - 24px) !important;
+        border-radius: 14px !important;
+    }
 }

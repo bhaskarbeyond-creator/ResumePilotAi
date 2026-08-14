@@ -94,6 +94,8 @@ remote_htaccess_content = r'''<IfModule mod_rewrite.c>
   <FilesMatch "^(index\.html)?$">
     Header set Content-Type "text/html; charset=utf-8"
     Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0, s-maxage=0"
+    Header set CDN-Cache-Control "no-store"
+    Header set Cloudflare-CDN-Cache-Control "no-store"
     Header set Pragma "no-cache"
     Header set Expires "0"
   </FilesMatch>
