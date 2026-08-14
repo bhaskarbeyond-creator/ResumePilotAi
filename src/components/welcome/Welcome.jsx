@@ -443,6 +443,17 @@ class Welcome extends Component {
 
     // Initialize user state based on localStorage
     initializeUserState() {
+        const pathname = window.location.pathname;
+
+        // If explicitly visiting Homepage (/ or /front or /login), force Introduction step (Homepage)
+        if (pathname === '/' || pathname === '/front' || pathname === '/login') {
+            this.setState({
+                currentStep: 'Introduction',
+                stepIndex: 0,
+            });
+            return;
+        }
+
         // Check URL parameters for cover letter creation
         const urlParams = new URLSearchParams(window.location.search);
 
@@ -464,7 +475,6 @@ class Welcome extends Component {
         if (localStorage.getItem('currentCoverItem')) {
             const currentCoverData = JSON.parse(localStorage.getItem('currentCoverItem'));
 
-
             this.setState({
                 currentResume: currentCoverData,
             });
@@ -477,7 +487,7 @@ class Welcome extends Component {
             return;
         }
 
-        // Check if current resume exists in localStorage
+        // Check if current resume exists in localStorage (only if on builder routes)
         if (localStorage.getItem('currentResumeItem')) {
             const currentResumeData = JSON.parse(localStorage.getItem('currentResumeItem'));
 
@@ -485,8 +495,7 @@ class Welcome extends Component {
                 currentResume: currentResumeData,
             });
 
-            // If we have an existing resume, skip template selection and go directly to filling
-            // Check if it's a resume (has employments) or a cover letter
+            // If we have an existing resume and on a builder path, skip template selection and go directly to filling
             if (currentResumeData.employments !== undefined) {
                 // It's a resume - go to Adding Data step (step 2)
                 this.setState({
