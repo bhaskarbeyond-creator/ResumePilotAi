@@ -254,7 +254,6 @@ export const loadTemplate = async (templateKey, initialData, setPortfolioData, s
             },
         };
 
-        console.log('Loading template:', templateKey, newPortfolioData);
 
         // Clear current portfolio ID since this is a new template
         setCurrentPortfolioId(null);
@@ -275,7 +274,6 @@ export const loadTemplate = async (templateKey, initialData, setPortfolioData, s
         setTimeout(() => {
             setPortfolioData(newPortfolioData);
             setRenderKey((prev) => prev + 1); // Force Puck to completely re-render
-            console.log('Template data set:', newPortfolioData);
         }, 50);
 
         return { success: true, template: template };

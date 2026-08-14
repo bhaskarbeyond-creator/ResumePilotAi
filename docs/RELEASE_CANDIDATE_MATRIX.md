@@ -10,7 +10,7 @@ Date: 2026-08-15. This matrix separates evidence available in the repository fro
 | Security | Static secret/TLS/XSS/MFA/OAuth/payment checks and backend deterministic provider/route/policy tests. |
 | Rendering | All 51 CV and four cover-template entry points server-render representative data. |
 | Build and lint | Production Vite build and repository ESLint command. |
-| Dependency state | Root and backend production dependency audits through `npm run audit:production`. |
+| Dependency state | Root and backend production plus full dependency audits through `npm run audit:production` and `npm run audit:all`. |
 | SEO | Public static route metadata, dynamic Blog/Portfolio metadata, private-route noindex rules, robots exclusions, static sitemap, and explicit 404 route. |
 | PWA privacy | Manifest remains installable; service-worker data caching is intentionally disabled and legacy registrations are removed. No Cache Storage or IndexedDB authenticated data path exists. |
 | Maintenance | Public config is audited; web shell blocks non-admin routes, preserves `/login`, and bypasses `/adm` only after a Firebase role claim. |

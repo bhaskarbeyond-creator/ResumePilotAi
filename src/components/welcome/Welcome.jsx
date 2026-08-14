@@ -18,7 +18,7 @@ import { RxHamburgerMenu } from 'react-icons/rx';
 // Firease
 import fire from '../../conf/fire';
 import signOutUser from '../../utils/signOut';
-import { InitialisationCheck, getPages, getWebsiteData, getSubscriptionStatus, checkSbs, makeBasicAccount, checkIfSuspended } from '../../firestore/dbOperations';
+import { InitialisationCheck, getPages, getWebsiteData, getSubscriptionStatus, checkSbs, checkIfSuspended } from '../../firestore/dbOperations';
 import { getUserMembership } from '../../firestore/paidOperations';
 // Initialisation Component
 import InitialisationWrapper from '../initailisation/initialisationWrapper/initialisationWrapper';
@@ -271,12 +271,9 @@ class Welcome extends Component {
                     membershipEnds: value.membershipEnds.toDate(),
                 });
 
-                checkSbs(value.membership, value.membershipEnds.toDate()).then((val) => {
-                    if (val == 'false') {
-                        this.setState({ membership: 'Basic' });
-                        makeBasicAccount(userId);
-                    }
-                });
+                checkSbs().then((val) => {
+                    if (val === 'false') this.setState({ membership: 'Basic' });
+                }).catch(() => this.setState({ membership: 'Basic' }));
             }
         });
     }

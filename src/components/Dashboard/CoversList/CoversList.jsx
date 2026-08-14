@@ -57,7 +57,6 @@ class CoversList extends Component {
         localStorage.setItem('currentCoverItem', data);
         console.log('Data of cover:', data);
         var coverData = JSON.parse(localStorage.getItem('currentCoverItem'));
-        console.log('Cover data loaded:', coverData);
     }
     //// List all covers for that specific user
     returnCovers() {

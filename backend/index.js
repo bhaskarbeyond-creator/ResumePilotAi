@@ -2203,58 +2203,12 @@ Write a compelling, tailored, 3-paragraph ATS cover letter addressed to ${recipi
 });
 
 // Naukri.com Scraper Endpoint
-app.post('/api/jobs/naukri', async (req, res) => {
-    try {
-        const { keywords = 'software engineer', location = 'Bengaluru', maxJobs = 10 } = req.body;
-
-        // Mock sample scraped Naukri jobs for Indian market
-        const mockNaukriJobs = [
-            {
-                id: 'naukri_1',
-                title: 'Senior Full Stack Developer (React & Node)',
-                company: 'TechMahindra / Infosys',
-                location: location,
-                experience: '3-6 yrs',
-                salary: '₹14,000 - ₹22,000 LPA',
-                source: 'Naukri.com',
-                applyUrl: 'https://naukri.com',
-                posted: '1 day ago'
-            },
-            {
-                id: 'naukri_2',
-                title: 'Frontend Engineer (React.js)',
-                company: 'TCS Innovation Labs',
-                location: location,
-                experience: '1-3 yrs',
-                salary: '₹8,000 - ₹12,000 LPA',
-                source: 'Naukri.com',
-                applyUrl: 'https://naukri.com',
-                posted: '2 days ago'
-            },
-            {
-                id: 'naukri_3',
-                title: 'AI Prompt & Software Engineer',
-                company: 'Wipro AI Tech',
-                location: location,
-                experience: '2-5 yrs',
-                salary: '₹10,000 - ₹18,000 LPA',
-                source: 'Naukri.com',
-                applyUrl: 'https://naukri.com',
-                posted: 'Just now'
-            }
-        ];
-
-        res.json({
-            success: true,
-            portal: 'Naukri.com India',
-            location: location,
-            keywords: keywords,
-            count: mockNaukriJobs.length,
-            jobs: mockNaukriJobs
-        });
-    } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
-    }
+app.post('/api/jobs/naukri', async (_req, res) => {
+    return res.status(501).json({
+        success: false,
+        code: 'SCRAPER_NOT_CONFIGURED',
+        error: 'Naukri ingestion is not configured. No demo or fabricated listings are returned.',
+    });
 });
 
 app.get('/healthz', (req, res) => {

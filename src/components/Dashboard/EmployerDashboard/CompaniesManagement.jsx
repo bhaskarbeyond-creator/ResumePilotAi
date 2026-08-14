@@ -58,7 +58,6 @@ const CompaniesManagement = ({ showToast, sidebarCollapsed, t }) => {
 
         setLoading(true);
         try {
-            console.log('🔍 Loading companies for employer:', user.uid);
             const employerCompanies = await getEmployerCompanies(user.uid);
 
             console.log('📊 Raw companies from database:', employerCompanies);
@@ -96,7 +95,6 @@ const CompaniesManagement = ({ showToast, sidebarCollapsed, t }) => {
                 console.log('✅ Transformed companies:', transformedCompanies);
                 setCompanies(transformedCompanies);
             } else {
-                console.log('❌ No companies found for employer:', user.uid);
                 setCompanies([]);
             }
         } catch (error) {

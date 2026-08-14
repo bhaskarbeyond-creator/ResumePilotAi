@@ -36,6 +36,14 @@ test('non-English locale payloads are loaded on demand instead of bundled into t
   assert.doesNotMatch(source, /import common_es/);
 });
 
+test('i18n literal inventory is reproducible and classifies UI, accessibility, technical and brand strings', async () => {
+  const inventory = JSON.parse(await fs.readFile('docs/I18N_UI_STRING_INVENTORY.json', 'utf8'));
+  assert.equal(inventory.filesScanned, 280);
+  assert.equal(inventory.occurrences, 2896);
+  assert.equal(inventory.summary.USER_FACING_ENGLISH_CANDIDATE, 2369);
+  assert.equal(inventory.summary.USER_FACING_ACCESSIBILITY, 302);
+});
+
 test('PWA remains installable but authenticated offline caching is explicitly disabled', async () => {
   const [worker, bootstrap, manifest] = await Promise.all([
     fs.readFile('src/serviceWorker.js', 'utf8'), fs.readFile('src/bootstrap.js', 'utf8'), fs.readFile('public/manifest.json', 'utf8'),

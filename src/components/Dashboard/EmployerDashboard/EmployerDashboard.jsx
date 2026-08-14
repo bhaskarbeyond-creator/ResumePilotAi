@@ -61,7 +61,6 @@ const EmployerDashboard = ({ showToast, sidebarCollapsed, t }) => {
 
     const loadJobs = async () => {
         if (!user?.uid) {
-            console.log('❌ No user found, cannot load jobs');
             setLoading(false);
             return;
         }
@@ -77,13 +76,14 @@ const EmployerDashboard = ({ showToast, sidebarCollapsed, t }) => {
                 // Transform the data to match the expected format
                 const transformedJobs = employerJobs.map((job) => {
                     return {
+                        ...job,
                         id: job.id,
                         title: job.title || 'Untitled Job',
                         company: job.company || 'Your Company',
                         location: job.location || 'Location not specified',
                         salary: formatSalaryDisplay(job.minSalary, job.maxSalary),
-                        postedDate: job.createdAt ? formatDate(job.createdAt) : new Date().toISOString().split('T')[0],
-                        status: job.status || 'active',
+                        postedDate: job.createdAt ? formatDate(job.createdAt) : null,
+                        status: job.status || 'unknown',
                         statusColor: getStatusColor(job.status),
                         jobType: job.jobType || 'Full-time',
                         workMode: job.workMode || 'On-site',
@@ -92,23 +92,15 @@ const EmployerDashboard = ({ showToast, sidebarCollapsed, t }) => {
                         applicationsCount: job.applicationsCount || 0,
                         viewsCount: job.viewsCount || 0,
                         deadline: job.deadline ? formatDate(job.deadline) : null,
-                        // Include all original data
-                        ...job,
                     };
                 });
 
                 setJobs(transformedJobs);
             } else {
-                console.log('❌ No jobs found for employer:', user.uid);
-                console.log('❌ This could mean:');
-                console.log('   1. No jobs exist in the database for this employer');
-                console.log("   2. The employerId field in jobs doesn't match the user.uid");
-                console.log("   3. There's an issue with the database query");
                 setJobs([]);
             }
         } catch (error) {
-            console.error('❌ Error loading jobs:', error);
-            console.error('❌ Error details:', error.message);
+            console.error('Error loading employer jobs:', error.message);
             showToast && showToast('error', 'Error', 'Failed to load jobs');
             setJobs([]);
         } finally {
@@ -179,7 +171,6 @@ const EmployerDashboard = ({ showToast, sidebarCollapsed, t }) => {
 
                 setApplications(transformedApplications);
             } else {
-                console.log('❌ EmployerDashboard: No applications found for job:', jobId);
                 setApplications([]);
             }
         } catch (error) {

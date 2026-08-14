@@ -194,7 +194,6 @@ const CreateJobModal = ({ isOpen, onClose, onJobCreated, t }) => {
                 throw new Error('User not authenticated');
             }
 
-            console.log('Creating job with form data:', formData);
 
             // Validate that a company is selected
             if (!formData.selectedCompanyId) {
@@ -232,7 +231,6 @@ const CreateJobModal = ({ isOpen, onClose, onJobCreated, t }) => {
                 status: 'pending', // Jobs need admin approval before going live
             };
 
-            console.log('Processed job data:', jobData);
 
             // Create job posting in database
             const result = await createJobPosting(user.uid, jobData);
@@ -268,7 +266,6 @@ const CreateJobModal = ({ isOpen, onClose, onJobCreated, t }) => {
         
         setLoadingCompanies(true);
         try {
-            console.log('Loading approved companies for employer:', user.uid);
             const approvedCompanies = await getApprovedEmployerCompanies(user.uid);
             console.log('Found approved companies:', approvedCompanies.length);
             setCompanies(approvedCompanies);
@@ -300,7 +297,6 @@ const CreateJobModal = ({ isOpen, onClose, onJobCreated, t }) => {
 
         setIsSubmitting(true);
         try {
-            console.log('Submitting application for user:', user.uid);
             const result = await submitEmployerApplication(user.uid, applicationData);
 
             if (result.success) {

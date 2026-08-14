@@ -14,12 +14,15 @@ function blocked(name, reason) {
   results.push({ name, status: 'NOT_EXECUTED', reason });
 }
 
+run('Root lockfile consistency', 'npm', ['ci', '--ignore-scripts', '--dry-run']);
+run('Backend lockfile consistency', 'npm', ['--prefix', 'backend', 'ci', '--ignore-scripts', '--dry-run']);
 run('Product, AI, Resume, Portfolio, CMS, Admin, Profile, Job Tracker, i18n and analytics/privacy', 'npm', ['run', 'test:product']);
 run('Security and backend integration', 'npm', ['run', 'test:security']);
 run('Templates', 'npm', ['run', 'test:templates']);
 run('Production build', 'npm', ['run', 'build']);
 run('ESLint', 'npm', ['run', 'lint']);
 run('Production dependency audit', 'npm', ['run', 'audit:production']);
+run('Full dependency audit', 'npm', ['run', 'audit:all']);
 
 const java = spawnSync('java', ['-version'], { stdio: 'ignore' });
 if (java.status === 0) run('Firebase rules emulators', 'npm', ['run', 'test:firestore']);

@@ -152,7 +152,6 @@ const AddCompanyModal = ({ isOpen, onClose, showToast, t }) => {
 
         setLoading(true);
         try {
-            console.log('🏢 Submitting company data:', formData);
             
             const result = await createCompany(user.uid, formData);
 

@@ -152,7 +152,7 @@ class EmailNotifier {
     /**
      * 5. Payment Failure Alert
      */
-    static async notifyPaymentFailed(db, { userEmail, userName = 'Customer', amount = '₹199.00', retryUrl }) {
+    static async notifyPaymentFailed(db, { userEmail, userName = 'Customer', amount = 'Amount unavailable', retryUrl }) {
         if (!userEmail) return;
         const siteUrl = `${process.env.PROTOCOL || 'https'}://${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}`;
         return sendNotification(db, {
@@ -165,7 +165,7 @@ class EmailNotifier {
     /**
      * 6. Subscription Renewal Notice
      */
-    static async notifySubscriptionRenewal(db, { userEmail, userName = 'Customer', planName = 'Pro Plan', amount = '₹1,999.00', renewalDate }) {
+    static async notifySubscriptionRenewal(db, { userEmail, userName = 'Customer', planName = 'Plan unavailable', amount = 'Amount unavailable', renewalDate }) {
         if (!userEmail) return;
         return sendNotification(db, {
             to: userEmail,
@@ -194,7 +194,7 @@ class EmailNotifier {
     /**
      * 8. Refund Processed Confirmation
      */
-    static async notifyRefundProcessed(db, { userEmail, invoiceNumber = 'RPAI-INV-1001', amount = '₹199.00' }) {
+    static async notifyRefundProcessed(db, { userEmail, invoiceNumber = 'Invoice unavailable', amount = 'Amount unavailable' }) {
         if (!userEmail) return;
         return sendNotification(db, {
             to: userEmail,
@@ -206,7 +206,7 @@ class EmailNotifier {
     /**
      * 9. AI Resume Ready Completed Alert
      */
-    static async notifyAIResumeReady(db, { userEmail, userName = 'Candidate', atsScore = '94' }) {
+    static async notifyAIResumeReady(db, { userEmail, userName = 'Candidate', atsScore = 'Not measured' }) {
         if (!userEmail) return;
         const siteUrl = `${process.env.PROTOCOL || 'https'}://${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}`;
         return sendNotification(db, {
