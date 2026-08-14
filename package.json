@@ -22,7 +22,7 @@
     "@puckeditor/core": "^0.23.0",
     "@react-google-maps/api": "^2.20.7",
     "@stripe/react-stripe-js": "^3.7.0",
-    "@stripe/stripe-js": "^7.3.1",
+    "@stripe/stripe-js": "^9.13.0",
     "@tailwindcss/vite": "^4.1.8",
     "@tiptap/extension-color": "^3.4.4",
     "@tiptap/extension-highlight": "^3.4.4",
