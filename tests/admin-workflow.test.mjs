@@ -127,6 +127,18 @@ test('review and rating administration is validated, confirmed, audited, and bac
   assert.match(rules, /match \/reviews\/\{id\}[^\n]+allow write: if false/);
 });
 
+test('contact messages expose truthful loading, error, search, filter, pagination, and accessible expansion states', async () => {
+  const [messages, operations] = await Promise.all([
+    fs.readFile('src/components/admin/messages/Messages.jsx', 'utf8'),
+    fs.readFile('src/firestore/dbOperations.js', 'utf8'),
+  ]);
+  assert.doesNotMatch(messages, /console\.log|>Search<|>Filter</);
+  assert.match(messages, /PAGE_SIZE = 20/);
+  assert.match(messages, /aria-expanded/);
+  assert.match(messages, /role="alert"/);
+  assert.match(operations, /id: document\.id/);
+});
+
 test('user CSV export neutralizes spreadsheet formulas', async () => {
   const users = await fs.readFile('src/components/admin/usersManager/UsersManager.jsx', 'utf8');
   assert.match(users, /\^\[=\+\\-@\]/);

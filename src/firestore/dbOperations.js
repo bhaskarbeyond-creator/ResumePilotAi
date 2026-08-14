@@ -64,16 +64,10 @@ function formatSalaryRange(minSalary, maxSalary) {
 export async function getAllMessages() {
     const db = fire.firestore();
     const snapshot = await db.collection('contact').get();
-    if (!snapshot.empty) {
-        var messages = [];
-        snapshot.forEach((doc) => {
-            messages.push(doc.data());
-        });
-        return messages;
-    } else {
-        // if there is no documents return null
-        return null;
-    }
+    return snapshot.docs.map(document => {
+        const data = document.data() || {};
+        return { id: document.id, ...data, createdAt: data.created_at?.toDate?.() || data.createdAt?.toDate?.() || data.created_at || data.createdAt || null };
+    });
 }
 
 // Contact submissions cross the rate-limited server boundary; clients cannot write the

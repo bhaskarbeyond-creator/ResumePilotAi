@@ -19,6 +19,7 @@ Validated on 2026-08-14 against the reachable grafted history and the protected 
 | Job moderation | Admin job status/feature/delete used direct SDK writes with no audit or stale check. Notifications usually failed under owner-scoped rules, delete could orphan applications, search fired a full collection read per keypress, and confirmation used `window.confirm`. | Recent-auth backend transactions verify loaded state, allow one mutation, write employer notifications and audit events, and reject stale rows. Jobs with applications must be archived. Direct admin SDK mutation is denied by rules. Dialogs are accessible, search is debounced, stale loads are ignored, status filters reduce reads, and pagination clamps after deletes. |
 | Company moderation | Approve/reject/feature operations wrote directly through the SDK, had no stale protection/audit/confirmation, accepted blank rejection reasons, and rendered untrusted image URLs. | Recent-auth backend transactions verify status/feature/timestamps, require rejection reasons, notify owners, and audit each change. Direct admin SDK writes are denied, confirmation is accessible, and admin image previews use the shared URL sanitizer. |
 | Reviews and global rating | Review create/delete and rating updates used unawaited direct SDK writes, had no audit or confirmation, reported false success, created records without approved status, rendered a false “Active” metric, and truncated fractional ratings with `parseInt`. | Recent-auth backend routes validate/bound records, publish explicit approved reviews, revision-check deletes, audit create/delete/rating changes, and deny direct review writes. The UI confirms destructive/global changes, reports backend failures, refreshes stale results, and averages only valid finite ratings. |
+| Contact messages | PII was logged, loading/errors were shown as an empty inbox, “Search” and “Filter” buttons were inert, Today counts reparsed locale-only strings, rows used indexes as identity, and no pagination existed. | Firestore document identity and real timestamps are preserved without logging content. The view has distinct loading/error/empty states, retry, working text/date filters, deterministic date calculations, accessible expansion semantics, and 20-row pagination. |
 
 ## Security and integrity controls
 
@@ -41,22 +42,22 @@ These are operation-count/critical-path improvements, not synthetic production l
 - Exact UID lookup changed from an ineffective email collection query to one document read.
 - Sidebar and Settings headers no longer issue duplicate settings reads solely to calculate unverified colored dots.
 - Job text search now performs at most one collection operation after a 350 ms idle period instead of one operation per keystroke; status equality is applied in Firestore before in-memory text filtering.
-- Final production build passed in 3.71 seconds (4.074 seconds wall time); dependency chunk warnings are unchanged.
+- Latest production build passed in 4.03 seconds; dependency chunk warnings are unchanged.
 
 ## Validation
 
-- Admin targeted tests: 9/9.
-- Product suite: 51/51 plus template render 1/1.
+- Admin targeted tests: 10/10.
+- Product suite: 52/52 plus template render 1/1.
 - Security suite: static/browser 22/22 plus backend 64/64.
 - Backend integration covers stale-session rejection for maintenance, generic-settings, job, company, user, and employer operations and ordinary-user rejection for admin routes.
-- Production build: passed in 3.71 seconds (4.074 seconds wall time).
+- Production build: passed in 4.03 seconds (latest message-view validation build).
 - ESLint: 0 errors, 499 warnings (down from the protected 505-warning baseline).
 - `git diff --check`: passed.
 
 ## Remaining limitations for continued Phase 3 work
 
 - Some category-specific settings panels still need deeper semantic validation and runtime-provider integration tests even though their generic persistence boundary is now revisioned, audited, bounded, and split.
-- Messages, landing pages, trusted-by content, invoice/order tables, and their bulk/search/pagination workflows remain under active audit and are not certified by this slice.
+- Landing pages, trusted-by content, invoice/order tables, and their bulk/search/pagination workflows remain under active audit and are not certified by this slice.
 - Firebase Auth and Firestore cannot be committed atomically together. Server failures are reported, but production reconciliation/alerting remains required for rare cross-service partial failures.
 - Financial ledgers and legally retained billing records are intentionally not deleted by the user-admin cleanup endpoint; the later account-lifecycle evidence must define retention and erasure policy precisely.
 - Account merge/restore functions remain intentionally disabled because no provider-aware transactional identity workflow exists; the UI still needs a focused disabled-state cleanup.
