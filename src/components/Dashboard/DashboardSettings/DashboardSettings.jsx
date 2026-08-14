@@ -645,7 +645,10 @@ function DashboardSettings(props) {
             a.download = `user_data_export_${data.userId || 'account'}_${Date.now()}.json`;
             a.click();
             URL.revokeObjectURL(url);
-            triggerNotification('GDPR Data Export downloaded successfully!');
+            const warningCount = data.exportWarnings?.length || 0;
+            triggerNotification(warningCount
+                ? `Data export downloaded with ${warningCount} unavailable section${warningCount === 1 ? '' : 's'}. Review exportWarnings in the file.`
+                : 'Account data export downloaded successfully.');
         } catch (err) {
             triggerNotification(err.message || 'Failed to export data', 'error');
         } finally {
@@ -2598,7 +2601,7 @@ function DashboardSettings(props) {
                         <h3 id="delete-account-title" className="text-base font-bold text-slate-900">Confirm Permanent Account Deletion</h3>
                     </div>
                     <p id="delete-account-description" className="text-xs text-slate-600 leading-relaxed">
-                        This action is <strong>irreversible</strong>. Your identity and owned profile, resume, cover-letter, Portfolio, CMS, employer, job, application, and notification data will be removed. Payment, invoice, transaction, subscription, and security-audit records may be retained for legal, fraud-prevention, and accounting obligations.
+                        This action is <strong>irreversible</strong>. Your identity and owned profile, resume, cover-letter, Portfolio, CMS, employer, job, application, notification, and messaging data will be removed. Payment, invoice, transaction, subscription, and security-audit records may be retained for legal, fraud-prevention, and accounting obligations.
                     </p>
                     <div className="space-y-3">
                         {usesPasswordProvider ? (

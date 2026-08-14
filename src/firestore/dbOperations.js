@@ -2279,46 +2279,67 @@ export async function deleteUserAccountPermanently(currentPassword) {
     return result;
 }
 
-// Export all user data as JSON (GDPR Compliant Data Portability)
+// Export browser-readable account data as JSON (GDPR data portability).
 export async function exportUserDataJSON(uid) {
-    if (!uid) {
-        const user = fire.auth().currentUser;
-        if (user) uid = user.uid;
-        else throw new Error("User not logged in");
-    }
-
+    const authenticatedUser = fire.auth().currentUser;
+    if (!authenticatedUser || (uid && uid !== authenticatedUser.uid)) throw new Error('User not logged in');
+    uid = authenticatedUser.uid;
     const db = fire.firestore();
-
-    const userDoc = await db.collection('users').doc(uid).get();
-    const profile = userDoc.exists ? userDoc.data() : {};
-
-    const resumesSnap = await db.collection('users').doc(uid).collection('resumes').get();
-    const resumes = [];
-    resumesSnap.forEach(doc => resumes.push({ id: doc.id, ...doc.data() }));
-
-    const coverSnap = await db.collection('users').doc(uid).collection('coverLetters').get();
-    const coverLetters = [];
-    coverSnap.forEach(doc => coverLetters.push({ id: doc.id, ...doc.data() }));
-
-    let transactions = [];
-    try {
-        const txnSnap = await db.collection('transactions').where('userId', '==', uid).get();
-        txnSnap.forEach(doc => transactions.push({ id: doc.id, ...doc.data() }));
-    } catch (e) {
-        console.warn('Transactions export notice:', e);
-    }
-
-    const readOwned = async (collection, field) => {
-        try { const snapshot = await db.collection(collection).where(field, '==', uid).get(); return snapshot.docs.map(document => ({ id: document.id, ...document.data() })); }
-        catch { return []; }
+    const warnings = [];
+    const readDocuments = async reference => {
+        try {
+            const snapshot = await reference.get();
+            return snapshot.docs.map(document => ({ id: document.id, ...document.data() }));
+        } catch (error) {
+            warnings.push(error.message || 'A data section was unavailable.');
+            return [];
+        }
     };
-    const [portfolios, publishedPortfolios, blogPosts, jobApplications, jobs, companies] = await Promise.all([
-        readOwned('portfolios', 'userId'), readOwned('pb', 'ownerUid'), readOwned('blog_posts', 'authorUid'),
-        readOwned('jobApplications', 'userId'), readOwned('jobs', 'employerId'), readOwned('companies', 'employerId'),
+    const readOwned = (collection, field) => readDocuments(db.collection(collection).where(field, '==', uid));
+    const userReference = db.collection('users').doc(uid);
+    const [userDoc, resumes, legacyCovers, coverLetters, favourites, privatePortfolios, jobTracker, loginHistory, nestedInvoices, nestedTransactions, notifications, transactions, portfolios, publishedPortfolios, blogPosts, jobApplications, jobs, companies, employerApplication] = await Promise.all([
+        userReference.get(),
+        readDocuments(userReference.collection('resumes')),
+        readDocuments(userReference.collection('covers')),
+        readDocuments(userReference.collection('coverLetters')),
+        readDocuments(userReference.collection('favourites')),
+        readDocuments(userReference.collection('portfolios')),
+        readDocuments(userReference.collection('jobTracker')),
+        readDocuments(userReference.collection('loginHistory')),
+        readDocuments(userReference.collection('invoices')),
+        readDocuments(userReference.collection('transactions')),
+        readDocuments(db.collection('notifications').doc(uid).collection('userNotifications')),
+        readOwned('transactions', 'userId'),
+        readOwned('portfolios', 'userId'),
+        readOwned('pb', 'ownerUid'),
+        readOwned('blog_posts', 'authorUid'),
+        readOwned('jobApplications', 'userId'),
+        readOwned('jobs', 'employerId'),
+        readOwned('companies', 'employerId'),
+        db.collection('employerApplications').doc(uid).get().catch(error => { warnings.push(error.message); return null; }),
     ]);
+
+    const messaging = { conversations: [], messagesByConversation: {} };
+    try {
+        const realtime = fire.database();
+        const index = await realtime.ref(`user-conversations/${uid}`).get();
+        for (const conversationId of Object.keys(index.val() || {})) {
+            const [conversationSnapshot, messagesSnapshot] = await Promise.all([
+                realtime.ref(`conversations/${conversationId}`).get(),
+                realtime.ref(`messages/${conversationId}`).orderByChild('timestamp').get(),
+            ]);
+            if (conversationSnapshot.exists()) messaging.conversations.push({ id: conversationId, ...conversationSnapshot.val() });
+            const messages = [];
+            messagesSnapshot.forEach(message => messages.push({ id: message.key, ...message.val() }));
+            messaging.messagesByConversation[conversationId] = messages;
+        }
+    } catch (error) { warnings.push(`Messaging export unavailable: ${error.message}`); }
+
     return {
-        exportDate: new Date().toISOString(), userId: uid, profile,
-        resumes, coverLetters, portfolios, publishedPortfolios, blogPosts, jobApplications, jobs, companies, transactions,
+        exportDate: new Date().toISOString(), userId: uid, profile: userDoc.exists ? userDoc.data() : {},
+        resumes, legacyCovers, coverLetters, favourites, privatePortfolios, jobTracker, loginHistory, nestedInvoices, nestedTransactions, notifications,
+        portfolios, publishedPortfolios, blogPosts, jobApplications, jobs, companies, transactions,
+        employerApplication: employerApplication?.exists ? employerApplication.data() : null, messaging, exportWarnings: warnings,
         note: 'Provider-held identity, payment-provider records, security audit logs, and legally retained billing records require provider/support export channels.'
     };
 }

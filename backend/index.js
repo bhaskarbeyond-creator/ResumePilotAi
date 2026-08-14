@@ -1244,6 +1244,10 @@ app.get('/api/messages/conversations/:conversationId/participant-profile', async
         const participantIds = Object.keys(conversation.child('participants').val() || {});
         const otherUserId = participantIds.find(uid => uid !== req.user.uid);
         if (!otherUserId) return res.status(404).json({ success: false, error: 'Participant not found.' });
+        if (otherUserId.startsWith('deleted_')) {
+            res.setHeader('Cache-Control', 'no-store, private');
+            return res.json({ success: true, profile: { name: 'Deleted account', avatar: '' } });
+        }
         const userSnapshot = await requestDb.collection('users').doc(otherUserId).get();
         const user = userSnapshot.data() || {};
         const profile = user.profile || {};
@@ -3288,6 +3292,51 @@ app.patch('/api/admin/users/:uid', async (req, res) => {
     }
 });
 
+async function deleteApplicationNotifications(database, applicationIds) {
+    for (const applicationId of applicationIds) {
+        const notifications = await database.collectionGroup('userNotifications').where('data.applicationId', '==', applicationId).get();
+        for (const notification of notifications.docs) await database.recursiveDelete(notification.ref);
+    }
+}
+
+async function removeDeletedUserFromRealtimeMessaging(uid) {
+    if (!admin?.database) throw new Error('Realtime Database is unavailable');
+    const realtime = admin.database();
+    const indexSnapshot = await realtime.ref(`user-conversations/${uid}`).get();
+    const conversationIds = Object.keys(indexSnapshot.val() || {});
+    for (const conversationId of conversationIds) {
+        const deletedParticipantId = `deleted_${crypto.randomBytes(10).toString('hex')}`;
+        if (!/^[A-Za-z0-9_-]{1,128}$/.test(conversationId)) continue;
+        const [conversationSnapshot, messagesSnapshot] = await Promise.all([
+            realtime.ref(`conversations/${conversationId}`).get(),
+            realtime.ref(`messages/${conversationId}`).get(),
+        ]);
+        if (!conversationSnapshot.exists() || conversationSnapshot.child(`participants/${uid}`).val() !== true) continue;
+        const participantIds = Object.keys(conversationSnapshot.child('participants').val() || {}).sort();
+        const lookupKey = crypto.createHash('sha256').update(participantIds.join('\0')).digest('hex');
+        const remainingAccounts = participantIds.filter(participantId => participantId !== uid && !participantId.startsWith('deleted_'));
+        const updates = {
+            [`user-conversations/${uid}/${conversationId}`]: null,
+            [`conversation-participants/${lookupKey}`]: null,
+        };
+        if (!remainingAccounts.length) {
+            updates[`conversations/${conversationId}`] = null;
+            updates[`messages/${conversationId}`] = null;
+        } else {
+            updates[`conversations/${conversationId}/participants/${uid}`] = null;
+            updates[`conversations/${conversationId}/participants/${deletedParticipantId}`] = true;
+            updates[`conversations/${conversationId}/applicationId`] = null;
+            updates[`conversations/${conversationId}/deletedAt`] = { '.sv': 'timestamp' };
+            messagesSnapshot.forEach(message => {
+                if (message.child('senderId').val() === uid) updates[`messages/${conversationId}/${message.key}`] = null;
+            });
+        }
+        await realtime.ref().update(updates);
+    }
+    await realtime.ref(`user-conversations/${uid}`).remove();
+    return { conversationCount: conversationIds.length };
+}
+
 app.post('/api/account/delete', async (req, res) => {
     if (!db || !admin?.auth) return res.status(503).json({ success: false, error: 'Account deletion service unavailable.' });
     const uid = req.user.uid;
@@ -3295,16 +3344,20 @@ app.post('/api/account/delete', async (req, res) => {
     try {
         const jobs = await db.collection('jobs').where('employerId', '==', uid).get().catch(() => { failures.push('employer jobs'); return { docs: [] }; });
         for (const job of jobs.docs) {
-            try {
-                const applications = await db.collection('jobApplications').where('jobId', '==', job.id).get();
-                for (const application of applications.docs) await db.recursiveDelete(application.ref);
-                await db.recursiveDelete(job.ref);
-            } catch { failures.push(`job:${job.id}`); }
+            // Applications belong to their applicants and retain a bounded job snapshot.
+            // Deleting an employer removes the posting, not another account's application history.
+            try { await db.recursiveDelete(job.ref); }
+            catch { failures.push(`job:${job.id}`); }
         }
+        try {
+            const applications = await db.collection('jobApplications').where('userId', '==', uid).get();
+            const applicationIds = applications.docs.map(application => application.id);
+            for (const application of applications.docs) await db.recursiveDelete(application.ref);
+            await deleteApplicationNotifications(db, applicationIds);
+        } catch { failures.push('job applications'); }
         const queries = [
             ['portfolios', db.collection('portfolios').where('userId', '==', uid)],
             ['published portfolios', db.collection('pb').where('ownerUid', '==', uid)],
-            ['job applications', db.collection('jobApplications').where('userId', '==', uid)],
             ['blog posts', db.collection('blog_posts').where('authorUid', '==', uid)],
             ['companies', db.collection('companies').where('employerId', '==', uid)],
         ];
@@ -3315,6 +3368,7 @@ app.post('/api/account/delete', async (req, res) => {
         for (const [label, reference] of [['employer application', db.collection('employerApplications').doc(uid)], ['notifications', db.collection('notifications').doc(uid)]]) {
             try { await db.recursiveDelete(reference); } catch { failures.push(label); }
         }
+        try { await removeDeletedUserFromRealtimeMessaging(uid); } catch { failures.push('realtime messaging'); }
         if (!failures.length) try { await db.recursiveDelete(db.collection('users').doc(uid)); } catch { failures.push('user profile tree'); }
         if (failures.length) {
             await db.collection('security_audit_logs').add({ action: 'ACCOUNT_SELF_DELETION_INCOMPLETE', targetUid: uid, cleanupFailures: failures, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
@@ -3326,7 +3380,7 @@ app.post('/api/account/delete', async (req, res) => {
             return res.status(500).json({ success: false, code: 'ACCOUNT_IDENTITY_DELETE_FAILED', error: 'Owned application data was removed, but the Firebase identity could not be deleted. Contact support immediately.' });
         }
         await db.collection('security_audit_logs').add({ action: 'ACCOUNT_SELF_DELETED', targetUid: uid, retainedRecordTypes: ['payment_orders', 'invoices', 'transactions', 'subscriptions', 'security_audit_logs'], requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
-        return res.json({ success: true, message: 'Identity and owned profile, resume, portfolio, CMS, employer, job, application, and notification data were deleted.', retainedRecordTypes: ['payment_orders', 'invoices', 'transactions', 'subscriptions', 'security_audit_logs'] });
+        return res.json({ success: true, message: 'Identity and owned profile, resume, portfolio, CMS, employer, job, application, notification, and messaging data were deleted.', retainedRecordTypes: ['payment_orders', 'invoices', 'transactions', 'subscriptions', 'security_audit_logs'] });
     } catch (error) {
         console.error('[Account self-delete]', error.message);
         return res.status(500).json({ success: false, error: 'Unable to complete account deletion. Identity remains active unless the response explicitly confirms success.' });
@@ -3363,11 +3417,21 @@ app.post(['/api/admin/delete-user', '/api/auth/purge-orphaned-auth'], async (req
         if (target) await admin.auth().deleteUser(targetUid);
 
         const cleanupFailures = [];
+        try {
+            const ownedJobs = await db.collection('jobs').where('employerId', '==', targetUid).get();
+            for (const job of ownedJobs.docs) await db.recursiveDelete(job.ref);
+        } catch { cleanupFailures.push('employer jobs'); }
+        try {
+            const applications = await db.collection('jobApplications').where('userId', '==', targetUid).get();
+            const applicationIds = applications.docs.map(application => application.id);
+            for (const application of applications.docs) await db.recursiveDelete(application.ref);
+            await deleteApplicationNotifications(db, applicationIds);
+        } catch { cleanupFailures.push('job applications'); }
         const relatedQueries = [
             ['portfolios', db.collection('portfolios').where('userId', '==', targetUid)],
             ['published portfolios', db.collection('pb').where('ownerUid', '==', targetUid)],
-            ['job applications', db.collection('jobApplications').where('userId', '==', targetUid)],
             ['blog posts', db.collection('blog_posts').where('authorUid', '==', targetUid)],
+            ['companies', db.collection('companies').where('employerId', '==', targetUid)],
         ];
         for (const [label, query] of relatedQueries) {
             try {
@@ -3384,6 +3448,7 @@ app.post(['/api/admin/delete-user', '/api/auth/purge-orphaned-auth'], async (req
         ]) {
             try { await db.recursiveDelete(reference); } catch { cleanupFailures.push(label); }
         }
+        try { await removeDeletedUserFromRealtimeMessaging(targetUid); } catch { cleanupFailures.push('realtime messaging'); }
         if (!cleanupFailures.length) {
             try { await db.recursiveDelete(db.collection('users').doc(targetUid)); }
             catch { cleanupFailures.push('user profile tree'); }
@@ -3397,7 +3462,7 @@ app.post(['/api/admin/delete-user', '/api/auth/purge-orphaned-auth'], async (req
             success: false, code: 'USER_CLEANUP_INCOMPLETE',
             error: `Identity is absent or was deleted, but cleanup failed for: ${cleanupFailures.join(', ')}. Retry this operation.`,
         });
-        return res.json({ success: true, deletedFromAuth: Boolean(target), message: 'User identity, profile tree, portfolios, applications, notifications, and authored blog posts were deleted.' });
+        return res.json({ success: true, deletedFromAuth: Boolean(target), message: 'User identity, profile tree, portfolios, applications, employer content, notifications, messaging data, and authored blog posts were deleted.' });
     } catch (error) {
         console.error('[Admin delete user]', error.message);
         return res.status(error.code === 'auth/user-not-found' ? 404 : 500).json({ success: false, error: 'Unable to delete user.' });
