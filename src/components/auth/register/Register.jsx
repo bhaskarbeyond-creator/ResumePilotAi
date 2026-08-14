@@ -381,7 +381,7 @@ class Register extends Component {
                             </div>
                         )}
                     </div>
-                    <form onSubmit={this.signUp} className="registerForm">
+                    <form onSubmit={this.signUp} className="registerForm w-full flex flex-col">
                         <Input name="Email" title={t("login.email")} handleInputs={this.handleInputs} />
                         <Input name="Password" type="Password" title={t("login.password")} handleInputs={this.handleInputs} />
                         <Input name="Repeat Password" type="Password" title={t("login.passwordRepeat")} handleInputs={this.handleInputs} />

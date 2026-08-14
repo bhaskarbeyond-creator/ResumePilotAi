@@ -317,13 +317,9 @@ class Login extends Component {
                             </div>
                         )}
                         {/* Login Form */}
-                        <form onSubmit={this.login}>
-                            <div>
-                                <Input name="Email" title={t("login.email")} handleInputs={this.handleInputs} />
-                            </div>
-                            <div>
-                                <Input name="Password" type="Password" title={t("login.password")} handleInputs={this.handleInputs} />
-                            </div>
+                        <form onSubmit={this.login} className="w-full flex flex-col">
+                            <Input name="Email" title={t("login.email")} handleInputs={this.handleInputs} />
+                            <Input name="Password" type="Password" title={t("login.password")} handleInputs={this.handleInputs} />
                             <input className="inputSubmit" value={t("login.login")} type="submit" />
                         </form>
                     </div>
