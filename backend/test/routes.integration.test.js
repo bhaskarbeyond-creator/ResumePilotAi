@@ -12,7 +12,7 @@ setTokenVerifierForTests(async token => {
   if (token === 'user') return { uid: 'user-1', email: 'user@example.com', email_verified: true, role: 'USER', auth_time: now };
   if (token === 'unverified') return { uid: 'user-2', email: 'pending@example.com', email_verified: false, role: 'USER', auth_time: now };
   if (token === 'admin') return { uid: 'admin-1', email: 'admin@example.com', email_verified: true, role: 'ADMIN', auth_time: now };
-  if (token === 'employer') return { uid: 'employer-1', email: 'employer@example.com', email_verified: true, role: 'EMPLOYER', auth_time: now };
+  if (token === 'employer') return { uid: 'employer-1', email: 'employer@example.com', email_verified: true, role: 'EMPLOYER', employer: true, auth_time: now };
   if (token === 'unverified-admin') return { uid: 'admin-2', email: 'admin2@example.com', email_verified: false, role: 'ADMIN', auth_time: now };
   if (token === 'super-admin') return { uid: 'super-1', email: 'super@example.com', email_verified: true, role: 'SUPER_ADMIN', auth_time: now };
   if (token === 'stale-admin') return { uid: 'admin-1', email: 'admin@example.com', email_verified: true, role: 'ADMIN', auth_time: now - 3600 };
@@ -243,6 +243,50 @@ test('job application submission and employer status transitions are atomic, aud
   } finally {
     app.set('db', originalDb);
   }
+});
+
+test('employer job create, pause, edit, and delete routes are owned, audited, and revision safe', async () => {
+  const store = new Map([
+    ['companies/company-1', { employerId: 'employer-1', status: 'approved', name: 'Example Co', website: 'https://example.com' }],
+    ['jobs/active-owned', { employerId: 'employer-1', companyId: 'company-1', status: 'active', revision: 2, title: 'Existing role', applicationsCount: 0 }],
+  ]);
+  let automaticId = 0;
+  const ref = (path, id) => ({ id, path, async get() { const data = store.get(path); return { exists: data !== undefined, data: () => data }; } });
+  const collection = name => ({
+    doc(id = `auto-${automaticId++}`) { return ref(`${name}/${id}`, id); },
+    where(field, operator, value) {
+      return { limit() { return this; }, async get() { const docs = [...store.entries()].filter(([path, data]) => path.startsWith(`${name}/`) && data[field] === value).map(([path]) => ref(path, path.split('/').pop())); return { empty: docs.length === 0, docs }; } };
+    },
+  });
+  const fakeDb = {
+    collection,
+    batch() { const operations = []; return { set(reference, value) { operations.push(() => store.set(reference.path, value)); }, async commit() { for (const operation of operations) operation(); } }; },
+    runTransaction: callback => callback({
+      get: reference => reference.get(),
+      set(reference, value) { store.set(reference.path, value); },
+      update(reference, value) { store.set(reference.path, { ...(store.get(reference.path) || {}), ...value }); },
+      delete(reference) { store.delete(reference.path); },
+    }),
+  };
+  const originalDb = app.get('db');
+  app.set('db', fakeDb);
+  try {
+    const created = await request(app).post('/api/employer/jobs').set(bearer('employer')).send({ data: { companyId: 'company-1', title: 'New role', description: 'A real role', location: 'Remote', country: 'IN', requirements: ['JavaScript'] } });
+    assert.equal(created.status, 201);
+    assert.equal(created.body.revision, 1);
+    assert.equal(store.get(`jobs/${created.body.jobId}`).employerId, 'employer-1');
+    const paused = await request(app).patch('/api/employer/jobs/active-owned').set(bearer('employer')).send({ status: 'paused', expectedRevision: 2 });
+    assert.equal(paused.status, 200);
+    assert.equal(paused.body.revision, 3);
+    assert.equal(store.get('jobs/active-owned').status, 'paused');
+    const stale = await request(app).patch('/api/employer/jobs/active-owned').set(bearer('employer')).send({ status: 'active', expectedRevision: 2 });
+    assert.equal(stale.status, 409);
+    const outsider = await request(app).patch('/api/employer/jobs/active-owned').set(bearer('user')).send({ status: 'active', expectedRevision: 3 });
+    assert.equal(outsider.status, 403);
+    const removed = await request(app).delete('/api/employer/jobs/active-owned').set(bearer('employer')).send({ expectedRevision: 3 });
+    assert.equal(removed.status, 200);
+    assert.equal(store.has('jobs/active-owned'), false);
+  } finally { app.set('db', originalDb); }
 });
 
 test('generic settings preserve omitted and blank backend secrets without browser disclosure', async () => {

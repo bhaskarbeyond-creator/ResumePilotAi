@@ -27,6 +27,27 @@ test('job application lifecycle is backend-owned, identity-bound, and atomic', a
   assert.doesNotMatch(rules, /applicationsCount == resource\.data\.applicationsCount \+ 1/);
 });
 
+test('employer job posting mutations are backend-owned, audited, and revision safe', async () => {
+  const [backend, operations, rules, dashboard, editor] = await Promise.all([
+    fs.readFile('backend/index.js', 'utf8'),
+    fs.readFile('src/firestore/dbOperations.js', 'utf8'),
+    fs.readFile('SecurityRules.txt', 'utf8'),
+    fs.readFile('src/components/Dashboard/EmployerDashboard/EmployerDashboard.jsx', 'utf8'),
+    fs.readFile('src/components/Dashboard/EmployerDashboard/EditJobModal.jsx', 'utf8'),
+  ]);
+  assert.match(backend, /EMPLOYER_JOB_CREATED/);
+  assert.match(backend, /EMPLOYER_JOB_STATUS_CHANGED/);
+  assert.match(backend, /EMPLOYER_JOB_EDITED/);
+  assert.match(backend, /EMPLOYER_JOB_DELETED/);
+  assert.match(backend, /EMPLOYER_JOB_CHANGED/);
+  assert.match(operations, /\/api\/employer\/jobs/);
+  const jobRule = rules.slice(rules.indexOf('match /jobs/{id}'), rules.indexOf('match /jobApplications/{id}'));
+  assert.match(jobRule, /allow create, update, delete: if false/);
+  assert.match(dashboard, /job\.revision/);
+  assert.match(dashboard, /result\.revision/);
+  assert.match(editor, /job\.revision/);
+});
+
 test('candidate and employer UI wait for confirmed revisioned outcomes', async () => {
   const [candidate, employer, dashboard] = await Promise.all([
     fs.readFile('src/components/JobsListings/JobApplicationModal.jsx', 'utf8'),

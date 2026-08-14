@@ -1185,6 +1185,118 @@ app.patch('/api/job-applications/:applicationId/status', async (req, res) => {
     }
 });
 
+function normalizeEmployerJobInput(input = {}, company = {}) {
+    const text = (value, maximum) => String(value || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, maximum);
+    const title = text(input.title, 160);
+    const description = text(input.description, 20_000);
+    const location = text(input.location, 200);
+    const country = text(input.country, 100);
+    if (!title || !description || !location) throw new Error('Job title, description, and location are required.');
+    const list = value => Array.isArray(value) ? value.slice(0, 100).map(item => text(item, 500)).filter(Boolean) : [];
+    const salary = value => value === null || value === '' || value === undefined ? null : Number(value);
+    const minSalary = salary(input.minSalary);
+    const maxSalary = salary(input.maxSalary);
+    if ((minSalary !== null && (!Number.isFinite(minSalary) || minSalary < 0)) || (maxSalary !== null && (!Number.isFinite(maxSalary) || maxSalary < 0)) || (minSalary !== null && maxSalary !== null && minSalary > maxSalary)) throw new Error('Invalid salary range.');
+    const deadline = input.deadline ? new Date(input.deadline) : null;
+    if (deadline && !Number.isFinite(deadline.getTime())) throw new Error('Invalid application deadline.');
+    return {
+        title, description, location, country,
+        companyId: company.id, company: text(company.name, 160), companySize: text(company.size, 80), companyIndustry: text(company.industry, 120),
+        companyWebsite: safePublicUrl(company.website), companyImage: safePublicUrl(company.companyImage), companyDescription: text(company.description, 2000),
+        jobType: text(input.jobType, 80), workMode: text(input.workMode, 80), experienceLevel: text(input.experienceLevel, 100),
+        minSalary, maxSalary, requirements: list(input.requirements), benefits: list(input.benefits), deadline,
+    };
+}
+
+function isEmployerAccount(req) { return req.user?.claims?.employer === true; }
+
+app.post('/api/employer/jobs', async (req, res) => {
+    const requestDb = req.app.get('db');
+    if (!isEmployerAccount(req)) return res.status(403).json({ success: false, error: 'Approved employer access is required.' });
+    const companyId = String(req.body?.data?.companyId || '');
+    if (!requestDb || !admin || !/^[A-Za-z0-9_-]{1,128}$/.test(companyId)) return res.status(400).json({ success: false, error: 'Select an approved company.' });
+    try {
+        const companySnapshot = await requestDb.collection('companies').doc(companyId).get();
+        if (!companySnapshot.exists || companySnapshot.data()?.employerId !== req.user.uid || companySnapshot.data()?.status !== 'approved') return res.status(404).json({ success: false, error: 'Approved company not found.' });
+        const data = normalizeEmployerJobInput(req.body.data, { id: companyId, ...companySnapshot.data() });
+        const reference = requestDb.collection('jobs').doc();
+        const batch = requestDb.batch();
+        batch.set(reference, { ...data, employerId: req.user.uid, status: 'pending', revision: 1, applicationsCount: 0, viewsCount: 0, createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+        batch.set(requestDb.collection('security_audit_logs').doc(), { action: 'EMPLOYER_JOB_CREATED', actorUid: req.user.uid, jobId: reference.id, companyId, revision: 1, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        await batch.commit();
+        return res.status(201).json({ success: true, jobId: reference.id, status: 'pending', revision: 1 });
+    } catch (error) {
+        return res.status(400).json({ success: false, error: error.message || 'Unable to create job.' });
+    }
+});
+
+app.patch('/api/employer/jobs/:jobId', async (req, res) => {
+    const requestDb = req.app.get('db');
+    const jobId = String(req.params.jobId || '');
+    const expectedRevision = Number(req.body?.expectedRevision || 0);
+    if (!isEmployerAccount(req)) return res.status(403).json({ success: false, error: 'Approved employer access is required.' });
+    if (!requestDb || !admin || !/^[A-Za-z0-9_-]{1,128}$/.test(jobId) || !Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid job update.' });
+    try {
+        let result;
+        await requestDb.runTransaction(async transaction => {
+            const reference = requestDb.collection('jobs').doc(jobId);
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists || snapshot.data()?.employerId !== req.user.uid) { const missing = new Error('Job not found.'); missing.code = 'NOT_FOUND'; throw missing; }
+            const current = snapshot.data() || {};
+            const revision = Number(current.revision || 0);
+            if (revision !== expectedRevision) { const conflict = new Error('This job changed after the dashboard loaded. Refresh before saving.'); conflict.code = 'EMPLOYER_JOB_CHANGED'; throw conflict; }
+            let changes;
+            let action;
+            if (Object.hasOwn(req.body || {}, 'status')) {
+                const nextStatus = String(req.body.status || '').toLowerCase();
+                const allowed = (current.status === 'active' && nextStatus === 'paused') || (current.status === 'paused' && nextStatus === 'active');
+                if (!allowed) { const invalid = new Error(`A ${current.status || 'pending'} job cannot be changed to ${nextStatus}.`); invalid.code = 'INVALID_JOB_TRANSITION'; throw invalid; }
+                changes = { status: nextStatus };
+                action = 'EMPLOYER_JOB_STATUS_CHANGED';
+            } else {
+                const companyId = String(req.body?.data?.companyId || '');
+                const companyRef = requestDb.collection('companies').doc(companyId);
+                const company = await transaction.get(companyRef);
+                if (!company.exists || company.data()?.employerId !== req.user.uid || company.data()?.status !== 'approved') { const missing = new Error('Approved company not found.'); missing.code = 'COMPANY_NOT_FOUND'; throw missing; }
+                changes = { ...normalizeEmployerJobInput(req.body.data, { id: companyId, ...company.data() }), status: 'pending' };
+                action = 'EMPLOYER_JOB_EDITED';
+            }
+            const nextRevision = revision + 1;
+            transaction.update(reference, { ...changes, revision: nextRevision, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+            transaction.set(requestDb.collection('security_audit_logs').doc(), { action, actorUid: req.user.uid, jobId, revision: nextRevision, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+            result = { ...changes, revision: nextRevision };
+        });
+        return res.json({ success: true, ...result });
+    } catch (error) {
+        const status = error.code === 'EMPLOYER_JOB_CHANGED' ? 409 : ['NOT_FOUND', 'COMPANY_NOT_FOUND'].includes(error.code) ? 404 : error.code === 'INVALID_JOB_TRANSITION' ? 400 : 500;
+        return res.status(status).json({ success: false, code: error.code, error: status === 500 ? 'Unable to update job.' : error.message });
+    }
+});
+
+app.delete('/api/employer/jobs/:jobId', async (req, res) => {
+    const requestDb = req.app.get('db');
+    const jobId = String(req.params.jobId || '');
+    const expectedRevision = Number(req.body?.expectedRevision || 0);
+    if (!isEmployerAccount(req)) return res.status(403).json({ success: false, error: 'Approved employer access is required.' });
+    if (!requestDb || !admin || !/^[A-Za-z0-9_-]{1,128}$/.test(jobId) || !Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid job deletion.' });
+    try {
+        await requestDb.runTransaction(async transaction => {
+            const reference = requestDb.collection('jobs').doc(jobId);
+            const applicationsQuery = requestDb.collection('jobApplications').where('jobId', '==', jobId).limit(1);
+            const [snapshot, applications] = await Promise.all([transaction.get(reference), transaction.get(applicationsQuery)]);
+            if (!snapshot.exists || snapshot.data()?.employerId !== req.user.uid) { const missing = new Error('Job not found.'); missing.code = 'NOT_FOUND'; throw missing; }
+            if (Number(snapshot.data()?.revision || 0) !== expectedRevision) { const conflict = new Error('This job changed after the dashboard loaded. Refresh before deleting.'); conflict.code = 'EMPLOYER_JOB_CHANGED'; throw conflict; }
+            if (!applications.empty) { const conflict = new Error('This job has applications and cannot be deleted. Pause it instead.'); conflict.code = 'JOB_HAS_APPLICATIONS'; throw conflict; }
+            transaction.delete(reference);
+            transaction.set(requestDb.collection('security_audit_logs').doc(), { action: 'EMPLOYER_JOB_DELETED', actorUid: req.user.uid, jobId, revision: expectedRevision, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        });
+        return res.json({ success: true });
+    } catch (error) {
+        const status = ['EMPLOYER_JOB_CHANGED', 'JOB_HAS_APPLICATIONS'].includes(error.code) ? 409 : error.code === 'NOT_FOUND' ? 404 : 500;
+        return res.status(status).json({ success: false, code: error.code, error: status === 500 ? 'Unable to delete job.' : error.message });
+    }
+});
+
 app.post('/api/messages/conversations', async (req, res) => {
     const applicationId = String(req.body.applicationId || '');
     if (!/^[A-Za-z0-9:_-]{1,300}$/.test(applicationId) || !db || !admin?.database) {

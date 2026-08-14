@@ -1282,32 +1282,13 @@ export async function getFeaturedCompanies(limit = 8) {
 // ==================== JOB POSTING FUNCTIONS ====================
 // Create a new job posting
 export async function createJobPosting(employerId, jobData) {
-    const db = fire.firestore();
+    const user = fire.auth().currentUser;
+    if (!user || user.uid !== employerId) return { success: false, error: 'Approved employer sign-in is required.' };
     try {
-
-        const finalJobData = {
-            employerId: employerId,
-            ...jobData,
-            // Don't override status if it's already set in jobData
-            status: jobData.status || 'active',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            applicationsCount: 0,
-            viewsCount: 0,
-        };
-
-
-        const jobRef = await db.collection('jobs').add(finalJobData);
-
-
-        return { success: true, jobId: jobRef.id };
-    } catch (error) {
-        console.error('❌ Error creating job posting:', error);
-        console.error('Error code:', error.code);
-        console.error('Error message:', error.message);
-        console.error('Full error:', error);
-        return { success: false, error: error.message };
-    }
+        const response = await fetch('/api/employer/jobs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: jobData }) });
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success ? result : { success: false, error: result.error?.message || result.error || 'Unable to create job.', code: result.code };
+    } catch (error) { return { success: false, error: error.message }; }
 }
 
 // Get paginated active job postings for public viewing
@@ -1481,34 +1462,26 @@ export async function getEmployerJobs(employerId) {
     return snapshot.docs.map(document => ({ id: document.id, ...document.data() }));
 }
 
-// Update job posting
-export async function updateJobPosting(jobId, updateData) {
-    const db = fire.firestore();
+// Update job posting through the revision-safe employer API.
+export async function updateJobPosting(jobId, updateData, expectedRevision = 0) {
     try {
-        await db
-            .collection('jobs')
-            .doc(jobId)
-            .update({
-                ...updateData,
-                updatedAt: new Date(),
-            });
-
-        return { success: true };
-    } catch (error) {
-        console.error('Error updating job posting:', error);
-        return { success: false, error: error.message };
-    }
+        const statusOnly = Object.keys(updateData || {}).length === 1 && Object.hasOwn(updateData, 'status');
+        const response = await fetch(`/api/employer/jobs/${encodeURIComponent(jobId)}`, {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(statusOnly ? { status: updateData.status, expectedRevision } : { data: updateData, expectedRevision }),
+        });
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success ? result : { success: false, error: result.error?.message || result.error || 'Unable to update job.', code: result.code };
+    } catch (error) { return { success: false, error: error.message }; }
 }
 
-// Delete an employer-owned job posting (ownership is enforced by Firestore rules).
-export async function deleteJobPosting(jobId) {
-    const db = fire.firestore();
+// Delete an employer-owned job only after revision and application checks.
+export async function deleteJobPosting(jobId, expectedRevision = 0) {
     try {
-        await db.collection('jobs').doc(jobId).delete();
-        return { success: true };
-    } catch (error) {
-        return { success: false, error: error.message };
-    }
+        const response = await fetch(`/api/employer/jobs/${encodeURIComponent(jobId)}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expectedRevision }) });
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success ? result : { success: false, error: result.error?.message || result.error || 'Unable to delete job.', code: result.code };
+    } catch (error) { return { success: false, error: error.message }; }
 }
 
 // Administrative deletion is server-authoritative, stale-target checked, and audited.

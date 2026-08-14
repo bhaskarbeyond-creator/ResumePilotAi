@@ -227,13 +227,13 @@ const EmployerDashboard = ({ showToast, sidebarCollapsed, t }) => {
         try {
             const newStatus = job.status === 'active' ? 'paused' : 'active';
             
-            const result = await updateJobPosting(job.id, { status: newStatus });
+            const result = await updateJobPosting(job.id, { status: newStatus }, job.revision);
             
             if (result.success) {
                 setJobs((prevJobs) => 
                     prevJobs.map((j) => 
                         j.id === job.id 
-                            ? { ...j, status: newStatus, statusColor: getStatusColor(newStatus) }
+                            ? { ...j, status: result.status, revision: result.revision, statusColor: getStatusColor(result.status) }
                             : j
                     )
                 );
@@ -250,13 +250,13 @@ const EmployerDashboard = ({ showToast, sidebarCollapsed, t }) => {
     // Handle delete job
     const handleDeleteJob = async (job) => {
         const confirmed = window.confirm(
-            `Are you sure you want to delete the job "${job.title}"? This action cannot be undone and will remove all associated applications.`
+            `Delete the job "${job.title}"? This is allowed only when it has no applications and cannot be undone.`
         );
         
         if (!confirmed) return;
         
         try {
-            const result = await deleteJobPosting(job.id);
+            const result = await deleteJobPosting(job.id, job.revision);
             
             if (result.success) {
                 setJobs((prevJobs) => prevJobs.filter((j) => j.id !== job.id));

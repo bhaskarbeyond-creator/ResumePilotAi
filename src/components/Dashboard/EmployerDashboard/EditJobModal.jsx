@@ -207,7 +207,7 @@ const EditJobModal = ({ isOpen, onClose, job, onJobUpdated, showToast, t }) => {
 
 
             // Update job posting in database
-            const result = await updateJobPosting(job.id, jobData);
+            const result = await updateJobPosting(job.id, jobData, job.revision);
 
             if (result.success) {
                 console.log('✅ Job updated successfully');
@@ -215,7 +215,7 @@ const EditJobModal = ({ isOpen, onClose, job, onJobUpdated, showToast, t }) => {
 
                 // Call callback if provided
                 if (onJobUpdated) {
-                    onJobUpdated({ ...jobData, id: job.id });
+                    onJobUpdated({ ...jobData, ...result, id: job.id });
                 }
 
                 if (showToast) {

@@ -134,7 +134,7 @@ test('private job tracker requires monotonic revisions', async () => {
 test('jobs expose active listings only and employer edits cannot self-approve', async () => {
   await assertSucceeds(getDoc(doc(anonymous(), 'jobs/active-job')));
   await assertFails(getDoc(doc(anonymous(), 'jobs/draft-job')));
-  await assertSucceeds(setDoc(doc(employer(), 'jobs/new-job'), {
+  await assertFails(setDoc(doc(employer(), 'jobs/new-job'), {
     employerId: 'employer', status: 'pending', applicationsCount: 0, title: 'New role'
   }));
   await assertFails(setDoc(doc(employer(), 'jobs/self-approved'), {
