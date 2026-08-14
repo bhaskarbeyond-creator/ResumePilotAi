@@ -9,7 +9,7 @@ try:
         'https://airesume.projectdemo.guru/api/export',
         json={'resumeName': 'Cv1', 'resumeId': 'live_verify_final', 'language': 'en'},
         timeout=90,
-        verify=False
+        verify=True
     )
     elapsed = time.time() - start
     ct = r.headers.get('content-type', 'N/A')

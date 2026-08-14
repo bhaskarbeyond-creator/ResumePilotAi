@@ -5,8 +5,6 @@ import sys
 
 sys.stdout.reconfigure(encoding='utf-8')
 ctx = ssl.create_default_context()
-ctx.check_hostname = False
-ctx.verify_mode = ssl.CERT_NONE
 
 base_url = "https://airesume.projectdemo.guru"
 
@@ -48,8 +46,8 @@ for route in routes:
 
 print("\n=== 2. TESTING BACKEND & DATABASE PROXY ENDPOINTS ===")
 api_endpoints = [
-    ("/api/return", "GET", None),
-    ("/api/date", "POST", {}),
+    ("/healthz", "GET", None),
+    ("/healthz", "POST", {}),
     ("/api/admin/test-connection", "POST", {"type": "diagnostics"})
 ]
 

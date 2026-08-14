@@ -18,19 +18,26 @@ setTokenVerifierForTests(async token => {
 const app = require('../index');
 const bearer = token => ({ Authorization: `Bearer ${token}` });
 
+test('minimal health endpoint is public and does not cache', async () => {
+  const response = await request(app).get('/healthz');
+  assert.equal(response.status, 200);
+  assert.equal(response.body.status, 'ok');
+  assert.equal(response.headers['cache-control'], 'no-store');
+});
+
 test('protected endpoint rejects absent and invalid Firebase tokens', async () => {
-  const absent = await request(app).get('/api/return');
+  const absent = await request(app).get('/api/rtl-font-config');
   assert.equal(absent.status, 401);
   assert.equal(absent.body.error.code, 'AUTH_REQUIRED');
-  const invalid = await request(app).get('/api/return').set(bearer('invalid'));
+  const invalid = await request(app).get('/api/rtl-font-config').set(bearer('invalid'));
   assert.equal(invalid.status, 401);
   assert.equal(invalid.body.error.code, 'INVALID_AUTH_TOKEN');
 });
 
 test('valid authenticated user reaches an ordinary route', async () => {
-  const response = await request(app).get('/api/return').set(bearer('user'));
+  const response = await request(app).get('/api/rtl-font-config').set(bearer('user'));
   assert.equal(response.status, 200);
-  assert.equal(response.text, 'Hello World\n');
+  assert.equal(response.body.isRtlSupported, true);
   assert.match(response.headers['x-request-id'], /^[0-9a-f-]{36}$/);
 });
 
@@ -86,11 +93,11 @@ test('verification and notification dispatch cannot target another account', asy
 });
 
 test('CORS grants only exact configured origins', async () => {
-  const allowed = await request(app).options('/api/return')
+  const allowed = await request(app).options('/api/rtl-font-config')
     .set('Origin', 'https://app.example.com')
     .set('Access-Control-Request-Method', 'GET');
   assert.equal(allowed.headers['access-control-allow-origin'], 'https://app.example.com');
-  const denied = await request(app).options('/api/return')
+  const denied = await request(app).options('/api/rtl-font-config')
     .set('Origin', 'https://app.example.com.evil.test')
     .set('Access-Control-Request-Method', 'GET');
   assert.equal(denied.headers['access-control-allow-origin'], undefined);
@@ -134,7 +141,7 @@ test('payment verification rejects malformed or unbound provider orders', async 
 });
 
 test('JSON body limit rejects oversized payloads before route work', async () => {
-  const response = await request(app).post('/api/date')
+  const response = await request(app).post('/api/check')
     .set(bearer('user'))
     .send({ value: 'x'.repeat(300 * 1024) });
   assert.equal(response.status, 413);

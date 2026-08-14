@@ -8,7 +8,7 @@ try:
         'https://airesume.projectdemo.guru/api/export',
         json={'resumeName': 'Cv3', 'resumeId': 'live_verify_cv3', 'language': 'en'},
         timeout=90,
-        verify=False
+        verify=True
     )
     print(f'Status: {r.status_code} | Size: {len(r.content):,} bytes')
     if r.status_code == 200 and r.content.startswith(b'%PDF'):

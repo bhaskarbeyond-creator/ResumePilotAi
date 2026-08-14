@@ -5,8 +5,6 @@ import sys
 
 sys.stdout.reconfigure(encoding='utf-8')
 ctx = ssl.create_default_context()
-ctx.check_hostname = False
-ctx.verify_mode = ssl.CERT_NONE
 
 project_id = "ai-resume-builder-424cf"
 url = f"https://firestore.googleapis.com/v1/projects/{project_id}/databases/(default)/documents/users"

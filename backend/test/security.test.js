@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { isPrivateIp, isPrivateV4, assertHttpsUrl } = require('../security/network');
+const { isPrivateIp, isPrivateV4, assertHttpsUrl, assertPublicNetworkTarget } = require('../security/network');
 const { isAdminPath, requiresVerifiedEmail, enforceApiPolicy } = require('../security/policy');
 const { accountRateLimit, _buckets } = require('../security/abuse');
 const { permissionsFor } = require('../security/auth');
@@ -26,6 +26,12 @@ test('private and reserved IP encodings are rejected', () => {
   }
   assert.equal(isPrivateIp('8.8.8.8'), false);
   assert.equal(isPrivateIp('2606:4700:4700::1111'), false);
+});
+
+test('network target guard rejects literal metadata, loopback, local names, and malformed hosts', async () => {
+  for (const host of ['127.0.0.1', '169.254.169.254', '::1', '::ffff:127.0.0.1', 'localhost', 'service.internal', 'printer.local', '', 'bad host']) {
+    await assert.rejects(() => assertPublicNetworkTarget(host), undefined, host);
+  }
 });
 
 test('HTTPS allowlist rejects credentials, insecure schemes and suffix confusion', () => {
@@ -60,13 +66,12 @@ test('route policy blocks normal user from admin alias', () => {
   assert.equal(res.body.error.code, 'FORBIDDEN');
 });
 
-test('ordinary ADMIN cannot grant roles or rotate Firebase credentials', () => {
-  for (const path of ['/test-grant-admin', '/admin/firebase-service-account']) {
-    const req = { path, user: { claims: { role: 'ADMIN', auth_time: Math.floor(Date.now() / 1000) }, emailVerified: true } };
-    const res = responseHarness();
-    enforceApiPolicy(req, res, () => assert.fail('must not call next'));
-    assert.equal(res.statusCode, 403, path);
-  }
+test('ordinary ADMIN cannot rotate Firebase credentials', () => {
+  const path = '/admin/firebase-service-account';
+  const req = { path, user: { claims: { role: 'ADMIN', auth_time: Math.floor(Date.now() / 1000) }, emailVerified: true } };
+  const res = responseHarness();
+  enforceApiPolicy(req, res, () => assert.fail('must not call next'));
+  assert.equal(res.statusCode, 403, path);
 });
 
 test('route policy requires verified email for paid AI and payments', () => {

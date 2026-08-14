@@ -6,8 +6,6 @@ import sys
 
 sys.stdout.reconfigure(encoding='utf-8')
 ctx = ssl.create_default_context()
-ctx.check_hostname = False
-ctx.verify_mode = ssl.CERT_NONE
 
 base_url = "https://airesume.projectdemo.guru"
 
@@ -22,9 +20,9 @@ try:
 except Exception as e:
     print(f"Frontend Error: {e}")
 
-print("\n2. Testing backend API health check (/api/return)...")
+print("\n2. Testing backend API health check (/healthz)...")
 try:
-    req = urllib.request.Request(f"{base_url}/api/return", headers={'User-Agent': 'Mozilla/5.0'})
+    req = urllib.request.Request(f"{base_url}/healthz", headers={'User-Agent': 'Mozilla/5.0'})
     with urllib.request.urlopen(req, context=ctx) as resp:
         text = resp.read().decode('utf-8')
         print(f"Status: {resp.status}, Response: {text.strip()}")

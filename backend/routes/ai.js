@@ -274,8 +274,6 @@ router.post('/generate-summary', async (req, res) => {
     try {
         const { name, jobTitle, experience, workHistory, education, projects, skills, certifications, achievement, summaryType, language = 'en' } = req.body;
 
-        console.log('Received summary request with language:', language);
-        console.log('Full summary request body:', req.body);
 
         // Language mapping for proper language names in prompt
         const languageNames = {
@@ -554,8 +552,6 @@ router.post('/generate-work-description', async (req, res) => {
     try {
         const { jobTitle, employer, startDate, endDate, current, language = 'en' } = req.body;
 
-        console.log('Received work description request with language:', language);
-        console.log('Full request body:', req.body);
 
         if (!jobTitle || !employer) {
             return res.status(400).json({ error: 'Job title and employer are required' });
@@ -697,8 +693,6 @@ router.post('/generate-education-description', async (req, res) => {
     try {
         const { school, degree, startDate, endDate, current, language = 'en' } = req.body;
 
-        console.log('Received education description request with language:', language);
-        console.log('Full request body:', req.body);
 
         if (!school || !degree) {
             return res.status(400).json({ error: 'School and degree are required' });
