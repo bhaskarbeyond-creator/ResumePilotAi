@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useReducer, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useReducer, useCallback, useMemo, useRef } from 'react';
 import {
     FaCheckCircle,
     FaTimesCircle,
@@ -267,6 +267,7 @@ function interviewReducer(state, action) {
 const DashboardInterviews = () => {
     const { t } = useTranslation('common');
     const [state, dispatch] = useReducer(interviewReducer, initialState);
+    const requestControllerRef = useRef(null);
 
     // Function to toggle mobile sidebar
     const toggleMobileSidebar = () => {
@@ -275,6 +276,9 @@ const DashboardInterviews = () => {
 
     // Function to fetch interview questions from the backend
     const fetchInterviewQuestions = useCallback(async () => {
+        requestControllerRef.current?.abort();
+        const requestController = new AbortController();
+        requestControllerRef.current = requestController;
         dispatch({ type: 'FETCH_INTERVIEW_START' });
         try {
             // Get current language from preferredLanguage in localStorage or default to 'en'
@@ -285,6 +289,7 @@ const DashboardInterviews = () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
+                signal: requestController.signal,
                 body: JSON.stringify({
                     occupation: state.selectedOccupation,
                     interviewType: state.interviewType,
@@ -300,10 +305,16 @@ const DashboardInterviews = () => {
             const data = await response.json();
             dispatch({ type: 'FETCH_INTERVIEW_SUCCESS', data });
         } catch (error) {
-            console.error('Error fetching interview questions:', error);
-            dispatch({ type: 'FETCH_INTERVIEW_ERROR', error: error.message });
+            if (error?.name !== 'AbortError') {
+                console.error('Error fetching interview questions:', error);
+                dispatch({ type: 'FETCH_INTERVIEW_ERROR', error: error.message });
+            }
+        } finally {
+            if (requestControllerRef.current === requestController) requestControllerRef.current = null;
         }
     }, [state.selectedOccupation, state.interviewType, state.questionCount]);
+
+    useEffect(() => () => { const controller = requestControllerRef.current; requestControllerRef.current = null; controller?.abort(); }, []);
 
     // Enhanced timer with persistence
     useEffect(() => {

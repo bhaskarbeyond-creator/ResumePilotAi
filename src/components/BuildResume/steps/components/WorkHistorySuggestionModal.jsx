@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdClose, MdLightbulb, MdBolt, MdContentCopy, MdAdd, MdCheck, MdAutoAwesome } from 'react-icons/md';
 import { FiLoader } from 'react-icons/fi';
-import config from '../../../../conf/configuration';
 import { generateUserAiContent } from '../../../../services/aiService';
 
 // Updated tone prompts – now include style guidance for natural language and ATS optimization
@@ -62,6 +61,7 @@ const WorkHistorySuggestionModal = ({ isOpen, onClose, selectedEmployment, onApp
     const [copiedIndex, setCopiedIndex] = useState(null);
     const [activeTone, setActiveTone] = useState('metrics');
     const [error, setError] = useState(null);
+    const requestControllerRef = useRef(null);
 
     const generateAiSuggestions = async (toneId = activeTone) => {
         const jobTitle = selectedEmployment?.jobTitle || selectedEmployment?.job_title || selectedEmployment?.position || '';
@@ -78,6 +78,9 @@ const WorkHistorySuggestionModal = ({ isOpen, onClose, selectedEmployment, onApp
             return;
         }
 
+        requestControllerRef.current?.abort();
+        const requestController = new AbortController();
+        requestControllerRef.current = requestController;
         setIsGenerating(true);
         setError(null);
 
@@ -97,7 +100,7 @@ const WorkHistorySuggestionModal = ({ isOpen, onClose, selectedEmployment, onApp
                 language: preferredLanguage,
                 focusTone: toneObj.prompt,
                 style: 'natural, human-like, ATS-optimized, strictly truthful, no fabricated facts'
-            });
+            }, { signal: requestController.signal });
 
             if (data && data.suggestions && Array.isArray(data.suggestions)) {
                 const cleanSuggestions = data.suggestions.map((item) => {
@@ -112,6 +115,7 @@ const WorkHistorySuggestionModal = ({ isOpen, onClose, selectedEmployment, onApp
                 throw new Error('Invalid response format');
             }
         } catch (err) {
+            if (err?.name === 'AbortError') return;
             console.error('Error generating AI suggestions:', err);
             setError(`AI Service fallback used. (${err.message || 'Unknown error'})`);
 
@@ -123,7 +127,10 @@ const WorkHistorySuggestionModal = ({ isOpen, onClose, selectedEmployment, onApp
             );
             setSuggestions(fallback);
         } finally {
-            setIsGenerating(false);
+            if (requestControllerRef.current === requestController) {
+                requestControllerRef.current = null;
+                setIsGenerating(false);
+            }
         }
     };
 
@@ -144,6 +151,11 @@ const WorkHistorySuggestionModal = ({ isOpen, onClose, selectedEmployment, onApp
             ]);
         }
     }, [isOpen, selectedEmployment]);
+
+    useEffect(() => () => { const controller = requestControllerRef.current; requestControllerRef.current = null; controller?.abort(); }, []);
+    useEffect(() => {
+        if (!isOpen) requestControllerRef.current?.abort();
+    }, [isOpen]);
 
     const handleToneChange = (toneId) => {
         setActiveTone(toneId);

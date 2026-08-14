@@ -54,6 +54,7 @@ const AiSettings = () => {
     const [testingProvider, setTestingProvider] = useState(null);
     const [fetchingNvidiaModels, setFetchingNvidiaModels] = useState(false);
     const [nvidiaModels, setNvidiaModels] = useState(RECOMMENDED_NVIDIA_MODELS);
+    const [configuredProviders, setConfiguredProviders] = useState({});
 
     // Per-provider inline message state
     const [providerMessages, setProviderMessages] = useState({});
@@ -63,14 +64,24 @@ const AiSettings = () => {
     const messageTimeouts = useRef({});
 
     useEffect(() => {
-        getSystemSettings().then((settings) => {
-            const ai = (settings && settings.ai) || {};
-            const hasGeminiKey = !!(ai.geminiApiKey || '');
-            const hasNvidiaKey = !!(ai.nvidiaApiKey || '');
-            const hasOpenaiKey = !!(ai.openaiApiKey || '');
-            const hasGroqKey = !!(ai.groqApiKey || '');
-            const hasOpenrouterKey = !!(ai.openrouterApiKey || '');
-            const hasDeepseekKey = !!(ai.deepseekApiKey || '');
+        let active = true;
+        const loadSettings = async () => {
+            try {
+                const [settings, response] = await Promise.all([
+                    getSystemSettings(),
+                    fetch('/api/admin/ai-settings'),
+                ]);
+                const serverResult = response.ok ? await response.json() : { settings: {}, configuredProviders: {} };
+                if (!active) return;
+            const ai = { ...((settings && settings.ai) || {}), ...(serverResult.settings || {}) };
+            const configured = serverResult.configuredProviders || {};
+            setConfiguredProviders(configured);
+            const hasGeminiKey = Boolean(configured.gemini);
+            const hasNvidiaKey = Boolean(configured.nvidia);
+            const hasOpenaiKey = Boolean(configured.openai);
+            const hasGroqKey = Boolean(configured.groq);
+            const hasOpenrouterKey = Boolean(configured.openrouter);
+            const hasDeepseekKey = Boolean(configured.deepseek);
 
             setAiConfig({
                 provider: ai.provider || 'gemini',
@@ -104,8 +115,14 @@ const AiSettings = () => {
                 enableFallback: ai.enableFallback !== undefined ? ai.enableFallback : true,
                 enableImportModule: ai.enableImportModule !== undefined ? ai.enableImportModule : false,
             });
-            setLoading(false);
-        });
+            } catch (error) {
+                if (active) setGlobalMessage({ type: 'error', text: `Unable to load AI settings: ${error.message}` });
+            } finally {
+                if (active) setLoading(false);
+            }
+        };
+        loadSettings();
+        return () => { active = false; };
     }, []);
 
     const handleChange = (e) => {
@@ -193,6 +210,14 @@ const AiSettings = () => {
             });
             const result = await response.json().catch(() => ({}));
             if (!response.ok || !result.success) throw new Error(result.error || 'Unable to save AI settings');
+            setConfiguredProviders((current) => ({
+                ...current,
+                ...Object.fromEntries([
+                    ['gemini', aiConfig.geminiApiKey], ['nvidia', aiConfig.nvidiaApiKey],
+                    ['openai', aiConfig.openaiApiKey], ['groq', aiConfig.groqApiKey],
+                    ['openrouter', aiConfig.openrouterApiKey], ['deepseek', aiConfig.deepseekApiKey],
+                ].filter(([, key]) => String(key || '').trim()).map(([provider]) => [provider, true])),
+            }));
             setGlobalMessage({ type: 'success', text: 'AI engine and provider secrets saved to the server-only store.' });
         } catch (error) {
             setGlobalMessage({ type: 'error', text: `Failed to save settings: ${error.message}` });
@@ -215,7 +240,9 @@ const AiSettings = () => {
         };
         try {
             const key = keyFields[targetProvider] ? String(aiConfig[keyFields[targetProvider]] || '').trim() : '';
-            if (targetProvider !== 'ollama' && !key) throw new Error(`Enter the ${targetProvider} API key first.`);
+            if (targetProvider !== 'ollama' && !key && !configuredProviders[targetProvider]) {
+                throw new Error(`Enter and save the ${targetProvider} API key first.`);
+            }
             const response = await fetch('/api/admin/test-connection', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -427,7 +454,7 @@ const AiSettings = () => {
                                     name="nvidiaApiKey"
                                     value={aiConfig.nvidiaApiKey}
                                     onChange={handleChange}
-                                    placeholder="nvapi-..."
+                                    placeholder={configuredProviders.nvidia ? 'Configured securely — enter only to replace' : 'nvapi-...'}
                                     className="w-full pl-3 pr-10 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                                 />
                                 <button
@@ -532,7 +559,7 @@ const AiSettings = () => {
                                     name="geminiApiKey"
                                     value={aiConfig.geminiApiKey}
                                     onChange={handleChange}
-                                    placeholder="AIzaSy..."
+                                    placeholder={configuredProviders.gemini ? 'Configured securely — enter only to replace' : 'AIzaSy...'}
                                     className="w-full pl-3 pr-10 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                 />
                                 <button
@@ -623,7 +650,7 @@ const AiSettings = () => {
                                     name="openaiApiKey"
                                     value={aiConfig.openaiApiKey}
                                     onChange={handleChange}
-                                    placeholder="sk-proj-..."
+                                    placeholder={configuredProviders.openai ? 'Configured securely — enter only to replace' : 'sk-proj-...'}
                                     className="w-full pl-3 pr-10 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                                 />
                                 <button
@@ -722,7 +749,7 @@ const AiSettings = () => {
                                         name="groqApiKey"
                                         value={aiConfig.groqApiKey}
                                         onChange={handleChange}
-                                        placeholder="gsk_..."
+                                        placeholder={configuredProviders.groq ? 'Configured securely — enter only to replace' : 'gsk_...'}
                                         className="w-full pl-3 pr-10 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:outline-none"
                                     />
                                     <button
@@ -808,7 +835,7 @@ const AiSettings = () => {
                                         name="openrouterApiKey"
                                         value={aiConfig.openrouterApiKey}
                                         onChange={handleChange}
-                                        placeholder="sk-or-v1-..."
+                                        placeholder={configuredProviders.openrouter ? 'Configured securely — enter only to replace' : 'sk-or-v1-...'}
                                         className="w-full pl-3 pr-10 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:outline-none"
                                     />
                                     <button
@@ -896,7 +923,7 @@ const AiSettings = () => {
                                         name="deepseekApiKey"
                                         value={aiConfig.deepseekApiKey}
                                         onChange={handleChange}
-                                        placeholder="sk-..."
+                                        placeholder={configuredProviders.deepseek ? 'Configured securely — enter only to replace' : 'sk-...'}
                                         className="w-full pl-3 pr-10 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     />
                                     <button

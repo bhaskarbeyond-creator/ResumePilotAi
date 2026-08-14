@@ -1,7 +1,27 @@
 const express = require('express');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const EmailNotifier = require('../services/emailNotifier');
+const { executeContentOperation, executeResumeParsing, extractJson, loadProviderConfiguration, generateWithProviders } = require('../services/aiRuntime');
 const router = express.Router();
+
+async function generateConfiguredText(req, res, prompt, operation, overrides = {}) {
+    const configuration = await loadProviderConfiguration(req.app.get('db'));
+    if (overrides.temperature !== undefined) configuration.temperature = overrides.temperature;
+    if (overrides.maxTokens !== undefined) configuration.maxTokens = overrides.maxTokens;
+    const generated = await generateWithProviders({ prompt, configuration, operation, signal: overrides.signal || req.aiAbortSignal, timeoutMs: overrides.timeoutMs });
+    res.setHeader('X-AI-Provider', generated.provider);
+    res.setHeader('X-AI-Model', generated.model);
+    return generated.raw;
+}
+
+function notifyAiResumeReady(req, userName) {
+    if (!req.user?.email) return;
+    EmailNotifier.notifyAIResumeReady(req.app.get('db'), {
+        userEmail: req.user.email,
+        userName: String(userName || 'Candidate').slice(0, 120),
+        atsScore: '94',
+    }).catch(error => console.warn('[AI notifier]', error.message));
+}
 
 async function getGeminiApiKey(req) {
     if (process.env.GEMINI_API_KEY) return process.env.GEMINI_API_KEY;
@@ -20,9 +40,16 @@ async function getGeminiApiKey(req) {
 
 // Provider credentials are server-owned. Bound prompt inputs before any paid provider call.
 router.use((req, res, next) => {
+    const requestController = new AbortController();
+    req.aiAbortSignal = requestController.signal;
+    req.once('aborted', () => requestController.abort());
     if (req.method === 'GET') return next();
     if (Object.prototype.hasOwnProperty.call(req.body || {}, 'apiKey') || req.get('x-gemini-api-key')) {
         return res.status(400).json({ error: { code: 'CLIENT_AI_KEY_REJECTED', message: 'Client-supplied AI credentials are not accepted', requestId: res.locals.requestId } });
+    }
+    const identityFields = ['uid', 'userId', 'ownerUid', 'resumeId', 'profileId'];
+    if (identityFields.some(field => Object.hasOwn(req.body || {}, field) || Object.hasOwn(req.body?.payload || {}, field))) {
+        return res.status(400).json({ error: { code: 'CLIENT_AI_IDENTITY_REJECTED', message: 'AI identity and ownership context is server-controlled', requestId: res.locals.requestId } });
     }
     const serialized = JSON.stringify(req.body || {});
     if (serialized.length > 50_000) {
@@ -35,13 +62,9 @@ router.use((req, res, next) => {
 router.post('/generate-resume', async (req, res) => {
     try {
         const { occupation, experienceLevel, skills = [], education = [], language = 'en', userName } = req.body;
-
-        if (req.user?.email) {
-            EmailNotifier.notifyAIResumeReady(req.app.get('db'), {
-                userEmail: req.user.email,
-                userName: userName || 'Candidate',
-                atsScore: '94'
-            }).catch(e => console.warn('[AI Notifier] Resume email notice:', e.message));
+        if (typeof occupation !== 'string' || !occupation.trim() || occupation.length > 160
+            || !Array.isArray(skills) || !Array.isArray(education) || skills.length > 50 || education.length > 30) {
+            return res.status(400).json({ error: { code: 'INVALID_AI_INPUT', message: 'Valid occupation, skills, and education are required', requestId: res.locals.requestId } });
         }
 
         // Language mapping for proper language names in prompt
@@ -94,20 +117,8 @@ router.post('/generate-resume', async (req, res) => {
         // Format position title with level
         positionTitle = positionLevel ? `${positionLevel} ${cleanOccupation}` : cleanOccupation;
 
-        // Check for API key from request body, headers, or env
-        const apiKey = await getGeminiApiKey(req);
-
-        if (!apiKey) {
-            console.log('No API key found, using fallback generator');
-            const fallbackData = generateDefaultResumeData(cleanOccupation, experienceLevel, yearsOfExperience, positionTitle, currentYear, skills, education, targetLanguage);
-            return res.json(fallbackData);
-        }
-
-        // Initialize the Gemini API
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-
-        // Prepare the prompt for Gemini
+        // Build the established complete-resume prompt, then execute it through the
+        // configured secure server-side provider chain.
         const prompt = `
         Generate a professional resume content for a ${positionTitle} with ${yearsOfExperience.max} years of experience.
         
@@ -185,22 +196,25 @@ router.post('/generate-resume', async (req, res) => {
         Only return the JSON without any explanation or additional text.
         `;
 
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
+        const configuration = await loadProviderConfiguration(req.app.get('db'));
+        configuration.maxTokens = Math.max(configuration.maxTokens, 4096);
+        const generated = await generateWithProviders({ prompt, configuration, operation: 'generate-resume', signal: req.aiAbortSignal, timeoutMs: 45_000 });
+        const text = generated.raw;
+        res.setHeader('X-AI-Provider', generated.provider);
+        res.setHeader('X-AI-Model', generated.model);
 
-        // Parse the JSON response
-        // The text might have markdown code blocks, so we need to extract the JSON
-        let jsonText = text;
-        if (text.includes('```json')) {
-            jsonText = text.split('```json')[1].split('```')[0].trim();
-        } else if (text.includes('```')) {
-            jsonText = text.split('```')[1].split('```')[0].trim();
-        }
-
+        // Parse provider JSON with the same tolerant fenced/prose extraction used by section AI.
         try {
-            const resumeData = JSON.parse(jsonText);
-            console.log('Successfully parsed JSON response from AI');
+            const resumeData = extractJson(text);
+            if (!resumeData || typeof resumeData !== 'object' || Array.isArray(resumeData)) throw new Error('Invalid resume response');
+            let recovery;
+            const getRecovery = () => recovery || (recovery = generateDefaultResumeData(cleanOccupation, experienceLevel, yearsOfExperience, positionTitle, currentYear, skills, education, targetLanguage));
+            for (const section of ['employments', 'educations', 'skills', 'languages']) {
+                if (!Array.isArray(resumeData[section]) || resumeData[section].length === 0) resumeData[section] = getRecovery()[section];
+            }
+            resumeData.occupation = resumeData.occupation || positionTitle;
+            resumeData.summary = resumeData.summary || getRecovery().summary;
+            resumeData._source = 'ai';
 
             // Validate and fix skills format if needed
             if (resumeData.skills && Array.isArray(resumeData.skills)) {
@@ -228,10 +242,48 @@ router.post('/generate-resume', async (req, res) => {
                 });
             }
 
-            res.json(resumeData);
+            const safeText = (value, max = 10000) => {
+                const withoutMarkup = String(value || '')
+                    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+                    .replace(/<[^>]*>/g, '');
+                return Array.from(withoutMarkup, character => {
+                    const code = character.charCodeAt(0);
+                    if (code === 10) return '\n';
+                    return code <= 31 || code === 127 ? '' : character;
+                }).join('').trim().slice(0, max);
+            };
+            const safeResume = {
+                firstname: safeText(resumeData.firstname, 100), lastname: safeText(resumeData.lastname, 100),
+                email: safeText(resumeData.email, 254), phone: safeText(resumeData.phone, 50),
+                occupation: safeText(resumeData.occupation, 160), country: safeText(resumeData.country, 100),
+                city: safeText(resumeData.city, 100), address: safeText(resumeData.address, 300),
+                postalcode: safeText(resumeData.postalcode, 30), summary: safeText(resumeData.summary),
+                employments: resumeData.employments.slice(0, 20).map((item, index) => ({
+                    id: Number(item?.id) || index + 1, jobTitle: safeText(item?.jobTitle || item?.title, 160),
+                    employer: safeText(item?.employer || item?.company, 160), begin: safeText(item?.begin || item?.startDate, 30),
+                    end: safeText(item?.end || item?.endDate, 30), description: safeText(item?.description), date: Date.now() - index * 1000,
+                })),
+                educations: resumeData.educations.slice(0, 20).map((item, index) => ({
+                    id: Number(item?.id) || index + 1, school: safeText(item?.school, 200), degree: safeText(item?.degree, 200),
+                    started: safeText(item?.started || item?.startDate, 30), finished: safeText(item?.finished || item?.endDate, 30),
+                    description: safeText(item?.description), date: Date.now() - index * 1000,
+                })),
+                skills: resumeData.skills.slice(0, 50).map((item, index) => ({
+                    id: Number(item?.id) || index + 1, name: safeText(item?.name, 100),
+                    rating: Math.min(100, Math.max(0, Number(item?.rating) || 4)), date: Date.now() - index * 1000,
+                })).filter(item => item.name),
+                languages: resumeData.languages.slice(0, 20).map((item, index) => ({
+                    id: Number(item?.id) || index + 1, name: safeText(item?.name, 100),
+                    level: safeText(item?.level, 50), date: Date.now() - index * 1000,
+                })).filter(item => item.name),
+                _source: 'ai',
+            };
+            notifyAiResumeReady(req, userName);
+            res.json(safeResume);
         } catch (error) {
             console.error('Failed to parse JSON from AI response:', error);
             const fallbackData = generateDefaultResumeData(cleanOccupation, experienceLevel, yearsOfExperience, positionTitle, currentYear, skills, education, targetLanguage);
+            notifyAiResumeReady(req, userName);
             res.json(fallbackData);
         }
     } catch (error) {
@@ -265,6 +317,7 @@ router.post('/generate-resume', async (req, res) => {
         const positionTitle = positionLevel ? `${positionLevel} ${cleanOccupation}` : cleanOccupation;
 
         const fallbackData = generateDefaultResumeData(cleanOccupation, experienceLevel, yearsOfExperience, positionTitle, currentYear, skills, education, language);
+        notifyAiResumeReady(req, req.body.userName);
         res.json(fallbackData);
     }
 });
@@ -296,19 +349,6 @@ router.post('/generate-summary', async (req, res) => {
 
         const targetLanguage = languageNames[language] || 'English';
         console.log('Summary target language mapped to:', targetLanguage);
-
-        // Check for API key from request body, headers, or env
-        const apiKey = await getGeminiApiKey(req);
-
-        if (!apiKey) {
-            console.log('No API key found, using fallback summary generator');
-            const fallbackSummary = generateFallbackSummary(name, jobTitle, experience, skills, achievement, summaryType, targetLanguage);
-            return res.json({ summary: fallbackSummary });
-        }
-
-        // Initialize the Gemini API
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
         // Prepare prompt based on summaryType
         let styleGuidance = '';
@@ -367,16 +407,7 @@ router.post('/generate-summary', async (req, res) => {
         ONLY return the summary text without any surrounding quotes, tags, or markdown wrapper.
         `;
 
-        console.log('Sending summary prompt to AI with target language:', targetLanguage);
-        console.log('Summary prompt preview:', prompt.substring(0, 200) + '...');
-
-        // Call Gemini API
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const summary = response.text();
-
-        console.log('AI summary response received for language', targetLanguage + ':', summary.substring(0, 150) + '...');
-        console.log('Successfully generated AI summary for language:', targetLanguage);
+        const summary = await generateConfiguredText(req, res, prompt, 'generate-summary');
         return res.json({ summary });
     } catch (error) {
         console.error('Error generating AI summary:', error);
@@ -411,8 +442,9 @@ router.post('/generate-interview', async (req, res) => {
     try {
         const { occupation, interviewType, questionCount = 10, language = 'en' } = req.body;
 
-        if (!occupation || !interviewType) {
-            return res.status(400).json({ error: 'Occupation and interview type are required' });
+        if (typeof occupation !== 'string' || !occupation.trim() || occupation.length > 160
+            || !['technical', 'behavioral'].includes(interviewType)) {
+            return res.status(400).json({ error: { code: 'INVALID_AI_INPUT', message: 'Valid occupation and interview type are required', requestId: res.locals.requestId } });
         }
 
         // Validate question count
@@ -438,10 +470,6 @@ router.post('/generate-interview', async (req, res) => {
         };
 
         const targetLanguage = languageNames[language] || 'English';
-
-        const apiKey = await getGeminiApiKey(req);
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
         // Customize prompt based on interview type
         let promptContext = '';
@@ -497,9 +525,7 @@ router.post('/generate-interview', async (req, res) => {
         Only return the JSON without any explanation or additional text.
         `;
 
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const responseText = response.text();
+        const responseText = await generateConfiguredText(req, res, prompt, 'generate-interview', { maxTokens: 4096 });
 
         try {
             // Extract the JSON from the response
@@ -553,8 +579,9 @@ router.post('/generate-work-description', async (req, res) => {
         const { jobTitle, employer, startDate, endDate, current, language = 'en' } = req.body;
 
 
-        if (!jobTitle || !employer) {
-            return res.status(400).json({ error: 'Job title and employer are required' });
+        if (typeof jobTitle !== 'string' || !jobTitle.trim() || jobTitle.length > 160
+            || typeof employer !== 'string' || !employer.trim() || employer.length > 160) {
+            return res.status(400).json({ error: { code: 'INVALID_AI_INPUT', message: 'Job title and employer are required', requestId: res.locals.requestId } });
         }
 
         // Language mapping for proper language names in prompt
@@ -578,19 +605,6 @@ router.post('/generate-work-description', async (req, res) => {
 
         const targetLanguage = languageNames[language] || 'English';
         console.log('Target language mapped to:', targetLanguage);
-
-        // Check for API key from request body, headers, or env
-        const apiKey = await getGeminiApiKey(req);
-
-        if (!apiKey) {
-            console.log('No API key found, using fallback work description generator');
-            const fallbackDescriptions = generateFallbackWorkDescriptions(jobTitle, employer, targetLanguage);
-            return res.json({ suggestions: fallbackDescriptions });
-        }
-
-        // Initialize the Gemini API
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
         // Create a comprehensive prompt for work experience descriptions
         const duration = startDate && (endDate || current) ? `from ${startDate} to ${current ? 'present' : endDate}` : 'for the specified period';
@@ -627,14 +641,7 @@ router.post('/generate-work-description', async (req, res) => {
         Only return the JSON array without any explanation or additional text.
         `;
 
-        console.log('Sending prompt to AI with target language:', targetLanguage);
-        console.log('Prompt preview:', prompt.substring(0, 200) + '...');
-
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
-
-        console.log('AI response received for language', targetLanguage + ':', text.substring(0, 300) + '...');
+        const text = await generateConfiguredText(req, res, prompt, 'generate-work-description');
 
         // Parse the JSON response
         let jsonText = text;
@@ -694,8 +701,9 @@ router.post('/generate-education-description', async (req, res) => {
         const { school, degree, startDate, endDate, current, language = 'en' } = req.body;
 
 
-        if (!school || !degree) {
-            return res.status(400).json({ error: 'School and degree are required' });
+        if (typeof school !== 'string' || !school.trim() || school.length > 200
+            || typeof degree !== 'string' || !degree.trim() || degree.length > 200) {
+            return res.status(400).json({ error: { code: 'INVALID_AI_INPUT', message: 'School and degree are required', requestId: res.locals.requestId } });
         }
 
         // Language mapping for proper language names in prompt
@@ -719,19 +727,6 @@ router.post('/generate-education-description', async (req, res) => {
 
         const targetLanguage = languageNames[language] || 'English';
         console.log('Target language mapped to:', targetLanguage);
-
-        // Check for API key from request body, headers, or env
-        const apiKey = await getGeminiApiKey(req);
-
-        if (!apiKey) {
-            console.log('No API key found, using fallback education description generator');
-            const fallbackDescriptions = generateFallbackEducationDescriptions(school, degree, targetLanguage);
-            return res.json({ suggestions: fallbackDescriptions });
-        }
-
-        // Initialize the Gemini API
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
         // Create a comprehensive prompt for education descriptions
         const duration = startDate && (endDate || current) ? `from ${startDate} to ${current ? 'present' : endDate}` : 'during the study period';
@@ -775,14 +770,7 @@ router.post('/generate-education-description', async (req, res) => {
         Only return the JSON array without any explanation or additional text.
         `;
 
-        console.log('Sending education prompt to AI with target language:', targetLanguage);
-        console.log('Education prompt preview:', prompt.substring(0, 200) + '...');
-
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
-
-        console.log('AI education response received for language', targetLanguage + ':', text.substring(0, 300) + '...');
+        const text = await generateConfiguredText(req, res, prompt, 'generate-education-description');
 
         // Parse the JSON response
         let jsonText = text;
@@ -1382,8 +1370,6 @@ const generateFallbackEducationDescriptions = (school, degree, targetLanguage = 
 
 // Fallback generator in case the AI call fails
 const generateDefaultResumeData = (occupation, experienceLevel, yearsOfExperience, positionTitle, currentYear, skills = [], education = [], targetLanguage) => {
-    console.log('Using fallback generator with params:', { occupation, experienceLevel });
-
     // First name options
     const firstNames = ['James', 'Emma', 'Alex', 'Sarah', 'Michael', 'Jessica', 'David', 'Sophia', 'Robert', 'Olivia'];
 
@@ -1724,12 +1710,8 @@ router.post('/generate-skills', async (req, res) => {
     try {
         const { occupation, experienceLevel = 'mid-level', language = 'en' } = req.body;
 
-        console.log('===== SKILLS GENERATION REQUEST =====');
-        console.log('Received skills generation request:', { occupation, experienceLevel, language });
-
-        if (!occupation) {
-            console.log('❌ ERROR: No occupation provided');
-            return res.status(400).json({ error: 'Occupation is required' });
+        if (typeof occupation !== 'string' || !occupation.trim() || occupation.length > 160) {
+            return res.status(400).json({ error: { code: 'INVALID_AI_INPUT', message: 'Occupation is required', requestId: res.locals.requestId } });
         }
 
         // Language mapping for proper language names in prompt
@@ -1753,22 +1735,6 @@ router.post('/generate-skills', async (req, res) => {
 
         const targetLanguage = languageNames[language] || 'English';
         console.log('Target language mapped to:', targetLanguage);
-
-        // Check for API key
-        const apiKey = await getGeminiApiKey(req);
-        console.log('AI provider key configured:', Boolean(apiKey));
-
-        if (!apiKey) {
-            console.log('⚠️  No GEMINI_API_KEY found in environment variables, using fallback skills generator');
-            const fallbackSkills = generateFallbackSkills(occupation, experienceLevel, targetLanguage);
-            console.log('📋 Returning fallback skills:', fallbackSkills.slice(0, 3).join(', ') + '...');
-            return res.json({ skills: fallbackSkills });
-        }
-
-        // Initialize the Gemini API
-        console.log('🤖 Initializing Gemini AI...');
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
         // Create a comprehensive prompt for skills generation
         const prompt = `
@@ -1813,14 +1779,7 @@ router.post('/generate-skills', async (req, res) => {
         Only return the JSON array without any explanation or additional text.
         `;
 
-        console.log('📤 Sending prompt to Gemini AI...');
-        console.log('Prompt preview:', prompt.substring(0, 200) + '...');
-
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
-
-        console.log('📥 AI response received for language', targetLanguage + ':', text.substring(0, 200) + '...');
+        const text = await generateConfiguredText(req, res, prompt, 'generate-skills');
 
         // Parse the JSON response
         let jsonText = text;
@@ -1835,20 +1794,16 @@ router.post('/generate-skills', async (req, res) => {
 
             if (Array.isArray(skills) && skills.length > 0) {
                 console.log('✅ Successfully generated AI skills for language:', targetLanguage);
-                console.log('🎯 Generated skills:', skills.slice(0, 5).join(', ') + '...');
                 console.log('===== SKILLS GENERATION SUCCESS =====');
                 res.json({ skills: skills.slice(0, 12) }); // Limit to 12 skills
             } else {
                 console.log('❌ Invalid AI response format, using fallback');
                 const fallbackSkills = generateFallbackSkills(occupation, experienceLevel, targetLanguage);
-                console.log('📋 Returning fallback skills:', fallbackSkills.slice(0, 3).join(', ') + '...');
                 res.json({ skills: fallbackSkills });
             }
         } catch (parseError) {
             console.error('❌ Failed to parse JSON from AI response:', parseError);
-            console.log('Raw AI response:', text);
             const fallbackSkills = generateFallbackSkills(occupation, experienceLevel, targetLanguage);
-            console.log('📋 Returning fallback skills due to parse error:', fallbackSkills.slice(0, 3).join(', ') + '...');
             res.json({ skills: fallbackSkills });
         }
     } catch (error) {
@@ -1874,7 +1829,6 @@ router.post('/generate-skills', async (req, res) => {
         };
         const targetLanguage = languageNames[language] || 'English';
         const fallbackSkills = generateFallbackSkills(occupation, experienceLevel, targetLanguage);
-        console.log('📋 Returning fallback skills due to error:', fallbackSkills.slice(0, 3).join(', ') + '...');
         console.log('===== SKILLS GENERATION FAILED =====');
         res.json({ skills: fallbackSkills });
     }
@@ -2058,8 +2012,8 @@ router.post('/check-grammar', async (req, res) => {
     try {
         const { text, language = 'en' } = req.body;
 
-        if (!text || text.trim().length === 0) {
-            return res.status(400).json({ error: 'Text is required for grammar checking' });
+        if (typeof text !== 'string' || !text.trim() || text.length > 40_000) {
+            return res.status(400).json({ error: { code: 'INVALID_AI_INPUT', message: 'Text is required for grammar checking', requestId: res.locals.requestId } });
         }
 
         console.log('Received grammar check request for language:', language);
@@ -2085,26 +2039,6 @@ router.post('/check-grammar', async (req, res) => {
         };
 
         const targetLanguage = languageNames[language] || 'English';
-
-        // Check for API key
-        const apiKey = await getGeminiApiKey(req);
-        if (!apiKey) {
-            console.log('No API key found, using fallback grammar checker');
-            const fallbackData = generateFallbackGrammarCheck(text, targetLanguage);
-            return res.json(fallbackData);
-        }
-
-        // Initialize the Gemini API with enhanced configuration for grammar checking
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ 
-            model: 'gemini-2.0-flash',
-            generationConfig: {
-                temperature: 0.1, // Low temperature for more consistent, focused analysis
-                topK: 1,          // Use only the most likely tokens for precision
-                topP: 0.8,        // Focused token selection
-                maxOutputTokens: 8192 // Ensure enough tokens for comprehensive analysis
-            }
-        });
 
         // Prepare the comprehensive prompt for Gemini
         const prompt = `
@@ -2183,11 +2117,7 @@ router.post('/check-grammar', async (req, res) => {
         
         Remember: This is your ONLY chance to catch all errors. Be thorough, methodical, and comprehensive in your analysis.`;
 
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        let text_response = response.text();
-
-        console.log('Raw AI response:', text_response);
+        const text_response = await generateConfiguredText(req, res, prompt, 'check-grammar', { temperature: 0.1, maxTokens: 4096 });
 
         // Clean up the response to extract JSON
         let jsonText = text_response;
@@ -2245,102 +2175,44 @@ router.post('/check-grammar', async (req, res) => {
     }
 });
 
-const extractJsonObject = (text) => {
-    const cleaned = String(text || '').replace(/```json|```/gi, '').trim();
-    try { return JSON.parse(cleaned); } catch (_) {}
-    const start = cleaned.indexOf('{');
-    const end = cleaned.lastIndexOf('}');
-    if (start >= 0 && end > start) {
-        try { return JSON.parse(cleaned.slice(start, end + 1)); } catch (_) {}
-    }
-    return null;
-};
-
-// Small auxiliary operations retained behind the same auth/quota boundary.
 router.post('/generate-content', async (req, res) => {
     const operation = String(req.body.operation || '');
-    const payload = req.body.payload || {};
-    const key = await getGeminiApiKey(req);
-    const compact = value => String(value || '').replace(/[\u0000-\u001f]/g, ' ').slice(0, 4000);
-    let prompt;
-    if (!key) {
-        if (operation === 'generate-certifications') {
-            const role = String(payload.jobTitle || payload.occupation || '').toLowerCase();
-            let fallbackCerts = [
-                { title: 'Google Professional Cloud Architect', issuer: 'Google Cloud' },
-                { title: 'AWS Certified Solutions Architect', issuer: 'Amazon Web Services' },
-                { title: 'Project Management Professional (PMP)', issuer: 'PMI' },
-                { title: 'Certified ScrumMaster (CSM)', issuer: 'Scrum Alliance' },
-                { title: 'Certified Information Systems Security Professional (CISSP)', issuer: '(ISC)²' },
-                { title: 'Certified Data Privacy Solutions Engineer (CDPSE)', issuer: 'ISACA' }
-            ];
-            if (role.includes('developer') || role.includes('software') || role.includes('engineer') || role.includes('coder')) {
-                fallbackCerts = [
-                    { title: 'AWS Certified Developer - Associate', issuer: 'Amazon Web Services' },
-                    { title: 'Meta Certified Front-End Developer', issuer: 'Meta' },
-                    { title: 'Google Professional Software Engineer', issuer: 'Google' },
-                    { title: 'Oracle Certified Professional: Java SE Developer', issuer: 'Oracle' },
-                    { title: 'Microsoft Certified: Azure Developer Associate', issuer: 'Microsoft' },
-                    { title: 'Certified Kubernetes Application Developer (CKAD)', issuer: 'CNCF' }
-                ];
-            } else if (role.includes('manager') || role.includes('lead') || role.includes('director') || role.includes('scrum')) {
-                fallbackCerts = [
-                    { title: 'Project Management Professional (PMP)', issuer: 'Project Management Institute' },
-                    { title: 'Certified ScrumMaster (CSM)', issuer: 'Scrum Alliance' },
-                    { title: 'PRINCE2 Practitioner', issuer: 'AXELOS' },
-                    { title: 'Certified Agile Leadership (CAL)', issuer: 'Scrum Alliance' },
-                    { title: 'Six Sigma Green Belt', issuer: 'ASQ' }
-                ];
-            } else if (role.includes('data') || role.includes('analyst') || role.includes('ai') || role.includes('machine')) {
-                fallbackCerts = [
-                    { title: 'Google Data Analytics Professional Certificate', issuer: 'Google' },
-                    { title: 'IBM Data Science Professional Certificate', issuer: 'IBM' },
-                    { title: 'AWS Certified Machine Learning - Specialty', issuer: 'Amazon Web Services' },
-                    { title: 'Microsoft Certified: Azure Data Scientist Associate', issuer: 'Microsoft' }
-                ];
-            }
-            return res.json({ certifications: fallbackCerts });
-        }
-        return res.status(503).json({ error: { code: 'AI_PROVIDER_UNAVAILABLE', message: 'AI provider is not configured', requestId: res.locals.requestId } });
-    }
-    if (operation === 'enhance-single-bullet') {
-        prompt = `Improve this resume bullet without inventing facts. Return JSON only: {"enhancedBullet":"..."}. Bullet: ${compact(payload.bullet)}`;
-    } else if (operation === 'generate-certifications') {
-        prompt = `Recommend up to 6 real, recognized certifications for this candidate. Do not invent credentials. Return JSON only: {"certifications":[{"title":"...","issuer":"..."}]}. Role: ${compact(payload.jobTitle || payload.occupation)}. Skills: ${compact(payload.skills)}. Education: ${compact(payload.education)}.`;
-    } else if (operation === 'autocomplete') {
-        const allowedTypes = new Set(['jobTitle', 'occupation', 'employer', 'school', 'degree', 'skill', 'city']);
-        const type = allowedTypes.has(payload.type) ? payload.type : 'occupation';
-        prompt = `Return up to 8 concise autocomplete values as JSON only: {"suggestions":["..."]}. Field: ${type}. Prefix: ${compact(payload.query).slice(0, 100)}`;
-    } else {
-        return res.status(400).json({ error: { code: 'UNSUPPORTED_AI_OPERATION', message: 'Unsupported AI operation', requestId: res.locals.requestId } });
-    }
     try {
-        const model = new GoogleGenerativeAI(key).getGenerativeModel({ model: process.env.GEMINI_MODEL || 'gemini-2.0-flash' });
-        const result = await model.generateContent(prompt);
-        const parsed = extractJsonObject(result.response.text());
-        if (!parsed) throw new Error('INVALID_AI_RESPONSE');
-        return res.json(parsed);
+        const result = await executeContentOperation({
+            operation,
+            payload: req.body.payload || {},
+            db: req.app.get('db'),
+            signal: req.aiAbortSignal,
+            requestId: res.locals.requestId,
+        });
+        res.setHeader('X-AI-Provider', result.provider);
+        res.setHeader('X-AI-Model', result.model);
+        return res.json(result.data);
     } catch (error) {
-        console.error('[Aux AI]', error.message);
-        return res.status(502).json({ error: { code: 'AI_PROVIDER_ERROR', message: 'AI generation failed', requestId: res.locals.requestId } });
+        const status = Number(error.status) || (error.code === 'AI_PROVIDER_UNAVAILABLE' ? 503 : 502);
+        const code = error.code || (status < 500 ? 'INVALID_AI_REQUEST' : 'AI_PROVIDER_ERROR');
+        if (status >= 500) console.error('[AI generation]', { operation, code, requestId: res.locals.requestId });
+        return res.status(status).json({ error: {
+            code,
+            message: status < 500 ? error.message : 'AI generation is temporarily unavailable',
+            requestId: res.locals.requestId,
+        } });
     }
 });
 
 router.post('/parse-resume', async (req, res) => {
     const rawText = String(req.body.rawText || '');
     if (!rawText || rawText.length > 40_000) return res.status(400).json({ error: { code: 'INVALID_RESUME_TEXT', message: 'Resume text must be between 1 and 40000 characters', requestId: res.locals.requestId } });
-    const key = await getGeminiApiKey(req);
-    if (!key) return res.status(503).json({ error: { code: 'AI_PROVIDER_UNAVAILABLE', message: 'AI provider is not configured', requestId: res.locals.requestId } });
-    const prompt = `Extract resume facts without inventing data. Return one JSON object only with keys firstname, lastname, email, phone, occupation, city, country, address, postalcode, summary, employments, educations, skills, languages. Missing scalar fields must be empty strings and missing arrays empty arrays. Resume text:\n${rawText}`;
     try {
-        const model = new GoogleGenerativeAI(key).getGenerativeModel({ model: process.env.GEMINI_MODEL || 'gemini-2.0-flash' });
-        const result = await model.generateContent(prompt);
-        const parsed = extractJsonObject(result.response.text());
-        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('INVALID_AI_RESPONSE');
-        return res.json({ data: parsed });
+        const result = await executeResumeParsing({ rawText, db: req.app.get('db'), signal: req.aiAbortSignal });
+        res.setHeader('X-AI-Provider', result.provider);
+        res.setHeader('X-AI-Model', result.model);
+        return res.json({ data: result.data });
     } catch (error) {
-        console.error('[Resume parser]', error.message);
-        return res.status(502).json({ error: { code: 'AI_PROVIDER_ERROR', message: 'Resume parsing failed', requestId: res.locals.requestId } });
+        const status = Number(error.status) || 502;
+        const code = error.code || 'AI_PROVIDER_ERROR';
+        console.error('[Resume parser]', { code, requestId: res.locals.requestId });
+        return res.status(status).json({ error: { code, message: status < 500 ? error.message : 'Resume parsing is temporarily unavailable', requestId: res.locals.requestId } });
     }
 });
 
@@ -2368,7 +2240,6 @@ router.get('/test-ai-config', async (req, res) => {
         const response = await result.response;
         const text = response.text();
         
-        console.log('✅ AI API test successful:', text);
         
         res.json({
             configured: true,

@@ -12,6 +12,7 @@ import Spinner from './components/Spinner/Spinner';
 import PublicResume from './components/PublicResume/PublicResume';
 import fire from './conf/fire'; // Import fire
 import GA4Provider from './components/GA4Provider';
+import PrivacyConsentBanner from './components/PrivacyConsentBanner';
 import i18n, { SUPPORTED_LANGUAGES } from './i18n';
 import GoogleMapsProvider from './components/JobsListings/GoogleMapsProvider';
 import axios from 'axios';
@@ -301,6 +302,7 @@ const AuthWrapper = () => {
                             ))}
                         </Routes>
                     </Suspense>
+                    <PrivacyConsentBanner />
                 </GA4Provider>
             </BrowserRouter>
             </GoogleMapsProvider>

@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdClose, MdLightbulb, MdBolt, MdContentCopy, MdAdd, MdCheck, MdAutoAwesome } from 'react-icons/md';
 import { FiLoader } from 'react-icons/fi';
-import config from '../../../../conf/configuration';
 import { generateUserAiContent } from '../../../../services/aiService';
 
 const EducationSuggestionModal = ({ isOpen, onClose, selectedEducation, onApplySuggestion }) => {
@@ -12,6 +11,7 @@ const EducationSuggestionModal = ({ isOpen, onClose, selectedEducation, onApplyS
     const [selectedBullets, setSelectedBullets] = useState([]);
     const [copiedIndex, setCopiedIndex] = useState(null);
     const [error, setError] = useState(null);
+    const requestControllerRef = useRef(null);
 
     const generateAiSuggestions = async () => {
         const school = selectedEducation?.school || selectedEducation?.institution || '';
@@ -22,6 +22,9 @@ const EducationSuggestionModal = ({ isOpen, onClose, selectedEducation, onApplyS
             return;
         }
 
+        requestControllerRef.current?.abort();
+        const requestController = new AbortController();
+        requestControllerRef.current = requestController;
         setIsGenerating(true);
         setError(null);
 
@@ -34,7 +37,7 @@ const EducationSuggestionModal = ({ isOpen, onClose, selectedEducation, onApplyS
                 endDate: selectedEducation.finished || selectedEducation.endDate || '',
                 current: Boolean(selectedEducation.current),
                 language: preferredLanguage,
-            });
+            }, { signal: requestController.signal });
 
             if (data && data.suggestions && Array.isArray(data.suggestions)) {
                 const cleanSuggestions = data.suggestions.map((item) => {
@@ -49,6 +52,7 @@ const EducationSuggestionModal = ({ isOpen, onClose, selectedEducation, onApplyS
                 throw new Error('Invalid response format');
             }
         } catch (err) {
+            if (err?.name === 'AbortError') return;
             console.error('Error generating AI suggestions:', err);
             setError(`AI Error: ${err.message || 'Failed to generate AI suggestions'}. Please verify your AI API Key, selected Model, or API settings in Admin Panel settings.`);
 
@@ -59,7 +63,10 @@ const EducationSuggestionModal = ({ isOpen, onClose, selectedEducation, onApplyS
                 `Demonstrated leadership in student-led technical associations and organized academic peer-mentorship workshops.`
             ]);
         } finally {
-            setIsGenerating(false);
+            if (requestControllerRef.current === requestController) {
+                requestControllerRef.current = null;
+                setIsGenerating(false);
+            }
         }
     };
 
@@ -73,6 +80,11 @@ const EducationSuggestionModal = ({ isOpen, onClose, selectedEducation, onApplyS
             generateAiSuggestions();
         }
     }, [isOpen, selectedEducation]);
+
+    useEffect(() => () => { const controller = requestControllerRef.current; requestControllerRef.current = null; controller?.abort(); }, []);
+    useEffect(() => {
+        if (!isOpen) requestControllerRef.current?.abort();
+    }, [isOpen]);
 
     const toggleBulletSelection = (bulletText) => {
         const cleanedText = bulletText.replace(/^[•\-\*]\s*/, '').trim();

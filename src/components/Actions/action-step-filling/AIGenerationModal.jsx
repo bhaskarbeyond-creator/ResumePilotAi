@@ -9,11 +9,10 @@ import EmploymentModel from '../../../models/Employment';
 import EducationModel from '../../../models/Education';
 import LanguageModel from '../../../models/Language';
 import SkillModel from '../../../models/Skills';
-import config from '../../../conf/configuration';
 import { generateUserAiContent } from '../../../services/aiService';
 
 // AI resume data generator using Backend API & Universal aiService
-const generateAIResumeData = async (occupation, experienceLevel, skills = [], education = [], language = 'en') => {
+const generateAIResumeData = async (occupation, experienceLevel, skills = [], education = [], language = 'en', options = {}) => {
     try {
         const resumeData = await generateUserAiContent('generate-resume', {
             occupation,
@@ -22,7 +21,7 @@ const generateAIResumeData = async (occupation, experienceLevel, skills = [], ed
             skills,
             education,
             language,
-        });
+        }, options);
 
         console.log('Successfully received AI-generated resume data');
         return resumeData;
@@ -98,6 +97,7 @@ const AIGenerationModal = ({ closeModal, currentStep, handleStep, t, handleInput
     const [generationProgress, setGenerationProgress] = React.useState(0);
     const [generationError, setGenerationError] = React.useState(null);
     const generationInProgressRef = useRef(false);
+    const requestControllerRef = useRef(null);
 
     // Transition variants for animations
     const slideVariants = {
@@ -137,12 +137,15 @@ const AIGenerationModal = ({ closeModal, currentStep, handleStep, t, handleInput
     const generateAIData = async () => {
         if (generationInProgressRef.current) return;
         generationInProgressRef.current = true;
+        requestControllerRef.current?.abort();
+        const requestController = new AbortController();
+        requestControllerRef.current = requestController;
 
         try {
             console.log('Starting resume generation for:', formData.occupation);
             // Get current language from preferredLanguage in localStorage or i18n
             const currentLanguage = localStorage.getItem('preferredLanguage') || i18n.language || 'en';
-            const aiData = await generateAIResumeData(formData.occupation, formData.experienceLevel, skillsList, educationList, currentLanguage);
+            const aiData = await generateAIResumeData(formData.occupation, formData.experienceLevel, skillsList, educationList, currentLanguage, { signal: requestController.signal });
 
             const validatedData = {
                 ...aiData,
@@ -156,11 +159,16 @@ const AIGenerationModal = ({ closeModal, currentStep, handleStep, t, handleInput
             setGenerationProgress(100);
             console.log('Resume generation completed successfully');
         } catch (error) {
-            console.error('Failed to generate AI data:', error);
-            setGenerationError('There was an error generating your resume content. Please try again later.');
-            setGenerationProgress((prev) => Math.max(prev, 95));
+            if (error?.name !== 'AbortError') {
+                console.error('Failed to generate AI data:', error);
+                setGenerationError('There was an error generating your resume content. Please try again later.');
+                setGenerationProgress((prev) => Math.max(prev, 95));
+            }
         } finally {
-            generationInProgressRef.current = false;
+            if (requestControllerRef.current === requestController) {
+                requestControllerRef.current = null;
+                generationInProgressRef.current = false;
+            }
         }
     };
 
@@ -471,7 +479,7 @@ const AIGenerationModal = ({ closeModal, currentStep, handleStep, t, handleInput
 
                         {/* CTA Button */}
                         <button
-                            onClick={() => handleStep(2)}
+                            onClick={returnToDetails}
                             className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg flex items-center space-x-2 text-sm">
                             <BsLightning className="text-sm" />
                             <span>Get Started</span>
@@ -694,7 +702,7 @@ const AIGenerationModal = ({ closeModal, currentStep, handleStep, t, handleInput
                         {/* Action Button */}
                         {generationProgress < 100 ? (
                             <button
-                                onClick={() => handleStep(2)}
+                                onClick={returnToDetails}
                                 disabled={generationProgress > 50 && !generationError}
                                 className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 text-sm">
                                 <BsArrowLeft className="text-sm" />
@@ -725,17 +733,33 @@ const AIGenerationModal = ({ closeModal, currentStep, handleStep, t, handleInput
         return 'Finalizing content...';
     };
 
+    const cancelGeneration = () => {
+        requestControllerRef.current?.abort();
+        requestControllerRef.current = null;
+        generationInProgressRef.current = false;
+        closeModal();
+    };
+
+    const returnToDetails = () => {
+        requestControllerRef.current?.abort();
+        requestControllerRef.current = null;
+        generationInProgressRef.current = false;
+        setGenerationProgress(0);
+        handleStep(2);
+    };
+
     // Handle keyboard navigation
     const handleKeyDown = (e) => {
-        if (e.key === 'Escape') {
-            closeModal();
-        }
+        if (e.key === 'Escape') cancelGeneration();
     };
 
     useEffect(() => {
         document.addEventListener('keydown', handleKeyDown);
         return () => {
             document.removeEventListener('keydown', handleKeyDown);
+            const controller = requestControllerRef.current;
+            requestControllerRef.current = null;
+            controller?.abort();
         };
     }, []);
 
@@ -744,7 +768,7 @@ const AIGenerationModal = ({ closeModal, currentStep, handleStep, t, handleInput
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl">
                 {/* Close Button */}
                 <button
-                    onClick={closeModal}
+                    onClick={cancelGeneration}
                     className="absolute top-4 right-4 w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 z-10"
                     aria-label="Close modal">
                     <BsX className="text-lg text-gray-600" />

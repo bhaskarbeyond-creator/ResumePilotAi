@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { FaPlus, FaTrash, FaArrowUp, FaCheckCircle, FaExclamationCircle, FaMagic, FaUndo, FaGripVertical } from 'react-icons/fa';
 import { generateUserAiContent } from '../../services/aiService';
 
@@ -20,6 +20,8 @@ const BulletPointsEditor = ({
     const [isEnhancingAll, setIsEnhancingAll] = useState(false);
     const [draggedIdx, setDraggedIdx] = useState(null);
     const [historyMap, setHistoryMap] = useState({}); // Stores previous text for undo
+    const aiRequestControllerRef = useRef(null);
+    useEffect(() => () => { const controller = aiRequestControllerRef.current; aiRequestControllerRef.current = null; controller?.abort(); }, []);
 
     // Parse value string into array of bullet strings
     const bullets = useMemo(() => {
@@ -100,16 +102,22 @@ const BulletPointsEditor = ({
         // Record history before enhancement
         setHistoryMap((prev) => ({ ...prev, [index]: currentText }));
         setEnhancingIndex(index);
+        aiRequestControllerRef.current?.abort();
+        const requestController = new AbortController();
+        aiRequestControllerRef.current = requestController;
 
         try {
-            const res = await generateUserAiContent('enhance-single-bullet', { bullet: currentText });
+            const res = await generateUserAiContent('enhance-single-bullet', { bullet: currentText }, { signal: requestController.signal });
             if (res && res.enhancedBullet) {
                 handleBulletChange(index, res.enhancedBullet, false);
             }
         } catch (err) {
-            console.error('Failed to enhance single bullet point:', err);
+            if (err?.name !== 'AbortError') console.error('Failed to enhance single bullet point:', err);
         } finally {
-            setEnhancingIndex(null);
+            if (aiRequestControllerRef.current === requestController) {
+                aiRequestControllerRef.current = null;
+                setEnhancingIndex(null);
+            }
         }
     };
 
@@ -121,6 +129,9 @@ const BulletPointsEditor = ({
         if (validIndices.length === 0) return;
 
         setIsEnhancingAll(true);
+        aiRequestControllerRef.current?.abort();
+        const requestController = new AbortController();
+        aiRequestControllerRef.current = requestController;
         // Snapshot current history
         const newHistory = { ...historyMap };
         bullets.forEach((b, i) => {
@@ -132,17 +143,21 @@ const BulletPointsEditor = ({
         for (const idx of validIndices) {
             setEnhancingIndex(idx);
             try {
-                const res = await generateUserAiContent('enhance-single-bullet', { bullet: currentBullets[idx] });
+                const res = await generateUserAiContent('enhance-single-bullet', { bullet: currentBullets[idx] }, { signal: requestController.signal });
                 if (res && res.enhancedBullet) {
                     currentBullets[idx] = res.enhancedBullet;
                 }
             } catch (err) {
+                if (err?.name === 'AbortError') break;
                 console.error(`Failed to enhance bullet ${idx}:`, err);
             }
         }
-        emitChanges(currentBullets);
-        setEnhancingIndex(null);
-        setIsEnhancingAll(false);
+        if (!requestController.signal.aborted) emitChanges(currentBullets);
+        if (aiRequestControllerRef.current === requestController) {
+            aiRequestControllerRef.current = null;
+            setEnhancingIndex(null);
+            setIsEnhancingAll(false);
+        }
     };
 
     const handleUndo = (index) => {

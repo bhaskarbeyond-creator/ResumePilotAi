@@ -12,6 +12,7 @@ const crypto = require('crypto');
 const { chromium } = require('playwright');
 require('dotenv').config();
 const EmailNotifier = require('./services/emailNotifier');
+const { clearProviderConfigurationCache, loadProviderConfiguration, generateWithProviders } = require('./services/aiRuntime');
 const app = express();
 const cors = require('cors');
 const cryptoRandom = require('crypto');
@@ -1248,6 +1249,41 @@ app.use('/api/email', emailRoutes);
 
 // AI provider configuration is split: secrets remain in a server-only document while
 // browser-readable settings contain models/toggles only.
+app.get('/api/admin/ai-settings', async (_req, res) => {
+    if (!db) return res.status(503).json({ success: false, error: 'Settings service unavailable' });
+    const [publicDoc, secretDoc, legacyDoc] = await Promise.all([
+        db.collection('data').doc('public_config').get(),
+        db.collection('settings').doc('ai_providers').get(),
+        db.collection('data').doc('system_settings').get(),
+    ]);
+    const storedPublicAi = publicDoc.data()?.ai || {};
+    const ai = Object.fromEntries(Object.entries(storedPublicAi).filter(([key]) => !/(?:apiKey|secret|token|password)$/i.test(key)));
+    const secrets = secretDoc.data() || {};
+    const legacyAi = legacyDoc.data()?.ai || {};
+    const legacyFields = { gemini: 'geminiApiKey', nvidia: 'nvidiaApiKey', openai: 'openaiApiKey', groq: 'groqApiKey', openrouter: 'openrouterApiKey', deepseek: 'deepseekApiKey' };
+    const configuredProviders = Object.fromEntries(['gemini', 'nvidia', 'openai', 'groq', 'openrouter', 'deepseek']
+        .map(provider => [provider, Boolean(secrets[provider]?.apiKey || legacyAi[legacyFields[provider]] || process.env[`${provider.toUpperCase()}_API_KEY`])]));
+    return res.json({ success: true, settings: ai, configuredProviders });
+});
+
+app.post('/api/admin/gdpr-settings', async (req, res) => {
+    if (!db) return res.status(503).json({ success: false, error: 'Settings service unavailable' });
+    const input = req.body || {};
+    const safePath = (value, fallback) => {
+        const pathValue = String(value || fallback).trim();
+        return /^\/[A-Za-z0-9/_-]{1,200}$/.test(pathValue) ? pathValue : fallback;
+    };
+    const gdpr = {
+        enableCookieBanner: input.enableCookieBanner !== false,
+        cookieMessage: String(input.cookieMessage || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 500),
+        buttonText: String(input.buttonText || 'Allow analytics').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 80),
+        privacyPolicyUrl: safePath(input.privacyPolicyUrl, '/p/privacy-policy'),
+        termsOfServiceUrl: safePath(input.termsOfServiceUrl, '/p/terms-of-service'),
+    };
+    await db.collection('data').doc('public_config').set({ gdpr }, { merge: true });
+    return res.json({ success: true, settings: gdpr });
+});
+
 app.post('/api/admin/ai-settings', async (req, res) => {
     if (!db) return res.status(503).json({ success: false, error: 'Settings service unavailable' });
     const input = req.body || {};
@@ -1283,6 +1319,7 @@ app.post('/api/admin/ai-settings', async (req, res) => {
         requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
     await batch.commit();
+    clearProviderConfigurationCache(db);
     return res.json({ success: true, message: 'AI provider settings saved securely.' });
 });
 
@@ -1363,14 +1400,18 @@ app.post('/api/admin/payment-settings', async (req, res) => {
 app.post('/api/admin/test-connection', async (req, res) => {
     const { type, apiKey, secretKey, model } = req.body;
     try {
+        let storedAi = {};
+        if (db && ['gemini', 'nvidia', 'openai', 'groq', 'openrouter', 'deepseek'].includes(type)) {
+            storedAi = (await db.collection('settings').doc('ai_providers').get()).data() || {};
+        }
         if (type === 'gemini') {
-            const keyToUse = apiKey || process.env.GEMINI_API_KEY;
+            const keyToUse = apiKey || process.env.GEMINI_API_KEY || storedAi.gemini?.apiKey;
             if (!keyToUse) {
                 return res.json({ success: false, error: 'No Gemini API Key provided or configured.' });
             }
             const { GoogleGenerativeAI } = require('@google/generative-ai');
             const genAI = new GoogleGenerativeAI(keyToUse);
-            const aiModel = genAI.getGenerativeModel({ model: model || 'gemini-2.0-flash' });
+            const aiModel = genAI.getGenerativeModel({ model: model || storedAi.gemini?.model || 'gemini-2.0-flash' });
             const result = await aiModel.generateContent('Say hello in 3 words');
             const text = result.response.text();
             return res.json({ success: true, message: `Response: "${text.trim()}"` });
@@ -1382,8 +1423,8 @@ app.post('/api/admin/test-connection', async (req, res) => {
                 deepseek: { url: 'https://api.deepseek.com/chat/completions', key: process.env.DEEPSEEK_API_KEY, model: process.env.DEEPSEEK_MODEL || 'deepseek-chat' },
                 nvidia: { url: 'https://integrate.api.nvidia.com/v1/chat/completions', key: process.env.NVIDIA_API_KEY, model: process.env.NVIDIA_MODEL || 'meta/llama-3.1-8b-instruct' }
             }[type];
-            const providerKey = apiKey || providerConfig.key;
-            const selectedModel = String(model || providerConfig.model);
+            const providerKey = apiKey || providerConfig.key || storedAi[type]?.apiKey;
+            const selectedModel = String(model || storedAi[type]?.model || providerConfig.model);
             if (!providerKey || !/^[A-Za-z0-9._:/-]{1,150}$/.test(selectedModel)) {
                 return res.status(400).json({ success: false, error: 'A provider key and valid model are required.' });
             }
@@ -1900,6 +1941,8 @@ app.get('/api/rtl-font-config', (req, res) => {
 
 // Real AI Cover Letter Generator Endpoint (Admin Dashboard Dynamic AI Key & Model Integration)
 app.post('/api/generate-ai-cover-letter', async (req, res) => {
+    const requestController = new AbortController();
+    req.once('aborted', () => requestController.abort());
     try {
         const { jobTitle, companyName, recipientName, userSkills, yearsExperience } = req.body;
 
@@ -1909,67 +1952,26 @@ app.post('/api/generate-ai-cover-letter', async (req, res) => {
         const exp = yearsExperience || 'proven track record of';
         const skills = userSkills || 'full-stack architecture, API optimization, and team leadership';
 
-        // Extract Admin Configuration from Admin Panel settings passed in request or environment
-        let storedAi = {};
-        if (db) {
-            try { storedAi = (await db.collection('settings').doc('ai_providers').get()).data() || {}; } catch (_) {}
+        const candidate = String(req.body.candidateName || 'Candidate').trim().slice(0, 120) || 'Candidate';
+        if ([title, company, recipient, skills, candidate].some(value => String(value).length > 4000)) {
+            return res.status(400).json({ success: false, error: 'Cover letter input is too large' });
         }
-        const openAiKey = process.env.OPENAI_API_KEY || storedAi.openai?.apiKey;
-        const geminiKey = process.env.GEMINI_API_KEY || storedAi.gemini?.apiKey;
-        const model = process.env.OPENAI_MODEL || storedAi.openai?.model || 'gpt-4o-mini';
-        const systemPrompt = 'You are a professional career writer. Never invent candidate facts and return only the requested cover letter.';
+        const systemPrompt = 'You are an elite executive career strategist and professional resume writer specializing in high-impact ATS cover letters. Never invent candidate facts and return only the requested cover letter.';
+        const prompt = `${systemPrompt}
 
-        // 1. If OpenAI is configured in the server-only store:
-        if (openAiKey) {
-            const key = openAiKey;
-            try {
-                const response = await fetch('https://api.openai.com/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${key}`
-                    },
-                    body: JSON.stringify({
-                        model: model,
-                        messages: [
-                            { role: 'system', content: systemPrompt },
-                            { role: 'user', content: `Write a compelling, tailored, 3-paragraph ATS cover letter addressed to ${recipient} for a ${title} position at ${company}. Highlight ${exp} years of experience and key skills in ${skills}.` }
-                        ],
-                        temperature: 0.7,
-                        max_tokens: 500
-                    })
-                });
-                const data = await response.json();
-                if (data.choices && data.choices[0] && data.choices[0].message) {
-                    return res.json({ success: true, coverLetter: data.choices[0].message.content.trim(), provider: 'OpenAI (Admin Dashboard Configured)' });
-                }
-            } catch (err) {
-                console.warn('Admin OpenAI call failed, falling back:', err.message);
+Write a compelling, tailored, 3-paragraph ATS cover letter addressed to ${recipient} for a ${title} position at ${company}. Highlight ${exp} years of experience and key skills in ${skills}. Close the letter with the candidate name ${candidate}.`;
+        try {
+            const configuration = await loadProviderConfiguration(db);
+            configuration.maxTokens = Math.min(1000, Math.max(500, configuration.maxTokens));
+            const providerResult = await generateWithProviders({ prompt, configuration, operation: 'generate-ai-cover-letter', signal: requestController.signal });
+            const coverLetter = String(providerResult.raw || '').replace(/^```(?:text)?\s*|```$/gi, '').trim().slice(0, 20000);
+            if (coverLetter) {
+                res.setHeader('X-AI-Provider', providerResult.provider);
+                res.setHeader('X-AI-Model', providerResult.model);
+                return res.json({ success: true, coverLetter, provider: providerResult.provider });
             }
-        }
-
-        // 2. If Gemini is configured in the server-only store:
-        if (geminiKey) {
-            const key = geminiKey;
-            try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{
-                            parts: [{
-                                text: `${systemPrompt}\n\nWrite a compelling, tailored, 3-paragraph ATS cover letter addressed to ${recipient} for a ${title} position at ${company}. Highlight ${exp} years of experience and key skills in ${skills}.`
-                            }]
-                        }]
-                    })
-                });
-                const data = await response.json();
-                if (data.candidates && data.candidates[0] && data.candidates[0].content?.parts[0]?.text) {
-                    return res.json({ success: true, coverLetter: data.candidates[0].content.parts[0].text.trim(), provider: 'Google Gemini (Admin Dashboard Configured)' });
-                }
-            } catch (err) {
-                console.warn('Admin Gemini call failed, falling back:', err.message);
-            }
+        } catch (providerError) {
+            console.warn('[Cover letter provider fallback]', { code: providerError.code || 'PROVIDER_ERROR', requestId: res.locals.requestId });
         }
 
         // 3. Dynamic Context-Aware AI Generator Engine (No Hardcoding)
@@ -1992,7 +1994,7 @@ app.post('/api/generate-ai-cover-letter', async (req, res) => {
         ];
 
         const randomPick = (arr) => arr[Math.floor(Math.random() * arr.length)];
-        const generated = `Dear ${recipient},\n\n${randomPick(hookTemplates)}\n\n${randomPick(bodyTemplates)}\n\n${randomPick(closeTemplates)}\n\nSincerely,\nCandidate`;
+        const generated = `Dear ${recipient},\n\n${randomPick(hookTemplates)}\n\n${randomPick(bodyTemplates)}\n\n${randomPick(closeTemplates)}\n\nSincerely,\n${candidate}`;
 
         res.json({
             success: true,

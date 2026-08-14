@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { MdDelete, MdKeyboardArrowDown, MdAdd, MdCheck, MdLightbulb } from 'react-icons/md';
 import InputField from './components/InputField';
 import AutocompleteInputField from './components/AutocompleteInputField';
-import config from '../../../conf/configuration';
 import { generateUserAiContent } from '../../../services/aiService';
 
 const SkillsStep = ({ resumeData, updateResumeData }) => {
@@ -19,6 +18,8 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
     const [isGeneratingSkills, setIsGeneratingSkills] = useState(false);
     const [popularSkills, setPopularSkills] = useState([]);
     const idCounter = useRef(0);
+    const aiRequestControllerRef = useRef(null);
+    useEffect(() => () => { const controller = aiRequestControllerRef.current; aiRequestControllerRef.current = null; controller?.abort(); }, []);
 
     const createNewSkill = () => {
         idCounter.current += 1;
@@ -72,6 +73,9 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
             return;
         }
 
+        aiRequestControllerRef.current?.abort();
+        const requestController = new AbortController();
+        aiRequestControllerRef.current = requestController;
         setIsGeneratingSkills(true);
         try {
             const currentLanguage = localStorage.getItem('i18nextLng') || 'en';
@@ -82,15 +86,19 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
                 jobTitle: resumeData.occupation,
                 experienceLevel: experienceLevel,
                 language: currentLanguage,
-            });
+            }, { signal: requestController.signal });
 
             if (data && data.skills && Array.isArray(data.skills)) {
-                console.log('Successfully generated AI skills:', data.skills);
-                setPopularSkills(data.skills);
+                const skillNames = data.skills
+                    .map((skill) => typeof skill === 'string' ? skill : skill?.name || skill?.skill || skill?.title || '')
+                    .map((skill) => String(skill).trim())
+                    .filter(Boolean);
+                setPopularSkills(skillNames);
             } else {
                 throw new Error('Invalid response format');
             }
         } catch (error) {
+            if (error?.name === 'AbortError') return;
             console.error('Error generating AI skills:', error);
             // Fallback to default skills if API call fails
             setPopularSkills([
@@ -108,7 +116,10 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
                 'Customer Service',
             ]);
         } finally {
-            setIsGeneratingSkills(false);
+            if (aiRequestControllerRef.current === requestController) {
+                aiRequestControllerRef.current = null;
+                setIsGeneratingSkills(false);
+            }
         }
     };
 

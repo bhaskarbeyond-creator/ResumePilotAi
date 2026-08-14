@@ -679,6 +679,8 @@ class SimpleTextarea extends Component {
 
     // Ref to store the Lexical editor instance
     this.editorInstance = null;
+    this.aiSummaryController = null;
+    this.grammarController = null;
     this.handleInputChange = this.handleInputChange.bind(this);
     this.adjustTextarea = this.adjustTextarea.bind(this);
     this.addParagraph = this.addParagraph.bind(this);
@@ -810,6 +812,9 @@ class SimpleTextarea extends Component {
 
   async handleGrammarCheck(e) {
     e.preventDefault();
+    this.grammarController?.abort();
+    const requestController = new AbortController();
+    this.grammarController = requestController;
     // Close the dropdown
     this.setState({ aiToolsDropdownOpen: false });
 
@@ -862,6 +867,7 @@ class SimpleTextarea extends Component {
           headers: {
             "Content-Type": "application/json",
           },
+          signal: requestController.signal,
           body: JSON.stringify({
             text: currentText,
             language: "en", // You can make this dynamic based on user settings
@@ -874,23 +880,29 @@ class SimpleTextarea extends Component {
       }
 
       const data = await response.json();
-
+      if (this.grammarController !== requestController) return;
       this.setState({
         isCheckingGrammar: false,
         grammarResults: data,
         grammarError: null,
       });
     } catch (error) {
-      console.error("Error checking grammar:", error);
-      this.setState({
-        isCheckingGrammar: false,
-        grammarError: "Failed to check grammar. Please try again.",
-        grammarResults: null,
-      });
+      if (error?.name !== "AbortError") {
+        console.error("Error checking grammar:", error);
+        this.setState({
+          isCheckingGrammar: false,
+          grammarError: "Failed to check grammar. Please try again.",
+          grammarResults: null,
+        });
+      }
+    } finally {
+      if (this.grammarController === requestController) this.grammarController = null;
     }
   }
 
   closeGrammarPanel() {
+    this.grammarController?.abort();
+    this.grammarController = null;
     this.setState({
       showGrammarPanel: false,
       grammarResults: null,
@@ -1173,6 +1185,9 @@ class SimpleTextarea extends Component {
 
   generateSummary(e) {
     if (e) e.preventDefault();
+    this.aiSummaryController?.abort();
+    const requestController = new AbortController();
+    this.aiSummaryController = requestController;
     this.setState({ isGenerating: true, generationError: null }); // Reset error on new attempt
 
     const { aiAnswers } = this.state;
@@ -1191,6 +1206,7 @@ class SimpleTextarea extends Component {
         headers: {
           "Content-Type": "application/json",
         },
+        signal: requestController.signal,
         body: JSON.stringify({
           name: aiAnswers.name,
           jobTitle: aiAnswers.jobTitle,
@@ -1209,6 +1225,8 @@ class SimpleTextarea extends Component {
         return response.json();
       })
       .then((data) => {
+        if (this.aiSummaryController !== requestController) return;
+        this.aiSummaryController = null;
         this.setState({
           generatedSummary: data.summary,
           isGenerating: false,
@@ -1216,13 +1234,12 @@ class SimpleTextarea extends Component {
         });
       })
       .catch((error) => {
+        if (this.aiSummaryController !== requestController || error?.name === "AbortError") return;
+        this.aiSummaryController = null;
         console.error("Error generating summary:", error);
-
-        // Show error message and allow retry
         this.setState({
           isGenerating: false,
           generationError: "Failed to generate summary. Please try again.",
-          // currentStep remains at aiQuestions.length to show the error and retry button
         });
       });
   }
@@ -1233,6 +1250,8 @@ class SimpleTextarea extends Component {
   }
 
   resetAiHelper() {
+    this.aiSummaryController?.abort();
+    this.aiSummaryController = null;
     this.setState({
       currentStep: 0,
       aiAnswers: {
@@ -1751,6 +1770,12 @@ class SimpleTextarea extends Component {
   }
 
   componentWillUnmount() {
+    const summaryController = this.aiSummaryController;
+    const grammarController = this.grammarController;
+    this.aiSummaryController = null;
+    this.grammarController = null;
+    summaryController?.abort();
+    grammarController?.abort();
     document.removeEventListener("mouseover", (event) => {});
   }
 

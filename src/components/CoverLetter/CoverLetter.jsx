@@ -38,11 +38,18 @@ class CoverLetter extends Component {
             notificationMessage: null,
             letterToDelete: null,
         };
+        this.aiRequestController = null;
     }
 
     async componentDidMount() {
         this.loadSavedLetters();
         await this.loadUserProfileData();
+    }
+
+    componentWillUnmount() {
+        const controller = this.aiRequestController;
+        this.aiRequestController = null;
+        controller?.abort();
     }
 
     loadUserProfileData = async () => {
@@ -198,11 +205,15 @@ class CoverLetter extends Component {
     };
 
     generateAiCoverLetter = async () => {
+        this.aiRequestController?.abort();
+        const requestController = new AbortController();
+        this.aiRequestController = requestController;
         this.setState({ isAiGenerating: true });
         try {
             const response = await fetch('/api/generate-ai-cover-letter', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                signal: requestController.signal,
                 body: JSON.stringify({
                     jobTitle: this.state.jobTitle,
                     companyName: this.state.companyName,
@@ -220,11 +231,17 @@ class CoverLetter extends Component {
                 throw new Error(data.error || 'Failed to generate AI cover letter');
             }
         } catch (err) {
+            if (err?.name === 'AbortError') return;
             console.error('AI Cover Letter Error:', err);
             const candidateFullName = `${this.state.candidateFirstname} ${this.state.candidateLastname}`.trim() || 'Applicant';
             const fallback = `Dear ${this.state.recipientName || 'Hiring Manager'},\n\nI am writing to express my enthusiasm for the ${this.state.jobTitle || 'target'} role at ${this.state.companyName || 'your company'}. Possessing background in ${this.state.userSkills || 'relevant industry domains'}, I am well-prepared to contribute to your team\'s goals.\n\nMy professional track record demonstrates a dedication to high-quality execution and cross-functional collaboration. I am eager to apply my skill set to drive measurable outcomes for ${this.state.companyName || 'your organization'}.\n\nThank you for considering my application. I look forward to the opportunity to discuss my qualifications further.\n\nSincerely,\n${candidateFullName}`;
             this.setState({ letterBody: fallback, isAiGenerating: false, step: 2 });
             await this.handleSaveCoverLetter();
+        } finally {
+            if (this.aiRequestController === requestController) {
+                this.aiRequestController = null;
+                this.setState({ isAiGenerating: false });
+            }
         }
     };
 

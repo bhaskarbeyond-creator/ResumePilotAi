@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
+import { getSystemSettings } from '../../../firestore/dbOperations';
 import { FaCookieBite, FaCheck, FaTimes, FaSpinner, FaBalanceScale } from 'react-icons/fa';
 
 const GdprLegalSettings = () => {
@@ -35,7 +35,12 @@ const GdprLegalSettings = () => {
         e.preventDefault();
         setSaving(true);
         try {
-            await saveSystemSettings('gdpr', gdprConfig);
+            const response = await fetch('/api/admin/gdpr-settings', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(gdprConfig),
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result.success) throw new Error(result.error || 'Unable to save privacy settings');
+            setGdprConfig((current) => ({ ...current, ...(result.settings || {}) }));
             setStatusMessage({ type: 'success', text: 'GDPR Cookie Notice & Legal settings saved!' });
         } catch (error) {
             setStatusMessage({ type: 'error', text: `Failed to save settings: ${error.message}` });

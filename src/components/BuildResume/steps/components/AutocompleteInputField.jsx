@@ -30,6 +30,7 @@ const AutocompleteInputField = ({
     
     const containerRef = useRef(null);
     const debounceTimer = useRef(null);
+    const requestControllerRef = useRef(null);
     const isUserTypingRef = useRef(false);
 
     // Fetch AI suggestions
@@ -48,12 +49,15 @@ const AutocompleteInputField = ({
             return;
         }
 
+        requestControllerRef.current?.abort();
+        const requestController = new AbortController();
+        requestControllerRef.current = requestController;
         setLoading(true);
         try {
             const res = await generateUserAiContent('autocomplete', {
                 type: suggestionType,
                 query: query
-            });
+            }, { signal: requestController.signal });
             if (res && Array.isArray(res.suggestions)) {
                 // Remove duplicates and empty options
                 const list = [...new Set(res.suggestions.map(s => String(s).trim()))].filter(Boolean);
@@ -64,13 +68,19 @@ const AutocompleteInputField = ({
                 }
             }
         } catch (err) {
-            console.warn('Autocomplete fetch failed:', err);
+            if (err?.name !== 'AbortError') console.warn('Autocomplete fetch failed:', err);
         } finally {
-            setLoading(false);
+            if (requestControllerRef.current === requestController) {
+                requestControllerRef.current = null;
+                setLoading(false);
+            }
         }
     };
 
     const handleInputChange = (e) => {
+        requestControllerRef.current?.abort();
+        requestControllerRef.current = null;
+        setLoading(false);
         isUserTypingRef.current = true;
         onChange(e);
     };
@@ -94,6 +104,8 @@ const AutocompleteInputField = ({
             if (debounceTimer.current) clearTimeout(debounceTimer.current);
         };
     }, [safeValue]);
+
+    useEffect(() => () => { const controller = requestControllerRef.current; requestControllerRef.current = null; controller?.abort(); }, []);
 
     // Close dropdown on click outside
     useEffect(() => {
