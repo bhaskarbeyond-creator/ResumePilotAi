@@ -3656,19 +3656,12 @@ export async function getJsonById(resumeId) {
     }
 }
 
-export async function setJsonPb(resumeId, resumeObject, { isPublished = false } = {}) {
+export async function setJsonPb(resumeId, resumeObject) {
     const db = fire.firestore();
     const ownerUid = fire.auth().currentUser?.uid;
     if (!ownerUid) throw new Error('Authentication is required');
     const objectToSave = { ...resumeObject };
     delete objectToSave.user;
-    if (isPublished === true) {
-        await db.collection('pb').doc(resumeId).set({
-            id: resumeId, ownerUid, isPublished: true, publicationMode: 'explicit', object: JSON.stringify(objectToSave),
-            publishedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        });
-        return;
-    }
     const isCover = String(objectToSave.template || objectToSave.resumeName || '').startsWith('Cover');
     const collectionName = isCover ? 'covers' : 'resumes';
     const reference = db.collection('users').doc(ownerUid).collection(collectionName).doc(resumeId);

@@ -69,10 +69,12 @@ test('builder persistence does not implicitly publish or write a cross-account g
   assert.doesNotMatch(source, /setJsonPb\s*\(/);
   assert.doesNotMatch(source, /setItem\(['"]currentResumeItem/);
   assert.match(source, /publishResume\(/);
+  assert.match(source, /expectedPublicationRevision/);
   assert.match(source, /saveResumeDraft\(/);
   const operations = await fs.promises.readFile('src/firestore/dbOperations.js', 'utf8');
-  assert.match(operations, /setJsonPb\(resumeId, resumeObject, \{ isPublished = false \}/);
-  assert.match(operations, /publicationMode: 'explicit'/);
+  assert.match(operations, /setJsonPb\(resumeId, resumeObject\)/);
+  const legacyWriter = operations.slice(operations.indexOf('export async function setJsonPb'), operations.indexOf('export async function checkIfResumeIdAvailable'));
+  assert.doesNotMatch(legacyWriter, /collection\('pb'\)|isPublished|publicationMode/);
 });
 
 test('recovery envelopes are account/resume scoped, expiring, and preserve large data', () => {

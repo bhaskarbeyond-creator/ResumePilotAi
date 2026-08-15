@@ -67,16 +67,30 @@ export async function saveResumeDraft(userId, resumeId, resumeData, { expectedRe
     return { id: resumeId, revision, data };
 }
 
-export async function publishResume(userId, resumeId, resumeData, { db = null } = {}) {
+export async function publishResume(userId, resumeId, _resumeData, { db = null, expectedRevision = null, expectedPublicationRevision = null } = {}) {
     if (!userId || !resumeId) throw new Error('A signed-in account and resume are required');
     db = await resolveDb(db);
-    const data = normalizeResumeData(resumeData);
-    assertResumeSize(data);
-    await db.collection('pb').doc(resumeId).set({
-        id: resumeId, ownerUid: userId, isPublished: true, publicationMode: 'explicit', object: JSON.stringify(data),
-        publishedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    const ownerReference = db.collection('users').doc(userId).collection('resumes').doc(resumeId);
+    const publicReference = db.collection('pb').doc(resumeId);
+    let result;
+    await db.runTransaction(async transaction => {
+        const [ownerSnapshot, publicSnapshot] = await Promise.all([transaction.get(ownerReference), transaction.get(publicReference)]);
+        if (!ownerSnapshot.exists) throw new Error('Resume not found');
+        const sourceRevision = Number(ownerSnapshot.data()?.revision || 0);
+        const publicationRevision = Number(publicSnapshot.data()?.publicationRevision || 0);
+        if (expectedRevision !== null && sourceRevision !== Number(expectedRevision)) { const error = new Error('This resume changed before publication. Reload before sharing.'); error.code = 'RESUME_CONFLICT'; throw error; }
+        if (expectedPublicationRevision !== null && publicationRevision !== Number(expectedPublicationRevision)) { const error = new Error('The public link changed in another tab. Refresh before publishing.'); error.code = 'RESUME_PUBLICATION_CONFLICT'; throw error; }
+        if (publicSnapshot.exists && publicSnapshot.data()?.ownerUid !== userId) throw new Error('Resume not found or access denied');
+        const data = normalizeResumeData(ownerSnapshot.data() || {});
+        assertResumeSize(data);
+        const nextPublicationRevision = publicationRevision + 1;
+        transaction.set(publicReference, {
+            id: resumeId, ownerUid: userId, isPublished: true, publicationMode: 'explicit', object: JSON.stringify(data), sourceRevision,
+            publicationRevision: nextPublicationRevision, publishedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        });
+        result = { resumeId, isPublished: true, sourceRevision, publicationRevision: nextPublicationRevision };
     });
-    return { resumeId, isPublished: true };
+    return result;
 }
 
 export async function getResumePublication(userId, resumeId, { db = null } = {}) {
@@ -84,18 +98,24 @@ export async function getResumePublication(userId, resumeId, { db = null } = {})
     db = await resolveDb(db);
     const snapshot = await db.collection('pb').doc(resumeId).get();
     if (!snapshot.exists || snapshot.data()?.ownerUid !== userId) return { isPublished: false };
-    return { isPublished: snapshot.data()?.isPublished === true && snapshot.data()?.publicationMode === 'explicit' };
+    return { isPublished: snapshot.data()?.isPublished === true && snapshot.data()?.publicationMode === 'explicit', publicationRevision: Number(snapshot.data()?.publicationRevision || 0), sourceRevision: Number(snapshot.data()?.sourceRevision || 0) };
 }
 
-export async function unpublishResume(userId, resumeId, { db = null } = {}) {
+export async function unpublishResume(userId, resumeId, { db = null, expectedPublicationRevision = null } = {}) {
     if (!userId || !resumeId) throw new Error('A signed-in account and resume are required');
     db = await resolveDb(db);
     const reference = db.collection('pb').doc(resumeId);
-    const snapshot = await reference.get();
-    if (!snapshot.exists) return false;
-    if (snapshot.data()?.ownerUid !== userId) throw new Error('Resume not found or access denied');
-    await reference.update({ isPublished: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-    return true;
+    let publicationRevision;
+    await db.runTransaction(async transaction => {
+        const snapshot = await transaction.get(reference);
+        if (!snapshot.exists) { publicationRevision = 0; return; }
+        if (snapshot.data()?.ownerUid !== userId) throw new Error('Resume not found or access denied');
+        const current = Number(snapshot.data()?.publicationRevision || 0);
+        if (expectedPublicationRevision !== null && current !== Number(expectedPublicationRevision)) { const error = new Error('The public link changed in another tab. Refresh before unpublishing.'); error.code = 'RESUME_PUBLICATION_CONFLICT'; throw error; }
+        publicationRevision = current + 1;
+        transaction.set(reference, { isPublished: false, publicationRevision, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    });
+    return { isPublished: false, publicationRevision };
 }
 
 export async function deleteResumeDraft(userId, resumeId, { db = null } = {}) {

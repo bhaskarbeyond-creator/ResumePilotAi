@@ -33,7 +33,7 @@ function fakeDb(initial = {}) {
     async runTransaction(callback) {
       await callback({
         async get(ref) { return { id: ref.id, exists: documents.has(ref.path), data: () => documents.get(ref.path) }; },
-        set(ref, value) { documents.set(ref.path, value); },
+        set(ref, value, options) { documents.set(ref.path, options?.merge ? { ...(documents.get(ref.path) || {}), ...value } : value); },
       });
     },
   };
@@ -88,11 +88,16 @@ test('publishing is explicit, revocable, and deletion removes owner and public c
   const db = fakeDb();
   const created = await createResumeDraft('alice', { firstname: 'Asha', email: 'private@example.com' }, { db });
   assert.equal((await getResumePublication('alice', created.id, { db })).isPublished, false);
-  await publishResume('alice', created.id, created.data, { db });
+  const publishedV1 = await publishResume('alice', created.id, created.data, { db, expectedRevision: 1, expectedPublicationRevision: 0 });
   assert.equal((await getResumePublication('alice', created.id, { db })).isPublished, true);
   assert.match(db.documents.get(`pb/${created.id}`).object, /private@example.com/);
   assert.equal(db.documents.get(`pb/${created.id}`).publicationMode, 'explicit');
-  await unpublishResume('alice', created.id, { db });
+  await saveResumeDraft('alice', created.id, { firstname: 'Version 2', email: 'new@example.com' }, { db, expectedRevision: 1 });
+  assert.match(db.documents.get(`pb/${created.id}`).object, /private@example.com/);
+  await assert.rejects(() => publishResume('alice', created.id, {}, { db, expectedRevision: 1, expectedPublicationRevision: publishedV1.publicationRevision }), error => error.code === 'RESUME_CONFLICT');
+  const publishedV2 = await publishResume('alice', created.id, {}, { db, expectedRevision: 2, expectedPublicationRevision: publishedV1.publicationRevision });
+  assert.match(db.documents.get(`pb/${created.id}`).object, /new@example.com/);
+  await unpublishResume('alice', created.id, { db, expectedPublicationRevision: publishedV2.publicationRevision });
   assert.equal((await getResumePublication('alice', created.id, { db })).isPublished, false);
   await deleteResumeDraft('alice', created.id, { db });
   assert.equal(db.documents.has(`users/alice/resumes/${created.id}`), false);

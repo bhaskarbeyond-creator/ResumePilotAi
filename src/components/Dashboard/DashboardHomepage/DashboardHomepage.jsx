@@ -376,7 +376,7 @@ class DashboardHomepage extends Component {
     const previewWindow = window.open('about:blank', '_blank');
     if (previewWindow) previewWindow.opener = null;
     try {
-      await publishResume(userId, document.id, normalizeResumeData(document.item || document));
+      await publishResume(userId, document.id, normalizeResumeData(document.item || document), { expectedRevision: document.revision ?? document.item?.revision ?? null });
       if (previewWindow) {
         previewWindow.opener = null;
         previewWindow.location = `${window.location.origin}/shared/${document.id}`;

@@ -59,7 +59,7 @@ class ResumeCard extends Component {
         const userId = fire.auth().currentUser?.uid;
         if (!userId || this.props.type !== 'resume') return;
         try {
-            await publishResume(userId, this.props.document.id, normalizeResumeData(this.props.document.item || this.props.document));
+            await publishResume(userId, this.props.document.id, normalizeResumeData(this.props.document.item || this.props.document), { expectedRevision: this.props.document.revision ?? this.props.document.item?.revision ?? null });
             this.setState({ shareModal: true });
         } catch (error) {
             this.props.showToast?.('error', 'Sharing failed', 'Resume could not be published.');

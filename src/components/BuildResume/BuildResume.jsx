@@ -79,7 +79,7 @@ const BuildResume = () => {
     const [resumeData, setResumeData] = useState(() => normalizeResumeData(EMPTY_RESUME));
     const [saveState, setSaveState] = useState({ status: 'idle', message: '' });
     const [saveConflict, setSaveConflict] = useState(null);
-    const [publicationState, setPublicationState] = useState({ isPublished: false, status: 'idle', message: '' });
+    const [publicationState, setPublicationState] = useState({ isPublished: false, publicationRevision: 0, sourceRevision: 0, status: 'idle', message: '' });
     const saveConflictRef = useRef(null);
     const resumeDataRef = useRef(resumeData);
     const currentTemplateRef = useRef(currentTemplate);
@@ -599,14 +599,14 @@ const BuildResume = () => {
         setPublicationState(current => ({ ...current, status: 'saving', message: 'Publishing secure review link…' }));
         try {
             if (!await persistLatest({ manual: true })) throw new Error('Save the resume before sharing');
-            await publishResume(userId, resumeId, buildCanonicalSnapshot());
+            const published = await publishResume(userId, resumeId, buildCanonicalSnapshot(), { expectedRevision: revisionRef.current, expectedPublicationRevision: publicationState.publicationRevision });
             const shareUrl = `${window.location.origin}/shared/${resumeId}`;
-            setPublicationState({ isPublished: true, status: 'saved', message: 'Review link published' });
+            setPublicationState({ ...published, status: 'saved', message: 'Review link published' });
             try {
                 await navigator.clipboard.writeText(shareUrl);
-                setPublicationState({ isPublished: true, status: 'saved', message: 'Review link copied' });
+                setPublicationState(current => ({ ...current, status: 'saved', message: 'Review link copied' }));
             } catch {
-                setPublicationState({ isPublished: true, status: 'saved', message: `Published: ${shareUrl}` });
+                setPublicationState(current => ({ ...current, status: 'saved', message: `Published: ${shareUrl}` }));
             }
         } catch (error) {
             setPublicationState(current => ({ ...current, status: 'error', message: error.message || 'Unable to publish review link' }));
@@ -619,8 +619,8 @@ const BuildResume = () => {
         if (!userId || !resumeId) return;
         setPublicationState(current => ({ ...current, status: 'saving', message: 'Revoking public link…' }));
         try {
-            await unpublishResume(userId, resumeId);
-            setPublicationState({ isPublished: false, status: 'saved', message: 'Public link revoked' });
+            const unpublished = await unpublishResume(userId, resumeId, { expectedPublicationRevision: publicationState.publicationRevision });
+            setPublicationState(current => ({ ...current, ...unpublished, status: 'saved', message: 'Public link revoked' }));
         } catch (error) {
             setPublicationState(current => ({ ...current, status: 'error', message: error.message || 'Unable to revoke link' }));
         }
