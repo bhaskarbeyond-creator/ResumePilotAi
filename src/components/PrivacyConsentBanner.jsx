@@ -1,7 +1,16 @@
 import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { getSystemSettings } from '../firestore/dbOperations';
 import { sanitizeUrl } from '../utils/sanitizeHtml';
 import { getAnalyticsConsent, setAnalyticsConsent } from '../utils/privacyConsent';
+
+export const OPEN_PRIVACY_CHOICES_EVENT = 'resumepilot:open-privacy-choices';
+
+export function openPrivacyChoicesModal() {
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent(OPEN_PRIVACY_CHOICES_EVENT));
+    }
+}
 
 const DEFAULTS = Object.freeze({
     enableCookieBanner: true,
@@ -11,6 +20,7 @@ const DEFAULTS = Object.freeze({
 });
 
 export default function PrivacyConsentBanner() {
+    const location = useLocation();
     const [config, setConfig] = useState(DEFAULTS);
     const [configLoaded, setConfigLoaded] = useState(false);
     const [consent, setConsent] = useState(() => getAnalyticsConsent());
@@ -24,6 +34,12 @@ export default function PrivacyConsentBanner() {
         return () => { active = false; };
     }, []);
 
+    useEffect(() => {
+        const handleOpen = () => setShowChoices(true);
+        window.addEventListener(OPEN_PRIVACY_CHOICES_EVENT, handleOpen);
+        return () => window.removeEventListener(OPEN_PRIVACY_CHOICES_EVENT, handleOpen);
+    }, []);
+
     const choose = (value) => {
         setAnalyticsConsent(value);
         setConsent(value);
@@ -31,7 +47,12 @@ export default function PrivacyConsentBanner() {
     };
 
     if (!configLoaded || !config.enableCookieBanner) return null;
+
+    // Inside active dashboard or editing workspaces, hide the floating pill so it doesn't obstruct the sidebar/tools
+    const isAppWorkspace = /^\/(dashboard|dashboard2|build-resume|admin|interview|job-tracker|portfolio|cover-letter)/i.test(location.pathname);
+
     if (!showChoices) {
+        if (isAppWorkspace) return null;
         return (
             <button type="button" onClick={() => setShowChoices(true)} className="fixed bottom-3 left-3 z-[9998] rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-md hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
                 Privacy choices

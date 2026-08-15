@@ -15,6 +15,7 @@ import ImageCropModal from './ImageCropModal';
 import SubscriptionModal from './SubscriptionModal';
 import { inferCountryFromCity } from '../../../utils/locationHelper';
 import { normalizeProfileData, normalizeProfileImage } from '../../../utils/profileData';
+import { openPrivacyChoicesModal } from '../../PrivacyConsentBanner';
 
 const normalizeProfileForSave = value => normalizeProfileData({ ...value, postalcode: value.postalCode || '', website: value.websiteUrl || '' });
 
@@ -2549,7 +2550,10 @@ function DashboardSettings(props) {
                             <div><h3 className="text-sm font-bold text-slate-900">Preferences &amp; Privacy</h3><p className="text-xs text-slate-500">These account-scoped choices do not change analytics consent or payment state.</p></div>
                             <label className="block text-xs font-bold text-slate-700" htmlFor="account-language">Language<select id="account-language" value={preferences.language} onChange={event => setPreferences(current => ({ ...current, language: event.target.value }))} className="mt-1 w-full rounded-xl border border-slate-300 p-3 text-sm font-normal"><option value="en">English</option><option value="hi">हिन्दी</option><option value="es">Español</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="pt">Português</option><option value="it">Italiano</option><option value="nl">Nederlands</option></select></label>
                             <div className="grid gap-3 sm:grid-cols-2">{[['emailNotifications','Email notifications'],['securityNotifications','Security notifications'],['productUpdates','Product updates'],['profileDiscoverable','Discoverable public profile']].map(([key,label]) => <label key={key} className="flex items-center gap-2 rounded-xl border border-slate-200 p-3 text-xs font-semibold"><input type="checkbox" checked={Boolean(preferences[key])} onChange={event => setPreferences(current => ({ ...current, [key]: event.target.checked }))} />{label}</label>)}</div>
-                            <button type="button" onClick={handlePreferencesSave} disabled={savingPreferences} className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white disabled:opacity-50">{savingPreferences ? 'Saving…' : 'Save preferences'}</button>
+                            <div className="flex flex-wrap items-center gap-3 pt-1">
+                                <button type="button" onClick={handlePreferencesSave} disabled={savingPreferences} className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-700 disabled:opacity-50 transition-all">{savingPreferences ? 'Saving…' : 'Save preferences'}</button>
+                                <button type="button" onClick={openPrivacyChoicesModal} className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-2xs">Manage Cookie &amp; Analytics Choices</button>
+                            </div>
                         </div>
 
                         {/* Card 5: GDPR Data Portability & Export */}
