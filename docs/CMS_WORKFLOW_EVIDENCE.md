@@ -1,6 +1,10 @@
 # CMS lifecycle evidence
 
-Validated against branch `arena/019ffe7b-resumepilotai` on 2026-08-14. The authoritative article collection remains `blog_posts`; this phase did not introduce a competing CMS model.
+Validated against branch `arena/019ffe7b-resumepilotai`. The authoritative article collection remains `blog_posts`; custom pages retain their historical `pages` collection and `/p/{slug}` URLs.
+
+## Legacy custom pages
+
+Legacy documents without a status remain publicly readable during non-destructive migration. New and migrated pages use explicit `draft`, `published`, or `unpublished` state and monotonic revisions. Admin create/edit/publish/unpublish/delete operations are validated, revision-checked, and audited; browser writes are denied. Active content is rejected at write time while `sanitizePublicHtml` remains mandatory at render time. Missing and private pages intentionally share a client-side 404 to avoid leaking private existence; deployment edge HTTP status remains externally unverified.
 
 ## Historical behavior checked
 

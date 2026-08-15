@@ -3113,65 +3113,39 @@ export async function addAds(link, name, destinationLink) {
 }
 // Get pages
 export async function getPages() {
-    return safeDbOperation(async () => {
-        const db = fire.firestore();
-        const adsRef = db.collection('pages');
-        var allDocs = [];
-        const snapshot = await adsRef.get();
-        snapshot.forEach((item) => {
-            allDocs.push(item.data());
-        });
-        return allDocs.length > 0 ? allDocs : [];
-    }, false); // Set requireAuth to false for public pages
+    const response = await fetch('/public/custom-pages.json', { cache: 'no-store' });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.success) throw new Error('Public pages are unavailable.');
+    return result.pages || [];
 }
 
 // Get  page by name
 export async function getPageByName(name) {
     const db = fire.firestore();
     const snapshot = await db.collection('pages').doc(name).get();
-    if (snapshot.exists) {
-        return snapshot.data();
-    }
+    if (snapshot.exists) return snapshot.data();
+    return null;
 }
 
-// Remove  page by name
-export async function removePageByName(name) {
-    const db = fire.firestore();
-    await db
-        .collection('pages')
-        .doc(name)
-        .delete()
-        .then((value) => {
-            return true;
-        });
+export async function getAdminPages() {
+    const { response, data } = await fetchAdminWithReauth('/api/admin/pages');
+    if (!response.ok || !data.success) throw new Error(data.error?.message || data.error || 'Unable to load custom pages.');
+    return data.pages || [];
 }
 
-// Add Pages
+export async function removePageByName(name, expectedRevision = 0) {
+    const { response, data } = await fetchAdminWithReauth(`/api/admin/pages/${encodeURIComponent(name)}`, {
+        method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expectedRevision }),
+    });
+    return response.ok && data.success ? data : { success: false, error: data.error?.message || data.error || 'Unable to delete page.', code: data.code };
+}
 
-export async function addPages(pagename, pagecontent) {
-    const db = fire.firestore();
-    const adsRef = db.collection('pages');
-    //  Getting the date
-    let date = new Date();
-    let day = date.getDate();
-    let month = date.getMonth() + 1;
-    let year = date.getFullYear();
-
-    if (month < 10) {
-        await adsRef
-            .doc(pagename)
-            .set({ id: pagename, pagecontent: pagecontent, date: `${day}-0${month}-${year}` })
-            .then((value) => {
-                return true;
-            });
-    } else {
-        await adsRef
-            .doc(pagename)
-            .set({ id: pagename, pagecontent: pagecontent, date: `${day}-${month}-${year}` })
-            .then((value) => {
-                return true;
-            });
-    }
+export async function addPages(pagename, pagecontent, options = {}) {
+    const { response, data } = await fetchAdminWithReauth(`/api/admin/pages/${encodeURIComponent(pagename)}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pagecontent, title: options.title || pagename, description: options.description || '', status: options.status || 'published', expectedRevision: Number(options.expectedRevision || 0) }),
+    });
+    return response.ok && data.success ? data : { success: false, error: data.error?.message || data.error || 'Unable to save page.', code: data.code };
 }
 
 export async function getEarnings() {

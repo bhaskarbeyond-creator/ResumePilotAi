@@ -224,7 +224,10 @@ service cloud.firestore {
         && resource.data.status in ['draft', 'pending', 'rejected']);
     }
     match /blog_categories/{id} { allow read: if true; allow write: if admin(); }
-    match /pages/{id} { allow read: if true; allow write: if admin(); }
+    match /pages/{id} {
+      allow read: if !('status' in resource.data) || resource.data.status == 'published' || admin();
+      allow write: if false;
+    }
     match /ads/{id} { allow read: if true; allow write: if false; }
     match /reviews/{id} { allow read: if resource.data.status == 'approved' || admin(); allow write: if false; }
     match /trustedBy/{id} { allow read: if true; allow write: if false; }

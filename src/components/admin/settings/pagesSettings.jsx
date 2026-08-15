@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { addPages, getPages, removePageByName } from '../../../firestore/dbOperations';
+import { addPages, getAdminPages, removePageByName } from '../../../firestore/dbOperations';
 import { FaCheck, FaTimes, FaFile, FaTrash, FaPlus, FaEdit, FaEye, FaGlobe } from 'react-icons/fa';
 // import ReactQuill from 'react-quill'; // ES6
 // import 'react-quill/dist/quill.snow.css'; // ES6
@@ -11,6 +11,7 @@ class PagesSettings extends Component {
             pageName: '',
             text: '',
             isSuccesShowed: false,
+            error: '', saving: false, editingRevision: 0, status: 'draft',
             pages: null,
         };
         this.handleChange = this.handleChange.bind(this);
@@ -37,33 +38,32 @@ class PagesSettings extends Component {
         this.setState({ text: value });
     }
     // Handling addition of page
-    saveNewPage() {
-        addPages(this.state.pageName, this.state.text).then((value) => {
-            this.setState({ isSuccesShowed: true });
-            // Auto-hide success message after 3 seconds
-            setTimeout(() => {
-                this.setState({ isSuccesShowed: false });
-            }, 3000);
-        });
-        this.getPages();
+    async saveNewPage() {
+        this.setState({ saving: true, error: '' });
+        try {
+            const result = await addPages(this.state.pageName, this.state.text, { status: this.state.status, expectedRevision: this.state.editingRevision });
+            if (!result.success) throw Object.assign(new Error(result.error), { code: result.code });
+            this.setState({ isSuccesShowed: true, pageName: '', text: '', editingRevision: 0, status: 'draft' });
+            await this.getPages();
+        } catch (error) { this.setState({ error: error.message || 'Page could not be saved.' }); }
+        finally { this.setState({ saving: false }); }
     }
-    // getPages
-    getPages() {
-        getPages().then((value) => {
-            value !== null && this.setState({ pages: value });
-        });
+    async getPages() {
+        try { this.setState({ pages: await getAdminPages(), error: '' }); }
+        catch (error) { this.setState({ pages: [], error: error.message }); }
     }
-    // handling removal of page
-    removePageHandler(name) {
-        removePageByName(name).then((value) => {
-            this.getPages();
-        });
+    async removePageHandler(page) {
+        if (!window.confirm(`Delete “${page.id}”? This cannot be undone.`)) return;
+        const result = await removePageByName(page.id, page.revision);
+        if (!result.success) { this.setState({ error: result.error }); return; }
+        await this.getPages();
     }
     render() {
         const totalPages = this.state.pages ? this.state.pages.length : 0;
         
         return (
             <div className="space-y-6">
+                {this.state.error && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{this.state.error}</div>}
                 {/* Success Alert */}
                 {this.state.isSuccesShowed && (
                     <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 flex items-center justify-between">
@@ -124,22 +124,15 @@ class PagesSettings extends Component {
                                             </div>
                                             <div>
                                                 <p className="font-medium text-slate-900">{page.id}</p>
-                                                <p className="text-xs text-slate-500">Custom page</p>
+                                                <p className="text-xs text-slate-500">{page.status} · revision {page.revision}</p>
                                             </div>
                                         </div>
                                         
                                         <div className="flex items-center space-x-2">
-                                            <a 
-                                                href={`/p/${page.id}`} 
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                title="View page"
-                                            >
-                                                <FaEye className="w-4 h-4" />
-                                            </a>
+                                            {page.status === 'published' && <a href={`/p/${page.id}`} target="_blank" rel="noopener noreferrer" className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View page"><FaEye className="w-4 h-4" /></a>}
+                                            <button type="button" onClick={() => this.setState({ pageName: page.id, text: page.pagecontent, editingRevision: page.revision, status: page.status })} className="p-2 text-slate-500 hover:text-blue-600" title="Edit page"><FaEdit className="w-4 h-4" /></button>
                                             <button 
-                                                onClick={() => this.removePageHandler(page.id)}
+                                                onClick={() => this.removePageHandler(page)}
                                                 className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                                 title="Delete page"
                                             >
@@ -197,8 +190,9 @@ class PagesSettings extends Component {
                                 rows="8"
                                 className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical bg-slate-50 text-slate-900 placeholder-slate-400 font-mono text-sm"
                             />
+                            <div className="mt-3"><label className="text-sm font-medium">Publication state <select value={this.state.status} onChange={event => this.setState({ status: event.target.value })} className="ml-2 rounded border p-2"><option value="draft">Draft</option><option value="published">Published</option><option value="unpublished">Unpublished</option></select></label></div>
                             <div className="flex items-center justify-between mt-2">
-                                <p className="text-xs text-slate-500">Supports basic HTML formatting</p>
+                                <p className="text-xs text-slate-500">Supports basic HTML formatting; active content is rejected and output is sanitized again.</p>
                                 <p className="text-xs text-slate-500">{this.state.text.length} characters</p>
                             </div>
                         </div>
@@ -243,14 +237,14 @@ class PagesSettings extends Component {
                         <button
                             type="button"
                             className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
-                            onClick={() => this.setState({ pageName: '', text: '' })}
+                            onClick={() => this.setState({ pageName: '', text: '', editingRevision: 0, status: 'draft', error: '' })}
                         >
                             Clear
                         </button>
                         <button
                             type="button"
                             onClick={() => this.saveNewPage()}
-                            disabled={!this.state.pageName.trim() || !this.state.text.trim()}
+                            disabled={this.state.saving || !this.state.pageName.trim() || !this.state.text.trim()}
                             className={`px-6 py-2 text-sm font-medium rounded-lg transition-colors flex items-center space-x-2 ${
                                 this.state.pageName.trim() && this.state.text.trim()
                                     ? 'text-white bg-slate-800 hover:bg-slate-700'
@@ -258,7 +252,7 @@ class PagesSettings extends Component {
                             }`}
                         >
                             <FaPlus className="w-4 h-4" />
-                            <span>Create Page</span>
+                            <span>{this.state.saving ? 'Saving…' : this.state.editingRevision ? 'Save Page' : 'Create Page'}</span>
                         </button>
                     </div>
                 </div>

@@ -3207,6 +3207,82 @@ function normalizeTrustedLogo(input = {}) {
     return { name, imageUrl, order, published: input.published !== false };
 }
 
+function validateCustomPageContent(value) {
+    const content = String(value || '');
+    if (!content.trim() || Buffer.byteLength(content, 'utf8') > 500_000) throw new Error('Page content is required and must be smaller than 500 KB.');
+    if (/<\s*(?:script|iframe|object|embed|svg|math|link|meta)\b|\bon\w+\s*=|(?:javascript|data)\s*:|@import\b|url\s*\(/i.test(content)) throw new Error('Page content contains unsafe active content.');
+    return content;
+}
+
+app.get('/public/custom-pages.json', async (_req, res) => {
+    if (!db) return res.status(503).json({ success: false, pages: [] });
+    const snapshot = await db.collection('pages').get();
+    const pages = snapshot.docs.filter(document => !document.data()?.status || document.data()?.status === 'published').map(document => ({ id: document.id, title: document.data()?.title || document.id }));
+    res.setHeader('Cache-Control', 'no-store');
+    return res.json({ success: true, pages });
+});
+
+app.get('/api/admin/pages', async (req, res) => {
+    const requestDb = req.app.get('db');
+    if (!requestDb) return res.status(503).json({ success: false, error: 'Page service unavailable.' });
+    const snapshot = await requestDb.collection('pages').get();
+    const pages = snapshot.docs.map(document => {
+        const value = document.data() || {};
+        return { id: document.id, title: value.title || document.id, description: value.description || '', pagecontent: value.pagecontent || '', status: value.status || 'published', revision: Number(value.revision || 0), legacy: !value.status };
+    });
+    return res.json({ success: true, pages });
+});
+
+app.put('/api/admin/pages/:slug', async (req, res) => {
+    const requestDb = req.app.get('db');
+    const slug = String(req.params.slug || '').toLowerCase();
+    const status = String(req.body?.status || 'draft').toLowerCase();
+    const expectedRevision = Number(req.body?.expectedRevision || 0);
+    if (!requestDb || !admin || !/^[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$/.test(slug) || !['draft', 'published', 'unpublished'].includes(status) || !Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid custom page request.' });
+    try {
+        const content = validateCustomPageContent(req.body?.pagecontent);
+        const title = String(req.body?.title || slug).replace(/\p{Cc}/gu, ' ').trim().slice(0, 160) || slug;
+        const description = String(req.body?.description || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, 500);
+        let result;
+        await requestDb.runTransaction(async transaction => {
+            const reference = requestDb.collection('pages').doc(slug);
+            const snapshot = await transaction.get(reference);
+            const current = snapshot.data() || {};
+            const revision = Number(current.revision || 0);
+            if (revision !== expectedRevision || (!snapshot.exists && expectedRevision !== 0)) { const conflict = new Error('This page changed after the editor loaded. Refresh before saving.'); conflict.code = 'CMS_PAGE_CONFLICT'; throw conflict; }
+            const nextRevision = revision + 1;
+            const event = !snapshot.exists ? 'CMS_PAGE_CREATED' : current.status !== status ? `CMS_PAGE_${status.toUpperCase()}` : 'CMS_PAGE_UPDATED';
+            transaction.set(reference, { id: slug, title, description, pagecontent: content, status, revision: nextRevision, createdAt: current.createdAt || admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp(), publishedAt: status === 'published' ? (current.publishedAt || admin.firestore.FieldValue.serverTimestamp()) : null }, { merge: false });
+            transaction.set(requestDb.collection('security_audit_logs').doc(), { action: event, actorUid: req.user.uid, pageId: slug, revision: nextRevision, status, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+            result = { id: slug, title, description, pagecontent: content, status, revision: nextRevision };
+        });
+        return res.json({ success: true, page: result });
+    } catch (error) {
+        return res.status(error.code === 'CMS_PAGE_CONFLICT' ? 409 : 400).json({ success: false, code: error.code, error: error.message });
+    }
+});
+
+app.delete('/api/admin/pages/:slug', async (req, res) => {
+    const requestDb = req.app.get('db');
+    const slug = String(req.params.slug || '').toLowerCase();
+    const expectedRevision = Number(req.body?.expectedRevision || 0);
+    if (!requestDb || !admin || !/^[a-z0-9-]{1,80}$/.test(slug) || !Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid custom page deletion.' });
+    try {
+        await requestDb.runTransaction(async transaction => {
+            const reference = requestDb.collection('pages').doc(slug);
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists) { const missing = new Error('Page not found.'); missing.code = 'NOT_FOUND'; throw missing; }
+            if (Number(snapshot.data()?.revision || 0) !== expectedRevision) { const conflict = new Error('This page changed after the list loaded. Refresh before deleting.'); conflict.code = 'CMS_PAGE_CONFLICT'; throw conflict; }
+            transaction.delete(reference);
+            transaction.set(requestDb.collection('security_audit_logs').doc(), { action: 'CMS_PAGE_DELETED', actorUid: req.user.uid, pageId: slug, revision: expectedRevision, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        });
+        return res.json({ success: true });
+    } catch (error) {
+        const statusCode = error.code === 'CMS_PAGE_CONFLICT' ? 409 : error.code === 'NOT_FOUND' ? 404 : 500;
+        return res.status(statusCode).json({ success: false, code: error.code, error: statusCode === 500 ? 'Unable to delete page.' : error.message });
+    }
+});
+
 app.post('/api/admin/landing-content', async (req, res) => {
     if (!db || !admin) return res.status(503).json({ success: false, error: 'Landing-content service unavailable.' });
     const fields = ['activeJobs', 'rating', 'partnerCompanies', 'successfulHires', 'featuredJobs', 'successRate', 'topCompanies'];
