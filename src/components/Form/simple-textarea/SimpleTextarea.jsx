@@ -1198,14 +1198,24 @@ class SimpleTextarea extends Component {
       localStorage.getItem("language") ||
       "en";
 
+    const getAuthHeaders = async () => {
+      const headers = { "Content-Type": "application/json" };
+      try {
+        const fireModule = await import('../../../conf/fire.js').catch(() => null);
+        const fire = fireModule?.default;
+        if (fire?.auth?.()?.currentUser) {
+          const token = await fire.auth().currentUser.getIdToken();
+          if (token) headers['Authorization'] = `Bearer ${token}`;
+        }
+      } catch (_) {}
+      return headers;
+    };
+
     // Call the backend API to generate the summary
-    fetch(
-      config.provider + "://" + config.backendUrl + "/api/generate-summary",
-      {
+    getAuthHeaders().then(headers => {
+      fetch("/api/generate-summary", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
         signal: requestController.signal,
         body: JSON.stringify({
           name: aiAnswers.name,
@@ -1216,8 +1226,7 @@ class SimpleTextarea extends Component {
           summaryType: aiAnswers.summaryType,
           language: currentLanguage,
         }),
-      }
-    )
+      })
       .then((response) => {
         if (!response.ok) {
           throw new Error("Failed to generate summary");
@@ -1228,9 +1237,9 @@ class SimpleTextarea extends Component {
         if (this.aiSummaryController !== requestController) return;
         this.aiSummaryController = null;
         this.setState({
-          generatedSummary: data.summary,
+          generatedSummary: data.summary || "",
           isGenerating: false,
-          currentStep: this.aiQuestions.length,
+          currentStep: this.aiQuestions ? this.aiQuestions.length : 0,
         });
       })
       .catch((error) => {
@@ -1242,6 +1251,7 @@ class SimpleTextarea extends Component {
           generationError: "Failed to generate summary. Please try again.",
         });
       });
+    });
   }
 
   addGeneratedSummary() {

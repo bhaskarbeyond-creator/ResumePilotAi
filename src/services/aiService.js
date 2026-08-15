@@ -77,9 +77,18 @@ export async function generateUserAiContent(endpointName, payload = {}, options 
     const request = buildAiRequest(endpointName, payload);
     const { controller, dispose } = createAbortController(options.signal, options.timeoutMs || 45_000);
     try {
+        const headers = { 'Content-Type': 'application/json' };
+        try {
+            const fireModule = await import('../conf/fire.js').catch(() => null);
+            const fire = fireModule?.default;
+            if (fire?.auth?.()?.currentUser) {
+                const token = await fire.auth().currentUser.getIdToken();
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+            }
+        } catch (_) {}
         const response = await fetch(request.url, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers,
             credentials: 'same-origin',
             signal: controller.signal,
             body: JSON.stringify(request.body),
