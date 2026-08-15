@@ -193,7 +193,6 @@ class BoardFilling extends Component {
                 trackEngagement('document_downloaded', {
                     template_name: templateName,
                     document_type: documentType,
-                    user_id: userId,
                 });
 
                 download(response.data, 'resume.pdf', content);

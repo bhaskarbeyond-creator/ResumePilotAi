@@ -112,7 +112,7 @@ class DashboardMain extends Component {
             });
             try { localStorage.setItem('user', user.uid); } catch { /* compatibility only */ }
             trackUserLogin('firebase');
-            trackEngagement('dashboard_access', { user_id: user.uid });
+            trackEngagement('dashboard_access');
 
             try {
                 const [idToken, value] = await Promise.all([user.getIdTokenResult(), getFullName(user.uid)]);

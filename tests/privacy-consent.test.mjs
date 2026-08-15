@@ -28,5 +28,12 @@ test('analytics implementation is consent-gated and does not use document IDs or
   assert.match(source, /analyticsAllowed\(\)/);
   assert.match(source, /resumeId \? 'resume'/);
   assert.match(source, /coverId \? 'cover_letter'/);
-  assert.doesNotMatch(source, /membership|entitlement|accountType|paymentStatus/);
+  assert.match(source, /forbiddenKey/);
+  const implementationWithoutDenylist = source.replace(/const forbiddenKey = [^\n]+/, '');
+  assert.doesNotMatch(implementationWithoutDenylist, /membership|entitlement|accountType|paymentStatus/);
+  const [dashboard, board] = await Promise.all([
+    import('node:fs/promises').then(fs => fs.readFile('src/components/Dashboard/DashboardMain/DashboardMain.jsx', 'utf8')),
+    import('node:fs/promises').then(fs => fs.readFile('src/components/Boards/board-step-filling/BoardFilling.jsx', 'utf8')),
+  ]);
+  assert.doesNotMatch(`${dashboard}\n${board}`, /user_id/);
 });

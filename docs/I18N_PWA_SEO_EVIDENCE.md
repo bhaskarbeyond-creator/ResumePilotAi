@@ -10,6 +10,10 @@
 - Existing English fallback is preserved rather than inventing translations or changing legal/payment meaning. The 2,687 UI/accessibility candidates require product-approved source copy and professional translation review, especially billing, deletion, privacy, MFA, Admin, and validation language.
 - Newly added release-critical semantics are written in clear English and do not modify existing translated keys.
 
+## Analytics privacy follow-up
+
+Consent gating from `5e04b169` remains intact. Analytics calls no longer include Firebase UIDs, and the shared event boundary drops UID, email, phone, Resume/Portfolio IDs, payment/order/invoice IDs, membership IDs, and email-shaped values. Analytics remains observational and cannot change entitlement, payment, application, publication, or AI quota state.
+
 ## PWA/offline safety
 
 - The manifest has stable root `id`, `scope`, and `start_url` plus 192px and 512px icons. Manifest structure is statically valid; browser installation still requires external validation.
