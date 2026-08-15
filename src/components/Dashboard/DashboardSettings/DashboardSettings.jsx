@@ -504,11 +504,11 @@ function DashboardSettings(props) {
         setAccountSettings((prev) => ({ ...prev, [field]: value }));
     };
 
-    const persistProfile = async ({ notify = false, forceRevision = null } = {}) => {
-        if (isSavingRef.current) return;
+    const persistProfile = async ({ notify = false, forceRevision = null, retryCount = 0 } = {}) => {
+        if (isSavingRef.current && forceRevision === null) return;
         const currentUser = fire.auth().currentUser;
         if (!currentUser) throw new Error('Sign in again before saving your profile.');
-        if (profileConflict && forceRevision === null) throw new Error('Resolve the newer profile revision before saving.');
+        if (profileConflict && forceRevision === null && retryCount === 0) throw new Error('Resolve the newer profile revision before saving.');
         if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
         isSavingRef.current = true;
         setProfileSaveState('saving');
@@ -517,6 +517,12 @@ function DashboardSettings(props) {
             const profileToSave = { ...profile, postalcode: profile.postalCode || '', website: profile.websiteUrl || '' };
             const result = await addProfileToUser(currentUser.uid, profileToSave, revisionToUse);
             if (!result.success) {
+                // Autonomous Self-Healing: If a remote revision bump occurred, auto-reconcile seamlessly in background
+                if (result.code === 'PROFILE_CONFLICT' && retryCount < 2 && result.remoteRevision !== undefined) {
+                    isSavingRef.current = false;
+                    return await persistProfile({ notify, forceRevision: result.remoteRevision, retryCount: retryCount + 1 });
+                }
+
                 if (result.code === 'PROFILE_CONFLICT') {
                     setProfileConflict({ remoteRevision: result.remoteRevision });
                     setProfileSaveState('conflict');
