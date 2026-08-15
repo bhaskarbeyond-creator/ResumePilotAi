@@ -34,8 +34,19 @@ export function normalizeAdminApiError(response, result = {}, fallback = 'Reques
   return error;
 }
 
-async function request(url, options, fallback) {
-  const response = await fetch(url, options);
+async function request(url, options = {}, fallback = 'Request failed.') {
+  let headers = { ...(options.headers || {}) };
+  try {
+    const fireModule = await import('../conf/fire.js').catch(() => null);
+    const fire = fireModule?.default;
+    if (fire?.auth?.()?.currentUser) {
+      const freshToken = await fire.auth().currentUser.getIdToken(true);
+      if (freshToken) {
+        headers['Authorization'] = `Bearer ${freshToken}`;
+      }
+    }
+  } catch (_) {}
+  const response = await fetch(url, { ...options, headers });
   const result = await response.json().catch(() => ({}));
   if (!response.ok || result.success === false) throw normalizeAdminApiError(response, result, fallback);
   return result;
