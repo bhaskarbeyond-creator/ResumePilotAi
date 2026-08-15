@@ -219,6 +219,7 @@ app.use('/api/auth', authLimiter);
 // Zero-trust API boundary. Requests are authenticated unless they are explicitly
 // public protocol endpoints. Route handlers must still enforce their own role/ownership policy.
 const publicApiPaths = new Set([
+    '/healthz', '/readyz', '/health',
     '/stripe-webhook', '/public-export', '/export-render-data', '/contact', '/auth/custom-password-reset',
     '/auth/verify-email-token', '/auth/set-user-password', '/auth/linkedin', '/auth/linkedin/callback',
     '/auth/github', '/auth/github/callback', '/auth/oauth/exchange'
@@ -2773,8 +2774,10 @@ Write a compelling, tailored, 3-paragraph ATS cover letter addressed to ${recipi
             const providerResult = await generateWithProviders({ prompt, configuration, operation: 'generate-ai-cover-letter', signal: requestController.signal });
             const coverLetter = String(providerResult.raw || '').replace(/^```(?:text)?\s*|```$/gi, '').trim().slice(0, 20000);
             if (coverLetter) {
-                res.setHeader('X-AI-Provider', providerResult.provider);
-                res.setHeader('X-AI-Model', providerResult.model);
+                if (res?.setHeader && !res.headersSent) {
+                    res.setHeader('X-AI-Provider', providerResult.provider);
+                    res.setHeader('X-AI-Model', providerResult.model);
+                }
                 return res.json({ success: true, coverLetter, provider: providerResult.provider });
             }
         } catch (providerError) {
@@ -2822,12 +2825,12 @@ app.post('/api/jobs/naukri', async (_req, res) => {
     });
 });
 
-app.get('/healthz', (req, res) => {
+app.get(['/healthz', '/api/healthz', '/api/health'], (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    return res.json({ status: 'ok', firebaseAdminConfigured: Boolean(db && admin) });
+    return res.json({ status: 'ok', firebaseAdminConfigured: Boolean(db && admin), date: new Date().toISOString() });
 });
 
-app.get('/readyz', (req, res) => {
+app.get(['/readyz', '/api/readyz'], (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     const requestDb = req.app.get('db');
     const firebaseReady = Boolean(requestDb && admin?.auth);

@@ -8,8 +8,10 @@ async function generateConfiguredText(req, res, prompt, operation, overrides = {
     if (overrides.temperature !== undefined) configuration.temperature = overrides.temperature;
     if (overrides.maxTokens !== undefined) configuration.maxTokens = overrides.maxTokens;
     const generated = await generateWithProviders({ prompt, configuration, operation, signal: overrides.signal || req.aiAbortSignal, timeoutMs: overrides.timeoutMs });
-    res.setHeader('X-AI-Provider', generated.provider);
-    res.setHeader('X-AI-Model', generated.model);
+    if (res?.setHeader && !res.headersSent) {
+        res.setHeader('X-AI-Provider', generated.provider);
+        res.setHeader('X-AI-Model', generated.model);
+    }
     return generated.raw;
 }
 

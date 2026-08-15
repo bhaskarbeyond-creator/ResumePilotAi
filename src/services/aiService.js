@@ -37,7 +37,7 @@ const ALLOWED_ENDPOINTS = new Set([
     'generate-resume', 'generate-summary', 'generate-interview',
     'generate-work-description', 'generate-education-description',
     'generate-skills', 'check-grammar', 'enhance-single-bullet',
-    'generate-certifications', 'autocomplete'
+    'generate-certifications', 'autocomplete', 'generate-ai-cover-letter'
 ]);
 const LEGACY_PROMPT_OPERATIONS = new Set([
     'generate-summary', 'generate-work-description', 'generate-education-description',
@@ -50,6 +50,19 @@ export function buildAiRequest(endpointName, payload = {}) {
         return { url: '/api/generate-content', body: { operation: endpointName, payload } };
     }
     return { url: `/api/${endpointName}`, body: payload };
+}
+
+async function getAuthHeaders() {
+    const headers = { 'Content-Type': 'application/json' };
+    try {
+        const fireModule = await import('../conf/fire.js').catch(() => null);
+        const fire = fireModule?.default;
+        if (fire?.auth?.()?.currentUser) {
+            const token = await fire.auth().currentUser.getIdToken();
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+        }
+    } catch (_) {}
+    return headers;
 }
 
 function createAbortController(externalSignal, timeoutMs) {
@@ -77,15 +90,7 @@ export async function generateUserAiContent(endpointName, payload = {}, options 
     const request = buildAiRequest(endpointName, payload);
     const { controller, dispose } = createAbortController(options.signal, options.timeoutMs || 45_000);
     try {
-        const headers = { 'Content-Type': 'application/json' };
-        try {
-            const fireModule = await import('../conf/fire.js').catch(() => null);
-            const fire = fireModule?.default;
-            if (fire?.auth?.()?.currentUser) {
-                const token = await fire.auth().currentUser.getIdToken();
-                if (token) headers['Authorization'] = `Bearer ${token}`;
-            }
-        } catch (_) {}
+        const headers = await getAuthHeaders();
         if (controller.signal.aborted) throw (controller.signal.reason || new DOMException('This operation was aborted', 'AbortError'));
         const response = await fetch(request.url, {
             method: 'POST',
@@ -118,9 +123,10 @@ export async function parseResumeTextToStructuredData(rawText, options = {}) {
     const heuristic = normalizeRawDataToTempJson(extractHeuristicResumeData(text), text);
     const { controller, dispose } = createAbortController(options.signal, options.timeoutMs || 55_000);
     try {
+        const headers = await getAuthHeaders();
         const response = await fetch('/api/parse-resume', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers,
             credentials: 'same-origin',
             signal: controller.signal,
             body: JSON.stringify({ rawText: text.slice(0, 40_000) })

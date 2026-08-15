@@ -446,7 +446,11 @@ function providerOrder(configuration) {
 
 async function fetchWithDeadline(fetchImpl, url, options, timeoutMs, externalSignal) {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(new Error('AI provider timeout')), timeoutMs);
+    let timedOut = false;
+    const timeout = setTimeout(() => {
+        timedOut = true;
+        controller.abort(Object.assign(new Error(`AI provider timeout (${timeoutMs}ms)`), { name: 'TimeoutError', code: 'AI_PROVIDER_TIMEOUT' }));
+    }, timeoutMs);
     const abort = () => controller.abort(externalSignal.reason);
     if (externalSignal) {
         if (externalSignal.aborted) abort();
@@ -454,6 +458,11 @@ async function fetchWithDeadline(fetchImpl, url, options, timeoutMs, externalSig
     }
     try {
         return await fetchImpl(url, { ...options, signal: controller.signal });
+    } catch (err) {
+        if (timedOut && !externalSignal?.aborted) {
+            throw Object.assign(new Error(`AI provider timed out (${timeoutMs}ms)`), { status: 504, code: 'AI_PROVIDER_TIMEOUT' });
+        }
+        throw err;
     } finally {
         clearTimeout(timeout);
         externalSignal?.removeEventListener('abort', abort);
@@ -482,7 +491,9 @@ async function requestProvider(provider, providerConfig, prompt, generation, { f
         }, timeoutMs, signal);
         const body = await response.json().catch(() => ({}));
         if (!response.ok) throw Object.assign(new Error(extractProviderErrorMessage(body, response.status, 'Gemini')), { status: response.status });
-        return body.candidates?.[0]?.content?.parts?.map(part => part.text || '').join('') || '';
+        const content = body.candidates?.[0]?.content?.parts?.map(part => part.text || '').join('') || '';
+        if (!content.trim()) throw Object.assign(new Error('Empty content received from Gemini provider'), { status: 502, code: 'EMPTY_PROVIDER_RESPONSE' });
+        return content;
     }
     const defaults = PROVIDER_DEFAULTS[provider];
     const response = await fetchWithDeadline(fetchImpl, defaults.url, {
@@ -497,7 +508,9 @@ async function requestProvider(provider, providerConfig, prompt, generation, { f
     }, timeoutMs, signal);
     const body = await response.json().catch(() => ({}));
     if (!response.ok) throw Object.assign(new Error(extractProviderErrorMessage(body, response.status, provider)), { status: response.status });
-    return body.choices?.[0]?.message?.content || '';
+    const content = body.choices?.[0]?.message?.content || '';
+    if (!content.trim()) throw Object.assign(new Error(`Empty content received from ${provider} provider`), { status: 502, code: 'EMPTY_PROVIDER_RESPONSE' });
+    return content;
 }
 
 async function generateWithProviders({ prompt, configuration, operation, fetchImpl, signal, timeoutMs }) {
@@ -510,7 +523,7 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
             return { raw, provider, model: configuration.providers[provider].model };
         } catch (error) {
             console.error(`[AI Provider Failure] operation=${operation || 'unknown'} provider=${provider} error=${error.message}`);
-            if (signal?.aborted || error.name === 'AbortError') throw error;
+            if (signal?.aborted) throw error;
             failures.push({ provider, status: Number(error.status) || 0, code: error.code || 'PROVIDER_ERROR', message: error.message });
         }
     }

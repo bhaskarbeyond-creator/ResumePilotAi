@@ -22,6 +22,7 @@ import {
   FiEdit3,
 } from "react-icons/fi";
 import config from "../../../conf/configuration";
+import { generateUserAiContent } from "../../../services/aiService";
 import "./LexicalStyles.css";
 
 // Lexical imports
@@ -859,27 +860,15 @@ class SimpleTextarea extends Component {
     });
 
     try {
-      // Call the backend API
-      const response = await fetch(
-        config.provider + "://" + config.backendUrl + "/api/check-grammar",
+      const data = await generateUserAiContent(
+        "check-grammar",
         {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          signal: requestController.signal,
-          body: JSON.stringify({
-            text: currentText,
-            language: "en", // You can make this dynamic based on user settings
-          }),
-        }
+          text: currentText,
+          language: "en",
+        },
+        { signal: requestController.signal }
       );
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
       if (this.grammarController !== requestController) return;
       this.setState({
         isCheckingGrammar: false,
@@ -1198,58 +1187,35 @@ class SimpleTextarea extends Component {
       localStorage.getItem("language") ||
       "en";
 
-    const getAuthHeaders = async () => {
-      const headers = { "Content-Type": "application/json" };
-      try {
-        const fireModule = await import('../../../conf/fire.js').catch(() => null);
-        const fire = fireModule?.default;
-        if (fire?.auth?.()?.currentUser) {
-          const token = await fire.auth().currentUser.getIdToken();
-          if (token) headers['Authorization'] = `Bearer ${token}`;
-        }
-      } catch (_) {}
-      return headers;
-    };
-
-    // Call the backend API to generate the summary
-    getAuthHeaders().then(headers => {
-      fetch("/api/generate-summary", {
-        method: "POST",
-        headers,
-        signal: requestController.signal,
-        body: JSON.stringify({
-          name: aiAnswers.name,
-          jobTitle: aiAnswers.jobTitle,
-          experience: aiAnswers.experience,
-          skills: aiAnswers.skills,
-          achievement: aiAnswers.achievement,
-          summaryType: aiAnswers.summaryType,
-          language: currentLanguage,
-        }),
-      })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to generate summary");
-        }
-        return response.json();
-      })
-      .then((data) => {
-        if (this.aiSummaryController !== requestController) return;
-        this.aiSummaryController = null;
-        this.setState({
-          generatedSummary: data.summary || "",
-          isGenerating: false,
-          currentStep: this.aiQuestions ? this.aiQuestions.length : 0,
-        });
-      })
-      .catch((error) => {
-        if (this.aiSummaryController !== requestController || error?.name === "AbortError") return;
-        this.aiSummaryController = null;
-        console.error("Error generating summary:", error);
-        this.setState({
-          isGenerating: false,
-          generationError: "Failed to generate summary. Please try again.",
-        });
+    generateUserAiContent(
+      "generate-summary",
+      {
+        name: aiAnswers.name,
+        jobTitle: aiAnswers.jobTitle,
+        experience: aiAnswers.experience,
+        skills: aiAnswers.skills,
+        achievement: aiAnswers.achievement,
+        summaryType: aiAnswers.summaryType,
+        language: currentLanguage,
+      },
+      { signal: requestController.signal }
+    )
+    .then((data) => {
+      if (this.aiSummaryController !== requestController) return;
+      this.aiSummaryController = null;
+      this.setState({
+        generatedSummary: data.summary || "",
+        isGenerating: false,
+        currentStep: this.aiQuestions ? this.aiQuestions.length : 0,
+      });
+    })
+    .catch((error) => {
+      if (this.aiSummaryController !== requestController || error?.name === "AbortError") return;
+      this.aiSummaryController = null;
+      console.error("Error generating summary:", error);
+      this.setState({
+        isGenerating: false,
+        generationError: "Failed to generate summary. Please try again.",
       });
     });
   }

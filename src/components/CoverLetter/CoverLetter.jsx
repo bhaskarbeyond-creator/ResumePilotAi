@@ -4,6 +4,7 @@ import logo from '../../assets/logo/logo.png';
 import { withTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { saveCoverLetter, getUserCoverLetters, deleteCoverLetter, getProfileOfUser } from '../../firestore/dbOperations';
+import { generateUserAiContent } from '../../services/aiService';
 import fire from '../../conf/fire';
 import TemplateRenderer from '../TemplateRenderer';
 
@@ -210,20 +211,15 @@ class CoverLetter extends Component {
         this.aiRequestController = requestController;
         this.setState({ isAiGenerating: true });
         try {
-            const response = await fetch('/api/generate-ai-cover-letter', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                signal: requestController.signal,
-                body: JSON.stringify({
-                    jobTitle: this.state.jobTitle,
-                    companyName: this.state.companyName,
-                    recipientName: this.state.recipientName,
-                    userSkills: this.state.userSkills,
-                    candidateName: `${this.state.candidateFirstname} ${this.state.candidateLastname}`.trim(),
-                    yearsExperience: this.state.yearsExperience || (this.state.userSkills ? `${Math.max(2, this.state.userSkills.split(',').length * 2)}+` : '3+')
-                })
-            });
-            const data = await response.json();
+            const data = await generateUserAiContent('generate-ai-cover-letter', {
+                jobTitle: this.state.jobTitle,
+                companyName: this.state.companyName,
+                recipientName: this.state.recipientName,
+                userSkills: this.state.userSkills,
+                candidateName: `${this.state.candidateFirstname} ${this.state.candidateLastname}`.trim(),
+                yearsExperience: this.state.yearsExperience || (this.state.userSkills ? `${Math.max(2, this.state.userSkills.split(',').length * 2)}+` : '3+')
+            }, { signal: requestController.signal });
+
             if (data.success && data.coverLetter) {
                 this.setState({ letterBody: data.coverLetter, isAiGenerating: false, step: 2 });
                 await this.handleSaveCoverLetter();

@@ -100,8 +100,11 @@ async function saveAiAdminSettings({ db, admin, input, expectedRevision = 0, act
     transaction.set(secretRef, { ...secretPatch(input, currentSecrets, legacyAi), _revision: nextRevision }, { merge: true });
     transaction.set(publicRef, { ai: safePublic, aiRevision: nextRevision }, { merge: true });
     transaction.set(db.collection('security_audit_logs').doc(), {
-      action: 'AI_PROVIDER_SETTINGS_UPDATED', actorUid, revision: nextRevision,
-      changedFields: Object.keys(safePublic), requestId,
+      action: 'AI_PROVIDER_SETTINGS_UPDATED',
+      actorUid: actorUid || 'system',
+      revision: nextRevision,
+      changedFields: Object.keys(safePublic),
+      requestId: requestId || null,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
   });
@@ -124,7 +127,6 @@ async function testAiProvider({ db, environment = process.env, provider, model, 
     return { provider, model: selectedModel, message: `${provider} provider connection verified.` };
   } catch (error) {
     if (error.code && error.status) throw error;
-    const detail = error.message ? `: ${error.message}` : '';
     if (error.name === 'AbortError' || /timeout/i.test(error.message || '')) throw errorWith('AI_PROVIDER_TIMEOUT', `${provider} provider timed out (${timeoutMs}ms).`, 504);
     if ([401, 403].includes(Number(error.status))) throw errorWith('AI_PROVIDER_AUTHENTICATION_FAILED', `${provider} rejected the configured credential.`, 422);
     if (Number(error.status) === 400 || Number(error.status) === 404) throw errorWith('AI_PROVIDER_CONFIGURATION_ERROR', `${provider} rejected model "${selectedModel}" or payload.`, 422);
