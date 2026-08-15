@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { reauthenticateUser } from '../../../firestore/dbOperations';
-import { loadAdminAiSettings, saveAdminAiSettings, testAdminAiProvider } from '../../../services/adminAiSettings';
+import { loadAdminAiSettings, saveAdminAiSettings, testAdminAiProvider, fetchAdminAiModels } from '../../../services/adminAiSettings';
 import fire from '../../../conf/fire';
 import {
     FaRobot, FaCheck, FaTimes, FaSpinner, FaKey, FaSlidersH,
@@ -12,9 +12,14 @@ import { SiNvidia } from 'react-icons/si';
 const SUPPORTED_AI_PROVIDERS = ['gemini', 'nvidia', 'openai', 'groq', 'openrouter', 'deepseek'];
 const PROVIDER_KEY_FIELDS = { gemini: 'geminiApiKey', nvidia: 'nvidiaApiKey', openai: 'openaiApiKey', groq: 'groqApiKey', openrouter: 'openrouterApiKey', deepseek: 'deepseekApiKey' };
 const RECOMMENDED_NVIDIA_MODELS = [
-    { id: 'meta/llama-3.1-8b-instruct', name: 'Meta Llama 3.1 8B Instruct (Ultra Fast - 215ms - Verified 200 OK)', badge: 'LLAMA' },
-    { id: 'poolside/laguna-xs-2.1', name: 'Poolside Laguna XS 2.1 (Verified 200 OK)', badge: 'LAGUNA' },
-    { id: 'meta/llama-3.3-70b-instruct', name: 'Meta Llama 3.3 70B Instruct (High Capacity)', badge: 'LLAMA' },
+    { id: 'meta/llama-3.1-8b-instruct', name: '⚡ Meta Llama 3.1 8B Instruct (Ultra Fast ~380ms - Default & Recommended)', badge: 'FAST' },
+    { id: 'poolside/laguna-xs-2.1', name: '⚡ Poolside Laguna XS 2.1 (Fast - Queue Dependent)', badge: 'LAGUNA' },
+    { id: 'nvidia/nemotron-mini-4b-instruct', name: '⚡ NVIDIA Nemotron Mini 4B Instruct (Fast ~740ms)', badge: 'FAST' },
+    { id: 'openai/gpt-oss-20b', name: '⚡ OpenAI GPT OSS 20B (Fast ~620ms)', badge: 'FAST' },
+    { id: 'openai/gpt-oss-120b', name: '🧠 OpenAI GPT OSS 120B (Heavy 120B Reasoning - Slow 8-15s)', badge: '120B' },
+    { id: 'meta/llama-3.3-70b-instruct', name: '🧠 Meta Llama 3.3 70B Instruct (70B Model - Queue Dependent)', badge: '70B' },
+    { id: 'nvidia/llama-3.1-nemotron-70b-instruct', name: '🧠 NVIDIA Nemotron 70B Instruct (70B Model)', badge: '70B' },
+    { id: 'mistralai/mistral-large-2-instruct', name: '🧠 Mistral Large 2 Instruct (123B Model)', badge: '123B' },
 ];
 
 const AiSettings = () => {
@@ -25,7 +30,7 @@ const AiSettings = () => {
         model: 'gemini-2.0-flash',
         enableNvidia: false,
         nvidiaApiKey: '',
-        nvidiaModel: 'poolside/laguna-xs-2.1',
+        nvidiaModel: 'meta/llama-3.1-8b-instruct',
         nvidiaBaseUrl: 'https://integrate.api.nvidia.com/v1',
         enableOpenai: false,
         openaiApiKey: '',
@@ -85,6 +90,7 @@ const AiSettings = () => {
             setLoadFailed(false);
             const ai = serverResult.settings || {};
             const configured = serverResult.configuredProviders || {};
+            const masked = serverResult.maskedKeys || {};
             setConfiguredProviders(configured);
             setCredentialSources(serverResult.credentialSources || {});
             setSettingsRevision(Number(serverResult.revision) || 0);
@@ -98,24 +104,24 @@ const AiSettings = () => {
             setAiConfig({
                 provider: SUPPORTED_AI_PROVIDERS.includes(ai.provider) ? ai.provider : 'gemini',
                 enableGemini: ai.enableGemini !== undefined ? ai.enableGemini : hasGeminiKey,
-                geminiApiKey: '',
+                geminiApiKey: ai.geminiApiKey || masked.gemini || '',
                 model: ai.model || 'gemini-2.0-flash',
                 enableNvidia: ai.enableNvidia !== undefined ? ai.enableNvidia : hasNvidiaKey,
-                nvidiaApiKey: '',
-                nvidiaModel: ai.nvidiaModel || 'poolside/laguna-xs-2.1',
+                nvidiaApiKey: ai.nvidiaApiKey || masked.nvidia || '',
+                nvidiaModel: ai.nvidiaModel || 'meta/llama-3.1-8b-instruct',
                 nvidiaBaseUrl: ai.nvidiaBaseUrl || 'https://integrate.api.nvidia.com/v1',
                 enableOpenai: ai.enableOpenai !== undefined ? ai.enableOpenai : hasOpenaiKey,
-                openaiApiKey: '',
+                openaiApiKey: ai.openaiApiKey || masked.openai || '',
                 openaiModel: ai.openaiModel || 'gpt-4o-mini',
                 openaiBaseUrl: ai.openaiBaseUrl || '',
                 enableGroq: ai.enableGroq !== undefined ? ai.enableGroq : hasGroqKey,
-                groqApiKey: '',
+                groqApiKey: ai.groqApiKey || masked.groq || '',
                 groqModel: ai.groqModel || 'llama-3.3-70b-versatile',
                 enableOpenrouter: ai.enableOpenrouter !== undefined ? ai.enableOpenrouter : hasOpenrouterKey,
-                openrouterApiKey: '',
+                openrouterApiKey: ai.openrouterApiKey || masked.openrouter || '',
                 openrouterModel: ai.openrouterModel || 'meta-llama/llama-3.3-70b-instruct:free',
                 enableDeepseek: ai.enableDeepseek !== undefined ? ai.enableDeepseek : hasDeepseekKey,
-                deepseekApiKey: '',
+                deepseekApiKey: ai.deepseekApiKey || masked.deepseek || '',
                 deepseekModel: ai.deepseekModel || 'deepseek-chat',
                 enableOllama: ai.enableOllama !== undefined ? ai.enableOllama : false,
                 ollamaBaseUrl: ai.ollamaBaseUrl || 'http://localhost:11434/v1',
@@ -204,9 +210,33 @@ const AiSettings = () => {
 
     const handleFetchNvidiaModels = async () => {
         setFetchingNvidiaModels(true);
-        setNvidiaModels(RECOMMENDED_NVIDIA_MODELS);
-        setCardMessage('nvidia', 'success', `Loaded ${RECOMMENDED_NVIDIA_MODELS.length} curated NVIDIA models. Provider discovery runs server-side only.`);
-        setFetchingNvidiaModels(false);
+        try {
+            const res = await fetchAdminAiModels({ provider: 'nvidia', apiKey: aiConfig.nvidiaApiKey });
+            if (res.models && res.models.length > 0) {
+                const fetched = res.models.map(m => {
+                    const isFast = m.id.includes('8b') || m.id.includes('4b') || m.id.includes('20b') || m.id.includes('mini');
+                    const isHeavy = m.id.includes('120b') || m.id.includes('70b') || m.id.includes('340b') || m.id.includes('405b');
+                    const speedTag = isFast ? ' (⚡ Fast)' : isHeavy ? ' (🧠 Heavy)' : '';
+                    return {
+                        id: m.id,
+                        name: `${m.id}${speedTag}`,
+                        badge: m.owned_by ? m.owned_by.toUpperCase() : 'NVIDIA'
+                    };
+                });
+                const recIds = new Set(RECOMMENDED_NVIDIA_MODELS.map(r => r.id));
+                const rest = fetched.filter(f => !recIds.has(f.id));
+                setNvidiaModels([...RECOMMENDED_NVIDIA_MODELS, ...rest]);
+                setCardMessage('nvidia', 'success', `Successfully fetched ${res.models.length} live models from NVIDIA NIM.`);
+            } else {
+                setNvidiaModels(RECOMMENDED_NVIDIA_MODELS);
+                setCardMessage('nvidia', 'success', `Loaded ${RECOMMENDED_NVIDIA_MODELS.length} curated NVIDIA models.`);
+            }
+        } catch (err) {
+            setNvidiaModels(RECOMMENDED_NVIDIA_MODELS);
+            setCardMessage('nvidia', 'error', `Could not fetch live models: ${err.message}. Showing ${RECOMMENDED_NVIDIA_MODELS.length} curated models.`);
+        } finally {
+            setFetchingNvidiaModels(false);
+        }
     };
 
     const saveSettings = async () => {
@@ -217,9 +247,15 @@ const AiSettings = () => {
             setSettingsRevision(Number(result.revision) || settingsRevision);
             setConfiguredProviders(result.configuredProviders || {});
             setCredentialSources(result.credentialSources || {});
+            const masked = result.maskedKeys || {};
             setAiConfig(current => ({
                 ...current, ...(result.settings || {}),
-                geminiApiKey: '', nvidiaApiKey: '', openaiApiKey: '', groqApiKey: '', openrouterApiKey: '', deepseekApiKey: '',
+                geminiApiKey: result.settings?.geminiApiKey || masked.gemini || current.geminiApiKey,
+                nvidiaApiKey: result.settings?.nvidiaApiKey || masked.nvidia || current.nvidiaApiKey,
+                openaiApiKey: result.settings?.openaiApiKey || masked.openai || current.openaiApiKey,
+                groqApiKey: result.settings?.groqApiKey || masked.groq || current.groqApiKey,
+                openrouterApiKey: result.settings?.openrouterApiKey || masked.openrouter || current.openrouterApiKey,
+                deepseekApiKey: result.settings?.deepseekApiKey || masked.deepseek || current.deepseekApiKey,
             }));
             setPendingOperation(null);
             setReauthPassword('');
@@ -256,12 +292,17 @@ const AiSettings = () => {
             if (targetProvider !== 'ollama' && !key && !configuredProviders[targetProvider]) {
                 throw new Error(`Enter and save the ${targetProvider} API key first.`);
             }
+            const startTime = Date.now();
             const result = await testAdminAiProvider({
                 provider: targetProvider,
                 apiKey: key,
                 model: aiConfig[modelFields[targetProvider]] || '',
             });
+            const latency = Date.now() - startTime;
             setPendingOperation(null);
+            const verifiedModel = result.model || aiConfig[modelFields[targetProvider]] || 'default';
+            const speedRating = latency < 800 ? '⚡ Ultra Fast' : latency < 3000 ? '✓ Fast' : latency < 7000 ? '⏳ Moderate' : '🐢 High Latency';
+            setCardMessage(targetProvider, 'success', `✓ ${targetProvider.toUpperCase()} connection verified in ${latency}ms (${speedRating})! Model "${verifiedModel}" is live and ready.`);
         } catch (error) {
             if (error.code === 'RECENT_AUTH_REQUIRED') setPendingOperation({ type: 'test', provider: targetProvider });
             const errorMsg = error.message.startsWith('Test Failed') ? error.message : `Test Failed: ${error.message}`;
@@ -507,10 +548,10 @@ const AiSettings = () => {
                                     {showKeys.nvidia ? <FaEyeSlash className="w-3.5 h-3.5" /> : <FaEye className="w-3.5 h-3.5" />}
                                 </button>
                             </div>
-                            {configuredProviders.nvidia && !aiConfig.nvidiaApiKey && (
+                            {configuredProviders.nvidia && (
                                 <div className="mt-1 text-[11px] text-emerald-700 font-medium flex items-center gap-1">
                                     <FaCheck className="w-3 h-3 text-emerald-600 flex-shrink-0" />
-                                    <span>API key configured & active on server (hidden for security)</span>
+                                    <span>API key configured & active on server (masked for security)</span>
                                 </div>
                             )}
                         </div>
@@ -531,7 +572,7 @@ const AiSettings = () => {
                             <div className="space-y-1.5">
                                 <select
                                     name="nvidiaModel"
-                                    value={RECOMMENDED_NVIDIA_MODELS.some(m => m.id === aiConfig.nvidiaModel) ? aiConfig.nvidiaModel : 'custom'}
+                                    value={nvidiaModels.some(m => m.id === aiConfig.nvidiaModel) ? aiConfig.nvidiaModel : 'custom'}
                                     onChange={(e) => {
                                         if (e.target.value !== 'custom') {
                                             handleChange({ target: { name: 'nvidiaModel', value: e.target.value } });
@@ -539,7 +580,7 @@ const AiSettings = () => {
                                     }}
                                     className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white"
                                 >
-                                    {RECOMMENDED_NVIDIA_MODELS.map((m) => (
+                                    {nvidiaModels.map((m) => (
                                         <option key={m.id} value={m.id}>
                                             {m.name}
                                         </option>
@@ -633,10 +674,10 @@ const AiSettings = () => {
                                     {showKeys.gemini ? <FaEyeSlash className="w-3.5 h-3.5" /> : <FaEye className="w-3.5 h-3.5" />}
                                 </button>
                             </div>
-                            {configuredProviders.gemini && !aiConfig.geminiApiKey && (
+                            {configuredProviders.gemini && (
                                 <div className="mt-1 text-[11px] text-blue-700 font-medium flex items-center gap-1">
                                     <FaCheck className="w-3 h-3 text-blue-600 flex-shrink-0" />
-                                    <span>API key configured & active on server (hidden for security)</span>
+                                    <span>API key configured & active on server (masked for security)</span>
                                 </div>
                             )}
                         </div>
@@ -745,10 +786,10 @@ const AiSettings = () => {
                                     {showKeys.openai ? <FaEyeSlash className="w-3.5 h-3.5" /> : <FaEye className="w-3.5 h-3.5" />}
                                 </button>
                             </div>
-                            {configuredProviders.openai && !aiConfig.openaiApiKey && (
+                            {configuredProviders.openai && (
                                 <div className="mt-1 text-[11px] text-indigo-700 font-medium flex items-center gap-1">
                                     <FaCheck className="w-3 h-3 text-indigo-600 flex-shrink-0" />
-                                    <span>API key configured & active on server (hidden for security)</span>
+                                    <span>API key configured & active on server (masked for security)</span>
                                 </div>
                             )}
                         </div>
@@ -850,10 +891,10 @@ const AiSettings = () => {
                                         {showKeys.groq ? <FaEyeSlash className="w-3.5 h-3.5" /> : <FaEye className="w-3.5 h-3.5" />}
                                     </button>
                                 </div>
-                                {configuredProviders.groq && !aiConfig.groqApiKey && (
+                                {configuredProviders.groq && (
                                     <div className="mt-1 text-[11px] text-amber-700 font-medium flex items-center gap-1">
                                         <FaCheck className="w-3 h-3 text-amber-600 flex-shrink-0" />
-                                        <span>API key configured & active on server (hidden for security)</span>
+                                        <span>API key configured & active on server (masked for security)</span>
                                     </div>
                                 )}
                             </div>
@@ -942,10 +983,10 @@ const AiSettings = () => {
                                         {showKeys.openrouter ? <FaEyeSlash className="w-3.5 h-3.5" /> : <FaEye className="w-3.5 h-3.5" />}
                                     </button>
                                 </div>
-                                {configuredProviders.openrouter && !aiConfig.openrouterApiKey && (
+                                {configuredProviders.openrouter && (
                                     <div className="mt-1 text-[11px] text-purple-700 font-medium flex items-center gap-1">
                                         <FaCheck className="w-3 h-3 text-purple-600 flex-shrink-0" />
-                                        <span>API key configured & active on server (hidden for security)</span>
+                                        <span>API key configured & active on server (masked for security)</span>
                                     </div>
                                 )}
                             </div>
@@ -1036,10 +1077,10 @@ const AiSettings = () => {
                                         {showKeys.deepseek ? <FaEyeSlash className="w-3.5 h-3.5" /> : <FaEye className="w-3.5 h-3.5" />}
                                     </button>
                                 </div>
-                                {configuredProviders.deepseek && !aiConfig.deepseekApiKey && (
+                                {configuredProviders.deepseek && (
                                     <div className="mt-1 text-[11px] text-blue-700 font-medium flex items-center gap-1">
                                         <FaCheck className="w-3 h-3 text-blue-600 flex-shrink-0" />
-                                        <span>API key configured & active on server (hidden for security)</span>
+                                        <span>API key configured & active on server (masked for security)</span>
                                     </div>
                                 )}
                             </div>

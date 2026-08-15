@@ -133,30 +133,47 @@ Language: ${language}. SessionID: ${uniqueSeed}`;
         const certsText = Array.isArray(payload.certifications) ? payload.certifications.join(', ') : payload.certifications || '';
         const projText = payload.projects || payload.achievement || '';
 
-        prompt = `You are a Fortune 500 Senior Executive Recruiter & Resume Strategist.
-Synthesize this candidate's background into a crisp, 10/10 human-written, ATS-optimized Executive Resume Summary (2-3 punchy sentences, 50-70 words maximum).
+        const rawTone = payload.tone || payload.summaryType || payload.focusTone || payload.style || 'executive';
+        const toneMap = {
+            executive: 'Executive & Strategic: Focus on high-level organizational leadership, strategic vision, cross-functional orchestration, and enterprise value delivery.',
+            technical: 'Technical & Architectural: Emphasize core engineering depth, systems architecture, tech stack mastery, performance optimization, and rigorous problem-solving.',
+            'metric-focused': 'Quantifiable & Metrics-Driven: Highlight measurable KPIs, performance improvements, efficiency gains, cost reductions, and data-backed accomplishments.',
+            metrics: 'Quantifiable & Metrics-Driven: Highlight measurable KPIs, performance improvements, efficiency gains, cost reductions, and data-backed accomplishments.',
+            creative: 'Creative & Innovative: Focus on forward-thinking ideas, user-centric design, innovative solutions, and storytelling in product execution.',
+            concise: 'Punchy & Ultra-Concise: Direct, high-signal, zero-fluff summary maximizing impact with dense ATS keywords in minimal words.',
+            professional: 'Balanced & ATS-Optimized: Balanced executive tone harmonizing technical expertise, execution capabilities, and industry competencies.'
+        };
+        const activeToneDirective = toneMap[rawTone.toLowerCase()] || `Tone Directive: ${rawTone}.`;
 
-CANDIDATE PROFILE DETAILS:
-- Candidate Name: ${payload.name || 'Professional'}
-- Primary Role/Occupation: "${payload.jobTitle || payload.occupation || 'Professional'}"
-- Calculated Experience Span: ${yearsText}
+        prompt = `You are an elite Fortune 500 Senior Executive Resume Writer & Senior ATS Keyword Strategist.
+Synthesize this candidate's background into a 100% natural, human-written, ATS-optimized Executive Summary (2-3 punchy sentences, 45-65 words maximum).
+
+CANDIDATE DETAILS:
+- Target Role/Occupation: "${payload.jobTitle || payload.occupation || 'Professional'}"
+- Experience Level/Span: ${yearsText}
 ${workHistText ? `- Work History & Roles: ${workHistText}` : ''}
 ${eduText ? `- Academic Education: ${eduText}` : ''}
-${skillsText ? `- Core Technical Skills: ${skillsText}` : ''}
-${certsText ? `- Professional Certifications & Accreditations: ${certsText}` : ''}
-${projText ? `- Major Projects & Accomplishments: ${projText}` : ''}
+${skillsText ? `- Core Skills & Tools: ${skillsText}` : ''}
+${certsText ? `- Certifications: ${certsText}` : ''}
+${projText ? `- Accomplishments: ${projText}` : ''}
 
-STRICT 10/10 NATURAL HUMAN VOICE & ATS RULES:
-1. PUNCHY 2-3 SENTENCE RESUME STRUCTURE:
-   - Sentence 1: Start directly with candidate identity and primary domains (e.g., "${payload.jobTitle || 'Full-Stack Engineer'} with ${yearsText} of experience specializing in Full-Stack Engineering, Cloud Architecture, and DevOps.").
-   - Sentence 2: Summarize actual work accomplishments derived ONLY from their work history (e.g., "Demonstrated track record modernizing API architectures, optimizing database performance, and automating CI/CD pipelines.").
-   - Sentence 3: Highlight core technical competencies, key certifications, and specialized industry focus (e.g., "Proficient in Node.js, React, and AWS cloud solutions with a strong focus on high-availability system scalability.").
-2. STRICT BAN ON COVER LETTER FLUFF & FLAP:
-   - NEVER use cover-letter phrasing such as "I would bring immediate strategic value to your organization", "make a tangible impact from day one", or "leveraging my expertise to drive business growth". This is a RESUME SUMMARY, NOT a cover letter!
-3. STRICT BAN ON ROBOTIC AI CLICHÉS:
-   - BAN these AI phrases completely: "seasoned professional", "proven track record of", "resulting in significant performance gains", "spearheaded", "leveraged", "utilize", "fostered", "tapestry", "beacon", "testament".
-4. STRICT ROLE ALIGNMENT: Do NOT mix up engineering roles with unrelated business titles (like Account Manager). Focus 100% on "${payload.jobTitle || payload.occupation || 'Professional'}".
-5. NO BRACKETS OR PLACEHOLDERS. Write clean, 100% complete sentences.
+TARGET TONE DIRECTIVE (STRICT REQUIREMENT):
+${activeToneDirective}
+
+CRITICAL RULES FOR 100% NATURAL HUMAN VOICE & MAXIMUM ATS MATCH:
+1. PUNCHY 2-3 SENTENCE STRUCTURE:
+   - Sentence 1: Start directly with candidate role title, years of experience, and their top 2-3 specific technical domains or functional specializations (e.g., "${payload.jobTitle || payload.occupation || 'Software Engineer'} with ${yearsText} of experience in [Domain 1] and [Domain 2].").
+   - Sentence 2: Concrete summary of key strengths, systems, or responsibilities derived strictly from their actual background, reflecting the requested tone.
+   - Sentence 3: Hard-skill ATS keyword cluster (languages, frameworks, methodologies, or certifications).
+2. ABSOLUTE BAN ON BUZZWORDS & STOCK FILLER:
+   - NEVER use overused clichés: "Results-driven", "Results-oriented", "Dedicated professional", "Passionate", "Seasoned", "Motivated", "Dynamic", "I am a...", "proven track record of", "driving business growth", "spearheaded", "leveraged", "leveraging", "utilize", "fostered", "synergy", "testament".
+   - Start immediately with the exact job title.
+3. THIRD-PERSON IMPLICIT RESUME STYLE:
+   - Resumes NEVER use first-person pronouns ("I", "my", "we") or third-person pronouns ("He", "She").
+4. 100% FACTUAL & DOMAIN-ALIGNED:
+   - Adapt tone and terminology to the specific profession (Tech, Marketing, Finance, Healthcare, Operations, etc.). Do not insert tech terms into non-tech roles.
+5. NO PLACEHOLDERS OR BRACKETS:
+   - Write 100% complete, polished sentences.
 
 Return ONLY valid JSON format:
 { "summary": "Full professional executive summary text here." }
@@ -496,21 +513,52 @@ async function requestProvider(provider, providerConfig, prompt, generation, { f
         return content;
     }
     const defaults = PROVIDER_DEFAULTS[provider];
-    const response = await fetchWithDeadline(fetchImpl, defaults.url, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${providerConfig.key}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            model: providerConfig.model,
-            messages: [{ role: 'user', content: prompt }],
-            temperature: generation.temperature,
-            max_tokens: generation.maxTokens,
-        }),
-    }, timeoutMs, signal);
-    const body = await response.json().catch(() => ({}));
-    if (!response.ok) throw Object.assign(new Error(extractProviderErrorMessage(body, response.status, provider)), { status: response.status });
-    const content = body.choices?.[0]?.message?.content || '';
-    if (!content.trim()) throw Object.assign(new Error(`Empty content received from ${provider} provider`), { status: 502, code: 'EMPTY_PROVIDER_RESPONSE' });
-    return content;
+    const candidateModels = [providerConfig.model];
+    if (provider === 'nvidia' && providerConfig.model !== 'meta/llama-3.1-8b-instruct') {
+        candidateModels.push('meta/llama-3.1-8b-instruct');
+    }
+
+    let lastError = null;
+    for (let i = 0; i < candidateModels.length; i++) {
+        const currentModel = candidateModels[i];
+        const isLastCandidate = (i === candidateModels.length - 1);
+        const candidateTimeoutMs = isLastCandidate ? timeoutMs : Math.min(timeoutMs, 6000);
+        try {
+            const response = await fetchWithDeadline(fetchImpl, defaults.url, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${providerConfig.key}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: currentModel,
+                    messages: [{ role: 'user', content: prompt }],
+                    temperature: generation.temperature,
+                    max_tokens: generation.maxTokens,
+                }),
+            }, candidateTimeoutMs, signal);
+            const body = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                const errMsg = extractProviderErrorMessage(body, response.status, provider);
+                const isRetryable = response.status === 503 || response.status === 404 || /ResourceExhausted|Worker local total request limit/i.test(errMsg);
+                if (isRetryable && !isLastCandidate) {
+                    console.warn(`[AI Model Failover] ${provider} model ${currentModel} error (${errMsg}); retrying with ${candidateModels[candidateModels.length - 1]}`);
+                    lastError = Object.assign(new Error(errMsg), { status: response.status });
+                    continue;
+                }
+                throw Object.assign(new Error(errMsg), { status: response.status });
+            }
+            const content = body.choices?.[0]?.message?.content || '';
+            if (!content.trim()) throw Object.assign(new Error(`Empty content received from ${provider} provider`), { status: 502, code: 'EMPTY_PROVIDER_RESPONSE' });
+            return content;
+        } catch (err) {
+            lastError = err;
+            if (signal?.aborted) throw err;
+            if (!isLastCandidate) {
+                console.warn(`[AI Model Failover] ${provider} model ${currentModel} timed out or failed (${err.message}); retrying with fallback model...`);
+                continue;
+            }
+            throw err;
+        }
+    }
+    throw lastError;
 }
 
 async function generateWithProviders({ prompt, configuration, operation, fetchImpl, signal, timeoutMs }) {

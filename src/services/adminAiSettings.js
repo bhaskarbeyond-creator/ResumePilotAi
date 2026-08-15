@@ -61,3 +61,7 @@ export const testAdminAiProvider = ({ provider, model, apiKey = '' }) => request
   method: 'POST', headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ provider, model, ...(apiKey ? { apiKey } : {}) }),
 }, 'Provider test failed.');
+export const fetchAdminAiModels = ({ provider = 'nvidia', apiKey = '' } = {}) => request('/api/admin/ai/fetch-models', {
+  method: 'POST', headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ provider, ...(apiKey ? { apiKey } : {}) }),
+}, 'Unable to fetch provider models.');

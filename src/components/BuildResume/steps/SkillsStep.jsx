@@ -76,10 +76,9 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
     };
 
     const generateAISkills = async () => {
-        if (!resumeData.occupation) {
-            console.warn('No occupation found in resume data');
-            return;
-        }
+        const targetOccupation = (resumeData.occupation && resumeData.occupation.trim())
+            || (resumeData.employments?.[0]?.jobTitle)
+            || 'Professional';
 
         aiRequestControllerRef.current?.abort();
         const requestController = new AbortController();
@@ -90,8 +89,8 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
             const experienceLevel = resumeData.experienceLevel || 'mid-level';
 
             const data = await generateUserAiContent('generate-skills', {
-                occupation: resumeData.occupation,
-                jobTitle: resumeData.occupation,
+                occupation: targetOccupation,
+                jobTitle: targetOccupation,
                 experienceLevel: experienceLevel,
                 language: currentLanguage,
             }, { signal: requestController.signal });
@@ -337,9 +336,9 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
                         </div>
                         <button
                             onClick={generateAISkills}
-                            disabled={isGeneratingSkills || !resumeData.occupation}
+                            disabled={isGeneratingSkills}
                             className={`flex items-center justify-center text-sm font-semibold px-3 py-2 rounded-lg shadow-sm ${
-                                isGeneratingSkills || !resumeData.occupation
+                                isGeneratingSkills
                                     ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
                                     : 'text-purple-700 bg-gradient-to-r from-purple-100 to-pink-100 hover:from-purple-200 hover:to-pink-200 cursor-pointer shadow-purple-100 hover:shadow-purple-200'
                             }`}>

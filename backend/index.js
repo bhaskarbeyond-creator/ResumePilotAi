@@ -15,7 +15,7 @@ const EmailNotifier = require('./services/emailNotifier');
 const { queueEmailInTransaction, processOutboxOnce } = require('./services/notificationOutbox');
 const { createResumeDocx } = require('./services/docxExport');
 const { loadProviderConfiguration, generateWithProviders } = require('./services/aiRuntime');
-const { loadAiAdminSettings, saveAiAdminSettings, testAiProvider } = require('./services/aiAdmin');
+const { loadAiAdminSettings, saveAiAdminSettings, testAiProvider, fetchProviderModels } = require('./services/aiAdmin');
 const { createExportRenderToken, consumeExportRenderToken, discardExportRenderToken } = require('./security/exportTokens');
 const app = express();
 const cors = require('cors');
@@ -2055,11 +2055,25 @@ app.post('/api/admin/ai/test-provider', async (req, res) => {
         const result = await testAiProvider({
             db: req.app.get('db'), environment: process.env,
             provider: String(req.body?.provider || ''), model: req.body?.model,
-            apiKey: req.body?.apiKey, fetchImpl: global.fetch, timeoutMs: 10000,
+            apiKey: req.body?.apiKey, fetchImpl: global.fetch, timeoutMs: 30000,
         });
         return res.json({ success: true, ...result });
     } catch (error) {
         return res.status(error.status || 500).json({ success: false, code: error.code || 'AI_PROVIDER_TEST_FAILED', error: error.message, requestId: res.locals.requestId });
+    }
+});
+
+app.post('/api/admin/ai/fetch-models', async (req, res) => {
+    try {
+        const provider = String(req.body?.provider || req.query?.provider || 'nvidia');
+        const apiKey = req.body?.apiKey;
+        const result = await fetchProviderModels({
+            db: req.app.get('db'), environment: process.env,
+            provider, apiKey, fetchImpl: global.fetch, timeoutMs: 15000,
+        });
+        return res.json({ success: true, ...result });
+    } catch (error) {
+        return res.status(error.status || 500).json({ success: false, code: error.code || 'AI_MODELS_FETCH_FAILED', error: error.message, requestId: res.locals.requestId });
     }
 });
 
@@ -2825,12 +2839,35 @@ app.post('/api/jobs/naukri', async (_req, res) => {
     });
 });
 
-app.get(['/healthz', '/api/healthz', '/api/health'], (req, res) => {
+app.get('/healthz', (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    return res.json({ status: 'ok', firebaseAdminConfigured: Boolean(db && admin), date: new Date().toISOString() });
+});
+app.get('/api/healthz', (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    return res.json({ status: 'ok', firebaseAdminConfigured: Boolean(db && admin), date: new Date().toISOString() });
+});
+app.get('/api/health', (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     return res.json({ status: 'ok', firebaseAdminConfigured: Boolean(db && admin), date: new Date().toISOString() });
 });
 
-app.get(['/readyz', '/api/readyz'], (req, res) => {
+app.get('/readyz', (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    const requestDb = req.app.get('db');
+    const firebaseReady = Boolean(requestDb && admin?.auth);
+    return res.status(firebaseReady ? 200 : 503).json({
+        status: firebaseReady ? 'ready' : 'not_ready',
+        checks: {
+            firebaseAdmin: firebaseReady ? 'READY' : 'UNAVAILABLE',
+            aiProviders: 'NOT_CHECKED', paymentProviders: 'NOT_CHECKED', smtp: 'NOT_CHECKED',
+            cmsScheduler: process.env.CMS_SCHEDULER_ENABLED === 'true' ? 'CONFIGURED' : 'DISABLED',
+            notificationOutbox: process.env.NOTIFICATION_OUTBOX_WORKER_ENABLED === 'true' ? 'LOCAL_WORKER_CONFIGURED' : process.env.NOTIFICATION_OUTBOX_EXTERNAL_WORKER === 'true' ? 'EXTERNAL_WORKER_DECLARED' : 'DISABLED',
+            pdfIsolation: process.env.PDF_RENDERER_ISOLATED === 'true' ? 'DECLARED_ISOLATED' : 'REQUIRES_ISOLATED_WORKER',
+        },
+    });
+});
+app.get('/api/readyz', (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     const requestDb = req.app.get('db');
     const firebaseReady = Boolean(requestDb && admin?.auth);

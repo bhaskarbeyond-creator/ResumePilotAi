@@ -18,6 +18,7 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
     }, [resumeData.summary]);
     const [charCount, setCharCount] = useState(0);
     const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+    const [selectedTone, setSelectedTone] = useState('executive');
     const [error, setError] = useState(null);
     const aiRequestControllerRef = useRef(null);
     useEffect(() => () => { const controller = aiRequestControllerRef.current; aiRequestControllerRef.current = null; controller?.abort(); }, []);
@@ -29,7 +30,7 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
         setCharCount(plainText.length);
     };
 
-    const generateAISummary = async () => {
+    const generateAISummary = async (toneToUse = selectedTone) => {
         setIsGeneratingAI(true);
         setError(null);
 
@@ -96,7 +97,8 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
                 experience: experience,
                 skills: skills,
                 achievement: achievement,
-                summaryType: 'professional',
+                summaryType: toneToUse,
+                tone: toneToUse,
                 language: preferredLanguage,
             }, { signal: requestController.signal });
 
@@ -111,17 +113,18 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
             console.error('Error generating AI summary:', error);
             setError('Failed to generate AI summary. Please try again.');
 
-            // Fallback summary generation based on language
-            const profession = resumeData.occupation || 'professional';
+            // Dynamic fallback summary generation based on language & resume data
+            const profession = resumeData.occupation || (resumeData.employments?.[0]?.jobTitle) || 'Professional';
+            const skillsList = (resumeData.skills || []).map(s => typeof s === 'string' ? s : s.name).filter(Boolean).slice(0, 4).join(', ');
             const preferredLanguage = localStorage.getItem('preferredLanguage') || 'en';
 
             let fallbackSummary;
             if (preferredLanguage === 'es') {
-                fallbackSummary = `Soy un ${profession} orientado a resultados con experiencia comprobada en impulsar el éxito organizacional a través de soluciones innovadoras y liderazgo estratégico. He demostrado la capacidad de entregar resultados excepcionales mientras colaboro efectivamente con equipos multifuncionales. Me apasiona aprovechar la tecnología y los insights basados en datos para optimizar procesos y superar objetivos de rendimiento.`;
+                fallbackSummary = `${profession} con sólida trayectoria técnica y experiencia en ${skillsList || 'desarrollo de soluciones avanzadas'}. Especializado en optimizar el rendimiento, liderar iniciativas clave y entregar valor medible en entornos colaborativos.`;
             } else if (preferredLanguage === 'fr') {
-                fallbackSummary = `Je suis un ${profession} axé sur les résultats avec une expertise éprouvée dans le succès organisationnel grâce à des solutions innovantes et un leadership stratégique. J'ai démontré ma capacité à livrer des résultats exceptionnels tout en collaborant efficacement avec des équipes interfonctionnelles. Je suis passionné par l'exploitation de la technologie et des insights basés sur les données pour optimiser les processus et dépasser les objectifs de performance.`;
+                fallbackSummary = `${profession} avec une solide expertise technique et une expérience avérée en ${skillsList || 'développement de solutions innovantes'}. Spécialisé dans l'optimisation des performances et la livraison de valeur mesurable.`;
             } else {
-                fallbackSummary = `I am a results-driven ${profession} with proven expertise in driving organizational success through innovative solutions and strategic leadership. I have demonstrated ability to deliver exceptional results while collaborating effectively with cross-functional teams. I am passionate about leveraging technology and data-driven insights to optimize processes and exceed performance targets.`;
+                fallbackSummary = `${profession} with a strong track record architecting and delivering high-impact solutions${skillsList ? ` specializing in ${skillsList}` : ''}. Experienced in optimizing workflows, collaborating across cross-functional teams, and driving measurable technical outcomes.`;
             }
 
             setSummary(fallbackSummary);
@@ -267,13 +270,36 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
                             </div>
                         </div>
 
-                        {/* AI Generation Section */}
-                        <div className="flex justify-between items-center">
-                            <label className="block text-sm font-semibold text-slate-800 tracking-wide">{t('SummaryStep.content.label')}</label>
+                        {/* AI Generation & Tone Selection Section */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/80 p-3 rounded-xl border border-slate-200">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mr-1">Tone:</span>
+                                {[
+                                    { id: 'executive', label: 'Executive' },
+                                    { id: 'technical', label: 'Technical' },
+                                    { id: 'metric-focused', label: 'Metrics' },
+                                    { id: 'creative', label: 'Creative' }
+                                ].map((tone) => (
+                                    <button
+                                        key={tone.id}
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedTone(tone.id);
+                                            if (!isGeneratingAI) generateAISummary(tone.id);
+                                        }}
+                                        className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all border ${
+                                            selectedTone === tone.id
+                                                ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                                                : 'bg-white text-slate-600 border-slate-200 hover:border-purple-300 hover:text-purple-700'
+                                        }`}>
+                                        {tone.label}
+                                    </button>
+                                ))}
+                            </div>
                             <button
-                                onClick={generateAISummary}
+                                onClick={() => generateAISummary(selectedTone)}
                                 disabled={isGeneratingAI}
-                                className={`flex items-center text-sm font-semibold px-4 py-2 rounded-lg shadow-sm ${
+                                className={`flex items-center justify-center text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg shadow-xs shrink-0 transition-all ${
                                     isGeneratingAI
                                         ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
                                         : 'text-purple-700 bg-gradient-to-r from-purple-100 to-pink-100 hover:from-purple-200 hover:to-pink-200 cursor-pointer shadow-purple-100 hover:shadow-purple-200'

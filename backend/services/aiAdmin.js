@@ -15,10 +15,23 @@ const ENABLE_FIELDS = Object.freeze({
   openrouter: 'enableOpenrouter', deepseek: 'enableDeepseek',
 });
 const modelPattern = /^[A-Za-z0-9._:/-]{1,150}$/;
+const MASKED_PATTERN = /[•*]/;
 
 function errorWith(code, message, status) {
   return Object.assign(new Error(message), { code, status });
 }
+
+function maskApiKey(key) {
+  if (!key || typeof key !== 'string') return '';
+  const trimmed = key.trim();
+  if (!trimmed) return '';
+  if (trimmed.length <= 10) return '••••••••••••••••••••••••';
+  const prefixLen = trimmed.startsWith('nvapi-') ? 6 : trimmed.startsWith('sk-or-v1-') ? 9 : trimmed.startsWith('sk-proj-') ? 8 : trimmed.startsWith('AIzaSy') ? 6 : trimmed.startsWith('gsk_') ? 4 : 4;
+  const head = trimmed.slice(0, prefixLen);
+  const tail = trimmed.slice(-4);
+  return `${head}${'•'.repeat(24)}${tail}`;
+}
+
 function publicAiSettings(input = {}) {
   if (input.provider && !PROVIDERS.includes(input.provider)) throw errorWith('AI_SETTINGS_VALIDATION_ERROR', 'Unsupported primary AI provider.', 400);
   const provider = PROVIDERS.includes(input.provider) ? input.provider : 'gemini';
@@ -37,14 +50,22 @@ function publicAiSettings(input = {}) {
   }
   return result;
 }
+
 function secretPatch(input = {}, existing = {}, legacy = {}) {
   const patch = {};
   for (const provider of PROVIDERS) {
-    const key = String(input[SECRET_FIELDS[provider]] || '').trim();
-    if (key && (key.length < 12 || key.length > 512)) throw errorWith('AI_SETTINGS_VALIDATION_ERROR', `Invalid ${provider} API key format.`, 400);
-    const model = String(input[MODEL_FIELDS[provider]] || '').trim();
+    const rawKey = String(input[SECRET_FIELDS[provider]] || '').trim();
+    const isMasked = MASKED_PATTERN.test(rawKey);
     const existingKey = existing[provider]?.apiKey || legacy[SECRET_FIELDS[provider]] || '';
-    const finalKey = key || existingKey;
+    
+    if (rawKey && !isMasked) {
+      if (rawKey.length < 12 || rawKey.length > 512) {
+        throw errorWith('AI_SETTINGS_VALIDATION_ERROR', `Invalid ${provider} API key format.`, 400);
+      }
+    }
+    
+    const finalKey = (!isMasked && rawKey) ? rawKey : existingKey;
+    const model = String(input[MODEL_FIELDS[provider]] || '').trim();
     patch[provider] = {
       ...(existing[provider] || {}),
       ...(finalKey ? { apiKey: finalKey } : {}),
@@ -69,14 +90,23 @@ async function loadAiAdminSettings(db, environment = process.env) {
     environment[`${provider.toUpperCase()}_API_KEY`] ? 'environment' : secrets[provider]?.apiKey ? 'secret-store' : legacyAi[SECRET_FIELDS[provider]] ? 'legacy-server-store' : 'none'
   ]));
   const configuredProviders = Object.fromEntries(PROVIDERS.map(provider => [provider, credentialSources[provider] !== 'none']));
-  const settings = Object.fromEntries(Object.entries(publicAi).filter(([key]) => !/(?:apiKey|secret|token|password)$/i.test(key)));
   const runtime = await loadProviderConfiguration(db, environment);
+
+  const maskedKeys = {};
+  for (const provider of PROVIDERS) {
+    const rawKey = runtime.providers[provider]?.key || '';
+    maskedKeys[provider] = maskApiKey(rawKey);
+  }
+
+  const settings = Object.fromEntries(Object.entries(publicAi).filter(([key]) => !/(?:apiKey|secret|token|password)$/i.test(key)));
   settings.provider = PROVIDERS.includes(settings.provider) ? settings.provider : runtime.primary;
   settings.temperature = settings.temperature ?? runtime.temperature;
   settings.maxTokens = settings.maxTokens ?? runtime.maxTokens;
   settings.enableFallback = settings.enableFallback ?? runtime.enableFallback;
-  for (const provider of PROVIDERS) settings[MODEL_FIELDS[provider]] = runtime.providers[provider].model;
-  return { settings, configuredProviders, credentialSources, revision: Number(stored.aiRevision || secrets._revision || 0) };
+  for (const provider of PROVIDERS) {
+    settings[MODEL_FIELDS[provider]] = runtime.providers[provider].model;
+  }
+  return { settings, configuredProviders, credentialSources, maskedKeys, revision: Number(stored.aiRevision || secrets._revision || 0) };
 }
 
 async function saveAiAdminSettings({ db, admin, input, expectedRevision = 0, actorUid, requestId }) {
@@ -113,11 +143,12 @@ async function saveAiAdminSettings({ db, admin, input, expectedRevision = 0, act
   return { ...loaded, revision: nextRevision };
 }
 
-async function testAiProvider({ db, environment = process.env, provider, model, apiKey, fetchImpl = global.fetch, timeoutMs = 10000 }) {
+async function testAiProvider({ db, environment = process.env, provider, model, apiKey, fetchImpl = global.fetch, timeoutMs = 30000 }) {
   if (!PROVIDERS.includes(provider)) throw errorWith('AI_SETTINGS_VALIDATION_ERROR', 'Unsupported AI provider.', 400);
   const configuration = await loadProviderConfiguration(db, environment);
   const base = configuration.providers[provider];
-  const key = String(apiKey || base?.key || '').trim();
+  const isMasked = MASKED_PATTERN.test(String(apiKey || ''));
+  const key = String((!isMasked && apiKey) || base?.key || '').trim();
   const selectedModel = String(model || base?.model || '').trim();
   if (!key) throw errorWith('AI_PROVIDER_NOT_CONFIGURED', `${provider} has no server-side credential configured.`, 400);
   if (!modelPattern.test(selectedModel)) throw errorWith('AI_SETTINGS_VALIDATION_ERROR', `Invalid ${provider} model.`, 400);
@@ -134,4 +165,57 @@ async function testAiProvider({ db, environment = process.env, provider, model, 
   }
 }
 
-module.exports = { ENABLE_FIELDS, MODEL_FIELDS, SECRET_FIELDS, loadAiAdminSettings, publicAiSettings, saveAiAdminSettings, secretPatch, testAiProvider };
+async function fetchProviderModels({ db, environment = process.env, provider, apiKey, fetchImpl = global.fetch, timeoutMs = 15000 }) {
+  if (!PROVIDERS.includes(provider)) throw errorWith('AI_SETTINGS_VALIDATION_ERROR', 'Unsupported AI provider.', 400);
+  const configuration = await loadProviderConfiguration(db, environment);
+  const base = configuration.providers[provider];
+  const isMasked = MASKED_PATTERN.test(String(apiKey || ''));
+  const key = String((!isMasked && apiKey) || base?.key || '').trim();
+  if (!key) throw errorWith('AI_PROVIDER_NOT_CONFIGURED', `${provider} has no server-side credential configured.`, 400);
+
+  if (provider === 'nvidia') {
+    const response = await fetchImpl('https://integrate.api.nvidia.com/v1/models', {
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout ? AbortSignal.timeout(timeoutMs) : undefined
+    });
+    if (!response.ok) throw errorWith('AI_MODELS_FETCH_FAILED', `NVIDIA API returned HTTP ${response.status}`, response.status);
+    const data = await response.json();
+    const models = (data.data || []).map(m => ({ id: m.id, name: m.id, owned_by: m.owned_by || 'nvidia' })).sort((a, b) => a.id.localeCompare(b.id));
+    return { provider: 'nvidia', count: models.length, models };
+  }
+
+  if (provider === 'openai' || provider === 'groq' || provider === 'openrouter' || provider === 'deepseek') {
+    const urls = {
+      openai: 'https://api.openai.com/v1/models',
+      groq: 'https://api.groq.com/openai/v1/models',
+      openrouter: 'https://openrouter.ai/api/v1/models',
+      deepseek: 'https://api.deepseek.com/models'
+    };
+    const response = await fetchImpl(urls[provider], {
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout ? AbortSignal.timeout(timeoutMs) : undefined
+    });
+    if (!response.ok) throw errorWith('AI_MODELS_FETCH_FAILED', `${provider} API returned HTTP ${response.status}`, response.status);
+    const data = await response.json();
+    const models = (data.data || []).map(m => ({ id: m.id, name: m.id })).sort((a, b) => a.id.localeCompare(b.id));
+    return { provider, count: models.length, models };
+  }
+
+  if (provider === 'gemini') {
+    const response = await fetchImpl(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(key)}`, {
+      signal: AbortSignal.timeout ? AbortSignal.timeout(timeoutMs) : undefined
+    });
+    if (!response.ok) throw errorWith('AI_MODELS_FETCH_FAILED', `Gemini API returned HTTP ${response.status}`, response.status);
+    const data = await response.json();
+    const models = (data.models || []).map(m => ({ id: m.name.replace(/^models\//, ''), name: m.displayName || m.name })).sort((a, b) => a.id.localeCompare(b.id));
+    return { provider: 'gemini', count: models.length, models };
+  }
+
+  return { provider, count: 0, models: [] };
+}
+
+module.exports = {
+  ENABLE_FIELDS, MODEL_FIELDS, SECRET_FIELDS, MASKED_PATTERN,
+  maskApiKey, loadAiAdminSettings, publicAiSettings, saveAiAdminSettings,
+  secretPatch, testAiProvider, fetchProviderModels
+};

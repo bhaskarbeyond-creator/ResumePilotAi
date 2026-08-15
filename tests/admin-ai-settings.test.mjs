@@ -90,7 +90,7 @@ test('AI Settings supports exactly the restored secure provider set and preserve
   assert.match(ui, /Not supported by the trusted multi-provider runtime/);
 });
 
-test('AI secrets remain backend-only and frontend fields are cleared after confirmed save', async () => {
+test('AI secrets remain backend-only and frontend fields receive secure masked tokens', async () => {
   const [ui, service, rules] = await Promise.all([
     fs.readFile('src/components/admin/settings/AiSettings.jsx', 'utf8'),
     fs.readFile('backend/services/aiAdmin.js', 'utf8'),
@@ -99,7 +99,8 @@ test('AI secrets remain backend-only and frontend fields are cleared after confi
   assert.match(service, /settings.*ai_providers/s);
   assert.match(service, /configuredProviders/);
   assert.match(service, /doesNotMatch|apiKey/); // server module owns key handling
-  assert.match(ui, /geminiApiKey: '', nvidiaApiKey: ''/);
+  assert.match(ui, /masked\.gemini/);
+  assert.match(ui, /masked\.nvidia/);
   assert.match(ui, /deployment-managed credential takes precedence/);
   assert.match(rules, /ai_providers/);
   assert.match(rules, /allow read: if admin\(\) && !\(id in/);

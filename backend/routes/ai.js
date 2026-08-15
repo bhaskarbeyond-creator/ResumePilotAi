@@ -842,9 +842,9 @@ function generateFallbackSummary(name, jobTitle, experience, skills, achievement
     const templates = {
         English: {
             professional: [
-                `I am a dedicated ${jobTitle} with ${cleanExp} of experience in the field. Skilled in ${skillsList}, I have successfully demonstrated core competencies across key projects. Known for my technical precision and commitment to excellence, I bring valuable insights and proven results to any organization.`,
-                `I am an experienced ${jobTitle} with ${cleanExp} of professional expertise. I specialize in ${skillsList} and have a track record of driving impactful results. I am passionate about delivering high-quality solutions and organizational success through strategic thinking.`,
-                `I am a results-driven ${jobTitle} bringing ${cleanExp} of industry experience. With expertise in ${skillsList}, I have demonstrated exceptional technical leadership and execution. I am committed to continuous learning and professional growth while contributing to team success.`,
+                `Dedicated ${jobTitle} with ${cleanExp} of experience in the field. Skilled in ${skillsList}, with a track record demonstrating core competencies across key production projects. Known for technical precision, analytical rigor, and delivering high-value outcomes.`,
+                `Experienced ${jobTitle} with ${cleanExp} of professional expertise. Specializing in ${skillsList} with a demonstrated background modernizing architectures, driving impactful delivery, and optimizing strategic workflows.`,
+                `Strategic ${jobTitle} bringing ${cleanExp} of industry experience. With deep expertise in ${skillsList}, demonstrated technical leadership, cross-functional execution, and continuous professional excellence.`,
             ],
             creative: [
                 `Blending creativity with technical prowess, I have spent ${experience} crafting success as a ${jobTitle}. A master of ${skillsList}, I transform challenges into opportunities, notably when I ${achievement}. Every project becomes my canvas for innovation and excellence.`,
@@ -1425,10 +1425,10 @@ const generateDefaultResumeData = (occupation, experienceLevel, yearsOfExperienc
 
         'mid-level':
             targetLanguage === 'English'
-                ? `Results-driven ${positionTitle} with ${yearsOfExperience.max} years of experience delivering successful outcomes through ${selectedKeywords.join(
+                ? `Accomplished ${positionTitle} with ${yearsOfExperience.max} years of experience delivering high-impact solutions through ${selectedKeywords.join(
                       ', '
-                  )}. Proven ability to combine technical expertise with strong collaboration skills.`
-                : `${positionTitle} axé sur les résultats avec ${yearsOfExperience.max} années d'expérience offrant des résultats réussis grâce à ${selectedKeywords.join(
+                  )}. Proven track record combining deep technical competencies with cross-functional execution.`
+                : `${positionTitle} expérimenté avec ${yearsOfExperience.max} années d'expérience offrant des résultats réussis grâce à ${selectedKeywords.join(
                       ', '
                   )}. Capacité prouvée à combiner l'expertise technique avec de solides compétences de collaboration.`,
 
