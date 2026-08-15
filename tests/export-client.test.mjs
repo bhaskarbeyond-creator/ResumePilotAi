@@ -111,8 +111,10 @@ test('export failures are surfaced to the user rather than silently swallowed', 
   assert.match(board, /role="alert"/);
 
   const dashboard = await fs.readFile('src/components/Dashboard/DashboardHomepage/DashboardHomepage.jsx', 'utf8');
-  const failureBlock = dashboard.slice(dashboard.indexOf("trackEvent(\n        \"download_failed\""));
-  assert.match(failureBlock.slice(0, 600), /showToast/, 'a failed download must notify the user');
+  const failureIndex = dashboard.search(/trackEvent\s*\(\s*["']download_failed["']/);
+  assert.equal(failureIndex > -1, true, 'download_failed tracking must exist');
+  const failureBlock = dashboard.slice(failureIndex, failureIndex + 600);
+  assert.match(failureBlock, /showToast/, 'a failed download must notify the user');
 });
 
 test('success analytics are only emitted after a genuine PDF has been delivered', async () => {
