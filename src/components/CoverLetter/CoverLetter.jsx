@@ -398,17 +398,100 @@ class CoverLetter extends Component {
         }, 600);
     };
 
-    handleCopyFormattedText = async () => {
+    handlePrintCoverLetter = () => {
         try {
-            const fullName = `${this.state.candidateFirstname} ${this.state.candidateLastname}`.trim() || 'Candidate Name';
-            const recipientName = (this.state.recipientName || 'Hiring Manager').trim();
-            const body = (this.state.letterBody || this.getDefaultLetterBody()).trim();
-            const text = `Dear ${recipientName},\n\n${body}\n\nSincerely,\n${fullName}`;
-            await navigator.clipboard.writeText(text);
-            this.setState({ notificationMessage: '✓ Copied formatted cover letter to clipboard!' });
-            setTimeout(() => this.setState({ notificationMessage: null }), 4000);
+            const coverElement = document.getElementById('resumen');
+            if (!coverElement) {
+                window.print();
+                return;
+            }
+
+            const coverHtml = coverElement.outerHTML;
+            let styleSheets = '';
+            document.querySelectorAll('style, link[rel="stylesheet"]').forEach(node => {
+                styleSheets += node.outerHTML;
+            });
+
+            let printFrame = document.getElementById('cover-letter-print-frame');
+            if (printFrame) {
+                try { printFrame.remove(); } catch (_) {}
+            }
+            printFrame = document.createElement('iframe');
+            printFrame.id = 'cover-letter-print-frame';
+            printFrame.style.position = 'fixed';
+            printFrame.style.right = '0';
+            printFrame.style.bottom = '0';
+            printFrame.style.width = '0';
+            printFrame.style.height = '0';
+            printFrame.style.border = '0';
+            document.body.appendChild(printFrame);
+
+            const frameDoc = printFrame.contentWindow.document;
+            frameDoc.open();
+            frameDoc.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="utf-8" />
+                    <title>${this.state.jobTitle || 'Cover Letter'} - ${this.state.candidateFirstname} ${this.state.candidateLastname}</title>
+                    ${styleSheets}
+                    <style>
+                        @page {
+                            size: A4 portrait;
+                            margin: 0;
+                        }
+                        *, *::before, *::after {
+                            box-sizing: border-box !important;
+                            transform: none !important;
+                        }
+                        html, body {
+                            background: #ffffff !important;
+                            margin: 0 !important;
+                            padding: 0 !important;
+                            width: 100% !important;
+                            height: auto !important;
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+                        }
+                        #resumen, [class*="-board"] {
+                            width: 100% !important;
+                            max-width: 210mm !important;
+                            min-height: 297mm !important;
+                            margin: 0 auto !important;
+                            padding: 20mm 20mm !important;
+                            box-sizing: border-box !important;
+                            box-shadow: none !important;
+                            border: none !important;
+                            background: #ffffff !important;
+                        }
+                        [class*="-content"] {
+                            width: 100% !important;
+                            max-width: 100% !important;
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${coverHtml}
+                </body>
+                </html>
+            `);
+            frameDoc.close();
+
+            setTimeout(() => {
+                try {
+                    printFrame.contentWindow.focus();
+                    printFrame.contentWindow.print();
+                } catch (e) {
+                    console.error('Print trigger error:', e);
+                    window.print();
+                }
+                setTimeout(() => {
+                    try { printFrame.remove(); } catch (_) {}
+                }, 3000);
+            }, 350);
         } catch (err) {
-            console.error('Clipboard copy error:', err);
+            console.error('Print error:', err);
+            window.print();
         }
     };
 
@@ -503,7 +586,7 @@ class CoverLetter extends Component {
 
                                     {/* Print / Save PDF in Modal */}
                                     <button
-                                        onClick={() => window.print()}
+                                        onClick={this.handlePrintCoverLetter}
                                         className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-2">
                                         <FaPrint className="w-3.5 h-3.5" />
                                         <span>Print / PDF</span>
@@ -908,7 +991,7 @@ class CoverLetter extends Component {
                                     {/* Primary Export Actions */}
                                     <div className="space-y-2.5">
                                         <button
-                                            onClick={() => window.print()}
+                                            onClick={this.handlePrintCoverLetter}
                                             className="w-full py-3.5 px-4 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2">
                                             <FaPrint className="w-3.5 h-3.5" />
                                             <span>Print / Save as PDF ({activeTemplate.name})</span>
