@@ -1538,29 +1538,48 @@ app.post('/api/contact', async (req, res) => {
     return res.status(202).json({ success: true, message: 'Message accepted.' });
 });
 
+// Redeems a single-use render token for the resume payload. The token itself is the
+// authorization proof (issued only after server-side ownership + entitlement checks) and
+// is consumed transactionally, so a replayed or leaked token is already spent.
 app.get('/api/export-render-data', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store, private');
-    const data = await consumeExportRenderToken(req.app.get('db'), req.query.token);
-    if (!data) return res.status(404).json({ error: 'Export data not found' });
-    return res.json({ data });
+    // Never let a token reach a shared cache, a referrer, or a search index.
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+    try {
+        const data = await consumeExportRenderToken(req.app.get('db'), req.query.token);
+        if (!data) return res.status(404).json({ error: 'Export data not found' });
+        return res.json({ data });
+    } catch (error) {
+        console.error('[Export render data]', { message: error.message, requestId: res.locals.requestId });
+        return res.status(503).json({ error: 'Export data is temporarily unavailable' });
+    }
 });
 
 let activeExports = 0;
 const MAX_CONCURRENT_EXPORTS = 5;
+// Every template the router can render must be exportable. The Cv range tracks the 51
+// CV templates and the Cover range tracks the 4 cover-letter templates; both are
+// rendered by /export/:template/:resumeId/:language.
+const EXPORTABLE_TEMPLATE = /^(?:Cv(?:[1-9]|[1-4][0-9]|5[0-1])|Cover[1-4])$/;
 
 app.post(['/api/export', '/api/public-export'], async (req, res) => {
+    // The slot is claimed before any await so concurrent requests cannot all observe a
+    // free counter and overshoot the Chromium concurrency ceiling.
     if (activeExports >= MAX_CONCURRENT_EXPORTS) {
         return res.status(429).json({ error: 'Server is busy processing PDF exports. Please try again in a few seconds.' });
     }
+    activeExports++;
+    const releaseSlot = () => { activeExports = Math.max(0, activeExports - 1); };
     let browser;
     let renderToken;
-    let slotAcquired = false;
+    let slotAcquired = true;
     try {
         const resumeId = String(req.body.resumeId || '');
         const resumeName = String(req.body.resumeName || '');
         const language = String(req.body.language || 'en');
         if (!/^[A-Za-z0-9_-]{4,128}$/.test(resumeId)
-            || !/^Cv(?:[1-9]|[1-4][0-9]|5[0-1])$/.test(resumeName)
+            || !EXPORTABLE_TEMPLATE.test(resumeName)
             || !/^[a-z]{2}(?:-[A-Z]{2})?$/.test(language)) {
             return res.status(400).json({ error: 'Invalid export request' });
         }
@@ -1569,7 +1588,10 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
 
         let stored;
         let ownerUid;
-        if (req.path === '/public-export') {
+        // This handler is mounted at application level, so req.path is the full
+        // '/api/public-export'. Matching the suffix keeps the public branch correct
+        // regardless of whether the route is reached directly or through a mount.
+        if (req.path.endsWith('/public-export')) {
             const publishedSnap = await requestDb.collection('pb').doc(resumeId).get();
             const published = publishedSnap.data();
             if (!publishedSnap.exists || published?.isPublished !== true || published?.publicationMode !== 'explicit') return res.status(404).json({ error: 'Resume not found' });
@@ -1577,7 +1599,14 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
             try { stored = JSON.parse(published.object); } catch { return res.status(422).json({ error: 'Resume data is invalid' }); }
         } else {
             ownerUid = req.user?.uid;
-            const privateSnap = await requestDb.collection('users').doc(ownerUid).collection('resumes').doc(resumeId).get();
+            // Cover-letter documents live in the owner-scoped 'covers' collection; CV drafts
+            // live in 'resumes'. Both are owner-scoped, so ownership is enforced by the path.
+            const ownerCollection = resumeName.startsWith('Cover') ? 'covers' : 'resumes';
+            let privateSnap = await requestDb.collection('users').doc(ownerUid).collection(ownerCollection).doc(resumeId).get();
+            if (!privateSnap.exists && ownerCollection === 'covers') {
+                // Historical cover documents were saved into the resumes collection.
+                privateSnap = await requestDb.collection('users').doc(ownerUid).collection('resumes').doc(resumeId).get();
+            }
             if (privateSnap.exists) {
                 stored = { ...privateSnap.data() };
                 for (const field of ['revision', 'created_at', 'createdAt', 'updatedAt', 'ownerUid', 'userId']) delete stored[field];
@@ -1601,8 +1630,6 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
         }
         if (stored?.template && stored.template !== resumeName) return res.status(400).json({ error: 'Template mismatch' });
         renderToken = await createExportRenderToken(req.app.get('db'), stored);
-        activeExports++;
-        slotAcquired = true;
         const launchOptions = {
             headless: true,
             args: ['--no-sandbox', '--disable-setuid-sandbox', '--single-process', '--no-zygote']
@@ -1642,9 +1669,10 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
         }).catch(() => {});
         await page.waitForTimeout(250);
 
-        const pdfPath = path.join(__dirname, `resume_${Date.now()}.pdf`);
-        await page.pdf({
-            path: pdfPath,
+        // Buffer the PDF instead of writing to disk. A temporary file on local disk is
+        // not shared across instances, survives crashes as an orphan, and races when two
+        // exports land in the same millisecond. Streaming the buffer removes all three.
+        const pdfBuffer = await page.pdf({
             format: 'A4',
             printBackground: true,
             preferCSSPageSize: true,
@@ -1656,23 +1684,26 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
             }
         });
         await browser.close();
+        browser = undefined;
 
+        if (!pdfBuffer || pdfBuffer.length < 5 || pdfBuffer.subarray(0, 5).toString('latin1') !== '%PDF-') {
+            throw new Error('EXPORT_PDF_INVALID');
+        }
+        res.setHeader('Cache-Control', 'no-store, private');
         res.setHeader('Content-Type', 'application/pdf');
-        res.download(pdfPath, 'resume.pdf', (err) => {
-            if (err) {
-                console.error('res.download error:', err);
-            }
-            if (fs.existsSync(pdfPath)) {
-                fs.unlinkSync(pdfPath);
-            }
-        });
+        res.setHeader('Content-Disposition', 'attachment; filename="resume.pdf"');
+        res.setHeader('Content-Length', String(pdfBuffer.length));
+        return res.send(pdfBuffer);
     } catch (error) {
-        console.error('Export PDF error:', error);
+        // Internal render/browser diagnostics stay in the server log; the client receives a
+        // stable code and the correlation id only.
+        console.error('[Export PDF]', { code: error.code || 'EXPORT_FAILED', message: error.message, requestId: res.locals.requestId });
         if (browser) await browser.close().catch(() => {});
-        res.status(500).json({ error: error.message });
+        if (res.headersSent) return res.end();
+        return res.status(500).json({ error: { code: 'EXPORT_FAILED', message: 'Unable to generate the PDF export. Please try again.', requestId: res.locals.requestId } });
     } finally {
         if (renderToken) await discardExportRenderToken(req.app.get('db'), renderToken);
-        if (slotAcquired) activeExports = Math.max(0, activeExports - 1);
+        if (slotAcquired) { slotAcquired = false; releaseSlot(); }
     }
 });
 
@@ -2859,7 +2890,13 @@ app.post('/api/export-docx', async (req, res) => {
     const { resumeName, resumeId } = req.body;
     const requestDb = req.app.get('db');
     if (!requestDb || !/^[A-Za-z0-9_-]{4,128}$/.test(String(resumeId || ''))) return res.status(400).json({ error: 'Invalid resume' });
-    const resumeSnap = await requestDb.collection('users').doc(req.user.uid).collection('resumes').doc(String(resumeId)).get();
+    // Cover-letter documents live in the owner-scoped 'covers' collection. Both lookups
+    // are owner-scoped, so ownership remains enforced by the document path.
+    const docId = String(resumeId);
+    let resumeSnap = await requestDb.collection('users').doc(req.user.uid).collection('resumes').doc(docId).get();
+    if (!resumeSnap.exists) {
+        resumeSnap = await requestDb.collection('users').doc(req.user.uid).collection('covers').doc(docId).get();
+    }
     if (!resumeSnap.exists) return res.status(404).json({ error: 'Resume not found' });
     const ownerSnap = await requestDb.collection('users').doc(req.user.uid).get();
     const owner = ownerSnap.data() || {};

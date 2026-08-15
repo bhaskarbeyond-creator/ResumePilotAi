@@ -9,6 +9,7 @@ import download from 'downloadjs';
 import { getJsonById } from '../../firestore/dbOperations';
 import { isKnownTemplate } from '../../utils/templateRegistry';
 import { trackDownload, trackEvent } from '../../utils/ga4';
+import { toValidatedPdfBlob } from '../../utils/pdfDownload';
 import TemplateRenderer from '../TemplateRenderer';
 
 export default function PublicResume() {
@@ -51,13 +52,17 @@ export default function PublicResume() {
                 resumeId,
                 resumeName: templateId,
             }, { responseType: 'blob' });
-            download(response.data, 'resume.pdf', response.headers['content-type'] || 'application/pdf');
+            // Reject JSON error bodies delivered through the blob response type.
+            const pdfBlob = await toValidatedPdfBlob(response.data);
+            download(pdfBlob, 'resume.pdf', 'application/pdf');
             trackDownload(templateId, 'shared-resume');
             trackEvent('shared_resume_download', 'Documents', templateId, 1);
             setMessage('PDF downloaded successfully.');
         } catch (error) {
             const serverMessage = error.response?.data instanceof Blob ? '' : error.response?.data?.error?.message;
-            setMessage(serverMessage || 'PDF download is unavailable. The owner may need an active subscription.');
+            setMessage(serverMessage
+                || (error?.code === 'EXPORT_NOT_PDF' ? error.message : '')
+                || 'PDF download is unavailable. The owner may need an active subscription.');
         } finally {
             setIsDownloading(false);
         }

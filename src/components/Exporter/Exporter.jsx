@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { getJsonById } from '../../firestore/dbOperations';
 import { isKnownTemplate } from '../../utils/templateRegistry';
 import TemplateRenderer from '../TemplateRenderer';
+import { readRenderToken } from './exportAccess';
 
 const EMPTY_RESUME = Object.freeze({
     firstname: '', lastname: '', photo: '', phone: '', address: '', email: '',
@@ -21,7 +22,7 @@ export default function Exporter({ resumeName }) {
         let active = true;
         document.documentElement.removeAttribute('data-export-ready');
         document.documentElement.removeAttribute('data-export-error');
-        const renderToken = new URLSearchParams(window.location.hash.replace(/^#/, '')).get('renderToken');
+        const renderToken = readRenderToken(window.location.hash);
         const dataRequest = renderToken
             ? fetch(`/api/export-render-data?token=${encodeURIComponent(renderToken)}`, { cache: 'no-store' })
                 .then(async response => response.ok ? (await response.json()).data : null)

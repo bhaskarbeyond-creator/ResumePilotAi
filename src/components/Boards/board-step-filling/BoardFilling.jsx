@@ -29,6 +29,7 @@ import fire from '../../../conf/fire';
 import { FaEye, FaDownload, FaSave, FaPalette } from 'react-icons/fa';
 import { trackDownload, trackEvent, trackEngagement } from '../../../utils/ga4';
 import { evaluateDownloadAccess } from '../../../utils/subscriptionUtils';
+import { toValidatedPdfBlob } from '../../../utils/pdfDownload';
 
 class BoardFilling extends Component {
     constructor(props) {
@@ -44,6 +45,7 @@ class BoardFilling extends Component {
             showSavedIcon: false,
             count: 0,
             showColorPanel: false,
+            downloadError: '',
         };
         this.addPage = this.addPage.bind(this);
         this.nextPage = this.nextPage.bind(this);
@@ -153,6 +155,7 @@ class BoardFilling extends Component {
     }
 
     async download() {
+        this.setState({ downloadError: '' });
         const userId = fire.auth().currentUser?.uid;
         if (!userId) throw new Error('Sign in before downloading an account document.');
         const templateName = this.props.currentResumeName;
@@ -182,27 +185,29 @@ class BoardFilling extends Component {
                     responseType: 'blob',
                 }
             )
-            .then(function (response) {
-                console.log(response);
-                const content = response.headers['content-type'];
+            .then(async function (response) {
+                // A blob response also carries JSON error bodies; verify the PDF magic
+                // bytes so a failed export is never saved as a corrupt resume.pdf.
+                const pdfBlob = await toValidatedPdfBlob(response.data);
+                download(pdfBlob, 'resume.pdf', 'application/pdf');
 
-                // Track the download event
+                // Track the download only after a genuine PDF has been delivered.
                 trackDownload(templateName, documentType);
                 trackEvent('download_document', 'Documents', templateName, 1);
                 trackEngagement('document_downloaded', {
                     template_name: templateName,
                     document_type: documentType,
                 });
-
-                download(response.data, 'resume.pdf', content);
             })
-            .catch(function (error) {
-                console.log(error);
+            .catch((error) => {
                 // Track download failure
                 trackEvent('download_failed', 'Documents', templateName, 0);
-            })
-            .then(function () {
-                // always executed
+                // Surface the failure instead of leaving the user with a silent no-op.
+                this.setState({
+                    downloadError: error?.message?.startsWith('Download failed')
+                        ? error.message
+                        : 'The PDF could not be generated. Please try again.',
+                });
             });
     }
 
@@ -466,6 +471,27 @@ class BoardFilling extends Component {
                         </motion.div>
                     )}
                 </AnimatePresence>
+
+                {this.state.downloadError && (
+                    <div
+                        role="alert"
+                        aria-live="assertive"
+                        style={{
+                            position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)',
+                            zIndex: 99999, maxWidth: '480px', width: '90%', display: 'flex',
+                            alignItems: 'center', justifyContent: 'space-between', gap: '16px',
+                            padding: '14px 20px', borderRadius: '12px', background: '#7f1d1d', color: '#fff',
+                            boxShadow: '0 20px 40px -15px rgba(0,0,0,0.5)', fontSize: '14px',
+                        }}>
+                        <span>{this.state.downloadError}</span>
+                        <button
+                            type="button"
+                            onClick={() => this.setState({ downloadError: '' })}
+                            style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', borderRadius: '8px', padding: '6px 12px', cursor: 'pointer', fontWeight: 700 }}>
+                            Dismiss
+                        </button>
+                    </div>
+                )}
 
                 <AnimatePresence>
                     {this.state.isUpgradeToastVisible && (

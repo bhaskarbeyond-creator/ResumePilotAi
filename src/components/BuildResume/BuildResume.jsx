@@ -26,6 +26,7 @@ import { getJsonById, IncrementDownloads, addOneToNumberOfDocumentsDownloaded, g
 import { createResumeDraft, loadResumeDraft, saveResumeDraft, publishResume, unpublishResume, getResumePublication, writeResumeRecovery, readResumeRecovery, clearResumeRecovery } from '../../services/resumePersistence';
 import { EMPTY_RESUME, normalizeResumeData } from '../../utils/resumeData';
 import { trackDownload, trackEvent, trackEngagement } from '../../utils/ga4';
+import { toValidatedPdfBlob, pdfFileName } from '../../utils/pdfDownload';
 
 // Import logo
 import logo from '../../assets/logo/logo.png';
@@ -698,34 +699,27 @@ const BuildResume = () => {
                 }
             );
 
-            // Track download analytics
+            // Validate the blob is a real PDF before downloading. Shared with the other
+            // export surfaces so every path rejects JSON error bodies identically.
+            const pdfBlob = await toValidatedPdfBlob(response.data);
+            download(pdfBlob, pdfFileName(previewData?.firstname, previewData?.lastname), 'application/pdf');
+
+            // Track download analytics only once a genuine PDF has been delivered, so
+            // success metrics cannot count failed exports.
             trackDownload(currentTemplate, 'resume');
             trackEvent('download_document', 'Documents', currentTemplate, 1);
             trackEngagement('document_downloaded', {
                 template_name: currentTemplate,
                 document_type: 'resume',
             });
-
-            // Validate the blob is a real PDF before downloading
-            const arrayBuffer = await response.data.arrayBuffer();
-            const bytes = new Uint8Array(arrayBuffer).slice(0, 4);
-            const isPdf = bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46; // %PDF
-            if (!isPdf) {
-                // Server returned an error response instead of a PDF
-                const errorText = new TextDecoder().decode(arrayBuffer);
-                let errorMsg = 'Download failed: Server did not return a valid PDF.';
-                try {
-                    const parsed = JSON.parse(errorText);
-                    if (parsed.error) errorMsg = `Download failed: ${parsed.error}`;
-                } catch {}
-                throw new Error(errorMsg);
-            }
-            download(new Blob([arrayBuffer], { type: 'application/pdf' }), 'resume.pdf', 'application/pdf');
         } catch (error) {
             console.error('Download failed:', error);
             // Track download failure
             trackEvent('download_failed', 'Documents', currentTemplate, 0);
-            alert(t('BuildResume.errors.downloadFailed'));
+            // Prefer the server's reason (e.g. subscription required) over a generic string.
+            alert(error?.code === 'EXPORT_NOT_PDF' && error.message
+                ? error.message
+                : t('BuildResume.errors.downloadFailed'));
         } finally {
             setIsDownloading(false);
         }

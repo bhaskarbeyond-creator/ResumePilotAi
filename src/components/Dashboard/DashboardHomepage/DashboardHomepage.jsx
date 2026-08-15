@@ -41,6 +41,7 @@ import axios from "axios";
 import download from "downloadjs";
 import config from "../../../conf/configuration";
 import { trackDownload, trackEvent, trackEngagement } from "../../../utils/ga4";
+import { toValidatedPdfBlob, pdfFileName } from "../../../utils/pdfDownload";
 import { getTemplateComponent } from "../../../utils/templateRegistry";
 import PreviewModal from "../../BuildResume/PreviewModal";
 
@@ -577,10 +578,10 @@ class DashboardHomepage extends Component {
         }
       );
 
-      const content = response.headers["content-type"];
-      const fileName = `${document.item?.firstname || "Resume"}_${
-        document.item?.lastname || "Document"
-      }.pdf`;
+      // Verify the payload really is a PDF before saving it. A blob response type also
+      // delivers JSON error bodies, which would otherwise be saved as a corrupt .pdf.
+      const pdfBlob = await toValidatedPdfBlob(response.data);
+      const fileName = pdfFileName(document.item?.firstname, document.item?.lastname);
 
       // Track the download event
       trackDownload(templateName, "resume");
@@ -590,7 +591,7 @@ class DashboardHomepage extends Component {
         document_type: "resume",
       });
 
-      download(response.data, fileName, content);
+      download(pdfBlob, fileName, "application/pdf");
       await Promise.allSettled([
         IncrementDownloads(),
         addOneToNumberOfDocumentsDownloaded(fire.auth().currentUser?.uid),
@@ -602,6 +603,13 @@ class DashboardHomepage extends Component {
         "Documents",
         document?.template || "Unknown",
         0
+      );
+      // A failed export must never look like a completed one.
+      this.props.showToast?.(
+        error?.message?.startsWith('Download failed')
+          ? error.message
+          : 'The PDF could not be generated. Please try again.',
+        'error'
       );
     } finally {
       // Always remove from downloading set when finished (success or failure)

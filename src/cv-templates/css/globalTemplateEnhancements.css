@@ -275,3 +275,59 @@ h1, h2, h3, h4, h5, h6,
 .avatar-ring {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12), 0 0 0 3px #ffffff, 0 0 0 5px #2563eb;
 }
+
+/* ==========================================================================
+   8. Browser Print (Ctrl/Cmd+P) — application chrome removal
+   --------------------------------------------------------------------------
+   The headless PDF pipeline renders the isolated /export page, which contains no
+   application chrome. A user pressing Ctrl/Cmd+P on the shared-resume or preview
+   screens, however, prints the live DOM, which previously included the sticky
+   header, zoom controls, download buttons, toasts, modals and consent banner.
+
+   These rules remove non-document UI from printed output and neutralize the
+   on-screen preview scaling so the printed resume is a clean, full-size A4
+   document. They are scoped to @media print and therefore cannot affect any
+   on-screen rendering or the existing headless export path.
+   ========================================================================== */
+@media print {
+  /* Non-document application chrome. */
+  .public-resume > .head,
+  .no-print,
+  [data-print="hide"],
+  nav,
+  .navbar,
+  .privacy-consent-banner,
+  .dashboard-toast,
+  .toasts,
+  [role="alert"].toast {
+    display: none !important;
+  }
+
+  /* Interactive controls are not part of a printed document. Anything inside the
+     rendered resume board is document content and is deliberately preserved. */
+  button:not(.export-document button):not(.cv-board button):not([class*="-board"] button) {
+    display: none !important;
+  }
+
+  /* The shared-resume viewer scales the document for screen viewing; printing must
+     use the true A4 geometry instead of the zoomed transform. */
+  .public-resume .resume-frame,
+  .public-resume .resume {
+    width: auto !important;
+    min-height: 0 !important;
+    transform: none !important;
+    overflow: visible !important;
+  }
+
+  .public-resume {
+    background: #ffffff !important;
+    min-height: 0 !important;
+  }
+
+  /* Scroll containers must not clip content to one viewport-height page. */
+  html, body, #root, main, .body, .export-document {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}

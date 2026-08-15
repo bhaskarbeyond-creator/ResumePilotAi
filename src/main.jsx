@@ -80,6 +80,7 @@ const NotFound = () => <main className="flex min-h-screen items-center justify-c
 const RequireAuthenticated = ({ user, children }) => user ? children : <Navigate to="/login" replace />;
 import ResetPasswordModal from './components/auth/resetPassword/ResetPasswordModal';
 import RouteSeo from './components/RouteSeo';
+import RequireExportAccess from './components/Exporter/RequireExportAccess';
 import RouteFocus from './components/RouteFocus';
 import { clearAccountScopedBrowserState } from './utils/signOut';
 
@@ -326,7 +327,7 @@ const AuthWrapper = () => {
                           {/* Export routes*/}
                             {/* Generate CV template routes dynamically */}
                             {Array.from({ length: 51 }, (_, i) => i + 1).map((num) => (
-                                <Route key={`cv-route-${num}`} path={`/export/Cv${num}/:resumeId/:language`} element={<RequireAuthenticated user={user}><Exporter key={user?.uid || 'unauthenticated'} resumeName={`Cv${num}`} export={true} /></RequireAuthenticated>} />
+                                <Route key={`cv-route-${num}`} path={`/export/Cv${num}/:resumeId/:language`} element={<RequireExportAccess user={user}><Exporter key={user?.uid || 'render'} resumeName={`Cv${num}`} export={true} /></RequireExportAccess>} />
                             ))}
                              {/* Dashboard2 mapped to main User Dashboard */}
                              <Route path="/dashboard2/*" element={<RequireAuthenticated user={user}><Dashboard key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
@@ -334,7 +335,7 @@ const AuthWrapper = () => {
                             {/* Covers export routes */}
                             {/* Generate Cover Letter routes dynamically */}
                             {Array.from({ length: 4 }, (_, i) => i + 1).map((num) => (
-                                <Route key={`cover-route-${num}`} path={`/export/Cover${num}/:resumeId/:language`} element={<RequireAuthenticated user={user}><Exporter key={user?.uid || 'unauthenticated'} resumeName={`Cover${num}`} export={true} /></RequireAuthenticated>} />
+                                <Route key={`cover-route-${num}`} path={`/export/Cover${num}/:resumeId/:language`} element={<RequireExportAccess user={user}><Exporter key={user?.uid || 'render'} resumeName={`Cover${num}`} export={true} /></RequireExportAccess>} />
                             ))}
                             <Route path="*" element={<NotFound />} />
                         </Routes>
