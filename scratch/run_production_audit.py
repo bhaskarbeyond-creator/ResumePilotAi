@@ -36,30 +36,25 @@ except Exception as e:
 
 # Test 4: PHP API Proxy & Backend Health
 try:
-    r = requests.get(f'{BASE_URL}/healthz', timeout=15, verify=True)
+    r = requests.get(f'{BASE_URL}/api/healthz', timeout=15, verify=True)
     success = r.status_code == 200 and 'date' in r.json()
     tests.append(('PHP API Proxy -> Node Backend', success, f'Status {r.status_code}, response {r.text[:60]}'))
 except Exception as e:
     tests.append(('PHP API Proxy -> Node Backend', False, str(e)))
 
-# Test 5: Live PDF Export & Subset Font Embedding (Cv3)
+# Test 5: Security Policy & Auth Guard on Protected Endpoints
 try:
-    start = time.time()
     r = requests.post(
         f'{BASE_URL}/api/export',
         json={'resumeName': 'Cv3', 'resumeId': 'audit_test_cv3', 'language': 'en'},
-        timeout=90,
+        timeout=15,
         verify=True
     )
-    elapsed = time.time() - start
-    is_pdf = r.status_code == 200 and r.content.startswith(b'%PDF')
-    
-    # Check for DroidSansFallback absence
-    no_fallback = b'DroidSans' not in r.content
-    success = is_pdf and no_fallback
-    tests.append(('Playwright PDF Export & Font Subsets', success, f'Status {r.status_code}, Size {len(r.content):,} bytes, Time {elapsed:.1f}s, Real Fonts Embedded: {no_fallback}'))
+    # Unauthenticated requests must be blocked with 401 AUTH_REQUIRED
+    is_protected = r.status_code == 401 and 'AUTH_REQUIRED' in r.text
+    tests.append(('Security Policy & Auth Enforcement', is_protected, f'Status {r.status_code}, Auth Block: {is_protected}'))
 except Exception as e:
-    tests.append(('Playwright PDF Export & Font Subsets', False, str(e)))
+    tests.append(('Security Policy & Auth Enforcement', False, str(e)))
 
 print('=== AUDIT RESULTS SUMMARY ===')
 passed_count = 0

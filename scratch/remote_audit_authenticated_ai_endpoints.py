@@ -93,17 +93,17 @@ async function auditAllEndpoints() {
         {
             name: '6. POST /api/generate-content (enhance-single-bullet)',
             path: '/api/generate-content',
-            body: { operation: 'enhance-single-bullet', payload: { bulletText: 'Fixed bugs and improved performance', jobTitle: 'Software Developer' } }
+            body: { operation: 'enhance-single-bullet', payload: { bullet: 'Fixed bugs and improved performance', jobTitle: 'Software Developer' } }
         },
         {
             name: '7. POST /api/generate-content (generate-certifications)',
             path: '/api/generate-content',
-            body: { operation: 'generate-certifications', payload: { occupation: 'DevOps Engineer' } }
+            body: { operation: 'generate-certifications', payload: { jobTitle: 'DevOps Engineer' } }
         },
         {
             name: '8. POST /api/generate-content (autocomplete)',
             path: '/api/generate-content',
-            body: { operation: 'autocomplete', payload: { prompt: 'Optimized database queries by' } }
+            body: { operation: 'autocomplete', payload: { type: 'skill', query: 'React' } }
         },
         {
             name: '9. POST /api/generate-resume',
@@ -113,7 +113,7 @@ async function auditAllEndpoints() {
         {
             name: '10. POST /api/parse-resume',
             path: '/api/parse-resume',
-            body: { resumeText: 'Bhaskar Beyond\nFull Stack Engineer\nExperience: 8 years building web applications with React and Node.js.\nSkills: JavaScript, React, Node.js, Python, PostgreSQL.' }
+            body: { rawText: 'Bhaskar Beyond\nFull Stack Engineer\nExperience: 8 years building web applications with React and Node.js.\nSkills: JavaScript, React, Node.js, Python, PostgreSQL.' }
         }
     ];
 
