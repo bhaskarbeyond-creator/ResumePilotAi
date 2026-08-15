@@ -8,6 +8,37 @@ import { generateUserAiContent } from '../../services/aiService';
 import fire from '../../conf/fire';
 import TemplateRenderer from '../TemplateRenderer';
 
+const COVER_TEMPLATES = [
+    {
+        id: 'Cover1',
+        name: 'Executive Classic',
+        badge: 'Classic',
+        description: 'Centered executive letterhead with blue gradient accent bar.',
+        color: 'from-blue-600 to-indigo-700',
+    },
+    {
+        id: 'Cover2',
+        name: 'Modern Left-Aligned',
+        badge: 'Modern',
+        description: 'Crisp, left-aligned layout with dark horizontal divider.',
+        color: 'from-slate-700 to-slate-900',
+    },
+    {
+        id: 'Cover3',
+        name: 'Split Sidebar',
+        badge: 'Two-Column',
+        description: 'Side-by-side recipient card and sender contact pane.',
+        color: 'from-indigo-600 to-blue-500',
+    },
+    {
+        id: 'Cover4',
+        name: 'Accent Icons',
+        badge: 'Creative',
+        description: 'Modern header with contact icons and job title accent.',
+        color: 'from-blue-700 to-amber-500',
+    },
+];
+
 class CoverLetter extends Component {
     constructor(props) {
         super(props);
@@ -28,6 +59,7 @@ class CoverLetter extends Component {
             recipientName: '',
             companyAddress: '',
             companyCity: '',
+            companyPostalCode: '',
             userSkills: '',
             letterBody: '',
             // UI Controls
@@ -140,7 +172,11 @@ class CoverLetter extends Component {
             jobTitle: '',
             companyName: '',
             recipientName: '',
+            companyAddress: '',
+            companyCity: '',
+            companyPostalCode: '',
             letterBody: '',
+            templateId: 'Cover1',
             notificationMessage: 'Cover letter builder reset. Enter recipient details to generate a new letter.',
         });
         setTimeout(() => this.setState({ notificationMessage: null }), 4000);
@@ -155,11 +191,16 @@ class CoverLetter extends Component {
             candidateEmail: this.state.candidateEmail,
             candidatePhone: this.state.candidatePhone,
             candidateAddress: this.state.candidateAddress,
+            candidateCity: this.state.candidateCity,
+            candidatePostalCode: this.state.candidatePostalCode,
             jobTitle: this.state.jobTitle,
             companyName: this.state.companyName,
             recipientName: this.state.recipientName,
+            companyAddress: this.state.companyAddress,
+            companyCity: this.state.companyCity,
+            companyPostalCode: this.state.companyPostalCode,
             letterBody: this.state.letterBody,
-            templateId: this.state.templateId,
+            templateId: this.state.templateId || 'Cover1',
             updatedAt: new Date().toISOString(),
         };
         const res = await saveCoverLetter(letterData);
@@ -195,6 +236,7 @@ class CoverLetter extends Component {
             ...letter,
             id: `cl_${Date.now()}`,
             jobTitle: `${letter.jobTitle || 'Cover Letter'} (Copy)`,
+            templateId: letter.templateId || 'Cover1',
             updatedAt: new Date().toISOString(),
         };
         const res = await saveCoverLetter(clonedData);
@@ -230,7 +272,7 @@ class CoverLetter extends Component {
             if (err?.name === 'AbortError') return;
             console.error('AI Cover Letter Error:', err);
             const candidateFullName = `${this.state.candidateFirstname} ${this.state.candidateLastname}`.trim() || 'Applicant';
-            const fallback = `Dear ${this.state.recipientName || 'Hiring Manager'},\n\nI am writing to express my enthusiasm for the ${this.state.jobTitle || 'target'} role at ${this.state.companyName || 'your company'}. Possessing background in ${this.state.userSkills || 'relevant industry domains'}, I am well-prepared to contribute to your team\'s goals.\n\nMy professional track record demonstrates a dedication to high-quality execution and cross-functional collaboration. I am eager to apply my skill set to drive measurable outcomes for ${this.state.companyName || 'your organization'}.\n\nThank you for considering my application. I look forward to the opportunity to discuss my qualifications further.\n\nSincerely,\n${candidateFullName}`;
+            const fallback = `Dear ${this.state.recipientName || 'Hiring Manager'},\n\nI am writing to express my enthusiasm for the ${this.state.jobTitle || 'target'} role at ${this.state.companyName || 'your company'}. Possessing background in ${this.state.userSkills || 'relevant industry domains'}, I am well-prepared to contribute to your team's goals.\n\nMy professional track record demonstrates a dedication to high-quality execution and cross-functional collaboration. I am eager to apply my skill set to drive measurable outcomes for ${this.state.companyName || 'your organization'}.\n\nThank you for considering my application. I look forward to the opportunity to discuss my qualifications further.\n\nSincerely,\n${candidateFullName}`;
             this.setState({ letterBody: fallback, isAiGenerating: false, step: 2 });
             await this.handleSaveCoverLetter();
         } finally {
@@ -241,9 +283,9 @@ class CoverLetter extends Component {
         }
     };
 
-    exportCoverLetterPdf = () => {
+    exportCoverLetterTxt = () => {
         const fullName = `${this.state.candidateFirstname} ${this.state.candidateLastname}`.trim() || 'Candidate';
-        const textContent = `COVER LETTER\n=======================\nCandidate: ${fullName}\nEmail: ${this.state.candidateEmail}\nPhone: ${this.state.candidatePhone}\nAddress: ${this.state.candidateAddress}\n\nTarget Position: ${this.state.jobTitle}\nCompany: ${this.state.companyName}\nRecipient: ${this.state.recipientName}\nDate: ${new Date().toLocaleDateString()}\n\n${this.state.letterBody}`;
+        const textContent = `COVER LETTER (${this.state.templateId || 'Cover1'})\n=======================\nCandidate: ${fullName}\nEmail: ${this.state.candidateEmail}\nPhone: ${this.state.candidatePhone}\nAddress: ${this.state.candidateAddress}\n\nTarget Position: ${this.state.jobTitle}\nCompany: ${this.state.companyName}\nRecipient: ${this.state.recipientName}\nDate: ${new Date().toLocaleDateString()}\n\n${this.state.letterBody}`;
         const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -254,24 +296,17 @@ class CoverLetter extends Component {
         setTimeout(() => this.setState({ notificationMessage: null }), 6000);
     };
 
-    exportPdfPackage = () => {
-        const fullName = `${this.state.candidateFirstname} ${this.state.candidateLastname}`.trim() || 'Candidate';
-        const textContent = `JOB APPLICATION PACKAGE\n=======================\nCandidate: ${fullName}\nContact: ${this.state.candidateEmail} | ${this.state.candidatePhone}\nTarget Position: ${this.state.jobTitle}\nCompany: ${this.state.companyName}\n\n--- COVER LETTER ---\nRecipient: ${this.state.recipientName}\n\n${this.state.letterBody}\n\n--- ATS RESUME PACKAGE ATTACHED ---`;
-        const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `Application_Package_${fullName.replace(/\s+/g, '_')}.txt`;
-        a.click();
-        this.setState({ notificationMessage: `Downloaded ${a.download} to your browser Downloads folder!` });
-        setTimeout(() => this.setState({ notificationMessage: null }), 6000);
-    };
-
     render() {
         const { t } = this.props;
         const candidateFullName = `${this.state.candidateFirstname} ${this.state.candidateLastname}`.trim();
+        const activeTemplate = COVER_TEMPLATES.find(tpl => tpl.id === (this.state.templateId || 'Cover1')) || COVER_TEMPLATES[0];
 
-        // Template Values Payload for Cover1
+        // Format multi-paragraph components
+        const paragraphList = this.state.letterBody
+            ? this.state.letterBody.split(/\n\n+/).filter(Boolean).map(para => ({ type: 'Paragraph', content: para.trim() }))
+            : [{ type: 'Paragraph', content: 'Generating AI cover letter content...' }];
+
+        // Template Values Payload matching all 4 Cover templates
         const templateValues = {
             firstname: this.state.candidateFirstname,
             lastname: this.state.candidateLastname,
@@ -280,13 +315,16 @@ class CoverLetter extends Component {
             postalcode: this.state.candidatePostalCode,
             phone: this.state.candidatePhone,
             email: this.state.candidateEmail,
+            occupation: this.state.jobTitle,
             employerFullName: this.state.recipientName,
+            recipientName: this.state.recipientName,
             companyName: this.state.companyName,
             companyAddress: this.state.companyAddress,
             companyCity: this.state.companyCity,
-            components: [
-                { type: 'Paragraph', content: this.state.letterBody || 'Generating AI cover letter content...' }
-            ]
+            companyPostalCode: this.state.companyPostalCode,
+            letterBody: this.state.letterBody,
+            coverLetterContent: this.state.letterBody,
+            components: paragraphList
         };
 
         return (
@@ -316,7 +354,7 @@ class CoverLetter extends Component {
                 )}
 
                 <div className="max-w-6xl mx-auto space-y-6">
-                    {/* Light-Mode Header Card */}
+                    {/* Header Card */}
                     <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                             <div className="flex items-center gap-4">
@@ -350,25 +388,25 @@ class CoverLetter extends Component {
                         </div>
                     )}
 
-                    {/* Stepper Indicator */}
-                    <div className="bg-white border border-slate-200 rounded-2xl p-3 flex items-center justify-between gap-3 overflow-x-auto shadow-sm">
-                        <div className="flex items-center gap-2 text-xs font-semibold">
+                    {/* Stepper Indicator & View Switcher */}
+                    <div className="bg-white border border-slate-200 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+                        <div className="flex items-center gap-2 text-xs font-semibold overflow-x-auto">
                             <button onClick={() => this.setState({ step: 1 })} className={`px-4 py-2 rounded-xl transition-all ${this.state.step === 1 ? 'bg-indigo-600 text-white font-bold shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
                                 Step 1: Candidate & Role Details
                             </button>
                             <button onClick={() => this.setState({ step: 2 })} className={`px-4 py-2 rounded-xl transition-all ${this.state.step === 2 ? 'bg-indigo-600 text-white font-bold shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
-                                Step 2: AI Generator & Template
+                                Step 2: AI Generator & Template Selection
                             </button>
                             <button onClick={() => this.setState({ step: 3 })} className={`px-4 py-2 rounded-xl transition-all ${this.state.step === 3 ? 'bg-indigo-600 text-white font-bold shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
-                                Step 3: Export & Package
+                                Step 3: Export & Download
                             </button>
                         </div>
 
-                        {/* View Switcher */}
+                        {/* View Mode Switcher */}
                         {this.state.step > 1 && (
                             <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
                                 <button onClick={() => this.setState({ viewMode: 'visual' })} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${this.state.viewMode === 'visual' ? 'bg-white text-indigo-700 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'}`}>
-                                    🎨 Visual Cover1 Layout
+                                    🎨 Visual Preview ({activeTemplate.name})
                                 </button>
                                 <button onClick={() => this.setState({ viewMode: 'text' })} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${this.state.viewMode === 'text' ? 'bg-white text-indigo-700 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'}`}>
                                     📝 Text Editor
@@ -377,10 +415,10 @@ class CoverLetter extends Component {
                         )}
                     </div>
 
-                    {/* Step 1: Candidate Dynamic Info + Job Inputs */}
+                    {/* Step 1: Candidate Profile + Job Target Details */}
                     {this.state.step === 1 && (
                         <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-6 shadow-sm">
-                            {/* Dynamic User Profile Information Card */}
+                            {/* Candidate Profile Information */}
                             <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-4">
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Candidate Profile Information (Synced with System)</h3>
@@ -389,19 +427,33 @@ class CoverLetter extends Component {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                                     <div>
                                         <label className="block text-[11px] font-bold text-slate-700 mb-1">First Name</label>
-                                        <input type="text" value={this.state.candidateFirstname} onChange={(e) => this.setState({ candidateFirstname: e.target.value })} placeholder="Enter your first name" className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 font-semibold focus:border-indigo-600 focus:outline-hidden" />
+                                        <input type="text" value={this.state.candidateFirstname} onChange={(e) => this.setState({ candidateFirstname: e.target.value })} placeholder="Enter first name" className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 font-semibold focus:border-indigo-600 focus:outline-hidden" />
                                     </div>
                                     <div>
                                         <label className="block text-[11px] font-bold text-slate-700 mb-1">Last Name</label>
-                                        <input type="text" value={this.state.candidateLastname} onChange={(e) => this.setState({ candidateLastname: e.target.value })} placeholder="Enter your last name" className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 font-semibold focus:border-indigo-600 focus:outline-hidden" />
+                                        <input type="text" value={this.state.candidateLastname} onChange={(e) => this.setState({ candidateLastname: e.target.value })} placeholder="Enter last name" className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 font-semibold focus:border-indigo-600 focus:outline-hidden" />
                                     </div>
                                     <div>
                                         <label className="block text-[11px] font-bold text-slate-700 mb-1">Email Address</label>
-                                        <input type="email" value={this.state.candidateEmail} onChange={(e) => this.setState({ candidateEmail: e.target.value })} placeholder="Enter your email" className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-600 focus:outline-hidden" />
+                                        <input type="email" value={this.state.candidateEmail} onChange={(e) => this.setState({ candidateEmail: e.target.value })} placeholder="Enter email address" className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-600 focus:outline-hidden" />
                                     </div>
                                     <div>
                                         <label className="block text-[11px] font-bold text-slate-700 mb-1">Phone Number</label>
-                                        <input type="text" value={this.state.candidatePhone} onChange={(e) => this.setState({ candidatePhone: e.target.value })} placeholder="Enter your phone number" className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-600 focus:outline-hidden" />
+                                        <input type="text" value={this.state.candidatePhone} onChange={(e) => this.setState({ candidatePhone: e.target.value })} placeholder="Enter phone number" className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-600 focus:outline-hidden" />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+                                    <div>
+                                        <label className="block text-[11px] font-bold text-slate-700 mb-1">Street Address</label>
+                                        <input type="text" value={this.state.candidateAddress} onChange={(e) => this.setState({ candidateAddress: e.target.value })} placeholder="e.g. 123 Innovation Way" className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-600 focus:outline-hidden" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[11px] font-bold text-slate-700 mb-1">City / Region</label>
+                                        <input type="text" value={this.state.candidateCity} onChange={(e) => this.setState({ candidateCity: e.target.value })} placeholder="e.g. San Francisco, CA" className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-600 focus:outline-hidden" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[11px] font-bold text-slate-700 mb-1">Postal Code</label>
+                                        <input type="text" value={this.state.candidatePostalCode} onChange={(e) => this.setState({ candidatePostalCode: e.target.value })} placeholder="e.g. 94105" className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-600 focus:outline-hidden" />
                                     </div>
                                 </div>
                             </div>
@@ -419,8 +471,22 @@ class CoverLetter extends Component {
                                         <input type="text" value={this.state.companyName} onChange={(e) => this.setState({ companyName: e.target.value })} placeholder="e.g. TechCorp Inc." className="w-full text-xs p-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-600 focus:outline-hidden" />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-700 mb-1">Hiring Manager Name</label>
+                                        <label className="block text-xs font-bold text-slate-700 mb-1">Hiring Manager / Recipient</label>
                                         <input type="text" value={this.state.recipientName} onChange={(e) => this.setState({ recipientName: e.target.value })} placeholder="e.g. Sarah Jenkins" className="w-full text-xs p-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-600 focus:outline-hidden" />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 mb-1">Company Street Address</label>
+                                        <input type="text" value={this.state.companyAddress} onChange={(e) => this.setState({ companyAddress: e.target.value })} placeholder="e.g. 500 Market St" className="w-full text-xs p-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-600 focus:outline-hidden" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 mb-1">Company City</label>
+                                        <input type="text" value={this.state.companyCity} onChange={(e) => this.setState({ companyCity: e.target.value })} placeholder="e.g. San Francisco, CA" className="w-full text-xs p-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-600 focus:outline-hidden" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 mb-1">Company Postal Code</label>
+                                        <input type="text" value={this.state.companyPostalCode} onChange={(e) => this.setState({ companyPostalCode: e.target.value })} placeholder="e.g. 94105" className="w-full text-xs p-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-600 focus:outline-hidden" />
                                     </div>
                                 </div>
                             </div>
@@ -431,40 +497,99 @@ class CoverLetter extends Component {
                         </div>
                     )}
 
-                    {/* Step 2: Visual Preview in Cover1 Template OR Raw Text Editor */}
+                    {/* Step 2: 4-Template Selection & Live Visual Preview */}
                     {this.state.step === 2 && (
-                        <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-6 shadow-sm">
-                            {this.state.viewMode === 'visual' ? (
-                                <div className="bg-slate-100 p-6 rounded-xl border border-slate-200 max-h-[600px] overflow-y-auto shadow-inner">
-                                    <div className="bg-white text-slate-900 rounded shadow-md max-w-2xl mx-auto p-4 scale-95 origin-top border border-slate-200">
-                                        {/* Official Cover1 Template Rendering */}
-                                        <TemplateRenderer templateId={this.state.templateId || 'Cover1'} values={templateValues} language={this.props.i18n?.language || 'en'} />
-                                    </div>
+                        <div className="space-y-6">
+                            {/* 4 Cover Templates Selector Cards */}
+                            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                                        Choose From 4 Available Cover Letter Templates
+                                    </h3>
+                                    <span className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">
+                                        Active: {activeTemplate.name} ({activeTemplate.id})
+                                    </span>
                                 </div>
-                            ) : (
-                                <div className="space-y-2">
-                                    <label className="block text-xs font-bold text-slate-700">Cover Letter Body Content (Editable)</label>
-                                    <textarea value={this.state.letterBody} onChange={(e) => this.setState({ letterBody: e.target.value })} className="w-full h-72 text-xs p-4 bg-white border border-slate-300 rounded-xl text-slate-900 font-mono leading-relaxed focus:border-indigo-600 focus:outline-hidden" />
-                                </div>
-                            )}
 
-                            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-                                <button onClick={() => this.setState({ step: 1 })} className="w-full sm:w-auto px-5 py-2.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">
-                                    Back to Role Details
-                                </button>
-                                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
-                                    <button
-                                        onClick={this.generateAiCoverLetter}
-                                        disabled={this.state.isAiGenerating}
-                                        className="px-4 py-2.5 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl transition-all flex items-center gap-2 shadow-2xs">
-                                        {this.state.isAiGenerating ? '⚡ Regenerating...' : '⚡ 🔄 Regenerate AI Variation'}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                    {COVER_TEMPLATES.map(tpl => {
+                                        const isSelected = (this.state.templateId || 'Cover1') === tpl.id;
+                                        return (
+                                            <button
+                                                key={tpl.id}
+                                                type="button"
+                                                onClick={() => this.setState({ templateId: tpl.id })}
+                                                className={`text-left p-3.5 rounded-xl border-2 transition-all flex flex-col justify-between relative ${
+                                                    isSelected
+                                                        ? 'border-indigo-600 bg-indigo-50/60 shadow-xs'
+                                                        : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                                                }`}>
+                                                <div className="space-y-1.5">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full text-white bg-gradient-to-r ${tpl.color}`}>
+                                                            {tpl.badge}
+                                                        </span>
+                                                        {isSelected && (
+                                                            <span className="text-xs font-bold text-indigo-600 flex items-center gap-1">
+                                                                ✓ Selected
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <h4 className="text-xs font-bold text-slate-900">{tpl.name}</h4>
+                                                    <p className="text-[11px] text-slate-500 leading-snug">{tpl.description}</p>
+                                                </div>
+                                                <div className="mt-3 pt-2 border-t border-slate-200/60 flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                                                    <span>{tpl.id}</span>
+                                                    <span>{isSelected ? 'Active Preview' : 'Click to Apply'}</span>
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Visual Render or Text Editor */}
+                            <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-6 shadow-sm">
+                                {this.state.viewMode === 'visual' ? (
+                                    <div className="bg-slate-100 p-6 rounded-xl border border-slate-200 max-h-[600px] overflow-y-auto shadow-inner">
+                                        <div className="bg-white text-slate-900 rounded shadow-md max-w-2xl mx-auto p-4 scale-95 origin-top border border-slate-200">
+                                            {/* Dynamic Template Rendering for any of the 4 Cover templates */}
+                                            <TemplateRenderer
+                                                templateId={this.state.templateId || 'Cover1'}
+                                                values={templateValues}
+                                                language={this.props.i18n?.language || 'en'}
+                                            />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        <label className="block text-xs font-bold text-slate-700">Cover Letter Body Content (Editable)</label>
+                                        <textarea
+                                            value={this.state.letterBody}
+                                            onChange={(e) => this.setState({ letterBody: e.target.value })}
+                                            className="w-full h-72 text-xs p-4 bg-white border border-slate-300 rounded-xl text-slate-900 font-mono leading-relaxed focus:border-indigo-600 focus:outline-hidden"
+                                        />
+                                    </div>
+                                )}
+
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+                                    <button onClick={() => this.setState({ step: 1 })} className="w-full sm:w-auto px-5 py-2.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">
+                                        Back to Role Details
                                     </button>
-                                    <button onClick={this.handleSaveCoverLetter} disabled={this.state.isSaving} className="px-4 py-2.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">
-                                        {this.state.isSaving ? 'Saving...' : '💾 Save to Dashboard'}
-                                    </button>
-                                    <button onClick={() => this.setState({ step: 3 })} className="px-5 py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-all">
-                                        Next: Export Package
-                                    </button>
+                                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+                                        <button
+                                            onClick={this.generateAiCoverLetter}
+                                            disabled={this.state.isAiGenerating}
+                                            className="px-4 py-2.5 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl transition-all flex items-center gap-2 shadow-2xs">
+                                            {this.state.isAiGenerating ? '⚡ Regenerating...' : '⚡ 🔄 Regenerate AI Variation'}
+                                        </button>
+                                        <button onClick={this.handleSaveCoverLetter} disabled={this.state.isSaving} className="px-4 py-2.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">
+                                            {this.state.isSaving ? 'Saving...' : '💾 Save to Dashboard'}
+                                        </button>
+                                        <button onClick={() => this.setState({ step: 3 })} className="px-5 py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-all">
+                                            Next: Export Package
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -473,11 +598,35 @@ class CoverLetter extends Component {
                     {/* Step 3: Final Export & Download Package */}
                     {this.state.step === 3 && (
                         <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-6 shadow-sm">
+                            {/* Template Switcher Bar */}
+                            <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                                <span className="text-xs font-bold text-slate-700">Cover Letter Style:</span>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    {COVER_TEMPLATES.map(tpl => (
+                                        <button
+                                            key={tpl.id}
+                                            type="button"
+                                            onClick={() => this.setState({ templateId: tpl.id })}
+                                            className={`px-3 py-1.5 text-xs rounded-lg font-semibold transition-all ${
+                                                (this.state.templateId || 'Cover1') === tpl.id
+                                                    ? 'bg-indigo-600 text-white shadow-xs'
+                                                    : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                                            }`}>
+                                            {tpl.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
                                 {/* Visual Preview Card */}
                                 <div className="bg-slate-100 p-4 rounded-xl border border-slate-200 max-h-[450px] overflow-y-auto">
                                     <div className="bg-white text-slate-900 rounded p-3 scale-90 origin-top shadow-md">
-                                        <TemplateRenderer templateId={this.state.templateId || 'Cover1'} values={templateValues} language={this.props.i18n?.language || 'en'} />
+                                        <TemplateRenderer
+                                            templateId={this.state.templateId || 'Cover1'}
+                                            values={templateValues}
+                                            language={this.props.i18n?.language || 'en'}
+                                        />
                                     </div>
                                 </div>
 
@@ -486,16 +635,20 @@ class CoverLetter extends Component {
                                     <div>
                                         <h3 className="text-xl font-bold text-slate-900">Your Styled Cover Letter is Ready!</h3>
                                         <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-                                            Formatted using the <strong className="text-slate-800 font-semibold">Modern Executive Cover1 Template</strong>, pre-populated with candidate information ({this.state.candidateEmail || 'Logged-in User'}).
+                                            Formatted using the <strong className="text-slate-800 font-semibold">{activeTemplate.name} ({activeTemplate.id})</strong> template, pre-populated with candidate profile details.
                                         </p>
                                     </div>
 
                                     <div className="space-y-3 pt-2">
-                                        <button onClick={this.exportCoverLetterPdf} className="w-full py-3.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-xl transition-all flex items-center justify-center gap-2">
-                                            📄 Download Cover Letter Document (.txt / PDF)
+                                        <button
+                                            onClick={this.exportCoverLetterTxt}
+                                            className="w-full py-3.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-xl transition-all flex items-center justify-center gap-2">
+                                            📄 Download Plain Text Document (.txt)
                                         </button>
-                                        <button onClick={this.exportPdfPackage} className="w-full py-3.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2">
-                                            📦 Download Application Package (Resume + Cover Letter)
+                                        <button
+                                            onClick={() => window.print()}
+                                            className="w-full py-3.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2">
+                                            🖨️ Print / Save as PDF ({activeTemplate.name})
                                         </button>
                                     </div>
                                 </div>
@@ -512,7 +665,9 @@ class CoverLetter extends Component {
                                     <div key={letter.id} className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between hover:bg-slate-100/80 transition-all">
                                         <div>
                                             <h4 className="text-xs font-bold text-slate-900">{letter.jobTitle || 'Target Position'}</h4>
-                                            <p className="text-[11px] text-slate-500 mt-0.5">{letter.companyName || 'Company'} • Candidate: {letter.candidateFirstname ? `${letter.candidateFirstname} ${letter.candidateLastname || ''}` : (candidateFullName || 'User Profile')}</p>
+                                            <p className="text-[11px] text-slate-500 mt-0.5">
+                                                {letter.companyName || 'Company'} • Template: {letter.templateId || 'Cover1'} • Candidate: {letter.candidateFirstname ? `${letter.candidateFirstname} ${letter.candidateLastname || ''}` : (candidateFullName || 'User Profile')}
+                                            </p>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <button
@@ -522,10 +677,17 @@ class CoverLetter extends Component {
                                                     candidateLastname: letter.candidateLastname || this.state.candidateLastname,
                                                     candidateEmail: letter.candidateEmail || this.state.candidateEmail,
                                                     candidatePhone: letter.candidatePhone || this.state.candidatePhone,
+                                                    candidateAddress: letter.candidateAddress || this.state.candidateAddress,
+                                                    candidateCity: letter.candidateCity || this.state.candidateCity,
+                                                    candidatePostalCode: letter.candidatePostalCode || this.state.candidatePostalCode,
                                                     jobTitle: letter.jobTitle,
                                                     companyName: letter.companyName,
                                                     recipientName: letter.recipientName,
+                                                    companyAddress: letter.companyAddress || '',
+                                                    companyCity: letter.companyCity || '',
+                                                    companyPostalCode: letter.companyPostalCode || '',
                                                     letterBody: letter.letterBody,
+                                                    templateId: letter.templateId || 'Cover1',
                                                     step: 2
                                                 })}
                                                 className="text-xs font-semibold text-indigo-700 hover:text-indigo-900 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-2xs transition-all">

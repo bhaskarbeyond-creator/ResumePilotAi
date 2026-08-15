@@ -1,53 +1,111 @@
-.cover4-content{
-    margin-top: 50px;
-    width: 90%;
+.cover4-content {
+    margin: 20px auto;
+    width: 92%;
+    max-width: 720px;
     height: 100%;
     display: flex;
     flex-direction: column;
-    font-size: 14px;
-    // reset font to default
-    font-family: 'Roboto', sans-serif;
-    
-    
-    .cover4-head{
-        padding: 0px 13px;
-        h1{
-            color: #0C2B76;
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: #1e293b;
+    font-family: 'Inter', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+
+    .cover4-head {
+        padding-bottom: 16px;
+        border-bottom: 2px solid #e2e8f0;
+        margin-bottom: 20px;
+
+        h1 {
+            color: #1e40af;
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin: 0;
+            line-height: 1.2;
         }
-        .cover4-job{
-            color: #F49342;
-            font-size: 1.2em;
-            margin: 0px;
+
+        .cover4-job {
+            color: #d97706;
+            font-size: 13px;
+            font-weight: 600;
+            margin: 4px 0 10px 0;
         }
-        .cover4-contactInfo{
+
+        .cover4-contactInfo {
             display: flex;
-            .cover4-contactInfo-item{
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-top: 8px;
+
+            .cover4-contactInfo-item {
                 display: flex;
                 align-items: center;
-                margin-right: 20px;
-                .cover4-icon{
-                    margin-right: 10px;
+                gap: 6px;
+                color: #64748b;
+                font-size: 12px;
+
+                .cover4-icon {
+                    color: #1e40af;
+                    font-size: 13px;
                 }
             }
         }
-
-
     }
-    .cover4-body{
-        display:flex;
-        padding: 0px 13px;
-        box-sizing: border-box;
-        flex-direction: column;
-        .cover4-body-left{
-            width: 70%;
+
+    .cover4-receipentDetails {
+        margin-bottom: 20px;
+        line-height: 1.5;
+        font-size: 13px;
+        color: #334155;
+
+        .cover4-receipentName {
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 2px;
         }
-        .cover4-body-right{
- 
-            padding-right: 20px;
-            width: 30%;
+        .cover4-companyName {
+            font-weight: 600;
+            color: #1e40af;
+            margin-bottom: 2px;
+        }
+        .cover4-receipentAddress {
+            color: #64748b;
+            margin-top: 2px;
+        }
+    }
+
+    .cover4-body {
+        line-height: 1.7;
+        color: #1e293b;
+
+        p {
+            margin-bottom: 14px;
+            white-space: pre-line;
         }
 
+        .cover4-paragraph {
+            margin: 12px 0;
+            p {
+                margin-bottom: 12px;
+                white-space: pre-line;
+            }
+        }
 
-        
+        .cover4-skills {
+            margin: 16px 0;
+            h3 {
+                font-size: 14px;
+                font-weight: 600;
+                color: #0f172a;
+                margin-bottom: 8px;
+            }
+            ul {
+                list-style-type: disc;
+                padding-left: 20px;
+                li {
+                    margin-bottom: 4px;
+                }
+            }
+        }
     }
 }

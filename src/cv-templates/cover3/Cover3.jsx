@@ -2,75 +2,87 @@ import React, { Component } from 'react';
 import './Cover3.scss';
 import { withTranslation } from 'react-i18next';
 import i18n from '../../i18n';
+
 class Cover3Template extends Component {
     constructor(props) {
         super(props);
-
         this.renderComponents = this.renderComponents.bind(this);
-
-        i18n.changeLanguage(this.props.language);
+        if (this.props.language) {
+            i18n.changeLanguage(this.props.language);
+        }
     }
 
-    /// Function that return components
     renderComponents() {
-        let array = [];
-
-        if (this.props.values?.components !== undefined) {
-            for (let i = 0; i < this.props.values.components.length; i++) {
-                if (this.props.values.components[i].type == 'Paragraph') {
-                    array.push(
-                        <div key={`component-${i}`} className="cover3-paragraph">
-                            <p>{this.props.values.components[i].content}</p>
-                        </div>
-                    );
-                } else if (this.props.values.components[i].type == 'List') {
-                    let list = this.props.values.components[i].content;
-
-                    array.push(
+        const components = this.props.values?.components;
+        if (Array.isArray(components) && components.length > 0) {
+            return components.map((comp, i) => {
+                if (comp.type === 'List') {
+                    const list = Array.isArray(comp.content) ? comp.content : String(comp.content || '').split('\n').filter(Boolean);
+                    return (
                         <div key={`component-${i}`} className="cover3-skills">
-                            <h3>{this.props.values.components[i].name}</h3>
+                            {comp.name && <h3>{comp.name}</h3>}
                             <ul>
-                                {list.map((item, index) => {
-                                    return <li key={index}>{item}</li>;
-                                })}
+                                {list.map((item, idx) => <li key={idx}>{item}</li>)}
                             </ul>
                         </div>
                     );
                 }
-            }
+                const textContent = typeof comp.content === 'string' ? comp.content : String(comp.content || '');
+                return (
+                    <div key={`component-${i}`} className="cover3-paragraph">
+                        <p>{textContent}</p>
+                    </div>
+                );
+            });
         }
 
-        return array;
+        const fallbackContent = this.props.values?.coverLetterContent || this.props.values?.letterBody;
+        if (fallbackContent) {
+            return fallbackContent.split(/\n\n+/).map((para, i) => (
+                <div key={`para-${i}`} className="cover3-paragraph">
+                    <p>{para.trim()}</p>
+                </div>
+            ));
+        }
+
+        return null;
     }
 
     render() {
-        const { t } = this.props;
+        const v = this.props.values || {};
+        const recipientName = v.employerFullName || v.recipientName || 'Hiring Manager';
+        const addressLine = [v.address, v.city, v.postalcode || v.postalCode, v.country].filter(Boolean).join(', ');
+        const companyAddressLine = [v.companyAddress, v.companyCity, v.companyPostalCode].filter(Boolean).join(', ');
+
         return (
             <div id="resumen" className="cv9-board">
                 <div className="cover3-content">
                     {/* Head */}
                     <div className="cover3-head">
-                        <h1> {this.props.values?.firstname}  {this.props.values?.lastname}</h1>
-                        <p></p>
+                        <h1>{v.firstname} {v.lastname}</h1>
+                        {v.occupation && <p className="cover3-subtitle">{v.occupation}</p>}
                     </div>
+
                     {/* Body */}
                     <div className="cover3-body">
                         <div className="cover3-body-left">
+                            <p>Dear {recipientName},</p>
                             {this.renderComponents()}
-                            </div>
+                        </div>
                         <div className="cover3-body-right">
-                            {/* Title */}
                             <div className="cover3-title">
-                                <h2>To</h2>
-                                <p> {this.props.values?.companyName}</p>
-                                <p>{this.props.values?.employerFullName}</p>
-                                <p> {this.props.values?.companyAddress}, {this.props.values?.companyCity}</p>
-                                <p> {this.props.values?.companyPostalCode}</p>
-                                <h2>From</h2>
-                                <p>{this.props.values?.firstname} {this.props.values?.lastname}</p>
-                                <p>{this.props.values?.address}, {this.props.values?.city}, {this.props.values?.postalcode}</p>
-                                <p>{this.props.values?.phone}</p>
-                                <p>{this.props.values?.email}</p>
+                                <h2>Recipient</h2>
+                                {recipientName && <p><strong>{recipientName}</strong></p>}
+                                {v.companyName && <p>{v.companyName}</p>}
+                                {companyAddressLine && <p>{companyAddressLine}</p>}
+
+                                <div className="sender-block">
+                                    <h2>Sender</h2>
+                                    <p><strong>{v.firstname} {v.lastname}</strong></p>
+                                    {addressLine && <p>{addressLine}</p>}
+                                    {v.phone && <p>{v.phone}</p>}
+                                    {v.email && <p>{v.email}</p>}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -79,5 +91,6 @@ class Cover3Template extends Component {
         );
     }
 }
+
 const Cover3 = withTranslation('common')(Cover3Template);
 export default Cover3;
