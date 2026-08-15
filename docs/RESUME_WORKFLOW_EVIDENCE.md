@@ -50,6 +50,10 @@ Builder persistence changed from one Firestore write per emitted change to at mo
 
 Production chunk size increased modestly because the builder now includes canonical persistence/recovery logic; correctness and removal of repeated network operations were prioritized over a few compressed kilobytes.
 
+## Public snapshot integrity
+
+Publishing now reads the canonical owner draft inside the publication transaction, verifies expected draft and public-snapshot revisions, and records both `sourceRevision` and `publicationRevision`. Private edits do not mutate the public snapshot. Stale publish/unpublish attempts fail instead of replacing a newer public decision. The unused legacy `setJsonPb(..., { isPublished: true })` bypass was removed; legacy saves remain private owner-subcollection writes.
+
 ## Security boundaries
 
 - Firestore user-subcollection ownership rules remain authoritative.

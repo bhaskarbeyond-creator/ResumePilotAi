@@ -3404,6 +3404,31 @@ app.delete('/api/admin/pages/:slug', async (req, res) => {
     }
 });
 
+app.post('/api/admin/website-meta', async (req, res) => {
+    const requestDb = req.app.get('db');
+    if (!requestDb || !admin) return res.status(503).json({ success: false, error: 'Website metadata service unavailable.' });
+    const allowedLanguages = new Set(['English','Hindi','Spanish','French','German','Italian','Portuguese','Russian','Polish','Dutch','Romanian','Danish','Swedish','Norwegian','Icelandic','Greek']);
+    const changes = {};
+    if (req.body.title !== undefined) changes.title = String(req.body.title).replace(/\p{Cc}/gu, ' ').trim().slice(0, 160);
+    if (req.body.description !== undefined) changes.description = String(req.body.description).replace(/\p{Cc}/gu, ' ').trim().slice(0, 500);
+    if (req.body.keywords !== undefined) changes.keywords = String(req.body.keywords).replace(/\p{Cc}/gu, ' ').trim().slice(0, 1000);
+    if (req.body.language !== undefined) { if (!allowedLanguages.has(req.body.language)) return res.status(400).json({ success: false, error: 'Unsupported website language.' }); changes.language = req.body.language; }
+    if (req.body.disabledLanguages !== undefined) changes.disabledLanguages = [...new Set((Array.isArray(req.body.disabledLanguages) ? req.body.disabledLanguages : []).filter(item => allowedLanguages.has(item)))];
+    if (req.body.trackingCode !== undefined) { const code = String(req.body.trackingCode).trim(); if (code && !/^(G-[A-Z0-9]{10}|UA-[0-9]+-[0-9]+)$/.test(code)) return res.status(400).json({ success: false, error: 'Invalid analytics measurement ID.' }); changes.trackingCode = code; }
+    if (!Object.keys(changes).length) return res.status(400).json({ success: false, error: 'No metadata changes supplied.' });
+    try {
+        let revision;
+        await requestDb.runTransaction(async transaction => {
+            const reference = requestDb.collection('data').doc('meta'); const snapshot = await transaction.get(reference); const current = Number(snapshot.data()?.revision || 0);
+            if (Number(req.body.expectedRevision || 0) !== current) { const e = new Error('Website metadata changed after the panel loaded. Refresh before saving.'); e.code = 'ADMIN_TARGET_CHANGED'; throw e; }
+            revision = current + 1;
+            transaction.set(reference, { ...changes, revision, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+            transaction.set(requestDb.collection('security_audit_logs').doc(), { action: 'WEBSITE_METADATA_UPDATED', actorUid: req.user.uid, changedFields: Object.keys(changes), revision, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        });
+        return res.json({ success: true, metadata: { ...changes, revision } });
+    } catch (error) { return res.status(error.code === 'ADMIN_TARGET_CHANGED' ? 409 : 500).json({ success: false, code: error.code, error: error.code ? error.message : 'Unable to update website metadata.' }); }
+});
+
 app.post('/api/admin/landing-content', async (req, res) => {
     if (!db || !admin) return res.status(503).json({ success: false, error: 'Landing-content service unavailable.' });
     const fields = ['activeJobs', 'rating', 'partnerCompanies', 'successfulHires', 'featuredJobs', 'successRate', 'topCompanies'];

@@ -10,7 +10,7 @@ class AnalyticsSettings extends Component {
             trackingCode: '',
             isSuccesShowed: false,
             isValidCode: true,
-            isGA4Active: false,
+            isGA4Active: false, saving: false, error: '',
         };
         this.handleChange = this.handleChange.bind(this);
         this.saveWebsiteMetaData = this.saveWebsiteMetaData.bind(this);
@@ -38,28 +38,21 @@ class AnalyticsSettings extends Component {
                 break;
         }
     }
-    saveWebsiteMetaData() {
+    async saveWebsiteMetaData() {
         const trackingCode = this.state.trackingCode.trim();
 
-        // Save to Firestore
-        editTrackingCode(trackingCode);
-
-        // Initialize GA4 if we have a valid tracking code
-        if (trackingCode && this.state.isValidCode) {
-            initGA(trackingCode);
-            this.setState({ isGA4Active: true });
-        }
-
-        this.setState({ isSuccesShowed: true });
-
-        // Auto-hide success message after 3 seconds
-        setTimeout(() => {
-            this.setState({ isSuccesShowed: false });
-        }, 3000);
+        this.setState({ saving: true, error: '' });
+        try {
+            await editTrackingCode(trackingCode);
+            if (trackingCode && this.state.isValidCode) this.setState({ isGA4Active: initGA(trackingCode) || isGA4Initialized() });
+            this.setState({ isSuccesShowed: true });
+        } catch (error) { this.setState({ error: error.message || 'Analytics settings could not be saved.' }); }
+        finally { this.setState({ saving: false }); }
     }
     render() {
         return (
             <div className="space-y-6">
+                {this.state.error && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{this.state.error}</div>}
                 {/* Success Alert */}
                 {this.state.isSuccesShowed && (
                     <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 flex items-center justify-between">
@@ -201,6 +194,7 @@ class AnalyticsSettings extends Component {
                         <button
                             type="button"
                             onClick={() => this.saveWebsiteMetaData()}
+                            disabled={this.state.saving}
                             disabled={!this.state.isValidCode || !this.state.trackingCode.trim()}
                             className={`px-6 py-2 text-sm font-medium rounded-lg transition-colors flex items-center space-x-2 ${
                                 this.state.isValidCode && this.state.trackingCode.trim()

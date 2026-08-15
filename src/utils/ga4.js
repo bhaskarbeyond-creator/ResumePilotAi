@@ -69,10 +69,12 @@ export const trackCustomEvent = (eventName, parameters = {}) => {
     if (!isInitialized || !analyticsAllowed()) return;
     const name = String(eventName || '').replace(/[^A-Za-z0-9_]/g, '_').slice(0, 40);
     if (!name) return;
+    const forbiddenKey = /(?:^|_)(?:uid|user_id|email|phone|resume_id|portfolio_id|order_id|payment_id|invoice_id|membership_id)(?:$|_)/i;
     const safeParameters = Object.fromEntries(Object.entries(parameters).slice(0, 25).map(([key, value]) => [
-        String(key).replace(/[^A-Za-z0-9_]/g, '_').slice(0, 40),
-        typeof value === 'number' || typeof value === 'boolean' ? value : String(value ?? '').slice(0, 100),
-    ]));
+        String(key).replace(/[^A-Za-z0-9_]/g, '_').slice(0, 40), value,
+    ]).filter(([key]) => key && !forbiddenKey.test(key)).map(([key, value]) => [
+        key, typeof value === 'number' || typeof value === 'boolean' ? value : String(value ?? '').slice(0, 100),
+    ]).filter(([, value]) => typeof value !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)));
     if (isDuplicate(`${name}:${JSON.stringify(safeParameters)}`)) return;
     try { ReactGA.gtag('event', name, safeParameters); } catch (error) { console.error('GA4 custom event tracking failed:', error); }
 };

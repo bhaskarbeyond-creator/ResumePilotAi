@@ -85,12 +85,13 @@ export async function addContactMessage(email, name, message) {
     return result;
 }
 
-// Edit Google track code. needs to bo with analytics
-export function editTrackingCode(trackingCode) {
-    const db = fire.firestore();
-    db.collection('data').doc('meta').update({
-        trackingCode: trackingCode,
-    });
+let websiteMetaRevision = 0;
+
+export async function editTrackingCode(trackingCode) {
+    const { response, data } = await fetchAdminWithReauth('/api/admin/website-meta', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ trackingCode, expectedRevision: websiteMetaRevision }) });
+    if (!response.ok || !data.success) throw new Error(data.error?.message || data.error || 'Unable to save analytics settings.');
+    websiteMetaRevision = Number(data.metadata.revision || websiteMetaRevision);
+    return data;
 }
 
 /// Add Resume
@@ -2010,10 +2011,10 @@ export async function getWebsiteData() {
         const snapshot = await userRef.get();
         if (snapshot && snapshot.exists) {
             var data = snapshot.data();
-            return {
-                ...data,
-                ...(localCache || {})
-            };
+            websiteMetaRevision = Number(data.revision || 0);
+            const merged = { ...(localCache || {}), ...data };
+            try { if (typeof window !== 'undefined') localStorage.setItem('website_meta_cache', JSON.stringify(merged)); } catch { /* public fallback cache is optional */ }
+            return merged;
         }
         return localCache;
     }, false);
@@ -2028,7 +2029,7 @@ export async function getWebsiteData() {
 }
 
 // Set Website Data
-export function settWebsiteData(title, description, keywords, language, disabledLanguages = []) {
+export async function settWebsiteData(title, description, keywords, language, disabledLanguages = []) {
     const websiteData = {
         title: title || '',
         description: description || '',
@@ -2037,18 +2038,12 @@ export function settWebsiteData(title, description, keywords, language, disabled
         disabledLanguages: Array.isArray(disabledLanguages) ? disabledLanguages : [],
     };
 
-    try {
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('website_meta_cache', JSON.stringify(websiteData));
-        }
-    } catch (e) {}
-
-    const db = fire.firestore();
-    const userRef = db.collection('data').doc('meta');
-    
-    userRef.set(websiteData, { merge: true }).catch((error) => {
-        console.error('Error saving website data:', error);
-    });
+    const { response, data } = await fetchAdminWithReauth('/api/admin/website-meta', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...websiteData, expectedRevision: websiteMetaRevision }) });
+    if (!response.ok || !data.success) throw new Error(data.error?.message || data.error || 'Unable to save website metadata.');
+    websiteMetaRevision = Number(data.metadata.revision || websiteMetaRevision);
+    const persisted = { ...websiteData, revision: websiteMetaRevision };
+    try { if (typeof window !== 'undefined') localStorage.setItem('website_meta_cache', JSON.stringify(persisted)); } catch { /* public fallback cache is optional */ }
+    return data;
 }
 
 // Set Subscriptions Data (Enterprise Grade)
@@ -3656,19 +3651,12 @@ export async function getJsonById(resumeId) {
     }
 }
 
-export async function setJsonPb(resumeId, resumeObject, { isPublished = false } = {}) {
+export async function setJsonPb(resumeId, resumeObject) {
     const db = fire.firestore();
     const ownerUid = fire.auth().currentUser?.uid;
     if (!ownerUid) throw new Error('Authentication is required');
     const objectToSave = { ...resumeObject };
     delete objectToSave.user;
-    if (isPublished === true) {
-        await db.collection('pb').doc(resumeId).set({
-            id: resumeId, ownerUid, isPublished: true, publicationMode: 'explicit', object: JSON.stringify(objectToSave),
-            publishedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        });
-        return;
-    }
     const isCover = String(objectToSave.template || objectToSave.resumeName || '').startsWith('Cover');
     const collectionName = isCover ? 'covers' : 'resumes';
     const reference = db.collection('users').doc(ownerUid).collection(collectionName).doc(resumeId);

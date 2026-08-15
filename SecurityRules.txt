@@ -244,7 +244,7 @@ service cloud.firestore {
     match /data/{id} {
       allow read: if id in ['meta','frontendstats','public_config']
         || (admin() && !(id in ['system_settings','subscriptions']));
-      allow write: if admin() && !(id in ['frontendstats','public_config']) && (!(id in ['system_settings','subscriptions']) || recentAuth());
+      allow write: if admin() && !(id in ['meta','frontendstats','public_config']) && (!(id in ['system_settings','subscriptions']) || recentAuth());
     }
     match /settings/{id} {
       allow read: if admin() && !(id in ['ai_providers','payment_providers','oauth_providers','admin_configuration']);

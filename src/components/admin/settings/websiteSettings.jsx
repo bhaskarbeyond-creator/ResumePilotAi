@@ -30,7 +30,7 @@ class WebsiteSettings extends Component {
             websiteKeywords: 'ResumePilot AI, ATS Resume Builder, CV Maker, AI Resume Builder, Student Resume Builder, Fresher CV Maker, Free Resume Builder India, Indian Biodata Maker, Naukri Resume Generator',
             defaultLan: 'English',
             disabledLanguages: [],
-            isSuccesShowed: false,
+            isSuccesShowed: false, saving: false, error: '',
         };
         this.handleChange = this.handleChange.bind(this);
         this.saveWebsiteMetaData = this.saveWebsiteMetaData.bind(this);
@@ -97,23 +97,20 @@ class WebsiteSettings extends Component {
         this.setState({ disabledLanguages: [] });
     }
 
-    saveWebsiteMetaData() {
+    async saveWebsiteMetaData() {
         const title = this.state.websiteTitle || 'ResumePilot AI — #1 ATS Resume Builder & CV Maker for Students & Freshers';
         const description = this.state.websiteDescription || '';
         const keywords = this.state.websiteKeywords || '';
         const language = this.state.defaultLan || 'English';
         const disabledLanguages = this.state.disabledLanguages || [];
 
-        settWebsiteData(title, description, keywords, language, disabledLanguages);
-
-        window.dispatchEvent(new CustomEvent('websiteMetadataUpdated', {
-            detail: { title, description, keywords, language, disabledLanguages }
-        }));
-
-        this.setState({ isSuccesShowed: true });
-        setTimeout(() => {
-            this.setState({ isSuccesShowed: false });
-        }, 3000);
+        this.setState({ saving: true, error: '' });
+        try {
+            await settWebsiteData(title, description, keywords, language, disabledLanguages);
+            window.dispatchEvent(new CustomEvent('websiteMetadataUpdated', { detail: { title, description, keywords, language, disabledLanguages } }));
+            this.setState({ isSuccesShowed: true });
+        } catch (error) { this.setState({ error: error.message || 'Website metadata could not be saved.' }); }
+        finally { this.setState({ saving: false }); }
     }
 
     render() {
@@ -121,6 +118,7 @@ class WebsiteSettings extends Component {
 
         return (
             <div className="space-y-6">
+                {this.state.error && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{this.state.error}</div>}
                 {/* Success Alert */}
                 {this.state.isSuccesShowed && (
                     <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 flex items-center justify-between">
@@ -340,6 +338,7 @@ class WebsiteSettings extends Component {
                         <button
                             type="button"
                             onClick={() => this.saveWebsiteMetaData()}
+                            disabled={this.state.saving}
                             className="px-6 py-2.5 text-sm font-semibold text-white bg-slate-900 rounded-xl hover:bg-slate-800 transition-colors flex items-center space-x-2 shadow-md"
                         >
                             <FaCheck className="w-4 h-4" />
