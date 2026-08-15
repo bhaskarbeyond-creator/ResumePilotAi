@@ -7,6 +7,7 @@ import { saveCoverLetter, getUserCoverLetters, deleteCoverLetter, getProfileOfUs
 import { generateUserAiContent } from '../../services/aiService';
 import fire from '../../conf/fire';
 import TemplateRenderer from '../TemplateRenderer';
+import { FaWhatsapp, FaEnvelope, FaLinkedin, FaTelegramPlane, FaCopy, FaPrint, FaFileDownload, FaExpand, FaTimes, FaSearchPlus, FaSearchMinus } from 'react-icons/fa';
 
 const COVER_TEMPLATES = [
     {
@@ -70,6 +71,9 @@ class CoverLetter extends Component {
             isSaving: false,
             notificationMessage: null,
             letterToDelete: null,
+            // Modal Preview State
+            showPreviewModal: false,
+            modalZoom: 0.65,
         };
         this.aiRequestController = null;
     }
@@ -77,13 +81,21 @@ class CoverLetter extends Component {
     async componentDidMount() {
         this.loadSavedLetters();
         await this.loadUserProfileData();
+        document.addEventListener('keydown', this.handleKeyDown);
     }
 
     componentWillUnmount() {
+        document.removeEventListener('keydown', this.handleKeyDown);
         const controller = this.aiRequestController;
         this.aiRequestController = null;
         controller?.abort();
     }
+
+    handleKeyDown = (e) => {
+        if (e.key === 'Escape' && this.state.showPreviewModal) {
+            this.setState({ showPreviewModal: false });
+        }
+    };
 
     getDefaultLetterBody = () => {
         const candidateName = `${this.state.candidateFirstname} ${this.state.candidateLastname}`.trim() || 'Applicant';
@@ -350,6 +362,56 @@ class CoverLetter extends Component {
         }
     };
 
+    handleShareWhatsApp = () => {
+        const fullName = `${this.state.candidateFirstname} ${this.state.candidateLastname}`.trim() || 'Candidate';
+        const role = this.state.jobTitle || 'Position';
+        const company = this.state.companyName ? `at ${this.state.companyName}` : '';
+        const body = (this.state.letterBody || this.getDefaultLetterBody()).trim();
+        const text = `*Cover Letter for ${role} ${company}*\n\nCandidate: ${fullName}\n\nDear ${this.state.recipientName || 'Hiring Manager'},\n\n${body}\n\nSincerely,\n${fullName}`;
+        const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+        window.open(url, '_blank', 'noopener,noreferrer');
+    };
+
+    handleShareEmail = () => {
+        const fullName = `${this.state.candidateFirstname} ${this.state.candidateLastname}`.trim() || 'Candidate';
+        const role = this.state.jobTitle || 'Job Application';
+        const company = this.state.companyName ? `at ${this.state.companyName}` : '';
+        const subject = `Cover Letter: ${role} ${company} - ${fullName}`;
+        const body = `Dear ${this.state.recipientName || 'Hiring Manager'},\n\n${(this.state.letterBody || this.getDefaultLetterBody()).trim()}\n\nSincerely,\n${fullName}`;
+        window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    };
+
+    handleShareTelegram = () => {
+        const fullName = `${this.state.candidateFirstname} ${this.state.candidateLastname}`.trim() || 'Candidate';
+        const role = this.state.jobTitle || 'Application';
+        const body = (this.state.letterBody || this.getDefaultLetterBody()).trim();
+        const text = `*Cover Letter: ${role}*\nCandidate: ${fullName}\n\n${body}`;
+        const url = `https://t.me/share/url?url=${encodeURIComponent(window.location.origin)}&text=${encodeURIComponent(text)}`;
+        window.open(url, '_blank', 'noopener,noreferrer');
+    };
+
+    handleShareLinkedIn = async () => {
+        await this.handleCopyFormattedText();
+        this.setState({ notificationMessage: '✓ Formatted cover letter copied to clipboard! Opening LinkedIn messaging...' });
+        setTimeout(() => {
+            window.open('https://www.linkedin.com/messaging/', '_blank', 'noopener,noreferrer');
+        }, 600);
+    };
+
+    handleCopyFormattedText = async () => {
+        try {
+            const fullName = `${this.state.candidateFirstname} ${this.state.candidateLastname}`.trim() || 'Candidate Name';
+            const recipientName = (this.state.recipientName || 'Hiring Manager').trim();
+            const body = (this.state.letterBody || this.getDefaultLetterBody()).trim();
+            const text = `Dear ${recipientName},\n\n${body}\n\nSincerely,\n${fullName}`;
+            await navigator.clipboard.writeText(text);
+            this.setState({ notificationMessage: '✓ Copied formatted cover letter to clipboard!' });
+            setTimeout(() => this.setState({ notificationMessage: null }), 4000);
+        } catch (err) {
+            console.error('Clipboard copy error:', err);
+        }
+    };
+
     render() {
         const { t } = this.props;
         const candidateFullName = `${this.state.candidateFirstname} ${this.state.candidateLastname}`.trim();
@@ -385,6 +447,89 @@ class CoverLetter extends Component {
 
         return (
             <div className="cover-letter min-h-screen bg-slate-50 text-slate-900 p-4 sm:p-8 font-sans">
+                {/* Fullscreen Preview Modal (Same as Resume Preview Modal) */}
+                {this.state.showPreviewModal && (
+                    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">
+                        <div
+                            role="dialog"
+                            aria-modal="true"
+                            className="relative w-full max-w-6xl max-h-[94vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
+                            {/* Modal Header */}
+                            <div className="bg-slate-50 border-b border-slate-200 px-6 py-4 flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100">
+                                        <FaExpand className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-base font-bold text-slate-900">Cover Letter Preview</h2>
+                                        <p className="text-xs text-slate-500 font-medium">
+                                            {activeTemplate.name} ({activeTemplate.id}) • A4 Print Ready
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    {/* Zoom Controls */}
+                                    <div className="hidden sm:flex items-center gap-1 bg-slate-200/70 p-1 rounded-xl">
+                                        <button
+                                            type="button"
+                                            onClick={() => this.setState(prev => ({ modalZoom: Math.max(0.4, prev.modalZoom - 0.1) }))}
+                                            className="p-1.5 text-slate-700 hover:text-indigo-600 hover:bg-white rounded-lg transition-all"
+                                            title="Zoom Out">
+                                            <FaSearchMinus className="w-3.5 h-3.5" />
+                                        </button>
+                                        <span className="text-[11px] font-mono font-bold px-2 text-slate-700 min-w-[45px] text-center">
+                                            {Math.round(this.state.modalZoom * 100)}%
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => this.setState(prev => ({ modalZoom: Math.min(1.0, prev.modalZoom + 0.1) }))}
+                                            className="p-1.5 text-slate-700 hover:text-indigo-600 hover:bg-white rounded-lg transition-all"
+                                            title="Zoom In">
+                                            <FaSearchPlus className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+
+                                    {/* Print / Save PDF in Modal */}
+                                    <button
+                                        onClick={() => window.print()}
+                                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-2">
+                                        <FaPrint className="w-3.5 h-3.5" />
+                                        <span>Print / PDF</span>
+                                    </button>
+
+                                    {/* Close Button */}
+                                    <button
+                                        onClick={() => this.setState({ showPreviewModal: false })}
+                                        className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-all"
+                                        aria-label="Close Preview">
+                                        <FaTimes className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Modal Canvas Body */}
+                            <div className="flex-1 overflow-auto bg-slate-100/90 p-4 sm:p-8 flex justify-center items-start custom-scrollbar">
+                                <div
+                                    className="bg-white text-slate-900 rounded-sm shadow-2xl transition-transform duration-200 border border-slate-200"
+                                    style={{
+                                        transform: `scale(${this.state.modalZoom})`,
+                                        transformOrigin: 'top center',
+                                        width: '794px',
+                                        minHeight: '1122px',
+                                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.2)',
+                                    }}>
+                                    <TemplateRenderer
+                                        templateId={this.state.templateId || 'Cover1'}
+                                        values={templateValues}
+                                        language={this.props.i18n?.language || 'en'}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Delete Confirmation Modal Overlay */}
                 {this.state.letterToDelete && (
                     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
@@ -454,7 +599,7 @@ class CoverLetter extends Component {
                                 Step 2: AI Generator & Template Selection
                             </button>
                             <button onClick={() => this.setState({ step: 3 })} className={`px-4 py-2 rounded-xl transition-all ${this.state.step === 3 ? 'bg-indigo-600 text-white font-bold shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
-                                Step 3: Export & Download
+                                Step 3: Export & Share Package
                             </button>
                         </div>
 
@@ -607,7 +752,17 @@ class CoverLetter extends Component {
                             {/* Visual Render or Text Editor */}
                             <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-6 shadow-sm">
                                 {this.state.viewMode === 'visual' ? (
-                                    <div className="bg-slate-100/80 p-4 sm:p-8 rounded-2xl border border-slate-200 overflow-x-auto shadow-inner flex justify-center items-start min-h-[650px]">
+                                    <div className="bg-slate-100/80 p-4 sm:p-8 rounded-2xl border border-slate-200 overflow-x-auto shadow-inner flex flex-col items-center min-h-[650px]">
+                                        <div className="w-full max-w-[794px] flex items-center justify-between mb-3 px-2">
+                                            <span className="text-xs font-semibold text-slate-500">A4 Letter Canvas Preview</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => this.setState({ showPreviewModal: true })}
+                                                className="text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-white hover:bg-indigo-50 border border-slate-200 px-3 py-1.5 rounded-lg shadow-2xs transition-all flex items-center gap-1.5">
+                                                <FaExpand className="w-3 h-3" />
+                                                <span>Open Fullscreen Modal</span>
+                                            </button>
+                                        </div>
                                         {/* Authentic A4 Paper Canvas */}
                                         <div
                                             className="bg-white text-slate-900 rounded-sm shadow-xl border border-slate-200/80 overflow-hidden"
@@ -650,7 +805,7 @@ class CoverLetter extends Component {
                                             {this.state.isSaving ? 'Saving...' : '💾 Save to Dashboard'}
                                         </button>
                                         <button onClick={() => this.setState({ step: 3 })} className="px-5 py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-all">
-                                            Next: Export Package
+                                            Next: Export & Share Package
                                         </button>
                                     </div>
                                 </div>
@@ -658,7 +813,7 @@ class CoverLetter extends Component {
                         </div>
                     )}
 
-                    {/* Step 3: Final Export & Download Package */}
+                    {/* Step 3: Final Export, Fullscreen Modal & Omni-Channel Share Package */}
                     {this.state.step === 3 && (
                         <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-6 shadow-sm">
                             {/* Template Switcher Bar */}
@@ -672,7 +827,7 @@ class CoverLetter extends Component {
                                             onClick={() => this.setState({ templateId: tpl.id })}
                                             className={`px-3 py-1.5 text-xs rounded-lg font-semibold transition-all ${
                                                 (this.state.templateId || 'Cover1') === tpl.id
-                                                    ? 'bg-indigo-600 text-white shadow-xs'
+                                                    ? 'bg-indigo-600 text-white shadow-xs font-bold'
                                                     : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
                                             }`}>
                                             {tpl.name}
@@ -681,38 +836,130 @@ class CoverLetter extends Component {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-                                {/* Visual Preview Card */}
-                                <div className="bg-slate-100/80 p-4 rounded-xl border border-slate-200 max-h-[500px] overflow-y-auto flex justify-center">
-                                    <div className="bg-white text-slate-900 rounded-sm shadow-md border border-slate-200 w-full max-w-[500px]">
-                                        <TemplateRenderer
-                                            templateId={this.state.templateId || 'Cover1'}
-                                            values={templateValues}
-                                            language={this.props.i18n?.language || 'en'}
-                                        />
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                                {/* Proportional Live Preview Card with Modal Trigger */}
+                                <div className="lg:col-span-6 space-y-2">
+                                    <div
+                                        onClick={() => this.setState({ showPreviewModal: true })}
+                                        className="relative h-[490px] bg-slate-100/90 rounded-2xl border border-slate-200 overflow-hidden flex items-start justify-center cursor-pointer group hover:border-indigo-300 transition-all shadow-inner p-3">
+                                        {/* Hover Overlay */}
+                                        <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/20 backdrop-blur-none group-hover:backdrop-blur-2xs transition-all duration-300 z-10 flex items-center justify-center pointer-events-none">
+                                            <div className="opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-200 bg-white/95 text-indigo-700 px-4 py-2 rounded-xl text-xs font-bold shadow-lg flex items-center gap-2 border border-indigo-100">
+                                                <FaExpand className="w-3.5 h-3.5" />
+                                                <span>Click to Open Fullscreen Preview</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Scaled A4 Preview Board */}
+                                        <div
+                                            className="bg-white text-slate-900 rounded-sm shadow-md border border-slate-200 pointer-events-none"
+                                            style={{
+                                                width: '794px',
+                                                minHeight: '1122px',
+                                                transform: 'scale(0.40)',
+                                                transformOrigin: 'top center',
+                                                marginBottom: '-580px',
+                                            }}>
+                                            <TemplateRenderer
+                                                templateId={this.state.templateId || 'Cover1'}
+                                                values={templateValues}
+                                                language={this.props.i18n?.language || 'en'}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center justify-between px-1">
+                                        <span className="text-[11px] text-slate-400">Click preview card to open modal</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => this.setState({ showPreviewModal: true })}
+                                            className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1.5">
+                                            <FaExpand className="w-3 h-3" />
+                                            <span>Expand Preview</span>
+                                        </button>
                                     </div>
                                 </div>
 
-                                {/* Download Actions */}
-                                <div className="space-y-6 text-center lg:text-left">
+                                {/* Download & Omni-Channel Share Actions */}
+                                <div className="lg:col-span-6 space-y-6">
                                     <div>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                                Ready for Submission
+                                            </span>
+                                            <span className="text-[10px] font-mono text-slate-400">{activeTemplate.id}</span>
+                                        </div>
                                         <h3 className="text-xl font-bold text-slate-900">Your Styled Cover Letter is Ready!</h3>
-                                        <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-                                            Formatted using the <strong className="text-slate-800 font-semibold">{activeTemplate.name} ({activeTemplate.id})</strong> template, pre-populated with candidate profile details.
+                                        <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                                            Formatted using the <strong className="text-slate-800 font-semibold">{activeTemplate.name}</strong> template with dynamic candidate details.
                                         </p>
                                     </div>
 
-                                    <div className="space-y-3 pt-2">
-                                        <button
-                                            onClick={this.exportCoverLetterTxt}
-                                            className="w-full py-3.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-xl transition-all flex items-center justify-center gap-2">
-                                            📄 Download Plain Text Document (.txt)
-                                        </button>
+                                    {/* Primary Export Actions */}
+                                    <div className="space-y-2.5">
                                         <button
                                             onClick={() => window.print()}
-                                            className="w-full py-3.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2">
-                                            🖨️ Print / Save as PDF ({activeTemplate.name})
+                                            className="w-full py-3.5 px-4 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2">
+                                            <FaPrint className="w-3.5 h-3.5" />
+                                            <span>Print / Save as PDF ({activeTemplate.name})</span>
                                         </button>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                            <button
+                                                onClick={this.exportCoverLetterTxt}
+                                                className="py-2.5 px-3 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl transition-all flex items-center justify-center gap-2">
+                                                <FaFileDownload className="w-3.5 h-3.5 text-slate-500" />
+                                                <span>Download Plain Text (.txt)</span>
+                                            </button>
+                                            <button
+                                                onClick={this.handleCopyFormattedText}
+                                                className="py-2.5 px-3 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl transition-all flex items-center justify-center gap-2">
+                                                <FaCopy className="w-3.5 h-3.5 text-indigo-600" />
+                                                <span>Copy Formatted Text</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Omni-Channel Social & Messaging Share Suite */}
+                                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                                        <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                                            <span>🚀 Share Cover Letter with Recruiter</span>
+                                        </h4>
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                            {/* WhatsApp */}
+                                            <button
+                                                type="button"
+                                                onClick={this.handleShareWhatsApp}
+                                                className="p-2.5 bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 rounded-xl text-center transition-all group flex flex-col items-center gap-1.5 shadow-2xs">
+                                                <FaWhatsapp className="w-5 h-5 text-emerald-500 group-hover:scale-110 transition-transform" />
+                                                <span className="text-[11px] font-bold text-slate-700 group-hover:text-emerald-700">WhatsApp</span>
+                                            </button>
+
+                                            {/* Email / Gmail */}
+                                            <button
+                                                type="button"
+                                                onClick={this.handleShareEmail}
+                                                className="p-2.5 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-xl text-center transition-all group flex flex-col items-center gap-1.5 shadow-2xs">
+                                                <FaEnvelope className="w-5 h-5 text-blue-500 group-hover:scale-110 transition-transform" />
+                                                <span className="text-[11px] font-bold text-slate-700 group-hover:text-blue-700">Email</span>
+                                            </button>
+
+                                            {/* Telegram */}
+                                            <button
+                                                type="button"
+                                                onClick={this.handleShareTelegram}
+                                                className="p-2.5 bg-white hover:bg-sky-50 border border-slate-200 hover:border-sky-300 rounded-xl text-center transition-all group flex flex-col items-center gap-1.5 shadow-2xs">
+                                                <FaTelegramPlane className="w-5 h-5 text-sky-500 group-hover:scale-110 transition-transform" />
+                                                <span className="text-[11px] font-bold text-slate-700 group-hover:text-sky-700">Telegram</span>
+                                            </button>
+
+                                            {/* LinkedIn */}
+                                            <button
+                                                type="button"
+                                                onClick={this.handleShareLinkedIn}
+                                                className="p-2.5 bg-white hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 rounded-xl text-center transition-all group flex flex-col items-center gap-1.5 shadow-2xs">
+                                                <FaLinkedin className="w-5 h-5 text-indigo-600 group-hover:scale-110 transition-transform" />
+                                                <span className="text-[11px] font-bold text-slate-700 group-hover:text-indigo-700">LinkedIn</span>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
