@@ -87,6 +87,32 @@ test('response normalization preserves UI contracts across markdown, aliases, an
   });
 });
 
+test('grammar responses are deterministically bounded and invalid indexes are rejected', () => {
+  const text = 'Teh company is growing. ';
+  const raw = JSON.stringify({
+    hasErrors: true,
+    corrections: [
+      { original: 'Teh', suggestion: 'The', type: 'spelling', explanation: 'Spelling', startIndex: 0, endIndex: 3 },
+      { original: 'Nope', suggestion: 'Never', type: 'grammar', explanation: 'Stale index', startIndex: 99, endIndex: 103 },
+      { original: 'Teh', suggestion: 'The', type: 'spelling', explanation: 'Duplicate range', startIndex: 0, endIndex: 3 },
+      { original: 'growing. ', suggestion: 'growing.', type: 'style', explanation: 'Trailing space', startIndex: 15, endIndex: 24 },
+      { original: 'bad', suggestion: 'evil', type: 'injection', explanation: 'Bad type', startIndex: 0, endIndex: 3 },
+    ],
+    overallSuggestion: 'Review the issue.'
+  });
+  assert.deepEqual(parseAiResponse('check-grammar', raw, { sourceText: text }), {
+    hasErrors: true,
+    corrections: [
+      { original: 'Teh', suggestion: 'The', type: 'spelling', explanation: 'Spelling', startIndex: 0, endIndex: 3 },
+      { original: 'growing. ', suggestion: 'growing.', type: 'style', explanation: 'Trailing space', startIndex: 15, endIndex: 24 },
+    ],
+    overallSuggestion: 'Review the issue.'
+  });
+  assert.deepEqual(parseAiResponse('check-grammar', '{"hasErrors":false,"corrections":[],"overallSuggestion":"All good."}', { sourceText: text }), {
+    hasErrors: false, corrections: [], overallSuggestion: 'All good.'
+  });
+});
+
 test('server configuration preserves primary provider, model, controls, and fallback order without exposing keys', async () => {
   const configuration = await loadProviderConfiguration(fakeDb({
     secrets: {

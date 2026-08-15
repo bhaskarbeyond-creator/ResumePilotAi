@@ -2766,27 +2766,26 @@ app.post('/api/generate-ai-cover-letter', async (req, res) => {
     const requestController = new AbortController();
     req.once('aborted', () => requestController.abort());
     try {
-        const { jobTitle, companyName, recipientName, userSkills, yearsExperience } = req.body;
-
-        const title = jobTitle || 'Software Engineer';
-        const company = companyName || 'TechCorp';
-        const recipient = recipientName || 'Hiring Manager';
-        const exp = yearsExperience || 'proven track record of';
-        const skills = userSkills || 'full-stack architecture, API optimization, and team leadership';
-
-        const candidate = String(req.body.candidateName || 'Candidate').trim().slice(0, 120) || 'Candidate';
-        if ([title, company, recipient, skills, candidate].some(value => String(value).length > 4000)) {
-            return res.status(400).json({ success: false, error: 'Cover letter input is too large' });
-        }
+        const compactField = (value, fallback, max = 4000) => {
+            const text = String(value ?? fallback).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '').replace(/\s+/g, ' ').trim().slice(0, max);
+            return text || fallback;
+        };
+        const title = compactField(req.body?.jobTitle, 'Software Engineer', 200);
+        const company = compactField(req.body?.companyName, 'TechCorp', 200);
+        const recipient = compactField(req.body?.recipientName, 'Hiring Manager', 200);
+        const skills = compactField(req.body?.userSkills, 'full-stack architecture, API optimization, and team leadership', 4000);
+        const candidate = compactField(req.body?.candidateName, 'Candidate', 120);
+        const rawExp = req.body?.yearsExperience ?? 'proven track record of';
+        const exp = typeof rawExp === 'number'
+            ? String(Math.min(50, Math.max(0, rawExp)))
+            : compactField(rawExp, 'proven track record of', 200);
         const systemPrompt = 'You are an elite executive career strategist and professional resume writer specializing in high-impact ATS cover letters. Never invent candidate facts and return only the requested cover letter.';
-        const prompt = `${systemPrompt}
-
-Write a compelling, tailored, 3-paragraph ATS cover letter addressed to ${recipient} for a ${title} position at ${company}. Highlight ${exp} years of experience and key skills in ${skills}. Close the letter with the candidate name ${candidate}.`;
+        const prompt = `${systemPrompt}\n\nWrite a compelling, tailored, 3-paragraph ATS cover letter addressed to ${recipient} for a ${title} position at ${company}. Highlight ${exp} years of experience and key skills in ${skills}. Close the letter with the candidate name ${candidate}.`;
         try {
             const configuration = await loadProviderConfiguration(db);
             configuration.maxTokens = Math.min(1000, Math.max(500, configuration.maxTokens));
-            const providerResult = await generateWithProviders({ prompt, configuration, operation: 'generate-ai-cover-letter', signal: requestController.signal });
-            const coverLetter = String(providerResult.raw || '').replace(/^```(?:text)?\s*|```$/gi, '').trim().slice(0, 20000);
+            const providerResult = await generateWithProviders({ prompt, configuration, operation: 'generate-ai-cover-letter', signal: requestController.signal, timeoutMs: 45000 });
+            const coverLetter = String(providerResult.raw || '').replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '').replace(/<[^>]*>/g, '').replace(/^```(?:text)?\s*|```$/gi, '').trim().slice(0, 20000);
             if (coverLetter) {
                 if (res?.setHeader && !res.headersSent) {
                     res.setHeader('X-AI-Provider', providerResult.provider);
@@ -2798,35 +2797,28 @@ Write a compelling, tailored, 3-paragraph ATS cover letter addressed to ${recipi
             console.warn('[Cover letter provider fallback]', { code: providerError.code || 'PROVIDER_ERROR', requestId: res.locals.requestId });
         }
 
-        // 3. Dynamic Context-Aware AI Generator Engine (No Hardcoding)
         const hookTemplates = [
             `I am thrilled to submit my application for the ${title} role at ${company}. Having followed ${company}'s industry impact and growth trajectory, I am eager to contribute my background in ${skills} to advance your team's upcoming initiatives.`,
             `With a strong background executing high-value projects in ${title} roles, I am excited about the opportunity to join ${company}. My career has been defined by delivering measurable efficiency gains and driving technical innovation.`,
             `It is with great enthusiasm that I apply for the ${title} position at ${company}. As a proactive practitioner with over ${exp} years of specialized experience, I have consistently turned strategic goals into impactful execution.`
         ];
-
         const bodyTemplates = [
-            `Over the past ${exp} years, I have spearheaded cross-functional teams and engineered scalable solutions that reduced operating overhead while accelerating delivery timelines. At my previous organizations, my focus on ${skills} enabled us to exceed performance benchmarks consistently. I thrive in dynamic environments where complex problems require structured, resilient solutions.`,
-            `My core competencies encompass ${skills}, with a proven track record of optimizing workflow architectures and leading cross-disciplinary initiatives. At ${company}, I am prepared to leverage this expertise to streamline core operations, mentor junior team members, and drive sustainable long-term value.`,
+            `Over the past ${exp} years, I have led cross-functional teams and engineered scalable solutions that reduced operating overhead while accelerating delivery timelines. At my previous organizations, my focus on ${skills} enabled us to exceed performance benchmarks consistently. I thrive in dynamic environments where complex problems require structured, resilient solutions.`,
+            `My core competencies encompass ${skills}, with a track record of optimizing workflow architectures and leading cross-disciplinary initiatives. At ${company}, I am prepared to apply this expertise to streamline core operations, mentor junior team members, and drive sustainable long-term value.`,
             `Throughout my professional journey, I have specialized in ${skills}. My approach combines data-driven decision-making with hands-on technical rigor, ensuring that every project not only meets compliance standards but delivers compelling user and business outcomes.`
         ];
-
         const closeTemplates = [
             `I would welcome the opportunity to discuss how my experience and skill set directly align with ${company}'s strategic priorities for the ${title} position. Thank you for your time and consideration.`,
             `I look forward to the possibility of discussing how my qualifications and enthusiasm for ${company}'s mission can contribute to your team's continued success. Thank you for evaluating my application.`,
             `Thank you for reviewing my candidacy. I am eager to explore how my background in ${skills} can help ${company} achieve its long-term objectives.`
         ];
-
         const randomPick = (arr) => arr[Math.floor(Math.random() * arr.length)];
         const generated = `Dear ${recipient},\n\n${randomPick(hookTemplates)}\n\n${randomPick(bodyTemplates)}\n\n${randomPick(closeTemplates)}\n\nSincerely,\n${candidate}`;
 
-        res.json({
-            success: true,
-            coverLetter: generated,
-            provider: 'Dynamic AI Synthesis Engine'
-        });
+        return res.json({ success: true, coverLetter: generated, provider: 'Dynamic AI Synthesis Engine' });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        console.error('[Cover letter generation]', { code: error.code || 'COVER_LETTER_ERROR', requestId: res.locals.requestId });
+        return res.status(500).json({ success: false, error: { code: 'COVER_LETTER_GENERATION_FAILED', message: 'Cover letter generation is temporarily unavailable', requestId: res.locals.requestId } });
     }
 });
 
