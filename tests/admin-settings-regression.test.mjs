@@ -80,6 +80,20 @@ test('OAuth Admin tests use recent-auth retry and runtime reads canonical secret
   assert.match(policy, /'\/auth\/github\/test-credentials'/);
 });
 
+test('website metadata and analytics persistence is revisioned, audited, and confirmed', async () => {
+  const [backend, operations, website, analytics, rules] = await Promise.all([
+    fs.readFile('backend/index.js', 'utf8'), fs.readFile('src/firestore/dbOperations.js', 'utf8'),
+    fs.readFile('src/components/admin/settings/websiteSettings.jsx', 'utf8'), fs.readFile('src/components/admin/settings/anlyticsSettings.jsx', 'utf8'), fs.readFile('SecurityRules.txt', 'utf8'),
+  ]);
+  assert.match(backend, /WEBSITE_METADATA_UPDATED/);
+  assert.match(backend, /ADMIN_TARGET_CHANGED/);
+  assert.match(operations, /\/api\/admin\/website-meta/);
+  assert.doesNotMatch(operations, /collection\(['"]data['"]\)\.doc\(['"]meta['"]\)\.(?:set|update)/);
+  assert.match(website, /await settWebsiteData/);
+  assert.match(analytics, /await editTrackingCode/);
+  assert.match(rules, /id in \['meta','frontendstats','public_config'\]/);
+});
+
 test('Ads mutations are backend-only, revision checked, audited, validated and confirmation gated', async () => {
   const [view, operations, backend, rules] = await Promise.all([
     fs.readFile('src/components/admin/settings/adsSettings.jsx', 'utf8'),

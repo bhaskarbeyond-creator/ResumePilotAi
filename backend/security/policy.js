@@ -33,6 +33,7 @@ const RECENT_AUTH_PATHS = new Set([
   '/admin/delete-user',
   '/send-sms',
   '/admin/system-health-settings',
+  '/admin/website-meta',
   '/auth/purge-orphaned-auth',
   '/auth/linkedin/test-credentials',
   '/auth/github/test-credentials'
