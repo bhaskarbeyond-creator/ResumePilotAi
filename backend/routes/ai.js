@@ -522,7 +522,7 @@ router.post('/generate-interview', async (req, res) => {
             // Extract the JSON from the response
             const jsonMatch = responseText.match(/\{[\s\S]*\}/);
             const jsonStr = jsonMatch ? jsonMatch[0] : responseText;
-            const jsonData = JSON.parse(jsonStr);
+            const jsonData = extractJson(jsonStr) || extractJson(responseText);
 
             // Ensure we have the correct number of questions
             if (jsonData.questions && jsonData.questions.length !== validQuestionCount) {
@@ -643,7 +643,7 @@ router.post('/generate-work-description', async (req, res) => {
         }
 
         try {
-            const descriptions = JSON.parse(jsonText);
+            const descriptions = extractJson(jsonText) || extractJson(text);
 
             if (Array.isArray(descriptions) && descriptions.length > 0) {
                 console.log('Successfully generated AI work descriptions for language:', targetLanguage);
@@ -772,7 +772,7 @@ router.post('/generate-education-description', async (req, res) => {
         }
 
         try {
-            const descriptions = JSON.parse(jsonText);
+            const descriptions = extractJson(jsonText) || extractJson(text);
 
             if (Array.isArray(descriptions) && descriptions.length > 0) {
                 console.log('Successfully generated AI education descriptions for language:', targetLanguage);
@@ -1781,7 +1781,7 @@ router.post('/generate-skills', async (req, res) => {
         }
 
         try {
-            const skills = JSON.parse(jsonText);
+            const skills = extractJson(jsonText) || extractJson(text);
 
             if (Array.isArray(skills) && skills.length > 0) {
                 console.log('✅ Successfully generated AI skills for language:', targetLanguage);
@@ -2119,7 +2119,7 @@ router.post('/check-grammar', async (req, res) => {
         }
 
         try {
-            const grammarResult = JSON.parse(jsonText);
+            const grammarResult = extractJson(jsonText) || extractJson(text_response);
             
             if (grammarResult && typeof grammarResult === 'object') {
                 console.log('Successfully generated AI grammar check for language:', targetLanguage);

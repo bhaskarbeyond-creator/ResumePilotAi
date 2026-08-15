@@ -258,10 +258,42 @@ SessionID: ${uniqueSeed}`;
     return { prompt, payload };
 }
 
+function sanitizeControlCharsInJson(jsonStr) {
+    let result = '';
+    let inString = false;
+    let escaped = false;
+    for (let i = 0; i < jsonStr.length; i++) {
+        const c = jsonStr[i];
+        if (escaped) {
+            result += c;
+            escaped = false;
+            continue;
+        }
+        if (c === '\\') {
+            result += c;
+            escaped = true;
+            continue;
+        }
+        if (c === '"') {
+            inString = !inString;
+            result += c;
+            continue;
+        }
+        if (inString) {
+            if (c === '\n') { result += '\\n'; continue; }
+            if (c === '\r') { result += '\\r'; continue; }
+            if (c === '\t') { result += '\\t'; continue; }
+        }
+        result += c;
+    }
+    return result;
+}
+
 function extractJson(raw) {
     const cleaned = String(raw || '').replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
     if (!cleaned) return null;
     try { return JSON.parse(cleaned); } catch {}
+    try { return JSON.parse(sanitizeControlCharsInJson(cleaned)); } catch {}
     const start = cleaned.indexOf('{');
     if (start < 0) return null;
     let depth = 0;
@@ -275,7 +307,9 @@ function extractJson(raw) {
         if (inString) continue;
         if (character === '{') depth += 1;
         else if (character === '}' && --depth === 0) {
-            try { return JSON.parse(cleaned.slice(start, index + 1)); } catch { return null; }
+            const candidate = cleaned.slice(start, index + 1);
+            try { return JSON.parse(candidate); } catch {}
+            try { return JSON.parse(sanitizeControlCharsInJson(candidate)); } catch { return null; }
         }
     }
     return null;
@@ -475,8 +509,9 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
             const raw = await requestProvider(provider, configuration.providers[provider], prompt, configuration, { fetchImpl, signal, timeoutMs });
             return { raw, provider, model: configuration.providers[provider].model };
         } catch (error) {
+            console.error(`[AI Provider Failure] operation=${operation || 'unknown'} provider=${provider} error=${error.message}`);
             if (signal?.aborted || error.name === 'AbortError') throw error;
-            failures.push({ provider, status: Number(error.status) || 0, code: error.code || 'PROVIDER_ERROR' });
+            failures.push({ provider, status: Number(error.status) || 0, code: error.code || 'PROVIDER_ERROR', message: error.message });
         }
     }
     const error = Object.assign(new Error('All configured AI providers failed'), { code: 'AI_PROVIDER_ERROR', status: 502 });
