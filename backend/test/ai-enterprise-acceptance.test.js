@@ -312,8 +312,8 @@ test('Acceptance Gate 3: Exhaustive 12-Failure-Mode Recovery, Telemetry & Retry-
 test('Acceptance Gate 4: Database-Level Multi-Tenant Data Isolation & Vault Boundary Enforcement', async () => {
   const db = createMockFirestore();
   await db.collection('settings').doc('ai_providers').set({
-    nvidia: { apiKey: 'nvapi-super-secret-vault-key', model: 'meta/llama-3.1-8b-instruct' },
-    openai: { apiKey: 'sk-super-secret-openai-key', model: 'gpt-4o-mini' },
+    nvidia: { apiKey: 'fixture-nvidia-vault-key', model: 'meta/llama-3.1-8b-instruct' },
+    openai: { apiKey: 'fixture-openai-vault-key', model: 'gpt-4o-mini' },
     _revision: 5
   });
   await db.collection('data').doc('public_config').set({

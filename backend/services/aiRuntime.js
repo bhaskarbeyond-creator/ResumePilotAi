@@ -38,6 +38,8 @@ const CONTENT_OPERATIONS = new Set([
     'generate-skills', 'generate-certifications', 'enhance-single-bullet', 'autocomplete',
 ]);
 
+const GRAMMAR_TYPES = new Set(['grammar', 'spelling', 'punctuation', 'style']);
+
 function clampNumber(value, min, max, fallback) {
     const number = Number(value);
     return Number.isFinite(number) ? Math.min(max, Math.max(min, number)) : fallback;
@@ -362,9 +364,10 @@ function cleanSkillName(raw) {
         .replace(/\s*\([^)]*,[^)]*\)/g, '').trim();
 }
 
-function parseAiResponse(operation, rawContent) {
+function parseAiResponse(operation, rawContent, context = {}) {
     const raw = String(rawContent || '').slice(0, 100000);
     if (!raw) throw Object.assign(new Error('AI provider returned an empty response'), { code: 'EMPTY_AI_RESPONSE' });
+    const sourceText = operation === 'check-grammar' ? String(context.sourceText ?? '') : raw;
     const parsed = extractJson(raw);
     if (operation === 'generate-summary') {
         const value = parsed?.summary || parsed?.description || parsed?.text || (!parsed ? raw : '');
@@ -402,6 +405,26 @@ function parseAiResponse(operation, rawContent) {
         const values = parsed?.suggestions || parsed?.highlights || parsed?.bullets || parsed?.items || parsed?.workDescriptions || (!parsed ? raw : []);
         const suggestions = normalizeStrings(values).slice(0, operation === 'autocomplete' ? 8 : 6);
         if (suggestions.length) return { suggestions };
+    }
+    if (operation === 'check-grammar') {
+        const corrections = Array.isArray(parsed?.corrections) ? parsed.corrections : [];
+        const validCorrections = corrections.slice(0, 10).map(item => {
+            if (!item || typeof item !== 'object') return null;
+            const original = String(item.original ?? '').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '').slice(0, 1000);
+            const suggestion = compact(item.suggestion, 1000);
+            const explanation = compact(item.explanation, 1000);
+            const type = GRAMMAR_TYPES.has(String(item.type || '').toLowerCase()) ? String(item.type).toLowerCase() : 'grammar';
+            const start = Number(item.startIndex);
+            const end = Number(item.endIndex);
+            if (!original || !suggestion || original === suggestion || !Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end <= start || end > sourceText.length) return null;
+            if (sourceText.slice(start, end) !== original) return null;
+            return { original, suggestion, type, explanation, startIndex: start, endIndex: end };
+        }).filter(Boolean).filter((item, index, items) => items.findIndex(other => other.startIndex === item.startIndex && other.endIndex === item.endIndex) === index);
+        return {
+            hasErrors: typeof parsed?.hasErrors === 'boolean' ? parsed.hasErrors : validCorrections.length > 0,
+            corrections: validCorrections,
+            overallSuggestion: compact(parsed?.overallSuggestion, 1000) || (validCorrections.length ? `Found ${validCorrections.length} issues to review.` : 'Text appears to be well-written.'),
+        };
     }
     throw Object.assign(new Error('AI provider response did not match the product contract'), { code: 'INVALID_AI_RESPONSE' });
 }

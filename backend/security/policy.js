@@ -35,6 +35,9 @@ const RECENT_AUTH_PATHS = new Set([
   '/admin/system-health-settings',
   '/admin/website-meta',
   '/admin/coupons',
+  '/admin/ai-settings',
+  '/admin/ai/test-provider',
+  '/admin/ai/fetch-models',
   '/auth/purge-orphaned-auth',
   '/auth/linkedin/test-credentials',
   '/auth/github/test-credentials'
@@ -84,7 +87,10 @@ function enforceApiPolicy(req, res, next) {
   if ((requiresVerifiedEmail(pathname) || isAdminPath(pathname)) && !req.user?.emailVerified) {
     return res.status(403).json({ error: { code: 'EMAIL_VERIFICATION_REQUIRED', message: 'A verified email address is required', requestId: res.locals.requestId } });
   }
-  if (pathname === '/account/delete' || (pathname === '/admin/firebase-service-account' && req.method !== 'GET')) {
+  const requiresRecentAuthentication = pathname === '/account/delete'
+    || (pathname === '/admin/firebase-service-account' && req.method !== 'GET')
+    || (req.method !== 'GET' && RECENT_AUTH_PATHS.has(pathname));
+  if (requiresRecentAuthentication) {
     const authTime = Number(req.user?.claims?.auth_time || 0) * 1000;
     const maxAgeMs = Number(process.env.SENSITIVE_AUTH_MAX_AGE_MS || 10 * 60 * 1000);
     if (!authTime || Date.now() - authTime > maxAgeMs) {

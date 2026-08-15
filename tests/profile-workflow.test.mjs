@@ -32,6 +32,10 @@ test('profile persistence and UI use revisions, truthful save states, conflicts,
   assert.match(operations, /runTransaction/);
   assert.match(settings, /Pending autosave/);
   assert.match(settings, /Conflict—action required/);
+  assert.doesNotMatch(settings, /remoteRevision\s*[),}][\s\S]{0,250}persistProfileRef\.current/);
+  assert.match(settings, /profileSavingRef/);
+  assert.match(settings, /pendingProfileSaveRef/);
+  assert.match(settings, /needsFollowUp/);
   assert.match(settings, /image\/png.*image\/jpeg.*image\/webp/);
   assert.match(settings, /fire\.auth\(\)\.currentUser\?\.emailVerified/);
   assert.doesNotMatch(settings, /Account & all personal data deleted successfully/);

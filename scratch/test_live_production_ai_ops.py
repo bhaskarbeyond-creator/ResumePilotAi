@@ -37,7 +37,7 @@ async function testLiveEndpoints() {
 
     // Mint a verified custom auth token for live HTTP route testing
     const customToken = await admin.auth().createCustomToken('test_prod_verifier', { email: 'verifier@airesume.projectdemo.guru', email_verified: true });
-    
+    // Exchange for ID token via Firebase Auth REST API
     const apiKey = process.env.FIREBASE_WEB_API_KEY;
     let idToken = null;
     if (apiKey) {

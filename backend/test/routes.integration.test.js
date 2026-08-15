@@ -86,10 +86,18 @@ test('stale admin sessions cannot perform sensitive destructive account deletion
 });
 
 test('unverified admin cannot load or mutate protected configuration', async () => {
-  for (const [method, route] of [['get', '/api/admin/ai-settings'], ['post', '/api/admin/ai-settings'], ['post', '/api/admin/ai/test-provider'], ['get', '/api/email/admin/settings'], ['get', '/api/admin/twilio-settings'], ['post', '/api/admin/settings/modules']]) {
+  for (const [method, route] of [['get', '/api/admin/ai-settings'], ['post', '/api/admin/ai-settings'], ['post', '/api/admin/ai/test-provider'], ['post', '/api/admin/ai/fetch-models'], ['get', '/api/email/admin/settings'], ['get', '/api/admin/twilio-settings'], ['post', '/api/admin/settings/modules']]) {
     const response = await request(app)[method](route).set(bearer('unverified-admin')).send({});
     assert.equal(response.status, 403, route);
     assert.equal(response.body.error.code, 'EMAIL_VERIFICATION_REQUIRED', route);
+  }
+});
+
+test('stale admin cannot mutate, test, or enumerate AI provider settings/models', async () => {
+  for (const route of ['/api/admin/ai-settings', '/api/admin/ai/test-provider', '/api/admin/ai/fetch-models']) {
+    const response = await request(app).post(route).set(bearer('stale-admin')).send({ provider: 'gemini', model: 'gemini-2.0-flash' });
+    assert.equal(response.status, 403, route);
+    assert.equal(response.body.error.code, 'RECENT_AUTH_REQUIRED', route);
   }
 });
 

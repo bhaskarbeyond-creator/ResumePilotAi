@@ -2,7 +2,8 @@ import { writeSanitizedPrintDocument } from '../../../utils/sanitizeHtml';
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { uploadImageToFirebase, getProfileOfUser, addProfileToUser, getAccountInfo, saveUserPreferences, changePassword, updateUserEmail, getWebsiteData, getSubscriptionStatus, getUserTransactions, deleteUserAccountPermanently, exportUserDataJSON, beginUserTotp2FA, saveUserTotp2FA, disableUserTotp2FA, getUserTotpStatus, reauthenticateUser, recordUserLoginEvent, getUserLoginHistory, sendSmsNotification } from '../../../firestore/dbOperations';
+import { getProfileOfUser, getAccountInfo, saveUserPreferences, changePassword, updateUserEmail, getWebsiteData, getSubscriptionStatus, getUserTransactions, deleteUserAccountPermanently, exportUserDataJSON, beginUserTotp2FA, saveUserTotp2FA, disableUserTotp2FA, getUserTotpStatus, reauthenticateUser, recordUserLoginEvent, getUserLoginHistory, sendSmsNotification } from '../../../firestore/dbOperations';
+import { saveProfile } from '../../../services/profilePersistence';
 import { generateUserAiContent, cleanSkillName } from '../../../services/aiService';
 import { FaUser, FaCog, FaCamera, FaTrash, FaUserCircle, FaKey, FaCalendarAlt, FaEnvelope, FaCreditCard, FaUpload, FaCheckCircle, FaExclamationTriangle, FaBriefcase, FaGraduationCap, FaTools, FaGlobe, FaPlus, FaCheck, FaShieldAlt, FaDesktop, FaDownload, FaCertificate, FaProjectDiagram, FaMagic, FaLinkedin, FaGithub, FaLink, FaSyncAlt, FaExternalLinkAlt, FaUnlink, FaLock, FaEye, FaEyeSlash, FaCrown, FaMobileAlt, FaQrcode, FaCopy, FaPrint, FaHistory } from 'react-icons/fa';
 import fire from '../../../conf/fire';
@@ -13,7 +14,9 @@ import AutocompleteInputField from '../../BuildResume/steps/components/Autocompl
 import ImageCropModal from './ImageCropModal';
 import SubscriptionModal from './SubscriptionModal';
 import { inferCountryFromCity } from '../../../utils/locationHelper';
-import { normalizeProfileImage } from '../../../utils/profileData';
+import { normalizeProfileData, normalizeProfileImage } from '../../../utils/profileData';
+
+const normalizeProfileForSave = value => normalizeProfileData({ ...value, postalcode: value.postalCode || '', website: value.websiteUrl || '' });
 
 function DashboardSettings(props) {
     const { i18n } = useTranslation('common');
@@ -44,10 +47,15 @@ function DashboardSettings(props) {
     const [profileSaveState, setProfileSaveState] = useState('loading');
     const [profileConflict, setProfileConflict] = useState(null);
     const persistProfileRef = useRef(null);
+    const profileRef = useRef(profile);
+    const profileConflictRef = useRef(null);
+    const profileSavingRef = useRef(null);
+    const pendingProfileSaveRef = useRef(null);
     const skipNextAutosaveRef = useRef(false);
     const isSavingRef = useRef(false);
     const autosaveTimerRef = useRef(null);
     const loadedProfileUidRef = useRef(null);
+    const mountedRef = useRef(true);
     const [isAiGenerating, setIsAiGenerating] = useState(false);
     const aiRequestControllerRef = useRef(null);
     const [toastState, setToastState] = useState(null);
@@ -504,63 +512,74 @@ function DashboardSettings(props) {
         setAccountSettings((prev) => ({ ...prev, [field]: value }));
     };
 
-    const persistProfile = async ({ notify = false, forceRevision = null, retryCount = 0 } = {}) => {
-        if (isSavingRef.current && forceRevision === null) return;
-        const currentUser = fire.auth().currentUser;
-        if (!currentUser) throw new Error('Sign in again before saving your profile.');
-        if (profileConflict && forceRevision === null && retryCount === 0) throw new Error('Resolve the newer profile revision before saving.');
-        if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
-        isSavingRef.current = true;
-        setProfileSaveState('saving');
-        try {
-            const revisionToUse = forceRevision !== null ? forceRevision : profile.revision;
-            const profileToSave = { ...profile, postalcode: profile.postalCode || '', website: profile.websiteUrl || '' };
-            const result = await addProfileToUser(currentUser.uid, profileToSave, revisionToUse);
-            if (!result.success) {
-                // Autonomous Self-Healing: If a remote revision bump occurred, auto-reconcile seamlessly in background
-                if (result.code === 'PROFILE_CONFLICT' && retryCount < 2 && result.remoteRevision !== undefined) {
-                    isSavingRef.current = false;
-                    return await persistProfile({ notify, forceRevision: result.remoteRevision, retryCount: retryCount + 1 });
-                }
+    useEffect(() => { profileRef.current = profile; }, [profile]);
+    useEffect(() => { profileConflictRef.current = profileConflict; }, [profileConflict]);
+    useEffect(() => () => { mountedRef.current = false; }, []);
 
-                if (result.code === 'PROFILE_CONFLICT') {
-                    setProfileConflict({ remoteRevision: result.remoteRevision });
-                    setProfileSaveState('conflict');
-                } else {
-                    setProfileSaveState('failed');
-                }
-                throw new Error(result.error || 'Profile save failed.');
-            }
-            skipNextAutosaveRef.current = true;
-            setProfileConflict(null);
-            setProfile(result.profile);
-            setProfileSaveState('saved');
-            window.dispatchEvent(new CustomEvent('profileUpdated', { detail: result.profile }));
-            if (notify) triggerNotification('Master Profile saved successfully.');
-            return result;
-        } finally {
-            isSavingRef.current = false;
+    const persistProfile = ({ profile: profileSnapshot, expectedRevision, notify = false } = {}) => new Promise((resolve, reject) => {
+        if (profileSavingRef.current) {
+            pendingProfileSaveRef.current = {
+                waiters: [...(pendingProfileSaveRef.current?.waiters || []), profileSavingRef.current, { resolve, reject }],
+                notify: pendingProfileSaveRef.current?.notify || notify,
+            };
+            return;
         }
-    };
-    persistProfileRef.current = persistProfile;
-    const reloadProfileConflict = async () => {
-        if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
-        setProfileConflict(null);
-        setProfileSaveState('loading');
-        await getProfileOfUserFront();
-        triggerNotification('Latest profile loaded.');
-    };
-    const overwriteProfileConflict = async () => {
-        if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
-        const remoteRev = profileConflict?.remoteRevision;
-        setProfileConflict(null);
+        profileSavingRef.current = { resolve, reject, notify };
         setProfileSaveState('saving');
-        try {
-            await persistProfile({ notify: true, forceRevision: remoteRev });
-        } catch (err) {
-            triggerNotification(err.message || 'Failed to overwrite profile.', 'error');
-        }
-    };
+        (async () => {
+            let waiter;
+            try {
+                while (true) {
+                    const currentUser = fire.auth().currentUser;
+                    if (!mountedRef.current) throw Object.assign(new Error('Profile save cancelled.'), { code: 'PROFILE_SAVE_CANCELLED' });
+                    if (!currentUser) throw new Error('Sign in again before saving your profile.');
+                    if (profileConflictRef.current) throw new Error('Resolve the newer profile revision before saving.');
+
+                    const snapshot = profileSnapshot || profileRef.current;
+                    const baseRevision = Number.isInteger(expectedRevision) ? expectedRevision : snapshot.revision;
+                    const profileToSave = normalizeProfileForSave(snapshot);
+                    const result = await saveProfile(fire.firestore(), currentUser.uid, profileToSave, baseRevision);
+                    if (!mountedRef.current) throw Object.assign(new Error('Profile save cancelled.'), { code: 'PROFILE_SAVE_CANCELLED' });
+                    if (!result.success) throw Object.assign(new Error(result.error || 'Profile save failed.'), { code: result.code, remoteRevision: result.remoteRevision });
+
+                    skipNextAutosaveRef.current = true;
+                    setProfile(current => ({ ...current, revision: result.revision }));
+                    setProfileSaveState('saved');
+                    window.dispatchEvent(new CustomEvent('profileUpdated', { detail: result.profile }));
+                    if (notify) triggerNotification('Master Profile saved successfully.');
+                    waiter = profileSavingRef.current;
+
+                    const latestProfile = profileRef.current;
+                    const needsFollowUp = latestProfile.revision === snapshot.revision
+                        && JSON.stringify(normalizeProfileForSave(latestProfile)) !== JSON.stringify(normalizeProfileForSave(result.profile));
+
+                    if (pendingProfileSaveRef.current || needsFollowUp) {
+                        const pending = pendingProfileSaveRef.current;
+                        pendingProfileSaveRef.current = needsFollowUp ? { waiters: [], notify: false } : null;
+                        profileSnapshot = null;
+                        expectedRevision = result.revision;
+                        notify = pending?.notify || false;
+                        pending?.waiters.forEach(item => item.resolve(result));
+                        continue;
+                    }
+                    waiter.resolve(result);
+                    break;
+                }
+            } catch (error) {
+                const pending = pendingProfileSaveRef.current;
+                pendingProfileSaveRef.current = null;
+                if (error.code === 'PROFILE_CONFLICT') setProfileConflict({ remoteRevision: error.remoteRevision });
+                if (mountedRef.current) setProfileSaveState(error.code === 'PROFILE_CONFLICT' ? 'conflict' : 'failed');
+                waiter?.reject(error);
+                pending?.waiters.forEach(item => item.reject(error));
+            } finally {
+                profileSavingRef.current = null;
+            }
+        })();
+    });
+    persistProfileRef.current = (options = {}) => persistProfile(options);
+    const reloadProfileConflict = async () => { setProfileConflict(null); setProfileSaveState('loading'); await getProfileOfUserFront(); triggerNotification('Latest profile loaded.'); };
+    const overwriteProfileConflict = () => { setProfile(current => ({ ...current, revision: profileConflict.remoteRevision })); setProfileConflict(null); setProfileSaveState('pending'); triggerNotification('Conflict acknowledged. Your local profile will save as the next revision.'); };
 
     const handleSubmit = async (e) => {
         e?.preventDefault?.();
@@ -783,11 +802,12 @@ function DashboardSettings(props) {
         if (isFirstProfileLoadRef.current) { isFirstProfileLoadRef.current = false; return undefined; }
         if (skipNextAutosaveRef.current) { skipNextAutosaveRef.current = false; return undefined; }
         if (profileConflict) return undefined;
+        if (profileSavingRef.current) { setProfileSaveState('pending'); return undefined; }
         setProfileSaveState('pending');
         if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
         autosaveTimerRef.current = setTimeout(async () => {
             try { await persistProfileRef.current?.(); }
-            catch (error) { triggerNotification(error.message || 'Profile autosave failed. Retry with Save.', 'error'); }
+            catch (error) { if (error.code !== 'PROFILE_CONFLICT') triggerNotification(error.message || 'Profile autosave failed. Retry with Save.', 'error'); }
         }, 1500);
         return () => {
             if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
@@ -1319,8 +1339,10 @@ function DashboardSettings(props) {
         setCropModalSrc(null);
         const currentUser = fire.auth().currentUser;
         if (!currentUser) { triggerNotification('Sign in again before uploading an avatar.', 'error'); return; }
+        if (profileConflictRef.current) { triggerNotification('Resolve the newer profile revision before replacing the avatar.', 'error'); return; }
         setProfileSaveState('saving');
-        const result = await uploadImageToFirebase(croppedDataUrl, currentUser.uid, profile.revision);
+        const avatarOnly = { ...profileRef.current, selectedImage: croppedDataUrl };
+        const result = await saveProfile(fire.firestore(), currentUser.uid, avatarOnly, profileRef.current.revision);
         if (!result.success) {
             setProfileSaveState(result.code === 'PROFILE_CONFLICT' ? 'conflict' : 'failed');
             if (result.code === 'PROFILE_CONFLICT') setProfileConflict({ remoteRevision: result.remoteRevision });
@@ -1328,7 +1350,7 @@ function DashboardSettings(props) {
             return;
         }
         skipNextAutosaveRef.current = true;
-        setProfile(prev => ({ ...prev, selectedImage: result.selectedImage, revision: result.revision }));
+        setProfile(prev => ({ ...prev, selectedImage: result.profile.selectedImage, revision: result.revision }));
         setProfileSaveState('saved');
         triggerNotification('Avatar updated successfully.');
     };

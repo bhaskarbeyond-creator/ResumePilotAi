@@ -1,6 +1,6 @@
 const express = require('express');
 const EmailNotifier = require('../services/emailNotifier');
-const { executeContentOperation, executeResumeParsing, extractJson, loadProviderConfiguration, generateWithProviders } = require('../services/aiRuntime');
+const { executeContentOperation, executeResumeParsing, extractJson, loadProviderConfiguration, generateWithProviders, parseAiResponse } = require('../services/aiRuntime');
 const router = express.Router();
 
 async function generateConfiguredText(req, res, prompt, operation, overrides = {}) {
@@ -2008,9 +2008,9 @@ router.post('/check-grammar', async (req, res) => {
         if (typeof text !== 'string' || !text.trim() || text.length > 40_000) {
             return res.status(400).json({ error: { code: 'INVALID_AI_INPUT', message: 'Text is required for grammar checking', requestId: res.locals.requestId } });
         }
-
-        console.log('Received grammar check request for language:', language);
-        console.log('Text length:', text.length);
+        if (typeof language !== 'string' || !/^[a-z]{2}$/.test(language)) {
+            return res.status(400).json({ error: { code: 'INVALID_AI_INPUT', message: 'Unsupported grammar language', requestId: res.locals.requestId } });
+        }
 
         // Language mapping for proper language names in prompt
         const languageNames = {
@@ -2111,98 +2111,13 @@ router.post('/check-grammar', async (req, res) => {
         Remember: This is your ONLY chance to catch all errors. Be thorough, methodical, and comprehensive in your analysis.`;
 
         const text_response = await generateConfiguredText(req, res, prompt, 'check-grammar', { temperature: 0.1, maxTokens: 4096 });
-
-        // Clean up the response to extract JSON
-        let jsonText = text_response;
-        if (text_response.includes('```json')) {
-            jsonText = text_response.split('```json')[1].split('```')[0].trim();
-        } else if (text_response.includes('```')) {
-            jsonText = text_response.split('```')[1].split('```')[0].trim();
-        }
-
-        try {
-            const grammarResult = extractJson(jsonText) || extractJson(text_response);
-            if (grammarResult && typeof grammarResult === 'object') {
-                const validTypes = new Set(['grammar', 'spelling', 'punctuation', 'style']);
-                const rawCorrections = Array.isArray(grammarResult.corrections) ? grammarResult.corrections : [];
-                const normalizedCorrections = [];
-
-                for (const item of rawCorrections) {
-                    if (!item || typeof item !== 'object') continue;
-                    const original = String(item.original || '').trim();
-                    const suggestion = String(item.suggestion || '').trim();
-                    if (!original || !suggestion) continue;
-
-                    let startIndex = Number.isInteger(item.startIndex) ? item.startIndex : -1;
-                    let endIndex = Number.isInteger(item.endIndex) ? item.endIndex : -1;
-
-                    // Verify or recalculate indices to guarantee exact match with source text
-                    if (startIndex < 0 || endIndex <= startIndex || text.slice(startIndex, endIndex) !== original) {
-                        const foundIdx = text.indexOf(original);
-                        if (foundIdx !== -1) {
-                            startIndex = foundIdx;
-                            endIndex = foundIdx + original.length;
-                        }
-                    }
-
-                    const type = validTypes.has(item.type?.toLowerCase()) ? item.type.toLowerCase() : 'grammar';
-                    normalizedCorrections.push({
-                        original,
-                        suggestion,
-                        type,
-                        explanation: String(item.explanation || `Suggested improvement for ${original}`).slice(0, 300),
-                        startIndex: Math.max(0, startIndex),
-                        endIndex: Math.max(0, endIndex),
-                    });
-                }
-
-                const finalResult = {
-                    hasErrors: Boolean(grammarResult.hasErrors) || normalizedCorrections.length > 0,
-                    corrections: normalizedCorrections.slice(0, 50),
-                    overallSuggestion: String(grammarResult.overallSuggestion || 'Grammar and style check complete.').slice(0, 1000)
-                };
-
-                console.log('Successfully generated AI grammar check for language:', targetLanguage);
-                console.log('Found errors:', finalResult.hasErrors);
-                console.log('Number of corrections:', finalResult.corrections.length);
-                
-                return res.json(finalResult);
-            } else {
-                throw new Error('Invalid response format');
-            }
-        } catch (parseError) {
-            console.error('Error parsing AI response:', parseError);
-            console.log('Attempting fallback parsing...');
-            
-            // Try to extract information from non-JSON response
-            const fallbackData = generateFallbackGrammarCheck(text, targetLanguage);
-            res.json(fallbackData);
-        }
-
+        const result = parseAiResponse('check-grammar', text_response, { sourceText: text });
+        return res.json(result);
     } catch (error) {
-        console.error('Error in grammar checking:', error);
-        // Use fallback method if AI generation fails
-        const { text, language = 'en' } = req.body;
-        const languageNames = {
-            en: 'English',
-            es: 'Spanish',
-            fr: 'French',
-            de: 'German',
-            it: 'Italian',
-            pt: 'Portuguese',
-            ru: 'Russian',
-            nl: 'Dutch',
-            pl: 'Polish',
-            se: 'Swedish',
-            no: 'Norwegian',
-            dk: 'Danish',
-            is: 'Icelandic',
-            gk: 'Greek',
-            ro: 'Romanian',
-        };
-        const targetLanguage = languageNames[language] || 'English';
-        const fallbackData = generateFallbackGrammarCheck(text, targetLanguage);
-        res.json(fallbackData);
+        if (error.code === 'INVALID_AI_INPUT') throw error;
+        console.error('Error in grammar checking:', error.code || error.message);
+        const fallbackData = generateFallbackGrammarCheck(req.body.text, 'English');
+        return res.json(fallbackData);
     }
 });
 
