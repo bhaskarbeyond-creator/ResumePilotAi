@@ -522,18 +522,33 @@ const AiSettings = () => {
                                     <span>Fetch Available Models</span>
                                 </button>
                             </div>
-                            <select
-                                name="nvidiaModel"
-                                value={aiConfig.nvidiaModel}
-                                onChange={handleChange}
-                                className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                            >
-                                {nvidiaModels.map((m) => (
-                                    <option key={m.id} value={m.id}>
-                                        {m.name}
-                                    </option>
-                                ))}
-                            </select>
+                            <div className="space-y-1.5">
+                                <select
+                                    name="nvidiaModel"
+                                    value={RECOMMENDED_NVIDIA_MODELS.some(m => m.id === aiConfig.nvidiaModel) ? aiConfig.nvidiaModel : 'custom'}
+                                    onChange={(e) => {
+                                        if (e.target.value !== 'custom') {
+                                            handleChange({ target: { name: 'nvidiaModel', value: e.target.value } });
+                                        }
+                                    }}
+                                    className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white"
+                                >
+                                    {RECOMMENDED_NVIDIA_MODELS.map((m) => (
+                                        <option key={m.id} value={m.id}>
+                                            {m.name}
+                                        </option>
+                                    ))}
+                                    <option value="custom">✏️ Enter Custom Model ID Manually...</option>
+                                </select>
+                                <input
+                                    type="text"
+                                    name="nvidiaModel"
+                                    value={aiConfig.nvidiaModel}
+                                    onChange={handleChange}
+                                    placeholder="e.g. meta/llama-3.1-8b-instruct or custom model ID"
+                                    className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-2 focus:ring-emerald-500 focus:outline-none font-mono bg-slate-50"
+                                />
+                            </div>
                         </div>
                     </div>
 
@@ -615,16 +630,31 @@ const AiSettings = () => {
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-slate-600 mb-1">Gemini Model Target</label>
-                            <select
-                                name="model"
-                                value={aiConfig.model}
-                                onChange={handleChange}
-                                className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                            >
-                                <option value="gemini-2.0-flash">Gemini 2.0 Flash (Fastest)</option>
-                                <option value="gemini-1.5-pro">Gemini 1.5 Pro (High Reasoning)</option>
-                                <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
-                            </select>
+                            <div className="space-y-1.5">
+                                <select
+                                    name="model"
+                                    value={['gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'].includes(aiConfig.model) ? aiConfig.model : 'custom'}
+                                    onChange={(e) => {
+                                        if (e.target.value !== 'custom') {
+                                            handleChange({ target: { name: 'model', value: e.target.value } });
+                                        }
+                                    }}
+                                    className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
+                                >
+                                    <option value="gemini-2.0-flash">Gemini 2.0 Flash (Fastest)</option>
+                                    <option value="gemini-1.5-pro">Gemini 1.5 Pro (High Reasoning)</option>
+                                    <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                                    <option value="custom">✏️ Enter Custom Gemini Model ID...</option>
+                                </select>
+                                <input
+                                    type="text"
+                                    name="model"
+                                    value={aiConfig.model}
+                                    onChange={handleChange}
+                                    placeholder="e.g. gemini-2.0-flash or custom model ID"
+                                    className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono bg-slate-50"
+                                />
+                            </div>
                         </div>
                     </div>
 
