@@ -39,23 +39,14 @@ jobs:
       - name: Install backend
         run: npm --prefix backend ci --ignore-scripts
 
-      - name: Lint
-        run: npm run lint
+      - name: Authoritative release-candidate validation
+        run: npm run test:rc
 
-      - name: Security and authorization unit tests
-        run: npm run test:security
-
-      - name: Firebase rules adversarial tests
-        run: npm run test:firebase-rules
-
-      - name: Production build
-        run: npm run build
-
-      - name: Block production dependency findings
-        run: npm run audit:production
-
-      - name: Audit development and CI tooling
-        run: npm run audit:all
+      - name: Ensure generated UI-string inventory is reproducible
+        run: |
+          cp docs/I18N_UI_STRING_INVENTORY.json /tmp/inventory.json
+          node scripts/audit-ui-strings.mjs
+          diff -u /tmp/inventory.json docs/I18N_UI_STRING_INVENTORY.json
 
       - name: Detect accidentally committed private keys and provider tokens
         shell: bash
