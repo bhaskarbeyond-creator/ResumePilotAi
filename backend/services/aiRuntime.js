@@ -426,6 +426,15 @@ async function fetchWithDeadline(fetchImpl, url, options, timeoutMs, externalSig
     }
 }
 
+function extractProviderErrorMessage(body, status, provider) {
+    if (!body) return `${provider} HTTP ${status}`;
+    if (typeof body.error === 'string' && body.error.trim()) return body.error.trim();
+    if (typeof body.error?.message === 'string' && body.error.message.trim()) return body.error.message.trim();
+    if (typeof body.message === 'string' && body.message.trim()) return body.message.trim();
+    if (typeof body.detail === 'string' && body.detail.trim()) return body.detail.trim();
+    return `${provider} HTTP ${status}`;
+}
+
 async function requestProvider(provider, providerConfig, prompt, generation, { fetchImpl = global.fetch, signal, timeoutMs = 30000 } = {}) {
     if (provider === 'gemini') {
         const model = providerConfig.model.startsWith('models/') ? providerConfig.model : `models/${providerConfig.model}`;
@@ -438,7 +447,7 @@ async function requestProvider(provider, providerConfig, prompt, generation, { f
             }),
         }, timeoutMs, signal);
         const body = await response.json().catch(() => ({}));
-        if (!response.ok) throw Object.assign(new Error(body.error?.message || `Gemini HTTP ${response.status}`), { status: response.status });
+        if (!response.ok) throw Object.assign(new Error(extractProviderErrorMessage(body, response.status, 'Gemini')), { status: response.status });
         return body.candidates?.[0]?.content?.parts?.map(part => part.text || '').join('') || '';
     }
     const defaults = PROVIDER_DEFAULTS[provider];
@@ -453,7 +462,7 @@ async function requestProvider(provider, providerConfig, prompt, generation, { f
         }),
     }, timeoutMs, signal);
     const body = await response.json().catch(() => ({}));
-    if (!response.ok) throw Object.assign(new Error(body.error?.message || `${provider} HTTP ${response.status}`), { status: response.status });
+    if (!response.ok) throw Object.assign(new Error(extractProviderErrorMessage(body, response.status, provider)), { status: response.status });
     return body.choices?.[0]?.message?.content || '';
 }
 

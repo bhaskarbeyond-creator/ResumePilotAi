@@ -129,7 +129,7 @@ const AiSettings = () => {
                 enableImportModule: ai.enableImportModule !== undefined ? ai.enableImportModule : false,
             });
             } catch (error) {
-                if (active) { setLoadFailed(true); setGlobalMessage({ type: 'error', text: `Unable to load AI settings: ${error.message}${error.requestId ? ` (Request ${error.requestId})` : ''}` }); }
+                if (active) { setLoadFailed(true); const loadMsg = error.message.startsWith('Unable to load') ? error.message : `Unable to load AI settings: ${error.message}`; setGlobalMessage({ type: 'error', text: `${loadMsg}${error.requestId ? ` (Request ${error.requestId})` : ''}` }); }
             } finally {
                 if (active) setLoading(false);
             }
@@ -265,10 +265,10 @@ const AiSettings = () => {
                 model: aiConfig[modelFields[targetProvider]] || '',
             });
             setPendingOperation(null);
-            setCardMessage(targetProvider, 'success', result.message || `${targetProvider} provider verified.`);
         } catch (error) {
             if (error.code === 'RECENT_AUTH_REQUIRED') setPendingOperation({ type: 'test', provider: targetProvider });
-            setCardMessage(targetProvider, 'error', `Test Failed: ${error.message}${error.requestId ? ` (Request ${error.requestId})` : ''}`);
+            const errorMsg = error.message.startsWith('Test Failed') ? error.message : `Test Failed: ${error.message}`;
+            setCardMessage(targetProvider, 'error', `${errorMsg}${error.requestId ? ` (Request ${error.requestId})` : ''}`);
         } finally {
             setTestingProvider(null);
         }

@@ -111,10 +111,12 @@ async function testAiProvider({ db, environment = process.env, provider, model, 
     if (!String(output || '').trim()) throw errorWith('AI_PROVIDER_UNAVAILABLE', `${provider} returned an empty response.`, 503);
     return { provider, model: selectedModel, message: `${provider} provider connection verified.` };
   } catch (error) {
-    if (error.name === 'AbortError' || /timeout/i.test(error.message || '')) throw errorWith('AI_PROVIDER_TIMEOUT', `${provider} provider timed out.`, 504);
-    if ([401, 403].includes(Number(error.status))) throw errorWith('AI_PROVIDER_AUTHENTICATION_FAILED', `${provider} rejected the configured credential.`, 422);
-    if (Number(error.status) === 400 || Number(error.status) === 404) throw errorWith('AI_PROVIDER_CONFIGURATION_ERROR', `${provider} rejected the configured model or request.`, 422);
-    throw errorWith('AI_PROVIDER_UNAVAILABLE', `${provider} provider is currently unavailable.`, 503);
+    if (error.code && error.status) throw error;
+    const detail = error.message ? `: ${error.message}` : '';
+    if (error.name === 'AbortError' || /timeout/i.test(error.message || '')) throw errorWith('AI_PROVIDER_TIMEOUT', `${provider} provider timed out (${timeoutMs}ms).`, 504);
+    if ([401, 403].includes(Number(error.status))) throw errorWith('AI_PROVIDER_AUTHENTICATION_FAILED', `${provider} rejected the configured credential${detail}.`, 422);
+    if (Number(error.status) === 400 || Number(error.status) === 404) throw errorWith('AI_PROVIDER_CONFIGURATION_ERROR', `${provider} rejected model "${selectedModel}" or payload${detail}.`, 422);
+    throw errorWith('AI_PROVIDER_UNAVAILABLE', `${provider} provider is currently unavailable${detail}.`, error.status || 503);
   }
 }
 
