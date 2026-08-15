@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { reauthenticateUser } from '../../../firestore/dbOperations';
-import { loadAdminAiSettings, saveAdminAiSettings, testAdminAiProvider, fetchAdminAiModels } from '../../../services/adminAiSettings';
+import { loadAdminAiSettings, saveAdminAiSettings, testAdminAiProvider, fetchAdminAiModels, loadQuotaStats, saveQuotaLimits, resetQuota } from '../../../services/adminAiSettings';
 import fire from '../../../conf/fire';
 import {
     FaRobot, FaCheck, FaTimes, FaSpinner, FaKey, FaSlidersH,
     FaEye, FaEyeSlash, FaServer, FaBolt, FaGlobe, FaBrain,
-    FaDesktop, FaDownload
+    FaDesktop, FaDownload, FaChartBar, FaTrashAlt, FaSyncAlt, FaUserShield
 } from 'react-icons/fa';
 import { SiNvidia } from 'react-icons/si';
 
@@ -72,6 +72,17 @@ const AiSettings = () => {
     // Per-provider inline message state
     const [providerMessages, setProviderMessages] = useState({});
     const [globalMessage, setGlobalMessage] = useState(null);
+
+    // Quota management state
+    const [quotaLimits, setQuotaLimits] = useState({ basic: 10, premium: 100, admin: 10000 });
+    const [quotaRecords, setQuotaRecords] = useState([]);
+    const [quotaToday, setQuotaToday] = useState('');
+    const [quotaTotalHistorical, setQuotaTotalHistorical] = useState(0);
+    const [quotaLoading, setQuotaLoading] = useState(false);
+    const [quotaSaving, setQuotaSaving] = useState(false);
+    const [quotaResetting, setQuotaResetting] = useState(null);
+    const [quotaMessage, setQuotaMessage] = useState(null);
+    const [resetTargetUid, setResetTargetUid] = useState('');
 
     // Refs for clearing timeouts
     const messageTimeouts = useRef({});
@@ -140,6 +151,64 @@ const AiSettings = () => {
         loadSettings();
         return () => { active = false; };
     }, []);
+
+    // Load quota stats on mount
+    useEffect(() => {
+        let active = true;
+        const loadQuota = async () => {
+            setQuotaLoading(true);
+            try {
+                const result = await loadQuotaStats();
+                if (!active) return;
+                if (result.limits) setQuotaLimits(result.limits);
+                if (result.todayRecords) setQuotaRecords(result.todayRecords);
+                if (result.today) setQuotaToday(result.today);
+                if (result.totalHistoricalRecords !== undefined) setQuotaTotalHistorical(result.totalHistoricalRecords);
+            } catch (_) { /* Quota stats optional - don't block page */ }
+            finally { if (active) setQuotaLoading(false); }
+        };
+        loadQuota();
+        return () => { active = false; };
+    }, []);
+
+    const handleSaveQuotaLimits = async () => {
+        setQuotaSaving(true);
+        setQuotaMessage(null);
+        try {
+            const result = await saveQuotaLimits({
+                basicDailyLimit: Number(quotaLimits.basic) || 10,
+                premiumDailyLimit: Number(quotaLimits.premium) || 100,
+                adminDailyLimit: Number(quotaLimits.admin) || 10000,
+            });
+            setQuotaMessage({ type: 'success', text: result.message || 'Quota limits saved.' });
+        } catch (error) {
+            setQuotaMessage({ type: 'error', text: error.message || 'Failed to save quota limits.' });
+        } finally {
+            setQuotaSaving(false);
+            setTimeout(() => setQuotaMessage(null), 6000);
+        }
+    };
+
+    const handleResetQuota = async (targetUid) => {
+        const label = targetUid ? `user ${targetUid.slice(0, 12)}...` : 'ALL users';
+        if (!window.confirm(`Reset AI quota for ${label}? This will restore their daily count to 0.`)) return;
+        setQuotaResetting(targetUid || '__all__');
+        setQuotaMessage(null);
+        try {
+            const result = await resetQuota(targetUid ? { uid: targetUid } : { all: true });
+            setQuotaMessage({ type: 'success', text: result.message || 'Quota reset successful.' });
+            // Refresh stats
+            const updated = await loadQuotaStats();
+            if (updated.todayRecords) setQuotaRecords(updated.todayRecords);
+            if (updated.totalHistoricalRecords !== undefined) setQuotaTotalHistorical(updated.totalHistoricalRecords);
+        } catch (error) {
+            setQuotaMessage({ type: 'error', text: error.message || 'Failed to reset quota.' });
+        } finally {
+            setQuotaResetting(null);
+            setResetTargetUid('');
+            setTimeout(() => setQuotaMessage(null), 6000);
+        }
+    };
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -1142,6 +1211,214 @@ const AiSettings = () => {
                     <label htmlFor="enableFallback" className="text-xs font-semibold text-slate-700 cursor-pointer">
                         Enable automatic fallback to the next configured provider when the primary provider fails or rate-limits
                     </label>
+                </div>
+            </div>
+
+            {/* ── Quota Management Section ── */}
+            <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50/60 to-orange-50/40 p-5 space-y-5">
+                <div>
+                    <h3 className="text-base font-bold text-slate-800 flex items-center gap-2 mb-0.5">
+                        <FaChartBar className="text-amber-600" /> AI Quota Management
+                    </h3>
+                    <p className="text-xs text-slate-500">Configure daily generation limits per membership tier and manage user quotas.</p>
+                </div>
+
+                {quotaMessage && (
+                    <div className={`p-3 rounded-lg text-xs font-medium flex items-center space-x-2 ${quotaMessage.type === 'success'
+                        ? 'bg-emerald-100 border border-emerald-300 text-emerald-900'
+                        : 'bg-red-100 border border-red-300 text-red-900'}`}>
+                        {quotaMessage.type === 'success' ? <FaCheck className="text-emerald-600 flex-shrink-0" /> : <FaTimes className="text-red-600 flex-shrink-0" />}
+                        <span>{quotaMessage.text}</span>
+                    </div>
+                )}
+
+                {/* Tier Limit Configuration */}
+                <div className="rounded-lg border border-slate-200 bg-white p-4 space-y-3">
+                    <h4 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                        <FaSlidersH className="text-slate-500" /> Daily Generation Limits per Tier
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div>
+                            <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Basic (Free)</label>
+                            <input
+                                type="number" min="1" max="100000"
+                                value={quotaLimits.basic}
+                                onChange={e => setQuotaLimits(prev => ({ ...prev, basic: Number(e.target.value) || 0 }))}
+                                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:outline-none"
+                            />
+                            <span className="text-[10px] text-slate-400 mt-0.5 block">generations / day</span>
+                        </div>
+                        <div>
+                            <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Premium</label>
+                            <input
+                                type="number" min="1" max="100000"
+                                value={quotaLimits.premium}
+                                onChange={e => setQuotaLimits(prev => ({ ...prev, premium: Number(e.target.value) || 0 }))}
+                                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:outline-none"
+                            />
+                            <span className="text-[10px] text-slate-400 mt-0.5 block">generations / day</span>
+                        </div>
+                        <div>
+                            <label className="block text-[11px] font-bold text-amber-700 uppercase tracking-wider mb-1 flex items-center gap-1">
+                                <FaUserShield className="text-amber-600" /> Admin
+                            </label>
+                            <input
+                                type="number" min="1" max="1000000"
+                                value={quotaLimits.admin}
+                                onChange={e => setQuotaLimits(prev => ({ ...prev, admin: Number(e.target.value) || 0 }))}
+                                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:outline-none"
+                            />
+                            <span className="text-[10px] text-slate-400 mt-0.5 block">generations / day</span>
+                        </div>
+                    </div>
+                    <div className="flex items-center justify-end pt-1">
+                        <button
+                            type="button"
+                            onClick={handleSaveQuotaLimits}
+                            disabled={quotaSaving}
+                            className="px-4 py-1.5 text-xs font-medium bg-amber-600 hover:bg-amber-700 text-white rounded-md flex items-center space-x-1.5 shadow-sm disabled:opacity-50"
+                        >
+                            {quotaSaving ? <FaSpinner className="animate-spin" /> : <FaCheck />}
+                            <span>Save Quota Limits</span>
+                        </button>
+                    </div>
+                </div>
+
+                {/* Reset Quota Section */}
+                <div className="rounded-lg border border-slate-200 bg-white p-4 space-y-3">
+                    <h4 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                        <FaSyncAlt className="text-slate-500" /> Reset User Quotas
+                    </h4>
+                    <div className="flex items-end gap-2">
+                        <div className="flex-1">
+                            <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">User UID (optional)</label>
+                            <input
+                                type="text"
+                                value={resetTargetUid}
+                                onChange={e => setResetTargetUid(e.target.value.trim())}
+                                placeholder="Firebase UID — leave empty to reset all users"
+                                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-red-400 focus:border-red-400 focus:outline-none font-mono"
+                            />
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => handleResetQuota(resetTargetUid || null)}
+                            disabled={quotaResetting !== null}
+                            className="px-4 py-2 text-xs font-medium bg-red-600 hover:bg-red-700 text-white rounded-md flex items-center space-x-1.5 shadow-sm disabled:opacity-50 whitespace-nowrap"
+                        >
+                            {quotaResetting ? <FaSpinner className="animate-spin" /> : <FaTrashAlt />}
+                            <span>{resetTargetUid ? 'Reset User' : 'Reset All'}</span>
+                        </button>
+                    </div>
+                </div>
+
+                {/* Today's Usage Dashboard */}
+                <div className="rounded-lg border border-slate-200 bg-white p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                            <FaChartBar className="text-slate-500" /> Today's AI Usage ({quotaToday || '—'})
+                        </h4>
+                        <span className="text-[10px] font-mono text-slate-400">{quotaTotalHistorical} historical records</span>
+                    </div>
+                    {quotaLoading ? (
+                        <div className="flex items-center justify-center py-4">
+                            <FaSpinner className="animate-spin text-slate-400 mr-2" />
+                            <span className="text-xs text-slate-500">Loading usage data...</span>
+                        </div>
+                    ) : quotaRecords.length === 0 ? (
+                        <p className="text-xs text-slate-400 text-center py-3">No AI usage recorded today.</p>
+                    ) : (
+                        <div className="max-h-64 overflow-y-auto">
+                            <table className="w-full text-xs">
+                                <thead className="sticky top-0 bg-slate-50">
+                                    <tr className="border-b border-slate-200">
+                                        <th className="text-left py-1.5 px-2 font-semibold text-slate-600">User</th>
+                                        <th className="text-center py-1.5 px-2 font-semibold text-slate-600">Used</th>
+                                        <th className="text-center py-1.5 px-2 font-semibold text-slate-600">Limit</th>
+                                        <th className="text-center py-1.5 px-2 font-semibold text-slate-600">%</th>
+                                        <th className="text-right py-1.5 px-2 font-semibold text-slate-600">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {quotaRecords.map((record, idx) => {
+                                        const pct = record.limit > 0 ? Math.round((record.count / record.limit) * 100) : 0;
+                                        const isExhausted = pct >= 100;
+                                        const isHigh = pct >= 80;
+                                        const initial = (record.displayName || record.email || record.uid || 'U').charAt(0).toUpperCase();
+                                        const displayName = record.displayName || (record.email ? record.email.split('@')[0] : `User (${record.uid.slice(0, 6)})`);
+                                        const isRecordAdmin = record.membership === 'Admin' || record.membership === 'admin' || record.limit >= 10000;
+                                        const isRecordPremium = !isRecordAdmin && (record.membership === 'Premium' || record.membership === 'premium' || record.limit >= 100);
+                                        return (
+                                            <tr key={record.docId || idx} className="border-b border-slate-100 hover:bg-slate-50/60 transition-colors">
+                                                <td className="py-2.5 px-3">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-xs flex-shrink-0 overflow-hidden border border-slate-300 shadow-sm">
+                                                            {record.photoURL ? (
+                                                                <img src={record.photoURL} alt="" className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <span>{initial}</span>
+                                                            )}
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="font-semibold text-slate-800 text-xs truncate max-w-[180px]" title={displayName}>
+                                                                    {displayName}
+                                                                </span>
+                                                                {isRecordAdmin && (
+                                                                    <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                                                                        Admin
+                                                                    </span>
+                                                                )}
+                                                                {isRecordPremium && (
+                                                                    <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                                                        PRO
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            {record.email && (
+                                                                <div className="text-[11px] text-slate-500 truncate max-w-[200px]" title={record.email}>
+                                                                    {record.email}
+                                                                </div>
+                                                            )}
+                                                            <div className="text-[10px] text-slate-400 font-mono truncate max-w-[200px] flex items-center gap-1">
+                                                                <span title={record.uid}>UID: {record.uid.slice(0, 8)}...{record.uid.slice(-4)}</span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setResetTargetUid(record.uid)}
+                                                                    className="text-amber-600 hover:text-amber-700 text-[10px] font-sans font-medium underline ml-1 cursor-pointer"
+                                                                    title="Select this UID for reset"
+                                                                >
+                                                                    Select
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="py-2.5 px-2 text-center font-mono font-bold text-slate-700">{record.count}</td>
+                                                <td className="py-2.5 px-2 text-center font-mono text-slate-500">{record.limit}</td>
+                                                <td className="py-2.5 px-2 text-center">
+                                                    <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                                        isExhausted ? 'bg-red-100 text-red-700 border border-red-200' : isHigh ? 'bg-amber-100 text-amber-700 border border-amber-200' : 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                                                    }`}>{pct}%</span>
+                                                </td>
+                                                <td className="py-2.5 px-3 text-right">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleResetQuota(record.uid)}
+                                                        disabled={quotaResetting === record.uid}
+                                                        className="px-2.5 py-1 text-[11px] font-medium text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-md transition-colors disabled:opacity-50"
+                                                        title={`Reset quota for ${displayName}`}
+                                                    >
+                                                        {quotaResetting === record.uid ? <FaSpinner className="animate-spin inline" /> : 'Reset'}
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </div>
             </div>
 
