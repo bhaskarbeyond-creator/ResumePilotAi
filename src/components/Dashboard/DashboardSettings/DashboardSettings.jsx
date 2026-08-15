@@ -47,12 +47,11 @@ function DashboardSettings(props) {
     const [profileSaveState, setProfileSaveState] = useState('loading');
     const [profileConflict, setProfileConflict] = useState(null);
     const persistProfileRef = useRef(null);
-    const profileRef = useRef(profile);
+    const profileRef = useRef(null);
     const profileConflictRef = useRef(null);
     const profileSavingRef = useRef(null);
     const pendingProfileSaveRef = useRef(null);
     const skipNextAutosaveRef = useRef(false);
-    const isSavingRef = useRef(false);
     const autosaveTimerRef = useRef(null);
     const loadedProfileUidRef = useRef(null);
     const mountedRef = useRef(true);
