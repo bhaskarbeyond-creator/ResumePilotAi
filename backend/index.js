@@ -1526,9 +1526,9 @@ app.post('/api/contact', async (req, res) => {
     return res.status(202).json({ success: true, message: 'Message accepted.' });
 });
 
-app.get('/api/export-render-data', (req, res) => {
+app.get('/api/export-render-data', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store, private');
-    const data = consumeExportRenderToken(req.query.token);
+    const data = await consumeExportRenderToken(req.app.get('db'), req.query.token);
     if (!data) return res.status(404).json({ error: 'Export data not found' });
     return res.json({ data });
 });
@@ -1588,7 +1588,7 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
             return res.status(402).json({ error: { code: 'ACTIVE_SUBSCRIPTION_REQUIRED', message: 'An active subscription is required for PDF export', requestId: res.locals.requestId } });
         }
         if (stored?.template && stored.template !== resumeName) return res.status(400).json({ error: 'Template mismatch' });
-        renderToken = createExportRenderToken(stored);
+        renderToken = await createExportRenderToken(req.app.get('db'), stored);
         activeExports++;
         slotAcquired = true;
         const launchOptions = {
@@ -1659,7 +1659,7 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
         if (browser) await browser.close().catch(() => {});
         res.status(500).json({ error: error.message });
     } finally {
-        if (renderToken) discardExportRenderToken(renderToken);
+        if (renderToken) await discardExportRenderToken(req.app.get('db'), renderToken);
         if (slotAcquired) activeExports = Math.max(0, activeExports - 1);
     }
 });
