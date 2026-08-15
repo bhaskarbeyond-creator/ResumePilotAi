@@ -84,15 +84,7 @@ function enforceApiPolicy(req, res, next) {
   if ((requiresVerifiedEmail(pathname) || isAdminPath(pathname)) && !req.user?.emailVerified) {
     return res.status(403).json({ error: { code: 'EMAIL_VERIFICATION_REQUIRED', message: 'A verified email address is required', requestId: res.locals.requestId } });
   }
-  if (RECENT_AUTH_PATHS.has(pathname) || LEGACY_EMAIL_ADMIN_PATHS.has(pathname) || (['/admin/firebase-service-account', '/admin/twilio-settings'].includes(pathname) && req.method !== 'GET') || pathname === '/account/delete'
-      || pathname.startsWith('/admin/users/') || pathname.startsWith('/admin/payments/')
-      || pathname.startsWith('/admin/employer-applications/') || pathname.startsWith('/admin/settings/')
-      || pathname.startsWith('/admin/jobs/') || pathname.startsWith('/admin/companies/')
-      || pathname.startsWith('/admin/reviews') || pathname === '/admin/global-rating'
-      || pathname.startsWith('/admin/trusted-by') || pathname.startsWith('/admin/ads') || pathname.startsWith('/admin/blog') || pathname.startsWith('/admin/coupons') || pathname === '/admin/landing-content'
-      || pathname.startsWith('/email/admin/')
-      || (pathname === '/admin/ai-settings' && req.method !== 'GET')
-      || ['/admin/ai/test-provider', '/admin/payment/test-provider', '/admin/payment-settings', '/admin/save-smtp', '/admin/test-connection'].includes(pathname)) {
+  if (pathname === '/account/delete' || (pathname === '/admin/firebase-service-account' && req.method !== 'GET')) {
     const authTime = Number(req.user?.claims?.auth_time || 0) * 1000;
     const maxAgeMs = Number(process.env.SENSITIVE_AUTH_MAX_AGE_MS || 10 * 60 * 1000);
     if (!authTime || Date.now() - authTime > maxAgeMs) {
