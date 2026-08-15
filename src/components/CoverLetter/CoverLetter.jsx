@@ -292,17 +292,62 @@ class CoverLetter extends Component {
     };
 
     exportCoverLetterTxt = () => {
-        const fullName = `${this.state.candidateFirstname} ${this.state.candidateLastname}`.trim() || 'Candidate';
-        const effectiveBody = this.state.letterBody || this.getDefaultLetterBody();
-        const textContent = `COVER LETTER (${this.state.templateId || 'Cover1'})\n=======================\nCandidate: ${fullName}\nEmail: ${this.state.candidateEmail}\nPhone: ${this.state.candidatePhone}\nAddress: ${this.state.candidateAddress}\n\nTarget Position: ${this.state.jobTitle}\nCompany: ${this.state.companyName}\nRecipient: ${this.state.recipientName}\nDate: ${new Date().toLocaleDateString()}\n\n${effectiveBody}`;
-        const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `Cover_Letter_${fullName.replace(/\s+/g, '_')}_${(this.state.companyName || 'App').replace(/\s+/g, '_')}.txt`;
-        a.click();
-        this.setState({ notificationMessage: `Downloaded ${a.download} to your browser Downloads folder!` });
-        setTimeout(() => this.setState({ notificationMessage: null }), 6000);
+        try {
+            const firstName = (this.state.candidateFirstname || '').trim();
+            const lastName = (this.state.candidateLastname || '').trim();
+            const fullName = `${firstName} ${lastName}`.trim() || 'Candidate Name';
+            const effectiveBody = (this.state.letterBody || this.getDefaultLetterBody()).trim();
+            const recipientName = (this.state.recipientName || 'Hiring Manager').trim();
+            const companyName = (this.state.companyName || '').trim();
+            const addressLine = [this.state.candidateAddress, this.state.candidateCity, this.state.candidatePostalCode].filter(Boolean).join(', ');
+            const companyAddressLine = [this.state.companyAddress, this.state.companyCity, this.state.companyPostalCode].filter(Boolean).join(', ');
+            const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+            const contactDetails = [
+                this.state.candidatePhone ? `Phone: ${this.state.candidatePhone}` : '',
+                this.state.candidateEmail ? `Email: ${this.state.candidateEmail}` : '',
+            ].filter(Boolean).join(' | ');
+
+            let textContent = `${fullName}\n`;
+            if (addressLine) textContent += `${addressLine}\n`;
+            if (contactDetails) textContent += `${contactDetails}\n`;
+            textContent += `\nDate: ${dateStr}\n\n`;
+
+            if (recipientName || companyName || companyAddressLine) {
+                textContent += `To:\n`;
+                if (recipientName) textContent += `${recipientName}\n`;
+                if (companyName) textContent += `${companyName}\n`;
+                if (companyAddressLine) textContent += `${companyAddressLine}\n`;
+                textContent += `\n`;
+            }
+
+            textContent += `Dear ${recipientName},\n\n`;
+            textContent += `${effectiveBody}\n\n`;
+            textContent += `Sincerely,\n${fullName}\n`;
+
+            const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            const safeName = fullName.replace(/[^a-zA-Z0-9_-]/g, '_');
+            const safeCompany = companyName ? companyName.replace(/[^a-zA-Z0-9_-]/g, '_') : 'Company';
+            a.download = `Cover_Letter_${safeName}_${safeCompany}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                try {
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                } catch (_) {}
+            }, 300);
+
+            this.setState({ notificationMessage: `Downloaded ${a.download} successfully!` });
+            setTimeout(() => this.setState({ notificationMessage: null }), 6000);
+        } catch (err) {
+            console.error('TXT Download error:', err);
+            this.setState({ notificationMessage: 'Could not trigger download. Please try again.' });
+        }
     };
 
     render() {
