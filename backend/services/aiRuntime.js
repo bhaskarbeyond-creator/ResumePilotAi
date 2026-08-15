@@ -568,7 +568,7 @@ async function requestProvider(provider, providerConfig, prompt, generation, { f
             const body = await response.json().catch(() => ({}));
             if (!response.ok) {
                 const errMsg = extractProviderErrorMessage(body, response.status, provider);
-                const isRetryable = response.status === 503 || response.status === 404 || /ResourceExhausted|Worker local total request limit/i.test(errMsg);
+                const isRetryable = response.status === 503 || response.status === 404 || response.status === 400 || /ResourceExhausted|Worker local total request limit|Not found for account|invalid_model|model_not_found|function.*not found/i.test(errMsg);
                 if (isRetryable && !isLastCandidate) {
                     console.warn(`[AI Model Failover] ${provider} model ${currentModel} error (${errMsg}); retrying with ${candidateModels[candidateModels.length - 1]}`);
                     lastError = Object.assign(new Error(errMsg), { status: response.status });

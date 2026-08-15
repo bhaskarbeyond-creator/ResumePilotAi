@@ -57,9 +57,22 @@ async function getAuthHeaders() {
     try {
         const fireModule = await import('../conf/fire.js').catch(() => null);
         const fire = fireModule?.default;
-        if (fire?.auth?.()?.currentUser) {
-            const token = await fire.auth().currentUser.getIdToken();
-            if (token) headers['Authorization'] = `Bearer ${token}`;
+        if (fire?.auth) {
+            let user = fire.auth().currentUser;
+            if (!user && typeof fire.auth().onAuthStateChanged === 'function') {
+                user = await new Promise(resolve => {
+                    const timer = setTimeout(() => resolve(fire.auth().currentUser), 1200);
+                    const unsubscribe = fire.auth().onAuthStateChanged(u => {
+                        clearTimeout(timer);
+                        if (typeof unsubscribe === 'function') unsubscribe();
+                        resolve(u);
+                    });
+                });
+            }
+            if (user) {
+                const token = await user.getIdToken();
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+            }
         }
     } catch (_) {}
     return headers;
