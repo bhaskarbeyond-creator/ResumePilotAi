@@ -2104,6 +2104,7 @@ app.get('/api/admin/ai/quota-stats', async (req, res) => {
                     docId: doc.id,
                     uid: data.uid || 'unknown',
                     email: data.email || '',
+                    displayName: '',
                     count: Number(data.count || 0),
                     limit: Number(data.limit || 0),
                     day: data.day || today,
@@ -2111,6 +2112,34 @@ app.get('/api/admin/ai/quota-stats', async (req, res) => {
                 });
             }
         }
+
+        // Enrich records with user profile data (displayName, email fallback)
+        const enrichPromises = todayRecords.map(async (record) => {
+            if (record.uid && record.uid !== 'unknown') {
+                try {
+                    const userDoc = await targetDb.collection('users').doc(record.uid).get();
+                    const userData = userDoc.data() || {};
+                    const nameFromParts = [userData.firstName, userData.lastName].filter(Boolean).join(' ').trim();
+                    record.displayName = userData.displayName || userData.name || userData.fullName || nameFromParts || '';
+                    if (!record.email) record.email = userData.email || '';
+                    record.membership = userData.membership || userData.role || 'Basic';
+                    record.photoURL = userData.photoURL || '';
+
+                    // If email or displayName still missing, try Firebase Auth user record
+                    if ((!record.displayName || !record.email) && admin && typeof admin.auth === 'function') {
+                        try {
+                            const authUser = await admin.auth().getUser(record.uid);
+                            if (authUser) {
+                                if (!record.displayName && authUser.displayName) record.displayName = authUser.displayName;
+                                if (!record.email && authUser.email) record.email = authUser.email;
+                                if (!record.photoURL && authUser.photoURL) record.photoURL = authUser.photoURL;
+                            }
+                        } catch (_) {}
+                    }
+                } catch (_) { /* user lookup optional */ }
+            }
+        });
+        await Promise.all(enrichPromises);
 
         return res.json({
             success: true,
