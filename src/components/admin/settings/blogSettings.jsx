@@ -113,7 +113,7 @@ const BlogSettings = () => {
             let result;
             
             if (editingCategory) {
-                result = await updateBlogCategory(editingCategory.id, categoryForm);
+                result = await updateBlogCategory(editingCategory.id, categoryForm, editingCategory.revision);
             } else {
                 result = await createBlogCategory(categoryForm);
             }
@@ -152,7 +152,7 @@ const BlogSettings = () => {
         setShowCategoryForm(true);
     };
 
-    const handleCategoryDelete = async (categoryId) => {
+    const handleCategoryDelete = async (categoryId, revision) => {
         if (!window.confirm('Are you sure you want to delete this category? This action cannot be undone.')) {
             return;
         }
@@ -160,7 +160,7 @@ const BlogSettings = () => {
         setSaving(true);
         
         try {
-            const result = await deleteBlogCategory(categoryId);
+            const result = await deleteBlogCategory(categoryId, revision);
             
             if (result.success) {
                 showNotification('Category deleted successfully!');
@@ -453,7 +453,7 @@ const BlogSettings = () => {
                                                 <FiEdit3 className="w-4 h-4" />
                                             </button>
                                             <button
-                                                onClick={() => handleCategoryDelete(category.id)}
+                                                onClick={() => handleCategoryDelete(category.id, category.revision)}
                                                 className="p-2 text-gray-400 hover:text-red-600 transition-colors duration-200"
                                             >
                                                 <FiTrash2 className="w-4 h-4" />

@@ -10,6 +10,10 @@ Legacy documents without a status remain publicly readable during non-destructiv
 
 Author draft and review-submission writes retain the established `blog_posts` model and owner-only Firestore rules. Admin moderation, schedule, unpublish, and delete actions now cross recent-authenticated backend routes with revision checks, explicit transitions, per-event author notifications, and audit records. Scheduled publication remains a trusted transaction: concurrent scheduler instances re-read each candidate, publish a revision once, clear the schedule, and create one deterministic in-app event. Public direct-slug failures reset metadata to `noindex`; list requests reject stale responses after filter/page changes.
 
+## Public discovery support
+
+Blog category creation/edit/delete now uses recent-authenticated, revisioned, audited backend routes with transactional slug uniqueness and dependent-post deletion checks. Trusted By public discovery uses a no-store published-only projection while Admin receives the full revisioned list through its protected API; legacy items without a `published` field remain visible during migration. Missing Portfolio metadata is reset to `noindex`, and shared Resume routes remain intentionally excluded from indexing.
+
 ## Historical behavior checked
 
 The reachable pre-phase implementation and grafted baseline were inspected in `BlogEditor.jsx`, `BlogPost.jsx`, `BlogList.jsx`, `BlogManagement.jsx`, `dbOperations.js`, both deployed-rule copies, and backend route policy.

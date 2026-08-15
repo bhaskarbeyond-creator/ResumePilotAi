@@ -4,6 +4,7 @@ import { FaMapMarkerAlt, FaClock, FaBuilding, FaBookmark, FaRegBookmark, FaEye, 
 import JobApplicationModal from './JobApplicationModal';
 import { AuthContext } from '../../main';
 import { checkUserApplicationStatus } from '../../firestore/dbOperations';
+import { sanitizeImageUrl } from '../../utils/sanitizeHtml';
 
 /**
  * JobCard component displays job information with company logo support
@@ -164,8 +165,8 @@ const JobCard = ({ job, isSaved, onToggleSaved, onViewDetails, onAuthRequired, t
             <div className="flex items-start justify-between mb-4">
                 <div className="flex items-start space-x-4">
                     <div className="w-12 h-12 bg-slate-50 rounded-lg flex items-center justify-center group-hover:bg-blue-50 transition-all duration-200 overflow-hidden border border-slate-200 group-hover:border-blue-200">
-                        {job.companyImage && job.companyImage.trim() !== '' && !imageError ? (
-                            <img src={job.companyImage} alt={`${job.company} logo`} className="w-full h-full object-cover" onError={() => setImageError(true)} onLoad={() => setImageError(false)} />
+                        {sanitizeImageUrl(job.companyImage) && !imageError ? (
+                            <img src={sanitizeImageUrl(job.companyImage)} alt={`${job.company} logo`} className="w-full h-full object-cover" onError={() => setImageError(true)} onLoad={() => setImageError(false)} />
                         ) : (
                             <FaBuilding className="w-5 h-5 text-slate-500 group-hover:text-blue-600 transition-colors duration-200" />
                         )}

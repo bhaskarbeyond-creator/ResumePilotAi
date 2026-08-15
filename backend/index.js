@@ -1718,6 +1718,68 @@ async function publishDueBlogPosts(requestDb, { actorUid = 'cms-scheduler', requ
     });
 }
 
+function normalizeBlogCategoryInput(input = {}) {
+    const name = String(input.name || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, 120);
+    const description = String(input.description || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, 500);
+    const color = /^#[0-9a-f]{6}$/i.test(String(input.color || '')) ? String(input.color) : '#6366f1';
+    const slug = name.normalize('NFKC').toLocaleLowerCase('en').replace(/[^\p{L}\p{M}\p{N}]+/gu, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 120);
+    if (!name || !slug) throw new Error('A valid category name is required.');
+    return { name, slug, description, color };
+}
+
+app.post('/api/admin/blog/categories', async (req, res) => {
+    const requestDb = req.app.get('db');
+    if (!requestDb || !admin) return res.status(503).json({ success: false, error: 'Category service unavailable.' });
+    try {
+        const data = normalizeBlogCategoryInput(req.body);
+        const reference = requestDb.collection('blog_categories').doc();
+        await requestDb.runTransaction(async transaction => {
+            const duplicate = await transaction.get(requestDb.collection('blog_categories').where('slug', '==', data.slug).limit(1));
+            if (!duplicate.empty) { const error = new Error('A category with this name already exists.'); error.code = 'CATEGORY_CONFLICT'; throw error; }
+            transaction.set(reference, { ...data, revision: 1, postCount: 0, createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+            transaction.set(requestDb.collection('security_audit_logs').doc(), { action: 'CMS_CATEGORY_CREATED', actorUid: req.user.uid, categoryId: reference.id, revision: 1, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        });
+        return res.status(201).json({ success: true, categoryId: reference.id, slug: data.slug, revision: 1 });
+    } catch (error) { return res.status(error.code === 'CATEGORY_CONFLICT' ? 409 : 400).json({ success: false, code: error.code, error: error.message }); }
+});
+
+app.patch('/api/admin/blog/categories/:categoryId', async (req, res) => {
+    const requestDb = req.app.get('db'); const categoryId = String(req.params.categoryId || ''); const expectedRevision = Number(req.body?.expectedRevision || 0);
+    if (!requestDb || !admin || !/^[A-Za-z0-9_-]{1,128}$/.test(categoryId) || !Number.isInteger(expectedRevision)) return res.status(400).json({ success: false, error: 'Invalid category update.' });
+    try {
+        const data = normalizeBlogCategoryInput(req.body);
+        let revision;
+        await requestDb.runTransaction(async transaction => {
+            const reference = requestDb.collection('blog_categories').doc(categoryId);
+            const [snapshot, duplicate] = await Promise.all([transaction.get(reference), transaction.get(requestDb.collection('blog_categories').where('slug', '==', data.slug).limit(2))]);
+            if (!snapshot.exists) { const e = new Error('Category not found.'); e.code = 'NOT_FOUND'; throw e; }
+            if (Number(snapshot.data()?.revision || 0) !== expectedRevision) { const e = new Error('This category changed after loading. Refresh before saving.'); e.code = 'CATEGORY_CONFLICT'; throw e; }
+            if (duplicate.docs.some(document => document.id !== categoryId)) { const e = new Error('A category with this name already exists.'); e.code = 'CATEGORY_CONFLICT'; throw e; }
+            revision = expectedRevision + 1;
+            transaction.update(reference, { ...data, revision, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+            transaction.set(requestDb.collection('security_audit_logs').doc(), { action: 'CMS_CATEGORY_UPDATED', actorUid: req.user.uid, categoryId, revision, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        });
+        return res.json({ success: true, slug: data.slug, revision });
+    } catch (error) { const status = error.code === 'CATEGORY_CONFLICT' ? 409 : error.code === 'NOT_FOUND' ? 404 : 400; return res.status(status).json({ success: false, code: error.code, error: error.message }); }
+});
+
+app.delete('/api/admin/blog/categories/:categoryId', async (req, res) => {
+    const requestDb = req.app.get('db'); const categoryId = String(req.params.categoryId || ''); const expectedRevision = Number(req.body?.expectedRevision || 0);
+    if (!requestDb || !admin || !/^[A-Za-z0-9_-]{1,128}$/.test(categoryId) || !Number.isInteger(expectedRevision)) return res.status(400).json({ success: false, error: 'Invalid category deletion.' });
+    try {
+        await requestDb.runTransaction(async transaction => {
+            const reference = requestDb.collection('blog_categories').doc(categoryId);
+            const [snapshot, posts] = await Promise.all([transaction.get(reference), transaction.get(requestDb.collection('blog_posts').where('categoryId', '==', categoryId).limit(1))]);
+            if (!snapshot.exists) { const e = new Error('Category not found.'); e.code = 'NOT_FOUND'; throw e; }
+            if (Number(snapshot.data()?.revision || 0) !== expectedRevision) { const e = new Error('This category changed after loading. Refresh before deleting.'); e.code = 'CATEGORY_CONFLICT'; throw e; }
+            if (!posts.empty) { const e = new Error('Move or delete posts before deleting this category.'); e.code = 'CATEGORY_HAS_POSTS'; throw e; }
+            transaction.delete(reference);
+            transaction.set(requestDb.collection('security_audit_logs').doc(), { action: 'CMS_CATEGORY_DELETED', actorUid: req.user.uid, categoryId, revision: expectedRevision, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        });
+        return res.json({ success: true });
+    } catch (error) { const status = ['CATEGORY_CONFLICT', 'CATEGORY_HAS_POSTS'].includes(error.code) ? 409 : error.code === 'NOT_FOUND' ? 404 : 500; return res.status(status).json({ success: false, code: error.code, error: status === 500 ? 'Unable to delete category.' : error.message }); }
+});
+
 app.patch('/api/admin/blog/posts/:postId', async (req, res) => {
     const requestDb = req.app.get('db');
     const postId = String(req.params.postId || '');
@@ -3360,6 +3422,21 @@ app.post('/api/admin/landing-content', async (req, res) => {
         });
         return res.json({ success: true, content: { ...content, revision } });
     } catch (error) { return res.status(error.code === 'ADMIN_TARGET_CHANGED' ? 409 : 500).json({ success: false, code: error.code, error: error.code ? error.message : 'Unable to save landing content.' }); }
+});
+
+app.get('/public/trusted-by.json', async (_req, res) => {
+    if (!db) return res.status(503).json({ success: false, items: [] });
+    const snapshot = await db.collection('trustedBy').get();
+    const items = snapshot.docs.map(document => ({ id: document.id, ...document.data() })).filter(item => item.published !== false).sort((a, b) => Number(a.order || 0) - Number(b.order || 0) || String(a.name || '').localeCompare(String(b.name || '')));
+    res.setHeader('Cache-Control', 'no-store');
+    return res.json({ success: true, items });
+});
+
+app.get('/api/admin/trusted-by', async (_req, res) => {
+    if (!db) return res.status(503).json({ success: false, error: 'Trusted-logo service unavailable.' });
+    const snapshot = await db.collection('trustedBy').get();
+    const items = snapshot.docs.map(document => ({ id: document.id, ...document.data(), revision: Number(document.data()?.revision || 0) })).sort((a, b) => Number(a.order || 0) - Number(b.order || 0) || String(a.name || '').localeCompare(String(b.name || '')));
+    return res.json({ success: true, items });
 });
 
 app.post('/api/admin/trusted-by', async (req, res) => {

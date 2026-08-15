@@ -1,4 +1,4 @@
-import { sanitizeUrl } from '../../../utils/sanitizeHtml';
+import { sanitizeImageUrl, sanitizeUrl } from '../../../utils/sanitizeHtml';
 import React, { useState, useEffect, useContext } from 'react';
 import { motion } from 'framer-motion';
 import { withTranslation } from 'react-i18next';
@@ -406,9 +406,9 @@ const CompaniesManagement = ({ showToast, sidebarCollapsed, t }) => {
                                                 <div className="flex items-center gap-3 mb-2">
                                                     {/* Company Logo */}
                                                     <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                                        {company.companyImage ? (
+                                                        {sanitizeImageUrl(company.companyImage) ? (
                                                             <img
-                                                                src={company.companyImage}
+                                                                src={sanitizeImageUrl(company.companyImage)}
                                                                 alt={`${company.name} logo`}
                                                                 className="w-10 h-10 object-contain rounded"
                                                                 onError={(e) => {
@@ -417,7 +417,7 @@ const CompaniesManagement = ({ showToast, sidebarCollapsed, t }) => {
                                                                 }}
                                                             />
                                                         ) : null}
-                                                        <FaBuilding className="w-6 h-6 text-slate-600" style={{ display: company.companyImage ? 'none' : 'block' }} />
+                                                        <FaBuilding className="w-6 h-6 text-slate-600" style={{ display: sanitizeImageUrl(company.companyImage) ? 'none' : 'block' }} />
                                                     </div>
 
                                                     <div className="flex-1 min-w-0">

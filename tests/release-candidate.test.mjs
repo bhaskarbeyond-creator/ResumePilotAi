@@ -40,9 +40,9 @@ test('non-English locale payloads are loaded on demand instead of bundled into t
 test('i18n literal inventory is reproducible and classifies UI, accessibility, technical and brand strings', async () => {
   const inventory = JSON.parse(await fs.readFile('docs/I18N_UI_STRING_INVENTORY.json', 'utf8'));
   assert.equal(inventory.filesScanned, 281);
-  assert.equal(inventory.occurrences, 2901);
-  assert.equal(inventory.summary.USER_FACING_ENGLISH_CANDIDATE, 2373);
-  assert.equal(inventory.summary.USER_FACING_ACCESSIBILITY, 306);
+  assert.equal(inventory.occurrences, 2909);
+  assert.equal(inventory.summary.USER_FACING_ENGLISH_CANDIDATE, 2379);
+  assert.equal(inventory.summary.USER_FACING_ACCESSIBILITY, 308);
 });
 
 test('PWA manifest readiness is static while authenticated offline caching stays disabled', async () => {
