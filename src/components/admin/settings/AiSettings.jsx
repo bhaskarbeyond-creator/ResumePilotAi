@@ -507,6 +507,12 @@ const AiSettings = () => {
                                     {showKeys.nvidia ? <FaEyeSlash className="w-3.5 h-3.5" /> : <FaEye className="w-3.5 h-3.5" />}
                                 </button>
                             </div>
+                            {configuredProviders.nvidia && !aiConfig.nvidiaApiKey && (
+                                <div className="mt-1 text-[11px] text-emerald-700 font-medium flex items-center gap-1">
+                                    <FaCheck className="w-3 h-3 text-emerald-600 flex-shrink-0" />
+                                    <span>API key configured & active on server (hidden for security)</span>
+                                </div>
+                            )}
                         </div>
 
                         <div>
@@ -627,6 +633,12 @@ const AiSettings = () => {
                                     {showKeys.gemini ? <FaEyeSlash className="w-3.5 h-3.5" /> : <FaEye className="w-3.5 h-3.5" />}
                                 </button>
                             </div>
+                            {configuredProviders.gemini && !aiConfig.geminiApiKey && (
+                                <div className="mt-1 text-[11px] text-blue-700 font-medium flex items-center gap-1">
+                                    <FaCheck className="w-3 h-3 text-blue-600 flex-shrink-0" />
+                                    <span>API key configured & active on server (hidden for security)</span>
+                                </div>
+                            )}
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-slate-600 mb-1">Gemini Model Target</label>
@@ -733,6 +745,12 @@ const AiSettings = () => {
                                     {showKeys.openai ? <FaEyeSlash className="w-3.5 h-3.5" /> : <FaEye className="w-3.5 h-3.5" />}
                                 </button>
                             </div>
+                            {configuredProviders.openai && !aiConfig.openaiApiKey && (
+                                <div className="mt-1 text-[11px] text-indigo-700 font-medium flex items-center gap-1">
+                                    <FaCheck className="w-3 h-3 text-indigo-600 flex-shrink-0" />
+                                    <span>API key configured & active on server (hidden for security)</span>
+                                </div>
+                            )}
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-slate-600 mb-1">Model Name</label>
@@ -832,6 +850,12 @@ const AiSettings = () => {
                                         {showKeys.groq ? <FaEyeSlash className="w-3.5 h-3.5" /> : <FaEye className="w-3.5 h-3.5" />}
                                     </button>
                                 </div>
+                                {configuredProviders.groq && !aiConfig.groqApiKey && (
+                                    <div className="mt-1 text-[11px] text-amber-700 font-medium flex items-center gap-1">
+                                        <FaCheck className="w-3 h-3 text-amber-600 flex-shrink-0" />
+                                        <span>API key configured & active on server (hidden for security)</span>
+                                    </div>
+                                )}
                             </div>
                             <div>
                                 <label className="block text-xs font-semibold text-slate-600 mb-1">Groq Model</label>
@@ -918,6 +942,12 @@ const AiSettings = () => {
                                         {showKeys.openrouter ? <FaEyeSlash className="w-3.5 h-3.5" /> : <FaEye className="w-3.5 h-3.5" />}
                                     </button>
                                 </div>
+                                {configuredProviders.openrouter && !aiConfig.openrouterApiKey && (
+                                    <div className="mt-1 text-[11px] text-purple-700 font-medium flex items-center gap-1">
+                                        <FaCheck className="w-3 h-3 text-purple-600 flex-shrink-0" />
+                                        <span>API key configured & active on server (hidden for security)</span>
+                                    </div>
+                                )}
                             </div>
                             <div>
                                 <label className="block text-xs font-semibold text-slate-600 mb-1">OpenRouter Model</label>
@@ -1006,6 +1036,12 @@ const AiSettings = () => {
                                         {showKeys.deepseek ? <FaEyeSlash className="w-3.5 h-3.5" /> : <FaEye className="w-3.5 h-3.5" />}
                                     </button>
                                 </div>
+                                {configuredProviders.deepseek && !aiConfig.deepseekApiKey && (
+                                    <div className="mt-1 text-[11px] text-blue-700 font-medium flex items-center gap-1">
+                                        <FaCheck className="w-3 h-3 text-blue-600 flex-shrink-0" />
+                                        <span>API key configured & active on server (hidden for security)</span>
+                                    </div>
+                                )}
                             </div>
                             <div>
                                 <label className="block text-xs font-semibold text-slate-600 mb-1">DeepSeek Model</label>
