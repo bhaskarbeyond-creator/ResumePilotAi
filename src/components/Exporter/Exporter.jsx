@@ -51,7 +51,14 @@ export default function Exporter({ resumeName }) {
     }, [resumeId]);
 
     const markReady = useCallback(async () => {
-        try { await document.fonts?.ready; } catch (_) { /* browser font API is optional */ }
+        try {
+            if (document.fonts?.ready) {
+                await Promise.race([
+                    document.fonts.ready,
+                    new Promise((resolve) => setTimeout(resolve, 1500))
+                ]);
+            }
+        } catch (_) { /* browser font API is optional */ }
         requestAnimationFrame(() => {
             document.documentElement.setAttribute('data-export-ready', 'true');
             setStatus('ready');
