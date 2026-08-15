@@ -446,7 +446,18 @@ class CoverLetter extends Component {
         };
 
         return (
-            <div className="cover-letter min-h-screen bg-slate-50 text-slate-900 p-4 sm:p-8 font-sans">
+            <div className="cover-letter">
+                {/* Dedicated Unscaled Full-Page Print Document (Only Rendered during @media print) */}
+                <div className="cover-letter-print-document">
+                    <TemplateRenderer
+                        templateId={this.state.templateId || 'Cover1'}
+                        values={templateValues}
+                        language={this.props.i18n?.language || 'en'}
+                    />
+                </div>
+
+                {/* On-Screen Interactive UI (Suppressed in Print) */}
+                <div className="cover-letter-ui no-print min-h-screen bg-slate-50 text-slate-900 p-4 sm:p-8 font-sans">
                 {/* Fullscreen Preview Modal (Same as Resume Preview Modal) */}
                 {this.state.showPreviewModal && (
                     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">
@@ -1019,6 +1030,7 @@ class CoverLetter extends Component {
                             </div>
                         </div>
                     )}
+                </div>
                 </div>
             </div>
         );
