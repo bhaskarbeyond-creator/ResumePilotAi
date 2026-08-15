@@ -12,6 +12,7 @@ const crypto = require('crypto');
 const { chromium } = require('playwright');
 require('dotenv').config();
 const EmailNotifier = require('./services/emailNotifier');
+const { queueEmailInTransaction, processOutboxOnce } = require('./services/notificationOutbox');
 const { loadProviderConfiguration, generateWithProviders } = require('./services/aiRuntime');
 const { loadAiAdminSettings, saveAiAdminSettings, testAiProvider } = require('./services/aiAdmin');
 const { createExportRenderToken, consumeExportRenderToken, discardExportRenderToken } = require('./security/exportTokens');
@@ -356,7 +357,12 @@ async function activateVerifiedOrder(orderRef, gatewayLabel, providerPaymentId) 
         const orderSnap = await tx.get(orderRef);
         if (!orderSnap.exists) throw Object.assign(new Error('ORDER_NOT_FOUND'), { status: 404 });
         const order = orderSnap.data();
-        if (order.status === 'ACTIVE') return;
+        const paymentEventId = notificationEventId('payment_active', orderRef.id);
+        const paymentNotificationRef = db.collection('notifications').doc(order.uid).collection('userNotifications').doc(paymentEventId);
+        if (order.status === 'ACTIVE') {
+            tx.set(paymentNotificationRef, { eventId: paymentEventId, state: 'NOTIFICATION_CREATED', deliveryState: 'NOT_REQUESTED', type: 'payment_active', title: 'Payment confirmed', message: 'Your payment was confirmed and premium access is active.', data: { paymentOrderId: orderRef.id, planId: order.planId }, read: false, createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+            return;
+        }
         if (!['PAYMENT_CREATED', 'PENDING_PAYMENT', 'PROVIDER_CONFIRMED'].includes(order.status)) {
             throw Object.assign(new Error('INVALID_ORDER_STATE'), { status: 409 });
         }
@@ -374,6 +380,7 @@ async function activateVerifiedOrder(orderRef, gatewayLabel, providerPaymentId) 
             status: 'ACTIVE', membershipEnds, providerPaymentId: providerPaymentId || null,
             activatedAt: admin.firestore.FieldValue.serverTimestamp()
         });
+        tx.set(paymentNotificationRef, { eventId: paymentEventId, state: 'NOTIFICATION_CREATED', deliveryState: 'NOT_REQUESTED', type: 'payment_active', title: 'Payment confirmed', message: 'Your payment was confirmed and premium access is active.', data: { paymentOrderId: orderRef.id, planId: order.planId }, read: false, createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() });
     });
     const activatedOrder = (await orderRef.get()).data();
     await consumeCouponRedemption(orderRef.id, activatedOrder);
@@ -1050,9 +1057,350 @@ app.post('/api/check', async (req, res) => {
     }
 });
 
+function notificationEventId(...parts) { return crypto.createHash('sha256').update(parts.join('\0')).digest('hex'); }
+
+function jobApplicationNotification(status, jobTitle, companyName, notes = '') {
+    const suffix = notes ? ` ${notes}` : '';
+    if (status === 'interview') return { type: 'application_interview', title: 'Interview invitation', message: `You have been invited to interview for ${jobTitle} at ${companyName}.${suffix}` };
+    if (status === 'accepted') return { type: 'application_accepted', title: 'Application accepted', message: `Your application for ${jobTitle} at ${companyName} was accepted.${suffix}` };
+    if (status === 'rejected') return { type: 'application_rejected', title: 'Application update', message: `Your application for ${jobTitle} at ${companyName} was not selected.${suffix}` };
+    return { type: 'application_status_update', title: 'Application status updated', message: `Your application for ${jobTitle} at ${companyName} is now ${status}.${suffix}` };
+}
+
+app.post('/api/jobs/:jobId/applications', async (req, res) => {
+    const requestDb = req.app.get('db');
+    const jobId = String(req.params.jobId || '');
+    const fullName = String(req.body?.fullName || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, 120);
+    const phone = String(req.body?.phone || '').replace(/\p{Cc}/gu, '').trim().slice(0, 30);
+    const linkedInUrl = safePublicUrl(req.body?.linkedinUrl);
+    const githubUrl = safePublicUrl(req.body?.githubUrl);
+    const coverLetter = String(req.body?.coverLetter || '').slice(0, 20_000);
+    const coverText = coverLetter.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const resumeId = String(req.body?.resumeId || '').trim();
+    if (!requestDb || !admin || !/^[A-Za-z0-9_-]{1,128}$/.test(jobId)) return res.status(400).json({ success: false, error: 'A valid job is required.' });
+    if (!String(req.user.email || '').trim()) return res.status(403).json({ success: false, error: 'A verified account email is required.' });
+    if (!fullName || !/^\+?[0-9 ()-]{7,30}$/.test(phone) || coverText.length < 50 || coverText.length > 1000) {
+        return res.status(400).json({ success: false, error: 'Valid name, phone, and a 50–1000 character cover letter are required.' });
+    }
+    if ((req.body?.linkedinUrl && (!linkedInUrl || !linkedInUrl.startsWith('https:'))) || (req.body?.githubUrl && (!githubUrl || !githubUrl.startsWith('https:')))) {
+        return res.status(400).json({ success: false, error: 'Profile links must use HTTPS.' });
+    }
+    if (resumeId && !/^[A-Za-z0-9_-]{1,128}$/.test(resumeId)) return res.status(400).json({ success: false, error: 'Invalid resume selection.' });
+    const applicationId = `${req.user.uid}_${jobId}`;
+    const applicationRef = requestDb.collection('jobApplications').doc(applicationId);
+    const jobRef = requestDb.collection('jobs').doc(jobId);
+    const resumeRef = resumeId ? requestDb.collection('users').doc(req.user.uid).collection('resumes').doc(resumeId) : null;
+    try {
+        let responseData;
+        await requestDb.runTransaction(async transaction => {
+            const reads = [transaction.get(applicationRef), transaction.get(jobRef), ...(resumeRef ? [transaction.get(resumeRef)] : [])];
+            const [existing, jobSnapshot, resumeSnapshot] = await Promise.all(reads);
+            if (existing.exists) { const duplicate = new Error('You have already applied to this job.'); duplicate.code = 'ALREADY_APPLIED'; throw duplicate; }
+            if (!jobSnapshot.exists || jobSnapshot.data()?.status !== 'active') { const unavailable = new Error('This job is no longer accepting applications.'); unavailable.code = 'JOB_UNAVAILABLE'; throw unavailable; }
+            if (resumeRef && !resumeSnapshot?.exists) { const invalidResume = new Error('The selected resume was not found.'); invalidResume.code = 'RESUME_NOT_FOUND'; throw invalidResume; }
+            const job = jobSnapshot.data() || {};
+            const employerUser = job.employerId ? await transaction.get(requestDb.collection('users').doc(job.employerId)) : null;
+            const resume = resumeSnapshot?.data() || null;
+            if (resume && Buffer.byteLength(JSON.stringify(resume), 'utf8') > 600_000) { const oversized = new Error('The selected resume is too large to attach.'); oversized.code = 'RESUME_TOO_LARGE'; throw oversized; }
+            const email = String(req.user.email || '').trim().toLowerCase();
+            const jobTitle = String(job.title || 'Job').replace(/\p{Cc}/gu, ' ').trim().slice(0, 160);
+            const companyName = String(job.company || 'Company').replace(/\p{Cc}/gu, ' ').trim().slice(0, 160);
+            const application = {
+                userId: req.user.uid, jobId, applicantName: fullName, fullName,
+                applicantEmail: email, email, phone,
+                linkedinUrl: linkedInUrl || '', githubUrl: githubUrl || '', coverLetter,
+                selectedResume: resume ? { id: resumeId, name: String(resume.title || resume.name || 'Resume').slice(0, 120), data: resume } : null,
+                resumeId: resumeId || '', resumeUrl: '', status: 'pending', revision: 1,
+                skills: [], experience: '',
+                appliedAt: admin.firestore.FieldValue.serverTimestamp(), createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                jobSnapshot: {
+                    title: jobTitle, company: companyName,
+                    location: String(job.location || '').slice(0, 200), country: String(job.country || '').slice(0, 100),
+                    minSalary: Number.isFinite(Number(job.minSalary)) ? Number(job.minSalary) : null,
+                    maxSalary: Number.isFinite(Number(job.maxSalary)) ? Number(job.maxSalary) : null,
+                    jobType: String(job.jobType || job.type || '').slice(0, 80), workMode: String(job.workMode || '').slice(0, 80),
+                    description: String(job.description || '').slice(0, 10_000), requirements: Array.isArray(job.requirements) ? job.requirements.slice(0, 50).map(item => String(item).slice(0, 500)) : [],
+                },
+            };
+            transaction.set(applicationRef, application);
+            transaction.update(jobRef, { applicationsCount: Number(job.applicationsCount || 0) + 1, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+            const submittedEventId = notificationEventId('job_application_submitted', applicationId);
+            queueEmailInTransaction(transaction, requestDb, admin, { eventId: `${submittedEventId}:candidate`, recipient: email, templateType: 'job_status_update', vars: { candidate_name: fullName, job_title: jobTitle, company_name: companyName, application_status: 'Submitted' }, metadata: { applicationId, recipientUid: req.user.uid } });
+            const employerEmail = String(employerUser?.data()?.email || '').trim().toLowerCase();
+            if (employerEmail) queueEmailInTransaction(transaction, requestDb, admin, { eventId: `${submittedEventId}:employer`, recipient: employerEmail, templateType: 'job_application_received', vars: { candidate_name: fullName, job_title: jobTitle, company_name: companyName, date: new Date().toLocaleDateString('en-IN') }, metadata: { applicationId, recipientUid: job.employerId } });
+            transaction.set(requestDb.collection('notifications').doc(req.user.uid).collection('userNotifications').doc(submittedEventId), {
+                eventId: submittedEventId, state: 'NOTIFICATION_CREATED', deliveryState: 'NOT_REQUESTED',
+                type: 'job_application', title: 'Application submitted', message: `Your application for ${jobTitle} at ${companyName} was submitted.`,
+                data: { jobId, applicationId, jobTitle, company: companyName }, read: false,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+            if (job.employerId) transaction.set(requestDb.collection('notifications').doc(job.employerId).collection('userNotifications').doc(submittedEventId), {
+                eventId: submittedEventId, state: 'NOTIFICATION_CREATED', deliveryState: 'NOT_REQUESTED',
+                type: 'job_application_received', title: 'New job application', message: `${fullName} applied for ${jobTitle}.`,
+                data: { jobId, applicationId, jobTitle }, read: false,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+            transaction.set(requestDb.collection('security_audit_logs').doc(), {
+                action: 'JOB_APPLICATION_SUBMITTED', actorUid: req.user.uid, jobId, applicationId,
+                requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+            responseData = { applicationId, revision: 1 };
+        });
+        return res.status(201).json({ success: true, ...responseData });
+    } catch (error) {
+        const status = error.code === 'ALREADY_APPLIED' ? 409 : ['JOB_UNAVAILABLE', 'RESUME_NOT_FOUND'].includes(error.code) ? 404 : error.code === 'RESUME_TOO_LARGE' ? 413 : 500;
+        return res.status(status).json({ success: false, code: error.code, error: status === 500 ? 'Unable to submit application.' : error.message });
+    }
+});
+
+app.patch('/api/job-applications/:applicationId/status', async (req, res) => {
+    const requestDb = req.app.get('db');
+    const applicationId = String(req.params.applicationId || '');
+    const status = String(req.body?.status || '').toLowerCase();
+    const notes = String(req.body?.notes || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, 1000);
+    const expectedStatus = String(req.body?.expectedStatus || '');
+    const expectedRevision = Number(req.body?.expectedRevision || 0);
+    if (!requestDb || !admin || !/^[A-Za-z0-9:_-]{1,300}$/.test(applicationId) || !['interview', 'accepted', 'rejected'].includes(status)
+        || !Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid application status request.' });
+    const allowedTransitions = { pending: new Set(['interview', 'rejected']), interview: new Set(['accepted', 'rejected']) };
+    try {
+        let responseData;
+        await requestDb.runTransaction(async transaction => {
+            const applicationRef = requestDb.collection('jobApplications').doc(applicationId);
+            const applicationSnapshot = await transaction.get(applicationRef);
+            if (!applicationSnapshot.exists) { const missing = new Error('Application not found.'); missing.code = 'NOT_FOUND'; throw missing; }
+            const application = applicationSnapshot.data() || {};
+            const jobRef = requestDb.collection('jobs').doc(application.jobId);
+            const jobSnapshot = await transaction.get(jobRef);
+            if (!jobSnapshot.exists || jobSnapshot.data()?.employerId !== req.user.uid) { const missing = new Error('Application not found.'); missing.code = 'NOT_FOUND'; throw missing; }
+            const currentStatus = String(application.status || 'pending');
+            const currentRevision = Number(application.revision || 0);
+            if ((expectedStatus && expectedStatus !== currentStatus) || expectedRevision !== currentRevision) { const conflict = new Error('This application changed after the list loaded. Refresh before updating it.'); conflict.code = 'APPLICATION_CHANGED'; throw conflict; }
+            if (!allowedTransitions[currentStatus]?.has(status)) { const transition = new Error(`An application cannot move from ${currentStatus} to ${status}.`); transition.code = 'INVALID_STATUS_TRANSITION'; throw transition; }
+            const job = jobSnapshot.data() || {};
+            const jobTitle = String(job.title || application.jobSnapshot?.title || 'Job').replace(/\p{Cc}/gu, ' ').slice(0, 160);
+            const companyName = String(job.company || application.jobSnapshot?.company || 'Company').replace(/\p{Cc}/gu, ' ').slice(0, 160);
+            const nextRevision = currentRevision + 1;
+            transaction.update(applicationRef, { status, employerNotes: notes, revision: nextRevision, statusUpdatedAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+            const notification = jobApplicationNotification(status, jobTitle, companyName, notes);
+            const statusEventId = notificationEventId('job_application_status', applicationId, String(nextRevision));
+            if (application.applicantEmail) queueEmailInTransaction(transaction, requestDb, admin, { eventId: `${statusEventId}:candidate`, recipient: application.applicantEmail, templateType: 'job_status_update', vars: { candidate_name: application.applicantName || 'Candidate', job_title: jobTitle, company_name: companyName, application_status: status }, metadata: { applicationId, recipientUid: application.userId, revision: nextRevision } });
+            transaction.set(requestDb.collection('notifications').doc(application.userId).collection('userNotifications').doc(statusEventId), {
+                eventId: statusEventId, state: 'NOTIFICATION_CREATED', deliveryState: 'NOT_REQUESTED',
+                ...notification, data: { jobId: application.jobId, applicationId, jobTitle, company: companyName, status }, read: false,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+            transaction.set(requestDb.collection('security_audit_logs').doc(), {
+                action: 'JOB_APPLICATION_STATUS_UPDATED', actorUid: req.user.uid, applicationId, jobId: application.jobId,
+                previousStatus: currentStatus, status, revision: nextRevision, requestId: res.locals.requestId,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+            responseData = { status, revision: nextRevision };
+        });
+        return res.json({ success: true, ...responseData });
+    } catch (error) {
+        const responseStatus = error.code === 'APPLICATION_CHANGED' ? 409 : error.code === 'INVALID_STATUS_TRANSITION' ? 400 : error.code === 'NOT_FOUND' ? 404 : 500;
+        return res.status(responseStatus).json({ success: false, code: error.code, error: responseStatus === 500 ? 'Unable to update application.' : error.message });
+    }
+});
+
+function normalizeEmployerJobInput(input = {}, company = {}) {
+    const text = (value, maximum) => String(value || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, maximum);
+    const title = text(input.title, 160);
+    const description = text(input.description, 20_000);
+    const location = text(input.location, 200);
+    const country = text(input.country, 100);
+    if (!title || !description || !location) throw new Error('Job title, description, and location are required.');
+    const list = value => Array.isArray(value) ? value.slice(0, 100).map(item => text(item, 500)).filter(Boolean) : [];
+    const salary = value => value === null || value === '' || value === undefined ? null : Number(value);
+    const minSalary = salary(input.minSalary);
+    const maxSalary = salary(input.maxSalary);
+    if ((minSalary !== null && (!Number.isFinite(minSalary) || minSalary < 0)) || (maxSalary !== null && (!Number.isFinite(maxSalary) || maxSalary < 0)) || (minSalary !== null && maxSalary !== null && minSalary > maxSalary)) throw new Error('Invalid salary range.');
+    const deadline = input.deadline ? new Date(input.deadline) : null;
+    if (deadline && !Number.isFinite(deadline.getTime())) throw new Error('Invalid application deadline.');
+    return {
+        title, description, location, country,
+        companyId: company.id, company: text(company.name, 160), companySize: text(company.size, 80), companyIndustry: text(company.industry, 120),
+        companyWebsite: safePublicUrl(company.website), companyImage: safePublicUrl(company.companyImage), companyDescription: text(company.description, 2000),
+        jobType: text(input.jobType, 80), workMode: text(input.workMode, 80), experienceLevel: text(input.experienceLevel, 100),
+        minSalary, maxSalary, requirements: list(input.requirements), benefits: list(input.benefits), deadline,
+    };
+}
+
+function isEmployerAccount(req) { return req.user?.claims?.employer === true; }
+
+function normalizeEmployerCompanyInput(input = {}) {
+    const text = (value, maximum) => String(value || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, maximum);
+    const name = text(input.name, 160);
+    const industry = text(input.industry, 120);
+    const size = text(input.size, 80);
+    const location = text(input.location, 200);
+    const website = safePublicUrl(input.website);
+    const companyImage = safePublicUrl(input.companyImage);
+    const email = text(input.email, 254).toLowerCase();
+    const phone = text(input.phone, 30);
+    if (!name || !industry || !size || !location) throw new Error('Company name, industry, size, and location are required.');
+    if (input.website && (!website || !website.startsWith('https:'))) throw new Error('Company website must use HTTPS.');
+    if (input.companyImage && (!companyImage || !companyImage.startsWith('https:'))) throw new Error('Company image must use HTTPS.');
+    if (email && !/^[^\s@,;<>]{1,64}@[^\s@,;<>]{1,190}$/.test(email)) throw new Error('Invalid company email.');
+    if (phone && !/^\+?[0-9 ()-]{7,30}$/.test(phone)) throw new Error('Invalid company phone.');
+    return { name, industry, size, location, website: website || '', companyImage: companyImage || '', description: text(input.description, 5000), address: text(input.address, 500), phone, email };
+}
+
+app.post('/api/employer/companies', async (req, res) => {
+    const requestDb = req.app.get('db');
+    if (!isEmployerAccount(req)) return res.status(403).json({ success: false, error: 'Approved employer access is required.' });
+    if (!requestDb || !admin) return res.status(503).json({ success: false, error: 'Company service unavailable.' });
+    try {
+        const data = normalizeEmployerCompanyInput(req.body?.data);
+        const reference = requestDb.collection('companies').doc();
+        const batch = requestDb.batch();
+        batch.set(reference, { ...data, employerId: req.user.uid, status: 'pending', featured: false, revision: 1, stats: { totalJobs: 0, activeJobs: 0, expiredJobs: 0, totalApplications: 0, lastJobPosted: null }, createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+        batch.set(requestDb.collection('security_audit_logs').doc(), { action: 'EMPLOYER_COMPANY_CREATED', actorUid: req.user.uid, companyId: reference.id, revision: 1, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        await batch.commit();
+        return res.status(201).json({ success: true, companyId: reference.id, status: 'pending', revision: 1 });
+    } catch (error) { return res.status(400).json({ success: false, error: error.message || 'Unable to create company.' }); }
+});
+
+app.patch('/api/employer/companies/:companyId', async (req, res) => {
+    const requestDb = req.app.get('db');
+    const companyId = String(req.params.companyId || '');
+    const expectedRevision = Number(req.body?.expectedRevision || 0);
+    if (!isEmployerAccount(req)) return res.status(403).json({ success: false, error: 'Approved employer access is required.' });
+    if (!requestDb || !admin || !/^[A-Za-z0-9_-]{1,128}$/.test(companyId) || !Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid company update.' });
+    try {
+        let revision;
+        await requestDb.runTransaction(async transaction => {
+            const reference = requestDb.collection('companies').doc(companyId);
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists || snapshot.data()?.employerId !== req.user.uid) { const missing = new Error('Company not found.'); missing.code = 'NOT_FOUND'; throw missing; }
+            const currentRevision = Number(snapshot.data()?.revision || 0);
+            if (currentRevision !== expectedRevision) { const conflict = new Error('This company changed after the dashboard loaded. Refresh before saving.'); conflict.code = 'EMPLOYER_COMPANY_CHANGED'; throw conflict; }
+            revision = currentRevision + 1;
+            transaction.update(reference, { ...normalizeEmployerCompanyInput(req.body?.data), status: 'pending', featured: false, revision, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+            transaction.set(requestDb.collection('security_audit_logs').doc(), { action: 'EMPLOYER_COMPANY_EDITED', actorUid: req.user.uid, companyId, revision, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        });
+        return res.json({ success: true, status: 'pending', featured: false, revision });
+    } catch (error) {
+        const status = error.code === 'EMPLOYER_COMPANY_CHANGED' ? 409 : error.code === 'NOT_FOUND' ? 404 : 400;
+        return res.status(status).json({ success: false, code: error.code, error: error.message || 'Unable to update company.' });
+    }
+});
+
+app.delete('/api/employer/companies/:companyId', async (req, res) => {
+    const requestDb = req.app.get('db');
+    const companyId = String(req.params.companyId || '');
+    const expectedRevision = Number(req.body?.expectedRevision || 0);
+    if (!isEmployerAccount(req)) return res.status(403).json({ success: false, error: 'Approved employer access is required.' });
+    if (!requestDb || !admin || !/^[A-Za-z0-9_-]{1,128}$/.test(companyId) || !Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid company deletion.' });
+    try {
+        await requestDb.runTransaction(async transaction => {
+            const reference = requestDb.collection('companies').doc(companyId);
+            const jobsQuery = requestDb.collection('jobs').where('companyId', '==', companyId).limit(1);
+            const [snapshot, jobs] = await Promise.all([transaction.get(reference), transaction.get(jobsQuery)]);
+            if (!snapshot.exists || snapshot.data()?.employerId !== req.user.uid) { const missing = new Error('Company not found.'); missing.code = 'NOT_FOUND'; throw missing; }
+            if (Number(snapshot.data()?.revision || 0) !== expectedRevision) { const conflict = new Error('This company changed after the dashboard loaded. Refresh before deleting.'); conflict.code = 'EMPLOYER_COMPANY_CHANGED'; throw conflict; }
+            if (!jobs.empty) { const conflict = new Error('Delete or archive this company’s jobs before deleting the company.'); conflict.code = 'COMPANY_HAS_JOBS'; throw conflict; }
+            transaction.delete(reference);
+            transaction.set(requestDb.collection('security_audit_logs').doc(), { action: 'EMPLOYER_COMPANY_DELETED', actorUid: req.user.uid, companyId, revision: expectedRevision, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        });
+        return res.json({ success: true });
+    } catch (error) {
+        const status = ['EMPLOYER_COMPANY_CHANGED', 'COMPANY_HAS_JOBS'].includes(error.code) ? 409 : error.code === 'NOT_FOUND' ? 404 : 500;
+        return res.status(status).json({ success: false, code: error.code, error: status === 500 ? 'Unable to delete company.' : error.message });
+    }
+});
+
+app.post('/api/employer/jobs', async (req, res) => {
+    const requestDb = req.app.get('db');
+    if (!isEmployerAccount(req)) return res.status(403).json({ success: false, error: 'Approved employer access is required.' });
+    const companyId = String(req.body?.data?.companyId || '');
+    if (!requestDb || !admin || !/^[A-Za-z0-9_-]{1,128}$/.test(companyId)) return res.status(400).json({ success: false, error: 'Select an approved company.' });
+    try {
+        const companySnapshot = await requestDb.collection('companies').doc(companyId).get();
+        if (!companySnapshot.exists || companySnapshot.data()?.employerId !== req.user.uid || companySnapshot.data()?.status !== 'approved') return res.status(404).json({ success: false, error: 'Approved company not found.' });
+        const data = normalizeEmployerJobInput(req.body.data, { id: companyId, ...companySnapshot.data() });
+        const reference = requestDb.collection('jobs').doc();
+        const batch = requestDb.batch();
+        batch.set(reference, { ...data, employerId: req.user.uid, status: 'pending', revision: 1, applicationsCount: 0, viewsCount: 0, createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+        batch.set(requestDb.collection('security_audit_logs').doc(), { action: 'EMPLOYER_JOB_CREATED', actorUid: req.user.uid, jobId: reference.id, companyId, revision: 1, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        await batch.commit();
+        return res.status(201).json({ success: true, jobId: reference.id, status: 'pending', revision: 1 });
+    } catch (error) {
+        return res.status(400).json({ success: false, error: error.message || 'Unable to create job.' });
+    }
+});
+
+app.patch('/api/employer/jobs/:jobId', async (req, res) => {
+    const requestDb = req.app.get('db');
+    const jobId = String(req.params.jobId || '');
+    const expectedRevision = Number(req.body?.expectedRevision || 0);
+    if (!isEmployerAccount(req)) return res.status(403).json({ success: false, error: 'Approved employer access is required.' });
+    if (!requestDb || !admin || !/^[A-Za-z0-9_-]{1,128}$/.test(jobId) || !Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid job update.' });
+    try {
+        let result;
+        await requestDb.runTransaction(async transaction => {
+            const reference = requestDb.collection('jobs').doc(jobId);
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists || snapshot.data()?.employerId !== req.user.uid) { const missing = new Error('Job not found.'); missing.code = 'NOT_FOUND'; throw missing; }
+            const current = snapshot.data() || {};
+            const revision = Number(current.revision || 0);
+            if (revision !== expectedRevision) { const conflict = new Error('This job changed after the dashboard loaded. Refresh before saving.'); conflict.code = 'EMPLOYER_JOB_CHANGED'; throw conflict; }
+            let changes;
+            let action;
+            if (Object.hasOwn(req.body || {}, 'status')) {
+                const nextStatus = String(req.body.status || '').toLowerCase();
+                const allowed = (current.status === 'active' && nextStatus === 'paused') || (current.status === 'paused' && nextStatus === 'active');
+                if (!allowed) { const invalid = new Error(`A ${current.status || 'pending'} job cannot be changed to ${nextStatus}.`); invalid.code = 'INVALID_JOB_TRANSITION'; throw invalid; }
+                changes = { status: nextStatus };
+                action = 'EMPLOYER_JOB_STATUS_CHANGED';
+            } else {
+                const companyId = String(req.body?.data?.companyId || '');
+                const companyRef = requestDb.collection('companies').doc(companyId);
+                const company = await transaction.get(companyRef);
+                if (!company.exists || company.data()?.employerId !== req.user.uid || company.data()?.status !== 'approved') { const missing = new Error('Approved company not found.'); missing.code = 'COMPANY_NOT_FOUND'; throw missing; }
+                changes = { ...normalizeEmployerJobInput(req.body.data, { id: companyId, ...company.data() }), status: 'pending' };
+                action = 'EMPLOYER_JOB_EDITED';
+            }
+            const nextRevision = revision + 1;
+            transaction.update(reference, { ...changes, revision: nextRevision, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+            transaction.set(requestDb.collection('security_audit_logs').doc(), { action, actorUid: req.user.uid, jobId, revision: nextRevision, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+            result = { ...changes, revision: nextRevision };
+        });
+        return res.json({ success: true, ...result });
+    } catch (error) {
+        const status = error.code === 'EMPLOYER_JOB_CHANGED' ? 409 : ['NOT_FOUND', 'COMPANY_NOT_FOUND'].includes(error.code) ? 404 : error.code === 'INVALID_JOB_TRANSITION' ? 400 : 500;
+        return res.status(status).json({ success: false, code: error.code, error: status === 500 ? 'Unable to update job.' : error.message });
+    }
+});
+
+app.delete('/api/employer/jobs/:jobId', async (req, res) => {
+    const requestDb = req.app.get('db');
+    const jobId = String(req.params.jobId || '');
+    const expectedRevision = Number(req.body?.expectedRevision || 0);
+    if (!isEmployerAccount(req)) return res.status(403).json({ success: false, error: 'Approved employer access is required.' });
+    if (!requestDb || !admin || !/^[A-Za-z0-9_-]{1,128}$/.test(jobId) || !Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid job deletion.' });
+    try {
+        await requestDb.runTransaction(async transaction => {
+            const reference = requestDb.collection('jobs').doc(jobId);
+            const applicationsQuery = requestDb.collection('jobApplications').where('jobId', '==', jobId).limit(1);
+            const [snapshot, applications] = await Promise.all([transaction.get(reference), transaction.get(applicationsQuery)]);
+            if (!snapshot.exists || snapshot.data()?.employerId !== req.user.uid) { const missing = new Error('Job not found.'); missing.code = 'NOT_FOUND'; throw missing; }
+            if (Number(snapshot.data()?.revision || 0) !== expectedRevision) { const conflict = new Error('This job changed after the dashboard loaded. Refresh before deleting.'); conflict.code = 'EMPLOYER_JOB_CHANGED'; throw conflict; }
+            if (!applications.empty) { const conflict = new Error('This job has applications and cannot be deleted. Pause it instead.'); conflict.code = 'JOB_HAS_APPLICATIONS'; throw conflict; }
+            transaction.delete(reference);
+            transaction.set(requestDb.collection('security_audit_logs').doc(), { action: 'EMPLOYER_JOB_DELETED', actorUid: req.user.uid, jobId, revision: expectedRevision, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        });
+        return res.json({ success: true });
+    } catch (error) {
+        const status = ['EMPLOYER_JOB_CHANGED', 'JOB_HAS_APPLICATIONS'].includes(error.code) ? 409 : error.code === 'NOT_FOUND' ? 404 : 500;
+        return res.status(status).json({ success: false, code: error.code, error: status === 500 ? 'Unable to delete job.' : error.message });
+    }
+});
+
 app.post('/api/messages/conversations', async (req, res) => {
     const applicationId = String(req.body.applicationId || '');
-    if (!/^[A-Za-z0-9_-]{1,128}$/.test(applicationId) || !db || !admin?.database) {
+    if (!/^[A-Za-z0-9:_-]{1,300}$/.test(applicationId) || !db || !admin?.database) {
         return res.status(400).json({ success: false, error: 'Valid job application is required.' });
     }
     try {
@@ -1070,8 +1418,13 @@ app.post('/api/messages/conversations', async (req, res) => {
         const realtime = admin.database();
         const lookupRef = realtime.ref(`conversation-participants/${lookupKey}`);
         const existing = await lookupRef.get();
-        if (existing.exists()) return res.json({ success: true, conversationId: existing.val(), existing: true });
-        const conversationId = realtime.ref('conversations').push().key;
+        const existingId = String(existing.val() || '');
+        if (existing.exists() && /^[A-Za-z0-9_-]{1,128}$/.test(existingId)) {
+            return res.json({ success: true, conversationId: existingId, existing: true });
+        }
+        // A deterministic first ID makes concurrent create requests idempotent. Legacy
+        // random IDs remain available through the protected lookup above.
+        const conversationId = lookupKey;
         const timestamp = { '.sv': 'timestamp' };
         await realtime.ref().update({
             [`conversations/${conversationId}`]: {
@@ -1090,6 +1443,37 @@ app.post('/api/messages/conversations', async (req, res) => {
     }
 });
 
+app.get('/api/messages/conversations/:conversationId/participant-profile', async (req, res) => {
+    const conversationId = String(req.params.conversationId || '');
+    const requestDb = req.app.get('db');
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(conversationId) || !requestDb || !admin?.database) {
+        return res.status(404).json({ success: false, error: 'Conversation not found.' });
+    }
+    try {
+        const conversation = await admin.database().ref(`conversations/${conversationId}`).get();
+        if (!conversation.exists() || conversation.child(`participants/${req.user.uid}`).val() !== true) {
+            return res.status(404).json({ success: false, error: 'Conversation not found.' });
+        }
+        const participantIds = Object.keys(conversation.child('participants').val() || {});
+        const otherUserId = participantIds.find(uid => uid !== req.user.uid);
+        if (!otherUserId) return res.status(404).json({ success: false, error: 'Participant not found.' });
+        if (otherUserId.startsWith('deleted_')) {
+            res.setHeader('Cache-Control', 'no-store, private');
+            return res.json({ success: true, profile: { name: 'Deleted account', avatar: '' } });
+        }
+        const userSnapshot = await requestDb.collection('users').doc(otherUserId).get();
+        const user = userSnapshot.data() || {};
+        const profile = user.profile || {};
+        const name = String(profile.name || user.displayName || `${user.firstname || ''} ${user.lastname || ''}`.trim() || 'User').replace(/\p{Cc}/gu, ' ').trim().slice(0, 100);
+        const avatar = safePublicUrl(profile.image || user.photoURL || '');
+        res.setHeader('Cache-Control', 'no-store, private');
+        return res.json({ success: true, profile: { name, avatar } });
+    } catch (error) {
+        console.error('[Message participant profile]', error.message);
+        return res.status(503).json({ success: false, error: 'Participant profile is unavailable.' });
+    }
+});
+
 app.post('/api/messages/send', async (req, res) => {
     const conversationId = String(req.body.conversationId || '');
     const text = String(req.body.text || '').trim();
@@ -1104,7 +1488,19 @@ app.post('/api/messages/send', async (req, res) => {
         }
         const messageRef = realtime.ref(`messages/${conversationId}`).push();
         await messageRef.set({ senderId: req.user.uid, text, timestamp: { '.sv': 'timestamp' } });
-        return res.status(201).json({ success: true, messageId: messageRef.key });
+        let notificationState = 'NOTIFICATION_CREATED';
+        const recipientUid = Object.keys(conversation.child('participants').val() || {}).find(uid => uid !== req.user.uid && !uid.startsWith('deleted_'));
+        if (recipientUid && req.app.get('db')) {
+            try {
+                const eventId = notificationEventId('message', conversationId, messageRef.key);
+                await req.app.get('db').collection('notifications').doc(recipientUid).collection('userNotifications').doc(eventId).set({
+                    eventId, state: 'NOTIFICATION_CREATED', deliveryState: 'NOT_REQUESTED', type: 'message', title: 'New message', message: 'You have a new message.',
+                    data: { conversationId }, read: false,
+                    createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                });
+            } catch { notificationState = 'NOTIFICATION_CREATION_FAILED'; }
+        } else notificationState = 'NOTIFICATION_CREATION_FAILED';
+        return res.status(201).json({ success: true, messageId: messageRef.key, notificationState });
     } catch (error) {
         console.error('[Send message]', error.message);
         return res.status(503).json({ success: false, error: 'Messaging service unavailable.' });
@@ -1307,10 +1703,13 @@ async function publishDueBlogPosts(requestDb, { actorUid = 'cms-scheduler', requ
             const date = value?.toDate?.() || new Date(value || 0);
             return Number.isFinite(date.getTime()) && date <= now;
         });
-        for (const document of stillDue) transaction.update(document.ref, {
-            status: 'approved', publishedAt: admin.firestore.FieldValue.serverTimestamp(), scheduledAt: null,
-            revision: Number(document.data()?.revision || 0) + 1, updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
+        for (const document of stillDue) {
+            const post = document.data() || {};
+            const revision = Number(post.revision || 0) + 1;
+            transaction.update(document.ref, { status: 'approved', publishedAt: admin.firestore.FieldValue.serverTimestamp(), scheduledAt: null, revision, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+            const eventId = notificationEventId('blog_scheduled_published', document.id, String(revision));
+            transaction.set(requestDb.collection('notifications').doc(post.authorUid).collection('userNotifications').doc(eventId), { eventId, state: 'NOTIFICATION_CREATED', deliveryState: 'NOT_REQUESTED', type: 'blog_published', title: 'Scheduled Blog post published', message: `“${String(post.title || 'Post').slice(0, 160)}” is now public.`, data: { postId: document.id, status: 'approved', revision }, read: false, createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+        }
         if (stillDue.length) transaction.set(requestDb.collection('security_audit_logs').doc(), {
             action: 'CMS_SCHEDULED_POSTS_PUBLISHED', actorUid, count: stillDue.length, requestId,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -1318,6 +1717,62 @@ async function publishDueBlogPosts(requestDb, { actorUid = 'cms-scheduler', requ
         return stillDue.length;
     });
 }
+
+app.patch('/api/admin/blog/posts/:postId', async (req, res) => {
+    const requestDb = req.app.get('db');
+    const postId = String(req.params.postId || '');
+    const nextStatus = String(req.body?.status || '').toLowerCase();
+    const expectedRevision = Number(req.body?.expectedRevision);
+    const scheduledAt = req.body?.scheduledAt ? new Date(req.body.scheduledAt) : null;
+    if (!requestDb || !admin || !/^[A-Za-z0-9_-]{1,128}$/.test(postId) || !['approved', 'rejected', 'scheduled'].includes(nextStatus) || !Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid Blog moderation request.' });
+    if (nextStatus === 'scheduled' && (!scheduledAt || !Number.isFinite(scheduledAt.getTime()) || scheduledAt <= new Date())) return res.status(400).json({ success: false, error: 'Choose a future publication time.' });
+    try {
+        let result;
+        await requestDb.runTransaction(async transaction => {
+            const reference = requestDb.collection('blog_posts').doc(postId);
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists) { const missing = new Error('Post not found.'); missing.code = 'NOT_FOUND'; throw missing; }
+            const post = snapshot.data() || {};
+            const revision = Number(post.revision || 0);
+            if (revision !== expectedRevision) { const conflict = new Error('This post changed after moderation loaded. Refresh before continuing.'); conflict.code = 'BLOG_CONFLICT'; throw conflict; }
+            const allowed = nextStatus === 'rejected' || ((nextStatus === 'approved' || nextStatus === 'scheduled') && ['draft', 'pending', 'rejected'].includes(post.status));
+            if (!allowed) { const invalid = new Error(`A ${post.status} post cannot transition to ${nextStatus}.`); invalid.code = 'INVALID_BLOG_TRANSITION'; throw invalid; }
+            const nextRevision = revision + 1;
+            const changes = { status: nextStatus, revision: nextRevision, updatedAt: admin.firestore.FieldValue.serverTimestamp(), scheduledAt: nextStatus === 'scheduled' ? scheduledAt : null };
+            if (nextStatus === 'approved') changes.publishedAt = admin.firestore.FieldValue.serverTimestamp();
+            transaction.update(reference, changes);
+            const eventId = notificationEventId('blog_moderation', postId, String(nextRevision));
+            transaction.set(requestDb.collection('notifications').doc(post.authorUid).collection('userNotifications').doc(eventId), { eventId, state: 'NOTIFICATION_CREATED', deliveryState: 'NOT_REQUESTED', type: 'blog_moderation', title: nextStatus === 'approved' ? 'Blog post published' : nextStatus === 'scheduled' ? 'Blog post scheduled' : 'Blog post returned for revision', message: `“${String(post.title || 'Post').slice(0, 160)}” is now ${nextStatus}.`, data: { postId, status: nextStatus, revision: nextRevision }, read: false, createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+            transaction.set(requestDb.collection('security_audit_logs').doc(), { action: `CMS_BLOG_${nextStatus.toUpperCase()}`, actorUid: req.user.uid, postId, revision: nextRevision, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+            result = { status: nextStatus, revision: nextRevision };
+        });
+        return res.json({ success: true, ...result });
+    } catch (error) {
+        const status = error.code === 'BLOG_CONFLICT' ? 409 : error.code === 'NOT_FOUND' ? 404 : error.code === 'INVALID_BLOG_TRANSITION' ? 400 : 500;
+        return res.status(status).json({ success: false, code: error.code, error: status === 500 ? 'Unable to moderate post.' : error.message });
+    }
+});
+
+app.delete('/api/admin/blog/posts/:postId', async (req, res) => {
+    const requestDb = req.app.get('db');
+    const postId = String(req.params.postId || '');
+    const expectedRevision = Number(req.body?.expectedRevision);
+    if (!requestDb || !admin || !/^[A-Za-z0-9_-]{1,128}$/.test(postId) || !Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid Blog deletion.' });
+    try {
+        await requestDb.runTransaction(async transaction => {
+            const reference = requestDb.collection('blog_posts').doc(postId);
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists) { const missing = new Error('Post not found.'); missing.code = 'NOT_FOUND'; throw missing; }
+            if (Number(snapshot.data()?.revision || 0) !== expectedRevision) { const conflict = new Error('This post changed before deletion. Refresh and confirm again.'); conflict.code = 'BLOG_CONFLICT'; throw conflict; }
+            transaction.delete(reference);
+            transaction.set(requestDb.collection('security_audit_logs').doc(), { action: 'CMS_BLOG_DELETED', actorUid: req.user.uid, postId, revision: expectedRevision, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        });
+        return res.json({ success: true });
+    } catch (error) {
+        const status = error.code === 'BLOG_CONFLICT' ? 409 : error.code === 'NOT_FOUND' ? 404 : 500;
+        return res.status(status).json({ success: false, code: error.code, error: status === 500 ? 'Unable to delete post.' : error.message });
+    }
+});
 
 app.post('/api/admin/blog/publish-due', async (req, res) => {
     try {
@@ -1377,7 +1832,7 @@ const GENERIC_ADMIN_SETTING_CATEGORIES = new Set([
     'modules', 'auth', 'blog', 'watermark', 'templateManager', 'security', 'jobScraper',
     'exportPdf', 'branding', 'geoSeo', 'llmGeo', 'enabledTemplates', 'integrations',
     'socialAuth', 'google', 'facebook', 'smtp', 'fallbackSmtp', 'imap',
-    'twilio', 'storage', 'codeInjection'
+    'storage', 'codeInjection'
 ]);
 
 function normalizeAdminSettingValue(value, depth = 0) {
@@ -1401,37 +1856,70 @@ function normalizeAdminSettingValue(value, depth = 0) {
     throw new Error('Settings contain an unsupported value.');
 }
 
+function isPrivateAdminSettingKey(category, key) {
+    const publicApiKeys = new Set(['apiKey', 'googleMapsApiKey', 'cloudinaryApiKey']);
+    return /(?:secret|password|privateKey|authToken|clientToken|accessToken|refreshToken|serviceAccount|merchantKey|saltKey|keySecret|s3AccessKeyId)/i.test(key)
+        || (/apiKey$/i.test(key) && !publicApiKeys.has(key))
+        || (category === 'exportPdf' && ['chromiumPath', 'backendExportUrl'].includes(key));
+}
+
+function preserveAdminSettingSecrets(category, current, next) {
+    if (Array.isArray(next)) {
+        const previousItems = Array.isArray(current) ? current : [];
+        return next.map((item, index) => preserveAdminSettingSecrets(category, previousItems[index], item));
+    }
+    if (!next || typeof next !== 'object') return next;
+    const previous = current && typeof current === 'object' && !Array.isArray(current) ? current : {};
+    const output = {};
+    for (const [key, value] of Object.entries(next)) {
+        if (isPrivateAdminSettingKey(category, key)) {
+            output[key] = typeof value === 'string' && !value.trim() && previous[key] !== undefined ? previous[key] : value;
+        } else if (value && typeof value === 'object') {
+            output[key] = preserveAdminSettingSecrets(category, previous[key], value);
+        } else {
+            output[key] = value;
+        }
+    }
+    // Secret fields are intentionally absent from browser projections. Preserve them
+    // even when the submitted public form therefore cannot include the field at all.
+    for (const [key, value] of Object.entries(previous)) {
+        if (Object.hasOwn(output, key)) continue;
+        if (isPrivateAdminSettingKey(category, key)) output[key] = value;
+        else if (value && typeof value === 'object' && !Array.isArray(value)) {
+            const fragment = preserveAdminSettingSecrets(category, value, {});
+            if (Object.keys(fragment).length) output[key] = fragment;
+        }
+    }
+    return output;
+}
+
 function publicAdminSettings(category, data) {
     if (category === 'codeInjection') return {};
     if (['smtp', 'fallbackSmtp', 'imap'].includes(category)) return { enabled: data.enabled === true };
-    if (category === 'twilio') return { enableSmsAlerts: data.enableSmsAlerts === true };
-    const publicApiKeys = new Set(['apiKey', 'googleMapsApiKey', 'cloudinaryApiKey']);
-    const hideKey = key => /(?:secret|password|privateKey|authToken|clientToken|accessToken|refreshToken|serviceAccount|merchantKey|saltKey|keySecret|s3AccessKeyId)/i.test(key)
-        || (/apiKey$/i.test(key) && !publicApiKeys.has(key))
-        || (category === 'exportPdf' && ['chromiumPath', 'backendExportUrl'].includes(key));
     const redact = value => {
         if (Array.isArray(value)) return value.map(redact);
         if (!value || typeof value !== 'object') return value;
-        return Object.fromEntries(Object.entries(value).filter(([key]) => !hideKey(key)).map(([key, item]) => [key, redact(item)]));
+        return Object.fromEntries(Object.entries(value).filter(([key]) => !isPrivateAdminSettingKey(category, key)).map(([key, item]) => [key, redact(item)]));
     };
     return redact(data);
 }
 
 app.post('/api/admin/settings/:category', async (req, res) => {
-    if (!db || !admin) return res.status(503).json({ success: false, error: 'Settings service unavailable.' });
     const category = String(req.params.category || '');
     if (!GENERIC_ADMIN_SETTING_CATEGORIES.has(category) || !req.body?.data || typeof req.body.data !== 'object' || Array.isArray(req.body.data)) {
         return res.status(400).json({ success: false, error: 'Unsupported settings category or payload.' });
     }
+    const requestDb = req.app.get('db');
+    if (!requestDb || !admin) return res.status(503).json({ success: false, error: 'Settings service unavailable.' });
     try {
         if (Buffer.byteLength(JSON.stringify(req.body.data), 'utf8') > 100_000) throw new Error('Settings payload is too large.');
         const normalized = normalizeAdminSettingValue(req.body.data);
-        const publicSettings = publicAdminSettings(category, normalized);
+        let publicSettings;
         const expectedRevision = Number(req.body.expectedRevision || 0);
         if (!Number.isInteger(expectedRevision) || expectedRevision < 0) throw new Error('Invalid settings revision.');
-        const secretRef = db.collection('settings').doc('admin_configuration');
-        const publicRef = db.collection('data').doc('public_config');
-        const revision = await db.runTransaction(async transaction => {
+        const secretRef = requestDb.collection('settings').doc('admin_configuration');
+        const publicRef = requestDb.collection('data').doc('public_config');
+        const revision = await requestDb.runTransaction(async transaction => {
             const snapshot = await transaction.get(secretRef);
             const currentRevision = Number(snapshot.data()?._revisions?.[category] || 0);
             if (expectedRevision !== currentRevision) {
@@ -1440,9 +1928,11 @@ app.post('/api/admin/settings/:category', async (req, res) => {
                 throw stale;
             }
             const nextRevision = currentRevision + 1;
-            transaction.set(secretRef, { [category]: normalized, _revisions: { [category]: nextRevision } }, { merge: true });
+            const persisted = preserveAdminSettingSecrets(category, snapshot.data()?.[category], normalized);
+            publicSettings = publicAdminSettings(category, persisted);
+            transaction.set(secretRef, { [category]: persisted, _revisions: { [category]: nextRevision } }, { merge: true });
             transaction.set(publicRef, { [category]: publicSettings, _settingsRevisions: { [category]: nextRevision } }, { merge: true });
-            transaction.set(db.collection('security_audit_logs').doc(), {
+            transaction.set(requestDb.collection('security_audit_logs').doc(), {
                 action: 'ADMIN_SETTINGS_UPDATED', actorUid: req.user.uid, category, revision: nextRevision,
                 changedFields: Object.keys(normalized).slice(0, 200), requestId: res.locals.requestId,
                 createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -1656,6 +2146,86 @@ app.post('/api/admin/payment/test-provider', async (req, res) => {
     }
 });
 
+async function loadTwilioRuntimeConfig(database) {
+    let canonical = {};
+    let legacy = {};
+    if (database) {
+        const [canonicalSnapshot, legacySnapshot] = await Promise.all([
+            database.collection('settings').doc('admin_configuration').get(),
+            database.collection('settings').doc('system').get(),
+        ]);
+        canonical = canonicalSnapshot.data()?.twilio || {};
+        legacy = legacySnapshot.data()?.twilio || {};
+    }
+    return {
+        accountSid: canonical.accountSid || process.env.TWILIO_ACCOUNT_SID || legacy.accountSid || '',
+        authToken: canonical.authToken || process.env.TWILIO_AUTH_TOKEN || legacy.authToken || '',
+        fromPhoneNumber: canonical.fromPhoneNumber || process.env.TWILIO_FROM_PHONE || legacy.fromPhoneNumber || '',
+        enableSmsAlerts: canonical.enableSmsAlerts !== undefined ? canonical.enableSmsAlerts === true : legacy.enableSmsAlerts === true,
+        revision: Number(canonical._revision || 0),
+    };
+}
+
+app.get('/api/admin/twilio-settings', async (req, res) => {
+    try {
+        const config = await loadTwilioRuntimeConfig(req.app.get('db'));
+        return res.json({
+            success: true,
+            settings: {
+                accountSidConfigured: Boolean(config.accountSid),
+                authTokenConfigured: Boolean(config.authToken),
+                accountSidSuffix: config.accountSid ? String(config.accountSid).slice(-4) : '',
+                fromPhoneNumber: config.fromPhoneNumber,
+                enableSmsAlerts: config.enableSmsAlerts,
+            },
+            revision: config.revision,
+        });
+    } catch (error) {
+        return res.status(503).json({ success: false, error: 'SMS configuration is unavailable.' });
+    }
+});
+
+app.post('/api/admin/twilio-settings', async (req, res) => {
+    const requestDb = req.app.get('db');
+    if (!requestDb || !admin) return res.status(503).json({ success: false, error: 'SMS configuration service unavailable.' });
+    const accountSid = String(req.body?.accountSid || '').trim();
+    const authToken = String(req.body?.authToken || '').trim();
+    const fromPhoneNumber = String(req.body?.fromPhoneNumber || '').trim();
+    const enableSmsAlerts = req.body?.enableSmsAlerts === true;
+    const expectedRevision = Number(req.body?.expectedRevision || 0);
+    if (!Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid SMS settings revision.' });
+    if (Boolean(accountSid) !== Boolean(authToken)) return res.status(400).json({ success: false, error: 'Enter both the Twilio Account SID and Auth Token when rotating credentials.' });
+    if (accountSid && !/^AC[a-f0-9]{32}$/i.test(accountSid)) return res.status(400).json({ success: false, error: 'Invalid Twilio Account SID.' });
+    if (authToken && (authToken.length < 16 || authToken.length > 256 || /\p{Cc}/u.test(authToken))) return res.status(400).json({ success: false, error: 'Invalid Twilio Auth Token.' });
+    if (fromPhoneNumber && !/^\+[1-9]\d{7,14}$/.test(fromPhoneNumber)) return res.status(400).json({ success: false, error: 'The Twilio sender must be a valid E.164 phone number.' });
+    try {
+        const configuredFallback = await loadTwilioRuntimeConfig(requestDb);
+        const reference = requestDb.collection('settings').doc('admin_configuration');
+        const publicReference = requestDb.collection('data').doc('public_config');
+        const revision = await requestDb.runTransaction(async transaction => {
+            const snapshot = await transaction.get(reference);
+            const current = snapshot.data()?.twilio || {};
+            const currentRevision = Number(current._revision || 0);
+            if (currentRevision !== expectedRevision) { const conflict = new Error('SMS settings changed after this panel loaded. Refresh before saving.'); conflict.code = 'ADMIN_SETTINGS_CONFLICT'; throw conflict; }
+            const resolvedAccountSid = accountSid || current.accountSid || configuredFallback.accountSid || '';
+            const resolvedAuthToken = authToken || current.authToken || configuredFallback.authToken || '';
+            const resolvedFrom = fromPhoneNumber || current.fromPhoneNumber || configuredFallback.fromPhoneNumber || '';
+            if (enableSmsAlerts && (!resolvedAccountSid || !resolvedAuthToken || !resolvedFrom)) { const invalid = new Error('Configure the Account SID, Auth Token, and sender number before enabling SMS alerts.'); invalid.code = 'TWILIO_CONFIGURATION_INCOMPLETE'; throw invalid; }
+            const nextRevision = currentRevision + 1;
+            const next = { ...current, ...(accountSid ? { accountSid, authToken } : {}), ...(fromPhoneNumber ? { fromPhoneNumber } : {}), enableSmsAlerts, _revision: nextRevision };
+            transaction.set(reference, { twilio: next }, { merge: true });
+            transaction.set(publicReference, { twilio: { enableSmsAlerts }, _settingsRevisions: { twilio: nextRevision } }, { merge: true });
+            transaction.set(requestDb.collection('security_audit_logs').doc(), { action: 'TWILIO_SETTINGS_UPDATED', actorUid: req.user.uid, revision: nextRevision, credentialsRotated: Boolean(accountSid), requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+            return nextRevision;
+        });
+        const config = await loadTwilioRuntimeConfig(requestDb);
+        return res.json({ success: true, revision, settings: { accountSidConfigured: Boolean(config.accountSid), authTokenConfigured: Boolean(config.authToken), accountSidSuffix: config.accountSid ? String(config.accountSid).slice(-4) : '', fromPhoneNumber: config.fromPhoneNumber, enableSmsAlerts: config.enableSmsAlerts } });
+    } catch (error) {
+        const status = error.code === 'ADMIN_SETTINGS_CONFLICT' ? 409 : error.code === 'TWILIO_CONFIGURATION_INCOMPLETE' ? 400 : 500;
+        return res.status(status).json({ success: false, code: error.code, error: status === 500 ? 'Unable to save SMS settings.' : error.message });
+    }
+});
+
 // Twilio SMS Dispatcher Endpoint
 app.post('/api/send-sms', async (req, res) => {
     const { toPhone, messageBody } = req.body;
@@ -1664,20 +2234,9 @@ app.post('/api/send-sms', async (req, res) => {
     }
 
     try {
-        let accountSid = process.env.TWILIO_ACCOUNT_SID;
-        let authToken = process.env.TWILIO_AUTH_TOKEN;
-        let fromPhoneNumber = process.env.TWILIO_FROM_PHONE;
-
-        // Try loading from Firestore settings if db is initialized
-        if (!accountSid && db) {
-            const doc = await db.collection('settings').doc('system').get();
-            if (doc.exists && doc.data()?.twilio) {
-                const tw = doc.data().twilio;
-                accountSid = tw.accountSid;
-                authToken = tw.authToken;
-                fromPhoneNumber = tw.fromPhoneNumber;
-            }
-        }
+        const requestDb = req.app.get('db');
+        if (!requestDb || !admin) return res.status(503).json({ success: false, error: 'SMS audit service unavailable.' });
+        const { accountSid, authToken, fromPhoneNumber } = await loadTwilioRuntimeConfig(requestDb);
 
         if (!accountSid || !authToken || !fromPhoneNumber) {
             return res.status(400).json({
@@ -1689,6 +2248,12 @@ app.post('/api/send-sms', async (req, res) => {
             || !/^\+[1-9]\d{7,14}$/.test(String(fromPhoneNumber)) || String(messageBody).length > 1600) {
             return res.status(400).json({ success: false, error: 'Invalid SMS gateway or message parameters.' });
         }
+
+        await requestDb.collection('security_audit_logs').doc().set({
+            action: 'TWILIO_SMS_TEST_REQUESTED', actorUid: req.user.uid,
+            targetHash: crypto.createHash('sha256').update(String(toPhone)).digest('hex'),
+            requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
 
         const authString = Buffer.from(`${accountSid}:${authToken}`).toString('base64');
         const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
@@ -2179,6 +2744,24 @@ if (require.main === module) {
         setTimeout(runScheduler, 10_000).unref?.();
     }
 
+    if (process.env.NOTIFICATION_OUTBOX_WORKER_ENABLED === 'true' && db && admin) {
+        const workerId = `${process.pid}-${crypto.randomUUID()}`;
+        const intervalMs = Math.max(5_000, Math.min(Number(process.env.NOTIFICATION_OUTBOX_INTERVAL_MS) || 15_000, 300_000));
+        let workerRunning = false;
+        const runOutbox = async () => {
+            if (workerRunning) return;
+            workerRunning = true;
+            try {
+                const emailRoute = require('./routes/email');
+                await processOutboxOnce({ db, admin, workerId, dispatch: event => emailRoute.dispatchNotification(db, { to: event.recipient, templateType: event.templateType, vars: event.vars }) });
+            } catch (error) { console.error('[Notification outbox]', error.message); }
+            finally { workerRunning = false; }
+        };
+        const outboxTimer = setInterval(runOutbox, intervalMs);
+        outboxTimer.unref?.();
+        setTimeout(runOutbox, 5_000).unref?.();
+    }
+
     // Listen HTTP/HTTPS port safely
     const keyPath = '/etc/letsencrypt/live/' + websiteName + '/privkey.pem';
     const certPath = '/etc/letsencrypt/live/' + websiteName + '/fullchain.pem';
@@ -2235,14 +2818,15 @@ app.get('/api/linkedin-scraper', async (req, res) => {
 // Automatic Event Notifier API Endpoints (10/10 Coverage)
 app.post('/api/notify/user-signup', async (req, res) => {
     const { userEmail, userName } = req.body;
-    const db = req.app.get('db');
-    EmailNotifier.notifyUserRegistration(db, { userEmail, userName });
-    return res.json({ success: true, message: 'Signup notifications queued.' });
+    const result = await EmailNotifier.notifyUserRegistration(req.app.get('db'), { userEmail, userName });
+    const attempted = result?.userDelivery?.deliveryState === 'DELIVERY_ATTEMPTED';
+    return res.status(attempted ? 202 : 502).json({ success: attempted, deliveryState: result?.userDelivery?.deliveryState || 'DELIVERY_FAILED', providerAccepted: result?.userDelivery?.providerAccepted === true, message: attempted ? 'Welcome email delivery was attempted and accepted by the configured provider.' : 'Welcome email delivery failed.', adminDeliveryState: result?.adminDelivery?.deliveryState || 'DELIVERY_FAILED' });
 });
 
-// ─── Firebase Admin SDK Service Account Configuration ───────────────────────
-// Allows admins to update Firebase service account credentials via the admin UI
-// without re-deploying. Credentials are persisted to .env and hot-reloaded.
+// ─── Firebase Admin SDK Service Account Status ──────────────────────────────
+// Production credentials belong in Workload Identity or the deployment Secret Manager.
+// A legacy single-instance .env rotation path remains available only when explicitly
+// enabled outside production for backwards-compatible local operations.
 
 app.get('/api/admin/firebase-service-account', (req, res) => {
     const projectId = process.env.FIREBASE_PROJECT_ID || '';
@@ -2257,10 +2841,14 @@ app.get('/api/admin/firebase-service-account', (req, res) => {
         projectId,
         clientEmail,
         privateKeySet: hasPrivateKey,
+        runtimeRotationEnabled: process.env.ALLOW_RUNTIME_FIREBASE_CREDENTIAL_ROTATION === 'true' && process.env.NODE_ENV !== 'production',
     });
 });
 
 app.post('/api/admin/firebase-service-account', async (req, res) => {
+    if (process.env.ALLOW_RUNTIME_FIREBASE_CREDENTIAL_ROTATION !== 'true' || process.env.NODE_ENV === 'production') {
+        return res.status(501).json({ success: false, code: 'RUNTIME_SECRET_ROTATION_DISABLED', error: 'Runtime Firebase credential rotation is disabled. Use Workload Identity or the deployment Secret Manager.' });
+    }
     const { projectId, clientEmail, privateKey } = req.body;
 
     if (!projectId || !clientEmail || !privateKey) {
@@ -2554,6 +3142,11 @@ app.post('/api/admin/payments/refund', async (req, res) => {
             if (userSnap.exists && shouldReverseEntitlement(userSnap.data(), paymentOrderId)) {
                 tx.update(userRef, { membership: 'Basic', paymentStatus: 'REFUNDED', autoRenew: false, membershipEnds: new Date() });
             }
+            const refundEventId = notificationEventId('payment_refunded', paymentOrderId);
+            tx.set(db.collection('notifications').doc(order.uid).collection('userNotifications').doc(refundEventId), {
+                eventId: refundEventId, state: 'NOTIFICATION_CREATED', deliveryState: 'NOT_REQUESTED', type: 'payment_refunded', title: 'Refund confirmed', message: 'Your payment refund was confirmed by the provider.', data: { paymentOrderId, refundId }, read: false,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
             tx.set(db.collection('security_audit_logs').doc(), {
                 action: 'PAYMENT_REFUNDED', actorUid: req.user.uid, targetUid: order.uid,
                 paymentOrderId, provider: order.provider, reason, requestId: res.locals.requestId,
@@ -2618,6 +3211,50 @@ function firestoreTimeMillis(value) {
     return date && Number.isFinite(date.getTime()) ? date.getTime() : null;
 }
 
+function safePublicUrl(value) {
+    const raw = String(value || '').trim().slice(0, 2048);
+    if (!raw || /[\u0000-\u001f\u007f]/.test(raw) || /%(?:0a|0d|00)/i.test(raw)) return '';
+    if (raw.startsWith('/') && !raw.startsWith('//')) return raw;
+    try { const parsed = new URL(raw); return parsed.protocol === 'https:' && !parsed.username && !parsed.password ? parsed.href : ''; }
+    catch { return ''; }
+}
+
+app.post('/api/admin/ads', async (req, res) => {
+    const requestDb = req.app.get('db');
+    if (!requestDb || !admin) return res.status(503).json({ success: false, error: 'Advertisement service unavailable.' });
+    const name = String(req.body?.name || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, 120);
+    const imageLink = safePublicUrl(req.body?.imageLink);
+    const destinationLink = safePublicUrl(req.body?.destinationLink);
+    if (!name || !imageLink || !destinationLink) return res.status(400).json({ success: false, error: 'Name, safe image URL, and safe destination URL are required.' });
+    const reference = requestDb.collection('ads').doc();
+    const batch = requestDb.batch();
+    batch.set(reference, { id: reference.id, name, imageLink, destinationLink, revision: 1, createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+    batch.set(requestDb.collection('security_audit_logs').doc(), { action: 'ADVERTISEMENT_CREATED', actorUid: req.user.uid, adId: reference.id, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+    await batch.commit();
+    return res.json({ success: true, item: { id: reference.id, name, imageLink, destinationLink, revision: 1 } });
+});
+
+app.delete('/api/admin/ads/:adId', async (req, res) => {
+    const requestDb = req.app.get('db');
+    if (!requestDb || !admin) return res.status(503).json({ success: false, error: 'Advertisement service unavailable.' });
+    const adId = String(req.params.adId || '');
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(adId)) return res.status(400).json({ success: false, error: 'Invalid advertisement ID.' });
+    try {
+        await requestDb.runTransaction(async transaction => {
+            const reference = requestDb.collection('ads').doc(adId);
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists) { const error = new Error('Advertisement not found.'); error.code = 'NOT_FOUND'; throw error; }
+            if (Number(req.body?.expectedRevision || 0) !== Number(snapshot.data()?.revision || 0)) { const error = new Error('Advertisement changed after this page loaded. Refresh before deleting.'); error.code = 'ADMIN_TARGET_CHANGED'; throw error; }
+            transaction.delete(reference);
+            transaction.set(requestDb.collection('security_audit_logs').doc(), { action: 'ADVERTISEMENT_DELETED', actorUid: req.user.uid, adId, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        });
+        return res.json({ success: true });
+    } catch (error) {
+        const status = error.code === 'ADMIN_TARGET_CHANGED' ? 409 : error.code === 'NOT_FOUND' ? 404 : 500;
+        return res.status(status).json({ success: false, code: error.code, error: status === 500 ? 'Unable to delete advertisement.' : error.message });
+    }
+});
+
 function normalizeTrustedLogo(input = {}) {
     const name = String(input.name || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, 120);
     const rawUrl = String(input.imageUrl || '').trim().slice(0, 2048);
@@ -2628,6 +3265,82 @@ function normalizeTrustedLogo(input = {}) {
     if (!name || !imageUrl) throw new Error('A company name and valid HTTPS or site-relative image URL are required.');
     return { name, imageUrl, order, published: input.published !== false };
 }
+
+function validateCustomPageContent(value) {
+    const content = String(value || '');
+    if (!content.trim() || Buffer.byteLength(content, 'utf8') > 500_000) throw new Error('Page content is required and must be smaller than 500 KB.');
+    if (/<\s*(?:script|iframe|object|embed|svg|math|link|meta)\b|\bon\w+\s*=|(?:javascript|data)\s*:|@import\b|url\s*\(/i.test(content)) throw new Error('Page content contains unsafe active content.');
+    return content;
+}
+
+app.get('/public/custom-pages.json', async (_req, res) => {
+    if (!db) return res.status(503).json({ success: false, pages: [] });
+    const snapshot = await db.collection('pages').get();
+    const pages = snapshot.docs.filter(document => !document.data()?.status || document.data()?.status === 'published').map(document => ({ id: document.id, title: document.data()?.title || document.id }));
+    res.setHeader('Cache-Control', 'no-store');
+    return res.json({ success: true, pages });
+});
+
+app.get('/api/admin/pages', async (req, res) => {
+    const requestDb = req.app.get('db');
+    if (!requestDb) return res.status(503).json({ success: false, error: 'Page service unavailable.' });
+    const snapshot = await requestDb.collection('pages').get();
+    const pages = snapshot.docs.map(document => {
+        const value = document.data() || {};
+        return { id: document.id, title: value.title || document.id, description: value.description || '', pagecontent: value.pagecontent || '', status: value.status || 'published', revision: Number(value.revision || 0), legacy: !value.status };
+    });
+    return res.json({ success: true, pages });
+});
+
+app.put('/api/admin/pages/:slug', async (req, res) => {
+    const requestDb = req.app.get('db');
+    const slug = String(req.params.slug || '').toLowerCase();
+    const status = String(req.body?.status || 'draft').toLowerCase();
+    const expectedRevision = Number(req.body?.expectedRevision || 0);
+    if (!requestDb || !admin || !/^[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$/.test(slug) || !['draft', 'published', 'unpublished'].includes(status) || !Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid custom page request.' });
+    try {
+        const content = validateCustomPageContent(req.body?.pagecontent);
+        const title = String(req.body?.title || slug).replace(/\p{Cc}/gu, ' ').trim().slice(0, 160) || slug;
+        const description = String(req.body?.description || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, 500);
+        let result;
+        await requestDb.runTransaction(async transaction => {
+            const reference = requestDb.collection('pages').doc(slug);
+            const snapshot = await transaction.get(reference);
+            const current = snapshot.data() || {};
+            const revision = Number(current.revision || 0);
+            if (revision !== expectedRevision || (!snapshot.exists && expectedRevision !== 0)) { const conflict = new Error('This page changed after the editor loaded. Refresh before saving.'); conflict.code = 'CMS_PAGE_CONFLICT'; throw conflict; }
+            const nextRevision = revision + 1;
+            const event = !snapshot.exists ? 'CMS_PAGE_CREATED' : current.status !== status ? `CMS_PAGE_${status.toUpperCase()}` : 'CMS_PAGE_UPDATED';
+            transaction.set(reference, { id: slug, title, description, pagecontent: content, status, revision: nextRevision, createdAt: current.createdAt || admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp(), publishedAt: status === 'published' ? (current.publishedAt || admin.firestore.FieldValue.serverTimestamp()) : null }, { merge: false });
+            transaction.set(requestDb.collection('security_audit_logs').doc(), { action: event, actorUid: req.user.uid, pageId: slug, revision: nextRevision, status, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+            result = { id: slug, title, description, pagecontent: content, status, revision: nextRevision };
+        });
+        return res.json({ success: true, page: result });
+    } catch (error) {
+        return res.status(error.code === 'CMS_PAGE_CONFLICT' ? 409 : 400).json({ success: false, code: error.code, error: error.message });
+    }
+});
+
+app.delete('/api/admin/pages/:slug', async (req, res) => {
+    const requestDb = req.app.get('db');
+    const slug = String(req.params.slug || '').toLowerCase();
+    const expectedRevision = Number(req.body?.expectedRevision || 0);
+    if (!requestDb || !admin || !/^[a-z0-9-]{1,80}$/.test(slug) || !Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid custom page deletion.' });
+    try {
+        await requestDb.runTransaction(async transaction => {
+            const reference = requestDb.collection('pages').doc(slug);
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists) { const missing = new Error('Page not found.'); missing.code = 'NOT_FOUND'; throw missing; }
+            if (Number(snapshot.data()?.revision || 0) !== expectedRevision) { const conflict = new Error('This page changed after the list loaded. Refresh before deleting.'); conflict.code = 'CMS_PAGE_CONFLICT'; throw conflict; }
+            transaction.delete(reference);
+            transaction.set(requestDb.collection('security_audit_logs').doc(), { action: 'CMS_PAGE_DELETED', actorUid: req.user.uid, pageId: slug, revision: expectedRevision, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        });
+        return res.json({ success: true });
+    } catch (error) {
+        const statusCode = error.code === 'CMS_PAGE_CONFLICT' ? 409 : error.code === 'NOT_FOUND' ? 404 : 500;
+        return res.status(statusCode).json({ success: false, code: error.code, error: statusCode === 500 ? 'Unable to delete page.' : error.message });
+    }
+});
 
 app.post('/api/admin/landing-content', async (req, res) => {
     if (!db || !admin) return res.status(503).json({ success: false, error: 'Landing-content service unavailable.' });
@@ -2962,6 +3675,51 @@ app.patch('/api/admin/users/:uid', async (req, res) => {
     }
 });
 
+async function deleteApplicationNotifications(database, applicationIds) {
+    for (const applicationId of applicationIds) {
+        const notifications = await database.collectionGroup('userNotifications').where('data.applicationId', '==', applicationId).get();
+        for (const notification of notifications.docs) await database.recursiveDelete(notification.ref);
+    }
+}
+
+async function removeDeletedUserFromRealtimeMessaging(uid) {
+    if (!admin?.database) throw new Error('Realtime Database is unavailable');
+    const realtime = admin.database();
+    const indexSnapshot = await realtime.ref(`user-conversations/${uid}`).get();
+    const conversationIds = Object.keys(indexSnapshot.val() || {});
+    for (const conversationId of conversationIds) {
+        const deletedParticipantId = `deleted_${crypto.randomBytes(10).toString('hex')}`;
+        if (!/^[A-Za-z0-9_-]{1,128}$/.test(conversationId)) continue;
+        const [conversationSnapshot, messagesSnapshot] = await Promise.all([
+            realtime.ref(`conversations/${conversationId}`).get(),
+            realtime.ref(`messages/${conversationId}`).get(),
+        ]);
+        if (!conversationSnapshot.exists() || conversationSnapshot.child(`participants/${uid}`).val() !== true) continue;
+        const participantIds = Object.keys(conversationSnapshot.child('participants').val() || {}).sort();
+        const lookupKey = crypto.createHash('sha256').update(participantIds.join('\0')).digest('hex');
+        const remainingAccounts = participantIds.filter(participantId => participantId !== uid && !participantId.startsWith('deleted_'));
+        const updates = {
+            [`user-conversations/${uid}/${conversationId}`]: null,
+            [`conversation-participants/${lookupKey}`]: null,
+        };
+        if (!remainingAccounts.length) {
+            updates[`conversations/${conversationId}`] = null;
+            updates[`messages/${conversationId}`] = null;
+        } else {
+            updates[`conversations/${conversationId}/participants/${uid}`] = null;
+            updates[`conversations/${conversationId}/participants/${deletedParticipantId}`] = true;
+            updates[`conversations/${conversationId}/applicationId`] = null;
+            updates[`conversations/${conversationId}/deletedAt`] = { '.sv': 'timestamp' };
+            messagesSnapshot.forEach(message => {
+                if (message.child('senderId').val() === uid) updates[`messages/${conversationId}/${message.key}`] = null;
+            });
+        }
+        await realtime.ref().update(updates);
+    }
+    await realtime.ref(`user-conversations/${uid}`).remove();
+    return { conversationCount: conversationIds.length };
+}
+
 app.post('/api/account/delete', async (req, res) => {
     if (!db || !admin?.auth) return res.status(503).json({ success: false, error: 'Account deletion service unavailable.' });
     const uid = req.user.uid;
@@ -2969,16 +3727,20 @@ app.post('/api/account/delete', async (req, res) => {
     try {
         const jobs = await db.collection('jobs').where('employerId', '==', uid).get().catch(() => { failures.push('employer jobs'); return { docs: [] }; });
         for (const job of jobs.docs) {
-            try {
-                const applications = await db.collection('jobApplications').where('jobId', '==', job.id).get();
-                for (const application of applications.docs) await db.recursiveDelete(application.ref);
-                await db.recursiveDelete(job.ref);
-            } catch { failures.push(`job:${job.id}`); }
+            // Applications belong to their applicants and retain a bounded job snapshot.
+            // Deleting an employer removes the posting, not another account's application history.
+            try { await db.recursiveDelete(job.ref); }
+            catch { failures.push(`job:${job.id}`); }
         }
+        try {
+            const applications = await db.collection('jobApplications').where('userId', '==', uid).get();
+            const applicationIds = applications.docs.map(application => application.id);
+            for (const application of applications.docs) await db.recursiveDelete(application.ref);
+            await deleteApplicationNotifications(db, applicationIds);
+        } catch { failures.push('job applications'); }
         const queries = [
             ['portfolios', db.collection('portfolios').where('userId', '==', uid)],
             ['published portfolios', db.collection('pb').where('ownerUid', '==', uid)],
-            ['job applications', db.collection('jobApplications').where('userId', '==', uid)],
             ['blog posts', db.collection('blog_posts').where('authorUid', '==', uid)],
             ['companies', db.collection('companies').where('employerId', '==', uid)],
         ];
@@ -2989,6 +3751,7 @@ app.post('/api/account/delete', async (req, res) => {
         for (const [label, reference] of [['employer application', db.collection('employerApplications').doc(uid)], ['notifications', db.collection('notifications').doc(uid)]]) {
             try { await db.recursiveDelete(reference); } catch { failures.push(label); }
         }
+        try { await removeDeletedUserFromRealtimeMessaging(uid); } catch { failures.push('realtime messaging'); }
         if (!failures.length) try { await db.recursiveDelete(db.collection('users').doc(uid)); } catch { failures.push('user profile tree'); }
         if (failures.length) {
             await db.collection('security_audit_logs').add({ action: 'ACCOUNT_SELF_DELETION_INCOMPLETE', targetUid: uid, cleanupFailures: failures, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
@@ -3000,7 +3763,7 @@ app.post('/api/account/delete', async (req, res) => {
             return res.status(500).json({ success: false, code: 'ACCOUNT_IDENTITY_DELETE_FAILED', error: 'Owned application data was removed, but the Firebase identity could not be deleted. Contact support immediately.' });
         }
         await db.collection('security_audit_logs').add({ action: 'ACCOUNT_SELF_DELETED', targetUid: uid, retainedRecordTypes: ['payment_orders', 'invoices', 'transactions', 'subscriptions', 'security_audit_logs'], requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
-        return res.json({ success: true, message: 'Identity and owned profile, resume, portfolio, CMS, employer, job, application, and notification data were deleted.', retainedRecordTypes: ['payment_orders', 'invoices', 'transactions', 'subscriptions', 'security_audit_logs'] });
+        return res.json({ success: true, message: 'Identity and owned profile, resume, portfolio, CMS, employer, job, application, notification, and messaging data were deleted.', retainedRecordTypes: ['payment_orders', 'invoices', 'transactions', 'subscriptions', 'security_audit_logs'] });
     } catch (error) {
         console.error('[Account self-delete]', error.message);
         return res.status(500).json({ success: false, error: 'Unable to complete account deletion. Identity remains active unless the response explicitly confirms success.' });
@@ -3037,11 +3800,21 @@ app.post(['/api/admin/delete-user', '/api/auth/purge-orphaned-auth'], async (req
         if (target) await admin.auth().deleteUser(targetUid);
 
         const cleanupFailures = [];
+        try {
+            const ownedJobs = await db.collection('jobs').where('employerId', '==', targetUid).get();
+            for (const job of ownedJobs.docs) await db.recursiveDelete(job.ref);
+        } catch { cleanupFailures.push('employer jobs'); }
+        try {
+            const applications = await db.collection('jobApplications').where('userId', '==', targetUid).get();
+            const applicationIds = applications.docs.map(application => application.id);
+            for (const application of applications.docs) await db.recursiveDelete(application.ref);
+            await deleteApplicationNotifications(db, applicationIds);
+        } catch { cleanupFailures.push('job applications'); }
         const relatedQueries = [
             ['portfolios', db.collection('portfolios').where('userId', '==', targetUid)],
             ['published portfolios', db.collection('pb').where('ownerUid', '==', targetUid)],
-            ['job applications', db.collection('jobApplications').where('userId', '==', targetUid)],
             ['blog posts', db.collection('blog_posts').where('authorUid', '==', targetUid)],
+            ['companies', db.collection('companies').where('employerId', '==', targetUid)],
         ];
         for (const [label, query] of relatedQueries) {
             try {
@@ -3058,6 +3831,7 @@ app.post(['/api/admin/delete-user', '/api/auth/purge-orphaned-auth'], async (req
         ]) {
             try { await db.recursiveDelete(reference); } catch { cleanupFailures.push(label); }
         }
+        try { await removeDeletedUserFromRealtimeMessaging(targetUid); } catch { cleanupFailures.push('realtime messaging'); }
         if (!cleanupFailures.length) {
             try { await db.recursiveDelete(db.collection('users').doc(targetUid)); }
             catch { cleanupFailures.push('user profile tree'); }
@@ -3071,7 +3845,7 @@ app.post(['/api/admin/delete-user', '/api/auth/purge-orphaned-auth'], async (req
             success: false, code: 'USER_CLEANUP_INCOMPLETE',
             error: `Identity is absent or was deleted, but cleanup failed for: ${cleanupFailures.join(', ')}. Retry this operation.`,
         });
-        return res.json({ success: true, deletedFromAuth: Boolean(target), message: 'User identity, profile tree, portfolios, applications, notifications, and authored blog posts were deleted.' });
+        return res.json({ success: true, deletedFromAuth: Boolean(target), message: 'User identity, profile tree, portfolios, applications, employer content, notifications, messaging data, and authored blog posts were deleted.' });
     } catch (error) {
         console.error('[Admin delete user]', error.message);
         return res.status(error.code === 'auth/user-not-found' ? 404 : 500).json({ success: false, error: 'Unable to delete user.' });
@@ -3128,11 +3902,15 @@ app.post('/api/auth/set-user-password', async (req, res) => {
     }
 });
 
+function respondToDeliveryAttempt(res, delivery, label) {
+    const attempted = delivery?.deliveryState === 'DELIVERY_ATTEMPTED';
+    return res.status(attempted ? 202 : 502).json({ success: attempted, deliveryState: delivery?.deliveryState || 'DELIVERY_FAILED', providerAccepted: delivery?.providerAccepted === true, message: attempted ? `${label} delivery was attempted and accepted by the configured provider.` : `${label} delivery failed.` });
+}
+
 app.post('/api/notify/password-changed', async (req, res) => {
     const { userEmail, userName } = req.body;
-    const db = req.app.get('db');
-    EmailNotifier.notifyPasswordChanged(db, { userEmail, userName });
-    return res.json({ success: true, message: 'Password changed confirmation queued.' });
+    const delivery = await EmailNotifier.notifyPasswordChanged(req.app.get('db'), { userEmail, userName });
+    return respondToDeliveryAttempt(res, delivery, 'Password-change email');
 });
 
 app.post('/api/notify/email-otp', (req, res) => {
@@ -3141,44 +3919,39 @@ app.post('/api/notify/email-otp', (req, res) => {
 
 app.post('/api/notify/security-alert', async (req, res) => {
     const { userEmail, deviceInfo, ipAddress } = req.body;
-    const db = req.app.get('db');
-    EmailNotifier.notifySecurityAlert(db, { userEmail, deviceInfo, ipAddress });
-    return res.json({ success: true, message: 'Security alert queued.' });
+    const delivery = await EmailNotifier.notifySecurityAlert(req.app.get('db'), { userEmail, deviceInfo, ipAddress });
+    return respondToDeliveryAttempt(res, delivery, 'Security alert');
 });
 
 app.post('/api/notify/portfolio-published', async (req, res) => {
     const { userEmail, userName, portfolioSlug } = req.body;
-    const db = req.app.get('db');
-    EmailNotifier.notifyPortfolioPublished(db, { userEmail, userName, portfolioSlug });
-    return res.json({ success: true, message: 'Portfolio published email queued.' });
+    const delivery = await EmailNotifier.notifyPortfolioPublished(req.app.get('db'), { userEmail, userName, portfolioSlug });
+    const attempted = delivery?.deliveryState === 'DELIVERY_ATTEMPTED';
+    return res.status(attempted ? 202 : 502).json({ success: attempted, deliveryState: delivery?.deliveryState || 'DELIVERY_FAILED', providerAccepted: delivery?.providerAccepted === true, message: attempted ? 'Portfolio email delivery was attempted and accepted by the configured provider.' : 'Portfolio email delivery failed.' });
 });
 
 app.post('/api/notify/job-application', async (req, res) => {
     const { recruiterEmail, applicantName, jobTitle, companyName } = req.body;
-    const db = req.app.get('db');
-    EmailNotifier.notifyJobApplicationReceived(db, { recruiterEmail, applicantName, jobTitle, companyName });
-    return res.json({ success: true, message: 'Job application notification queued.' });
+    const delivery = await EmailNotifier.notifyJobApplicationReceived(req.app.get('db'), { recruiterEmail, applicantName, jobTitle, companyName });
+    return respondToDeliveryAttempt(res, delivery, 'Job-application email');
 });
 
 app.post('/api/notify/job-status-update', async (req, res) => {
     const { applicantEmail, applicantName, jobTitle, companyName, status } = req.body;
-    const db = req.app.get('db');
-    EmailNotifier.notifyJobStatusUpdate(db, { applicantEmail, applicantName, jobTitle, companyName, status });
-    return res.json({ success: true, message: 'Job status update email queued.' });
+    const delivery = await EmailNotifier.notifyJobStatusUpdate(req.app.get('db'), { applicantEmail, applicantName, jobTitle, companyName, status });
+    return respondToDeliveryAttempt(res, delivery, 'Job-status email');
 });
 
 app.post('/api/notify/job-posted', async (req, res) => {
     const { employerEmail, jobTitle, companyName } = req.body;
-    const db = req.app.get('db');
-    EmailNotifier.notifyJobPosted(db, { employerEmail, jobTitle, companyName });
-    return res.json({ success: true, message: 'Job posted email queued.' });
+    const delivery = await EmailNotifier.notifyJobPosted(req.app.get('db'), { employerEmail, jobTitle, companyName });
+    return respondToDeliveryAttempt(res, delivery, 'Job-posted email');
 });
 
 app.post('/api/notify/subscription-cancelled', async (req, res) => {
     const { userEmail, userName, planName } = req.body;
-    const db = req.app.get('db');
-    EmailNotifier.notifySubscriptionCancelled(db, { userEmail, userName, planName });
-    return res.json({ success: true, message: 'Subscription cancellation email queued.' });
+    const delivery = await EmailNotifier.notifySubscriptionCancelled(req.app.get('db'), { userEmail, userName, planName });
+    return respondToDeliveryAttempt(res, delivery, 'Subscription-cancellation email');
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -3193,20 +3966,25 @@ const oauthCookie = (state, clear = false) => {
 };
 const safeRedirect = (res, value) => res.redirect(`${protocol}://${websiteName}${value}`);
 
-async function getSocialAuthCredentials(provider) {
+async function getSocialAuthCredentials(provider, database = db) {
     let config = {};
+    const legacyPrefix = provider === 'linkedin' ? 'linkedin' : 'github';
+    const fillMissing = candidate => {
+        if (!config.clientId && candidate?.clientId) config.clientId = candidate.clientId;
+        if (!config.clientSecret && candidate?.clientSecret) config.clientSecret = candidate.clientSecret;
+    };
     try {
-        if (db) {
-            const secretDoc = await db.collection('settings').doc('oauth_providers').get();
-            config = secretDoc.data()?.[provider] || {};
-            // Temporary migration fallback for existing installations.
-            if (!config.clientId || !config.clientSecret) {
-                const legacyDoc = await db.collection('data').doc('system_settings').get();
-                const legacy = legacyDoc.data()?.socialAuth || {};
-                config = provider === 'linkedin'
-                    ? { clientId: legacy.linkedinClientId, clientSecret: legacy.linkedinClientSecret }
-                    : { clientId: legacy.githubClientId, clientSecret: legacy.githubClientSecret };
-            }
+        if (database) {
+            const [providerSecrets, adminConfiguration, legacySettings] = await Promise.all([
+                database.collection('settings').doc('oauth_providers').get(),
+                database.collection('settings').doc('admin_configuration').get(),
+                database.collection('data').doc('system_settings').get(),
+            ]);
+            fillMissing(providerSecrets.data()?.[provider]);
+            const canonical = adminConfiguration.data()?.socialAuth || {};
+            fillMissing({ clientId: canonical[`${legacyPrefix}ClientId`], clientSecret: canonical[`${legacyPrefix}ClientSecret`] });
+            const legacy = legacySettings.data()?.socialAuth || {};
+            fillMissing({ clientId: legacy[`${legacyPrefix}ClientId`], clientSecret: legacy[`${legacyPrefix}ClientSecret`] });
         }
     } catch (error) {
         console.warn(`[OAuth config ${provider}]`, error.message);
@@ -3402,7 +4180,7 @@ app.post('/api/auth/oauth/exchange', async (req, res) => {
  * Called by Admin OAuth panel to show live status badge.
  */
 app.get('/api/auth/linkedin/test-credentials', async (req, res) => {
-    const { clientId, clientSecret } = await getSocialAuthCredentials('linkedin');
+    const { clientId, clientSecret } = await getSocialAuthCredentials('linkedin', req.app.get('db'));
     const configured = !!(clientId && clientSecret);
     return res.json({
         provider: 'linkedin',
@@ -3416,7 +4194,7 @@ app.get('/api/auth/linkedin/test-credentials', async (req, res) => {
  * GET /api/auth/github/test-credentials — Verify GitHub credentials are configured
  */
 app.get('/api/auth/github/test-credentials', async (req, res) => {
-    const { clientId, clientSecret } = await getSocialAuthCredentials('github');
+    const { clientId, clientSecret } = await getSocialAuthCredentials('github', req.app.get('db'));
     const configured = !!(clientId && clientSecret);
     return res.json({
         provider: 'github',

@@ -19,6 +19,7 @@ import CompanyManagement from './companyManagement/CompanyManagement';
 import BlogManagement from './blogManagement/BlogManagement';
 import LandingPages from './landingPages/LandingPages';
 import { FaCircle, FaExternalLinkAlt, FaSignOutAlt, FaChevronRight, FaSyncAlt } from 'react-icons/fa';
+import AdminReauthPrompt from './AdminReauthPrompt';
 
 const AdminHeader = ({ userEmail, onLogout }) => {
     const location = useLocation();
@@ -104,6 +105,7 @@ const Admin = () => {
             </div>
             <div className={`admin__right ${sidebarCollapsed ? 'admin__right--sidebar-collapsed' : ''} flex min-h-screen flex-col bg-slate-50`}>
                 <AdminHeader userEmail={authState.user?.email} onLogout={handleLogout} />
+                <AdminReauthPrompt />
                 <main className="mx-auto w-full max-w-7xl flex-1 p-3 sm:p-6">
                     <Routes>
                         <Route path="/" element={<Navigate to="dashboard" replace />} />

@@ -26,7 +26,7 @@ import {
     FaChevronDown,
     FaChevronUp,
 } from 'react-icons/fa';
-import { getEmployerJobs, getJobApplications, updateJobPosting, deleteJobPosting, updateApplicationStatus } from '../../../firestore/dbOperations';
+import { getEmployerJobs, getJobApplications, updateJobPosting, deleteJobPosting } from '../../../firestore/dbOperations';
 import { AuthContext } from '../../../main';
 import JobApplicationsModal from './JobApplicationsModal';
 import AddCompanyModal from './AddCompanyModal';
@@ -194,9 +194,10 @@ const EmployerDashboard = ({ showToast, sidebarCollapsed, t }) => {
         setApplications([]);
     };
 
-    const handleUpdateApplicationStatus = (applicationId, newStatus) => {
-        setApplications((prev) => prev.map((app) => (app.id === applicationId ? { ...app, status: newStatus } : app)));
-        showToast && showToast('success', 'Success', `Application status updated to ${newStatus}`);
+    const handleUpdateApplicationStatus = (applicationId, newStatus, revision) => {
+        setApplications(previous => previous.map(application => application.id === applicationId
+            ? { ...application, status: newStatus, revision }
+            : application));
     };
 
     const toggleJobExpansion = (jobId) => {
@@ -226,13 +227,13 @@ const EmployerDashboard = ({ showToast, sidebarCollapsed, t }) => {
         try {
             const newStatus = job.status === 'active' ? 'paused' : 'active';
             
-            const result = await updateJobPosting(job.id, { status: newStatus });
+            const result = await updateJobPosting(job.id, { status: newStatus }, job.revision);
             
             if (result.success) {
                 setJobs((prevJobs) => 
                     prevJobs.map((j) => 
                         j.id === job.id 
-                            ? { ...j, status: newStatus, statusColor: getStatusColor(newStatus) }
+                            ? { ...j, status: result.status, revision: result.revision, statusColor: getStatusColor(result.status) }
                             : j
                     )
                 );
@@ -249,13 +250,13 @@ const EmployerDashboard = ({ showToast, sidebarCollapsed, t }) => {
     // Handle delete job
     const handleDeleteJob = async (job) => {
         const confirmed = window.confirm(
-            `Are you sure you want to delete the job "${job.title}"? This action cannot be undone and will remove all associated applications.`
+            `Delete the job "${job.title}"? This is allowed only when it has no applications and cannot be undone.`
         );
         
         if (!confirmed) return;
         
         try {
-            const result = await deleteJobPosting(job.id);
+            const result = await deleteJobPosting(job.id, job.revision);
             
             if (result.success) {
                 setJobs((prevJobs) => prevJobs.filter((j) => j.id !== job.id));

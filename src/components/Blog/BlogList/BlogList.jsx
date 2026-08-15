@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { 
@@ -30,6 +30,8 @@ const BlogList = () => {
     const [loadingMore, setLoadingMore] = useState(false);
     const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
     const [sortBy, setSortBy] = useState('newest');
+    const [loadError, setLoadError] = useState('');
+    const requestGeneration = useRef(0);
 
     // Auth handlers for navbar
     const authBtnHandler = () => {
@@ -75,6 +77,8 @@ const BlogList = () => {
     };
 
     const fetchPosts = async () => {
+        const generation = ++requestGeneration.current;
+        setLoadError('');
         if (currentPage === 1) {
             setLoading(true);
         } else {
@@ -96,8 +100,8 @@ const BlogList = () => {
 
             const result = await listBlogPosts(options);
             
+            if (generation !== requestGeneration.current) return;
             if (result.success) {
-                console.log('📄 Blog posts loaded successfully:', result.posts.length, 'posts');
                 if (currentPage === 1) {
                     setPosts(result.posts);
                 } else {
@@ -105,15 +109,13 @@ const BlogList = () => {
                 }
                 setPagination(result.pagination);
             } else {
-                console.error('❌ Failed to fetch blog posts:', result.error);
                 setPosts([]);
+                setLoadError(result.error || 'Blog posts are unavailable.');
             }
         } catch (error) {
-            console.error('❌ Error fetching posts:', error);
-            setPosts([]);
+            if (generation === requestGeneration.current) { setPosts([]); setLoadError(error.message || 'Blog posts are unavailable.'); }
         } finally {
-            setLoading(false);
-            setLoadingMore(false);
+            if (generation === requestGeneration.current) { setLoading(false); setLoadingMore(false); }
         }
     };
 
@@ -306,7 +308,8 @@ const BlogList = () => {
 
                     {/* Main Content Area */}
                     <div className="">
-                        {filteredPosts.length === 0 && !loading ? (
+                        {loadError && <div role="alert" className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">{loadError}</div>}
+                        {filteredPosts.length === 0 && !loading && !loadError ? (
                             <div className="bg-white border border-slate-200 rounded-2xl p-16 text-center">
                                 <div className="w-24 h-24 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
                                     <FiSearch className="w-12 h-12 text-slate-400" />

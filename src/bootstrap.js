@@ -4,6 +4,9 @@ if ('serviceWorker' in navigator) {
         for (const registration of registrations) registration.unregister();
     }).catch(() => {});
 }
+if ('caches' in globalThis) {
+    globalThis.caches.keys().then(keys => Promise.all(keys.map(key => globalThis.caches.delete(key)))).catch(() => {});
+}
 
 function handleChunkError(message) {
     const text = String(message || '');

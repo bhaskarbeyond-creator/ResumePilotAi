@@ -1,34 +1,36 @@
-﻿import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { FiX, FiBell, FiCheck, FiClock, FiUser, FiBriefcase, FiMail } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getUnreadNotifications, markNotificationAsRead } from '../../../firestore/dbOperations';
+import { markNotificationAsRead, subscribeUnreadNotifications } from '../../../firestore/dbOperations';
 import { AuthContext } from '../../../main';
 
 const NotificationPanel = ({ isOpen, onClose, sidebarCollapsed = false }) => {
     const [notifications, setNotifications] = useState([]);
+    const [errorMessage, setErrorMessage] = useState('');
+    const [markingRead, setMarkingRead] = useState(false);
     const authUser = useContext(AuthContext);
 
     useEffect(() => {
-        if (isOpen && authUser?.uid) {
-            getUnreadNotifications(authUser.uid).then(fetchedNotifications => {
-                // Sort notifications by createdAt date (newest first)
-                const sortedNotifications = fetchedNotifications.sort((a, b) => {
-                    const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
-                    const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
-                    return dateB - dateA;
-                });
-                setNotifications(sortedNotifications);
+        if (!isOpen || !authUser?.uid) { setNotifications([]); return undefined; }
+        const userId = authUser.uid;
+        return subscribeUnreadNotifications(userId, fetchedNotifications => {
+            const sorted = [...fetchedNotifications].sort((a, b) => {
+                const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+                const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+                return dateB - dateA;
             });
-        }
+            setErrorMessage('');
+            setNotifications(sorted);
+        }, error => setErrorMessage(error.message || 'Notifications are unavailable.'));
     }, [isOpen, authUser?.uid]);
 
     const markAllAsRead = async () => {
-        await Promise.all(notifications.map(n => markNotificationAsRead(authUser?.uid, n.id)));
-        setNotifications([]);
-        // Trigger a refresh of the parent component's notification count
-        if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('notificationsUpdated'));
-        }
+        const userId = authUser?.uid;
+        if (!userId || markingRead) return;
+        setMarkingRead(true);
+        const results = await Promise.all(notifications.map(notification => markNotificationAsRead(userId, notification.id)));
+        if (results.some(result => !result.success)) setErrorMessage('Some notifications could not be marked as read. Retry.');
+        setMarkingRead(false);
     };
 
     const unreadCount = notifications.length;
@@ -52,6 +54,9 @@ const NotificationPanel = ({ isOpen, onClose, sidebarCollapsed = false }) => {
                         animate={{ opacity: 1, scale: 1, x: 0 }}
                         exit={{ opacity: 0, scale: 0.95, x: -20 }}
                         transition={{ duration: 0.2, ease: "easeOut" }}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="notification-panel-title"
                         className={`fixed top-24 w-[24rem] bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-xl shadow-xl z-50 overflow-hidden ${
                             sidebarCollapsed ? 'left-24' : 'left-72'
                         }`}
@@ -61,7 +66,7 @@ const NotificationPanel = ({ isOpen, onClose, sidebarCollapsed = false }) => {
                         <div className="px-4 py-3 border-b border-gray-200/80">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                    <h3 className="text-base font-semibold text-gray-800">Notifications</h3>
+                                    <h3 id="notification-panel-title" className="text-base font-semibold text-gray-800">Notifications</h3>
                                     {unreadCount > 0 && (
                                         <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
                                             {unreadCount}
@@ -72,12 +77,13 @@ const NotificationPanel = ({ isOpen, onClose, sidebarCollapsed = false }) => {
                                     <button 
                                         onClick={markAllAsRead}
                                         className="text-xs text-purple-600 hover:text-purple-800 font-semibold transition-colors disabled:text-gray-400 disabled:cursor-not-allowed"
-                                        disabled={unreadCount === 0}
+                                        disabled={unreadCount === 0 || markingRead}
                                     >
                                         Mark all read
                                     </button>
-                                    <button 
+                                    <button type="button"
                                         onClick={onClose}
+                                        aria-label="Close notifications"
                                         className="p-1 hover:bg-gray-200/50 transition-colors"
                                     >
                                         <FiX className="w-4 h-4 text-gray-500 hover:text-gray-700" />
@@ -86,6 +92,7 @@ const NotificationPanel = ({ isOpen, onClose, sidebarCollapsed = false }) => {
                             </div>
                         </div>
 
+                        {errorMessage && <div role="alert" className="border-b border-red-200 bg-red-50 px-4 py-2 text-xs text-red-800">{errorMessage}</div>}
                         {/* Notifications List */}
                         <div className="max-h-[22rem] overflow-y-auto divide-y divide-gray-200/50">
                             {notifications.length === 0 ? (
@@ -193,12 +200,6 @@ const NotificationPanel = ({ isOpen, onClose, sidebarCollapsed = false }) => {
                             )}
                         </div>
 
-                        {/* Footer */}
-                        <div className="px-4 py-2 bg-gray-50/70 border-t border-gray-200/80">
-                            <button className="w-full text-center text-xs font-medium text-purple-600 hover:text-purple-700 transition-colors">
-                                View all notifications
-                            </button>
-                        </div>
                     </motion.div>
                 </>
             )}

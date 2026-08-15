@@ -5,7 +5,6 @@ import { sanitizeRichText } from '../../../utils/sanitizeHtml';
 import { withTranslation } from 'react-i18next';
 import './JobApplicationsModal.css';
 import SendMessageDialog from './SendMessageDialog';
-import fire from '../../../conf/fire';
 import { updateApplicationStatusWithMessage } from '../../../firestore/dbOperations';
 import RejectionReasonModal from './RejectionReasonModal';
 import {
@@ -69,43 +68,35 @@ const [selectedApplication, setSelectedApplication] = useState(null);
     const [isRejectionModalOpen, setRejectionModalOpen] = useState(false);
 
     const handleStatusUpdate = async (applicationId, newStatus, rejectionMessage = '') => {
+        const target = filteredApplications.find(application => application.id === applicationId);
+        if (!target) return;
         setUpdatingStatus(applicationId);
         try {
-            console.log('Updating application status:', { applicationId, newStatus, rejectionMessage });
-
-            // Update the database
-            const result = await updateApplicationStatusWithMessage(applicationId, newStatus, rejectionMessage);
+            const result = await updateApplicationStatusWithMessage(applicationId, newStatus, rejectionMessage, { status: target.status, revision: target.revision });
 
             if (result.success) {
-                // Update local state immediately for better UX
-                setFilteredApplications((prev) => prev.map((app) => (app.id === applicationId ? { ...app, status: newStatus, statusUpdatedAt: new Date() } : app)));
+                setFilteredApplications((previous) => previous.map(application => application.id === applicationId
+                    ? { ...application, status: result.status, revision: result.revision, statusUpdatedAt: new Date() }
+                    : application));
 
                 // Also call the parent callback if provided
                 if (onUpdateStatus) {
-                    onUpdateStatus(applicationId, newStatus);
+                    onUpdateStatus(applicationId, result.status, result.revision);
                 }
 
                 // Show success toast
                 if (showToast) {
                     showToast('success', 'Success', `Application status updated to ${newStatus}`);
                 }
-
-                console.log('Application status updated successfully');
             } else {
-                console.error('Failed to update application status:', result.error);
-                if (showToast) {
-                    showToast('error', 'Error', 'Failed to update application status. Please try again.');
-                } else {
-                    alert('Failed to update application status. Please try again.');
-                }
+                const message = result.error || 'Failed to update application status.';
+                if (showToast) showToast('error', result.code === 'APPLICATION_CHANGED' ? 'Application changed' : 'Error', message);
+                else alert(message);
             }
         } catch (error) {
-            console.error('Error updating application status:', error);
-            if (showToast) {
-                showToast('error', 'Error', 'An error occurred while updating the application status. Please try again.');
-            } else {
-                alert('An error occurred while updating the application status. Please try again.');
-            }
+            const message = error.message || 'An error occurred while updating the application status.';
+            if (showToast) showToast('error', 'Error', message);
+            else alert(message);
         } finally {
             setUpdatingStatus(null);
             setRejectionModalOpen(false);
@@ -171,12 +162,15 @@ const [selectedApplication, setSelectedApplication] = useState(null);
             <div
                 className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
                 style={{ background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.1) 0%, rgba(30, 41, 59, 0.2) 100%)' }}
+                role="presentation"
+                onKeyDown={event => { if (event.key === 'Escape' && !updatingStatus) onClose(); }}
                 onClick={(e) => {
-                    if (e.target === e.currentTarget) {
-                        onClose();
-                    }
+                    if (e.target === e.currentTarget && !updatingStatus) onClose();
                 }}>
                 <motion.div
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="job-applications-title"
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
@@ -185,10 +179,10 @@ const [selectedApplication, setSelectedApplication] = useState(null);
                     {/* Header */}
                     <div className="flex items-center justify-between p-4 border-b border-slate-200">
                         <div>
-                            <h2 className="text-lg font-semibold text-slate-900">{t('JobsUpdate.JobApplicationsModal.header.title', 'Applications for')} {job?.title}</h2>
+                            <h2 id="job-applications-title" className="text-lg font-semibold text-slate-900">{t('JobsUpdate.JobApplicationsModal.header.title', 'Applications for')} {job?.title}</h2>
                             <p className="text-slate-600 text-sm mt-0.5">{applications?.length || 0} {t('JobsUpdate.JobApplicationsModal.header.totalApplications', 'total applications')}</p>
                         </div>
-                        <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-md transition-colors">
+                        <button type="button" onClick={onClose} disabled={Boolean(updatingStatus)} aria-label="Close applications dialog" className="p-2 hover:bg-slate-100 rounded-md transition-colors disabled:opacity-50">
                             <FaTimes className="w-4 h-4 text-slate-500" />
                         </button>
                     </div>
@@ -198,9 +192,11 @@ const [selectedApplication, setSelectedApplication] = useState(null);
                         <div className="flex flex-col sm:flex-row gap-3">
                             {/* Search */}
                             <div className="flex-1">
+                                <label htmlFor="application-search" className="sr-only">Search applications</label>
                                 <div className="relative">
                                     <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-3.5 h-3.5" />
                                     <input
+                                        id="application-search"
                                         type="text"
                                         placeholder={t('JobsUpdate.JobApplicationsModal.search.placeholder', 'Search by name, email, or skills...')}
                                         value={searchTerm}
@@ -212,7 +208,9 @@ const [selectedApplication, setSelectedApplication] = useState(null);
 
                             {/* Status Filter */}
                             <div className="sm:w-40">
+                                <label htmlFor="application-status-filter" className="sr-only">Filter by status</label>
                                 <select
+                                    id="application-status-filter"
                                     value={statusFilter}
                                     onChange={(e) => setStatusFilter(e.target.value)}
                                     className="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 bg-white">
@@ -334,6 +332,9 @@ const [selectedApplication, setSelectedApplication] = useState(null);
                                                 )}
 
                                                 <button
+                                                    type="button"
+                                                    aria-expanded={expandedApplication === application.id}
+                                                    aria-label={`${expandedApplication === application.id ? 'Collapse' : 'Expand'} application from ${application.applicantName}`}
                                                     onClick={() => toggleApplicationExpansion(application.id)}
                                                     className="p-2 text-slate-400 hover:text-slate-600 transition-colors rounded-md hover:bg-slate-50">
                                                     {expandedApplication === application.id ? <FaChevronUp className="w-3 h-3" /> : <FaChevronDown className="w-3 h-3" />}

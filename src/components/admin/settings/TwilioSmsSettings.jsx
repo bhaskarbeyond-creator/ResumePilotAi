@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getSystemSettings, saveSystemSettings, sendSmsNotification } from '../../../firestore/dbOperations';
+import { sendSmsNotification } from '../../../firestore/dbOperations';
+import { fetchAdminWithReauth } from '../../../services/adminReauth';
 import { FaCommentAlt, FaCheck, FaTimes, FaSpinner, FaPhoneAlt, FaEye, FaEyeSlash, FaPaperPlane } from 'react-icons/fa';
 
 const TwilioSmsSettings = () => {
@@ -9,6 +10,9 @@ const TwilioSmsSettings = () => {
         fromPhoneNumber: '',
         enableSmsAlerts: false,
     });
+    const [credentialStatus, setCredentialStatus] = useState({ configured: false, accountSidSuffix: '' });
+    const [revision, setRevision] = useState(0);
+    const [settingsLoaded, setSettingsLoaded] = useState(false);
     const [showToken, setShowToken] = useState(false);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -16,19 +20,19 @@ const TwilioSmsSettings = () => {
     const [statusMessage, setStatusMessage] = useState(null);
 
     useEffect(() => {
-        getSystemSettings().then((settings) => {
-            if (settings && settings.twilio) {
-                const tw = settings.twilio;
-                const hasAccountSid = !!(tw.accountSid && tw.accountSid.trim());
-                setTwilioConfig({
-                    accountSid: tw.accountSid || '',
-                    authToken: tw.authToken || '',
-                    fromPhoneNumber: tw.fromPhoneNumber || '',
-                    enableSmsAlerts: tw.enableSmsAlerts !== undefined ? tw.enableSmsAlerts : hasAccountSid,
-                });
-            }
-            setLoading(false);
-        });
+        let active = true;
+        fetchAdminWithReauth('/api/admin/twilio-settings').then(({ response, data }) => {
+            if (!active) return;
+            if (!response.ok || !data.success) throw new Error(data.error?.message || data.error || 'SMS settings could not be loaded.');
+            const settings = data.settings || {};
+            setTwilioConfig(current => ({ ...current, accountSid: '', authToken: '', fromPhoneNumber: settings.fromPhoneNumber || '', enableSmsAlerts: settings.enableSmsAlerts === true }));
+            setCredentialStatus({ configured: settings.accountSidConfigured === true && settings.authTokenConfigured === true && Boolean(settings.fromPhoneNumber), accountSidSuffix: settings.accountSidSuffix || '' });
+            setRevision(Number(data.revision || 0));
+            setSettingsLoaded(true);
+        }).catch(error => {
+            if (active) setStatusMessage({ type: 'error', text: `SMS settings were not loaded; saving is disabled. ${error.message}` });
+        }).finally(() => { if (active) setLoading(false); });
+        return () => { active = false; };
     }, []);
 
     const handleChange = (e) => {
@@ -47,15 +51,26 @@ const TwilioSmsSettings = () => {
 
     const handleSave = async (e) => {
         e.preventDefault();
+        if (!settingsLoaded) {
+            setStatusMessage({ type: 'error', text: 'SMS settings are unavailable. Reload before saving.' });
+            return;
+        }
         setSaving(true);
         try {
-            await saveSystemSettings('twilio', twilioConfig);
-            setStatusMessage({ type: 'success', text: 'Twilio SMS gateway settings saved successfully!' });
+            const { response, data } = await fetchAdminWithReauth('/api/admin/twilio-settings', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...twilioConfig, expectedRevision: revision }),
+            });
+            if (!response.ok || !data.success) throw Object.assign(new Error(data.error?.message || data.error || 'SMS settings could not be saved.'), { code: data.code });
+            const settings = data.settings || {};
+            setRevision(Number(data.revision || revision));
+            setCredentialStatus({ configured: settings.accountSidConfigured === true && settings.authTokenConfigured === true && Boolean(settings.fromPhoneNumber), accountSidSuffix: settings.accountSidSuffix || '' });
+            setTwilioConfig(current => ({ ...current, accountSid: '', authToken: '', fromPhoneNumber: settings.fromPhoneNumber || current.fromPhoneNumber, enableSmsAlerts: settings.enableSmsAlerts === true }));
+            setStatusMessage({ type: 'success', text: 'Twilio SMS gateway settings saved to the trusted backend.' });
         } catch (error) {
             setStatusMessage({ type: 'error', text: `Failed to save settings: ${error.message}` });
         } finally {
             setSaving(false);
-            setTimeout(() => setStatusMessage(null), 4000);
         }
     };
 
@@ -71,7 +86,7 @@ const TwilioSmsSettings = () => {
     return (
         <form onSubmit={handleSave} className="space-y-6">
             {statusMessage && (
-                <div className={`p-4 rounded-lg flex items-center justify-between text-sm ${
+                <div role={statusMessage.type === 'success' ? 'status' : 'alert'} className={`p-4 rounded-lg flex items-center justify-between text-sm ${
                     statusMessage.type === 'success' ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-red-50 border border-red-200 text-red-800'
                 }`}>
                     <div className="flex items-center space-x-2">
@@ -85,8 +100,11 @@ const TwilioSmsSettings = () => {
                 <h3 className="text-base font-semibold text-slate-800 flex items-center gap-2 mb-1">
                     <FaCommentAlt className="text-red-600" /> Twilio SMS & Phone Gateway
                 </h3>
-                <p className="text-xs text-slate-500 mb-4">
-                    Configure your Twilio credentials for sending OTP verification codes and SMS job alert notifications.
+                <p className="text-xs text-slate-500 mb-2">
+                    Configure backend-only Twilio credentials for sending SMS alerts. Leave both credential fields blank to preserve the configured credential.
+                </p>
+                <p className={`mb-4 text-xs font-semibold ${credentialStatus.configured ? 'text-emerald-700' : 'text-amber-700'}`}>
+                    {credentialStatus.configured ? `Gateway credential configured${credentialStatus.accountSidSuffix ? ` (Account SID ending ${credentialStatus.accountSidSuffix})` : ''}.` : 'Gateway credential is not fully configured.'}
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -99,7 +117,7 @@ const TwilioSmsSettings = () => {
                             name="accountSid"
                             value={twilioConfig.accountSid}
                             onChange={handleChange}
-                            placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                            placeholder={credentialStatus.configured ? 'Configured — enter SID only when rotating both credentials' : 'ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'}
                             className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-red-500 focus:outline-none"
                         />
                     </div>
@@ -113,7 +131,7 @@ const TwilioSmsSettings = () => {
                                 name="authToken"
                                 value={twilioConfig.authToken}
                                 onChange={handleChange}
-                                placeholder="auth_token..."
+                                placeholder={credentialStatus.configured ? 'Configured — leave blank to preserve' : 'Enter Twilio Auth Token'}
                                 className="w-full pl-3 pr-10 py-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-red-500 focus:outline-none"
                             />
                             <button
@@ -162,7 +180,7 @@ const TwilioSmsSettings = () => {
             <div className="flex items-center justify-between pt-2">
                 <button
                     type="button"
-                    disabled={testing || !twilioConfig.accountSid}
+                    disabled={testing || !credentialStatus.configured}
                     onClick={async () => {
                         const testNumber = prompt('Enter recipient mobile phone number with country code (e.g. +14155552671 or +919876543210):');
                         if (!testNumber) return;
@@ -186,7 +204,7 @@ const TwilioSmsSettings = () => {
                 </button>
                 <button
                     type="submit"
-                    disabled={saving}
+                    disabled={saving || !settingsLoaded}
                     className="px-5 py-2 text-sm font-medium text-white bg-slate-800 hover:bg-slate-900 rounded-md flex items-center space-x-2 shadow-sm cursor-pointer"
                 >
                     {saving && <FaSpinner className="animate-spin text-white" />}

@@ -37,6 +37,7 @@ class DashboardMain extends Component {
         super(props);
         this.authListener = this.authListener.bind(this);
         this._isMounted = false;
+        this._authGeneration = 0;
         this.unsubscribeAuth = null;
         this.state = {
             user: null,
@@ -90,72 +91,55 @@ class DashboardMain extends Component {
 
     /// Check if the user is authenticated
     authListener() {
-        const initialUser = localStorage.getItem('user') || 'active_user';
-        this.setState({ user: initialUser });
+        this.unsubscribeAuth = fire.auth().onAuthStateChanged(async user => {
+            const generation = ++this._authGeneration;
+            if (!this._isMounted) return;
 
-        this.unsubscribeAuth = fire.auth().onAuthStateChanged(async (user) => {
-            if (!this._isMounted) return; // Prevent state updates if component is unmounted
-
-            if (user) {
-                this.setState({ user: user.uid });
-
-                // Track user login
-                trackUserLogin('firebase');
-                trackEngagement('dashboard_access', { user_id: user.uid });
-
-                const idToken = await user.getIdTokenResult();
-                const isAdminUser = ['ADMIN', 'SUPER_ADMIN'].includes(String(idToken.claims.role || '').toUpperCase());
-                getFullName(user.uid).then((value) => {
-                    if (!this._isMounted) return; // Prevent state updates if component is unmounted
-                    if (value !== undefined) {
-                        const resolvedMembership = isAdminUser
-                            ? 'Admin Tier'
-                            : (value.membership && value.membership !== ';' ? value.membership : 'Basic');
-
-                        this.setState({
-                            firstname: value.firstname,
-                            lastname: value.lastname,
-                            membership: resolvedMembership,
-                            profile: {
-                                ...(value.profile || {}),
-                                membership: resolvedMembership,
-                            },
-                        });
-                    }
+            if (!user) {
+                try { localStorage.removeItem('user'); } catch { /* optional compatibility storage */ }
+                this.setState({
+                    user: null, role: 'user', firstname: '', lastname: '', membership: '', profile: {},
+                    showVerifyBanner: false, verifyBannerDismissed: false,
                 });
-                localStorage.setItem('user', user.uid);
-                /// Checking if user ad
-                if (isAdminUser) {
-                    this.setState({ role: 'admin' });
-                    getAds();
-                }
+                return;
+            }
 
-                // ─── Email Verification Banner Logic ───────────────────────────────
-                // Only show for email/password users who haven't verified yet
-                const isEmailProvider = user.providerData && user.providerData.some(p => p.providerId === 'password');
-                if (isEmailProvider && !user.emailVerified && !this.state.verifyBannerDismissed) {
-                    try {
-                        const { getSystemSettings } = await import('../../../firestore/dbOperations');
-                        const settings = await getSystemSettings();
-                        const verificationEnabled = settings?.modules?.enableEmailVerification === true;
-                        if (verificationEnabled && this._isMounted) {
-                            this.setState({ showVerifyBanner: true });
-                        }
-                    } catch (e) {
-                        // Non-fatal — don't block dashboard load
-                    }
-                }
-                // ────────────────────────────────────────────────────────────────────
+            // Clear every account-derived field immediately. This component can remain
+            // mounted during a direct A → B Firebase session transition.
+            this.setState({
+                user: user.uid, role: 'user', firstname: '', lastname: '', membership: '', profile: {},
+                showVerifyBanner: false, verifyBannerDismissed: false,
+            });
+            try { localStorage.setItem('user', user.uid); } catch { /* compatibility only */ }
+            trackUserLogin('firebase');
+            trackEngagement('dashboard_access', { user_id: user.uid });
 
-            } else {
-                const storedUser = localStorage.getItem('user');
-                if (storedUser) {
-                    this.setState({ user: storedUser });
-                } else {
-                    // Default to guest session on local environment
-                    const fallbackUser = 'guest_user';
-                    localStorage.setItem('user', fallbackUser);
-                    this.setState({ user: fallbackUser });
+            try {
+                const [idToken, value] = await Promise.all([user.getIdTokenResult(), getFullName(user.uid)]);
+                if (!this._isMounted || generation !== this._authGeneration || fire.auth().currentUser?.uid !== user.uid) return;
+                const isAdminUser = ['ADMIN', 'SUPER_ADMIN'].includes(String(idToken.claims.role || '').toUpperCase());
+                const resolvedMembership = isAdminUser
+                    ? 'Admin Tier'
+                    : (value?.membership && value.membership !== ';' ? value.membership : 'Basic');
+                this.setState({
+                    role: isAdminUser ? 'admin' : 'user',
+                    firstname: value?.firstname || '',
+                    lastname: value?.lastname || '',
+                    membership: resolvedMembership,
+                    profile: { ...(value?.profile || {}), membership: resolvedMembership },
+                });
+                if (isAdminUser) getAds().catch(() => {});
+
+                const isEmailProvider = user.providerData?.some(provider => provider.providerId === 'password');
+                if (isEmailProvider && !user.emailVerified) {
+                    const { getSystemSettings } = await import('../../../firestore/dbOperations');
+                    const settings = await getSystemSettings();
+                    if (!this._isMounted || generation !== this._authGeneration || fire.auth().currentUser?.uid !== user.uid) return;
+                    if (settings?.modules?.enableEmailVerification === true) this.setState({ showVerifyBanner: true });
+                }
+            } catch (error) {
+                if (this._isMounted && generation === this._authGeneration) {
+                    console.warn('[Dashboard auth state]', error.message);
                 }
             }
         });
@@ -280,6 +264,7 @@ class DashboardMain extends Component {
 
     componentWillUnmount() {
         this._isMounted = false;
+        this._authGeneration += 1;
         // Clean up Firebase auth listener
         if (this.unsubscribeAuth) {
             this.unsubscribeAuth();

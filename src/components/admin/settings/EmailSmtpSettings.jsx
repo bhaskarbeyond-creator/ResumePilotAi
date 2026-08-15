@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { normalizeAdminApiError } from '../../../services/adminAiSettings';
+import { fetchAdminWithReauth } from '../../../services/adminReauth';
 import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
 import config from '../../../conf/configuration';
 import { 
@@ -33,6 +34,7 @@ const EmailSmtpSettings = () => {
     });
 
     // Inbound IMAP State
+    const [credentialStatus, setCredentialStatus] = useState({ smtp: false, fallbackSmtp: false, imap: false });
     const [imapConfig, setImapConfig] = useState({
         enabled: true,
         host: 'imap.hostinger.com',
@@ -83,6 +85,7 @@ const EmailSmtpSettings = () => {
     
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [runtimeSettingsLoaded, setRuntimeSettingsLoaded] = useState(false);
     const [saving, setSaving] = useState(false);
     const [testingSmtp, setTestingSmtp] = useState(false);
     const [testingFallbackSmtp, setTestingFallbackSmtp] = useState(false);
@@ -353,11 +356,17 @@ const EmailSmtpSettings = () => {
 
     const loadSettingsAndLogs = async () => {
         setLoading(true);
+        setRuntimeSettingsLoaded(false);
         try {
-            const settings = await getSystemSettings();
-            const sm = (settings && settings.smtp) || {};
-            const fb = (settings && settings.fallbackSmtp) || {};
-            const im = (settings && settings.imap) || {};
+            const [settings, runtime] = await Promise.all([
+                getSystemSettings(),
+                fetchAdminWithReauth(`${API_BASE}/api/email/admin/settings`),
+            ]);
+            if (!runtime.response.ok || !runtime.data.success) throw normalizeAdminApiError(runtime.response, runtime.data, 'Email runtime settings could not be loaded.');
+            const sm = runtime.data.settings?.smtp || {};
+            const fb = runtime.data.settings?.fallbackSmtp || {};
+            const im = runtime.data.settings?.imap || {};
+            setCredentialStatus({ smtp: sm.passwordConfigured === true, fallbackSmtp: fb.passwordConfigured === true, imap: im.passwordConfigured === true });
 
             const loadedSmtp = {
                 host: sm.host || 'smtp.hostinger.com',
@@ -391,41 +400,49 @@ const EmailSmtpSettings = () => {
                 autoSync: im.autoSync !== undefined ? im.autoSync : true
             });
 
-            if (settings && settings.enabledTemplates) {
-                setEnabledTemplates((prev) => ({ ...prev, ...settings.enabledTemplates }));
-            }
+            setEnabledTemplates((prev) => ({ ...prev, ...(settings?.enabledTemplates || {}), ...(runtime.data.settings?.enabledTemplates || {}) }));
 
             setTestRecipientEmail(loadedSmtp.adminEmail);
+            setRuntimeSettingsLoaded(true);
 
-            // Fetch Email Outbox Logs
-            const logsRes = await fetch(`${API_BASE}/api/email/logs`);
-            const logsData = await logsRes.json();
-            if (logsData.success) {
+            // Logs are operational history, not configuration. A log failure must not
+            // turn a successfully loaded configuration into an unsafe default state.
+            try {
+                const logsRes = await fetch(`${API_BASE}/api/email/logs`);
+                const logsData = await logsRes.json().catch(() => ({}));
+                if (!logsRes.ok || !logsData.success) throw normalizeAdminApiError(logsRes, logsData, 'Email logs could not be loaded.');
                 setEmailLogs(logsData.logs || []);
+            } catch (logError) {
+                setStatusMessage({ type: 'error', text: logError.message || 'Email settings loaded, but outbox logs are unavailable.' });
             }
         } catch (e) {
-            console.error('Error loading settings:', e);
+            console.error('Error loading email runtime settings:', e);
+            setStatusMessage({ type: 'error', text: `Email settings were not loaded; saving is disabled to prevent overwriting runtime configuration. ${e.message}` });
         } finally {
             setLoading(false);
         }
     };
 
     const toggleTemplate = async (templateKey) => {
+        if (!runtimeSettingsLoaded) {
+            setStatusMessage({ type: 'error', text: 'Email runtime settings are unavailable. Reload before changing templates.' });
+            return;
+        }
         const updated = {
             ...enabledTemplates,
             [templateKey]: enabledTemplates[templateKey] === false ? true : false
         };
-        setEnabledTemplates(updated);
-
         try {
             await saveSystemSettings('enabledTemplates', updated);
-            await fetch('/api/admin/save-smtp', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+            const { response, data } = await fetchAdminWithReauth('/api/email/admin/save-smtp', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ smtp: smtpConfig, fallbackSmtp, imap: imapConfig, enabledTemplates: updated })
             });
-        } catch (e) {
-            console.warn('Backend template toggle save notice:', e.message);
+            if (!response.ok || !data.success) throw normalizeAdminApiError(response, data, 'Template setting was not saved to the mail runtime.');
+            setEnabledTemplates(updated);
+            setStatusMessage({ type: 'success', text: 'Template setting saved.' });
+        } catch (error) {
+            setStatusMessage({ type: 'error', text: error.message || 'Template setting could not be saved.' });
         }
     };
 
@@ -461,22 +478,29 @@ const EmailSmtpSettings = () => {
 
     const handleSave = async (e) => {
         if (e) e.preventDefault();
+        if (!runtimeSettingsLoaded) {
+            setStatusMessage({ type: 'error', text: 'Email runtime settings are unavailable. Reload before saving.' });
+            return;
+        }
         setSaving(true);
         try {
-            // Save to Firestore (client-side)
+            // Persist revisioned Admin metadata through trusted backend routes.
             await saveSystemSettings('smtp', smtpConfig);
             await saveSystemSettings('fallbackSmtp', fallbackSmtp);
             await saveSystemSettings('imap', imapConfig);
             await saveSystemSettings('enabledTemplates', enabledTemplates);
 
             // Persist the runtime mail configuration on the trusted backend and inspect its result.
-            const response = await fetch('/api/admin/save-smtp', {
+            const { response, data: result } = await fetchAdminWithReauth('/api/email/admin/save-smtp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ smtp: smtpConfig, fallbackSmtp, imap: imapConfig, enabledTemplates })
             });
-            const result = await response.json().catch(() => ({}));
             if (!response.ok || !result.success) throw normalizeAdminApiError(response, result, 'Runtime email configuration was not saved.');
+            setCredentialStatus(current => ({ smtp: current.smtp || Boolean(smtpConfig.password), fallbackSmtp: current.fallbackSmtp || Boolean(fallbackSmtp.password), imap: current.imap || Boolean(imapConfig.password) }));
+            setSmtpConfig(current => ({ ...current, password: '' }));
+            setFallbackSmtp(current => ({ ...current, password: '' }));
+            setImapConfig(current => ({ ...current, password: '' }));
 
             setStatusMessage({ type: 'success', text: 'SMTP, fallback relay, IMAP, and template settings were saved to the trusted runtime.' });
         } catch (error) {
@@ -491,12 +515,11 @@ const EmailSmtpSettings = () => {
         setTestingSmtp(true);
         setStatusMessage(null);
         try {
-            const response = await fetch(`${API_BASE}/api/email/admin/test-connection`, {
+            const { response, data } = await fetchAdminWithReauth(`${API_BASE}/api/email/admin/test-connection`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ type: 'smtp', ...smtpConfig })
             });
-            const data = await response.json().catch(() => ({}));
             if (!response.ok) throw normalizeAdminApiError(response, data, 'Email operation failed.');
             if (data.success) {
                 setStatusMessage({ type: 'success', text: data.message });
@@ -514,12 +537,11 @@ const EmailSmtpSettings = () => {
         setTestingFallbackSmtp(true);
         setStatusMessage(null);
         try {
-            const response = await fetch(`${API_BASE}/api/email/admin/test-connection`, {
+            const { response, data } = await fetchAdminWithReauth(`${API_BASE}/api/email/admin/test-connection`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ type: 'fallback_smtp', ...fallbackSmtp })
             });
-            const data = await response.json().catch(() => ({}));
             if (!response.ok) throw normalizeAdminApiError(response, data, 'Email operation failed.');
             if (data.success) {
                 setStatusMessage({ type: 'success', text: `🛡️ ${data.message}` });
@@ -537,12 +559,11 @@ const EmailSmtpSettings = () => {
         setTestingImap(true);
         setStatusMessage(null);
         try {
-            const response = await fetch(`${API_BASE}/api/email/admin/test-imap`, {
+            const { response, data } = await fetchAdminWithReauth(`${API_BASE}/api/email/admin/test-imap`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(imapConfig)
             });
-            const data = await response.json().catch(() => ({}));
             if (!response.ok) throw normalizeAdminApiError(response, data, 'Email operation failed.');
             if (data.success) {
                 setStatusMessage({ type: 'success', text: data.message });
@@ -631,7 +652,7 @@ const EmailSmtpSettings = () => {
                 <div>
                     <div className="flex items-center gap-2">
                         <FaEnvelope className="text-indigo-400 w-5 h-5" />
-                        <h2 className="text-lg font-black tracking-tight text-white">Enterprise Email &amp; SMTP Subsystem (10/10)</h2>
+                        <h2 className="text-lg font-black tracking-tight text-white">Enterprise Email &amp; SMTP Subsystem</h2>
                     </div>
                     <p className="text-xs text-slate-300 mt-1">Outbound SMTP, Inbound IMAP, Fallback Relay, Dynamic HTML Templates &amp; Audit Outbox.</p>
                 </div>
@@ -697,7 +718,7 @@ const EmailSmtpSettings = () => {
 
             {/* Status Message Notification Toast */}
             {statusMessage && (
-                <div className={`p-4 rounded-xl flex items-center justify-between text-xs font-bold shadow-xs ${
+                <div role={statusMessage.type === 'success' ? 'status' : 'alert'} className={`p-4 rounded-xl flex items-center justify-between text-xs font-bold shadow-xs ${
                     statusMessage.type === 'success' ? 'bg-emerald-50 border border-emerald-200 text-emerald-900' : 'bg-rose-50 border border-rose-200 text-rose-900'
                 }`}>
                     <div className="flex items-center space-x-2">
@@ -779,7 +800,6 @@ const EmailSmtpSettings = () => {
                                 >
                                     <option value="ssl">SSL (Port 465 - Recommended)</option>
                                     <option value="tls">TLS (STARTTLS - Port 587)</option>
-                                    <option value="none">None (Plaintext - Port 25)</option>
                                 </select>
                             </div>
 
@@ -807,7 +827,7 @@ const EmailSmtpSettings = () => {
                                         name="password"
                                         value={smtpConfig.password}
                                         onChange={handleSmtpChange}
-                                        placeholder="Account Password / API Key"
+                                        placeholder={credentialStatus.smtp ? 'Configured securely — enter only to replace' : 'Account Password / API Key'}
                                         className="w-full pl-3.5 pr-10 py-2 text-xs font-semibold border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 font-mono"
                                     />
                                     <button
@@ -915,7 +935,6 @@ const EmailSmtpSettings = () => {
                                         >
                                             <option value="tls">TLS (Port 587 - Recommended)</option>
                                             <option value="ssl">SSL (Port 465)</option>
-                                            <option value="none">NONE (Port 25)</option>
                                         </select>
                                     </div>
                                 </div>
@@ -937,7 +956,7 @@ const EmailSmtpSettings = () => {
                                             type="password"
                                             value={fallbackSmtp.password}
                                             onChange={(e) => setFallbackSmtp(prev => ({ ...prev, password: e.target.value }))}
-                                            placeholder="API Key / App Password"
+                                            placeholder={credentialStatus.fallbackSmtp ? 'Configured securely — enter only to replace' : 'API Key / App Password'}
                                             className="w-full px-3 py-1.5 text-xs font-semibold border border-slate-300 rounded-xl font-mono"
                                         />
                                     </div>
@@ -1022,7 +1041,7 @@ const EmailSmtpSettings = () => {
 
                         <button
                             type="submit"
-                            disabled={saving}
+                            disabled={saving || !runtimeSettingsLoaded}
                             className="px-6 py-2.5 text-xs font-extrabold text-white bg-slate-900 hover:bg-slate-800 rounded-xl flex items-center gap-2 transition-all shadow-md cursor-pointer"
                         >
                             {saving && <FaSpinner className="animate-spin text-white w-4 h-4" />}
@@ -1087,7 +1106,6 @@ const EmailSmtpSettings = () => {
                                     className="w-full px-3.5 py-2 text-xs font-semibold border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 bg-white"
                                 >
                                     <option value="ssl">SSL/TLS (Port 993 - Recommended)</option>
-                                    <option value="none">Plaintext (Port 143)</option>
                                 </select>
                             </div>
 
@@ -1114,7 +1132,7 @@ const EmailSmtpSettings = () => {
                                     name="password"
                                     value={imapConfig.password}
                                     onChange={handleImapChange}
-                                    placeholder="Account Password"
+                                    placeholder={credentialStatus.imap ? 'Configured securely — enter only to replace' : 'Account Password'}
                                     className="w-full px-3.5 py-2 text-xs font-semibold border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 font-mono"
                                 />
                             </div>
@@ -1134,7 +1152,7 @@ const EmailSmtpSettings = () => {
 
                         <button
                             type="submit"
-                            disabled={saving}
+                            disabled={saving || !runtimeSettingsLoaded}
                             className="px-6 py-2.5 text-xs font-extrabold text-white bg-slate-900 hover:bg-slate-800 rounded-xl flex items-center gap-2 transition-all shadow-md cursor-pointer"
                         >
                             {saving && <FaSpinner className="animate-spin text-white w-4 h-4" />}

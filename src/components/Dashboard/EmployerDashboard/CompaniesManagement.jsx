@@ -27,7 +27,7 @@ import {
     FaEye,
     FaImage,
 } from 'react-icons/fa';
-import { getEmployerCompanies, updateCompany, deleteCompany } from '../../../firestore/dbOperations';
+import { getEmployerCompanies, deleteCompany } from '../../../firestore/dbOperations';
 import { AuthContext } from '../../../main';
 import AddCompanyModal from './AddCompanyModal';
 
@@ -139,13 +139,13 @@ const CompaniesManagement = ({ showToast, sidebarCollapsed, t }) => {
         setExpandedCompany(expandedCompany === companyId ? null : companyId);
     };
 
-    const handleDeleteCompany = async (companyId, companyName) => {
-        if (!window.confirm(`Are you sure you want to delete "${companyName}"? This action cannot be undone.`)) {
+    const handleDeleteCompany = async (companyId, companyName, revision) => {
+        if (!window.confirm(`Delete "${companyName}"? This is allowed only when it has no jobs and cannot be undone.`)) {
             return;
         }
 
         try {
-            const result = await deleteCompany(companyId);
+            const result = await deleteCompany(companyId, revision);
             if (result.success) {
                 showToast && showToast('success', 'Success', 'Company deleted successfully');
                 loadCompanies(); // Reload the list
@@ -526,7 +526,7 @@ const CompaniesManagement = ({ showToast, sidebarCollapsed, t }) => {
                                                             {t('JobsUpdate.CompaniesManagement.actions.editCompany', 'Edit Company')}
                                                         </button>
                                                         <button
-                                                            onClick={() => handleDeleteCompany(company.id, company.name)}
+                                                            onClick={() => handleDeleteCompany(company.id, company.name, company.revision)}
                                                             className="flex items-center gap-2 px-3 py-2 bg-red-50 text-red-700 rounded-md hover:bg-red-100 transition-colors text-xs font-medium border border-red-200"
                                                         >
                                                             <FaTrash className="w-3 h-3" />

@@ -1,5 +1,5 @@
 /**
- * Enterprise Event-Driven Email Notifier Service (10/10 Grade)
+ * Event-driven email notification service
  * Automatically triggers emails across Auth, Billing, AI, Jobs, Security & Portfolios.
  * 
  * FIX: Admin email is now resolved dynamically from DB/SMTP config — never hardcoded.
@@ -52,19 +52,20 @@ async function getAdminEmail(db) {
 }
 
 const sendNotification = async (db, { to, templateType, vars, customSubject, customBody }) => {
-    if (!to) return;
+    if (!to) return { success: false, deliveryState: 'DELIVERY_FAILED', error: 'Notification recipient unavailable' };
     try {
         const emailRoute = require('../routes/email');
         if (emailRoute && typeof emailRoute.dispatchNotification === 'function') {
-            return await emailRoute.dispatchNotification(db, { to, templateType, vars, customSubject, customBody });
+            const result = await emailRoute.dispatchNotification(db, { to, templateType, vars, customSubject, customBody });
+            return result?.success
+                ? { success: true, deliveryState: 'DELIVERY_ATTEMPTED', providerAccepted: true }
+                : { success: false, deliveryState: 'DELIVERY_FAILED', error: result?.error || 'Provider rejected delivery attempt' };
         }
     } catch (e) {
         console.warn(`[EmailNotifier Direct Error] Template '${templateType}' fallback:`, e.message);
+        return { success: false, deliveryState: 'DELIVERY_FAILED', error: e.message };
     }
-
-    // Fail closed. Internal notifications call the dispatcher as code; they never loop back
-    // through an HTTP endpoint that would need a synthetic privileged identity.
-    return { success: false, error: 'Email dispatcher unavailable' };
+    return { success: false, deliveryState: 'DELIVERY_FAILED', error: 'Email dispatcher unavailable' };
 };
 
 class EmailNotifier {
@@ -74,31 +75,16 @@ class EmailNotifier {
     static async notifyUserRegistration(db, { userEmail, userName = 'Valued User' }) {
         if (!userEmail) return;
 
-        // User Welcome Email
-        sendNotification(db, {
+        const userDelivery = await sendNotification(db, {
             to: userEmail,
             templateType: 'welcome',
-            vars: {
-                candidate_name: userName,
-                site_url: `${process.env.PROTOCOL || 'https'}://${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}`
-            }
-        }).catch(err => console.error('[Notifier] Welcome trigger error:', err.message));
-
-        // Admin Notification — resolved dynamically from DB config
-        getAdminEmail(db).then(adminEmail => {
-            if (!adminEmail) {
-                console.warn('[EmailNotifier] Admin email not configured — skipping admin registration alert.');
-                return;
-            }
-            sendNotification(db, {
-                to: adminEmail,
-                templateType: 'account_created_admin',
-                vars: {
-                    candidate_name: `${userName} (${userEmail})`,
-                    date: new Date().toLocaleDateString('en-IN')
-                }
-            }).catch(err => console.error('[Notifier] Account Admin Alert error:', err.message));
-        }).catch(() => {});
+            vars: { candidate_name: userName, site_url: `${process.env.PROTOCOL || 'https'}://${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}` }
+        });
+        const adminEmail = await getAdminEmail(db);
+        const adminDelivery = adminEmail
+            ? await sendNotification(db, { to: adminEmail, templateType: 'account_created_admin', vars: { candidate_name: `${userName} (${userEmail})`, date: new Date().toLocaleDateString('en-IN') } })
+            : { success: false, deliveryState: 'DELIVERY_FAILED', error: 'Admin recipient unavailable' };
+        return { userDelivery, adminDelivery };
     }
 
     /**

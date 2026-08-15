@@ -26,14 +26,30 @@ const ADMIN_EXACT = new Set([
 const VERIFIED_PREFIXES = [
   '/generate-', '/check-grammar', '/ai/', '/pay', '/paypal/', '/razorpay/',
   '/paytm/', '/phonepe/', '/export', '/invoice', '/send-invoice-email',
-  '/linkedin-scraper', '/subscription/', '/account/', '/messages/', '/notify/', '/admin/ai'
+  '/linkedin-scraper', '/subscription/', '/account/', '/messages/', '/jobs/', '/job-applications/', '/employer/', '/notify/', '/admin/ai'
 ];
 
 const RECENT_AUTH_PATHS = new Set([
-  '/admin/firebase-service-account',
   '/admin/delete-user',
+  '/send-sms',
   '/admin/system-health-settings',
-  '/auth/purge-orphaned-auth'
+  '/auth/purge-orphaned-auth',
+  '/auth/linkedin/test-credentials',
+  '/auth/github/test-credentials'
+]);
+
+// The email router retains these historical /api/admin aliases for compatibility in
+// addition to its canonical /api/email/admin namespace. Both paths must receive the
+// same recent-auth policy so an alias can never bypass the canonical middleware.
+const LEGACY_EMAIL_ADMIN_PATHS = new Set([
+  '/admin/circuit-breaker-status',
+  '/admin/reset-circuit-breaker',
+  '/admin/save-template-customization',
+  '/admin/custom-templates',
+  '/admin/test-connection',
+  '/admin/settings',
+  '/admin/save-smtp',
+  '/admin/test-imap'
 ]);
 
 function isAdminPath(pathname) {
@@ -63,15 +79,15 @@ function enforceApiPolicy(req, res, next) {
   if (isAdminPath(pathname) && !hasPermission(req, 'system.config.write')) {
     return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Insufficient permission', requestId: res.locals.requestId } });
   }
-  if (requiresVerifiedEmail(pathname) && !req.user?.emailVerified) {
+  if ((requiresVerifiedEmail(pathname) || isAdminPath(pathname)) && !req.user?.emailVerified) {
     return res.status(403).json({ error: { code: 'EMAIL_VERIFICATION_REQUIRED', message: 'A verified email address is required', requestId: res.locals.requestId } });
   }
-  if (RECENT_AUTH_PATHS.has(pathname) || pathname === '/account/delete'
+  if (RECENT_AUTH_PATHS.has(pathname) || LEGACY_EMAIL_ADMIN_PATHS.has(pathname) || (['/admin/firebase-service-account', '/admin/twilio-settings'].includes(pathname) && req.method !== 'GET') || pathname === '/account/delete'
       || pathname.startsWith('/admin/users/') || pathname.startsWith('/admin/payments/')
       || pathname.startsWith('/admin/employer-applications/') || pathname.startsWith('/admin/settings/')
       || pathname.startsWith('/admin/jobs/') || pathname.startsWith('/admin/companies/')
       || pathname.startsWith('/admin/reviews') || pathname === '/admin/global-rating'
-      || pathname.startsWith('/admin/trusted-by') || pathname === '/admin/landing-content'
+      || pathname.startsWith('/admin/trusted-by') || pathname.startsWith('/admin/ads') || pathname.startsWith('/admin/blog') || pathname === '/admin/landing-content'
       || pathname.startsWith('/email/admin/')
       || (pathname === '/admin/ai-settings' && req.method !== 'GET')
       || ['/admin/ai/test-provider', '/admin/payment/test-provider', '/admin/payment-settings', '/admin/save-smtp', '/admin/test-connection'].includes(pathname)) {

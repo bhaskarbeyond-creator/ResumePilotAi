@@ -33,7 +33,7 @@ class Stats extends Component {
                     </div>
                     <div className="adminTabRight">
                         <div className="adminTabCircle circleBlue">
-                            <img src={usersImage} />
+                            <img src={usersImage} alt="" />
                         </div>
                     </div>
                 </div>
@@ -45,7 +45,7 @@ class Stats extends Component {
                     </div>
                     <div className="adminTabRight">
                         <div className="adminTabCircle circleOrange">
-                            <img src={resumesImage} />
+                            <img src={resumesImage} alt="" />
                         </div>
                     </div>
                 </div>
@@ -57,7 +57,7 @@ class Stats extends Component {
                     </div>
                     <div className="adminTabRight">
                         <div className="adminTabCircle circleGreen">
-                            <img style={{ position: "relative", left: "3px" }} src={downloadImage} />
+                            <img style={{ position: "relative", left: "3px" }} src={downloadImage} alt="" />
                         </div>
                     </div>
                 </div>

@@ -39,10 +39,11 @@ test('oversized articles fail the Firestore size boundary', () => {
 });
 
 test('CMS implementation uses revisions, private drafts, scheduling, sanitized preview, and public SEO', async () => {
-  const [operations, editor, publicPost, card, backend] = await Promise.all([
+  const [operations, editor, publicPost, publicList, card, backend] = await Promise.all([
     fs.readFile('src/firestore/dbOperations.js', 'utf8'),
     fs.readFile('src/components/Blog/BlogEditor/BlogEditor.jsx', 'utf8'),
     fs.readFile('src/components/Blog/BlogPost/BlogPost.jsx', 'utf8'),
+    fs.readFile('src/components/Blog/BlogList/BlogList.jsx', 'utf8'),
     fs.readFile('src/components/Blog/components/BlogCard.jsx', 'utf8'),
     fs.readFile('backend/index.js', 'utf8'),
   ]);
@@ -57,6 +58,13 @@ test('CMS implementation uses revisions, private drafts, scheduling, sanitized p
   assert.match(editor, /sanitizeBlogHtml/);
   assert.match(publicPost, /BlogPosting/);
   assert.match(publicPost, /index,follow/);
+  assert.match(publicPost, /noindex,nofollow/);
+  assert.match(publicList, /requestGeneration/);
+  assert.match(publicList, /role="alert"/);
   assert.match(card, /sanitizeImageUrl/);
   assert.match(backend, /CMS_SCHEDULED_POSTS_PUBLISHED/);
+  assert.match(backend, /\/api\/admin\/blog\/posts\/:postId/);
+  assert.match(backend, /INVALID_BLOG_TRANSITION/);
+  assert.match(backend, /blog_scheduled_published/);
+  assert.match(operations, /\/api\/admin\/blog\/posts/);
 });

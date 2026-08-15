@@ -241,7 +241,7 @@ const CreateJobModal = ({ isOpen, onClose, onJobCreated, t }) => {
 
                 // Call callback if provided
                 if (onJobCreated) {
-                    onJobCreated({ ...jobData, id: result.jobId });
+                    onJobCreated({ ...jobData, id: result.jobId, status: result.status, revision: result.revision });
                 }
 
                 // Close modal after success

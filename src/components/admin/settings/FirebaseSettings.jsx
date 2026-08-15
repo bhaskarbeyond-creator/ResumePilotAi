@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { fetchAdminWithReauth } from '../../../services/adminReauth';
 import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
 import {
     FaFire, FaCheck, FaTimes, FaSpinner, FaKey, FaLock,
@@ -50,6 +51,7 @@ const FirebaseSettings = () => {
     // ── Service Account
     const [saStatus, setSaStatus] = useState('loading');
     const [saInfo, setSaInfo] = useState({ projectId: '', clientEmail: '', privateKeySet: false });
+    const [runtimeRotationEnabled, setRuntimeRotationEnabled] = useState(false);
     const [saFields, setSaFields] = useState({ projectId: '', clientEmail: '', privateKey: '' });
     const [showPrivateKey, setShowPrivateKey] = useState(false);
     const [saJsonPaste, setSaJsonPaste] = useState('');
@@ -87,9 +89,9 @@ const FirebaseSettings = () => {
     const fetchSaStatus = async () => {
         setSaStatus('loading');
         try {
-            const res = await fetch('/api/admin/firebase-service-account');
-            const data = await res.json();
+            const { data } = await fetchAdminWithReauth('/api/admin/firebase-service-account');
             if (data.success) {
+                setRuntimeRotationEnabled(data.runtimeRotationEnabled === true);
                 const info = {
                     projectId: data.projectId || '',
                     clientEmail: data.clientEmail || '',
@@ -179,16 +181,11 @@ const FirebaseSettings = () => {
         setSavingSa(true);
         setSaStatusMsg(null);
         try {
-            const res = await fetch('/api/admin/firebase-service-account', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    projectId: projectId.trim(),
-                    clientEmail: clientEmail.trim(),
-                    privateKey: privateKey.trim(),
-                }),
+            const { response: res, data } = await fetchAdminWithReauth('/api/admin/firebase-service-account', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ projectId: projectId.trim(), clientEmail: clientEmail.trim(), privateKey: privateKey.trim() }),
             });
-            const data = await res.json();
+            if (!res.ok) throw new Error(data.error?.message || data.error || 'Credential rotation failed.');
             if (data.success) {
                 setSaStatusMsg({ type: 'success', text: `Admin SDK active for project: ${data.projectId}` });
                 setSaFields(prev => ({ ...prev, privateKey: '' }));
@@ -207,12 +204,14 @@ const FirebaseSettings = () => {
     };
 
     const handleOpenEdit = () => {
+        if (!runtimeRotationEnabled) { setSaStatusMsg({ type: 'error', text: 'Runtime credential changes are disabled. Use Workload Identity or the deployment Secret Manager.' }); return; }
         setSaEditMode('edit');
         setShowSaSection(true);
         setSaStatusMsg(null);
     };
 
     const handleOpenRotate = () => {
+        if (!runtimeRotationEnabled) { setSaStatusMsg({ type: 'error', text: 'Runtime credential rotation is disabled. Use Workload Identity or the deployment Secret Manager.' }); return; }
         setSaEditMode('rotate');
         setShowSaSection(true);
         setSaStatusMsg(null);
@@ -341,7 +340,7 @@ const FirebaseSettings = () => {
 
                 {/* ── Header row ── */}
                 <button type="button"
-                    onClick={() => { setShowSaSection(v => !v); if (!showSaSection) setSaEditMode(isConfigured ? 'view' : 'edit'); }}
+                    onClick={() => { setShowSaSection(v => !v); if (!showSaSection) setSaEditMode(isConfigured || !runtimeRotationEnabled ? 'view' : 'edit'); }}
                     className="w-full flex items-center justify-between px-5 py-4 bg-white hover:bg-slate-50 transition-colors text-left">
                     <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
@@ -357,6 +356,8 @@ const FirebaseSettings = () => {
                         {showSaSection ? <FaChevronUp className="text-slate-400 text-sm" /> : <FaChevronDown className="text-slate-400 text-sm" />}
                     </div>
                 </button>
+
+                {!runtimeRotationEnabled && <div className="border-t border-amber-200 bg-amber-50 px-5 py-3 text-xs text-amber-900">Runtime private-key changes are disabled. Configure Workload Identity or the deployment Secret Manager; this browser does not change deployment credentials.</div>}
 
                 {/* ── Configured summary bar (always visible when configured) ── */}
                 {isConfigured && (
@@ -447,7 +448,7 @@ const FirebaseSettings = () => {
                             )}
 
                             {/* ── EDIT / NEW mode: full form ── */}
-                            {(saEditMode === 'edit' || saEditMode === 'rotate' || !isConfigured) && (
+                            {runtimeRotationEnabled && (saEditMode === 'edit' || saEditMode === 'rotate' || !isConfigured) && (
                                 <form onSubmit={handleSaSave} className="space-y-4">
 
                                     {/* How-to banner */}

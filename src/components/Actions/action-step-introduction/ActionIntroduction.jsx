@@ -71,7 +71,7 @@ class ActionIntroduction extends Component {
             <div id="homepage" className="action-introWrapper">
                 <GridBackground />
                 <div className="head">
-                    <div className="brand">{conf.brand.useImg === false ? <span>{conf.brand.name}</span> : <img className="logo" src={logo} />}</div>
+                    <div className="brand">{conf.brand.useImg === false ? <span>{conf.brand.name}</span> : <img className="logo" src={logo} alt={conf.brand.name || 'ResumePilot AI'} />}</div>
                     <div className="authentication">
                         {this.props.user !== null ? (
                             <Link style={{ textDecoration: 'none' }} to={{ pathname: './dashboard' }} className="authenticationButton">
@@ -88,7 +88,7 @@ class ActionIntroduction extends Component {
                     </div>
                 </div>
                 <div className="head-mobile">
-                    <div className="brand">{conf.brand.useImg === false ? <span>{conf.brand.name}</span> : <img className="logo" src={logo} />}</div>
+                    <div className="brand">{conf.brand.useImg === false ? <span>{conf.brand.name}</span> : <img className="logo" src={logo} alt={conf.brand.name || 'ResumePilot AI'} />}</div>
                     {this.state.isMobileHeadToggle && (
                         <div className="authentication">
                             {this.props.user !== null ? (
@@ -155,7 +155,7 @@ class ActionIntroduction extends Component {
 
                         <div className="intro-body">
                             {/*  App image */}
-                            <img src={HeadPNG} className="intro-body-head" />
+                            <img src={HeadPNG} className="intro-body-head" alt="" />
 
                             {/* Reviews */}
                             <div className="intro-body-reviews-wrapper">
@@ -192,7 +192,7 @@ class ActionIntroduction extends Component {
                                     </div>
                                     {/*  right */}
                                     <div className="intro-body-features-right">
-                                        <img src={FeaturesPNG} className="features-image" />
+                                        <img src={FeaturesPNG} className="features-image" alt="" />
                                     </div>
                                 </div>
                             </div>

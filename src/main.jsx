@@ -1,7 +1,7 @@
 import './bootstrap';
-import React, { Suspense, lazy, useState, useEffect, createContext } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useRef, createContext } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, Navigate } from 'react-router-dom';
 import './tailwind.css';
 import './index.scss';
 import './cv-templates/css/globalTemplateEnhancements.css';
@@ -77,6 +77,7 @@ const BlogList = lazy(() => import('./components/Blog/BlogList/BlogList'));
 const BlogPost = lazy(() => import('./components/Blog/BlogPost/BlogPost'));
 const BlogEditor = lazy(() => import('./components/Blog/BlogEditor/BlogEditor'));
 const NotFound = () => <main className="flex min-h-screen items-center justify-center bg-slate-50 p-6"><div className="text-center"><h1 className="text-3xl font-bold text-slate-900">Page not found</h1><p className="mt-3 text-slate-600">The requested page does not exist or is no longer available.</p><Link to="/" className="mt-5 inline-block rounded-lg bg-slate-900 px-4 py-2 text-white">Return home</Link></div></main>;
+const RequireAuthenticated = ({ user, children }) => user ? children : <Navigate to="/login" replace />;
 import ResetPasswordModal from './components/auth/resetPassword/ResetPasswordModal';
 import RouteSeo from './components/RouteSeo';
 import RouteFocus from './components/RouteFocus';
@@ -89,6 +90,7 @@ const AuthWrapper = () => {
     const [directResetEmail, setDirectResetEmail] = useState(null);
     const [verificationBanner, setVerificationBanner] = useState(null);
     const [maintenance, setMaintenance] = useState({ loading: true, enabled: false, message: '', admin: false });
+    const previousUserUid = useRef(null);
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -176,7 +178,14 @@ const AuthWrapper = () => {
 
         // ── STEP 3: Subscribe only to cryptographically verified Firebase sessions. ───────
         const unsubscribe = fire.auth().onAuthStateChanged((authenticatedUser) => {
-            if (!authenticatedUser) clearAccountScopedBrowserState();
+            const nextUid = authenticatedUser?.uid || null;
+            if (!nextUid || (previousUserUid.current && previousUserUid.current !== nextUid)) {
+                clearAccountScopedBrowserState();
+            }
+            previousUserUid.current = nextUid;
+            if (nextUid) {
+                try { localStorage.setItem('user', nextUid); } catch { /* compatibility storage */ }
+            }
             setUser(authenticatedUser || null);
             setAuthLoading(false);
         });
@@ -285,47 +294,47 @@ const AuthWrapper = () => {
                     <RouteFocus />
                     <Suspense fallback={<Spinner />}>
                         <Routes>
-                            <Route path="/" element={<Welcome />} />
-                            <Route path="/login" element={<Welcome />} />
-                            <Route path="/coverletter" element={<CoverLetter />} />
-                            <Route path="/dashboard/*" element={<Dashboard />} />
+                            <Route path="/" element={<Welcome key={user?.uid || 'guest'} />} />
+                            <Route path="/login" element={<Welcome key={user?.uid || 'guest'} />} />
+                            <Route path="/coverletter" element={<CoverLetter key={user?.uid || 'guest'} />} />
+                            <Route path="/dashboard/*" element={<RequireAuthenticated user={user}><Dashboard key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
                             <Route path="/contact" element={<Contact user={user} />} />
-                            <Route path="/build-resume/*" element={<BuildResume />} />
-                            <Route path="/create-resume/*" element={<BuildResume />} />
-                            <Route path="/create-resume" element={<BuildResume />} />
-                            <Route path="/resume/:step" element={<Welcome />} />
-                            <Route path="/billing/plans" element={<Billing user={user} />} />
+                            <Route path="/build-resume/*" element={<BuildResume key={user?.uid || 'guest'} />} />
+                            <Route path="/create-resume/*" element={<BuildResume key={user?.uid || 'guest'} />} />
+                            <Route path="/create-resume" element={<BuildResume key={user?.uid || 'guest'} />} />
+                            <Route path="/resume/:step" element={<Welcome key={user?.uid || 'guest'} />} />
+                            <Route path="/billing/plans" element={<Billing key={user?.uid || 'guest'} user={user} />} />
                             <Route path="/p/:custompage" element={<CustomePage user={user} />} />
                             <Route path="/shared/:resumeId" element={<PublicResume />} />
-                            <Route path="/pricing" element={<Billing user={user} />} />
-                            <Route path="/portfolio/builder" element={<PortfolioBuilder />} />
+                            <Route path="/pricing" element={<Billing key={user?.uid || 'guest'} user={user} />} />
+                            <Route path="/portfolio/builder" element={<RequireAuthenticated user={user}><PortfolioBuilder key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
                             <Route path="/portfolio/:slug" element={<PublicPortfolio />} />
-                            <Route path="/portfolios" element={<PortfolioGallery />} />
-                            <Route path="/adm/*" element={<Admin />} />
+                            <Route path="/portfolios" element={<PortfolioGallery key={user?.uid || 'guest'} />} />
+                            <Route path="/adm/*" element={<RequireAuthenticated user={user}><Admin key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
                             <Route path="/front" element={<Front />} />
                             <Route path="/features" element={<Features user={user} />} />
                             <Route path="/jobs" element={<JobsLanding />} />
-                            <Route path="/jobs/portal" element={<MainJobListings />} />
-                            <Route path="/jobs/portal/:jobId" element={<MainJobListings />} />
-                            <Route path="/jobs/browse" element={<MainJobListings />} />
+                            <Route path="/jobs/portal" element={<MainJobListings key={user?.uid || 'guest'} />} />
+                            <Route path="/jobs/portal/:jobId" element={<MainJobListings key={user?.uid || 'guest'} />} />
+                            <Route path="/jobs/browse" element={<MainJobListings key={user?.uid || 'guest'} />} />
                             <Route path="/jobs/categories" element={<JobsLanding />} />
-                            <Route path="/jobs/category/:catName" element={<MainJobListings />} />
+                            <Route path="/jobs/category/:catName" element={<MainJobListings key={user?.uid || 'guest'} />} />
                             <Route path="/blog" element={<BlogList />} />
                             <Route path="/blog/:slug" element={<BlogPost />} />
-                            <Route path="/blog-editor" element={<BlogEditor />} />
-                            <Route path="/blog-editor/:postId" element={<BlogEditor />} />
+                            <Route path="/blog-editor" element={<RequireAuthenticated user={user}><BlogEditor key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
+                            <Route path="/blog-editor/:postId" element={<RequireAuthenticated user={user}><BlogEditor key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
                           {/* Export routes*/}
                             {/* Generate CV template routes dynamically */}
                             {Array.from({ length: 51 }, (_, i) => i + 1).map((num) => (
-                                <Route key={`cv-route-${num}`} path={`/export/Cv${num}/:resumeId/:language`} element={<Exporter resumeName={`Cv${num}`} export={true} />} />
+                                <Route key={`cv-route-${num}`} path={`/export/Cv${num}/:resumeId/:language`} element={<RequireAuthenticated user={user}><Exporter key={user?.uid || 'unauthenticated'} resumeName={`Cv${num}`} export={true} /></RequireAuthenticated>} />
                             ))}
                              {/* Dashboard2 mapped to main User Dashboard */}
-                             <Route path="/dashboard2/*" element={<Dashboard />} />
-                             <Route path="/dashboard2" element={<Dashboard />} />
+                             <Route path="/dashboard2/*" element={<RequireAuthenticated user={user}><Dashboard key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
+                             <Route path="/dashboard2" element={<RequireAuthenticated user={user}><Dashboard key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
                             {/* Covers export routes */}
                             {/* Generate Cover Letter routes dynamically */}
                             {Array.from({ length: 4 }, (_, i) => i + 1).map((num) => (
-                                <Route key={`cover-route-${num}`} path={`/export/Cover${num}/:resumeId/:language`} element={<Exporter resumeName={`Cover${num}`} export={true} />} />
+                                <Route key={`cover-route-${num}`} path={`/export/Cover${num}/:resumeId/:language`} element={<RequireAuthenticated user={user}><Exporter key={user?.uid || 'unauthenticated'} resumeName={`Cover${num}`} export={true} /></RequireAuthenticated>} />
                             ))}
                             <Route path="*" element={<NotFound />} />
                         </Routes>

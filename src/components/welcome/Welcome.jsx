@@ -33,6 +33,11 @@ class Welcome extends Component {
     constructor(props) {
         super(props);
 
+        this._isMounted = false;
+        this._authGeneration = 0;
+        this._activeUserUid = null;
+        this.unsubscribeAuth = null;
+
         // Configuration constants
         this.steps = ['Introduction', 'Template Selection', 'Adding Data', 'Cover Filling', 'Action Cover Selection', 'Action Cover Filling'];
 
@@ -51,7 +56,9 @@ class Welcome extends Component {
 
     // Helper for getting processed current resume from localStorage
     getProcessedCurrentResume() {
-        const currentResume = JSON.parse(localStorage.getItem('currentResumeItem'));
+        let currentResume = null;
+        try { currentResume = JSON.parse(localStorage.getItem('currentResumeItem')); }
+        catch { localStorage.removeItem('currentResumeItem'); }
 
         if (currentResume !== null) {
             // Remove nulls from arrays in current resume
@@ -240,42 +247,70 @@ class Welcome extends Component {
         return null;
     }
 
+    resetAccountBuilderState(user = null) {
+        this.currentResume = null;
+        const clean = this.getInitialState();
+        this.setState(current => ({
+            ...clean,
+            metaDataFetched: current.metaDataFetched,
+            websiteTitle: current.websiteTitle,
+            websiteDescription: current.websiteDescription,
+            websiteKeywords: current.websiteKeywords,
+            websiteLanguage: current.websiteLanguage,
+            subscriptionsStatus: current.subscriptionsStatus,
+            pages: current.pages,
+            loaded: current.loaded,
+            language: current.language,
+            user,
+            email: user?.email || '',
+        }));
+    }
+
     // Check user authentication status
     authListener() {
-        fire.auth().onAuthStateChanged(async (user) => {
-            if (user) {
-                const suspended = await checkIfSuspended(user.uid);
-                if (suspended) {
-                    signOutUser();
-                    alert('Your account has been temporarily suspended by an administrator. Please contact support.');
-                    this.setState({ user: null });
-                    return;
-                }
-                // User Logged in
-                this.setState({ user: user, email: user.email });
-                localStorage.setItem('user', user.uid);
-                this.fetchUserMembership(user.uid);
-            } else {
-                this.setState({ user: null });
-                localStorage.removeItem('user');
+        this.unsubscribeAuth?.();
+        this.unsubscribeAuth = fire.auth().onAuthStateChanged(async user => {
+            const generation = ++this._authGeneration;
+            if (!this._isMounted) return;
+            const previousUid = this._activeUserUid;
+            const nextUid = user?.uid || null;
+            this._activeUserUid = nextUid;
+            if (!user) {
+                if (previousUid) this.resetAccountBuilderState(null);
+                else this.setState({ user: null, email: '', membership: 'Basic', membershipEnds: null });
+                try { localStorage.removeItem('user'); } catch { /* compatibility storage */ }
+                return;
             }
+            if (previousUid && previousUid !== nextUid) this.resetAccountBuilderState(user);
+            // Reset account-derived fields before any asynchronous A → B transition work.
+            this.setState({ user, email: user.email, membership: 'Basic', membershipEnds: null });
+            try { localStorage.setItem('user', user.uid); } catch { /* compatibility storage */ }
+            const suspended = await checkIfSuspended(user.uid);
+            if (!this._isMounted || generation !== this._authGeneration || fire.auth().currentUser?.uid !== user.uid) return;
+            if (suspended) {
+                await signOutUser();
+                alert('Your account has been temporarily suspended by an administrator. Please contact support.');
+                return;
+            }
+            await this.fetchUserMembership(user.uid, generation);
         });
     }
 
-    // Fetch user membership information
-    fetchUserMembership(userId) {
-        getUserMembership(userId).then((value) => {
+    // Fetch user membership information without allowing a previous account's response
+    // to populate a newly authenticated account's builder.
+    async fetchUserMembership(userId, generation) {
+        try {
+            const value = await getUserMembership(userId);
+            if (!this._isMounted || generation !== this._authGeneration || fire.auth().currentUser?.uid !== userId) return;
             if (value.membershipEnds != undefined && typeof value.membershipEnds != 'string') {
-                this.setState({
-                    membership: value.membership,
-                    membershipEnds: value.membershipEnds.toDate(),
-                });
-
-                checkSbs().then((val) => {
-                    if (val === 'false') this.setState({ membership: 'Basic' });
-                }).catch(() => this.setState({ membership: 'Basic' }));
+                this.setState({ membership: value.membership, membershipEnds: value.membershipEnds.toDate() });
+                const subscriptionsDisabled = await checkSbs();
+                if (!this._isMounted || generation !== this._authGeneration || fire.auth().currentUser?.uid !== userId) return;
+                if (subscriptionsDisabled === 'false') this.setState({ membership: 'Basic' });
             }
-        });
+        } catch (error) {
+            if (this._isMounted && generation === this._authGeneration) console.warn('Membership unavailable:', error.message);
+        }
     }
 
     // Go to cover selection step
@@ -382,8 +417,15 @@ class Welcome extends Component {
     }
 
     componentDidMount() {
+        this._isMounted = true;
         this.fetchInitialData();
         this.initializeUserState();
+    }
+
+    componentWillUnmount() {
+        this._isMounted = false;
+        this._authGeneration += 1;
+        this.unsubscribeAuth?.();
     }
 
     // Fetch initial data
@@ -1148,7 +1190,7 @@ class Welcome extends Component {
 
     // Toggle auth modal
     authBtnHandler() {
-        if (localStorage.getItem('user') == null) {
+        if (!fire.auth().currentUser) {
             this.setState((prevState) => ({ isAuthShowed: !prevState.isAuthShowed }));
         } else {
             this.setState({ isAuthShowed: false });

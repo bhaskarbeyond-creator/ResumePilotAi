@@ -139,7 +139,7 @@ class ResumesList extends Component {
                                     display: 'flex',
                                     flexDirection: 'column',
                                 }}>
-                                <img className="noResumesImage" src={addResumesImage} />
+                                <img className="noResumesImage" src={addResumesImage} alt="" />
                                 <Link onClick={() => { localStorage.removeItem('currentResumeId'); localStorage.removeItem('currentResumeItem'); }} style={{ textDecoration: 'none ' }} to="/build-resume/heading">
                                     <span className="btn-default"> {t('dashboard.addResume')} </span>
                                 </Link>

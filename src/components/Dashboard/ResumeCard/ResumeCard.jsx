@@ -85,7 +85,9 @@ class ResumeCard extends Component {
         }
     };
     handleCoverRemoveClick = async (id) => {
-        let res = await removeCover(localStorage.getItem('user'), id);
+        const userId = fire.auth().currentUser?.uid;
+        if (!userId) return;
+        let res = await removeCover(userId, id);
         if (res) {
             this.props.getAllDocuments();
         }

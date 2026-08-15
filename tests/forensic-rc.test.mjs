@@ -46,11 +46,13 @@ test('employer and application queries use deployed indexes without collection s
 });
 
 test('all Firebase sign-outs clear account-scoped legacy browser state through the auth listener', async () => {
-  const [main, signOut, checkout] = await Promise.all([
-    fs.readFile('src/main.jsx', 'utf8'), fs.readFile('src/utils/signOut.js', 'utf8'), fs.readFile('src/components/Billing/Plans/Checkout.jsx', 'utf8'),
+  const [main, signOut, browserState, checkout] = await Promise.all([
+    fs.readFile('src/main.jsx', 'utf8'), fs.readFile('src/utils/signOut.js', 'utf8'),
+    fs.readFile('src/utils/browserState.js', 'utf8'), fs.readFile('src/components/Billing/Plans/Checkout.jsx', 'utf8'),
   ]);
-  assert.match(main, /if \(!authenticatedUser\) clearAccountScopedBrowserState\(\)/);
-  for (const key of ['currentResumeId', 'currentCoverId', 'resumeData', 'interviewProgress', 'user_session']) assert.match(signOut, new RegExp(key));
+  assert.match(main, /!nextUid \|\| \(previousUserUid\.current && previousUserUid\.current !== nextUid\)/);
+  assert.match(signOut, /clearAccountScopedBrowserState\(\)/);
+  for (const key of ['currentResumeId', 'currentCoverId', 'resumeData', 'interviewProgress', 'user_session']) assert.match(browserState, new RegExp(key));
   assert.doesNotMatch(checkout, /localStorage\.getItem\(['"]user/);
 });
 

@@ -25,6 +25,7 @@ before(async () => {
     await setDoc(doc(db, 'jobApplications/application-1'), {
       userId: 'alice', jobId: 'active-job', applicantEmail: 'alice@example.com', email: 'alice@example.com', status: 'pending'
     });
+    await setDoc(doc(db, 'notifications/alice/userNotifications/notice-1'), { title: 'Notice', message: 'Created by backend', read: false });
     await setDoc(doc(db, 'pb/public-resume'), { id: 'public-resume', ownerUid: 'alice', isPublished: true, publicationMode: 'explicit', object: '{}' });
     await setDoc(doc(db, 'pb/legacy-autosave'), { id: 'legacy-autosave', ownerUid: 'alice', isPublished: true, object: '{"email":"private@example.com"}' });
     await setDoc(doc(db, 'payment_orders/order-a'), { uid: 'alice', status: 'ACTIVE', planId: 'monthly' });
@@ -116,7 +117,7 @@ test('employer applications are owner-bound and cannot self-approve', async () =
 
 test('company moderation is backend-only while employer-owned pending edits remain available', async () => {
   await assertSucceeds(getDoc(doc(admin(), 'companies/draft-company')));
-  await assertSucceeds(updateDoc(doc(employer(), 'companies/draft-company'), { name: 'Updated Draft Co' }));
+  await assertFails(updateDoc(doc(employer(), 'companies/draft-company'), { name: 'Updated Draft Co' }));
   await assertFails(updateDoc(doc(employer(), 'companies/draft-company'), { status: 'approved' }));
   await assertFails(updateDoc(doc(admin(), 'companies/draft-company'), { status: 'approved' }));
   await assertFails(deleteDoc(doc(admin(), 'companies/draft-company')));
@@ -134,7 +135,7 @@ test('private job tracker requires monotonic revisions', async () => {
 test('jobs expose active listings only and employer edits cannot self-approve', async () => {
   await assertSucceeds(getDoc(doc(anonymous(), 'jobs/active-job')));
   await assertFails(getDoc(doc(anonymous(), 'jobs/draft-job')));
-  await assertSucceeds(setDoc(doc(employer(), 'jobs/new-job'), {
+  await assertFails(setDoc(doc(employer(), 'jobs/new-job'), {
     employerId: 'employer', status: 'pending', applicationsCount: 0, title: 'New role'
   }));
   await assertFails(setDoc(doc(employer(), 'jobs/self-approved'), {
@@ -145,25 +146,24 @@ test('jobs expose active listings only and employer edits cannot self-approve', 
   await assertFails(deleteDoc(doc(admin(), 'jobs/draft-job')));
 });
 
-test('job applications bind applicant identity and only job owner may change status', async () => {
-  await assertSucceeds(getDoc(doc(alice(), 'jobApplications/alice_active-job')));
-  await assertFails(getDoc(doc(bob(), 'jobApplications/alice_active-job')));
-  await assertSucceeds(setDoc(doc(alice(), 'jobApplications/alice_application-2'), {
+test('job applications are readable only by participants while every lifecycle write is backend-only', async () => {
+  await assertSucceeds(getDoc(doc(alice(), 'jobApplications/application-1')));
+  await assertFails(getDoc(doc(bob(), 'jobApplications/application-1')));
+  await assertSucceeds(getDoc(doc(employer(), 'jobApplications/application-1')));
+  await assertFails(setDoc(doc(alice(), 'jobApplications/alice_application-2'), {
     userId: 'alice', jobId: 'active-job', applicantEmail: 'alice@example.com', email: 'alice@example.com', status: 'pending'
   }));
-  await assertFails(setDoc(doc(alice(), 'jobApplications/alice_forged-applicant'), {
-    userId: 'bob', jobId: 'active-job', applicantEmail: 'bob@example.com', email: 'bob@example.com', status: 'pending'
-  }));
-  await assertFails(setDoc(doc(bob(), 'jobApplications/alice_reserved-by-bob'), {
-    userId: 'bob', jobId: 'active-job', applicantEmail: 'bob@example.com', email: 'bob@example.com', status: 'pending'
-  }));
-  await assertFails(setDoc(doc(alice(), 'jobApplications/alice_draft-application'), {
-    userId: 'alice', jobId: 'draft-job', applicantEmail: 'alice@example.com', email: 'alice@example.com', status: 'pending'
-  }));
-  await assertSucceeds(getDoc(doc(employer(), 'jobApplications/application-1')));
-  await assertSucceeds(updateDoc(doc(employer(), 'jobApplications/application-1'), { status: 'interview', statusUpdatedAt: new Date() }));
-  await assertFails(updateDoc(doc(alice(), 'jobApplications/application-1'), { status: 'accepted' }));
-  await assertFails(updateDoc(doc(employer(), 'jobApplications/application-1'), { userId: 'bob', status: 'accepted' }));
+  await assertFails(updateDoc(doc(employer(), 'jobApplications/application-1'), { status: 'interview', statusUpdatedAt: new Date() }));
+  await assertFails(updateDoc(doc(admin(), 'jobApplications/application-1'), { status: 'accepted' }));
+  await assertFails(deleteDoc(doc(alice(), 'jobApplications/application-1')));
+  await assertFails(updateDoc(doc(alice(), 'jobs/active-job'), { applicationsCount: 1, updatedAt: new Date() }));
+});
+
+test('notification reads are owner-only and browser producers cannot forge notifications', async () => {
+  await assertSucceeds(getDoc(doc(alice(), 'notifications/alice/userNotifications/notice-1')));
+  await assertFails(getDoc(doc(bob(), 'notifications/alice/userNotifications/notice-1')));
+  await assertSucceeds(updateDoc(doc(alice(), 'notifications/alice/userNotifications/notice-1'), { read: true }));
+  await assertFails(setDoc(doc(alice(), 'notifications/alice/userNotifications/forged'), { title: 'Forged', message: 'Browser authored', read: false }));
 });
 
 test('blog drafts are private and direct writes enforce revisions, fields, bounds, and trusted publication', async () => {
@@ -184,11 +184,10 @@ test('blog drafts are private and direct writes enforce revisions, fields, bound
 
   await assertSucceeds(setDoc(doc(alice(), 'blog_posts/alice_review'), basePost('pending', 'Review')));
   await assertFails(updateDoc(doc(alice(), 'blog_posts/alice_review'), { status: 'scheduled', scheduledAt: new Date(Date.now() + 60000), revision: 2, updatedAt: new Date() }));
-  await assertSucceeds(updateDoc(doc(admin(), 'blog_posts/alice_review'), { status: 'scheduled', scheduledAt: new Date(Date.now() + 60000), publishedAt: null, revision: 2, updatedAt: new Date() }));
+  await assertFails(updateDoc(doc(admin(), 'blog_posts/alice_review'), { status: 'scheduled', scheduledAt: new Date(Date.now() + 60000), publishedAt: null, revision: 2, updatedAt: new Date() }));
+  await assertFails(updateDoc(doc(admin(), 'blog_posts/alice_review'), { status: 'approved', scheduledAt: null, publishedAt: new Date(), revision: 2, updatedAt: new Date() }));
+  await assertFails(deleteDoc(doc(admin(), 'blog_posts/alice_review')));
   await assertFails(getDoc(doc(anonymous(), 'blog_posts/alice_review')));
-  await assertSucceeds(updateDoc(doc(admin(), 'blog_posts/alice_review'), { status: 'approved', scheduledAt: null, publishedAt: new Date(), revision: 3, updatedAt: new Date() }));
-  await assertFails(deleteDoc(doc(alice(), 'blog_posts/alice_review')));
-  await assertSucceeds(getDoc(doc(anonymous(), 'blog_posts/alice_review')));
 });
 
 test('billing, provider secrets and token registries are server-only', async () => {
@@ -208,6 +207,7 @@ test('billing, provider secrets and token registries are server-only', async () 
   await assertFails(setDoc(doc(admin(), 'settings/admin_configuration'), { smtp: { password: 'browser-secret' } }));
   await assertFails(setDoc(doc(admin(), 'reviews/direct-admin-review'), { status: 'approved', review: 'bypass' }));
   await assertFails(setDoc(doc(admin(), 'trustedBy/direct-admin-logo'), { name: 'Bypass', imageUrl: 'https://example.com/logo.png' }));
+  await assertFails(setDoc(doc(admin(), 'ads/direct-admin-ad'), { name: 'Bypass', imageLink: 'https://example.com/ad.png' }));
   await assertFails(setDoc(doc(admin(), 'data/frontendstats'), { activeJobs: 'fake' }));
   await assertFails(setDoc(doc(admin(), 'data/public_config'), { ai: { provider: 'attacker' } }, { merge: true }));
   await assertFails(getDoc(doc(admin(), 'password_reset_tokens/token')));

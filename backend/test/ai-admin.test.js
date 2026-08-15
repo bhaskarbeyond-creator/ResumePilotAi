@@ -44,12 +44,12 @@ test('AI Admin public settings preserve all six providers and fallback controls'
 
 test('authorized AI settings save is revisioned, audited, split, and never returns secrets', async () => {
   const db = fakeDb({ 'data/public_config': { ai: {}, aiRevision: 0 }, 'settings/ai_providers': {}, 'data/system_settings': {} });
-  const input = { ...baseInput, nvidiaApiKey: 'nvapi-secret-value-123' };
+  const input = { ...baseInput, nvidiaApiKey: 'fixture-nvidia-key-value' };
   const result = await saveAiAdminSettings({ db, admin, input, expectedRevision: 0, actorUid: 'admin-1', requestId: 'req-1' });
   assert.equal(result.revision, 1);
   assert.equal(result.configuredProviders.nvidia, true);
-  assert.doesNotMatch(JSON.stringify(result), /nvapi-secret-value-123/);
-  assert.equal(db.store.get('settings/ai_providers').nvidia.apiKey, 'nvapi-secret-value-123');
+  assert.doesNotMatch(JSON.stringify(result), /fixture-nvidia-key-value/);
+  assert.equal(db.store.get('settings/ai_providers').nvidia.apiKey, 'fixture-nvidia-key-value');
   assert.equal(db.store.get('data/public_config').ai.provider, 'nvidia');
   assert.ok([...db.store.values()].some(value => value?.action === 'AI_PROVIDER_SETTINGS_UPDATED'));
   await assert.rejects(() => saveAiAdminSettings({ db, admin, input, expectedRevision: 0, actorUid: 'admin-1' }), error => error.code === 'AI_SETTINGS_CONFLICT');

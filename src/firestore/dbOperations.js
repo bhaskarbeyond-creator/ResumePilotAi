@@ -5,6 +5,7 @@ import firebase from 'firebase/compat/app';
 import { JOB_TRACKER_STATUSES, normalizeTrackedJob, validateTrackedJob } from '../utils/jobTracker';
 import { blogPostFitsFirestore, normalizeBlogPost } from '../utils/blogData';
 import { normalizeProfileData, profileFitsFirestore } from '../utils/profileData';
+import { fetchAdminWithReauth } from '../services/adminReauth';
 
 // Utility function to wait for authentication state
 export const waitForAuth = () => {
@@ -1023,37 +1024,13 @@ export async function reactivateEmployerApplication(userId, expectedStatus = und
 // ==================== COMPANY MANAGEMENT FUNCTIONS ====================
 // Create a new company
 export async function createCompany(employerId, companyData) {
-    const db = fire.firestore();
+    const user = fire.auth().currentUser;
+    if (!user || user.uid !== employerId) return { success: false, error: 'Approved employer sign-in is required.' };
     try {
-
-        const finalCompanyData = {
-            employerId: employerId,
-            ...companyData,
-            status: 'pending', // Companies need approval
-            // Job statistics - initialized when company is created
-            stats: {
-                totalJobs: 0,
-                activeJobs: 0,
-                expiredJobs: 0,
-                totalApplications: 0,
-                lastJobPosted: null,
-            },
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        };
-
-
-        const companyRef = await db.collection('companies').add(finalCompanyData);
-
-
-        return { success: true, companyId: companyRef.id };
-    } catch (error) {
-        console.error('❌ Error creating company:', error);
-        console.error('Error code:', error.code);
-        console.error('Error message:', error.message);
-        console.error('Full error:', error);
-        return { success: false, error: error.message };
-    }
+        const response = await fetch('/api/employer/companies', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: companyData }) });
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success ? result : { success: false, error: result.error?.message || result.error || 'Unable to create company.', code: result.code };
+    } catch (error) { return { success: false, error: error.message }; }
 }
 
 // Get companies for an employer
@@ -1141,36 +1118,21 @@ export async function getApprovedEmployerCompanies(employerId) {
 }
 
 // Update a company
-export async function updateCompany(companyId, companyData) {
-    const db = fire.firestore();
+export async function updateCompany(companyId, companyData, expectedRevision = 0) {
     try {
-
-        const updateData = {
-            ...companyData,
-            updatedAt: new Date(),
-        };
-
-        await db.collection('companies').doc(companyId).update(updateData);
-
-        return { success: true };
-    } catch (error) {
-        console.error('❌ Error updating company:', error);
-        return { success: false, error: error.message };
-    }
+        const response = await fetch(`/api/employer/companies/${encodeURIComponent(companyId)}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: companyData, expectedRevision }) });
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success ? result : { success: false, error: result.error?.message || result.error || 'Unable to update company.', code: result.code };
+    } catch (error) { return { success: false, error: error.message }; }
 }
 
-// Delete a company
-export async function deleteCompany(companyId) {
-    const db = fire.firestore();
+// Delete a company only after revision and dependent-job checks.
+export async function deleteCompany(companyId, expectedRevision = 0) {
     try {
-
-        await db.collection('companies').doc(companyId).delete();
-
-        return { success: true };
-    } catch (error) {
-        console.error('❌ Error deleting company:', error);
-        return { success: false, error: error.message };
-    }
+        const response = await fetch(`/api/employer/companies/${encodeURIComponent(companyId)}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expectedRevision }) });
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success ? result : { success: false, error: result.error?.message || result.error || 'Unable to delete company.', code: result.code };
+    } catch (error) { return { success: false, error: error.message }; }
 }
 
 // Admin functions for company management
@@ -1281,32 +1243,13 @@ export async function getFeaturedCompanies(limit = 8) {
 // ==================== JOB POSTING FUNCTIONS ====================
 // Create a new job posting
 export async function createJobPosting(employerId, jobData) {
-    const db = fire.firestore();
+    const user = fire.auth().currentUser;
+    if (!user || user.uid !== employerId) return { success: false, error: 'Approved employer sign-in is required.' };
     try {
-
-        const finalJobData = {
-            employerId: employerId,
-            ...jobData,
-            // Don't override status if it's already set in jobData
-            status: jobData.status || 'active',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            applicationsCount: 0,
-            viewsCount: 0,
-        };
-
-
-        const jobRef = await db.collection('jobs').add(finalJobData);
-
-
-        return { success: true, jobId: jobRef.id };
-    } catch (error) {
-        console.error('❌ Error creating job posting:', error);
-        console.error('Error code:', error.code);
-        console.error('Error message:', error.message);
-        console.error('Full error:', error);
-        return { success: false, error: error.message };
-    }
+        const response = await fetch('/api/employer/jobs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: jobData }) });
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success ? result : { success: false, error: result.error?.message || result.error || 'Unable to create job.', code: result.code };
+    } catch (error) { return { success: false, error: error.message }; }
 }
 
 // Get paginated active job postings for public viewing
@@ -1480,34 +1423,26 @@ export async function getEmployerJobs(employerId) {
     return snapshot.docs.map(document => ({ id: document.id, ...document.data() }));
 }
 
-// Update job posting
-export async function updateJobPosting(jobId, updateData) {
-    const db = fire.firestore();
+// Update job posting through the revision-safe employer API.
+export async function updateJobPosting(jobId, updateData, expectedRevision = 0) {
     try {
-        await db
-            .collection('jobs')
-            .doc(jobId)
-            .update({
-                ...updateData,
-                updatedAt: new Date(),
-            });
-
-        return { success: true };
-    } catch (error) {
-        console.error('Error updating job posting:', error);
-        return { success: false, error: error.message };
-    }
+        const statusOnly = Object.keys(updateData || {}).length === 1 && Object.hasOwn(updateData, 'status');
+        const response = await fetch(`/api/employer/jobs/${encodeURIComponent(jobId)}`, {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(statusOnly ? { status: updateData.status, expectedRevision } : { data: updateData, expectedRevision }),
+        });
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success ? result : { success: false, error: result.error?.message || result.error || 'Unable to update job.', code: result.code };
+    } catch (error) { return { success: false, error: error.message }; }
 }
 
-// Delete an employer-owned job posting (ownership is enforced by Firestore rules).
-export async function deleteJobPosting(jobId) {
-    const db = fire.firestore();
+// Delete an employer-owned job only after revision and application checks.
+export async function deleteJobPosting(jobId, expectedRevision = 0) {
     try {
-        await db.collection('jobs').doc(jobId).delete();
-        return { success: true };
-    } catch (error) {
-        return { success: false, error: error.message };
-    }
+        const response = await fetch(`/api/employer/jobs/${encodeURIComponent(jobId)}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expectedRevision }) });
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success ? result : { success: false, error: result.error?.message || result.error || 'Unable to delete job.', code: result.code };
+    } catch (error) { return { success: false, error: error.message }; }
 }
 
 // Administrative deletion is server-authoritative, stale-target checked, and audited.
@@ -1549,153 +1484,29 @@ export async function getJobApplications(jobId) {
     }
 }
 
-// Submit a job application
+// Submit a job application through the ownership-bound backend transaction.
 export async function submitJobApplication(userId, jobId, applicationData) {
-    const db = fire.firestore();
+    const currentUser = fire.auth().currentUser;
+    if (!currentUser || currentUser.uid !== userId) return { success: false, error: 'Sign in again before applying.' };
     try {
-        // Validate required fields
-        if (!userId) {
-            return { success: false, error: 'User ID is required' };
-        }
-        if (!jobId) {
-            return { success: false, error: 'Job ID is required' };
-        }
-        if (!applicationData.fullName || !applicationData.email) {
-            return { success: false, error: 'Full name and email are required' };
-        }
-
-        // Check if user has already applied to this job
-        const existingApplicationQuery = await db.collection('jobApplications').where('userId', '==', userId).where('jobId', '==', jobId).get();
-
-        if (!existingApplicationQuery.empty) {
-            return { success: false, error: 'You have already applied to this job' };
-        }
-
-        // Get job details for notification
-        const jobDoc = await db.collection('jobs').doc(jobId).get();
-        const jobData = jobDoc.exists ? jobDoc.data() : null;
-
-        // Prepare application data - ensure no undefined values
-        const finalApplicationData = {
-            userId: userId || '',
-            jobId: jobId || '',
-            applicantName: applicationData.fullName || '',
-            applicantEmail: applicationData.email || '',
-            fullName: applicationData.fullName || '',
-            email: applicationData.email || '',
-            phone: applicationData.phone || '',
-            linkedinUrl: applicationData.linkedinUrl || '',
-            githubUrl: applicationData.githubUrl || '',
-            coverLetter: applicationData.coverLetter || '',
-            selectedResume: applicationData.selectedResume ? {
-                id: applicationData.selectedResume.id || '',
-                name: applicationData.selectedResume.name || '',
-                shareableLink: applicationData.selectedResume.shareableLink || '',
-                data: applicationData.selectedResume.data || null
-            } : null,
-            resumeId: applicationData.selectedResume?.id || '',
-            resumeUrl: applicationData.selectedResume?.shareableLink || '',
-            status: 'pending',
-            appliedAt: new Date(),
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            jobSnapshot: jobData ? {
-                title: jobData.title || '',
-                company: jobData.company || '',
-                location: jobData.location || '',
-                country: jobData.country || '',
-                minSalary: jobData.minSalary ?? null,
-                maxSalary: jobData.maxSalary ?? null,
-                jobType: jobData.jobType || jobData.type || '',
-                workMode: jobData.workMode || '',
-                description: String(jobData.description || '').slice(0, 10000),
-                requirements: Array.isArray(jobData.requirements) ? jobData.requirements.slice(0, 50) : [],
-            } : null,
-            // Add fields that might be missing to prevent undefined values
-            skills: [], // Initialize as empty array
-            experience: '', // Initialize as empty string
-            appliedDate: new Date(), // Ensure we have a date field
-        };
-
-        // Deep sanitization function to remove undefined values recursively
-        const sanitizeObject = (obj) => {
-            if (obj === null || obj === undefined) {
-                return null;
-            }
-            
-            if (Array.isArray(obj)) {
-                return obj.map(item => sanitizeObject(item));
-            }
-            
-            if (typeof obj === 'object') {
-                const sanitized = {};
-                Object.keys(obj).forEach(key => {
-                    const value = obj[key];
-                    if (value !== undefined) {
-                        sanitized[key] = sanitizeObject(value);
-                    }
-                });
-                return sanitized;
-            }
-            
-            return obj;
-        };
-
-        // Apply deep sanitization
-        const sanitizedApplicationData = sanitizeObject(finalApplicationData);
-
-        // Deterministic ownership-bound IDs plus a transaction prevent simultaneous tabs
-        // from creating duplicate applications or double-incrementing the job counter.
-        const applicationRef = db.collection('jobApplications').doc(`${userId}_${jobId}`);
-        const jobRef = db.collection('jobs').doc(jobId);
-        await db.runTransaction(async (transaction) => {
-            const existing = await transaction.get(applicationRef);
-            if (existing.exists) {
-                const duplicateError = new Error('You have already applied to this job');
-                duplicateError.code = 'already-exists';
-                throw duplicateError;
-            }
-            transaction.set(applicationRef, sanitizedApplicationData);
-            transaction.update(jobRef, {
-                applicationsCount: firebase.firestore.FieldValue.increment(1),
-                updatedAt: new Date(),
-            });
+        const response = await fetch(`/api/jobs/${encodeURIComponent(jobId)}/applications`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                fullName: applicationData.fullName,
+                phone: applicationData.phone,
+                linkedinUrl: applicationData.linkedinUrl,
+                githubUrl: applicationData.githubUrl,
+                coverLetter: applicationData.coverLetter,
+                resumeId: applicationData.selectedResume?.id || '',
+            }),
         });
-
-        // Create notification for job application
-        const jobTitle = jobData?.title || 'Unknown Job';
-        const companyName = jobData?.company || 'Unknown Company';
-        try {
-            await createNotification(userId, {
-                type: 'job_application',
-                title: 'Application Submitted',
-                message: `Your application for ${jobTitle} at ${companyName} has been submitted successfully.`,
-                data: {
-                    jobId: jobId,
-                    applicationId: applicationRef.id,
-                    jobTitle: jobTitle,
-                    company: companyName
-                }
-            });
-        } catch (notificationError) {
-            console.warn('Application saved but confirmation notification failed', notificationError);
-        }
-
-        return { success: true, applicationId: applicationRef.id };
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success
+            ? result
+            : { success: false, error: result.error?.message || result.error || 'Unable to submit application.', code: result.code };
     } catch (error) {
-        console.error('❌ Error submitting job application:', error);
-        console.error('❌ Error details:', error.message);
-        console.error('❌ Error code:', error.code);
-
-        // Provide more specific error messages
-        let errorMessage = error.message;
-        if (error.code === 'permission-denied') {
-            errorMessage = 'Permission denied. Please make sure you are logged in.';
-        } else if (error.code === 'unavailable') {
-            errorMessage = 'Service temporarily unavailable. Please try again later.';
-        }
-
-        return { success: false, error: errorMessage };
+        return { success: false, error: error.message || 'Unable to submit application.' };
     }
 }
 
@@ -1878,87 +1689,29 @@ export async function getUserJobApplications(userId) {
     }
 }
 
-// Update application status
-export async function updateApplicationStatus(applicationId, status, notes = '') {
-    const db = fire.firestore();
+// Update an application through the employer-owned, revision-safe backend transaction.
+export async function updateApplicationStatus(applicationId, status, notes = '', expected = {}) {
     try {
-        // Get the application and job details for the notification
-        const applicationDoc = await db.collection('jobApplications').doc(applicationId).get();
-        if (!applicationDoc.exists) {
-            return { success: false, error: 'Application not found' };
-        }
-        
-        const applicationData = applicationDoc.data();
-        const jobDoc = await db.collection('jobs').doc(applicationData.jobId).get();
-        const jobData = jobDoc.exists ? jobDoc.data() : null;
-        
-        // Update the application status
-        await db.collection('jobApplications').doc(applicationId).update({
-            status: status,
-            statusUpdatedAt: new Date(),
-            employerNotes: notes,
+        const response = await fetch(`/api/job-applications/${encodeURIComponent(applicationId)}/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                status, notes,
+                expectedStatus: expected.status || '',
+                expectedRevision: Number(expected.revision || 0),
+            }),
         });
-
-        // Create notification for the applicant
-        const jobTitle = jobData?.title || 'Unknown Job';
-        const companyName = jobData?.company || 'Unknown Company';
-        
-        let notificationData = {
-            data: {
-                jobId: applicationData.jobId,
-                applicationId: applicationId,
-                jobTitle: jobTitle,
-                company: companyName
-            }
-        };
-        
-        switch (status) {
-            case 'interview':
-                notificationData = {
-                    ...notificationData,
-                    type: 'application_interview',
-                    title: 'Interview Invitation',
-                    message: `Good news! You've been invited for an interview for ${jobTitle} at ${companyName}.${notes ? ' Additional notes: ' + notes : ''}`
-                };
-                break;
-            case 'accepted':
-                notificationData = {
-                    ...notificationData,
-                    type: 'application_accepted',
-                    title: 'Application Accepted',
-                    message: `Congratulations! Your application for ${jobTitle} at ${companyName} has been accepted.${notes ? ' Additional notes: ' + notes : ''}`
-                };
-                break;
-            case 'rejected':
-                notificationData = {
-                    ...notificationData,
-                    type: 'application_rejected',
-                    title: 'Application Update',
-                    message: `Thank you for your interest in ${jobTitle} at ${companyName}. Unfortunately, we have decided to move forward with other candidates.${notes ? ' Feedback: ' + notes : ''}`
-                };
-                break;
-            default:
-                notificationData = {
-                    ...notificationData,
-                    type: 'application_status_update',
-                    title: 'Application Status Update',
-                    message: `Your application status for ${jobTitle} at ${companyName} has been updated to ${status}.${notes ? ' Notes: ' + notes : ''}`
-                };
-        }
-        
-        // Send notification to the applicant
-        await createNotification(applicationData.userId, notificationData);
-        
-        return { success: true };
+        const result = await response.json().catch(() => ({}));
+        return response.ok && result.success
+            ? result
+            : { success: false, error: result.error?.message || result.error || 'Unable to update application.', code: result.code };
     } catch (error) {
-        console.error('Error updating application status:', error);
-        return { success: false, error: error.message };
+        return { success: false, error: error.message || 'Unable to update application.' };
     }
 }
 
-// Update application status with custom rejection message
-export async function updateApplicationStatusWithMessage(applicationId, status, customMessage = '') {
-    return await updateApplicationStatus(applicationId, status, customMessage);
+export async function updateApplicationStatusWithMessage(applicationId, status, customMessage = '', expected = {}) {
+    return updateApplicationStatus(applicationId, status, customMessage, expected);
 }
 
 // Admin function: Get all jobs with pagination and filtering
@@ -2347,11 +2100,10 @@ export async function setSubscriptionsData(state, month, quartarly, yearly, only
         receiptTemplate: options.receiptTemplate || 'modern',
         reverseCharge: options.reverseCharge || 'No',
     };
-    const response = await fetch('/api/admin/payment-settings', {
+    const { response, data: result } = await fetchAdminWithReauth('/api/admin/payment-settings', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(subData)
     });
-    const result = await response.json().catch(() => ({}));
     if (!response.ok || !result.success) throw new Error(result.error?.message || result.error || 'Unable to save payment settings.');
     return result;
 }
@@ -2461,46 +2213,67 @@ export async function deleteUserAccountPermanently(currentPassword) {
     return result;
 }
 
-// Export all user data as JSON (GDPR Compliant Data Portability)
+// Export browser-readable account data as JSON (GDPR data portability).
 export async function exportUserDataJSON(uid) {
-    if (!uid) {
-        const user = fire.auth().currentUser;
-        if (user) uid = user.uid;
-        else throw new Error("User not logged in");
-    }
-
+    const authenticatedUser = fire.auth().currentUser;
+    if (!authenticatedUser || (uid && uid !== authenticatedUser.uid)) throw new Error('User not logged in');
+    uid = authenticatedUser.uid;
     const db = fire.firestore();
-
-    const userDoc = await db.collection('users').doc(uid).get();
-    const profile = userDoc.exists ? userDoc.data() : {};
-
-    const resumesSnap = await db.collection('users').doc(uid).collection('resumes').get();
-    const resumes = [];
-    resumesSnap.forEach(doc => resumes.push({ id: doc.id, ...doc.data() }));
-
-    const coverSnap = await db.collection('users').doc(uid).collection('coverLetters').get();
-    const coverLetters = [];
-    coverSnap.forEach(doc => coverLetters.push({ id: doc.id, ...doc.data() }));
-
-    let transactions = [];
-    try {
-        const txnSnap = await db.collection('transactions').where('userId', '==', uid).get();
-        txnSnap.forEach(doc => transactions.push({ id: doc.id, ...doc.data() }));
-    } catch (e) {
-        console.warn('Transactions export notice:', e);
-    }
-
-    const readOwned = async (collection, field) => {
-        try { const snapshot = await db.collection(collection).where(field, '==', uid).get(); return snapshot.docs.map(document => ({ id: document.id, ...document.data() })); }
-        catch { return []; }
+    const warnings = [];
+    const readDocuments = async reference => {
+        try {
+            const snapshot = await reference.get();
+            return snapshot.docs.map(document => ({ id: document.id, ...document.data() }));
+        } catch (error) {
+            warnings.push(error.message || 'A data section was unavailable.');
+            return [];
+        }
     };
-    const [portfolios, publishedPortfolios, blogPosts, jobApplications, jobs, companies] = await Promise.all([
-        readOwned('portfolios', 'userId'), readOwned('pb', 'ownerUid'), readOwned('blog_posts', 'authorUid'),
-        readOwned('jobApplications', 'userId'), readOwned('jobs', 'employerId'), readOwned('companies', 'employerId'),
+    const readOwned = (collection, field) => readDocuments(db.collection(collection).where(field, '==', uid));
+    const userReference = db.collection('users').doc(uid);
+    const [userDoc, resumes, legacyCovers, coverLetters, favourites, privatePortfolios, jobTracker, loginHistory, nestedInvoices, nestedTransactions, notifications, transactions, portfolios, publishedPortfolios, blogPosts, jobApplications, jobs, companies, employerApplication] = await Promise.all([
+        userReference.get(),
+        readDocuments(userReference.collection('resumes')),
+        readDocuments(userReference.collection('covers')),
+        readDocuments(userReference.collection('coverLetters')),
+        readDocuments(userReference.collection('favourites')),
+        readDocuments(userReference.collection('portfolios')),
+        readDocuments(userReference.collection('jobTracker')),
+        readDocuments(userReference.collection('loginHistory')),
+        readDocuments(userReference.collection('invoices')),
+        readDocuments(userReference.collection('transactions')),
+        readDocuments(db.collection('notifications').doc(uid).collection('userNotifications')),
+        readOwned('transactions', 'userId'),
+        readOwned('portfolios', 'userId'),
+        readOwned('pb', 'ownerUid'),
+        readOwned('blog_posts', 'authorUid'),
+        readOwned('jobApplications', 'userId'),
+        readOwned('jobs', 'employerId'),
+        readOwned('companies', 'employerId'),
+        db.collection('employerApplications').doc(uid).get().catch(error => { warnings.push(error.message); return null; }),
     ]);
+
+    const messaging = { conversations: [], messagesByConversation: {} };
+    try {
+        const realtime = fire.database();
+        const index = await realtime.ref(`user-conversations/${uid}`).get();
+        for (const conversationId of Object.keys(index.val() || {})) {
+            const [conversationSnapshot, messagesSnapshot] = await Promise.all([
+                realtime.ref(`conversations/${conversationId}`).get(),
+                realtime.ref(`messages/${conversationId}`).orderByChild('timestamp').get(),
+            ]);
+            if (conversationSnapshot.exists()) messaging.conversations.push({ id: conversationId, ...conversationSnapshot.val() });
+            const messages = [];
+            messagesSnapshot.forEach(message => messages.push({ id: message.key, ...message.val() }));
+            messaging.messagesByConversation[conversationId] = messages;
+        }
+    } catch (error) { warnings.push(`Messaging export unavailable: ${error.message}`); }
+
     return {
-        exportDate: new Date().toISOString(), userId: uid, profile,
-        resumes, coverLetters, portfolios, publishedPortfolios, blogPosts, jobApplications, jobs, companies, transactions,
+        exportDate: new Date().toISOString(), userId: uid, profile: userDoc.exists ? userDoc.data() : {},
+        resumes, legacyCovers, coverLetters, favourites, privatePortfolios, jobTracker, loginHistory, nestedInvoices, nestedTransactions, notifications,
+        portfolios, publishedPortfolios, blogPosts, jobApplications, jobs, companies, transactions,
+        employerApplication: employerApplication?.exists ? employerApplication.data() : null, messaging, exportWarnings: warnings,
         note: 'Provider-held identity, payment-provider records, security audit logs, and legally retained billing records require provider/support export channels.'
     };
 }
@@ -2615,13 +2388,10 @@ export async function sendSmsNotification(toPhone, messageBody, _twilioOverride 
     if (!toPhone || !messageBody) return { success: false, error: 'Phone number and message are required' };
     try {
         const payload = { toPhone, messageBody };
-        const res = await fetch('/api/send-sms', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
+        const { response, data } = await fetchAdminWithReauth('/api/send-sms', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
         });
-        const data = await res.json();
-        return data;
+        return response.ok ? data : { success: false, error: data.error?.message || data.error || 'SMS request failed.' };
     } catch (err) {
         console.warn('Error sending SMS notification:', err);
         return { success: false, error: err.message };
@@ -2734,19 +2504,8 @@ export async function setFrontendStats(stats, expectedRevision = 0) {
 }
 // Get ads
 export async function getAds() {
-    const db = fire.firestore();
-    const adsRef = db.collection('ads');
-    var allDocs = [];
-    await adsRef.get().then((snapshot) => {
-        snapshot.forEach((item) => {
-            allDocs.push(item.data());
-        });
-    });
-    if (allDocs.length > 0) {
-        return allDocs;
-    } else {
-        return null;
-    }
+    const snapshot = await fire.firestore().collection('ads').get();
+    return snapshot.docs.map(document => ({ id: document.id, ...document.data(), revision: Number(document.data()?.revision || 0) }));
 }
 
 // ==================== BLOG MANAGEMENT FUNCTIONS ====================
@@ -2795,6 +2554,12 @@ export async function createBlogPost(userId, postData) {
 
 // Update a blog post
 export async function updateBlogPost(postId, updateData, userId = null, expectedRevision = null) {
+    if (!userId) {
+        try {
+            const { response, data: result } = await fetchAdminWithReauth(`/api/admin/blog/posts/${encodeURIComponent(postId)}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: updateData.status, scheduledAt: updateData.scheduledAt || null, expectedRevision }) });
+            return response.ok && result.success ? result : { success: false, error: result.error?.message || result.error || 'Unable to moderate post.', code: result.code };
+        } catch (error) { return { success: false, error: error.message }; }
+    }
     const db = fire.firestore();
     try {
         if (!blogPostFitsFirestore(updateData)) return { success: false, error: 'Post update is too large to save.' };
@@ -3090,6 +2855,12 @@ export async function listBlogPosts(options = {}) {
 
 // Delete a blog post
 export async function deleteBlogPost(postId, userId = null, expectedRevision = null) {
+    if (!userId) {
+        try {
+            const { response, data: result } = await fetchAdminWithReauth(`/api/admin/blog/posts/${encodeURIComponent(postId)}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expectedRevision }) });
+            return response.ok && result.success ? result : { success: false, error: result.error?.message || result.error || 'Unable to delete post.', code: result.code };
+        } catch (error) { return { success: false, error: error.message }; }
+    }
     const db = fire.firestore();
     try {
         const reference = db.collection('blog_posts').doc(postId);
@@ -3312,182 +3083,81 @@ function generateExcerpt(content, maxLength = 160) {
     return plainText.substring(0, maxLength).replace(/\s+\w*$/, '') + '...';
 }
 
-// Create a notification in the notifications collection
-export async function createNotification(userId, notificationData) {
-    const db = fire.firestore();
-    try {
-        
-        const notificationRef = db.collection('notifications').doc(userId).collection('userNotifications').doc();
-
-        const finalNotificationData = {
-            ...notificationData,
-            read: false,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        };
-        
-
-        await notificationRef.set(finalNotificationData);
-        return { success: true, notificationId: notificationRef.id };
-    } catch (error) {
-        console.error('❌ Error creating notification:', error);
-        console.error('❌ Error code:', error.code);
-        console.error('❌ Error message:', error.message);
-        return { success: false, error: error.message };
-    }
+function ownNotificationQuery(userId) {
+    const user = fire.auth().currentUser;
+    if (!user || user.uid !== userId) throw new Error('Notification account changed.');
+    return fire.firestore().collection('notifications').doc(userId).collection('userNotifications').where('read', '==', false);
 }
 
-// Get unread notifications for a user
 export async function getUnreadNotifications(userId) {
-    const db = fire.firestore();
-    try {
-        const snapshot = await db.collection('notifications').doc(userId).collection('userNotifications').where('read', '==', false).get();
-
-        const notifications = [];
-        snapshot.forEach((doc) => {
-            notifications.push({ id: doc.id, ...doc.data() });
-        });
-
-        return notifications;
-    } catch (error) {
-        console.error('❌ Error getting notifications:', error);
-        return [];
-    }
+    const snapshot = await ownNotificationQuery(userId).get();
+    return snapshot.docs.map(document => ({ id: document.id, ...document.data() }));
 }
 
-// Mark notification as read
+export function subscribeUnreadNotifications(userId, callback, errorCallback = () => {}) {
+    let active = true;
+    const query = ownNotificationQuery(userId);
+    const unsubscribe = query.onSnapshot(snapshot => {
+        if (!active || fire.auth().currentUser?.uid !== userId) return;
+        callback(snapshot.docs.map(document => ({ id: document.id, ...document.data() })));
+    }, error => {
+        if (active && fire.auth().currentUser?.uid === userId) errorCallback(error);
+    });
+    return () => { active = false; unsubscribe(); };
+}
+
 export async function markNotificationAsRead(userId, notificationId) {
-    const db = fire.firestore();
+    const user = fire.auth().currentUser;
+    if (!user || user.uid !== userId || !/^[A-Za-z0-9_-]{1,128}$/.test(String(notificationId || ''))) return { success: false, error: 'Notification account changed.' };
     try {
-        await db.collection('notifications').doc(userId).collection('userNotifications').doc(notificationId).update({
-            read: true,
-            updatedAt: new Date(),
-        });
+        await fire.firestore().collection('notifications').doc(userId).collection('userNotifications').doc(notificationId).update({ read: true, updatedAt: new Date() });
         return { success: true };
-    } catch (error) {
-        console.error('❌ Error marking notification as read:', error);
-        return { success: false, error: error.message };
-    }
-}
-
-// Test function to create a sample notification (for debugging)
-export async function testCreateNotification(userId) {
-    
-    const testNotification = {
-        type: 'test',
-        title: 'Test Notification',
-        message: 'This is a test notification to verify the system is working.',
-        data: {
-            testId: 'test-123',
-            timestamp: new Date().toISOString()
-        }
-    };
-    
-    const result = await createNotification(userId, testNotification);
-    return result;
+    } catch (error) { return { success: false, error: error.message }; }
 }
 
 //  add Ads
 export async function addAds(link, name, destinationLink) {
-    var id = makeid(5);
-    const db = fire.firestore();
-    const adsRef = db.collection('ads');
-    //  Getting the date
-    let date = new Date();
-
-    let day = date.getDate();
-    let month = date.getMonth() + 1;
-    let year = date.getFullYear();
-
-    if (month < 10) {
-        await adsRef
-            .doc(id)
-            .set({
-                id: id,
-                name: name,
-                imageLink: link,
-                date: `${day}-0${month}-${year}`,
-                destinationLink: destinationLink,
-            })
-            .then((value) => {
-                return true;
-            });
-    } else {
-        await adsRef
-            .doc(id)
-            .set({
-                id: id,
-                name: name,
-                imageLink: link,
-                date: `${day}-${month}-${year}`,
-                destinationLink: destinationLink,
-            })
-            .then((value) => {
-                return true;
-            });
-    }
+    const { response, data } = await fetchAdminWithReauth('/api/admin/ads', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageLink: link, name, destinationLink }),
+    });
+    return response.ok && data.success ? data : { success: false, error: data.error?.message || data.error || 'Unable to create advertisement.', code: data.code };
 }
 // Get pages
 export async function getPages() {
-    return safeDbOperation(async () => {
-        const db = fire.firestore();
-        const adsRef = db.collection('pages');
-        var allDocs = [];
-        const snapshot = await adsRef.get();
-        snapshot.forEach((item) => {
-            allDocs.push(item.data());
-        });
-        return allDocs.length > 0 ? allDocs : [];
-    }, false); // Set requireAuth to false for public pages
+    const response = await fetch('/public/custom-pages.json', { cache: 'no-store' });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.success) throw new Error('Public pages are unavailable.');
+    return result.pages || [];
 }
 
 // Get  page by name
 export async function getPageByName(name) {
     const db = fire.firestore();
     const snapshot = await db.collection('pages').doc(name).get();
-    if (snapshot.exists) {
-        return snapshot.data();
-    }
+    if (snapshot.exists) return snapshot.data();
+    return null;
 }
 
-// Remove  page by name
-export async function removePageByName(name) {
-    const db = fire.firestore();
-    await db
-        .collection('pages')
-        .doc(name)
-        .delete()
-        .then((value) => {
-            return true;
-        });
+export async function getAdminPages() {
+    const { response, data } = await fetchAdminWithReauth('/api/admin/pages');
+    if (!response.ok || !data.success) throw new Error(data.error?.message || data.error || 'Unable to load custom pages.');
+    return data.pages || [];
 }
 
-// Add Pages
+export async function removePageByName(name, expectedRevision = 0) {
+    const { response, data } = await fetchAdminWithReauth(`/api/admin/pages/${encodeURIComponent(name)}`, {
+        method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expectedRevision }),
+    });
+    return response.ok && data.success ? data : { success: false, error: data.error?.message || data.error || 'Unable to delete page.', code: data.code };
+}
 
-export async function addPages(pagename, pagecontent) {
-    const db = fire.firestore();
-    const adsRef = db.collection('pages');
-    //  Getting the date
-    let date = new Date();
-    let day = date.getDate();
-    let month = date.getMonth() + 1;
-    let year = date.getFullYear();
-
-    if (month < 10) {
-        await adsRef
-            .doc(pagename)
-            .set({ id: pagename, pagecontent: pagecontent, date: `${day}-0${month}-${year}` })
-            .then((value) => {
-                return true;
-            });
-    } else {
-        await adsRef
-            .doc(pagename)
-            .set({ id: pagename, pagecontent: pagecontent, date: `${day}-${month}-${year}` })
-            .then((value) => {
-                return true;
-            });
-    }
+export async function addPages(pagename, pagecontent, options = {}) {
+    const { response, data } = await fetchAdminWithReauth(`/api/admin/pages/${encodeURIComponent(pagename)}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pagecontent, title: options.title || pagename, description: options.description || '', status: options.status || 'published', expectedRevision: Number(options.expectedRevision || 0) }),
+    });
+    return response.ok && data.success ? data : { success: false, error: data.error?.message || data.error || 'Unable to save page.', code: data.code };
 }
 
 export async function getEarnings() {
@@ -3501,15 +3171,11 @@ export async function getEarnings() {
 }
 
 // Remove add
-export async function removeAd(id) {
-    const db = fire.firestore();
-    await db
-        .collection('ads')
-        .doc(id)
-        .delete()
-        .then((value) => {
-            return true;
-        });
+export async function removeAd(id, expectedRevision = 0) {
+    const { response, data } = await fetchAdminWithReauth(`/api/admin/ads/${encodeURIComponent(id)}`, {
+        method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expectedRevision }),
+    });
+    return response.ok && data.success ? data : { success: false, error: data.error?.message || data.error || 'Unable to delete advertisement.', code: data.code };
 }
 
 // Get  website details
@@ -4742,6 +4408,17 @@ export async function createConversation(applicationId) {
     }
 }
 
+export async function getConversationParticipantProfile(conversationId) {
+    try {
+        const response = await fetch(`/api/messages/conversations/${encodeURIComponent(conversationId)}/participant-profile`);
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.success) throw new Error(result.error || 'Participant profile is unavailable.');
+        return result.profile || { name: '', avatar: '' };
+    } catch (error) {
+        return { name: '', avatar: '', error: error.message };
+    }
+}
+
 export async function sendMessage(conversationId, _senderId, text) {
     try {
         const response = await fetch('/api/messages/send', {
@@ -5844,11 +5521,10 @@ export async function getSystemSettings() {
 }
 
 export async function saveSystemSettings(category, data) {
-    const response = await fetch(`/api/admin/settings/${encodeURIComponent(category)}`, {
+    const { response, data: result } = await fetchAdminWithReauth(`/api/admin/settings/${encodeURIComponent(category)}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ data, expectedRevision: Number(systemSettingsRevisions[category] || 0) }),
     });
-    const result = await response.json().catch(() => ({}));
     if (!response.ok || !result.success) throw new Error(result.error?.message || result.error || 'Unable to save settings.');
     systemSettingsRevisions = { ...systemSettingsRevisions, [category]: result.revision };
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('systemSettingsUpdated', { detail: { category, revision: result.revision } }));

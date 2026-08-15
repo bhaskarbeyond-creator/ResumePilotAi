@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
+import { fetchAdminWithReauth } from '../../../services/adminReauth';
 import { FaLinkedin, FaGithub, FaFacebook, FaGoogle, FaCheck, FaTimes, FaSpinner, FaLock, FaEye, FaEyeSlash, FaInfoCircle, FaShieldAlt } from 'react-icons/fa';
 
 const SocialAuthSettings = () => {
@@ -66,6 +67,22 @@ const SocialAuthSettings = () => {
         });
     };
 
+    const handleCredentialTest = async provider => {
+        setStatusMessage(null);
+        try {
+            const { response, data } = await fetchAdminWithReauth(`/api/auth/${provider}/test-credentials`);
+            if (!response.ok) throw new Error(data.error?.message || data.error || `${provider} configuration test failed.`);
+            setStatusMessage({
+                type: data.configured ? 'success' : 'error',
+                text: data.configured
+                    ? `${provider === 'linkedin' ? 'LinkedIn' : 'GitHub'} backend credentials are configured. Callback: ${data.callbackUrl}`
+                    : data.note,
+            });
+        } catch (error) {
+            setStatusMessage({ type: 'error', text: error.message || `${provider} configuration test failed.` });
+        }
+    };
+
     const handleSave = async (e) => {
         e.preventDefault();
         setSaving(true);
@@ -108,7 +125,7 @@ const SocialAuthSettings = () => {
     return (
         <form onSubmit={handleSave} className="space-y-6">
             {statusMessage && (
-                <div className={`p-4 rounded-lg flex items-center justify-between text-sm ${
+                <div role={statusMessage.type === 'success' ? 'status' : 'alert'} className={`p-4 rounded-lg flex items-center justify-between text-sm ${
                     statusMessage.type === 'success' ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-red-50 border border-red-200 text-red-800'
                 }`}>
                     <div className="flex items-center space-x-2">
@@ -326,19 +343,11 @@ const SocialAuthSettings = () => {
                     <button
                         type="button"
                         className="px-3 py-1 bg-sky-100 hover:bg-sky-200 text-sky-800 border border-sky-300 rounded-md font-medium transition-colors"
-                        onClick={() => {
-                            fetch('/api/auth/linkedin/test-credentials')
-                                .then(r => r.json())
-                                .then(d => alert(d.configured
-                                    ? `✅ LinkedIn credentials detected in environment.\nCallback URL: ${d.callbackUrl}`
-                                    : `⚠️ ${d.note}\n\nPlease add LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET to your server .env file.`
-                                ))
-                                .catch(() => alert('Could not reach backend. Is the server running?'));
-                        }}
+                        onClick={() => handleCredentialTest('linkedin')}
                     >
                         Test LinkedIn Config
                     </button>
-                    <span className="text-slate-400 text-[10px]">Checks if .env keys are loaded on server</span>
+                    <span className="text-slate-400 text-[10px]">Checks the active backend-only credential source</span>
                 </div>
 
             </div>
@@ -410,19 +419,11 @@ const SocialAuthSettings = () => {
                     <button
                         type="button"
                         className="px-3 py-1 bg-slate-800 hover:bg-slate-900 text-white border border-slate-700 rounded-md font-medium transition-colors"
-                        onClick={() => {
-                            fetch('/api/auth/github/test-credentials')
-                                .then(r => r.json())
-                                .then(d => alert(d.configured
-                                    ? `✅ GitHub credentials detected in environment.\nCallback URL: ${d.callbackUrl}`
-                                    : `⚠️ ${d.note}\n\nPlease add GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET to your server .env file.`
-                                ))
-                                .catch(() => alert('Could not reach backend. Is the server running?'));
-                        }}
+                        onClick={() => handleCredentialTest('github')}
                     >
                         Test GitHub Config
                     </button>
-                    <span className="text-slate-400 text-[10px]">Checks if .env keys are loaded on server</span>
+                    <span className="text-slate-400 text-[10px]">Checks the active backend-only credential source</span>
                 </div>
 
                 <div className="flex items-center space-x-2 pt-1">
