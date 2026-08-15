@@ -79,8 +79,20 @@ async function enforceDailyAiQuota(req, res, next) {
     const uidHash = crypto.createHash('sha256').update(req.user.uid).digest('hex').slice(0, 40);
     const ref = db.collection('ai_usage').doc(`${dayKey()}_${uidHash}`);
     const userSnap = await db.collection('users').doc(req.user.uid).get();
-    const tier = String(userSnap.data()?.membership || 'Basic').toLowerCase();
-    const limit = tier === 'premium'
+    const userData = userSnap.data() || {};
+    const isAdmin = Boolean(
+      req.user?.admin ||
+      userData.role === 'admin' ||
+      userData.isAdmin ||
+      userData.membership === 'Admin' ||
+      userData.membership === 'admin' ||
+      req.user?.email === 'admin@airesume.guru' ||
+      req.user?.email === 'bhaskarbeyond@gmail.com'
+    );
+    const tier = String(userData.membership || 'Basic').toLowerCase();
+    const limit = isAdmin
+      ? Number(process.env.AI_ADMIN_DAILY_LIMIT || 10000)
+      : tier === 'premium'
       ? Number(process.env.AI_PREMIUM_DAILY_LIMIT || 100)
       : Number(process.env.AI_BASIC_DAILY_LIMIT || 10);
     let count = 0;
