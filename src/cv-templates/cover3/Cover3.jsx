@@ -50,39 +50,50 @@ class Cover3Template extends Component {
 
     render() {
         const v = this.props.values || {};
+        const fullName = `${v.firstname || ''} ${v.lastname || ''}`.trim() || 'Candidate Name';
         const recipientName = v.employerFullName || v.recipientName || 'Hiring Manager';
         const addressLine = [v.address, v.city, v.postalcode || v.postalCode, v.country].filter(Boolean).join(', ');
         const companyAddressLine = [v.companyAddress, v.companyCity, v.companyPostalCode].filter(Boolean).join(', ');
+        const todayDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
         return (
-            <div id="resumen" className="cv9-board">
+            <div id="resumen" className="cover3-board">
                 <div className="cover3-content">
                     {/* Head */}
                     <div className="cover3-head">
-                        <h1>{v.firstname} {v.lastname}</h1>
-                        {v.occupation && <p className="cover3-subtitle">{v.occupation}</p>}
+                        <div className="cover3-title-area">
+                            <h1>{fullName}</h1>
+                            {v.occupation && <p className="cover3-subtitle">{v.occupation}</p>}
+                        </div>
+                        <div className="cover3-date">{todayDate}</div>
                     </div>
 
                     {/* Body */}
                     <div className="cover3-body">
                         <div className="cover3-body-left">
-                            <p>Dear {recipientName},</p>
+                            <p className="cover3-salutation">Dear {recipientName},</p>
                             {this.renderComponents()}
+
+                            <div className="cover3-signoff">
+                                <p className="cover3-closing">Sincerely,</p>
+                                <p className="cover3-signature-name">{fullName}</p>
+                            </div>
                         </div>
+
                         <div className="cover3-body-right">
-                            <div className="cover3-title">
+                            <div className="cover3-card-section">
                                 <h2>Recipient</h2>
                                 {recipientName && <p><strong>{recipientName}</strong></p>}
                                 {v.companyName && <p>{v.companyName}</p>}
                                 {companyAddressLine && <p>{companyAddressLine}</p>}
+                            </div>
 
-                                <div className="sender-block">
-                                    <h2>Sender</h2>
-                                    <p><strong>{v.firstname} {v.lastname}</strong></p>
-                                    {addressLine && <p>{addressLine}</p>}
-                                    {v.phone && <p>{v.phone}</p>}
-                                    {v.email && <p>{v.email}</p>}
-                                </div>
+                            <div className="cover3-card-section sender-block">
+                                <h2>Sender</h2>
+                                <p><strong>{fullName}</strong></p>
+                                {addressLine && <p>{addressLine}</p>}
+                                {v.phone && <p>{v.phone}</p>}
+                                {v.email && <p>{v.email}</p>}
                             </div>
                         </div>
                     </div>

@@ -1,100 +1,140 @@
-.cover3-content {
-    margin: 20px auto;
-    width: 92%;
-    max-width: 720px;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    font-size: 13px;
-    line-height: 1.6;
+.cover3-board {
+    width: 100%;
+    min-height: 100%;
+    background-color: #ffffff;
+    box-sizing: border-box;
+    padding: 48px 48px;
+    font-family: 'Inter', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     color: #1e293b;
-    font-family: 'Inter', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+    display: flex;
+    justify-content: center;
 
-    .cover3-head {
-        padding: 0 0 16px 0;
-        border-bottom: 2px solid #0f172a;
-        margin-bottom: 20px;
-
-        h1 {
-            font-size: 26px;
-            font-weight: 700;
-            color: #0f172a;
-            letter-spacing: -0.02em;
-            margin: 0;
-            line-height: 1.2;
-        }
-
-        .cover3-subtitle {
-            font-size: 12px;
-            color: #64748b;
-            margin-top: 4px;
-        }
-    }
-
-    .cover3-body {
+    .cover3-content {
+        width: 100%;
+        max-width: 680px;
         display: flex;
-        gap: 24px;
-        box-sizing: border-box;
+        flex-direction: column;
+        font-size: 13px;
+        line-height: 1.65;
 
-        .cover3-body-left {
-            flex: 1;
-            line-height: 1.7;
-            color: #1e293b;
+        .cover3-head {
+            padding-bottom: 12px;
+            border-bottom: 2px solid #0f172a;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
 
-            p {
-                margin-bottom: 14px;
-                white-space: pre-line;
-            }
+            .cover3-title-area {
+                h1 {
+                    font-size: 26px;
+                    font-weight: 700;
+                    color: #0f172a;
+                    letter-spacing: -0.02em;
+                    margin: 0;
+                    line-height: 1.2;
+                }
 
-            .cover3-paragraph {
-                margin: 12px 0;
-                p {
-                    margin-bottom: 12px;
-                    white-space: pre-line;
+                .cover3-subtitle {
+                    font-size: 12.5px;
+                    color: #2563eb;
+                    font-weight: 600;
+                    margin-top: 4px;
                 }
             }
 
-            .cover3-skills {
-                margin: 16px 0;
-                h3 {
-                    font-size: 13.5px;
+            .cover3-date {
+                font-size: 12px;
+                color: #64748b;
+                font-weight: 500;
+            }
+        }
+
+        .cover3-body {
+            display: flex;
+            gap: 28px;
+            box-sizing: border-box;
+
+            .cover3-body-left {
+                flex: 1;
+                line-height: 1.7;
+                color: #1e293b;
+
+                .cover3-salutation {
                     font-weight: 600;
                     color: #0f172a;
-                    margin-bottom: 8px;
+                    margin-bottom: 14px;
                 }
-                ul {
-                    list-style-type: disc;
-                    padding-left: 18px;
-                    li {
-                        margin-bottom: 4px;
+
+                .cover3-paragraph {
+                    margin-bottom: 14px;
+                    p {
+                        margin: 0;
+                        white-space: pre-line;
+                        text-align: justify;
+                    }
+                }
+
+                .cover3-signoff {
+                    margin-top: 24px;
+                    padding-top: 8px;
+
+                    .cover3-closing {
+                        margin-bottom: 18px;
+                        color: #334155;
+                    }
+
+                    .cover3-signature-name {
+                        font-weight: 700;
+                        color: #0f172a;
+                        font-size: 14px;
+                    }
+                }
+
+                .cover3-skills {
+                    margin: 16px 0;
+                    h3 {
+                        font-size: 13.5px;
+                        font-weight: 600;
+                        color: #0f172a;
+                        margin-bottom: 8px;
+                    }
+                    ul {
+                        list-style-type: disc;
+                        padding-left: 18px;
+                        li {
+                            margin-bottom: 4px;
+                        }
                     }
                 }
             }
-        }
 
-        .cover3-body-right {
-            width: 200px;
-            flex-shrink: 0;
-            background: #f8fafc;
-            padding: 16px;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-            font-size: 11.5px;
-            line-height: 1.5;
+            .cover3-body-right {
+                width: 200px;
+                flex-shrink: 0;
+                background: #f8fafc;
+                padding: 16px;
+                border-radius: 8px;
+                border: 1px solid #e2e8f0;
+                font-size: 11.5px;
+                line-height: 1.5;
 
-            .cover3-title {
-                h2 {
-                    font-size: 11px;
-                    text-transform: uppercase;
-                    letter-spacing: 0.05em;
-                    font-weight: 700;
-                    color: #2563eb;
-                    margin: 0 0 6px 0;
-                }
+                .cover3-card-section {
+                    margin-bottom: 16px;
 
-                p {
-                    margin: 2px 0;
-                    color: #475569;
+                    h2 {
+                        font-size: 10px;
+                        text-transform: uppercase;
+                        letter-spacing: 0.08em;
+                        font-weight: 700;
+                        color: #2563eb;
+                        margin: 0 0 6px 0;
+                    }
+
+                    p {
+                        margin: 2px 0;
+                        color: #475569;
+                    }
                 }
 
                 .sender-block {

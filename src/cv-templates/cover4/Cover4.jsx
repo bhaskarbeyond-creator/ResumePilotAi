@@ -53,16 +53,18 @@ class Cover4Template extends Component {
 
     render() {
         const v = this.props.values || {};
+        const fullName = `${v.firstname || ''} ${v.lastname || ''}`.trim() || 'Candidate Name';
         const recipientName = v.employerFullName || v.recipientName || 'Hiring Manager';
         const addressLine = [v.address, v.city, v.postalcode || v.postalCode, v.country].filter(Boolean).join(', ');
         const companyAddressLine = [v.companyAddress, v.companyCity, v.companyPostalCode].filter(Boolean).join(', ');
+        const todayDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
         return (
-            <div id="resumen" className="cv9-board">
+            <div id="resumen" className="cover4-board">
                 <div className="cover4-content">
                     {/* Head */}
                     <div className="cover4-head">
-                        <h1>{v.firstname} {v.lastname}</h1>
+                        <h1>{fullName}</h1>
                         {v.occupation && <p className="cover4-job">{v.occupation}</p>}
                         <div className="cover4-contactInfo">
                             {v.phone && (
@@ -86,19 +88,25 @@ class Cover4Template extends Component {
                         </div>
                     </div>
 
-                    {/* Recipient Details */}
-                    {(recipientName || v.companyName || companyAddressLine) && (
+                    {/* Meta Row */}
+                    <div className="cover4-meta-row">
                         <div className="cover4-receipentDetails">
-                            {recipientName && <p className="cover4-receipentName">{recipientName}</p>}
-                            {v.companyName && <p className="cover4-companyName">{v.companyName}</p>}
-                            {companyAddressLine && <p className="cover4-receipentAddress">{companyAddressLine}</p>}
+                            {recipientName && <div className="cover4-receipentName">{recipientName}</div>}
+                            {v.companyName && <div className="cover4-companyName">{v.companyName}</div>}
+                            {companyAddressLine && <div className="cover4-receipentAddress">{companyAddressLine}</div>}
                         </div>
-                    )}
+                        <div className="cover4-date">{todayDate}</div>
+                    </div>
 
                     {/* Body */}
                     <div className="cover4-body">
-                        <p>Dear {recipientName},</p>
+                        <p className="cover4-salutation">Dear {recipientName},</p>
                         {this.renderComponents()}
+
+                        <div className="cover4-signoff">
+                            <p className="cover4-closing">Sincerely,</p>
+                            <p className="cover4-signature-name">{fullName}</p>
+                        </div>
                     </div>
                 </div>
             </div>

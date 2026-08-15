@@ -50,42 +50,50 @@ class Cover2Template extends Component {
 
     render() {
         const v = this.props.values || {};
+        const fullName = `${v.firstname || ''} ${v.lastname || ''}`.trim() || 'Candidate Name';
         const recipientName = v.employerFullName || v.recipientName || 'Hiring Manager';
         const addressLine = [v.address, v.city, v.postalcode || v.postalCode, v.country].filter(Boolean).join(', ');
         const companyAddressLine = [v.companyAddress, v.companyCity, v.companyPostalCode].filter(Boolean).join(', ');
+        const todayDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
         return (
-            <div id="resumen" className="cv9-board">
+            <div id="resumen" className="cover2-board">
                 <div className="cover2-content">
                     {/* Head */}
                     <div className="cover2-head">
-                        <h1 className="cover2-name">
-                            {v.firstname} {v.lastname}
-                        </h1>
+                        <h1 className="cover2-name">{fullName}</h1>
                         {addressLine && <p className="cover2-address">{addressLine}</p>}
                         {(v.phone || v.email) && (
-                            <p className="cover2-phone">
-                                {[v.phone, v.email].filter(Boolean).join(' • ')}
-                            </p>
+                            <div className="cover2-contact-row">
+                                {v.phone && <span>{v.phone}</span>}
+                                {v.phone && v.email && <span>•</span>}
+                                {v.email && <span>{v.email}</span>}
+                            </div>
                         )}
                     </div>
 
                     {/* Separator Line */}
                     <div className="cover2-separatorLine" />
 
-                    {/* Recipient Details */}
-                    {(recipientName || v.companyName || companyAddressLine) && (
+                    {/* Meta Row: Recipient details and Date */}
+                    <div className="cover2-meta-row">
                         <div className="cover2-receipentDetails">
-                            {recipientName && <p className="cover2-receipentName">{recipientName}</p>}
-                            {v.companyName && <p className="cover2-companyName">{v.companyName}</p>}
-                            {companyAddressLine && <p className="cover2-receipentAddress">{companyAddressLine}</p>}
+                            {recipientName && <div className="cover2-receipentName">{recipientName}</div>}
+                            {v.companyName && <div className="cover2-companyName">{v.companyName}</div>}
+                            {companyAddressLine && <div className="cover2-receipentAddress">{companyAddressLine}</div>}
                         </div>
-                    )}
+                        <div className="cover2-date">{todayDate}</div>
+                    </div>
 
                     {/* Cover inner Content */}
                     <div className="cover2-innerContent">
-                        <p>Dear {recipientName},</p>
+                        <p className="cover2-salutation">Dear {recipientName},</p>
                         {this.renderComponents()}
+
+                        <div className="cover2-signoff">
+                            <p className="cover2-closing">Sincerely,</p>
+                            <p className="cover2-signature-name">{fullName}</p>
+                        </div>
                     </div>
                 </div>
             </div>

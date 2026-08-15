@@ -85,6 +85,15 @@ class CoverLetter extends Component {
         controller?.abort();
     }
 
+    getDefaultLetterBody = () => {
+        const candidateName = `${this.state.candidateFirstname} ${this.state.candidateLastname}`.trim() || 'Applicant';
+        const role = this.state.jobTitle || 'the open position';
+        const company = this.state.companyName || 'your organization';
+        const skills = this.state.userSkills || 'relevant professional experience and technical leadership';
+
+        return `I am writing to express my enthusiastic interest in the ${role} position at ${company}. With a strong foundation in ${skills}, I am confident in my ability to deliver immediate value and contribute effectively to your team's strategic goals.\n\nThroughout my career, I have dedicated myself to high-quality execution, systematic problem-solving, and cross-functional collaboration. My hands-on experience enables me to adapt rapidly, streamline complex workflows, and deliver measurable outcomes that align with organizational objectives.\n\nI admire ${company}'s work and industry impact, and I would welcome the opportunity to discuss how my qualifications can support your team. Thank you for your time and consideration.`;
+    };
+
     loadUserProfileData = async () => {
         try {
             let firstname = '';
@@ -143,7 +152,6 @@ class CoverLetter extends Component {
                 }
             }
 
-            // STRICT ZERO HARDCODING POLICY: All values pulled strictly from system profile or initialized blank
             this.setState({
                 candidateFirstname: firstname,
                 candidateLastname: lastname,
@@ -184,6 +192,7 @@ class CoverLetter extends Component {
 
     handleSaveCoverLetter = async () => {
         this.setState({ isSaving: true });
+        const effectiveBody = this.state.letterBody || this.getDefaultLetterBody();
         const letterData = {
             id: this.state.currentId || `cl_${Date.now()}`,
             candidateFirstname: this.state.candidateFirstname,
@@ -199,12 +208,12 @@ class CoverLetter extends Component {
             companyAddress: this.state.companyAddress,
             companyCity: this.state.companyCity,
             companyPostalCode: this.state.companyPostalCode,
-            letterBody: this.state.letterBody,
+            letterBody: effectiveBody,
             templateId: this.state.templateId || 'Cover1',
             updatedAt: new Date().toISOString(),
         };
         const res = await saveCoverLetter(letterData);
-        this.setState({ isSaving: false });
+        this.setState({ isSaving: false, letterBody: effectiveBody });
         if (res.success) {
             this.setState({
                 currentId: res.id,
@@ -271,8 +280,7 @@ class CoverLetter extends Component {
         } catch (err) {
             if (err?.name === 'AbortError') return;
             console.error('AI Cover Letter Error:', err);
-            const candidateFullName = `${this.state.candidateFirstname} ${this.state.candidateLastname}`.trim() || 'Applicant';
-            const fallback = `Dear ${this.state.recipientName || 'Hiring Manager'},\n\nI am writing to express my enthusiasm for the ${this.state.jobTitle || 'target'} role at ${this.state.companyName || 'your company'}. Possessing background in ${this.state.userSkills || 'relevant industry domains'}, I am well-prepared to contribute to your team's goals.\n\nMy professional track record demonstrates a dedication to high-quality execution and cross-functional collaboration. I am eager to apply my skill set to drive measurable outcomes for ${this.state.companyName || 'your organization'}.\n\nThank you for considering my application. I look forward to the opportunity to discuss my qualifications further.\n\nSincerely,\n${candidateFullName}`;
+            const fallback = this.getDefaultLetterBody();
             this.setState({ letterBody: fallback, isAiGenerating: false, step: 2 });
             await this.handleSaveCoverLetter();
         } finally {
@@ -285,7 +293,8 @@ class CoverLetter extends Component {
 
     exportCoverLetterTxt = () => {
         const fullName = `${this.state.candidateFirstname} ${this.state.candidateLastname}`.trim() || 'Candidate';
-        const textContent = `COVER LETTER (${this.state.templateId || 'Cover1'})\n=======================\nCandidate: ${fullName}\nEmail: ${this.state.candidateEmail}\nPhone: ${this.state.candidatePhone}\nAddress: ${this.state.candidateAddress}\n\nTarget Position: ${this.state.jobTitle}\nCompany: ${this.state.companyName}\nRecipient: ${this.state.recipientName}\nDate: ${new Date().toLocaleDateString()}\n\n${this.state.letterBody}`;
+        const effectiveBody = this.state.letterBody || this.getDefaultLetterBody();
+        const textContent = `COVER LETTER (${this.state.templateId || 'Cover1'})\n=======================\nCandidate: ${fullName}\nEmail: ${this.state.candidateEmail}\nPhone: ${this.state.candidatePhone}\nAddress: ${this.state.candidateAddress}\n\nTarget Position: ${this.state.jobTitle}\nCompany: ${this.state.companyName}\nRecipient: ${this.state.recipientName}\nDate: ${new Date().toLocaleDateString()}\n\n${effectiveBody}`;
         const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -300,11 +309,13 @@ class CoverLetter extends Component {
         const { t } = this.props;
         const candidateFullName = `${this.state.candidateFirstname} ${this.state.candidateLastname}`.trim();
         const activeTemplate = COVER_TEMPLATES.find(tpl => tpl.id === (this.state.templateId || 'Cover1')) || COVER_TEMPLATES[0];
+        const effectiveBody = this.state.letterBody || this.getDefaultLetterBody();
 
         // Format multi-paragraph components
-        const paragraphList = this.state.letterBody
-            ? this.state.letterBody.split(/\n\n+/).filter(Boolean).map(para => ({ type: 'Paragraph', content: para.trim() }))
-            : [{ type: 'Paragraph', content: 'Generating AI cover letter content...' }];
+        const paragraphList = effectiveBody
+            .split(/\n\n+/)
+            .filter(Boolean)
+            .map(para => ({ type: 'Paragraph', content: para.trim() }));
 
         // Template Values Payload matching all 4 Cover templates
         const templateValues = {
@@ -322,8 +333,8 @@ class CoverLetter extends Component {
             companyAddress: this.state.companyAddress,
             companyCity: this.state.companyCity,
             companyPostalCode: this.state.companyPostalCode,
-            letterBody: this.state.letterBody,
-            coverLetterContent: this.state.letterBody,
+            letterBody: effectiveBody,
+            coverLetterContent: effectiveBody,
             components: paragraphList
         };
 
@@ -551,9 +562,16 @@ class CoverLetter extends Component {
                             {/* Visual Render or Text Editor */}
                             <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-6 shadow-sm">
                                 {this.state.viewMode === 'visual' ? (
-                                    <div className="bg-slate-100 p-6 rounded-xl border border-slate-200 max-h-[600px] overflow-y-auto shadow-inner">
-                                        <div className="bg-white text-slate-900 rounded shadow-md max-w-2xl mx-auto p-4 scale-95 origin-top border border-slate-200">
-                                            {/* Dynamic Template Rendering for any of the 4 Cover templates */}
+                                    <div className="bg-slate-100/80 p-4 sm:p-8 rounded-2xl border border-slate-200 overflow-x-auto shadow-inner flex justify-center items-start min-h-[650px]">
+                                        {/* Authentic A4 Paper Canvas */}
+                                        <div
+                                            className="bg-white text-slate-900 rounded-sm shadow-xl border border-slate-200/80 overflow-hidden"
+                                            style={{
+                                                width: '100%',
+                                                maxWidth: '794px',
+                                                minHeight: '1000px',
+                                                boxShadow: '0 20px 40px -12px rgba(0, 0, 0, 0.15), 0 8px 32px -8px rgba(0, 0, 0, 0.1)',
+                                            }}>
                                             <TemplateRenderer
                                                 templateId={this.state.templateId || 'Cover1'}
                                                 values={templateValues}
@@ -565,7 +583,7 @@ class CoverLetter extends Component {
                                     <div className="space-y-2">
                                         <label className="block text-xs font-bold text-slate-700">Cover Letter Body Content (Editable)</label>
                                         <textarea
-                                            value={this.state.letterBody}
+                                            value={effectiveBody}
                                             onChange={(e) => this.setState({ letterBody: e.target.value })}
                                             className="w-full h-72 text-xs p-4 bg-white border border-slate-300 rounded-xl text-slate-900 font-mono leading-relaxed focus:border-indigo-600 focus:outline-hidden"
                                         />
@@ -620,8 +638,8 @@ class CoverLetter extends Component {
 
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
                                 {/* Visual Preview Card */}
-                                <div className="bg-slate-100 p-4 rounded-xl border border-slate-200 max-h-[450px] overflow-y-auto">
-                                    <div className="bg-white text-slate-900 rounded p-3 scale-90 origin-top shadow-md">
+                                <div className="bg-slate-100/80 p-4 rounded-xl border border-slate-200 max-h-[500px] overflow-y-auto flex justify-center">
+                                    <div className="bg-white text-slate-900 rounded-sm shadow-md border border-slate-200 w-full max-w-[500px]">
                                         <TemplateRenderer
                                             templateId={this.state.templateId || 'Cover1'}
                                             values={templateValues}
