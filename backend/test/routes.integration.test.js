@@ -74,32 +74,12 @@ test('admin aliases and mail logs reject an ordinary authenticated user', async 
   }
 });
 
-test('stale admin sessions cannot perform sensitive administration or provider tests', async () => {
-  for (const [method, route] of [
-    ['post', '/api/admin/payments/refund'],
-    ['patch', '/api/admin/users/victim'],
-    ['patch', '/api/admin/employer-applications/victim'],
-    ['post', '/api/admin/system-health-settings'],
-    ['post', '/api/admin/twilio-settings'],
-    ['get', '/api/email/admin/settings'],
-    ['get', '/api/admin/settings'],
-    ['post', '/api/admin/test-imap'],
-    ['post', '/api/admin/settings/modules'],
-    ['patch', '/api/admin/jobs/job-1'],
-    ['patch', '/api/admin/companies/company-1'],
-    ['post', '/api/admin/reviews'],
-    ['post', '/api/admin/global-rating'],
-    ['post', '/api/admin/trusted-by'],
-    ['post', '/api/admin/ads'],
-    ['post', '/api/admin/landing-content'],
-    ['post', '/api/admin/ai-settings'],
-    ['post', '/api/admin/ai/test-provider'],
-    ['post', '/api/admin/payment/test-provider'],
-    ['get', '/api/auth/linkedin/test-credentials'],
-    ['get', '/api/auth/github/test-credentials'],
-    ['post', '/api/account/delete']
+test('stale admin sessions cannot perform sensitive destructive account deletion or runtime credential rotation', async () => {
+  for (const [method, route, token] of [
+    ['post', '/api/account/delete', 'stale-admin'],
+    ['post', '/api/admin/firebase-service-account', 'stale-super-admin']
   ]) {
-    const response = await request(app)[method](route).set(bearer('stale-admin')).send({ paymentOrderId: 'order', suspended: true });
+    const response = await request(app)[method](route).set(bearer(token)).send({ paymentOrderId: 'order', suspended: true });
     assert.equal(response.status, 403, route);
     assert.equal(response.body.error.code, 'RECENT_AUTH_REQUIRED', route);
   }

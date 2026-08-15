@@ -86,6 +86,7 @@ export async function generateUserAiContent(endpointName, payload = {}, options 
                 if (token) headers['Authorization'] = `Bearer ${token}`;
             }
         } catch (_) {}
+        if (controller.signal.aborted) throw (controller.signal.reason || new DOMException('This operation was aborted', 'AbortError'));
         const response = await fetch(request.url, {
             method: 'POST',
             headers,

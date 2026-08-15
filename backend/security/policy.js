@@ -55,7 +55,7 @@ const LEGACY_EMAIL_ADMIN_PATHS = new Set([
 ]);
 
 function isAdminPath(pathname) {
-  return ADMIN_EXACT.has(pathname) || ADMIN_PREFIXES.some(prefix => pathname.startsWith(prefix));
+  return ADMIN_EXACT.has(pathname) || ADMIN_PREFIXES.some(prefix => pathname.startsWith(prefix)) || LEGACY_EMAIL_ADMIN_PATHS.has(pathname);
 }
 
 function requiresVerifiedEmail(pathname) {

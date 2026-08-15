@@ -58,7 +58,8 @@ test('AI client preserves structured server errors for retry UX', async () => {
 test('AI client supports user cancellation without converting it into generated content', async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = (_url, options) => new Promise((_resolve, reject) => {
-    options.signal.addEventListener('abort', () => reject(Object.assign(new Error('cancelled'), { name: 'AbortError' })), { once: true });
+    if (options.signal?.aborted) return reject(Object.assign(new Error('cancelled'), { name: 'AbortError' }));
+    options.signal?.addEventListener('abort', () => reject(Object.assign(new Error('cancelled'), { name: 'AbortError' })), { once: true });
   });
   const controller = new AbortController();
   try {

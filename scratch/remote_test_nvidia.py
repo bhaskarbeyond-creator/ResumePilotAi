@@ -11,7 +11,7 @@ require('dotenv').config();
 const { requestProvider } = require('./services/aiRuntime');
 
 async function testCall() {
-    const key = "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";
+    const key = process.env.NVIDIA_API_KEY || "";
     console.log('Testing NVIDIA key with poolside/laguna-xs-2.1 ...');
     try {
         const res1 = await requestProvider('nvidia', { key, model: 'poolside/laguna-xs-2.1' }, 'Say hello in 3 words.', { temperature: 0.7, maxTokens: 50 });
