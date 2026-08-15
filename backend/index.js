@@ -13,6 +13,7 @@ const { chromium } = require('playwright');
 require('dotenv').config();
 const EmailNotifier = require('./services/emailNotifier');
 const { queueEmailInTransaction, processOutboxOnce } = require('./services/notificationOutbox');
+const { createResumeDocx } = require('./services/docxExport');
 const { loadProviderConfiguration, generateWithProviders } = require('./services/aiRuntime');
 const { loadAiAdminSettings, saveAiAdminSettings, testAiProvider } = require('./services/aiAdmin');
 const { createExportRenderToken, consumeExportRenderToken, discardExportRenderToken } = require('./security/exportTokens');
@@ -2700,7 +2701,7 @@ app.post('/api/invoice', (req, res) => {
 
 // Item 41 & 42: PDF Job Queue & DOCX (Word) Document Export Engine Endpoint
 app.post('/api/export-docx', async (req, res) => {
-    const { resumeName, resumeId, language } = req.body;
+    const { resumeName, resumeId } = req.body;
     const requestDb = req.app.get('db');
     if (!requestDb || !/^[A-Za-z0-9_-]{4,128}$/.test(String(resumeId || ''))) return res.status(400).json({ error: 'Invalid resume' });
     const resumeSnap = await requestDb.collection('users').doc(req.user.uid).collection('resumes').doc(String(resumeId)).get();
@@ -2711,13 +2712,18 @@ app.post('/api/export-docx', async (req, res) => {
     if (owner.membership !== 'Premium' || !['ACTIVE', 'ADMIN_GRANTED'].includes(owner.paymentStatus) || membershipEnd <= new Date()) {
         return res.status(402).json({ error: { code: 'ACTIVE_SUBSCRIPTION_REQUIRED', message: 'An active subscription is required for DOCX export', requestId: res.locals.requestId } });
     }
-    // Compatibility representation; ownership and entitlement are enforced even while full DOCX rendering is pending.
-    const safeName = String(resumeName || 'Resume').replace(/[^A-Za-z0-9 _-]/g, '').slice(0, 80);
-    const safeLanguage = /^[a-z]{2}(?:-[A-Z]{2})?$/.test(String(language || '')) ? language : 'en';
-    const docxContent = `FILE: ${safeName}\nID: ${resumeId}\nLANGUAGE: ${safeLanguage}\nSTATUS: DOCX Export Generated Successfully`;
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-    res.setHeader('Content-Disposition', `attachment; filename="resume.docx"`);
-    res.send(Buffer.from(docxContent, 'utf-8'));
+    const safeName = String(resumeName || resumeSnap.data()?.title || 'Resume').replace(/[^A-Za-z0-9 _-]/g, '').trim().slice(0, 80) || 'Resume';
+    try {
+        const buffer = await createResumeDocx(resumeSnap.data() || {});
+        res.setHeader('Cache-Control', 'no-store, private');
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        res.setHeader('Content-Disposition', `attachment; filename="${safeName.replace(/\s+/g, '_')}.docx"`);
+        res.setHeader('Content-Length', String(buffer.length));
+        return res.send(buffer);
+    } catch (error) {
+        console.error('[DOCX export]', error.message);
+        return res.status(500).json({ error: { code: 'DOCX_EXPORT_FAILED', message: 'Unable to generate DOCX export', requestId: res.locals.requestId } });
+    }
 });
 
 // Item 44: RTL Native Font Support (Arabic/Hebrew) Helper
@@ -2820,6 +2826,8 @@ app.get('/readyz', (_req, res) => {
             firebaseAdmin: firebaseReady ? 'READY' : 'UNAVAILABLE',
             aiProviders: 'NOT_CHECKED', paymentProviders: 'NOT_CHECKED', smtp: 'NOT_CHECKED',
             cmsScheduler: process.env.CMS_SCHEDULER_ENABLED === 'true' ? 'CONFIGURED' : 'DISABLED',
+            notificationOutbox: process.env.NOTIFICATION_OUTBOX_WORKER_ENABLED === 'true' ? 'LOCAL_WORKER_CONFIGURED' : process.env.NOTIFICATION_OUTBOX_EXTERNAL_WORKER === 'true' ? 'EXTERNAL_WORKER_DECLARED' : 'DISABLED',
+            pdfIsolation: process.env.PDF_RENDERER_ISOLATED === 'true' ? 'DECLARED_ISOLATED' : 'REQUIRES_ISOLATED_WORKER',
         },
     });
 });

@@ -84,6 +84,19 @@ test('route transitions restore keyboard focus without redesigning page layouts'
   assert.match(main, /<RouteFocus \/>/);
 });
 
+test('operational contracts expose worker, PDF isolation, TTL, and recovery requirements truthfully', async () => {
+  const [backend, indexes, runbook] = await Promise.all([
+    fs.readFile('backend/index.js', 'utf8'), fs.readFile('firestore.indexes.json', 'utf8'), fs.readFile('docs/OPERATIONS_RUNBOOK.md', 'utf8'),
+  ]);
+  assert.match(backend, /NOTIFICATION_OUTBOX_EXTERNAL_WORKER/);
+  assert.match(backend, /REQUIRES_ISOLATED_WORKER/);
+  const parsed = JSON.parse(indexes);
+  assert.ok(parsed.fieldOverrides.some(item => item.collectionGroup === 'export_render_tokens' && item.fieldPath === 'expiresAt' && item.ttl === true));
+  assert.match(runbook, /Backup and restore/);
+  assert.match(runbook, /dead-letter/i);
+  assert.match(runbook, /Workload Identity/);
+});
+
 test('readiness reports unmeasured dependencies as NOT_CHECKED and RC runner exposes blocked work', async () => {
   const [backend, runner] = await Promise.all([
     fs.readFile('backend/index.js', 'utf8'), fs.readFile('scripts/release-candidate.mjs', 'utf8'),
