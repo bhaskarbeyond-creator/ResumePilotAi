@@ -118,7 +118,6 @@ class BoardFilling extends Component {
         }
 
         console.log('Download initiated. Subscription status:', this.props.values.subscriptionsStatus);
-        console.log('User:', this.props.values.user);
 
         const access = evaluateDownloadAccess({
             user: this.props.values.user,

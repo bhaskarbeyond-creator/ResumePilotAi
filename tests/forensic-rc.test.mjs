@@ -66,7 +66,7 @@ test('browser production source does not log user or application payloads', asyn
     }
   }
   await walk('src');
-  const forbidden = /console\.log.*(?:applicationData|sanitizedApplicationData|formData|jobData|companyData|coverData|portfolioData|membership|user\.uid|userId|currentUser\.email|adminEmail)/i;
+  const forbidden = /console\.log.*(?:applicationData|sanitizedApplicationData|formData|jobData|companyData|coverData|portfolioData|membership|user\.uid|userId|userData\.user|values\.user|currentUser\.email|adminEmail)/i;
   const offenders = [];
   for (const file of files) {
     const lines = (await fs.readFile(file, 'utf8')).split(/\r?\n/);

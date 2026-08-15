@@ -1505,6 +1505,7 @@ class SubscriptionSetting extends Component {
                 maxUses: c.maxUses || 0,
                 singleUsePerUser: Boolean(c.singleUsePerUser),
                 active: c.active !== false,
+                revision: Number(c.revision || 0),
             },
             showCouponModal: true,
             couponErrorMsg: '',
@@ -1513,7 +1514,7 @@ class SubscriptionSetting extends Component {
 
     async handleSaveCouponForm(e) {
         if (e) e.preventDefault();
-        const { code, discount, description, active, expiryDate, maxUses, singleUsePerUser } = this.state.couponForm;
+        const { code, discount, description, active, expiryDate, maxUses, singleUsePerUser, revision } = this.state.couponForm;
         if (!code || !code.trim()) {
             this.setState({ couponErrorMsg: 'Please enter a valid coupon code (e.g. SUMMER50).' });
             return;
@@ -1523,6 +1524,7 @@ class SubscriptionSetting extends Component {
             expiryDate,
             maxUses,
             singleUsePerUser,
+            revision,
         });
 
         if (res.success) {
@@ -1538,13 +1540,11 @@ class SubscriptionSetting extends Component {
     }
 
     async handleToggleCouponStatus(c) {
-        await saveCoupon(c.code, c.discount, c.description, !c.active, {
-            expiryDate: c.expiryDate,
-            maxUses: c.maxUses,
-            singleUsePerUser: c.singleUsePerUser,
-            usedCount: c.usedCount,
+        const result = await saveCoupon(c.code, c.discount, c.description, !c.active, {
+            expiryDate: c.expiryDate, maxUses: c.maxUses, singleUsePerUser: c.singleUsePerUser, revision: c.revision,
         });
-        this.fetchAdminCoupons();
+        if (!result.success) { this.setState({ couponErrorMsg: result.error || 'Coupon could not be updated.' }); return; }
+        await this.fetchAdminCoupons();
     }
 
     handleDeleteCouponCode(code) {
@@ -1555,7 +1555,8 @@ class SubscriptionSetting extends Component {
         const code = this.state.deleteConfirmCode;
         if (!code) return;
         this.setState({ isDeleting: true });
-        const res = await deleteCoupon(code);
+        const coupon = this.state.adminCoupons.find(item => item.code === code);
+        const res = await deleteCoupon(code, coupon?.revision || 0);
         if (res.success !== false) {
             await this.fetchAdminCoupons();
             this.setState({

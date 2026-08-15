@@ -2125,6 +2125,49 @@ app.post('/api/admin/payment-settings', async (req, res) => {
 });
 
 // Admin diagnostic test-connection endpoint
+app.get('/api/admin/coupons', async (req, res) => {
+    const requestDb = req.app.get('db');
+    if (!requestDb) return res.status(503).json({ success: false, error: 'Coupon service unavailable.' });
+    const snapshot = await requestDb.collection('coupons').get();
+    const coupons = snapshot.docs.filter(document => document.id !== '_meta').map(document => ({ code: document.id, ...document.data(), revision: Number(document.data()?.revision || 0) }));
+    return res.json({ success: true, coupons });
+});
+
+app.put('/api/admin/coupons/:code', async (req, res) => {
+    const requestDb = req.app.get('db'); const code = String(req.params.code || '').trim().toUpperCase();
+    const discount = Number(req.body?.discount); const expectedRevision = Number(req.body?.expectedRevision || 0);
+    if (!requestDb || !admin || !/^[A-Z0-9_-]{3,32}$/.test(code) || !Number.isFinite(discount) || discount <= 0 || discount > 100 || !Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid coupon request.' });
+    const maxUses = Math.max(0, Math.min(1_000_000, Number(req.body?.maxUses) || 0));
+    const expiryDate = String(req.body?.expiryDate || '').slice(0, 40);
+    if (expiryDate && !Number.isFinite(new Date(expiryDate).getTime())) return res.status(400).json({ success: false, error: 'Invalid coupon expiry.' });
+    try {
+        let revision;
+        await requestDb.runTransaction(async transaction => {
+            const reference = requestDb.collection('coupons').doc(code); const snapshot = await transaction.get(reference); const current = Number(snapshot.data()?.revision || 0);
+            if (current !== expectedRevision) { const e = new Error('This coupon changed after the list loaded. Refresh before saving.'); e.code = 'ADMIN_TARGET_CHANGED'; throw e; }
+            revision = current + 1;
+            transaction.set(reference, { code, discount, description: String(req.body?.description || `${discount}% Discount`).replace(/\p{Cc}/gu, ' ').slice(0, 200), active: req.body?.active !== false, expiryDate, maxUses, singleUsePerUser: req.body?.singleUsePerUser === true, usedCount: Number(snapshot.data()?.usedCount || 0), revision, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+            transaction.set(requestDb.collection('security_audit_logs').doc(), { action: 'COUPON_SAVED', actorUid: req.user.uid, code, revision, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        });
+        return res.json({ success: true, code, revision });
+    } catch (error) { return res.status(error.code === 'ADMIN_TARGET_CHANGED' ? 409 : 500).json({ success: false, code: error.code, error: error.code ? error.message : 'Unable to save coupon.' }); }
+});
+
+app.delete('/api/admin/coupons/:code', async (req, res) => {
+    const requestDb = req.app.get('db'); const code = String(req.params.code || '').trim().toUpperCase(); const expectedRevision = Number(req.body?.expectedRevision || 0);
+    if (!requestDb || !admin || !/^[A-Z0-9_-]{3,32}$/.test(code) || !Number.isInteger(expectedRevision)) return res.status(400).json({ success: false, error: 'Invalid coupon deletion.' });
+    try {
+        await requestDb.runTransaction(async transaction => {
+            const reference = requestDb.collection('coupons').doc(code); const snapshot = await transaction.get(reference);
+            if (!snapshot.exists) { const e = new Error('Coupon not found.'); e.code = 'NOT_FOUND'; throw e; }
+            if (Number(snapshot.data()?.revision || 0) !== expectedRevision) { const e = new Error('This coupon changed after the list loaded. Refresh before deleting.'); e.code = 'ADMIN_TARGET_CHANGED'; throw e; }
+            transaction.delete(reference);
+            transaction.set(requestDb.collection('security_audit_logs').doc(), { action: 'COUPON_DELETED', actorUid: req.user.uid, code, revision: expectedRevision, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        });
+        return res.json({ success: true });
+    } catch (error) { const status = error.code === 'ADMIN_TARGET_CHANGED' ? 409 : error.code === 'NOT_FOUND' ? 404 : 500; return res.status(status).json({ success: false, code: error.code, error: status === 500 ? 'Unable to delete coupon.' : error.message }); }
+});
+
 app.post('/api/admin/payment/test-provider', async (req, res) => {
     const { type, secretKey } = req.body;
     if (!['stripe', 'razorpay', 'paytm', 'phonepe'].includes(type)) return res.status(400).json({ success: false, code: 'PAYMENT_PROVIDER_VALIDATION_ERROR', error: 'Unsupported payment provider test.' });

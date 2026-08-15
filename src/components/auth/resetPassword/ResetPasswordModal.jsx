@@ -78,7 +78,6 @@ const ResetPasswordModal = ({ oobCode, initialEmail, onClose }) => {
                     throw new Error(data.error || 'Failed to update password. Please try again.');
                 }
 
-                console.log(`[Reset] Password updated via ${data.method || 'backend'} for ${email}`);
             }
 
             setSuccessMessage(`Password updated successfully for ${email}! Logging you in...`);

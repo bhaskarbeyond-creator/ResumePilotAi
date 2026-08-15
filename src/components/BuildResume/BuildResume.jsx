@@ -630,8 +630,6 @@ const BuildResume = () => {
     const handleDownload = async () => {
         if (isDownloading) return;
 
-        console.log('Download initiated. Global subscription status:', userData.subscriptionsStatus);
-        console.log('User:', userData.user);
 
         const access = evaluateDownloadAccess({
             user: userData.user,

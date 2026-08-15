@@ -94,6 +94,21 @@ test('website metadata and analytics persistence is revisioned, audited, and con
   assert.match(rules, /id in \['meta','frontendstats','public_config'\]/);
 });
 
+test('coupon administration is backend-only, revisioned, and preserves authoritative usage', async () => {
+  const [backend, operations, view, rules] = await Promise.all([
+    fs.readFile('backend/index.js', 'utf8'), fs.readFile('src/firestore/dbOperations.js', 'utf8'),
+    fs.readFile('src/components/admin/settings/subscriptionsSettings.jsx', 'utf8'), fs.readFile('SecurityRules.txt', 'utf8'),
+  ]);
+  assert.match(backend, /COUPON_SAVED/);
+  assert.match(backend, /COUPON_DELETED/);
+  assert.match(backend, /usedCount: Number\(snapshot\.data\(\)\?\.usedCount/);
+  assert.match(operations, /\/api\/admin\/coupons/);
+  const couponAdmin = operations.slice(operations.indexOf('export async function getAllCouponsAdmin'), operations.indexOf('// Subscription preferences'));
+  assert.doesNotMatch(couponAdmin, /collection\(['"]coupons['"]\)|recordTransaction|incrementCouponUsage/);
+  assert.match(view, /revision: c\.revision/);
+  assert.match(rules, /match \/coupons\/\{id\} \{ allow read: if signedIn\(\); allow write: if false/);
+});
+
 test('Ads mutations are backend-only, revision checked, audited, validated and confirmation gated', async () => {
   const [view, operations, backend, rules] = await Promise.all([
     fs.readFile('src/components/admin/settings/adsSettings.jsx', 'utf8'),
