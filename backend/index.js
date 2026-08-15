@@ -12,6 +12,7 @@ const crypto = require('crypto');
 const { chromium } = require('playwright');
 require('dotenv').config();
 const EmailNotifier = require('./services/emailNotifier');
+const { queueEmailInTransaction, processOutboxOnce } = require('./services/notificationOutbox');
 const { loadProviderConfiguration, generateWithProviders } = require('./services/aiRuntime');
 const { loadAiAdminSettings, saveAiAdminSettings, testAiProvider } = require('./services/aiAdmin');
 const { createExportRenderToken, consumeExportRenderToken, discardExportRenderToken } = require('./security/exportTokens');
@@ -1098,6 +1099,7 @@ app.post('/api/jobs/:jobId/applications', async (req, res) => {
             if (!jobSnapshot.exists || jobSnapshot.data()?.status !== 'active') { const unavailable = new Error('This job is no longer accepting applications.'); unavailable.code = 'JOB_UNAVAILABLE'; throw unavailable; }
             if (resumeRef && !resumeSnapshot?.exists) { const invalidResume = new Error('The selected resume was not found.'); invalidResume.code = 'RESUME_NOT_FOUND'; throw invalidResume; }
             const job = jobSnapshot.data() || {};
+            const employerUser = job.employerId ? await transaction.get(requestDb.collection('users').doc(job.employerId)) : null;
             const resume = resumeSnapshot?.data() || null;
             if (resume && Buffer.byteLength(JSON.stringify(resume), 'utf8') > 600_000) { const oversized = new Error('The selected resume is too large to attach.'); oversized.code = 'RESUME_TOO_LARGE'; throw oversized; }
             const email = String(req.user.email || '').trim().toLowerCase();
@@ -1123,6 +1125,9 @@ app.post('/api/jobs/:jobId/applications', async (req, res) => {
             transaction.set(applicationRef, application);
             transaction.update(jobRef, { applicationsCount: Number(job.applicationsCount || 0) + 1, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
             const submittedEventId = notificationEventId('job_application_submitted', applicationId);
+            queueEmailInTransaction(transaction, requestDb, admin, { eventId: `${submittedEventId}:candidate`, recipient: email, templateType: 'job_status_update', vars: { candidate_name: fullName, job_title: jobTitle, company_name: companyName, application_status: 'Submitted' }, metadata: { applicationId, recipientUid: req.user.uid } });
+            const employerEmail = String(employerUser?.data()?.email || '').trim().toLowerCase();
+            if (employerEmail) queueEmailInTransaction(transaction, requestDb, admin, { eventId: `${submittedEventId}:employer`, recipient: employerEmail, templateType: 'job_application_received', vars: { candidate_name: fullName, job_title: jobTitle, company_name: companyName, date: new Date().toLocaleDateString('en-IN') }, metadata: { applicationId, recipientUid: job.employerId } });
             transaction.set(requestDb.collection('notifications').doc(req.user.uid).collection('userNotifications').doc(submittedEventId), {
                 eventId: submittedEventId, state: 'NOTIFICATION_CREATED', deliveryState: 'NOT_REQUESTED',
                 type: 'job_application', title: 'Application submitted', message: `Your application for ${jobTitle} at ${companyName} was submitted.`,
@@ -1179,6 +1184,7 @@ app.patch('/api/job-applications/:applicationId/status', async (req, res) => {
             transaction.update(applicationRef, { status, employerNotes: notes, revision: nextRevision, statusUpdatedAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() });
             const notification = jobApplicationNotification(status, jobTitle, companyName, notes);
             const statusEventId = notificationEventId('job_application_status', applicationId, String(nextRevision));
+            if (application.applicantEmail) queueEmailInTransaction(transaction, requestDb, admin, { eventId: `${statusEventId}:candidate`, recipient: application.applicantEmail, templateType: 'job_status_update', vars: { candidate_name: application.applicantName || 'Candidate', job_title: jobTitle, company_name: companyName, application_status: status }, metadata: { applicationId, recipientUid: application.userId, revision: nextRevision } });
             transaction.set(requestDb.collection('notifications').doc(application.userId).collection('userNotifications').doc(statusEventId), {
                 eventId: statusEventId, state: 'NOTIFICATION_CREATED', deliveryState: 'NOT_REQUESTED',
                 ...notification, data: { jobId: application.jobId, applicationId, jobTitle, company: companyName, status }, read: false,
@@ -2677,6 +2683,24 @@ if (require.main === module) {
         const scheduler = setInterval(runScheduler, intervalMs);
         scheduler.unref?.();
         setTimeout(runScheduler, 10_000).unref?.();
+    }
+
+    if (process.env.NOTIFICATION_OUTBOX_WORKER_ENABLED === 'true' && db && admin) {
+        const workerId = `${process.pid}-${crypto.randomUUID()}`;
+        const intervalMs = Math.max(5_000, Math.min(Number(process.env.NOTIFICATION_OUTBOX_INTERVAL_MS) || 15_000, 300_000));
+        let workerRunning = false;
+        const runOutbox = async () => {
+            if (workerRunning) return;
+            workerRunning = true;
+            try {
+                const emailRoute = require('./routes/email');
+                await processOutboxOnce({ db, admin, workerId, dispatch: event => emailRoute.dispatchNotification(db, { to: event.recipient, templateType: event.templateType, vars: event.vars }) });
+            } catch (error) { console.error('[Notification outbox]', error.message); }
+            finally { workerRunning = false; }
+        };
+        const outboxTimer = setInterval(runOutbox, intervalMs);
+        outboxTimer.unref?.();
+        setTimeout(runOutbox, 5_000).unref?.();
     }
 
     // Listen HTTP/HTTPS port safely
