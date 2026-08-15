@@ -45,6 +45,8 @@ function DashboardSettings(props) {
     const [profileConflict, setProfileConflict] = useState(null);
     const persistProfileRef = useRef(null);
     const skipNextAutosaveRef = useRef(false);
+    const isSavingRef = useRef(false);
+    const autosaveTimerRef = useRef(null);
     const loadedProfileUidRef = useRef(null);
     const [isAiGenerating, setIsAiGenerating] = useState(false);
     const aiRequestControllerRef = useRef(null);
@@ -502,28 +504,57 @@ function DashboardSettings(props) {
         setAccountSettings((prev) => ({ ...prev, [field]: value }));
     };
 
-    const persistProfile = async ({ notify = false } = {}) => {
+    const persistProfile = async ({ notify = false, forceRevision = null } = {}) => {
+        if (isSavingRef.current) return;
         const currentUser = fire.auth().currentUser;
         if (!currentUser) throw new Error('Sign in again before saving your profile.');
-        if (profileConflict) throw new Error('Resolve the newer profile revision before saving.');
+        if (profileConflict && forceRevision === null) throw new Error('Resolve the newer profile revision before saving.');
+        if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+        isSavingRef.current = true;
         setProfileSaveState('saving');
-        const profileToSave = { ...profile, postalcode: profile.postalCode || '', website: profile.websiteUrl || '' };
-        const result = await addProfileToUser(currentUser.uid, profileToSave, profile.revision);
-        if (!result.success) {
-            if (result.code === 'PROFILE_CONFLICT') { setProfileConflict({ remoteRevision: result.remoteRevision }); setProfileSaveState('conflict'); }
-            else setProfileSaveState('failed');
-            throw new Error(result.error || 'Profile save failed.');
+        try {
+            const revisionToUse = forceRevision !== null ? forceRevision : profile.revision;
+            const profileToSave = { ...profile, postalcode: profile.postalCode || '', website: profile.websiteUrl || '' };
+            const result = await addProfileToUser(currentUser.uid, profileToSave, revisionToUse);
+            if (!result.success) {
+                if (result.code === 'PROFILE_CONFLICT') {
+                    setProfileConflict({ remoteRevision: result.remoteRevision });
+                    setProfileSaveState('conflict');
+                } else {
+                    setProfileSaveState('failed');
+                }
+                throw new Error(result.error || 'Profile save failed.');
+            }
+            skipNextAutosaveRef.current = true;
+            setProfileConflict(null);
+            setProfile(result.profile);
+            setProfileSaveState('saved');
+            window.dispatchEvent(new CustomEvent('profileUpdated', { detail: result.profile }));
+            if (notify) triggerNotification('Master Profile saved successfully.');
+            return result;
+        } finally {
+            isSavingRef.current = false;
         }
-        skipNextAutosaveRef.current = true;
-        setProfile(result.profile);
-        setProfileSaveState('saved');
-        window.dispatchEvent(new CustomEvent('profileUpdated', { detail: result.profile }));
-        if (notify) triggerNotification('Master Profile saved successfully.');
-        return result;
     };
     persistProfileRef.current = persistProfile;
-    const reloadProfileConflict = async () => { setProfileConflict(null); setProfileSaveState('loading'); await getProfileOfUserFront(); triggerNotification('Latest profile loaded.'); };
-    const overwriteProfileConflict = () => { setProfile(current => ({ ...current, revision: profileConflict.remoteRevision })); setProfileConflict(null); setProfileSaveState('pending'); triggerNotification('Conflict acknowledged. Your local profile will save as the next revision.'); };
+    const reloadProfileConflict = async () => {
+        if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+        setProfileConflict(null);
+        setProfileSaveState('loading');
+        await getProfileOfUserFront();
+        triggerNotification('Latest profile loaded.');
+    };
+    const overwriteProfileConflict = async () => {
+        if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+        const remoteRev = profileConflict?.remoteRevision;
+        setProfileConflict(null);
+        setProfileSaveState('saving');
+        try {
+            await persistProfile({ notify: true, forceRevision: remoteRev });
+        } catch (err) {
+            triggerNotification(err.message || 'Failed to overwrite profile.', 'error');
+        }
+    };
 
     const handleSubmit = async (e) => {
         e?.preventDefault?.();
@@ -747,11 +778,14 @@ function DashboardSettings(props) {
         if (skipNextAutosaveRef.current) { skipNextAutosaveRef.current = false; return undefined; }
         if (profileConflict) return undefined;
         setProfileSaveState('pending');
-        const timer = setTimeout(async () => {
+        if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = setTimeout(async () => {
             try { await persistProfileRef.current?.(); }
             catch (error) { triggerNotification(error.message || 'Profile autosave failed. Retry with Save.', 'error'); }
         }, 1500);
-        return () => clearTimeout(timer);
+        return () => {
+            if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+        };
     }, [profile, profileConflict]);
 
     // Dynamic Experience Calculator: Merges overlapping work history date intervals into exact total experience span
