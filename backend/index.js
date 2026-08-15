@@ -2077,6 +2077,75 @@ app.post('/api/admin/ai/fetch-models', async (req, res) => {
     }
 });
 
+app.get('/api/admin/ai/quota-stats', async (req, res) => {
+    try {
+        const targetDb = req.app.get('db');
+        if (!targetDb) return res.status(503).json({ success: false, error: 'Database service unavailable' });
+        const today = new Date().toISOString().slice(0, 10);
+
+        // Load configured quota limits from Firestore
+        const quotaDoc = await targetDb.collection('settings').doc('ai_quota').get();
+        const quotaConfig = quotaDoc.data() || {};
+        const limits = {
+            basic: Number(quotaConfig.basicDailyLimit || process.env.AI_BASIC_DAILY_LIMIT || 10),
+            premium: Number(quotaConfig.premiumDailyLimit || process.env.AI_PREMIUM_DAILY_LIMIT || 100),
+            admin: Number(quotaConfig.adminDailyLimit || process.env.AI_ADMIN_DAILY_LIMIT || 10000),
+        };
+
+        // Load today's usage records
+        const usageSnap = await targetDb.collection('ai_usage').get();
+        const todayRecords = [];
+        let totalRecords = 0;
+        for (const doc of usageSnap.docs) {
+            totalRecords++;
+            const data = doc.data() || {};
+            if (doc.id.startsWith(today)) {
+                todayRecords.push({
+                    docId: doc.id,
+                    uid: data.uid || 'unknown',
+                    email: data.email || '',
+                    count: Number(data.count || 0),
+                    limit: Number(data.limit || 0),
+                    day: data.day || today,
+                    lastUsed: data.lastUsed ? (data.lastUsed.toDate ? data.lastUsed.toDate().toISOString() : data.lastUsed) : null,
+                });
+            }
+        }
+
+        return res.json({
+            success: true,
+            limits,
+            today,
+            todayRecords: todayRecords.sort((a, b) => b.count - a.count),
+            totalHistoricalRecords: totalRecords,
+        });
+    } catch (error) {
+        return res.status(500).json({ success: false, error: error.message, requestId: res.locals.requestId });
+    }
+});
+
+app.post('/api/admin/ai/quota-limits', async (req, res) => {
+    try {
+        const targetDb = req.app.get('db');
+        if (!targetDb) return res.status(503).json({ success: false, error: 'Database service unavailable' });
+        const { basicDailyLimit, premiumDailyLimit, adminDailyLimit } = req.body || {};
+        const clamp = (v, min, max, fallback) => { const n = Number(v); return Number.isFinite(n) && n >= min && n <= max ? n : fallback; };
+
+        const update = {
+            basicDailyLimit: clamp(basicDailyLimit, 1, 100000, 10),
+            premiumDailyLimit: clamp(premiumDailyLimit, 1, 100000, 100),
+            adminDailyLimit: clamp(adminDailyLimit, 1, 1000000, 10000),
+            updatedAt: admin ? admin.firestore.FieldValue.serverTimestamp() : new Date(),
+            updatedBy: req.user?.uid || 'admin_console',
+        };
+
+        await targetDb.collection('settings').doc('ai_quota').set(update, { merge: true });
+        return res.json({ success: true, limits: update, message: 'AI quota limits saved successfully.' });
+    } catch (error) {
+        return res.status(500).json({ success: false, error: error.message, requestId: res.locals.requestId });
+    }
+});
+
 app.post('/api/admin/ai/reset-quota', async (req, res) => {
     try {
         const targetDb = req.app.get('db');

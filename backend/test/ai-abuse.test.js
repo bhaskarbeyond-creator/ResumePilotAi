@@ -10,6 +10,7 @@ function quotaDb(membership = 'Basic') {
       return {
         doc(id) {
           if (name === 'users') return { async get() { return { data: () => ({ membership }) }; } };
+          if (name === 'settings' && id === 'ai_quota') return { async get() { return { data: () => ({}) }; } };
           return { id };
         },
       };

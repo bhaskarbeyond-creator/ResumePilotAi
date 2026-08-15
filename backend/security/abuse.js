@@ -78,8 +78,12 @@ async function enforceDailyAiQuota(req, res, next) {
   try {
     const uidHash = crypto.createHash('sha256').update(req.user.uid).digest('hex').slice(0, 40);
     const ref = db.collection('ai_usage').doc(`${dayKey()}_${uidHash}`);
-    const userSnap = await db.collection('users').doc(req.user.uid).get();
+    const [userSnap, quotaSnap] = await Promise.all([
+      db.collection('users').doc(req.user.uid).get(),
+      db.collection('settings').doc('ai_quota').get(),
+    ]);
     const userData = userSnap.data() || {};
+    const quotaConfig = quotaSnap.data() || {};
     const isAdmin = Boolean(
       req.user?.admin ||
       userData.role === 'admin' ||
@@ -91,10 +95,10 @@ async function enforceDailyAiQuota(req, res, next) {
     );
     const tier = String(userData.membership || 'Basic').toLowerCase();
     const limit = isAdmin
-      ? Number(process.env.AI_ADMIN_DAILY_LIMIT || 10000)
+      ? Number(quotaConfig.adminDailyLimit || process.env.AI_ADMIN_DAILY_LIMIT || 10000)
       : tier === 'premium'
-      ? Number(process.env.AI_PREMIUM_DAILY_LIMIT || 100)
-      : Number(process.env.AI_BASIC_DAILY_LIMIT || 10);
+      ? Number(quotaConfig.premiumDailyLimit || process.env.AI_PREMIUM_DAILY_LIMIT || 100)
+      : Number(quotaConfig.basicDailyLimit || process.env.AI_BASIC_DAILY_LIMIT || 10);
     let count = 0;
     await db.runTransaction(async tx => {
       const snap = await tx.get(ref);
@@ -106,9 +110,11 @@ async function enforceDailyAiQuota(req, res, next) {
       }
       tx.set(ref, {
         uid: req.user.uid,
+        email: req.user?.email || userData.email || '',
         day: dayKey(),
         count,
         limit,
+        lastUsed: new Date(),
         updatedAt: new Date()
       }, { merge: true });
     });

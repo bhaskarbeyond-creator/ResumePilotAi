@@ -65,3 +65,12 @@ export const fetchAdminAiModels = ({ provider = 'nvidia', apiKey = '' } = {}) =>
   method: 'POST', headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ provider, ...(apiKey ? { apiKey } : {}) }),
 }, 'Unable to fetch provider models.');
+export const loadQuotaStats = () => request('/api/admin/ai/quota-stats', { cache: 'no-store' }, 'Unable to load AI quota stats.');
+export const saveQuotaLimits = (limits) => request('/api/admin/ai/quota-limits', {
+  method: 'POST', headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(limits),
+}, 'Unable to save AI quota limits.');
+export const resetQuota = ({ uid, all } = {}) => request('/api/admin/ai/reset-quota', {
+  method: 'POST', headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(uid ? { uid } : { all: true }),
+}, 'Unable to reset AI quota.');
