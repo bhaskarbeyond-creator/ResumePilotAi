@@ -270,7 +270,6 @@ class Register extends Component {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email, userName })
                     }).then(res => res.json()).then(data => {
-                        console.log('[Register] Branded crypto verification email dispatch result:', data);
                     }).catch(e => console.warn('[Register] Verification email notice:', e.message));
                 }
             } catch (verifyErr) {
