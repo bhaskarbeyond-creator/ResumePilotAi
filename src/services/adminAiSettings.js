@@ -16,12 +16,12 @@ const messages = {
 export function normalizeAdminApiError(response, result = {}, fallback = 'Request failed.') {
   const nested = result?.error && typeof result.error === 'object' ? result.error : null;
   const code = result.code || nested?.code || (response?.status === 401 ? 'AUTH_REQUIRED' : response?.status === 403 ? 'FORBIDDEN' : null);
-  const serverMessage = typeof result.error === 'string' && result.error.trim() ? result.error.trim() : nested?.message;
-  const serverPreferred = ['AI_SETTINGS_VALIDATION_ERROR', 'AI_SETTINGS_CONFLICT', 'AI_PROVIDER_NOT_CONFIGURED'].includes(code);
+  const rawMsg = typeof result.error === 'string' && result.error.trim() ? result.error.trim() : nested?.message;
+  const serverMessage = rawMsg && rawMsg !== 'internal' ? rawMsg : null;
+  const defaultMsg = messages[code];
   
   const statusSuffix = response?.status && response.status !== 200 ? ` (HTTP ${response.status})` : '';
-  const defaultMsg = messages[code];
-  let message = (serverPreferred ? serverMessage : defaultMsg) || serverMessage || defaultMsg || fallback;
+  let message = (code === 'AI_PROVIDER_AUTHENTICATION_FAILED' && defaultMsg ? defaultMsg : serverMessage) || defaultMsg || serverMessage || fallback;
 
   if (message === fallback && statusSuffix) {
     message = `${fallback}${statusSuffix}`;

@@ -212,13 +212,10 @@ for item in ['index.js', 'package.json', '.env']:
         sftp.put(local_path, os.path.join(remote_backend, item).replace('\\', '/'))
         print(f"Uploaded backend/{item}")
 
-local_routes = os.path.join(local_backend, 'routes')
-if os.path.exists(local_routes):
-    upload_dir(local_routes, os.path.join(remote_backend, 'routes').replace('\\', '/'))
-
-local_services = os.path.join(local_backend, 'services')
-if os.path.exists(local_services):
-    upload_dir(local_services, os.path.join(remote_backend, 'services').replace('\\', '/'))
+for folder in ['routes', 'services', 'security']:
+    local_folder = os.path.join(local_backend, folder)
+    if os.path.exists(local_folder):
+        upload_dir(local_folder, os.path.join(remote_backend, folder).replace('\\', '/'))
 
 sftp.close()
 print("All files transferred successfully!")

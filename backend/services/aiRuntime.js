@@ -2,7 +2,7 @@ const crypto = require('crypto');
 
 const PROVIDERS = Object.freeze(['nvidia', 'gemini', 'openai', 'groq', 'openrouter', 'deepseek']);
 const PROVIDER_DEFAULTS = Object.freeze({
-    nvidia: { model: 'poolside/laguna-xs-2.1', url: 'https://integrate.api.nvidia.com/v1/chat/completions' },
+    nvidia: { model: 'meta/llama-3.1-8b-instruct', url: 'https://integrate.api.nvidia.com/v1/chat/completions' },
     gemini: { model: 'gemini-2.0-flash' },
     openai: { model: 'gpt-4o-mini', url: 'https://api.openai.com/v1/chat/completions' },
     groq: { model: 'llama-3.3-70b-versatile', url: 'https://api.groq.com/openai/v1/chat/completions' },
