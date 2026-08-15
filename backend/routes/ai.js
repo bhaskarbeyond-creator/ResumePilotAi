@@ -2122,13 +2122,51 @@ router.post('/check-grammar', async (req, res) => {
 
         try {
             const grammarResult = extractJson(jsonText) || extractJson(text_response);
-            
             if (grammarResult && typeof grammarResult === 'object') {
+                const validTypes = new Set(['grammar', 'spelling', 'punctuation', 'style']);
+                const rawCorrections = Array.isArray(grammarResult.corrections) ? grammarResult.corrections : [];
+                const normalizedCorrections = [];
+
+                for (const item of rawCorrections) {
+                    if (!item || typeof item !== 'object') continue;
+                    const original = String(item.original || '').trim();
+                    const suggestion = String(item.suggestion || '').trim();
+                    if (!original || !suggestion) continue;
+
+                    let startIndex = Number.isInteger(item.startIndex) ? item.startIndex : -1;
+                    let endIndex = Number.isInteger(item.endIndex) ? item.endIndex : -1;
+
+                    // Verify or recalculate indices to guarantee exact match with source text
+                    if (startIndex < 0 || endIndex <= startIndex || text.slice(startIndex, endIndex) !== original) {
+                        const foundIdx = text.indexOf(original);
+                        if (foundIdx !== -1) {
+                            startIndex = foundIdx;
+                            endIndex = foundIdx + original.length;
+                        }
+                    }
+
+                    const type = validTypes.has(item.type?.toLowerCase()) ? item.type.toLowerCase() : 'grammar';
+                    normalizedCorrections.push({
+                        original,
+                        suggestion,
+                        type,
+                        explanation: String(item.explanation || `Suggested improvement for ${original}`).slice(0, 300),
+                        startIndex: Math.max(0, startIndex),
+                        endIndex: Math.max(0, endIndex),
+                    });
+                }
+
+                const finalResult = {
+                    hasErrors: Boolean(grammarResult.hasErrors) || normalizedCorrections.length > 0,
+                    corrections: normalizedCorrections.slice(0, 50),
+                    overallSuggestion: String(grammarResult.overallSuggestion || 'Grammar and style check complete.').slice(0, 1000)
+                };
+
                 console.log('Successfully generated AI grammar check for language:', targetLanguage);
-                console.log('Found errors:', grammarResult.hasErrors);
-                console.log('Number of corrections:', grammarResult.corrections?.length || 0);
+                console.log('Found errors:', finalResult.hasErrors);
+                console.log('Number of corrections:', finalResult.corrections.length);
                 
-                res.json(grammarResult);
+                return res.json(finalResult);
             } else {
                 throw new Error('Invalid response format');
             }
