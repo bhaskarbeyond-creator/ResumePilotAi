@@ -5,6 +5,7 @@ import { withTranslation } from 'react-i18next';
 import { createCompany } from '../../../firestore/dbOperations';
 import { AuthContext } from '../../../main';
 import LocationAutocomplete from '../../JobsListings/LocationAutocomplete';
+import { sanitizeImageUrl, sanitizeUrl } from '../../../utils/sanitizeHtml';
 
 const AddCompanyModal = ({ isOpen, onClose, showToast, t }) => {
     const user = useContext(AuthContext);
@@ -105,12 +106,12 @@ const AddCompanyModal = ({ isOpen, onClose, showToast, t }) => {
         }
 
         // Optional validation for website URL
-        if (formData.website && !isValidUrl(formData.website)) {
+        if (formData.website && (!sanitizeUrl(formData.website).startsWith('https:'))) {
             newErrors.website = t('JobsUpdate.AddCompanyModal.validation.invalidWebsite', 'Please enter a valid website URL');
         }
 
         // Optional validation for company logo URL
-        if (formData.companyImage && !isValidUrl(formData.companyImage)) {
+        if (formData.companyImage && !sanitizeImageUrl(formData.companyImage)) {
             newErrors.companyImage = t('JobsUpdate.AddCompanyModal.validation.invalidImage', 'Please enter a valid image URL');
         }
 
@@ -121,15 +122,6 @@ const AddCompanyModal = ({ isOpen, onClose, showToast, t }) => {
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
-    };
-
-    const isValidUrl = (string) => {
-        try {
-            new URL(string);
-            return true;
-        } catch (_) {
-            return false;
-        }
     };
 
     const isValidEmail = (email) => {
@@ -342,7 +334,7 @@ const AddCompanyModal = ({ isOpen, onClose, showToast, t }) => {
                                 {errors.companyImage}
                             </p>
                         )}
-                        {formData.companyImage && !errors.companyImage && (
+                        {sanitizeImageUrl(formData.companyImage) && !errors.companyImage && (
                             <motion.div 
                                 className="mt-4 flex items-center space-x-4 p-4 bg-slate-50 rounded-lg border border-slate-200"
                                 initial={{ opacity: 0, scale: 0.95 }}
@@ -351,7 +343,7 @@ const AddCompanyModal = ({ isOpen, onClose, showToast, t }) => {
                             >
                                 <div className="w-16 h-16 bg-white rounded-lg border border-slate-200 shadow-sm flex items-center justify-center overflow-hidden">
                                     <img
-                                        src={formData.companyImage}
+                                        src={sanitizeImageUrl(formData.companyImage)}
                                         alt="Company logo preview"
                                         className="w-full h-full object-contain"
                                         onError={(e) => {

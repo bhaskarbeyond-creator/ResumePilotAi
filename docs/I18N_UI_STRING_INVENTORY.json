@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-08-14",
+  "generatedAt": "2026-08-15",
   "scope": [
     "src/components"
   ],
   "method": "Deterministic single-line JSX text and literal user-facing attribute inventory; dynamic expressions and multiline text require professional source review.",
   "filesScanned": 281,
-  "occurrences": 2901,
+  "occurrences": 2909,
   "summary": {
     "INTENTIONAL_BRAND_PROVIDER": 26,
     "TECHNICAL_OR_IDENTIFIER": 196,
-    "USER_FACING_ACCESSIBILITY": 306,
-    "USER_FACING_ENGLISH_CANDIDATE": 2373
+    "USER_FACING_ACCESSIBILITY": 308,
+    "USER_FACING_ENGLISH_CANDIDATE": 2379
   },
   "inventory": [
     {
@@ -3263,63 +3263,63 @@
     },
     {
       "file": "src/components/Blog/BlogList/BlogList.jsx",
-      "line": 259,
+      "line": 261,
       "kind": "jsx-text",
       "text": "Newest First",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Blog/BlogList/BlogList.jsx",
-      "line": 260,
+      "line": 262,
       "kind": "jsx-text",
       "text": "Oldest First",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Blog/BlogList/BlogList.jsx",
-      "line": 261,
+      "line": 263,
       "kind": "jsx-text",
       "text": "Most Popular",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Blog/BlogList/BlogList.jsx",
-      "line": 276,
+      "line": 278,
       "kind": "title",
       "text": "Grid view",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/Blog/BlogList/BlogList.jsx",
-      "line": 287,
+      "line": 289,
       "kind": "title",
       "text": "List view",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/Blog/BlogList/BlogList.jsx",
-      "line": 314,
+      "line": 317,
       "kind": "jsx-text",
       "text": "No articles found",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Blog/BlogList/BlogList.jsx",
-      "line": 366,
+      "line": 369,
       "kind": "jsx-text",
       "text": "of",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Blog/BlogList/BlogList.jsx",
-      "line": 437,
+      "line": 440,
       "kind": "jsx-text",
       "text": "Load More Articles",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Blog/BlogPost/BlogPost.jsx",
-      "line": 382,
+      "line": 391,
       "kind": "jsx-text",
       "text": "No content available for this post.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
@@ -4326,6 +4326,34 @@
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
+      "file": "src/components/CustomPage/CustomePage.jsx",
+      "line": 76,
+      "kind": "jsx-text",
+      "text": "Loading page…",
+      "classification": "USER_FACING_ENGLISH_CANDIDATE"
+    },
+    {
+      "file": "src/components/CustomPage/CustomePage.jsx",
+      "line": 77,
+      "kind": "jsx-text",
+      "text": "Page not found",
+      "classification": "USER_FACING_ENGLISH_CANDIDATE"
+    },
+    {
+      "file": "src/components/CustomPage/CustomePage.jsx",
+      "line": 77,
+      "kind": "jsx-text",
+      "text": "This client-side route is unavailable or not published. The deployment edge may still return HTTP 200 for this SPA route.",
+      "classification": "USER_FACING_ENGLISH_CANDIDATE"
+    },
+    {
+      "file": "src/components/CustomPage/CustomePage.jsx",
+      "line": 78,
+      "kind": "jsx-text",
+      "text": "Page unavailable",
+      "classification": "USER_FACING_ENGLISH_CANDIDATE"
+    },
+    {
       "file": "src/components/Dashboard/CoversList/CoversList.jsx",
       "line": 116,
       "kind": "jsx-text",
@@ -4593,1148 +4621,1148 @@
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1248,
+      "line": 1251,
       "kind": "alt",
       "text": "Profile avatar",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1255,
+      "line": 1258,
       "kind": "title",
       "text": "Email verified",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1255,
+      "line": 1258,
       "kind": "aria-label",
       "text": "Email verified",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1317,
+      "line": 1320,
       "kind": "jsx-text",
       "text": "Master Profile",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1328,
+      "line": 1331,
       "kind": "jsx-text",
       "text": "Account &amp; Security",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1334,
+      "line": 1337,
       "kind": "jsx-text",
       "text": "Profile save:",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1334,
+      "line": 1337,
       "kind": "jsx-text",
       "text": "Discard local changes and load latest",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1334,
+      "line": 1337,
       "kind": "jsx-text",
       "text": "Overwrite latest with local profile",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1398,
+      "line": 1401,
       "kind": "alt",
       "text": "Avatar",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1406,
+      "line": 1409,
       "kind": "jsx-text",
       "text": "Profile Photo",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1407,
+      "line": 1410,
       "kind": "jsx-text",
       "text": "Drag and drop or browse photo for resume headers",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1421,
+      "line": 1424,
       "kind": "jsx-text",
       "text": "First Name *",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1422,
+      "line": 1425,
       "kind": "placeholder",
       "text": "First Name",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1425,
+      "line": 1428,
       "kind": "jsx-text",
       "text": "Last Name *",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1426,
+      "line": 1429,
       "kind": "placeholder",
       "text": "Last Name",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1429,
+      "line": 1432,
       "kind": "jsx-text",
       "text": "Email Address *",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1430,
+      "line": 1433,
       "kind": "placeholder",
       "text": "Email",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1433,
+      "line": 1436,
       "kind": "jsx-text",
       "text": "Phone Number *",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1434,
+      "line": 1437,
       "kind": "placeholder",
       "text": "Phone",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1442,
+      "line": 1445,
       "kind": "placeholder",
       "text": "e.g. Senior Full Stack Engineer",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1449,
+      "line": 1452,
       "kind": "jsx-text",
       "text": "Street Address",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1450,
+      "line": 1453,
       "kind": "placeholder",
       "text": "Street Address",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1458,
+      "line": 1461,
       "kind": "placeholder",
       "text": "City, State",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1465,
+      "line": 1468,
       "kind": "jsx-text",
       "text": "Postal Code",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1466,
+      "line": 1469,
       "kind": "placeholder",
       "text": "Postal Code",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1472,
+      "line": 1475,
       "kind": "placeholder",
       "text": "https://linkedin.com/in/username",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1478,
+      "line": 1481,
       "kind": "placeholder",
       "text": "https://github.com/username",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1481,
+      "line": 1484,
       "kind": "jsx-text",
       "text": "Country",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1482,
+      "line": 1485,
       "kind": "placeholder",
       "text": "Country (e.g. India)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1488,
+      "line": 1491,
       "kind": "placeholder",
       "text": "https://yourwebsite.com",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1499,
+      "line": 1502,
       "kind": "jsx-text",
       "text": "Executive Bio &amp; Professional Summary",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1500,
+      "line": 1503,
       "kind": "jsx-text",
       "text": "Auto-loaded into all new resumes and AI cover letters.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1504,
+      "line": 1507,
       "kind": "jsx-text",
       "text": "Tone:",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1529,
+      "line": 1532,
       "kind": "placeholder",
       "text": "Write or select a tone above and click 'Write Executive Bio with AI' to generate...",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1538,
+      "line": 1541,
       "kind": "jsx-text",
       "text": "Work History & Past Positions",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1539,
+      "line": 1542,
       "kind": "jsx-text",
       "text": "Add past employment details to pre-populate all future resumes automatically.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1548,
+      "line": 1551,
       "kind": "jsx-text",
       "text": "No work history saved in Master Profile",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1549,
+      "line": 1552,
       "kind": "jsx-text",
       "text": "Click \"Add Position\" above or sync LinkedIn to store your experience once for all resumes.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1558,
+      "line": 1561,
       "kind": "title",
       "text": "Delete position",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1569,
+      "line": 1572,
       "kind": "placeholder",
       "text": "e.g. Senior Developer",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1581,
+      "line": 1584,
       "kind": "placeholder",
       "text": "e.g. TechCorp",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1593,
+      "line": 1596,
       "kind": "placeholder",
       "text": "e.g. Visakhapatnam, India",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1626,
+      "line": 1629,
       "kind": "jsx-text",
       "text": "Responsibilities &amp; Accomplishments",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1631,
+      "line": 1634,
       "kind": "placeholder",
       "text": "e.g. Implemented new technologies, resulting in a 30% decrease in system downtime...",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1653,
+      "line": 1656,
       "kind": "jsx-text",
       "text": "Education & Academic Degrees",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1654,
+      "line": 1657,
       "kind": "jsx-text",
       "text": "Save degrees to automatically populate education sections in resumes.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1663,
+      "line": 1666,
       "kind": "jsx-text",
       "text": "No education entries saved in Master Profile",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1664,
+      "line": 1667,
       "kind": "jsx-text",
       "text": "Click \"Add Degree\" to save your educational background.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1673,
+      "line": 1676,
       "kind": "title",
       "text": "Delete education degree",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1683,
+      "line": 1686,
       "kind": "placeholder",
       "text": "e.g. B.S. Computer Science",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1695,
+      "line": 1698,
       "kind": "placeholder",
       "text": "e.g. Stanford University",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1716,
+      "line": 1719,
       "kind": "placeholder",
       "text": "e.g. Cambridge, MA",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1723,
+      "line": 1726,
       "kind": "jsx-text",
       "text": "GPA / Academic Honors (Optional)",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1728,
+      "line": 1731,
       "kind": "placeholder",
       "text": "e.g. 3.9/4.0 GPA, Summa Cum Laude",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1752,
+      "line": 1755,
       "kind": "jsx-text",
       "text": "Skills & Technical Competencies",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1753,
+      "line": 1756,
       "kind": "jsx-text",
       "text": "Save core technical skills for auto-filling skills lists.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1762,
+      "line": 1765,
       "kind": "jsx-text",
       "text": "Auto-Recommend Skills (AI)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1772,
+      "line": 1775,
       "kind": "jsx-text",
       "text": "No skills saved in Master Profile",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1780,
+      "line": 1783,
       "kind": "jsx-text",
       "text": "Auto-Recommend Top Skills (AI)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1797,
+      "line": 1800,
       "kind": "placeholder",
       "text": "Skill name",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1806,
+      "line": 1809,
       "kind": "title",
       "text": "Delete skill",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1822,
+      "line": 1825,
       "kind": "jsx-text",
       "text": "Auto-Recommend Skills (AI)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1837,
+      "line": 1840,
       "kind": "jsx-text",
       "text": "Professional Certifications & Credentials",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1838,
+      "line": 1841,
       "kind": "jsx-text",
       "text": "Add AWS, PMP, Scrum Master, or professional licenses.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1847,
+      "line": 1850,
       "kind": "jsx-text",
       "text": "Recommend Certifications (AI)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1857,
+      "line": 1860,
       "kind": "jsx-text",
       "text": "No certifications saved in Master Profile",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1865,
+      "line": 1868,
       "kind": "jsx-text",
       "text": "Recommend Industry Certifications (AI)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1881,
+      "line": 1884,
       "kind": "placeholder",
       "text": "Certification Title (e.g. AWS Solutions Architect)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1890,
+      "line": 1893,
       "kind": "placeholder",
       "text": "Issuing Organization (e.g. Amazon Web Services)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1894,
+      "line": 1897,
       "kind": "placeholder",
       "text": "Date Issued (e.g. 2024)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1895,
+      "line": 1898,
       "kind": "placeholder",
       "text": "Credential Link (URL)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1901,
+      "line": 1904,
       "kind": "title",
       "text": "Delete certification",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1916,
+      "line": 1919,
       "kind": "jsx-text",
       "text": "Recommend Certifications (AI)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1931,
+      "line": 1934,
       "kind": "jsx-text",
       "text": "Languages & Proficiency",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1932,
+      "line": 1935,
       "kind": "jsx-text",
       "text": "Add languages you speak and your level of proficiency.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1958,
+      "line": 1961,
       "kind": "jsx-text",
       "text": "No languages saved in Master Profile",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1959,
+      "line": 1962,
       "kind": "jsx-text",
       "text": "Click \"Add Language\" or tap a language pill above.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1971,
+      "line": 1974,
       "kind": "placeholder",
       "text": "Language (e.g. English)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 1989,
+      "line": 1992,
       "kind": "title",
       "text": "Delete language",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2012,
+      "line": 2015,
       "kind": "jsx-text",
       "text": "Portfolio & Personal Projects",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2013,
+      "line": 2016,
       "kind": "jsx-text",
       "text": "Add key open-source or commercial projects.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2022,
+      "line": 2025,
       "kind": "jsx-text",
       "text": "No portfolio projects saved in Master Profile",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2023,
+      "line": 2026,
       "kind": "jsx-text",
       "text": "Click \"Add Project\" to record your technical projects.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2032,
+      "line": 2035,
       "kind": "title",
       "text": "Delete project",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2037,
+      "line": 2040,
       "kind": "placeholder",
       "text": "Project Title",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2040,
+      "line": 2043,
       "kind": "placeholder",
       "text": "Live Demo / Repository URL",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2043,
+      "line": 2046,
       "kind": "placeholder",
       "text": "Short project summary or key tech stack used...",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2117,
+      "line": 2120,
       "kind": "jsx-text",
       "text": "Subscription Tier",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2122,
+      "line": 2125,
       "kind": "jsx-text",
       "text": "Active access to unlimited AI resumes, cover letters &amp; job tracking tools.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2129,
+      "line": 2132,
       "kind": "jsx-text",
       "text": "Manage Subscription &amp; Plans",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2140,
+      "line": 2143,
       "kind": "jsx-text",
       "text": "Account Credentials &amp; Security",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2141,
+      "line": 2144,
       "kind": "jsx-text",
       "text": "Update your primary login email and security authentication password.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2156,
+      "line": 2159,
       "kind": "placeholder",
       "text": "name@example.com",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2169,
+      "line": 2172,
       "kind": "jsx-text",
       "text": "Current Password (Required for Email or Password Change)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2175,
+      "line": 2178,
       "kind": "placeholder",
       "text": "Enter current password to re-authenticate",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2190,
+      "line": 2193,
       "kind": "jsx-text",
       "text": "New Security Password",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2196,
+      "line": 2199,
       "kind": "placeholder",
       "text": "Min. 8 characters",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2210,
+      "line": 2213,
       "kind": "jsx-text",
       "text": "Confirm New Password",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2216,
+      "line": 2219,
       "kind": "placeholder",
       "text": "Re-enter new password",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2232,
+      "line": 2235,
       "kind": "jsx-text",
       "text": "Security Standards Checklist",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2236,
+      "line": 2239,
       "kind": "jsx-text",
       "text": "At least 8 characters",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2240,
+      "line": 2243,
       "kind": "jsx-text",
       "text": "Uppercase letter (A-Z)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2244,
+      "line": 2247,
       "kind": "jsx-text",
       "text": "Number or special character",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2248,
+      "line": 2251,
       "kind": "jsx-text",
       "text": "Passwords match",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2274,
+      "line": 2277,
       "kind": "jsx-text",
       "text": "Mobile SMS Security &amp; Outgoing Alerts",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2275,
+      "line": 2278,
       "kind": "jsx-text",
       "text": "Configure your primary mobile number for instant SMS security notifications upon logins, 2FA updates, or password changes.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2312,
+      "line": 2315,
       "kind": "jsx-text",
       "text": "Dispatch Test SMS Alert",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2326,
+      "line": 2329,
       "kind": "jsx-text",
       "text": "Two-Factor Authentication (TOTP 2FA)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2327,
+      "line": 2330,
       "kind": "jsx-text",
       "text": "Protect your account using Google Authenticator, Authy, Microsoft Authenticator, or 1Password.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2367,
+      "line": 2370,
       "kind": "jsx-text",
       "text": "Enable 2FA (Authenticator App)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2382,
+      "line": 2385,
       "kind": "jsx-text",
       "text": "Email Verification Status",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2383,
+      "line": 2386,
       "kind": "jsx-text",
       "text": "Verify your email address for account recovery and notification delivery.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2399,
+      "line": 2402,
       "kind": "jsx-text",
       "text": "Your email address has not been verified yet.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2400,
+      "line": 2403,
       "kind": "jsx-text",
       "text": "Click below to send a verification confirmation link to",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2413,
+      "line": 2416,
       "kind": "jsx-text",
       "text": "Preferences &amp; Privacy",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2413,
+      "line": 2416,
       "kind": "jsx-text",
       "text": "These account-scoped choices do not change analytics consent or payment state.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2414,
+      "line": 2417,
       "kind": "jsx-text",
       "text": "Language",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2414,
+      "line": 2417,
       "kind": "jsx-text",
       "text": "English",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2414,
+      "line": 2417,
       "kind": "jsx-text",
       "text": "Español",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2414,
+      "line": 2417,
       "kind": "jsx-text",
       "text": "Français",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2414,
+      "line": 2417,
       "kind": "jsx-text",
       "text": "Deutsch",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2414,
+      "line": 2417,
       "kind": "jsx-text",
       "text": "Português",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2414,
+      "line": 2417,
       "kind": "jsx-text",
       "text": "Italiano",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2414,
+      "line": 2417,
       "kind": "jsx-text",
       "text": "Nederlands",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2427,
+      "line": 2430,
       "kind": "jsx-text",
       "text": "GDPR Data Portability &amp; Backup",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2428,
+      "line": 2431,
       "kind": "jsx-text",
       "text": "Download JSON for your profile, resumes, cover letters, Portfolios, CMS posts, employer content, applications, and accessible transactions. Provider-held identity/billing/audit records may require support export channels.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2437,
+      "line": 2440,
       "kind": "jsx-text",
       "text": "Download All My Data (JSON)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2450,
+      "line": 2453,
       "kind": "jsx-text",
       "text": "Active Device Sessions",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2451,
+      "line": 2454,
       "kind": "jsx-text",
       "text": "Manage device logins and authenticated browser sessions.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2463,
+      "line": 2466,
       "kind": "jsx-text",
       "text": "Current Session",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2464,
+      "line": 2467,
       "kind": "jsx-text",
       "text": "Active Now",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2488,
+      "line": 2491,
       "kind": "jsx-text",
       "text": "Historical Login Audit Trail",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2489,
+      "line": 2492,
       "kind": "jsx-text",
       "text": "Security history of authenticated logins, devices, browsers, and timestamps.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2509,
+      "line": 2512,
       "kind": "jsx-text",
       "text": "Recent Login Session Recorded",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2510,
+      "line": 2513,
       "kind": "jsx-text",
       "text": "Future login sessions will automatically build your security audit trail here.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2517,
+      "line": 2520,
       "kind": "jsx-text",
       "text": "Date &amp; Time",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2518,
+      "line": 2521,
       "kind": "jsx-text",
       "text": "Device OS",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2519,
+      "line": 2522,
       "kind": "jsx-text",
       "text": "Browser",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2520,
+      "line": 2523,
       "kind": "jsx-text",
       "text": "Sign-In Provider",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2521,
+      "line": 2524,
       "kind": "jsx-text",
       "text": "Status",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2555,
+      "line": 2558,
       "kind": "jsx-text",
       "text": "Danger Zone — Account Deletion",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2556,
+      "line": 2559,
       "kind": "jsx-text",
       "text": "Permanently delete your account, master profile, saved resumes, and subscription data.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2564,
+      "line": 2567,
       "kind": "jsx-text",
       "text": "Delete Account",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2598,
+      "line": 2601,
       "kind": "jsx-text",
       "text": "Confirm Permanent Account Deletion",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2601,
+      "line": 2604,
       "kind": "jsx-text",
       "text": "irreversible",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2606,
+      "line": 2609,
       "kind": "jsx-text",
       "text": "Current Password (Required for Identity Verification):",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2607,
+      "line": 2610,
       "kind": "placeholder",
       "text": "Enter current password",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2610,
+      "line": 2613,
       "kind": "jsx-text",
       "text": "Your identity provider or recent verified sign-in will be used for confirmation.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2614,
+      "line": 2617,
       "kind": "jsx-text",
       "text": "DELETE",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2620,
+      "line": 2623,
       "kind": "placeholder",
       "text": "DELETE",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2656,
+      "line": 2659,
       "kind": "jsx-text",
       "text": "Set Up Authenticator App (2FA)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2672,
+      "line": 2675,
       "kind": "jsx-text",
       "text": "1. Open Google Authenticator or Authy",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2672,
+      "line": 2675,
       "kind": "jsx-text",
       "text": "on your mobile phone and tap",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2679,
+      "line": 2682,
       "kind": "alt",
       "text": "2FA QR Code",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2684,
+      "line": 2687,
       "kind": "jsx-text",
       "text": "Can't scan? Enter key manually:",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2694,
+      "line": 2697,
       "kind": "title",
       "text": "Copy key",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2698,
+      "line": 2701,
       "kind": "jsx-text",
       "text": "Account Type: Time-based (TOTP), 6 digits, 30s period.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2723,
+      "line": 2726,
       "kind": "jsx-text",
       "text": "6-digit security code",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2727,
+      "line": 2730,
       "kind": "jsx-text",
       "text": "6-Digit Verification Code",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2760,
+      "line": 2763,
       "kind": "jsx-text",
       "text": "Two-factor authentication is active.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2779,
+      "line": 2782,
       "kind": "jsx-text",
       "text": "Disable Two-Factor Authentication",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2787,
+      "line": 2790,
       "kind": "jsx-text",
       "text": "Current Account Password (Required):",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2788,
+      "line": 2791,
       "kind": "placeholder",
       "text": "Enter current password",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx",
-      "line": 2791,
+      "line": 2794,
       "kind": "jsx-text",
       "text": "Your identity provider will open a secure reauthentication popup.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
@@ -5958,77 +5986,77 @@
     },
     {
       "file": "src/components/Dashboard/EmployerDashboard/AddCompanyModal.jsx",
-      "line": 308,
+      "line": 300,
       "kind": "placeholder",
       "text": "https://example.com",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/Dashboard/EmployerDashboard/AddCompanyModal.jsx",
-      "line": 336,
+      "line": 328,
       "kind": "placeholder",
       "text": "https://example.com/logo.png",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/Dashboard/EmployerDashboard/AddCompanyModal.jsx",
-      "line": 338,
+      "line": 330,
       "kind": "jsx-text",
       "text": "Provide a URL to your company logo (PNG, JPG, or SVG)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/EmployerDashboard/AddCompanyModal.jsx",
-      "line": 355,
+      "line": 347,
       "kind": "alt",
       "text": "Company logo preview",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/Dashboard/EmployerDashboard/AddCompanyModal.jsx",
-      "line": 363,
+      "line": 355,
       "kind": "jsx-text",
       "text": "Logo Preview",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/EmployerDashboard/AddCompanyModal.jsx",
-      "line": 364,
+      "line": 356,
       "kind": "jsx-text",
       "text": "This will appear in job listings",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/EmployerDashboard/AddCompanyModal.jsx",
-      "line": 443,
+      "line": 435,
       "kind": "placeholder",
       "text": "City, State/Country",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/EmployerDashboard/AddCompanyModal.jsx",
-      "line": 471,
+      "line": 463,
       "kind": "placeholder",
       "text": "Full address (optional)",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/EmployerDashboard/AddCompanyModal.jsx",
-      "line": 489,
+      "line": 481,
       "kind": "placeholder",
       "text": "Phone number",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/EmployerDashboard/AddCompanyModal.jsx",
-      "line": 509,
+      "line": 501,
       "kind": "placeholder",
       "text": "contact@company.com",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/EmployerDashboard/AddCompanyModal.jsx",
-      "line": 533,
+      "line": 525,
       "kind": "placeholder",
       "text": "Brief description of the company, its mission, and what it does...",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
@@ -6182,21 +6210,28 @@
     },
     {
       "file": "src/components/Dashboard/ProfileDisplay/NotificationPanel.jsx",
-      "line": 64,
+      "line": 69,
       "kind": "jsx-text",
       "text": "Notifications",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/ProfileDisplay/NotificationPanel.jsx",
-      "line": 94,
+      "line": 86,
+      "kind": "aria-label",
+      "text": "Close notifications",
+      "classification": "USER_FACING_ACCESSIBILITY"
+    },
+    {
+      "file": "src/components/Dashboard/ProfileDisplay/NotificationPanel.jsx",
+      "line": 101,
       "kind": "jsx-text",
       "text": "No notifications",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/Dashboard/ProfileDisplay/NotificationPanel.jsx",
-      "line": 182,
+      "line": 189,
       "kind": "title",
       "text": "Unread",
       "classification": "USER_FACING_ACCESSIBILITY"
@@ -11131,28 +11166,28 @@
     },
     {
       "file": "src/components/PublicPortfolio/PublicPortfolio.jsx",
-      "line": 160,
+      "line": 169,
       "kind": "jsx-text",
       "text": "Loading portfolio...",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/PublicPortfolio/PublicPortfolio.jsx",
-      "line": 171,
+      "line": 180,
       "kind": "jsx-text",
       "text": "Portfolio Unavailable",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/PublicPortfolio/PublicPortfolio.jsx",
-      "line": 194,
+      "line": 203,
       "kind": "jsx-text",
       "text": "Portfolio Under Construction",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/PublicPortfolio/PublicPortfolio.jsx",
-      "line": 195,
+      "line": 204,
       "kind": "jsx-text",
       "text": "This portfolio is being built and will be available soon.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
@@ -11460,364 +11495,364 @@
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 379,
+      "line": 380,
       "kind": "jsx-text",
       "text": "Blog Management",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 380,
+      "line": 381,
       "kind": "jsx-text",
       "text": "Review and manage blog posts",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 422,
+      "line": 423,
       "kind": "jsx-text",
       "text": "Filters",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 427,
+      "line": 428,
       "kind": "jsx-text",
       "text": "Status",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 434,
+      "line": 435,
       "kind": "jsx-text",
       "text": "All Status",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 435,
+      "line": 436,
       "kind": "jsx-text",
       "text": "Draft",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 436,
+      "line": 437,
       "kind": "jsx-text",
       "text": "Pending",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 437,
+      "line": 438,
       "kind": "jsx-text",
       "text": "Approved",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 438,
+      "line": 439,
       "kind": "jsx-text",
       "text": "Scheduled",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 439,
+      "line": 440,
       "kind": "jsx-text",
       "text": "Rejected",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 444,
+      "line": 445,
       "kind": "jsx-text",
       "text": "Category",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 451,
+      "line": 452,
       "kind": "jsx-text",
       "text": "All Categories",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 461,
+      "line": 462,
       "kind": "jsx-text",
       "text": "Filter titles on this page",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 467,
+      "line": 468,
       "kind": "placeholder",
       "text": "Filter visible titles...",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 476,
+      "line": 477,
       "kind": "jsx-text",
       "text": "Filter authors on this page",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 480,
+      "line": 481,
       "kind": "placeholder",
       "text": "Filter visible authors...",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 490,
+      "line": 491,
       "kind": "jsx-text",
       "text": "Publish due scheduled posts",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 537,
+      "line": 538,
       "kind": "jsx-text",
       "text": "No posts found",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 598,
+      "line": 599,
       "kind": "aria-label",
       "text": "Toggle content preview",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 599,
+      "line": 600,
       "kind": "title",
       "text": "Toggle content preview",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 650,
+      "line": 651,
       "kind": "jsx-text",
       "text": "Created",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 666,
+      "line": 667,
       "kind": "aria-label",
       "text": "View live post",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 667,
+      "line": 668,
       "kind": "title",
       "text": "View live post",
-      "classification": "USER_FACING_ACCESSIBILITY"
-    },
-    {
-      "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 676,
-      "kind": "aria-label",
-      "text": "Preview post",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
       "line": 677,
+      "kind": "aria-label",
+      "text": "Preview post",
+      "classification": "USER_FACING_ACCESSIBILITY"
+    },
+    {
+      "file": "src/components/admin/blogManagement/BlogManagement.jsx",
+      "line": 678,
       "kind": "title",
       "text": "Preview post",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 688,
+      "line": 689,
       "kind": "aria-label",
       "text": "Edit your post",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 689,
+      "line": 690,
       "kind": "title",
       "text": "Edit your post",
-      "classification": "USER_FACING_ACCESSIBILITY"
-    },
-    {
-      "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 702,
-      "kind": "aria-label",
-      "text": "Approve post",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
       "line": 703,
+      "kind": "aria-label",
+      "text": "Approve post",
+      "classification": "USER_FACING_ACCESSIBILITY"
+    },
+    {
+      "file": "src/components/admin/blogManagement/BlogManagement.jsx",
+      "line": 704,
       "kind": "title",
       "text": "Approve post",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 711,
-      "kind": "aria-label",
-      "text": "Schedule publication",
-      "classification": "USER_FACING_ACCESSIBILITY"
-    },
-    {
-      "file": "src/components/admin/blogManagement/BlogManagement.jsx",
       "line": 712,
-      "kind": "title",
+      "kind": "aria-label",
       "text": "Schedule publication",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
       "line": 713,
+      "kind": "title",
+      "text": "Schedule publication",
+      "classification": "USER_FACING_ACCESSIBILITY"
+    },
+    {
+      "file": "src/components/admin/blogManagement/BlogManagement.jsx",
+      "line": 714,
       "kind": "jsx-text",
       "text": "Schedule",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 718,
+      "line": 719,
       "kind": "aria-label",
       "text": "Reject post",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 719,
+      "line": 720,
       "kind": "title",
       "text": "Reject post",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 726,
+      "line": 727,
       "kind": "jsx-text",
       "text": "Unpublish",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 726,
+      "line": 727,
       "kind": "aria-label",
       "text": "Unpublish and return for revision",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 726,
+      "line": 727,
       "kind": "title",
       "text": "Unpublish and return for revision",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 729,
+      "line": 730,
       "kind": "jsx-text",
       "text": "Cancel schedule",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 729,
+      "line": 730,
       "kind": "aria-label",
       "text": "Cancel scheduled publication",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 729,
+      "line": 730,
       "kind": "title",
       "text": "Cancel scheduled publication",
-      "classification": "USER_FACING_ACCESSIBILITY"
-    },
-    {
-      "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 737,
-      "kind": "aria-label",
-      "text": "Delete post",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
       "line": 738,
+      "kind": "aria-label",
+      "text": "Delete post",
+      "classification": "USER_FACING_ACCESSIBILITY"
+    },
+    {
+      "file": "src/components/admin/blogManagement/BlogManagement.jsx",
+      "line": 739,
       "kind": "title",
       "text": "Delete post",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 754,
+      "line": 755,
       "kind": "jsx-text",
       "text": "Content Preview",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 761,
+      "line": 762,
       "kind": "jsx-text",
       "text": "No content available",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 770,
+      "line": 771,
       "kind": "jsx-text",
       "text": "Featured Image",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 773,
+      "line": 774,
       "kind": "alt",
       "text": "Featured",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 780,
+      "line": 781,
       "kind": "jsx-text",
       "text": "Quick Actions",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 849,
+      "line": 850,
       "kind": "jsx-text",
       "text": "Cancel",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 850,
+      "line": 851,
       "kind": "jsx-text",
       "text": "Confirm",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 859,
+      "line": 860,
       "kind": "jsx-text",
       "text": "Schedule publication",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 861,
+      "line": 862,
       "kind": "jsx-text",
       "text": "Publication date and time",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "line": 864,
+      "line": 865,
       "kind": "jsx-text",
       "text": "Cancel",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
@@ -16157,114 +16192,135 @@
     },
     {
       "file": "src/components/admin/settings/pagesSettings.jsx",
-      "line": 127,
-      "kind": "jsx-text",
-      "text": "Custom page",
-      "classification": "USER_FACING_ENGLISH_CANDIDATE"
-    },
-    {
-      "file": "src/components/admin/settings/pagesSettings.jsx",
-      "line": 137,
+      "line": 132,
       "kind": "title",
       "text": "View page",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/admin/settings/pagesSettings.jsx",
-      "line": 144,
+      "line": 133,
+      "kind": "title",
+      "text": "Edit page",
+      "classification": "USER_FACING_ACCESSIBILITY"
+    },
+    {
+      "file": "src/components/admin/settings/pagesSettings.jsx",
+      "line": 137,
       "kind": "title",
       "text": "Delete page",
       "classification": "USER_FACING_ACCESSIBILITY"
     },
     {
       "file": "src/components/admin/settings/pagesSettings.jsx",
-      "line": 163,
+      "line": 156,
       "kind": "jsx-text",
       "text": "Create New Page",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/pagesSettings.jsx",
-      "line": 164,
+      "line": 157,
       "kind": "jsx-text",
       "text": "Add a custom page to your website",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/pagesSettings.jsx",
-      "line": 173,
+      "line": 166,
       "kind": "jsx-text",
       "text": "Page Name",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/pagesSettings.jsx",
-      "line": 178,
+      "line": 171,
       "kind": "placeholder",
       "text": "e.g., about-us, privacy-policy, contact",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/pagesSettings.jsx",
-      "line": 183,
+      "line": 176,
       "kind": "jsx-text",
       "text": "This will be the URL path: yoursite.com/p/your-page-name",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/pagesSettings.jsx",
-      "line": 190,
+      "line": 183,
       "kind": "jsx-text",
       "text": "Page Content",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/pagesSettings.jsx",
-      "line": 194,
+      "line": 187,
       "kind": "placeholder",
       "text": "Write your page content here. You can use HTML tags for formatting.",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/pagesSettings.jsx",
-      "line": 201,
+      "line": 193,
       "kind": "jsx-text",
-      "text": "Supports basic HTML formatting",
+      "text": "Publication state",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/pagesSettings.jsx",
-      "line": 211,
+      "line": 193,
+      "kind": "jsx-text",
+      "text": "Draft",
+      "classification": "USER_FACING_ENGLISH_CANDIDATE"
+    },
+    {
+      "file": "src/components/admin/settings/pagesSettings.jsx",
+      "line": 193,
+      "kind": "jsx-text",
+      "text": "Published",
+      "classification": "USER_FACING_ENGLISH_CANDIDATE"
+    },
+    {
+      "file": "src/components/admin/settings/pagesSettings.jsx",
+      "line": 193,
+      "kind": "jsx-text",
+      "text": "Unpublished",
+      "classification": "USER_FACING_ENGLISH_CANDIDATE"
+    },
+    {
+      "file": "src/components/admin/settings/pagesSettings.jsx",
+      "line": 195,
+      "kind": "jsx-text",
+      "text": "Supports basic HTML formatting; active content is rejected and output is sanitized again.",
+      "classification": "USER_FACING_ENGLISH_CANDIDATE"
+    },
+    {
+      "file": "src/components/admin/settings/pagesSettings.jsx",
+      "line": 205,
       "kind": "jsx-text",
       "text": "Preview",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/pagesSettings.jsx",
-      "line": 216,
+      "line": 210,
       "kind": "jsx-text",
       "text": "URL:",
       "classification": "TECHNICAL_OR_IDENTIFIER"
     },
     {
       "file": "src/components/admin/settings/pagesSettings.jsx",
-      "line": 225,
+      "line": 219,
       "kind": "jsx-text",
       "text": "Content Preview:",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {
       "file": "src/components/admin/settings/pagesSettings.jsx",
-      "line": 240,
+      "line": 234,
       "kind": "jsx-text",
       "text": "Pages are accessible at yoursite.com/p/page-name",
-      "classification": "USER_FACING_ENGLISH_CANDIDATE"
-    },
-    {
-      "file": "src/components/admin/settings/pagesSettings.jsx",
-      "line": 261,
-      "kind": "jsx-text",
-      "text": "Create Page",
       "classification": "USER_FACING_ENGLISH_CANDIDATE"
     },
     {

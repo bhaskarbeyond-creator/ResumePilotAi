@@ -35,6 +35,16 @@ test('missing public Portfolio metadata is noindex and private Resume shares sta
   assert.match(resume, /no longer published/);
 });
 
+test('public and employer media rendering uses safe image URL projections', async () => {
+  const [jobCard, companies, addCompany, blogAdmin] = await Promise.all([
+    fs.readFile('src/components/JobsListings/JobCard.jsx', 'utf8'),
+    fs.readFile('src/components/Dashboard/EmployerDashboard/CompaniesManagement.jsx', 'utf8'),
+    fs.readFile('src/components/Dashboard/EmployerDashboard/AddCompanyModal.jsx', 'utf8'),
+    fs.readFile('src/components/admin/blogManagement/BlogManagement.jsx', 'utf8'),
+  ]);
+  for (const source of [jobCard, companies, addCompany, blogAdmin]) assert.match(source, /sanitizeImageUrl/);
+});
+
 test('static sitemap contains only stable public routes and no fabricated dynamic discovery', async () => {
   const sitemap = await fs.readFile('public/sitemap.xml', 'utf8');
   assert.doesNotMatch(sitemap, /dashboard|admin|editor|export|shared|portfolio\/[^<]|blog\/[^<]/);
