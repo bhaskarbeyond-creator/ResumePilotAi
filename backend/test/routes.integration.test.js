@@ -21,6 +21,9 @@ setTokenVerifierForTests(async token => {
 });
 
 const app = require('../index');
+// Isolate all tests from live Firestore. Tests that require database access mock it explicitly
+// per-test using app.set('db', mockDb) and restore in finally blocks.
+app.set('db', null);
 const bearer = token => ({ Authorization: `Bearer ${token}` });
 
 test('minimal health endpoint is public and does not cache', async () => {
@@ -493,9 +496,27 @@ test('Stripe webhook fails closed without a configured signature secret', async 
 test('legacy/demo payment bypasses fail closed and client entitlement dates are ignored', async () => {
   const legacy = await request(app).post('/api/payment/razorpay-order').set(bearer('user')).send({ amount: 1, keySecret: 'attacker' });
   assert.equal(legacy.status, 410);
-  const razorpay = await request(app).post('/api/razorpay/create-order').set(bearer('user')).send({ planId: 'monthly', amount: 1, userId: 'victim' });
-  assert.equal(razorpay.status, 503);
-  assert.equal(razorpay.body.error.code, 'PAYMENT_PROVIDER_UNAVAILABLE');
+  // Client-supplied identity fields (userId, amount) are rejected before provider is checked.
+  const razorpayWithIdentity = await request(app).post('/api/razorpay/create-order').set(bearer('user')).send({ planId: 'monthly', amount: 1, userId: 'victim' });
+  assert.equal(razorpayWithIdentity.status, 400);
+  assert.equal(razorpayWithIdentity.body.error.code, 'CLIENT_PAYMENT_IDENTITY_REJECTED');
+  // Simulate fully unconfigured provider: clear env vars AND isolate db so no Firestore fallback occurs.
+  const savedId = process.env.RAZORPAY_KEY_ID;
+  const savedSecret = process.env.RAZORPAY_KEY_SECRET;
+  const originalDb = app.get('db');
+  delete process.env.RAZORPAY_KEY_ID;
+  delete process.env.RAZORPAY_KEY_SECRET;
+  app.set('db', null);
+  try {
+    const razorpayUnconfigured = await request(app).post('/api/razorpay/create-order').set(bearer('user')).send({ planId: 'monthly' });
+    assert.equal(razorpayUnconfigured.status, 503);
+    assert.equal(razorpayUnconfigured.body.error.code, 'PAYMENT_PROVIDER_UNAVAILABLE');
+  } finally {
+    app.set('db', originalDb);
+    if (savedId) process.env.RAZORPAY_KEY_ID = savedId;
+    if (savedSecret) process.env.RAZORPAY_KEY_SECRET = savedSecret;
+  }
+  // Legacy client-supplied entitlement dates are rejected as 503.
   const entitlement = await request(app).post('/api/check').set(bearer('user')).send({ accountType: 'Premium', expDate: '2999-01-01' });
   assert.equal(entitlement.status, 503);
   assert.equal(entitlement.body.status, 'false');

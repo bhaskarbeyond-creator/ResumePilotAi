@@ -702,17 +702,17 @@ app.post('/api/paypal/verify', async (req, res) => {
 });
 
 // Razorpay credentials are server-owned and never accepted from payment requests.
-async function getRazorpayKeys() {
+async function getRazorpayKeys(database) {
     let keyId = process.env.RAZORPAY_KEY_ID || '';
     let keySecret = process.env.RAZORPAY_KEY_SECRET || '';
-    if ((!keyId || !keySecret) && db) {
+    if ((!keyId || !keySecret) && database) {
         try {
-            const doc = await db.collection('settings').doc('payment_providers').get();
+            const doc = await database.collection('settings').doc('payment_providers').get();
             const data = doc.data()?.razorpay || {};
             keyId = keyId || data.keyId || '';
             keySecret = keySecret || data.keySecret || '';
             if (!keyId || !keySecret) {
-                const legacy = (await db.collection('data').doc('subscriptions').get()).data() || {};
+                const legacy = (await database.collection('data').doc('subscriptions').get()).data() || {};
                 keyId = keyId || legacy.razorpayKeyId || '';
                 keySecret = keySecret || legacy.razorpayKeySecret || '';
             }
@@ -724,9 +724,14 @@ async function getRazorpayKeys() {
 }
 
 app.post('/api/razorpay/create-order', async (req, res) => {
+    // Ownership and amount are server-controlled; reject any client attempt to supply them.
+    const clientIdentityFields = ['userId', 'uid', 'ownerUid', 'amount', 'keyId', 'keySecret'];
+    if (clientIdentityFields.some(f => Object.hasOwn(req.body || {}, f))) {
+        return res.status(400).json({ error: { code: 'CLIENT_PAYMENT_IDENTITY_REJECTED', message: 'Payment ownership and amounts are server-controlled', requestId: res.locals.requestId } });
+    }
     let internalRef;
     try {
-        const { keyId, keySecret } = await getRazorpayKeys();
+        const { keyId, keySecret } = await getRazorpayKeys(req.app.get('db'));
         if (!keyId || !keySecret) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
         const { ref, plan } = await createProviderOrderRecord({ uid: req.user.uid, planId: req.body.planId || req.body.plan, provider: 'razorpay', couponCode: req.body.couponCode });
         internalRef = ref;
@@ -774,7 +779,7 @@ app.post('/api/razorpay/verify-payment', async (req, res) => {
         } catch (_) {
             return res.status(404).json({ verified: false, error: 'Order not found' });
         }
-        const { keyId, keySecret } = await getRazorpayKeys();
+        const { keyId, keySecret } = await getRazorpayKeys(req.app.get('db'));
         if (!keyId || !keySecret) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
         try {
             validateRazorpaySignature(keySecret, providerOrderId, paymentId, signature);
@@ -1045,6 +1050,11 @@ app.post('/api/subscription/preferences', async (req, res) => {
 });
 
 app.post('/api/check', async (req, res) => {
+    // Reject legacy client-supplied entitlement fields — membership is server-authoritative only.
+    const legacyClientFields = ['accountType', 'expDate', 'membership', 'paymentStatus', 'membershipEnds'];
+    if (legacyClientFields.some(f => Object.hasOwn(req.body || {}, f))) {
+        return res.status(503).json({ status: 'false', error: 'Client-supplied entitlement context is not accepted' });
+    }
     if (!db) return res.status(503).json({ status: 'false', error: 'Entitlement service unavailable' });
     try {
         const userSnap = await db.collection('users').doc(req.user.uid).get();
@@ -2817,9 +2827,10 @@ app.get('/healthz', (req, res) => {
     return res.json({ status: 'ok', firebaseAdminConfigured: Boolean(db && admin) });
 });
 
-app.get('/readyz', (_req, res) => {
+app.get('/readyz', (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    const firebaseReady = Boolean(db && admin?.auth);
+    const requestDb = req.app.get('db');
+    const firebaseReady = Boolean(requestDb && admin?.auth);
     return res.status(firebaseReady ? 200 : 503).json({
         status: firebaseReady ? 'ready' : 'not_ready',
         checks: {
@@ -3231,7 +3242,7 @@ app.post('/api/admin/payments/refund', async (req, res) => {
             if (!providerRes.ok || !refund.id) throw new Error('PAYPAL_REFUND_FAILED');
             refundId = refund.id;
         } else if (order.provider === 'razorpay') {
-            const { keyId, keySecret } = await getRazorpayKeys();
+            const { keyId, keySecret } = await getRazorpayKeys(req.app.get('db'));
             if (!keyId || !keySecret) throw new Error('RAZORPAY_REFUND_UNAVAILABLE');
             const providerRes = await fetch(`https://api.razorpay.com/v1/payments/${encodeURIComponent(order.providerPaymentId)}/refund`, {
                 method: 'POST', timeout: 10_000,
