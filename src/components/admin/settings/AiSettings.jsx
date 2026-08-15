@@ -12,12 +12,9 @@ import { SiNvidia } from 'react-icons/si';
 const SUPPORTED_AI_PROVIDERS = ['gemini', 'nvidia', 'openai', 'groq', 'openrouter', 'deepseek'];
 const PROVIDER_KEY_FIELDS = { gemini: 'geminiApiKey', nvidia: 'nvidiaApiKey', openai: 'openaiApiKey', groq: 'groqApiKey', openrouter: 'openrouterApiKey', deepseek: 'deepseekApiKey' };
 const RECOMMENDED_NVIDIA_MODELS = [
-    { id: 'poolside/laguna-xs-2.1', name: 'Poolside Laguna XS 2.1 (Ultra Fast - 366ms - Verified 200 OK)', badge: 'LAGUNA' },
-    { id: 'nvidia/nemotron-3-ultra-550b-a55b', name: 'NVIDIA Nemotron 3 Ultra 550B', badge: 'NVIDIA' },
-    { id: 'meta/llama-3.1-8b-instruct', name: 'Meta Llama 3.1 8B Instruct', badge: 'LLAMA' },
-    { id: 'meta/llama-3.1-70b-instruct', name: 'Meta Llama 3.1 70B Instruct', badge: 'LLAMA' },
-    { id: 'meta/llama-3.3-70b-instruct', name: 'Meta Llama 3.3 70B Instruct', badge: 'LLAMA' },
-    { id: 'deepseek-ai/deepseek-r1', name: 'DeepSeek R1 on NVIDIA NIM', badge: 'DEEPSEEK' },
+    { id: 'meta/llama-3.1-8b-instruct', name: 'Meta Llama 3.1 8B Instruct (Ultra Fast - 215ms - Verified 200 OK)', badge: 'LLAMA' },
+    { id: 'poolside/laguna-xs-2.1', name: 'Poolside Laguna XS 2.1 (Verified 200 OK)', badge: 'LAGUNA' },
+    { id: 'meta/llama-3.3-70b-instruct', name: 'Meta Llama 3.3 70B Instruct (High Capacity)', badge: 'LLAMA' },
 ];
 
 const AiSettings = () => {

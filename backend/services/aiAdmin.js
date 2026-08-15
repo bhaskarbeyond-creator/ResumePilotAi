@@ -37,13 +37,19 @@ function publicAiSettings(input = {}) {
   }
   return result;
 }
-function secretPatch(input = {}, existing = {}) {
+function secretPatch(input = {}, existing = {}, legacy = {}) {
   const patch = {};
   for (const provider of PROVIDERS) {
     const key = String(input[SECRET_FIELDS[provider]] || '').trim();
     if (key && (key.length < 12 || key.length > 512)) throw errorWith('AI_SETTINGS_VALIDATION_ERROR', `Invalid ${provider} API key format.`, 400);
     const model = String(input[MODEL_FIELDS[provider]] || '').trim();
-    patch[provider] = { ...(existing[provider] || {}), ...(key ? { apiKey: key } : {}), ...(model ? { model } : {}) };
+    const existingKey = existing[provider]?.apiKey || legacy[SECRET_FIELDS[provider]] || '';
+    const finalKey = key || existingKey;
+    patch[provider] = {
+      ...(existing[provider] || {}),
+      ...(finalKey ? { apiKey: finalKey } : {}),
+      ...(model ? { model } : {}),
+    };
   }
   return patch;
 }
@@ -78,14 +84,20 @@ async function saveAiAdminSettings({ db, admin, input, expectedRevision = 0, act
   const safePublic = publicAiSettings(input);
   const secretRef = db.collection('settings').doc('ai_providers');
   const publicRef = db.collection('data').doc('public_config');
+  const legacyRef = db.collection('data').doc('system_settings');
   let nextRevision;
   await db.runTransaction(async transaction => {
-    const [secretSnapshot, publicSnapshot] = await Promise.all([transaction.get(secretRef), transaction.get(publicRef)]);
+    const [secretSnapshot, publicSnapshot, legacySnapshot] = await Promise.all([
+      transaction.get(secretRef),
+      transaction.get(publicRef),
+      transaction.get(legacyRef),
+    ]);
     const currentSecrets = secretSnapshot.data() || {};
+    const legacyAi = legacySnapshot.data()?.ai || {};
     const currentRevision = Number(publicSnapshot.data()?.aiRevision || currentSecrets._revision || 0);
     if (Number(expectedRevision) !== currentRevision) throw errorWith('AI_SETTINGS_CONFLICT', 'AI settings changed after this panel loaded. Refresh before saving.', 409);
     nextRevision = currentRevision + 1;
-    transaction.set(secretRef, { ...secretPatch(input, currentSecrets), _revision: nextRevision }, { merge: true });
+    transaction.set(secretRef, { ...secretPatch(input, currentSecrets, legacyAi), _revision: nextRevision }, { merge: true });
     transaction.set(publicRef, { ai: safePublic, aiRevision: nextRevision }, { merge: true });
     transaction.set(db.collection('security_audit_logs').doc(), {
       action: 'AI_PROVIDER_SETTINGS_UPDATED', actorUid, revision: nextRevision,
