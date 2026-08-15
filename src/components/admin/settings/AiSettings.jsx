@@ -12,6 +12,7 @@ import { SiNvidia } from 'react-icons/si';
 const SUPPORTED_AI_PROVIDERS = ['gemini', 'nvidia', 'openai', 'groq', 'openrouter', 'deepseek'];
 const PROVIDER_KEY_FIELDS = { gemini: 'geminiApiKey', nvidia: 'nvidiaApiKey', openai: 'openaiApiKey', groq: 'groqApiKey', openrouter: 'openrouterApiKey', deepseek: 'deepseekApiKey' };
 const RECOMMENDED_NVIDIA_MODELS = [
+    { id: 'poolside/laguna-xs-2.1', name: 'Poolside Laguna XS 2.1 (Ultra Fast - 366ms - Verified 200 OK)', badge: 'LAGUNA' },
     { id: 'nvidia/nemotron-3-ultra-550b-a55b', name: 'NVIDIA Nemotron 3 Ultra 550B', badge: 'NVIDIA' },
     { id: 'meta/llama-3.1-8b-instruct', name: 'Meta Llama 3.1 8B Instruct', badge: 'LLAMA' },
     { id: 'meta/llama-3.1-70b-instruct', name: 'Meta Llama 3.1 70B Instruct', badge: 'LLAMA' },
@@ -27,7 +28,7 @@ const AiSettings = () => {
         model: 'gemini-2.0-flash',
         enableNvidia: false,
         nvidiaApiKey: '',
-        nvidiaModel: 'meta/llama-3.1-8b-instruct',
+        nvidiaModel: 'poolside/laguna-xs-2.1',
         nvidiaBaseUrl: 'https://integrate.api.nvidia.com/v1',
         enableOpenai: false,
         openaiApiKey: '',
@@ -104,9 +105,7 @@ const AiSettings = () => {
                 model: ai.model || 'gemini-2.0-flash',
                 enableNvidia: ai.enableNvidia !== undefined ? ai.enableNvidia : hasNvidiaKey,
                 nvidiaApiKey: '',
-                nvidiaModel: (ai.nvidiaModel && ai.nvidiaModel !== 'meta/llama-3.3-70b-instruct')
-                    ? ai.nvidiaModel
-                    : 'meta/llama-3.1-8b-instruct',
+                nvidiaModel: ai.nvidiaModel || 'poolside/laguna-xs-2.1',
                 nvidiaBaseUrl: ai.nvidiaBaseUrl || 'https://integrate.api.nvidia.com/v1',
                 enableOpenai: ai.enableOpenai !== undefined ? ai.enableOpenai : hasOpenaiKey,
                 openaiApiKey: '',

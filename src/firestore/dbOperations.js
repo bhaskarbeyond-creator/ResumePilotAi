@@ -5111,7 +5111,7 @@ export async function getSystemSettings() {
             model: 'gemini-2.0-flash',
             enableNvidia: true,
             nvidiaApiKey: '',
-            nvidiaModel: 'meta/llama-3.1-8b-instruct',
+            nvidiaModel: 'poolside/laguna-xs-2.1',
             nvidiaBaseUrl: '',
             enableOpenai: false,
             openaiApiKey: '',
