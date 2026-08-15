@@ -2077,6 +2077,38 @@ app.post('/api/admin/ai/fetch-models', async (req, res) => {
     }
 });
 
+app.post('/api/admin/ai/reset-quota', async (req, res) => {
+    try {
+        const targetDb = req.app.get('db');
+        if (!targetDb) return res.status(503).json({ success: false, error: 'Database service unavailable' });
+        const { uid, all } = req.body || {};
+        const today = new Date().toISOString().slice(0, 10);
+        let deletedCount = 0;
+
+        if (all) {
+            const snap = await targetDb.collection('ai_usage').get();
+            for (const doc of snap.docs) {
+                await doc.ref.delete();
+                deletedCount += 1;
+            }
+        } else if (uid) {
+            const uidHash = crypto.createHash('sha256').update(uid).digest('hex').slice(0, 40);
+            const docRef = targetDb.collection('ai_usage').doc(`${today}_${uidHash}`);
+            const doc = await docRef.get();
+            if (doc.exists) {
+                await docRef.delete();
+                deletedCount = 1;
+            }
+        } else {
+            return res.status(400).json({ success: false, error: 'Target user uid or all:true is required' });
+        }
+
+        return res.json({ success: true, deletedCount, message: `Successfully reset AI quota (${deletedCount} records deleted).` });
+    } catch (error) {
+        return res.status(500).json({ success: false, error: error.message, requestId: res.locals.requestId });
+    }
+});
+
 app.post('/api/admin/payment-settings', async (req, res) => {
     if (!db || !admin) return res.status(503).json({ success: false, error: 'Settings service unavailable.' });
     const input = req.body || {};
