@@ -146,9 +146,10 @@ Language: ${language}. SessionID: ${uniqueSeed}`;
         const activeToneDirective = toneMap[rawTone.toLowerCase()] || `Tone Directive: ${rawTone}.`;
 
         prompt = `You are an elite Fortune 500 Senior Executive Resume Writer & Senior ATS Keyword Strategist.
-Synthesize this candidate's background into a 100% natural, human-written, ATS-optimized Executive Summary (2-3 punchy sentences, 45-65 words maximum).
+Synthesize this candidate's background into a 100% natural, human-written, ATS-optimized Executive Summary (2-3 punchy sentences, 50-70 words maximum).
 
 CANDIDATE DETAILS:
+- Candidate Name: ${payload.name || 'Professional'}
 - Target Role/Occupation: "${payload.jobTitle || payload.occupation || 'Professional'}"
 - Experience Level/Span: ${yearsText}
 ${workHistText ? `- Work History & Roles: ${workHistText}` : ''}
@@ -168,11 +169,13 @@ CRITICAL RULES FOR 100% NATURAL HUMAN VOICE & MAXIMUM ATS MATCH:
 2. ABSOLUTE BAN ON BUZZWORDS & STOCK FILLER:
    - NEVER use overused clichés: "Results-driven", "Results-oriented", "Dedicated professional", "Passionate", "Seasoned", "Motivated", "Dynamic", "I am a...", "proven track record of", "driving business growth", "spearheaded", "leveraged", "leveraging", "utilize", "fostered", "synergy", "testament".
    - Start immediately with the exact job title.
-3. THIRD-PERSON IMPLICIT RESUME STYLE:
+3. STRICT BAN ON COVER LETTER FLUFF (RESUME SUMMARY, NOT a cover letter):
+   - NEVER use cover-letter phrasing such as "I would bring strategic value" or "make a tangible impact".
+4. THIRD-PERSON IMPLICIT RESUME STYLE:
    - Resumes NEVER use first-person pronouns ("I", "my", "we") or third-person pronouns ("He", "She").
-4. 100% FACTUAL & DOMAIN-ALIGNED:
+5. 100% FACTUAL & DOMAIN-ALIGNED:
    - Adapt tone and terminology to the specific profession (Tech, Marketing, Finance, Healthcare, Operations, etc.). Do not insert tech terms into non-tech roles.
-5. NO PLACEHOLDERS OR BRACKETS:
+6. NO PLACEHOLDERS OR BRACKETS:
    - Write 100% complete, polished sentences.
 
 Return ONLY valid JSON format:
@@ -524,9 +527,14 @@ async function requestProvider(provider, providerConfig, prompt, generation, { f
         const isLastCandidate = (i === candidateModels.length - 1);
         const candidateTimeoutMs = isLastCandidate ? timeoutMs : Math.min(timeoutMs, 6000);
         try {
+            const headers = { Authorization: `Bearer ${providerConfig.key}`, 'Content-Type': 'application/json' };
+            if (provider === 'openrouter') {
+                headers['HTTP-Referer'] = 'https://airesume.projectdemo.guru';
+                headers['X-Title'] = 'ResumePilot AI';
+            }
             const response = await fetchWithDeadline(fetchImpl, defaults.url, {
                 method: 'POST',
-                headers: { Authorization: `Bearer ${providerConfig.key}`, 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify({
                     model: currentModel,
                     messages: [{ role: 'user', content: prompt }],

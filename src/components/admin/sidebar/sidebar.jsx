@@ -307,14 +307,13 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
                                                             key={item.key}
                                                             type="button"
                                                             onClick={() => handleSettingsTabClick(item.key)}
-                                                            className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left text-xs transition-all cursor-pointer ${
+                                                            className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-xs transition-all cursor-pointer ${
                                                                 isActive
-                                                                    ? 'bg-purple-100 text-purple-700 font-semibold'
-                                                                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
+                                                                    ? 'bg-purple-50 text-purple-700 font-bold border-l-2 border-purple-600 shadow-2xs'
+                                                                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border-l-2 border-transparent'
                                                             }`}
                                                         >
-                                                            <span className={`w-2 h-2 rounded-full shrink-0 ${isActive ? 'bg-purple-500' : 'bg-slate-300'}`} aria-hidden="true" />
-                                                            <Icon className="w-3 h-3 shrink-0" />
+                                                            <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-purple-600' : 'text-slate-400 group-hover:text-slate-600'}`} />
                                                             <span className="truncate">{item.label}</span>
                                                         </button>
                                                     );

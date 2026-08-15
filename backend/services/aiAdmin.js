@@ -191,8 +191,13 @@ async function fetchProviderModels({ db, environment = process.env, provider, ap
       openrouter: 'https://openrouter.ai/api/v1/models',
       deepseek: 'https://api.deepseek.com/models'
     };
+    const headers = { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' };
+    if (provider === 'openrouter') {
+      headers['HTTP-Referer'] = 'https://airesume.projectdemo.guru';
+      headers['X-Title'] = 'ResumePilot AI';
+    }
     const response = await fetchImpl(urls[provider], {
-      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      headers,
       signal: AbortSignal.timeout ? AbortSignal.timeout(timeoutMs) : undefined
     });
     if (!response.ok) throw errorWith('AI_MODELS_FETCH_FAILED', `${provider} API returned HTTP ${response.status}`, response.status);
