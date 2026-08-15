@@ -87,7 +87,7 @@ function enforceApiPolicy(req, res, next) {
       || pathname.startsWith('/admin/employer-applications/') || pathname.startsWith('/admin/settings/')
       || pathname.startsWith('/admin/jobs/') || pathname.startsWith('/admin/companies/')
       || pathname.startsWith('/admin/reviews') || pathname === '/admin/global-rating'
-      || pathname.startsWith('/admin/trusted-by') || pathname.startsWith('/admin/ads') || pathname === '/admin/landing-content'
+      || pathname.startsWith('/admin/trusted-by') || pathname.startsWith('/admin/ads') || pathname.startsWith('/admin/blog') || pathname === '/admin/landing-content'
       || pathname.startsWith('/email/admin/')
       || (pathname === '/admin/ai-settings' && req.method !== 'GET')
       || ['/admin/ai/test-provider', '/admin/payment/test-provider', '/admin/payment-settings', '/admin/save-smtp', '/admin/test-connection'].includes(pathname)) {

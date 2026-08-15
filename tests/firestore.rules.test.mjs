@@ -184,11 +184,10 @@ test('blog drafts are private and direct writes enforce revisions, fields, bound
 
   await assertSucceeds(setDoc(doc(alice(), 'blog_posts/alice_review'), basePost('pending', 'Review')));
   await assertFails(updateDoc(doc(alice(), 'blog_posts/alice_review'), { status: 'scheduled', scheduledAt: new Date(Date.now() + 60000), revision: 2, updatedAt: new Date() }));
-  await assertSucceeds(updateDoc(doc(admin(), 'blog_posts/alice_review'), { status: 'scheduled', scheduledAt: new Date(Date.now() + 60000), publishedAt: null, revision: 2, updatedAt: new Date() }));
+  await assertFails(updateDoc(doc(admin(), 'blog_posts/alice_review'), { status: 'scheduled', scheduledAt: new Date(Date.now() + 60000), publishedAt: null, revision: 2, updatedAt: new Date() }));
+  await assertFails(updateDoc(doc(admin(), 'blog_posts/alice_review'), { status: 'approved', scheduledAt: null, publishedAt: new Date(), revision: 2, updatedAt: new Date() }));
+  await assertFails(deleteDoc(doc(admin(), 'blog_posts/alice_review')));
   await assertFails(getDoc(doc(anonymous(), 'blog_posts/alice_review')));
-  await assertSucceeds(updateDoc(doc(admin(), 'blog_posts/alice_review'), { status: 'approved', scheduledAt: null, publishedAt: new Date(), revision: 3, updatedAt: new Date() }));
-  await assertFails(deleteDoc(doc(alice(), 'blog_posts/alice_review')));
-  await assertSucceeds(getDoc(doc(anonymous(), 'blog_posts/alice_review')));
 });
 
 test('billing, provider secrets and token registries are server-only', async () => {

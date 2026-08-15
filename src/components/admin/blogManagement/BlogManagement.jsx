@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { fetchAdminWithReauth } from '../../../services/adminReauth';
 import { 
     listBlogPosts, 
     updateBlogPost, 
@@ -198,8 +199,7 @@ const BlogManagement = () => {
     const handlePublishDue = async () => {
         setProcessing(true);
         try {
-            const response = await fetch('/api/admin/blog/publish-due', { method: 'POST' });
-            const result = await response.json().catch(() => ({}));
+            const { response, data: result } = await fetchAdminWithReauth('/api/admin/blog/publish-due', { method: 'POST' });
             if (!response.ok || !result.success) throw new Error(result.error || 'Scheduler failed');
             showNotification(`${result.published} scheduled post(s) published.`);
             await loadData();

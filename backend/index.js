@@ -1703,10 +1703,13 @@ async function publishDueBlogPosts(requestDb, { actorUid = 'cms-scheduler', requ
             const date = value?.toDate?.() || new Date(value || 0);
             return Number.isFinite(date.getTime()) && date <= now;
         });
-        for (const document of stillDue) transaction.update(document.ref, {
-            status: 'approved', publishedAt: admin.firestore.FieldValue.serverTimestamp(), scheduledAt: null,
-            revision: Number(document.data()?.revision || 0) + 1, updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
+        for (const document of stillDue) {
+            const post = document.data() || {};
+            const revision = Number(post.revision || 0) + 1;
+            transaction.update(document.ref, { status: 'approved', publishedAt: admin.firestore.FieldValue.serverTimestamp(), scheduledAt: null, revision, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+            const eventId = notificationEventId('blog_scheduled_published', document.id, String(revision));
+            transaction.set(requestDb.collection('notifications').doc(post.authorUid).collection('userNotifications').doc(eventId), { eventId, state: 'NOTIFICATION_CREATED', deliveryState: 'NOT_REQUESTED', type: 'blog_published', title: 'Scheduled Blog post published', message: `“${String(post.title || 'Post').slice(0, 160)}” is now public.`, data: { postId: document.id, status: 'approved', revision }, read: false, createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+        }
         if (stillDue.length) transaction.set(requestDb.collection('security_audit_logs').doc(), {
             action: 'CMS_SCHEDULED_POSTS_PUBLISHED', actorUid, count: stillDue.length, requestId,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -1714,6 +1717,62 @@ async function publishDueBlogPosts(requestDb, { actorUid = 'cms-scheduler', requ
         return stillDue.length;
     });
 }
+
+app.patch('/api/admin/blog/posts/:postId', async (req, res) => {
+    const requestDb = req.app.get('db');
+    const postId = String(req.params.postId || '');
+    const nextStatus = String(req.body?.status || '').toLowerCase();
+    const expectedRevision = Number(req.body?.expectedRevision);
+    const scheduledAt = req.body?.scheduledAt ? new Date(req.body.scheduledAt) : null;
+    if (!requestDb || !admin || !/^[A-Za-z0-9_-]{1,128}$/.test(postId) || !['approved', 'rejected', 'scheduled'].includes(nextStatus) || !Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid Blog moderation request.' });
+    if (nextStatus === 'scheduled' && (!scheduledAt || !Number.isFinite(scheduledAt.getTime()) || scheduledAt <= new Date())) return res.status(400).json({ success: false, error: 'Choose a future publication time.' });
+    try {
+        let result;
+        await requestDb.runTransaction(async transaction => {
+            const reference = requestDb.collection('blog_posts').doc(postId);
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists) { const missing = new Error('Post not found.'); missing.code = 'NOT_FOUND'; throw missing; }
+            const post = snapshot.data() || {};
+            const revision = Number(post.revision || 0);
+            if (revision !== expectedRevision) { const conflict = new Error('This post changed after moderation loaded. Refresh before continuing.'); conflict.code = 'BLOG_CONFLICT'; throw conflict; }
+            const allowed = nextStatus === 'rejected' || ((nextStatus === 'approved' || nextStatus === 'scheduled') && ['draft', 'pending', 'rejected'].includes(post.status));
+            if (!allowed) { const invalid = new Error(`A ${post.status} post cannot transition to ${nextStatus}.`); invalid.code = 'INVALID_BLOG_TRANSITION'; throw invalid; }
+            const nextRevision = revision + 1;
+            const changes = { status: nextStatus, revision: nextRevision, updatedAt: admin.firestore.FieldValue.serverTimestamp(), scheduledAt: nextStatus === 'scheduled' ? scheduledAt : null };
+            if (nextStatus === 'approved') changes.publishedAt = admin.firestore.FieldValue.serverTimestamp();
+            transaction.update(reference, changes);
+            const eventId = notificationEventId('blog_moderation', postId, String(nextRevision));
+            transaction.set(requestDb.collection('notifications').doc(post.authorUid).collection('userNotifications').doc(eventId), { eventId, state: 'NOTIFICATION_CREATED', deliveryState: 'NOT_REQUESTED', type: 'blog_moderation', title: nextStatus === 'approved' ? 'Blog post published' : nextStatus === 'scheduled' ? 'Blog post scheduled' : 'Blog post returned for revision', message: `“${String(post.title || 'Post').slice(0, 160)}” is now ${nextStatus}.`, data: { postId, status: nextStatus, revision: nextRevision }, read: false, createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+            transaction.set(requestDb.collection('security_audit_logs').doc(), { action: `CMS_BLOG_${nextStatus.toUpperCase()}`, actorUid: req.user.uid, postId, revision: nextRevision, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+            result = { status: nextStatus, revision: nextRevision };
+        });
+        return res.json({ success: true, ...result });
+    } catch (error) {
+        const status = error.code === 'BLOG_CONFLICT' ? 409 : error.code === 'NOT_FOUND' ? 404 : error.code === 'INVALID_BLOG_TRANSITION' ? 400 : 500;
+        return res.status(status).json({ success: false, code: error.code, error: status === 500 ? 'Unable to moderate post.' : error.message });
+    }
+});
+
+app.delete('/api/admin/blog/posts/:postId', async (req, res) => {
+    const requestDb = req.app.get('db');
+    const postId = String(req.params.postId || '');
+    const expectedRevision = Number(req.body?.expectedRevision);
+    if (!requestDb || !admin || !/^[A-Za-z0-9_-]{1,128}$/.test(postId) || !Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid Blog deletion.' });
+    try {
+        await requestDb.runTransaction(async transaction => {
+            const reference = requestDb.collection('blog_posts').doc(postId);
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists) { const missing = new Error('Post not found.'); missing.code = 'NOT_FOUND'; throw missing; }
+            if (Number(snapshot.data()?.revision || 0) !== expectedRevision) { const conflict = new Error('This post changed before deletion. Refresh and confirm again.'); conflict.code = 'BLOG_CONFLICT'; throw conflict; }
+            transaction.delete(reference);
+            transaction.set(requestDb.collection('security_audit_logs').doc(), { action: 'CMS_BLOG_DELETED', actorUid: req.user.uid, postId, revision: expectedRevision, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        });
+        return res.json({ success: true });
+    } catch (error) {
+        const status = error.code === 'BLOG_CONFLICT' ? 409 : error.code === 'NOT_FOUND' ? 404 : 500;
+        return res.status(status).json({ success: false, code: error.code, error: status === 500 ? 'Unable to delete post.' : error.message });
+    }
+});
 
 app.post('/api/admin/blog/publish-due', async (req, res) => {
     try {

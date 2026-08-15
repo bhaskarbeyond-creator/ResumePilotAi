@@ -103,6 +103,15 @@ const BlogPost = () => {
     }, [slug]);
 
     useEffect(() => {
+        if (!error || post) return undefined;
+        document.title = 'Post not found — ResumePilot AI';
+        document.head.querySelector('meta[name="robots"]')?.setAttribute('content', 'noindex,nofollow');
+        document.head.querySelector('meta[name="description"]')?.setAttribute('content', 'The requested Blog post is unavailable or not published.');
+        document.head.querySelector('link[rel="canonical"]')?.setAttribute('href', `${window.location.origin}/blog/${encodeURIComponent(slug || '')}`);
+        return undefined;
+    }, [error, post, slug]);
+
+    useEffect(() => {
         if (!post) return undefined;
         const previousTitle = document.title;
         const changed = [];

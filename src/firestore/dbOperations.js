@@ -2554,6 +2554,12 @@ export async function createBlogPost(userId, postData) {
 
 // Update a blog post
 export async function updateBlogPost(postId, updateData, userId = null, expectedRevision = null) {
+    if (!userId) {
+        try {
+            const { response, data: result } = await fetchAdminWithReauth(`/api/admin/blog/posts/${encodeURIComponent(postId)}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: updateData.status, scheduledAt: updateData.scheduledAt || null, expectedRevision }) });
+            return response.ok && result.success ? result : { success: false, error: result.error?.message || result.error || 'Unable to moderate post.', code: result.code };
+        } catch (error) { return { success: false, error: error.message }; }
+    }
     const db = fire.firestore();
     try {
         if (!blogPostFitsFirestore(updateData)) return { success: false, error: 'Post update is too large to save.' };
@@ -2849,6 +2855,12 @@ export async function listBlogPosts(options = {}) {
 
 // Delete a blog post
 export async function deleteBlogPost(postId, userId = null, expectedRevision = null) {
+    if (!userId) {
+        try {
+            const { response, data: result } = await fetchAdminWithReauth(`/api/admin/blog/posts/${encodeURIComponent(postId)}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expectedRevision }) });
+            return response.ok && result.success ? result : { success: false, error: result.error?.message || result.error || 'Unable to delete post.', code: result.code };
+        } catch (error) { return { success: false, error: error.message }; }
+    }
     const db = fire.firestore();
     try {
         const reference = db.collection('blog_posts').doc(postId);

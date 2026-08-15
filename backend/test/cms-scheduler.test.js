@@ -6,6 +6,7 @@ const app = require('../index');
 
 function createFakeDb(records) {
   const audits = [];
+  const notifications = [];
   const docs = new Map(Object.entries(records).map(([id, data]) => [id, {
     id,
     ref: { id },
@@ -15,9 +16,11 @@ function createFakeDb(records) {
   for (const document of docs.values()) document.ref._document = document;
   return {
     audits,
+    notifications,
     documents: docs,
     collection(name) {
       if (name === 'security_audit_logs') return { doc: () => ({ audit: true }) };
+      if (name === 'notifications') return { doc: uid => ({ collection: () => ({ doc: id => ({ notification: true, uid, id }) }) }) };
       const query = {
         where: () => query,
         orderBy: () => query,
@@ -30,7 +33,7 @@ function createFakeDb(records) {
       return callback({
         get: async ref => ref._document,
         update(ref, changes) { Object.assign(ref._document.data(), changes); },
-        set(_ref, value) { audits.push(value); },
+        set(ref, value) { (ref.audit ? audits : notifications).push(value); },
       });
     },
   };
@@ -50,8 +53,11 @@ test('trusted CMS scheduler atomically publishes only due scheduled revisions an
   assert.equal(db.documents.get('future').data().status, 'scheduled');
   assert.equal(db.audits.length, 1);
   assert.equal(db.audits[0].count, 1);
+  assert.equal(db.notifications.length, 1);
+  assert.equal(db.notifications[0].state, 'NOTIFICATION_CREATED');
 
   const secondCount = await app.publishDueBlogPosts(db, { actorUid: 'scheduler-test', requestId: 'request-2' });
   assert.equal(secondCount, 0);
   assert.equal(db.audits.length, 1);
+  assert.equal(db.notifications.length, 1);
 });

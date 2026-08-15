@@ -211,17 +211,16 @@ service cloud.firestore {
         && request.resource.data.createdAt == resource.data.createdAt
         && request.resource.data.viewCount == resource.data.viewCount
         && advancesRevision()
-        && ((admin() && adminFieldsOnly() && validAdminPublication())
-          || (signedIn()
-            && resource.data.authorUid == request.auth.uid
-            && resource.data.status in ['draft', 'pending', 'rejected']
-            && request.resource.data.status in ['draft', 'pending']
-            && request.resource.data.publishedAt == resource.data.publishedAt
-            && request.resource.data.get('scheduledAt', null) == resource.data.get('scheduledAt', null)
-            && memberFieldsOnly()));
-      allow delete: if admin() || (signedIn()
+        && signedIn()
         && resource.data.authorUid == request.auth.uid
-        && resource.data.status in ['draft', 'pending', 'rejected']);
+        && resource.data.status in ['draft', 'pending', 'rejected']
+        && request.resource.data.status in ['draft', 'pending']
+        && request.resource.data.publishedAt == resource.data.publishedAt
+        && request.resource.data.get('scheduledAt', null) == resource.data.get('scheduledAt', null)
+        && memberFieldsOnly();
+      allow delete: if signedIn()
+        && resource.data.authorUid == request.auth.uid
+        && resource.data.status in ['draft', 'pending', 'rejected'];
     }
     match /blog_categories/{id} { allow read: if true; allow write: if admin(); }
     match /pages/{id} {
