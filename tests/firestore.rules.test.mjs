@@ -205,6 +205,7 @@ test('billing, provider secrets and token registries are server-only', async () 
   await assertFails(getDoc(doc(admin(), 'settings/ai_providers')));
   await assertFails(getDoc(doc(admin(), 'settings/admin_configuration')));
   await assertFails(setDoc(doc(admin(), 'settings/admin_configuration'), { smtp: { password: 'browser-secret' } }));
+  await assertFails(setDoc(doc(admin(), 'coupons/BYPASS'), { code: 'BYPASS', discount: 100 }));
   await assertFails(setDoc(doc(admin(), 'reviews/direct-admin-review'), { status: 'approved', review: 'bypass' }));
   await assertFails(setDoc(doc(admin(), 'trustedBy/direct-admin-logo'), { name: 'Bypass', imageUrl: 'https://example.com/logo.png' }));
   await assertFails(setDoc(doc(admin(), 'blog_categories/direct-admin-category'), { name: 'Bypass', slug: 'bypass' }));

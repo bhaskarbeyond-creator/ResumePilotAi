@@ -138,7 +138,7 @@ service cloud.firestore {
       allow read: if (signedIn() && resource.data.userId == request.auth.uid) || admin();
       allow write: if false;
     }
-    match /coupons/{id} { allow read: if signedIn(); allow write: if admin(); }
+    match /coupons/{id} { allow read: if signedIn(); allow write: if false; }
 
     match /blog_posts/{id} {
       function validBlogFields(data) {

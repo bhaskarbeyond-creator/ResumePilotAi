@@ -699,104 +699,26 @@ export async function getCoupons() {
 
 // Fetch ALL coupons for Admin Panel (including inactive & expired)
 export async function getAllCouponsAdmin() {
-    const db = fire.firestore();
     try {
-        const snap = await db.collection('coupons').get();
-        const list = [];
-        snap.forEach((doc) => {
-            if (doc.id === '_meta') return;
-            const data = doc.data();
-            list.push({
-                code: doc.id.toUpperCase(),
-                discount: Number(data.discount) || 10,
-                description: data.description || `${data.discount}% Discount`,
-                active: data.active !== false,
-                expiryDate: data.expiryDate || '',
-                maxUses: Number(data.maxUses) || 0,
-                usedCount: Number(data.usedCount) || 0,
-                singleUsePerUser: Boolean(data.singleUsePerUser),
-            });
-        });
-        list.sort((a, b) => a.code.localeCompare(b.code));
-        return list;
-    } catch (err) {
-        console.warn('⚠️ Could not fetch admin coupons:', err.message);
-        return [];
-    }
+        const { response, data } = await fetchAdminWithReauth('/api/admin/coupons');
+        if (!response.ok || !data.success) throw new Error(data.error?.message || data.error || 'Unable to load coupons.');
+        return (data.coupons || []).sort((a, b) => String(a.code).localeCompare(String(b.code)));
+    } catch { return []; }
 }
 
-// Create or update a coupon doc in Firestore (Admin)
 export async function saveCoupon(code, discount, description, active = true, extra = {}) {
-    const db = fire.firestore();
     try {
-        const cleanCode = code.trim().toUpperCase();
-        await db.collection('coupons').doc(cleanCode).set({
-            code: cleanCode,
-            discount: Number(discount),
-            description: description || `${discount}% Discount`,
-            active: Boolean(active),
-            expiryDate: extra.expiryDate || '',
-            maxUses: Number(extra.maxUses) || 0,
-            singleUsePerUser: Boolean(extra.singleUsePerUser),
-            usedCount: Number(extra.usedCount) || 0,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        }, { merge: true });
-        return { success: true, message: `Coupon ${cleanCode} saved successfully!` };
-    } catch (err) {
-        return { success: false, error: err.message };
-    }
+        const { response, data } = await fetchAdminWithReauth(`/api/admin/coupons/${encodeURIComponent(String(code).trim().toUpperCase())}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ discount, description, active, expiryDate: extra.expiryDate, maxUses: extra.maxUses, singleUsePerUser: extra.singleUsePerUser, expectedRevision: Number(extra.revision || 0) }) });
+        return response.ok && data.success ? data : { success: false, error: data.error?.message || data.error || 'Unable to save coupon.', code: data.code };
+    } catch (error) { return { success: false, error: error.message }; }
 }
 
-// Increment coupon usage count when redeemed
-export async function incrementCouponUsage(code) {
-    const db = fire.firestore();
+export async function deleteCoupon(code, expectedRevision = 0) {
     try {
-        const cleanCode = code.trim().toUpperCase();
-        await db.collection('coupons').doc(cleanCode).set({
-            usedCount: firebase.firestore.FieldValue.increment(1),
-        }, { merge: true });
-    } catch (e) {
-        console.warn('⚠️ Could not increment coupon usage:', e.message);
-    }
+        const { response, data } = await fetchAdminWithReauth(`/api/admin/coupons/${encodeURIComponent(String(code).trim().toUpperCase())}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expectedRevision }) });
+        return response.ok && data.success ? data : { success: false, error: data.error?.message || data.error || 'Unable to delete coupon.', code: data.code };
+    } catch (error) { return { success: false, error: error.message }; }
 }
-
-// Delete a coupon doc from Firestore (Admin)
-export async function deleteCoupon(code) {
-    const db = fire.firestore();
-    try {
-        await db.collection('coupons').doc(code.toUpperCase()).delete();
-        return { success: true, message: `Coupon ${code} deleted!` };
-    } catch (err) {
-        return { success: false, error: err.message };
-    }
-}
-
-// Record a user billing transaction in 'transactions' collection
-export async function recordTransaction(userId, details) {
-    const db = fire.firestore();
-    try {
-        const txnId = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
-        await db.collection('transactions').doc(txnId).set({
-            txnId,
-            userId,
-            email: details.email || '',
-            amount: Number(details.amount) || 0,
-            currency: details.currency || 'USD',
-            planName: details.planName || 'PRO Membership',
-            durationMonths: Number(details.durationMonths) || 12,
-            paymentMethod: details.paymentMethod || 'Card/PayPal/UPI',
-            couponUsed: details.couponUsed || null,
-            status: details.status || 'Completed',
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            createdDateString: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        });
-        return { success: true, txnId };
-    } catch (err) {
-        console.warn('⚠️ Could not record transaction:', err.message);
-        return { success: false, error: err.message };
-    }
-}
-
 
 // Subscription preferences are owner-bound by the verified backend token.
 export async function updateUserAutoRenew(_userId, autoRenew) {
