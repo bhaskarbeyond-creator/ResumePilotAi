@@ -84,6 +84,19 @@ test('route transitions restore keyboard focus without redesigning page layouts'
   assert.match(main, /<RouteFocus \/>/);
 });
 
+test('installable CI templates run the authoritative RC gate and CodeQL with least privilege', async () => {
+  const [rc, codeql] = await Promise.all([
+    fs.readFile('docs/ci-templates/security-ci.yml', 'utf8'), fs.readFile('docs/ci-templates/codeql.yml', 'utf8'),
+  ]);
+  assert.match(rc, /npm run test:rc/);
+  assert.match(rc, /persist-credentials: false/);
+  assert.match(rc, /contents: read/);
+  assert.match(rc, /audit-ui-strings/);
+  assert.match(codeql, /javascript-typescript/);
+  assert.match(codeql, /security-events: write/);
+  assert.doesNotMatch(codeql, /contents: write/);
+});
+
 test('operational contracts expose worker, PDF isolation, TTL, and recovery requirements truthfully', async () => {
   const [backend, indexes, runbook] = await Promise.all([
     fs.readFile('backend/index.js', 'utf8'), fs.readFile('firestore.indexes.json', 'utf8'), fs.readFile('docs/OPERATIONS_RUNBOOK.md', 'utf8'),
