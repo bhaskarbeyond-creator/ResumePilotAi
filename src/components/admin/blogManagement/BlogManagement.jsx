@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchAdminWithReauth } from '../../../services/adminReauth';
+import { sanitizeImageUrl } from '../../../utils/sanitizeHtml';
 import { 
     listBlogPosts, 
     updateBlogPost, 
@@ -765,11 +766,11 @@ const BlogManagement = () => {
                                                             
                                                             {/* Featured Image & Meta */}
                                                             <div className="space-y-4">
-                                                                {post.featuredImage && (
+                                                                {sanitizeImageUrl(post.featuredImage) && (
                                                                     <div>
                                                                         <h4 className="text-sm font-semibold text-gray-900 mb-2">Featured Image</h4>
                                                                         <img 
-                                                                            src={post.featuredImage} 
+                                                                            src={sanitizeImageUrl(post.featuredImage)}
                                                                             alt="Featured" 
                                                                             className="w-full h-32 object-cover rounded-lg border border-gray-200 shadow-sm"
                                                                         />

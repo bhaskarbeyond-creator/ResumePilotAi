@@ -2889,35 +2889,10 @@ export async function deleteBlogPost(postId, userId = null, expectedRevision = n
 
 // Create a new blog category
 export async function createBlogCategory(categoryData) {
-    const db = fire.firestore();
     try {
-
-        const slug = generateSlug(categoryData.name);
-        
-        // Check if slug already exists
-        const existingCategory = await db.collection('blog_categories').where('slug', '==', slug).get();
-        if (!existingCategory.empty) {
-            return { success: false, error: 'A category with this name already exists.' };
-        }
-
-        const finalCategoryData = {
-            name: categoryData.name,
-            slug: slug,
-            description: categoryData.description || '',
-            color: categoryData.color || '#6366f1',
-            postCount: 0,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        };
-
-        const categoryRef = await db.collection('blog_categories').add(finalCategoryData);
-
-
-        return { success: true, categoryId: categoryRef.id, slug: slug };
-    } catch (error) {
-        console.error('❌ Error creating blog category:', error);
-        return { success: false, error: error.message };
-    }
+        const { response, data } = await fetchAdminWithReauth('/api/admin/blog/categories', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(categoryData) });
+        return response.ok && data.success ? data : { success: false, error: data.error?.message || data.error || 'Unable to create category.', code: data.code };
+    } catch (error) { return { success: false, error: error.message }; }
 }
 
 // List all blog categories
@@ -2948,59 +2923,19 @@ export async function listBlogCategories() {
 }
 
 // Update a blog category
-export async function updateBlogCategory(categoryId, updateData) {
-    const db = fire.firestore();
+export async function updateBlogCategory(categoryId, updateData, expectedRevision = 0) {
     try {
-
-        const finalUpdateData = {
-            ...updateData,
-            updatedAt: new Date(),
-        };
-
-        // If name is being updated, regenerate slug
-        if (updateData.name) {
-            const newSlug = generateSlug(updateData.name);
-            const existingCategory = await db.collection('blog_categories')
-                .where('slug', '==', newSlug)
-                .where(firebase.firestore.FieldPath.documentId(), '!=', categoryId)
-                .get();
-            if (!existingCategory.empty) {
-                return { success: false, error: 'A category with this name already exists.' };
-            }
-            finalUpdateData.slug = newSlug;
-        }
-
-        await db.collection('blog_categories').doc(categoryId).update(finalUpdateData);
-
-        return { success: true };
-    } catch (error) {
-        console.error('❌ Error updating blog category:', error);
-        return { success: false, error: error.message };
-    }
+        const { response, data } = await fetchAdminWithReauth(`/api/admin/blog/categories/${encodeURIComponent(categoryId)}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...updateData, expectedRevision }) });
+        return response.ok && data.success ? data : { success: false, error: data.error?.message || data.error || 'Unable to update category.', code: data.code };
+    } catch (error) { return { success: false, error: error.message }; }
 }
 
-// Delete a blog category
-export async function deleteBlogCategory(categoryId) {
-    const db = fire.firestore();
+// Delete a category only when no posts reference it.
+export async function deleteBlogCategory(categoryId, expectedRevision = 0) {
     try {
-
-        // Check if category has posts
-        const postsWithCategory = await db.collection('blog_posts')
-            .where('categoryId', '==', categoryId)
-            .limit(1)
-            .get();
-            
-        if (!postsWithCategory.empty) {
-            return { success: false, error: 'Cannot delete category that has posts. Please move or delete the posts first.' };
-        }
-
-        await db.collection('blog_categories').doc(categoryId).delete();
-
-        return { success: true };
-    } catch (error) {
-        console.error('❌ Error deleting blog category:', error);
-        return { success: false, error: error.message };
-    }
+        const { response, data } = await fetchAdminWithReauth(`/api/admin/blog/categories/${encodeURIComponent(categoryId)}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expectedRevision }) });
+        return response.ok && data.success ? data : { success: false, error: data.error?.message || data.error || 'Unable to delete category.', code: data.code };
+    } catch (error) { return { success: false, error: error.message }; }
 }
 
 // ==================== BLOG SETTINGS FUNCTIONS ====================
@@ -4255,33 +4190,30 @@ export async function addReview(review) {
 
 export async function addTrustedBy(data) {
     try {
-        const response = await fetch('/api/admin/trusted-by', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-        const result = await response.json().catch(() => ({}));
+        const { response, data: result } = await fetchAdminWithReauth('/api/admin/trusted-by', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
         return response.ok && result.success ? result : { success: false, error: result.error || 'Unable to add logo.' };
     } catch (error) { return { success: false, error: error.message }; }
 }
 
 export async function getTrustedBy({ includeUnpublished = false } = {}) {
-    const snapshot = await fire.firestore().collection('trustedBy').get();
-    return snapshot.docs.map(document => {
-        const data = document.data() || {};
-        return { id: document.id, ...data, revision: Number(data.revision || 0) };
-    }).filter(item => includeUnpublished || item.published !== false)
-      .sort((a, b) => Number(a.order || 0) - Number(b.order || 0) || String(a.name || '').localeCompare(String(b.name || '')));
+    const request = includeUnpublished
+        ? fetchAdminWithReauth('/api/admin/trusted-by')
+        : fetch('/public/trusted-by.json', { cache: 'no-store' }).then(async response => ({ response, data: await response.json().catch(() => ({})) }));
+    const { response, data } = await request;
+    if (!response.ok || !data.success) throw new Error(data.error?.message || data.error || 'Trusted logos are unavailable.');
+    return (data.items || []).map(item => ({ ...item, revision: Number(item.revision || 0) }));
 }
 
 export async function removeTrustedBy(id, expectedRevision = 0) {
     try {
-        const response = await fetch(`/api/admin/trusted-by/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expectedRevision }) });
-        const result = await response.json().catch(() => ({}));
+        const { response, data: result } = await fetchAdminWithReauth(`/api/admin/trusted-by/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expectedRevision }) });
         return response.ok && result.success ? result : { success: false, error: result.error || 'Unable to delete logo.', code: result.code };
     } catch (error) { return { success: false, error: error.message }; }
 }
 
 export async function updateTrustedBy(id, data, expectedRevision = 0) {
     try {
-        const response = await fetch(`/api/admin/trusted-by/${encodeURIComponent(id)}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...data, expectedRevision }) });
-        const result = await response.json().catch(() => ({}));
+        const { response, data: result } = await fetchAdminWithReauth(`/api/admin/trusted-by/${encodeURIComponent(id)}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...data, expectedRevision }) });
         return response.ok && result.success ? result : { success: false, error: result.error || 'Unable to update logo.', code: result.code };
     } catch (error) { return { success: false, error: error.message }; }
 }

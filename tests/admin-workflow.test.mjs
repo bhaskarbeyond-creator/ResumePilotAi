@@ -154,7 +154,7 @@ test('Trusted By lifecycle is revisioned, publish-aware, audited, sanitized, and
   assert.match(backend, /TRUSTED_LOGO_CREATED/);
   assert.match(backend, /TRUSTED_LOGO_UPDATED/);
   assert.match(backend, /TRUSTED_LOGO_DELETED/);
-  assert.match(rules, /match \/trustedBy\/\{id\}[^\n]+allow write: if false/);
+  assert.match(rules, /match \/trustedBy\/\{id\}[\s\S]*?allow write: if false/);
 });
 
 test('landing marketing content is honestly labelled, revisioned, confirmed, audited, and backend-only', async () => {

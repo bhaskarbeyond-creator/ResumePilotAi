@@ -7,15 +7,17 @@ const HomepageCompatibility = () => {
     const { t } = useTranslation('common');
     const [trustedCompanies, setTrustedCompanies] = useState([]);
     const [shouldAnimate, setShouldAnimate] = useState(true);
+    const [loadError, setLoadError] = useState('');
 
     useEffect(() => {
-        const fetchTrustedCompanies = async () => {
-            const companies = await getTrustedBy();
+        let active = true;
+        getTrustedBy().then(companies => {
+            if (!active) return;
             setTrustedCompanies(companies);
-            // Only animate if we have enough logos
             setShouldAnimate(companies.length > 3);
-        };
-        fetchTrustedCompanies();
+            setLoadError('');
+        }).catch(() => { if (active) { setTrustedCompanies([]); setLoadError('Trusted organization logos are unavailable.'); } });
+        return () => { active = false; };
     }, []);
     return (
         <section className="py-10 bg-gray-50/50">
@@ -27,6 +29,7 @@ const HomepageCompatibility = () => {
                     <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3">{t('HomepageTrustedBy.title')}</h2>
                     <p className="text-gray-600 text-base max-w-2xl mx-auto mb-8">{t('HomepageTrustedBy.description')}</p>
 
+                    {loadError && <p role="status" className="mb-4 text-sm text-slate-500">{loadError}</p>}
                     {/* Logo Cloud - Simplified & Polished */}
                     <div className="relative">
                         {/* Gradient fades */}
