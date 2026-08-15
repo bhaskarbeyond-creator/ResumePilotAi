@@ -64,22 +64,26 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
                 }
             }
 
-            // Extract skills
-            const skills =
-                resumeData.skills && resumeData.skills.length > 0
-                    ? resumeData.skills
-                          .map((skill) => skill.skillName || skill.name || '')
-                          .filter(Boolean)
-                          .slice(0, 5)
-                          .join(', ')
-                    : 'various professional skills';
+            // Extract skills (handling both string arrays and object arrays)
+            const skills = Array.isArray(resumeData.skills) && resumeData.skills.length > 0
+                ? resumeData.skills
+                      .map((skill) => (typeof skill === 'string' ? skill : skill.skillName || skill.name || ''))
+                      .filter(Boolean)
+                      .slice(0, 8)
+                      .join(', ')
+                : '';
+
+            // Extract work history text
+            const workHistory = (resumeData.employments || [])
+                .map((emp) => `${emp.jobTitle || emp.position || ''} at ${emp.employer || emp.company || ''}: ${emp.description || ''}`)
+                .filter((line) => line.trim().length > 3)
+                .join('\n');
 
             // Extract a key achievement from work history
             let achievement = 'delivering high-quality results';
             if (resumeData.employments && resumeData.employments.length > 0) {
                 const latestJob = resumeData.employments[0];
                 if (latestJob.description && latestJob.description.trim()) {
-                    // Extract first bullet point or sentence as achievement
                     const descLines = latestJob.description.split('\n');
                     const firstLine = descLines.find((line) => line.trim().length > 0);
                     if (firstLine) {
@@ -89,33 +93,45 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
             }
 
             const preferredLanguage = localStorage.getItem('preferredLanguage') || 'en';
-            console.log('Summary - Preferred language from localStorage:', preferredLanguage);
 
             const data = await generateUserAiContent('generate-summary', {
                 name: name,
                 jobTitle: jobTitle,
                 experience: experience,
-                skills: skills,
+                skills: skills || 'various professional skills',
+                workHistory: workHistory,
                 achievement: achievement,
                 summaryType: toneToUse,
                 tone: toneToUse,
                 language: preferredLanguage,
             }, { signal: requestController.signal });
 
-            if (data && data.summary) {
-                setSummary(data.summary);
-                setCharCount(data.summary.length);
+            const generatedSummary = data?.summary || data?.description || data?.text || data?.data?.summary || (typeof data === 'string' ? data : null);
+
+            if (generatedSummary && typeof generatedSummary === 'string' && generatedSummary.trim().length > 0) {
+                setSummary(generatedSummary.trim());
+                setCharCount(generatedSummary.trim().length);
+                setError(null);
             } else {
-                throw new Error('Invalid response format');
+                throw new Error('AI provider returned an unexpected summary format');
             }
         } catch (error) {
             if (error?.name === 'AbortError') return;
             console.error('Error generating AI summary:', error);
-            setError('Failed to generate AI summary. Please try again.');
+
+            const friendlyMessage = error.code === 'EMAIL_VERIFICATION_REQUIRED'
+                ? 'Please verify your email address to use AI generation features.'
+                : error.code === 'AUTH_REQUIRED'
+                ? 'Please sign in to generate an AI summary.'
+                : error.code === 'AI_PROVIDER_UNAVAILABLE'
+                ? 'AI generation service is temporarily busy. A smart draft summary has been created for you.'
+                : (error.message || 'Failed to generate AI summary. A smart draft has been created for you.');
+
+            setError(friendlyMessage);
 
             // Dynamic fallback summary generation based on language & resume data
             const profession = resumeData.occupation || (resumeData.employments?.[0]?.jobTitle) || 'Professional';
-            const skillsList = (resumeData.skills || []).map(s => typeof s === 'string' ? s : s.name).filter(Boolean).slice(0, 4).join(', ');
+            const skillsList = (resumeData.skills || []).map(s => typeof s === 'string' ? s : s.name || s.skillName).filter(Boolean).slice(0, 4).join(', ');
             const preferredLanguage = localStorage.getItem('preferredLanguage') || 'en';
 
             let fallbackSummary;

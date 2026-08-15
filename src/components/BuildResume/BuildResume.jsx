@@ -1528,7 +1528,19 @@ const BuildResume = () => {
                             );
                         })}
                     </nav>
-                    <details className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-2">
+
+                    {/* Add Custom Section Action */}
+                    <button
+                        type="button"
+                        onClick={handleAddCustomSection}
+                        className="mt-3 w-full flex items-center justify-center gap-1.5 py-2 px-3 border border-dashed border-indigo-300 text-indigo-700 bg-indigo-50/50 hover:bg-indigo-100/70 hover:border-indigo-400 font-semibold text-xs rounded-xl transition-all shadow-2xs group">
+                        <svg className="w-3.5 h-3.5 text-indigo-600 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        <span>Add Custom Section</span>
+                    </button>
+
+                    <details className="mt-2.5 rounded-lg border border-slate-200 bg-slate-50 p-2">
                         <summary className="cursor-pointer text-xs font-semibold text-slate-700">Reorder sections</summary>
                         <ul className="mt-2 space-y-1" aria-label="Resume section order">
                             {orderedSteps.map((step, index) => (
@@ -1704,16 +1716,6 @@ const BuildResume = () => {
                                         Import Resume
                                     </button>
                                 )}
-
-                                {/* Custom Section Creator */}
-                                <button
-                                    onClick={handleAddCustomSection}
-                                    className="hidden lg:flex items-center px-3 py-2 border border-indigo-200 text-indigo-700 bg-indigo-50/40 hover:bg-indigo-100/70 hover:border-indigo-300 font-semibold transition-all text-xs rounded-xl shadow-2xs">
-                                    <svg className="w-3.5 h-3.5 mr-1 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                    </svg>
-                                    Add Custom Section
-                                </button>
 
                                 {/* Share for Mentor Review & Comments */}
                                 <button
