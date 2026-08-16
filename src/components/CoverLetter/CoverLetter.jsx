@@ -3,11 +3,38 @@ import './CoverLetter.scss';
 import logo from '../../assets/logo/logo.png';
 import { withTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { saveCoverLetter, getUserCoverLetters, deleteCoverLetter, getProfileOfUser } from '../../firestore/dbOperations';
+import { saveCoverLetter, getUserCoverLetters, deleteCoverLetter, getProfileOfUser, createTrackedJob } from '../../firestore/dbOperations';
 import { generateUserAiContent } from '../../services/aiService';
 import fire from '../../conf/fire';
 import TemplateRenderer from '../TemplateRenderer';
-import { FaWhatsapp, FaEnvelope, FaLinkedin, FaTelegramPlane, FaCopy, FaPrint, FaFileDownload, FaExpand, FaTimes, FaSearchPlus, FaSearchMinus, FaEye, FaEdit, FaTrashAlt, FaClone } from 'react-icons/fa';
+import { FaWhatsapp, FaEnvelope, FaLinkedin, FaTelegramPlane, FaCopy, FaPrint, FaFileDownload, FaExpand, FaTimes, FaSearchPlus, FaSearchMinus, FaEye, FaEdit, FaTrashAlt, FaClone, FaBriefcase, FaMagic, FaBullseye, FaCheckCircle, FaExclamationCircle, FaSlidersH, FaBookmark, FaSyncAlt } from 'react-icons/fa';
+
+const AI_TONES = [
+    {
+        id: 'modern',
+        name: 'Modern Professional',
+        icon: '💼',
+        desc: 'Crisp, approachable, balanced',
+    },
+    {
+        id: 'formal',
+        name: 'Executive Formal',
+        icon: '👔',
+        desc: 'Authoritative, corporate, measured',
+    },
+    {
+        id: 'impact',
+        name: 'Impact & Metrics',
+        icon: '🚀',
+        desc: 'High-energy, ROI & metrics-driven',
+    },
+    {
+        id: 'creative',
+        name: 'Creative Storyteller',
+        icon: '✨',
+        desc: 'Engaging, narrative, visionary',
+    },
+];
 
 const COVER_TEMPLATES = [
     {
@@ -74,6 +101,11 @@ class CoverLetter extends Component {
             // Modal Preview State
             showPreviewModal: false,
             modalZoom: 0.65,
+            // 10/10 SWOT Enhancements
+            aiTone: 'modern',
+            jobDescription: '',
+            showAtsSection: false,
+            isSyncingTracker: false,
         };
         this.aiRequestController = null;
     }
@@ -268,19 +300,109 @@ class CoverLetter extends Component {
         }
     };
 
-    generateAiCoverLetter = async () => {
+    calculateAtsMetrics = (letterBody, jobDesc) => {
+        if (!jobDesc || !jobDesc.trim()) return null;
+
+        const stopWords = new Set([
+            'the', 'and', 'for', 'with', 'that', 'this', 'from', 'have', 'were', 'will', 'your', 'about', 'more',
+            'into', 'than', 'them', 'their', 'there', 'they', 'what', 'when', 'which', 'who', 'whom', 'why',
+            'how', 'all', 'any', 'both', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'only', 'same',
+            'over', 'such', 'through', 'under', 'further', 'then', 'once', 'here', 'where', 'also', 'such',
+            'able', 'work', 'working', 'role', 'team', 'company', 'candidate', 'apply', 'skills', 'experience',
+            'years', 'opportunity', 'position', 'requirements', 'responsibilities', 'qualifications', 'must',
+            'should', 'ideal', 'looking', 'join', 'help', 'drive', 'grow', 'plus', 'need', 'needs', 'strong'
+        ]);
+
+        const jdTokens = jobDesc
+            .toLowerCase()
+            .replace(/[^a-z0-9+#.\s]/g, ' ')
+            .split(/\s+/)
+            .filter(w => w.length >= 3 && !stopWords.has(w));
+
+        const freqMap = {};
+        jdTokens.forEach(t => { freqMap[t] = (freqMap[t] || 0) + 1; });
+
+        const targetKeywords = Object.keys(freqMap)
+            .sort((a, b) => freqMap[b] - freqMap[a])
+            .slice(0, 12);
+
+        if (targetKeywords.length === 0) return { score: 95, matched: [], missing: [] };
+
+        const lowerLetter = (letterBody || '').toLowerCase();
+        const matched = [];
+        const missing = [];
+
+        targetKeywords.forEach(kw => {
+            if (lowerLetter.includes(kw)) {
+                matched.push(kw);
+            } else {
+                missing.push(kw);
+            }
+        });
+
+        const score = Math.min(100, Math.max(30, Math.round((matched.length / targetKeywords.length) * 100)));
+        return { score, matched, missing };
+    };
+
+    handleSyncToJobTracker = async (letter = null) => {
+        const user = fire.auth().currentUser;
+        if (!user) {
+            this.setState({ notificationMessage: 'Please log in to sync applications with Job Tracker.' });
+            return;
+        }
+
+        const targetTitle = letter?.jobTitle || this.state.jobTitle || 'Target Position';
+        const targetCompany = letter?.companyName || this.state.companyName || 'Target Company';
+        const targetBody = letter?.letterBody || this.state.letterBody || this.getDefaultLetterBody();
+        const targetTemplate = letter?.templateId || this.state.templateId || 'Cover1';
+
+        this.setState({ isSyncingTracker: true });
+        try {
+            const newJobPayload = {
+                title: targetTitle,
+                company: targetCompany,
+                location: letter?.companyCity || this.state.companyCity || 'Remote / Hybrid',
+                url: '',
+                status: 'applied',
+                notes: `[Cover Letter Linked] Formatted using ${targetTemplate} template on ${new Date().toLocaleDateString()}.\n\nPreview:\n${targetBody.slice(0, 250)}...`,
+                deadline: ''
+            };
+
+            await createTrackedJob(user.uid, newJobPayload);
+            this.setState({
+                isSyncingTracker: false,
+                notificationMessage: `✓ Successfully synced "${targetTitle} at ${targetCompany}" to your Job Tracker!`
+            });
+            setTimeout(() => this.setState({ notificationMessage: null }), 5000);
+        } catch (err) {
+            console.error('Job tracker sync error:', err);
+            this.setState({
+                isSyncingTracker: false,
+                notificationMessage: `Failed to sync to Job Tracker: ${err.message || 'Unknown error'}`
+            });
+            setTimeout(() => this.setState({ notificationMessage: null }), 5000);
+        }
+    };
+
+    generateAiCoverLetter = async (overrideTone = null) => {
         this.aiRequestController?.abort();
         const requestController = new AbortController();
         this.aiRequestController = requestController;
-        this.setState({ isAiGenerating: true });
+        const effectiveTone = overrideTone || this.state.aiTone || 'modern';
+        this.setState({ isAiGenerating: true, aiTone: effectiveTone });
         try {
+            const currentLang = this.props.i18n?.language || 'en';
             const data = await generateUserAiContent('generate-ai-cover-letter', {
                 jobTitle: this.state.jobTitle,
                 companyName: this.state.companyName,
                 recipientName: this.state.recipientName,
                 userSkills: this.state.userSkills,
                 candidateName: `${this.state.candidateFirstname} ${this.state.candidateLastname}`.trim(),
-                yearsExperience: this.state.yearsExperience || (this.state.userSkills ? `${Math.max(2, this.state.userSkills.split(',').length * 2)}+` : '3+')
+                yearsExperience: this.state.yearsExperience || (this.state.userSkills ? `${Math.max(2, this.state.userSkills.split(',').length * 2)}+` : '3+'),
+                tone: effectiveTone,
+                aiTone: effectiveTone,
+                jobDescription: this.state.jobDescription,
+                language: currentLang
             }, { signal: requestController.signal });
 
             if (data.success && data.coverLetter) {
@@ -581,6 +703,7 @@ class CoverLetter extends Component {
         const candidateFullName = `${this.state.candidateFirstname} ${this.state.candidateLastname}`.trim();
         const activeTemplate = COVER_TEMPLATES.find(tpl => tpl.id === (this.state.templateId || 'Cover1')) || COVER_TEMPLATES[0];
         const effectiveBody = this.state.letterBody || this.getDefaultLetterBody();
+        const atsMetrics = this.calculateAtsMetrics(effectiveBody, this.state.jobDescription);
 
         // Format multi-paragraph components
         const paragraphList = effectiveBody
@@ -867,8 +990,104 @@ class CoverLetter extends Component {
                                 </div>
                             </div>
 
-                            <button onClick={this.generateAiCoverLetter} disabled={this.state.isAiGenerating} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-2">
-                                {this.state.isAiGenerating ? '⚡ Generating AI Cover Letter...' : '⚡ Generate AI Cover Letter Automatically'}
+                            {/* AI Tone Archetype Selector */}
+                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                                        <FaSlidersH className="text-indigo-600 w-3.5 h-3.5" />
+                                        <span>Select AI Tone Archetype</span>
+                                    </h3>
+                                    <span className="text-[11px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full">
+                                        Active: {AI_TONES.find(t => t.id === this.state.aiTone)?.name || 'Modern Professional'}
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                    {AI_TONES.map(t => {
+                                        const isToneSelected = (this.state.aiTone || 'modern') === t.id;
+                                        return (
+                                            <button
+                                                key={t.id}
+                                                type="button"
+                                                onClick={() => this.setState({ aiTone: t.id })}
+                                                className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between ${
+                                                    isToneSelected
+                                                        ? 'border-indigo-600 bg-white ring-2 ring-indigo-500/20 shadow-xs'
+                                                        : 'border-slate-200 bg-white hover:border-slate-300'
+                                                }`}>
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <span className="text-lg">{t.icon}</span>
+                                                    {isToneSelected && <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-sm">Selected</span>}
+                                                </div>
+                                                <h5 className="text-xs font-bold text-slate-900">{t.name}</h5>
+                                                <p className="text-[10px] text-slate-500 mt-0.5">{t.desc}</p>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Target Job Description & ATS Keyword Matcher */}
+                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-3">
+                                <div className="flex items-center justify-between cursor-pointer" onClick={() => this.setState(prev => ({ showAtsSection: !prev.showAtsSection }))}>
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-1.5 bg-indigo-100 text-indigo-700 rounded-lg">
+                                            <FaBullseye className="w-3.5 h-3.5" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                                                Target Job Description & ATS Keyword Matcher (Optional)
+                                            </h3>
+                                            <p className="text-[11px] text-slate-500">
+                                                Paste the job description to optimize keywords and compute your real-time ATS match score.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button type="button" className="text-xs font-bold text-indigo-600 hover:text-indigo-800">
+                                        {this.state.showAtsSection ? '▲ Hide ATS Drawer' : '▼ Expand ATS Drawer'}
+                                    </button>
+                                </div>
+
+                                {this.state.showAtsSection && (
+                                    <div className="space-y-3 pt-2">
+                                        <textarea
+                                            value={this.state.jobDescription}
+                                            onChange={(e) => this.setState({ jobDescription: e.target.value })}
+                                            placeholder="Paste the target job description or core requirements here (e.g. 'Looking for a Senior Software Engineer experienced in React, TypeScript, Cloud Architecture, GraphQL, micro-services, and agile team delivery...')..."
+                                            className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900 focus:border-indigo-600 focus:outline-hidden min-h-[90px] font-sans"
+                                        />
+
+                                        {atsMetrics && (
+                                            <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-2.5">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                                        <FaCheckCircle className={atsMetrics.score >= 80 ? 'text-emerald-500' : 'text-amber-500'} />
+                                                        <span>Estimated ATS Compatibility Score:</span>
+                                                    </span>
+                                                    <span className={`text-xs font-mono font-bold px-2.5 py-0.5 rounded-full ${atsMetrics.score >= 80 ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'}`}>
+                                                        {atsMetrics.score}% Match
+                                                    </span>
+                                                </div>
+
+                                                <div className="flex flex-wrap gap-1.5 text-[10px]">
+                                                    {atsMetrics.matched.map(kw => (
+                                                        <span key={kw} className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-md font-semibold">
+                                                            ✓ {kw}
+                                                        </span>
+                                                    ))}
+                                                    {atsMetrics.missing.map(kw => (
+                                                        <span key={kw} className="px-2 py-0.5 bg-rose-50 text-rose-700 border border-rose-200 rounded-md font-semibold">
+                                                            + {kw}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            <button onClick={() => this.generateAiCoverLetter()} disabled={this.state.isAiGenerating} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-2">
+                                {this.state.isAiGenerating ? '⚡ Generating AI Cover Letter...' : `⚡ Generate AI Cover Letter (${AI_TONES.find(t => t.id === this.state.aiTone)?.name || 'Modern Professional'})`}
                             </button>
                         </div>
                     )}
@@ -965,13 +1184,38 @@ class CoverLetter extends Component {
                                     </div>
                                 )}
 
+                                {/* 1-Click Tone Refinement Toolbar */}
+                                <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                                    <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                                        <FaMagic className="text-indigo-600 w-3.5 h-3.5" />
+                                        <span>1-Click Tone Transformation:</span>
+                                    </span>
+                                    <div className="flex flex-wrap items-center gap-1.5">
+                                        {AI_TONES.map(t => (
+                                            <button
+                                                key={t.id}
+                                                type="button"
+                                                disabled={this.state.isAiGenerating}
+                                                onClick={() => this.generateAiCoverLetter(t.id)}
+                                                className={`text-xs px-2.5 py-1.5 rounded-lg border font-semibold transition-all flex items-center gap-1 ${
+                                                    this.state.aiTone === t.id
+                                                        ? 'bg-indigo-600 text-white border-indigo-600 font-bold shadow-2xs'
+                                                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                                                }`}>
+                                                <span>{t.icon}</span>
+                                                <span>{t.name}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
                                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
                                     <button onClick={() => this.setState({ step: 1 })} className="w-full sm:w-auto px-5 py-2.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">
                                         Back to Role Details
                                     </button>
                                     <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
                                         <button
-                                            onClick={this.generateAiCoverLetter}
+                                            onClick={() => this.generateAiCoverLetter()}
                                             disabled={this.state.isAiGenerating}
                                             className="px-4 py-2.5 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl transition-all flex items-center gap-2 shadow-2xs">
                                             {this.state.isAiGenerating ? '⚡ Regenerating...' : '⚡ 🔄 Regenerate AI Variation'}
@@ -1076,6 +1320,14 @@ class CoverLetter extends Component {
                                             className="w-full py-3.5 px-4 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2">
                                             <FaPrint className="w-3.5 h-3.5" />
                                             <span>Print / Save as PDF ({activeTemplate.name})</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            disabled={this.state.isSyncingTracker}
+                                            onClick={() => this.handleSyncToJobTracker()}
+                                            className="w-full py-3 px-4 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/80 rounded-xl transition-all flex items-center justify-center gap-2 shadow-2xs">
+                                            <FaBriefcase className="w-3.5 h-3.5 text-indigo-600" />
+                                            <span>{this.state.isSyncingTracker ? 'Syncing to Job Tracker...' : '📌 Sync & Attach to Job Tracker'}</span>
                                         </button>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                             <button
@@ -1218,6 +1470,13 @@ class CoverLetter extends Component {
                                                         onClick={() => this.handleCopyLetterText(letter)}
                                                         className="w-7 h-7 bg-white hover:bg-slate-700 hover:text-white text-slate-600 border border-slate-200/80 rounded-lg flex items-center justify-center transition-all shadow-2xs">
                                                         <FaCopy className="w-3 h-3" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        title="Sync & Attach to Job Tracker"
+                                                        onClick={() => this.handleSyncToJobTracker(letter)}
+                                                        className="w-7 h-7 bg-white hover:bg-indigo-600 hover:text-white text-indigo-600 border border-slate-200/80 rounded-lg flex items-center justify-center transition-all shadow-2xs">
+                                                        <FaBriefcase className="w-3 h-3" />
                                                     </button>
                                                 </div>
 

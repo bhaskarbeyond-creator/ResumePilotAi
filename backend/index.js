@@ -2942,12 +2942,28 @@ app.post('/api/generate-ai-cover-letter', async (req, res) => {
         const recipient = compactField(req.body?.recipientName, 'Hiring Manager', 200);
         const skills = compactField(req.body?.userSkills, 'full-stack architecture, API optimization, and team leadership', 4000);
         const candidate = compactField(req.body?.candidateName, 'Candidate', 120);
+        const tone = compactField(req.body?.tone || req.body?.aiTone, 'modern', 50);
+        const language = compactField(req.body?.language, 'English', 50);
+        const jobDesc = compactField(req.body?.jobDescription, '', 4000);
         const rawExp = req.body?.yearsExperience ?? 'proven track record of';
         const exp = typeof rawExp === 'number'
             ? String(Math.min(50, Math.max(0, rawExp)))
             : compactField(rawExp, 'proven track record of', 200);
-        const systemPrompt = 'You are an elite executive career strategist and professional resume writer specializing in high-impact ATS cover letters. Never invent candidate facts and return only the requested cover letter.';
-        const prompt = `${systemPrompt}\n\nWrite a compelling, tailored, 3-paragraph ATS cover letter addressed to ${recipient} for a ${title} position at ${company}. Highlight ${exp} years of experience and key skills in ${skills}. Close the letter with the candidate name ${candidate}.`;
+
+        let toneInstruction = 'Adopt a crisp, polished, approachable modern professional tone.';
+        if (tone === 'formal' || tone === 'executive') {
+            toneInstruction = 'Adopt an authoritative, measured, executive corporate tone suitable for leadership or traditional enterprises.';
+        } else if (tone === 'impact' || tone === 'assertive') {
+            toneInstruction = 'Adopt an energetic, results-driven, and metric-focused tone emphasizing tangible business ROI and achievements.';
+        } else if (tone === 'creative' || tone === 'storytelling') {
+            toneInstruction = 'Adopt an engaging, visionary storytelling tone highlighting passion, initiative, and cultural alignment.';
+        }
+
+        const jdContext = jobDesc ? `\nTarget Job Description / Requirements:\n${jobDesc}\nSeamlessly align the candidate's background with key requirements from this job description.` : '';
+        const langContext = (language && language.toLowerCase() !== 'en' && language.toLowerCase() !== 'english') ? `\nOutput the entire cover letter fluently and naturally in ${language}.` : '';
+
+        const systemPrompt = `You are an elite executive career strategist and professional resume writer specializing in high-impact ATS cover letters. Never invent candidate facts and return only the requested cover letter. ${toneInstruction}`;
+        const prompt = `${systemPrompt}\n\nWrite a compelling, tailored, 3-paragraph ATS cover letter addressed to ${recipient} for a ${title} position at ${company}. Highlight ${exp} years of experience and key skills in ${skills}.${jdContext}${langContext}\nClose the letter with the candidate name ${candidate}.`;
         try {
             const configuration = await loadProviderConfiguration(db);
             configuration.maxTokens = Math.min(1000, Math.max(500, configuration.maxTokens));
