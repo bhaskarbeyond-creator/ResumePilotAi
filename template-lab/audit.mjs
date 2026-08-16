@@ -84,35 +84,37 @@ async function measure(page, { templateId, fixtureName, language, screenshot, fu
     entry.error = await page.getAttribute('html', 'data-lab-error');
 
     const audit = await page.evaluate(() => {
-      const board = document.querySelector('#resumen') || document.querySelector('[class*="board"], [class*="Board"]');
-      const boardRect = board ? board.getBoundingClientRect() : null;
-      const boardAncestors = new Set();
-      for (let node = board?.parentElement; node; node = node.parentElement) boardAncestors.add(node);
+      const pagesHost = document.querySelector('.resume-pages');
+      const pages = [...document.querySelectorAll('.resume-pages:not(.resume-scratch) .resume-page')];
+      const firstPage = pages[0] || null;
+      const pageRect = firstPage ? firstPage.getBoundingClientRect() : null;
       const docEl = document.documentElement;
       const outOfBounds = [];
       const clippedCandidates = [];
-      const all = document.querySelectorAll('body *');
-      const limit = 4000;
+      const pageChecks = [];
+      const all = document.querySelectorAll('.resume-pages *');
+      const limit = 9000;
       let scanned = 0;
       for (const el of all) {
         if (scanned++ > limit) break;
-        if (boardAncestors.has(el)) continue; // harness wrapper, not template content
+        if (el.closest('.resume-live')) continue;
         if (el.hasAttribute('data-template-direction')) continue;
         const rect = el.getBoundingClientRect();
         if (rect.width === 0 && rect.height === 0) continue;
-        if (boardRect) {
-          const leftOut = rect.left < boardRect.left - 1;
-          const rightOut = rect.right > boardRect.right + 1;
+        // Bound elements by their containing page.
+        const ownerPage = el.closest('.resume-page');
+        const bounds = ownerPage ? ownerPage.getBoundingClientRect() : null;
+        if (bounds) {
+          const leftOut = rect.left < bounds.left - 1;
+          const rightOut = rect.right > bounds.right + 1;
           if ((leftOut || rightOut) && rect.width > 0) {
             const style = getComputedStyle(el);
             if (style.position === 'fixed' || style.position === 'absolute') {
-              // Decorative absolutely-positioned accents can legally exceed the board;
-              // only flag when they visibly extend past the document edge.
-              if (rightOut && rect.right > boardRect.right + 6) {
-                outOfBounds.push({ tag: el.tagName.toLowerCase(), cls: String(el.className).slice(0, 60), side: leftOut ? 'left' : 'right', by: Math.round(leftOut ? boardRect.left - rect.left : rect.right - boardRect.right) });
+              if (rightOut && rect.right > bounds.right + 6) {
+                outOfBounds.push({ tag: el.tagName.toLowerCase(), cls: String(el.className).slice(0, 60), side: leftOut ? 'left' : 'right', by: Math.round(leftOut ? bounds.left - rect.left : rect.right - bounds.right) });
               }
-            } else {
-              outOfBounds.push({ tag: el.tagName.toLowerCase(), cls: String(el.className).slice(0, 60), side: leftOut ? 'left' : 'right', by: Math.round(leftOut ? boardRect.left - rect.left : rect.right - boardRect.right) });
+            } else if (!leftOut || rect.left < bounds.left - 2) {
+              outOfBounds.push({ tag: el.tagName.toLowerCase(), cls: String(el.className).slice(0, 60), side: leftOut ? 'left' : 'right', by: Math.round(leftOut ? bounds.left - rect.left : rect.right - bounds.right) });
             }
           }
         }
@@ -120,8 +122,6 @@ async function measure(page, { templateId, fixtureName, language, screenshot, fu
         if ((overflowX === 'hidden' || overflowX === 'clip' || overflowX === 'auto' || overflowX === 'scroll') && el.scrollWidth > el.clientWidth + 2 && el.clientWidth > 0) {
           const trimmed = el.innerText?.trim();
           if (trimmed && trimmed.length > 12) {
-            // Distinguish real text clipping from decorative overflow (e.g. accent
-            // circles via ::before that legitimately extend past the container).
             const elRect = el.getBoundingClientRect();
             const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
             let textClipped = 0;
@@ -142,21 +142,36 @@ async function measure(page, { templateId, fixtureName, language, screenshot, fu
           }
         }
       }
-      const headings = [];
-      for (const h of document.querySelectorAll('h1, h2, h3, h4, h5, h6')) {
-        if (h.closest('#lab-root') && h.textContent.trim()) headings.push(`${h.tagName.toLowerCase()}:${h.textContent.trim().slice(0, 60)}`);
+      // Per-page geometry + overflow checks.
+      for (let i = 0; i < pages.length; i++) {
+        const p = pages[i];
+        const r = p.getBoundingClientRect();
+        const text = (p.innerText || '').trim();
+        pageChecks.push({
+          index: i + 1,
+          width: Math.round(r.width),
+          height: Math.round(r.height),
+          overflow: p.scrollHeight > p.clientHeight + 2 ? Math.round(p.scrollHeight - p.clientHeight) : 0,
+          empty: text.length < 40 && i > 0,
+          continuation: i > 0 ? Boolean(p.querySelector('.resume-continuation-header')) : null,
+          footer: Boolean(p.querySelector('.resume-page-footer')),
+        });
       }
-      const text = document.body.innerText || '';
-      const images = [...document.querySelectorAll('#lab-root img')];
-      const links = [...document.querySelectorAll('#lab-root a')];
+      const headings = [];
+      for (const h of document.querySelectorAll('.resume-pages h1, .resume-pages h2, .resume-pages h3, .resume-pages h4, .resume-pages h5, .resume-pages h6')) {
+        if (h.textContent.trim()) headings.push(`${h.tagName.toLowerCase()}:${h.textContent.trim().slice(0, 60)}`);
+      }
+      const text = pagesHost ? (pagesHost.innerText || '') : '';
+      const images = [...document.querySelectorAll('.resume-pages img')];
+      const links = [...document.querySelectorAll('.resume-pages a')];
       return {
-        boardRect: boardRect ? { left: Math.round(boardRect.left), top: Math.round(boardRect.top), width: Math.round(boardRect.width), height: Math.round(boardRect.height) } : null,
+        pageCount: pages.length,
+        pageRect: pageRect ? { left: Math.round(pageRect.left), top: Math.round(pageRect.top), width: Math.round(pageRect.width), height: Math.round(pageRect.height) } : null,
         docScrollW: docEl.scrollWidth,
         docClientW: docEl.clientWidth,
-        boardScrollW: board ? board.scrollWidth : 0,
-        boardClientW: board ? board.clientWidth : 0,
-        outOfBounds: outOfBounds.slice(0, 12),
-        clippedCandidates: clippedCandidates.slice(0, 12),
+        pageChecks: pageChecks.slice(0, 8),
+        outOfBounds: outOfBounds.slice(0, 14),
+        clippedCandidates: clippedCandidates.slice(0, 14),
         headings: headings.slice(0, 40),
         text,
         images: { total: images.length, missingAlt: images.filter((i) => !i.getAttribute('alt')).map((i) => i.getAttribute('src') || i.className || 'img').slice(0, 6) },
@@ -168,9 +183,11 @@ async function measure(page, { templateId, fixtureName, language, screenshot, fu
       };
     });
 
-    entry.board = audit.boardRect;
+    entry.board = audit.pageRect;
     entry.docOverflowX = audit.docScrollW - audit.docClientW;
-    entry.boardOverflowX = audit.boardScrollW - audit.boardClientW;
+    entry.boardOverflowX = 0;
+    entry.pageCount = audit.pageCount;
+    entry.pageChecks = audit.pageChecks;
     entry.outOfBounds = audit.outOfBounds;
     entry.clippedCandidates = audit.clippedCandidates;
     entry.headings = audit.headings;
@@ -200,7 +217,7 @@ async function measure(page, { templateId, fixtureName, language, screenshot, fu
     for (const [field, values] of Object.entries(probes)) {
       const present = values?.filter(Boolean);
       if (!present?.length) { entry.coverage[field] = 'n/a'; continue; }
-      const lowerText = text.toLowerCase();
+      const lowerText = text.replace(/\s+/g, ' ').toLowerCase();
       const rawProbe = present[0];
       const probe = String(rawProbe).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 40).toLowerCase();
       entry.coverage[field] = probe && lowerText.includes(probe) ? 'ok' : 'MISSING';
@@ -233,16 +250,21 @@ function summarize(entries) {
     if (e.pageErrors.length) byTemplate[e.template].failures.push(`${e.fixture}:pageerror:${e.pageErrors[0]}`);
     if (e.outOfBounds.length) byTemplate[e.template].failures.push(`${e.fixture}:oob:${e.outOfBounds.length}x`);
     if (e.clippedCandidates.length) byTemplate[e.template].failures.push(`${e.fixture}:clipped:${e.clippedCandidates.length}x`);
+    for (const p of e.pageChecks || []) {
+      if (p.overflow > 2) byTemplate[e.template].failures.push(`${e.fixture}:page${p.index}-overflow${p.overflow}`);
+      if (p.empty) byTemplate[e.template].failures.push(`${e.fixture}:page${p.index}-empty`);
+    }
   }
   console.log('\n==== PER-TEMPLATE SUMMARY ====');
   for (const id of Object.keys(byTemplate).sort((a, b) => Number(a.slice(2)) - Number(b.slice(2)))) {
     const t = byTemplate[id];
     const coverage = t.entries.find((e) => e.fixture === 'normal')?.coverage || {};
     const missing = Object.entries(coverage).filter(([, v]) => v === 'MISSING').map(([k]) => k);
+    const pages = t.entries.map((e) => `${e.fixture.replace('-mobile', '')}:${e.pageCount ?? '?'}p`).join(' ');
     const flags = [];
     if (t.failures.length) flags.push(`FAILURES[${t.failures.length}]`);
     if (missing.length) flags.push(`DROPS[${missing.join(',')}]`);
-    console.log(`${id.padEnd(5)} ${flags.length ? '❌' : '✅'} ${flags.join(' ') || 'clean'}`);
+    console.log(`${id.padEnd(5)} ${flags.length ? '❌' : '✅'} ${flags.join(' ') || 'clean'} | pages: ${pages}`);
     if (t.failures.length) for (const f of t.failures.slice(0, 6)) console.log(`       - ${f}`);
   }
 }

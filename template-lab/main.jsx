@@ -34,6 +34,33 @@ stateEl.setAttribute('data-lab-template', templateId);
 stateEl.setAttribute('data-lab-fixture', fixtureName);
 stateEl.setAttribute('data-lab-language', language);
 
+// The A4 composer fires `resume-composed` once the document has been
+// partitioned into pages; the lab is only "ready" for measurement then.
+// (Cover-letter documents never compose — fallback timer keeps the lab usable.)
+let composed = false;
+let readyAttempts = 0;
+let quietTimer = null;
+const markReady = () => {
+    if (composed) return;
+    // Never signal ready while a composition is mid-flight (scratch host present).
+    if (document.querySelector('.resume-scratch')) {
+        if (readyAttempts++ < 60) setTimeout(markReady, 120);
+        return;
+    }
+    composed = true;
+    stateEl.setAttribute('data-lab-state', 'ready');
+    stateEl.removeAttribute('data-lab-error');
+};
+// The composer fires resume-composed for every rebuild; only mark the lab
+// ready after a quiet period so late-arriving content (extras portal, image
+// loads, font settling) is included in the measured document.
+document.addEventListener('resume-composed', () => {
+    if (composed) return;
+    if (quietTimer) clearTimeout(quietTimer);
+    quietTimer = setTimeout(markReady, 600);
+});
+setTimeout(markReady, 4000);
+
 function CrashFallback() {
   useEffect(() => {
     stateEl.setAttribute('data-lab-state', 'error');
@@ -54,6 +81,7 @@ function LabApp() {
     if (error) {
       stateEl.setAttribute('data-lab-state', 'error');
       stateEl.setAttribute('data-lab-error', String(error?.message || error).slice(0, 500));
+      markReady();
     }
   }, [error]);
   return (

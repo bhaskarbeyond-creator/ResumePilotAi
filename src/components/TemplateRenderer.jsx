@@ -2,6 +2,7 @@ import React, { Suspense, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { getTemplateComponent, isKnownTemplate } from '../utils/templateRegistry';
 import ResumeExtras from '../cv-templates/shared/ResumeExtras';
+import ResumePageComposer from './ResumePageComposer';
 
 class TemplateErrorBoundary extends React.Component {
     constructor(props) {
@@ -69,8 +70,10 @@ export default function TemplateRenderer({ templateId = 'Cv1', values, language 
                 </div>
             )}>
                 <TemplateCommit key={`${safeTemplateId}:${language}`} onReady={onReady}>
-                    <TemplateComponent values={values} language={language} />
-                    <ResumeExtrasPortal enabled={isResumeTemplate} values={values} />
+                    <ResumePageComposer templateId={safeTemplateId} language={language} values={values} enabled={isResumeTemplate}>
+                        <TemplateComponent values={values} language={language} />
+                        <ResumeExtrasPortal enabled={isResumeTemplate} values={values} />
+                    </ResumePageComposer>
                 </TemplateCommit>
             </Suspense>
         </TemplateErrorBoundary>
