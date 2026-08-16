@@ -1656,11 +1656,8 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
             timeout: 60000,
         });
         // Wait for the normalized lazy template to commit. Export errors fail closed instead
-        // of silently producing an empty/corrupt PDF.
-        await page.waitForFunction(
-            'document.documentElement.getAttribute("data-export-ready") === "true" || document.documentElement.hasAttribute("data-export-error")',
-            { timeout: 25000 }
-        );
+        // of silently producing an empty/corrupt PDF. Use waitForSelector to avoid CSP eval restrictions.
+        await page.waitForSelector('html[data-export-ready="true"], html[data-export-error]', { timeout: 25000 });
         const exportError = await page.evaluate(() => globalThis.document.documentElement.getAttribute('data-export-error'));
         if (exportError) throw new Error(`EXPORT_RENDER_FAILED:${exportError}`);
         await page.evaluate(async () => {
