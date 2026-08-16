@@ -50,7 +50,10 @@ function ResumeExtrasPortal({ enabled, values }) {
     const [board, setBoard] = useState(null);
     useEffect(() => {
         if (!enabled) return undefined;
-        const node = document.querySelector('#resumen') || document.querySelector('[class*="board"], [class*="Board"]');
+        const node = document.querySelector('.resume-live #resumen') 
+            || document.querySelector('.resume-live [class*="board"], .resume-live [class*="Board"], .resume-live [class*="container"]')
+            || document.querySelector('#resumen') 
+            || document.querySelector('[class*="board"], [class*="Board"]');
         setBoard(node);
         return () => setBoard(null);
     }, [enabled]);

@@ -178,16 +178,14 @@ async function main() {
     const port = server.config.server.port;
     const base = `http://127.0.0.1:${port}`;
 
-    let executablePath = process.env.CHROMIUM_PATH || '/tmp/chromium/chromium';
+    let executablePath = process.env.CHROMIUM_PATH;
     const launchArgs = ['--no-sandbox', '--no-zygote', '--disable-gpu', '--disable-dev-shm-usage', '--no-first-run', '--disable-background-networking'];
     const env = { ...process.env, LD_LIBRARY_PATH: `/tmp/chromium/lib:${process.env.LD_LIBRARY_PATH || ''}` };
-    if (!fs.existsSync(executablePath)) {
-        console.log('SKIPPED: no Chromium binary available (set CHROMIUM_PATH). Static gates still enforce the template floor.');
-        await server.close().catch(() => {});
-        await vite.close().catch(() => {});
-        return;
-    }
-    let browser = await chromium.launch({ executablePath, env, args: launchArgs });
+    const launchOptions = executablePath && fs.existsSync(executablePath)
+        ? { executablePath, env, args: launchArgs }
+        : { args: launchArgs };
+
+    let browser = await chromium.launch(launchOptions);
     console.log(`Gate start — ${TEMPLATE_IDS.length} templates x ${FIXTURES_TO_CHECK.length} fixtures`);
     try {
         let entryCounter = 0;

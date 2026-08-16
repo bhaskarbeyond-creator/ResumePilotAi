@@ -65,55 +65,116 @@ function looksLikeSidebar(el, boardWidth) {
  */
 function findColumnLayout(board) {
     const boardWidth = board.getBoundingClientRect().width;
-    const wrapper = board.firstElementChild || null;
-    const wrapperHeight = wrapper ? (wrapper.getBoundingClientRect().height || 1) : (board.getBoundingClientRect().height || 1);
+    const boardHeight = board.getBoundingClientRect().height || 1;
     const candidates = [];
     const layoutKids = (container) => visibleChildren(container)
-        .filter((el) => !String(el.className || '').includes('resume-')); // engine chrome never joins layout detection
+        .filter((el) => !String(el.className || '').includes('resume-'));
+
+    const isHeaderElement = (el) => {
+        if (!el) return false;
+        const tag = el.tagName.toLowerCase();
+        const cls = String(el.className || '').toLowerCase();
+        const id = String(el.id || '').toLowerCase();
+        return tag === 'header' || /header|cv\d+-head\b|top-head|name-title|diagonal-header/.test(cls) || /header/.test(id);
+    };
+
     const add = (container, depth) => {
-        if (!container) return;
+        if (!container || isHeaderElement(container)) return;
         const cs = getComputedStyle(container);
         const isFlexRow = cs.display === 'flex' && (cs.flexDirection === 'row' || cs.flexDirection === 'row-reverse');
+        const isGrid = cs.display === 'grid';
         const kids = layoutKids(container);
         if (kids.length < 2) return;
-        if (isFlexRow) { candidates.push({ container, depth, height: container.getBoundingClientRect().height }); return; }
-        // Non-flex containers with side-by-side children (floats/grids).
+        const rect = container.getBoundingClientRect();
+        if (isFlexRow || isGrid) {
+            candidates.push({ container, depth, height: rect.height });
+            return;
+        }
         for (let i = 0; i < kids.length - 1; i++) {
             for (let j = i + 1; j < kids.length; j++) {
                 const ra = kids[i].getBoundingClientRect();
                 const rb = kids[j].getBoundingClientRect();
-                if (Math.abs(ra.top - rb.top) < 24 && Math.max(ra.height, rb.height) >= wrapperHeight * 0.6) {
-                    candidates.push({ container, depth, height: container.getBoundingClientRect().height });
+                if (Math.abs(ra.top - rb.top) < 24 && Math.max(ra.height, rb.height) >= boardHeight * 0.25) {
+                    candidates.push({ container, depth, height: rect.height });
                     return;
                 }
             }
         }
     };
+
     add(board, 0);
-    add(wrapper, 0);
-    if (wrapper) {
-        for (const child of wrapper.children) add(child, 1);
-        for (const child of wrapper.children) {
-            for (const grandchild of child.children || []) add(grandchild, 2);
+    for (const child of board.children) {
+        add(child, 1);
+        for (const grandchild of child.children || []) {
+            add(grandchild, 2);
+            for (const greatGrandchild of grandchild.children || []) {
+                add(greatGrandchild, 3);
+            }
         }
     }
+
+    candidates.sort((a, b) => b.height - a.height);
+
     for (const { container, depth, height } of candidates) {
-        const dominates = depth === 0 || height >= wrapperHeight * 0.55;
-        if (!dominates) continue;
+        if (height < 150 && height < boardHeight * 0.2) continue;
         const kids = layoutKids(container);
         if (kids.length >= 2 && kids.some((el) => looksLikeSidebar(el, boardWidth))) {
             const sidebar = kids.find((el) => looksLikeSidebar(el, boardWidth));
             const main = kids.find((el) => el !== sidebar);
             if (sidebar && main) {
-                // The wrapper is the board's first child only when the row lives
-                // inside it; board-as-row layouts have no wrapper.
-                const first = board.firstElementChild;
-                const realWrapper = first && (container === first || first.contains(container)) ? first : null;
+                let realWrapper = null;
+                for (const child of board.children) {
+                    if (child === container || child.contains(container)) {
+                        realWrapper = child;
+                        break;
+                    }
+                }
                 return { wrapper: realWrapper, row: container, sidebar, main };
             }
         }
     }
     return null;
+}
+
+function findFlowRootAndBlocks(board, layout) {
+    if (layout && layout.main) {
+        return { wrapper: layout.wrapper, flowRoot: layout.main, blocks: visibleChildren(layout.main) };
+    }
+
+    const isHeaderEl = (el) => {
+        if (!el) return false;
+        const tag = el.tagName.toLowerCase();
+        const cls = String(el.className || '').toLowerCase();
+        return tag === 'header' || /header|cv\d+-head\b|top-head|name-title|diagonal-header|contact/.test(cls);
+    };
+
+    const isBodyContainer = (el) => {
+        if (!el) return false;
+        const cls = String(el.className || '').toLowerCase();
+        const tag = el.tagName.toLowerCase();
+        return tag === 'main' || /body|main|content-body|grid-container/.test(cls);
+    };
+
+    const boardKids = visibleChildren(board).filter((el) => !String(el.className || '').includes('resume-'));
+
+    let container = board;
+    if (boardKids.length === 1) {
+        container = boardKids[0];
+    }
+    const containerKids = visibleChildren(container).filter((el) => !String(el.className || '').includes('resume-'));
+
+    const bodyEl = containerKids.find(isBodyContainer);
+    if (bodyEl && visibleChildren(bodyEl).length > 1) {
+        return { wrapper: container !== board ? container : bodyEl, flowRoot: bodyEl, blocks: visibleChildren(bodyEl) };
+    }
+
+    const header = containerKids.find(isHeaderEl);
+    const nonHeaders = containerKids.filter((el) => el !== header);
+    if (nonHeaders.length === 1 && visibleChildren(nonHeaders[0]).length > 1) {
+        return { wrapper: container !== board ? container : nonHeaders[0], flowRoot: nonHeaders[0], blocks: visibleChildren(nonHeaders[0]) };
+    }
+
+    return { wrapper: container !== board ? container : null, flowRoot: container, blocks: nonHeaders.length ? nonHeaders : containerKids };
 }
 
 function makeChrome(kind, { name, occupation, accent, pageNumber, pageCount }) {
@@ -242,49 +303,56 @@ function composePages({ blocks, layout, flowRoot, values, scratch, boardStyle, b
     const boardDeep = board.cloneNode(true);
     boardDeep.setAttribute('data-cv-board', 'true');
     page1.appendChild(boardDeep);
-    const contentDeep = (wrapper && wrapper !== board) ? boardDeep.firstElementChild : boardDeep;
-    // Board-level extras (portal appends after the content wrapper / columns).
+
+    const wrapperIndex = wrapper ? [...board.children].indexOf(wrapper) : -1;
+    const contentDeep = wrapperIndex >= 0 ? boardDeep.children[wrapperIndex] : boardDeep;
+
+    // Prune only the board-level extras clones that appear after content
     const columnEls = new Set([wrapper, row, sidebar, main].filter(Boolean));
     const extraOriginals = [...board.children].filter((el) => !columnEls.has(el) && getComputedStyle(el).display !== 'none');
-    // Prune only the board-level extras clones (identified by position); the
-    // column clones stay intact for the flow lookup below.
-    if (wrapper && wrapper !== board) {
-        for (const sibling of [...boardDeep.children]) {
-            if (sibling !== contentDeep) sibling.remove();
+    
+    if (wrapperIndex >= 0) {
+        while (boardDeep.children.length > wrapperIndex + 1) {
+            boardDeep.children[boardDeep.children.length - 1].remove();
         }
     } else {
         const keepCount = main ? Math.max(1, [...board.children].indexOf(main) + 1) : 1;
         while (boardDeep.children.length > keepCount) boardDeep.children[boardDeep.children.length - 1].remove();
     }
 
-    // Extras (board-level siblings) are re-appended to page 1 after content;
-    // the trim pass pushes them to continuation pages when they don't fit.
-    for (const extra of extraOriginals) boardDeep.appendChild(extra.cloneNode(true));
+    // Extras are re-appended to page 1 after content so they can be trimmed if needed
+    for (const extra of extraOriginals) {
+        if ([...board.children].indexOf(extra) > wrapperIndex) {
+            boardDeep.appendChild(extra.cloneNode(true));
+        }
+    }
     const extraRemovable = () => {
-        if (wrapper && wrapper !== board) return [...boardDeep.children].filter((el) => el !== contentDeep);
+        if (wrapperIndex >= 0) return [...boardDeep.children].slice(wrapperIndex + 1);
         const keepCount = main ? Math.max(1, [...board.children].indexOf(main) + 1) : 1;
         return [...boardDeep.children].slice(keepCount);
     };
 
     // Locate the flow container inside the deep clone (row/main or content).
-    let flowDeep;
-    if (main) {
-        const indexInRow = [...(row || wrapper || board).children].indexOf(main);
-        let rowDeep = contentDeep;
-        if (row && row !== wrapper && row !== board) {
-            rowDeep = [...contentDeep.querySelectorAll('*')].find((el) => el.tagName === row.tagName && el.className === row.className) || contentDeep;
-        }
-        flowDeep = (indexInRow >= 0 && rowDeep.children[indexInRow]) ? rowDeep.children[indexInRow] : contentDeep;
-    } else {
-        flowDeep = contentDeep;
+    let flowDeep = contentDeep;
+    if (main && row) {
+        flowDeep = boardDeep.querySelector(`.${main.className.split(/\s+/)[0]}`) || contentDeep;
+    } else if (flowRoot && flowRoot !== board && flowRoot !== wrapper) {
+        flowDeep = boardDeep.querySelector(`.${flowRoot.className.split(/\s+/)[0]}`) || contentDeep;
     }
-    const flowOriginals = main ? visibleChildren(main) : visibleChildren(wrapper || board);
+    const flowOriginals = blocks;
 
     // Cap the first-page sidebar at one sheet (first-page sidebar strategy).
     if (sidebar) {
         const sidebarIndex = [...(row || wrapper || board).children].indexOf(sidebar);
         const sidebarDeep = sidebarIndex >= 0 ? flowDeep.parentElement?.children?.[sidebarIndex] : null;
-        if (sidebarDeep) sidebarDeep.classList.add('resume-sidebar-clone');
+        if (sidebarDeep) {
+            sidebarDeep.classList.add('resume-sidebar-clone');
+            const headerHeight = wrapperIndex > 0 ? 
+                [...boardDeep.children].slice(0, wrapperIndex).reduce((sum, el) => sum + el.getBoundingClientRect().height, 0) : 0;
+            const maxSidebarH = Math.max(350, Math.floor(1050 - headerHeight));
+            sidebarDeep.style.maxHeight = `${maxSidebarH}px`;
+            sidebarDeep.style.overflow = 'hidden';
+        }
     }
 
     const removableInFlow = () => {
@@ -304,21 +372,21 @@ function composePages({ blocks, layout, flowRoot, values, scratch, boardStyle, b
     const pending = [];
     let trimGuard = 0;
     while (page1.scrollHeight > page1.clientHeight + 2 && trimGuard++ < 200) {
-        const removable = removableInFlow();
-        if (removable.length) {
-            const last = removable[removable.length - 1];
-            const original = flowOriginals[removable.length - 1];
-            last.remove();
-            if (original) pending.unshift(original);
-            continue;
-        }
-        // Try removing board-level extras before touching flow blocks.
+        // Try removing board-level extras (which sit below flow) before touching flow blocks.
         const extras = extraRemovable();
         if (extras.length) {
             const lastExtra = extras[extras.length - 1];
             const original = extraOriginals[extras.indexOf(lastExtra)];
             lastExtra.remove();
             if (original) pending.push(original);
+            continue;
+        }
+        const removable = removableInFlow();
+        if (removable.length > 0) {
+            const last = removable[removable.length - 1];
+            const original = flowOriginals[removable.length - 1];
+            last.remove();
+            if (original) pending.unshift(original);
             continue;
         }
         // Nothing removable left — first-page chrome (header/sidebar) exceeds
@@ -336,15 +404,19 @@ function composePages({ blocks, layout, flowRoot, values, scratch, boardStyle, b
     const buildContinuationShell = () => {
         const page = applyBoardIdentity(document.createElement('div'));
         page.className = 'resume-page';
-        const shell = wrapper && wrapper !== board ? wrapper.cloneNode(false) : document.createElement('div');
+        const continuation = makeChrome('continuation', { name, occupation, accent, pageNumber: pages.length + 1, pageCount: 0 });
+        page.appendChild(continuation);
+
+        const shell = (wrapper && wrapper !== board) ? wrapper.cloneNode(false) : document.createElement('div');
         page.appendChild(shell);
         let flow = shell;
-        if (main) {
+        if (main && row) {
             const chain = nestChain(main, (wrapper && wrapper !== board) ? wrapper : board);
             if (chain) { shell.appendChild(chain); flow = chain; }
+        } else if (flowRoot && flowRoot !== board && flowRoot !== wrapper) {
+            const chain = nestChain(flowRoot, (wrapper && wrapper !== board) ? wrapper : board);
+            if (chain) { shell.appendChild(chain); flow = chain; }
         }
-        const continuation = makeChrome('continuation', { name, occupation, accent, pageNumber: pages.length + 1, pageCount: 0 });
-        flow.appendChild(continuation);
         flow.appendChild(makeChrome('footer', { name, accent, pageNumber: pages.length + 1, pageCount: 0 }));
         scratch.appendChild(page);
         return { page, flow };
@@ -540,19 +612,9 @@ export default function ResumePageComposer({ templateId, language = 'en', values
             if (globalThis.__resumeComposeDebug) {
                 globalThis.__resumeComposeDebug.layout = layout ? { wrapper: String(layout.wrapper?.className || null).slice(0, 30), row: String(layout.row?.className || null).slice(0, 30), sidebar: String(layout.sidebar?.className).slice(0, 30), main: String(layout.main?.className).slice(0, 30) } : null;
             }
-            const content = layout?.wrapper || board.firstElementChild || board;
-            let blocks;
-            let flowRoot = content;
-            if (layout) {
-                flowRoot = layout.main;
-                blocks = visibleChildren(layout.main);
-            } else {
-                blocks = visibleChildren(content);
-                if (blocks.length === 1) {
-                    flowRoot = blocks[0];
-                    blocks = visibleChildren(blocks[0]);
-                }
-            }
+            const flowInfo = findFlowRootAndBlocks(board, layout);
+            const { wrapper, flowRoot, blocks } = flowInfo;
+            const effectiveLayout = layout ? { ...layout, wrapper } : null;
             // Board-level extras (resume-extras portal) are handled by the
             // page-1 composition itself (appended after content, trimmed into
             // continuation pages when they don't fit).
@@ -573,7 +635,7 @@ export default function ResumePageComposer({ templateId, language = 'en', values
 
             const { pages, overflowLeaves } = composePages({
                 blocks,
-                layout: layout || null,
+                layout: effectiveLayout || null,
                 flowRoot,
                 values: values || {},
                 scratch,

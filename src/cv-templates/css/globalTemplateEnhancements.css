@@ -603,9 +603,39 @@ h1, h2, h3, h4, h5, h6,
 .resume-page :not([class*="resume-"])[class*="body" i],
 .resume-page :not([class*="resume-"])[class*="main" i],
 .resume-page :not([class*="resume-"])[class*="column" i],
-.resume-page :not([class*="resume-"])[class*="side" i] {
+.resume-page :not([class*="resume-"])[class*="side" i],
+.resume-page :not([class*="resume-"])[class*="board" i],
+.resume-page :not([class*="resume-"])[class*="container" i],
+.resume-page #resumen,
+.resume-page [data-cv-board] {
     height: auto !important;
     min-height: 0 !important;
+    box-sizing: border-box !important;
+}
+
+.resume-page #resumen,
+.resume-page .cv-board,
+.resume-page [class*="-board"],
+.resume-page [data-cv-board] {
+    width: 100% !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    justify-content: flex-start !important;
+}
+
+.resume-page .cv2-board {
+    padding: 8mm 12mm !important;
+}
+
+.resume-page .cv2-content {
+    justify-content: flex-start !important;
+}
+
+.resume-page .cv51-content {
+    min-height: 0 !important;
+    height: auto !important;
+    padding: 8mm 12mm !important;
 }
 
 /* ── Continuation chrome ─────────────────────────────────────────────── */
