@@ -15,8 +15,8 @@ import path from 'node:path';
 import { buildCanonicalResumeDocument, normalizeResumeData } from '../src/utils/resumeData.js';
 
 const root = path.resolve(import.meta.dirname, '..');
-const cvDirs = fs.readdirSync(path.join(root, 'src/cv-templates')).filter((name) => /^cv\d+$/.test(name));
-const coverDirs = fs.readdirSync(path.join(root, 'src/cv-templates')).filter((name) => /^cover\d+$/.test(name));
+const cvDirs = fs.readdirSync(path.join(root, 'src/cv-templates')).filter((name) => /^cv\d+$/.test(name)).sort((a, b) => Number(a.slice(2)) - Number(b.slice(2)));
+const coverDirs = fs.readdirSync(path.join(root, 'src/cv-templates')).filter((name) => /^cover\d+$/.test(name)).sort();
 const jsxFiles = (() => {
     const files = [];
     for (let i = 1; i <= 51; i++) files.push(path.join(root, `src/cv-templates/cv${i}/Cv${i}.jsx`));

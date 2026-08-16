@@ -283,9 +283,8 @@
                                 font-size: 13px;
                                 font-weight: 500;
                                 color: #00695c;
-                                white-space: nowrap;
-                                overflow: hidden;
-                                text-overflow: ellipsis;
+                                white-space: normal;
+                                overflow-wrap: anywhere;
                             }
 
                             .pill-level {
