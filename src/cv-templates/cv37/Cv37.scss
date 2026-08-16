@@ -355,6 +355,9 @@
                             font-weight: 600;
                             color: $text-dark;
                             margin: 0;
+                            flex: 1;
+                            min-width: 0;
+                            overflow-wrap: anywhere;
                         }
 
                         .experience-date,

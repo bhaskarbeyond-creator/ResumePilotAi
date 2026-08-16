@@ -123,14 +123,18 @@
                             font-size: 0.8em;
                             align-items: center;
                             margin-top: 10px;
+                            min-width: 0;
                             .cv15-contact-icon {
                                 margin-right: 10px;
                                 font-size: 0.8em;
+                                flex-shrink: 0;
                             }
                             p {
-                                width: 150px;
+                                flex: 1;
+                                min-width: 0;
                                 margin: 0px;
                                 font-size: 0.8em;
+                                overflow-wrap: anywhere;
                             }
                         }
                     }

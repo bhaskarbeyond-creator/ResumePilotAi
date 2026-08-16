@@ -159,9 +159,9 @@
                 .contact-text {
                     font-size: 14px;
                     color: $text-medium;
-                    white-space: nowrap;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
+                    white-space: normal;
+                    overflow-wrap: anywhere;
+                    word-break: normal;
                 }
             }
         }

@@ -9,6 +9,9 @@
  *   data-lab-template, data-lab-fixture
  */
 import './i18n.bootstrap.js';
+// Mirrors src/main.jsx: the shared global template design system must be loaded
+// exactly like the production app loads it.
+import '../src/cv-templates/css/globalTemplateEnhancements.css';
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import TemplateRenderer from '../src/components/TemplateRenderer';

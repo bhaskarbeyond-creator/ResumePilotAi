@@ -53,6 +53,8 @@
         }
 
         .right-side {
+            flex: 0 0 auto;
+            min-width: 126px;
             .photo-container {
                 width: 120px;
                 height: 120px;

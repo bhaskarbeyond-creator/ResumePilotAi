@@ -120,7 +120,25 @@ async function measure(page, { templateId, fixtureName, language, screenshot, fu
         if ((overflowX === 'hidden' || overflowX === 'clip' || overflowX === 'auto' || overflowX === 'scroll') && el.scrollWidth > el.clientWidth + 2 && el.clientWidth > 0) {
           const trimmed = el.innerText?.trim();
           if (trimmed && trimmed.length > 12) {
-            clippedCandidates.push({ tag: el.tagName.toLowerCase(), cls: String(el.className).slice(0, 60), by: el.scrollWidth - el.clientWidth });
+            // Distinguish real text clipping from decorative overflow (e.g. accent
+            // circles via ::before that legitimately extend past the container).
+            const elRect = el.getBoundingClientRect();
+            const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+            let textClipped = 0;
+            let node;
+            while ((node = walker.nextNode())) {
+              if (!node.textContent.trim()) continue;
+              const range = document.createRange();
+              range.selectNodeContents(node);
+              for (const rect of [...range.getClientRects()]) {
+                if (rect.width < 2) continue;
+                if (rect.left < elRect.left - 2 || rect.right > elRect.right + 2) { textClipped++; break; }
+              }
+              if (textClipped) break;
+            }
+            if (textClipped > 0) {
+              clippedCandidates.push({ tag: el.tagName.toLowerCase(), cls: String(el.className).slice(0, 60), by: el.scrollWidth - el.clientWidth });
+            }
           }
         }
       }

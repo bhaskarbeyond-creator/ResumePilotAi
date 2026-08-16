@@ -175,9 +175,8 @@
                     text-align: center;
                     color: rgba(255, 255, 255, 0.9);
                     max-width: 100%;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    white-space: nowrap;
+                    white-space: normal;
+                    overflow-wrap: anywhere;
                 }
             }
         }

@@ -51,6 +51,8 @@
             }
 
             .photo-section {
+                flex: 0 0 auto;
+                min-width: 124px;
                 .photo-container {
                     width: 120px;
                     height: 120px;

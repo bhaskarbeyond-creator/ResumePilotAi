@@ -383,9 +383,8 @@
                                 font-size: 12px;
                                 margin-bottom: 4px;
                                 color: var(--text-dark);
-                                white-space: nowrap;
-                                overflow: hidden;
-                                text-overflow: ellipsis;
+                                white-space: normal;
+                                overflow-wrap: anywhere;
                                 display: block;
                                 width: 100%;
                             }
