@@ -216,10 +216,17 @@ const BuildResume = () => {
     const currentStepIndex = getCurrentStepIndex();
     const currentStep = currentStepIndex >= 0 ? orderedSteps[currentStepIndex] : orderedSteps[0];
 
-    const buildCanonicalSnapshot = useCallback((data = resumeDataRef.current) => normalizeResumeData({
-        ...data,
-        template: currentTemplateRef.current || data.template || 'Cv1',
-    }), []);
+    const buildCanonicalSnapshot = useCallback((data = resumeDataRef.current) => {
+        const snapshot = normalizeResumeData({
+            ...data,
+            template: currentTemplateRef.current || data.template || 'Cv1',
+        });
+        // Presentation state (template palette) must not be persisted inside the
+        // core resume document. The preview re-derives it from template selection,
+        // so switching templates can never destroy user data or stale palettes.
+        delete snapshot.colors;
+        return snapshot;
+    }, []);
 
     const persistLatest = useCallback(async ({ manual = false } = {}) => {
         if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
@@ -420,6 +427,7 @@ const BuildResume = () => {
             Cv48: t('BuildResume.templates.professional48'),
             Cv49: t('BuildResume.templates.professional49'),
             Cv50: t('BuildResume.templates.professional50'),
+            Cv51: 'Europass Executive Classic',
         };
 
         return templateNames[templateId] || templateId;
@@ -437,13 +445,15 @@ const BuildResume = () => {
     };
 
     const handleTemplateSelect = (templateId) => {
-        const templateColors = getTemplateDefaultColors(templateId);
         currentTemplateRef.current = templateId;
         setCurrentTemplate(templateId);
+        // Template selection changes presentation only. Colors are not written
+        // into the resume data model: the preview derives the palette from the
+        // selected template (with legacy user palettes still honored), so
+        // switching to Cv21+ can no longer wipe a previously chosen palette.
         const updated = normalizeResumeData({
             ...resumeDataRef.current,
             template: templateId,
-            colors: templateColors || null,
         });
         resumeDataRef.current = updated;
         setResumeData(updated);

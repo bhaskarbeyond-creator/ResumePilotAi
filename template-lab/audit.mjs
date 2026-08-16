@@ -193,6 +193,8 @@ async function measure(page, { templateId, fixtureName, language, screenshot, fu
       languages: fixture.languages?.slice(0, 1).map((l) => (typeof l === 'string' ? l : l.name || l.language)),
       projects: fixture.projects?.slice(0, 1).map((p) => p.title || p.name),
       certifications: fixture.certifications?.slice(0, 1).map((c) => c.title || c.name),
+      achievements: fixture.achievements?.slice(0, 1).map((a) => a.title || a.name),
+      references: fixture.references?.slice(0, 1).map((r) => r.name),
     };
     entry.coverage = {};
     for (const [field, values] of Object.entries(probes)) {
