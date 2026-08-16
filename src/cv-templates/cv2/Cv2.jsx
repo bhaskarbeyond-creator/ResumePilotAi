@@ -6,7 +6,7 @@ import Phone from '../../assets/cv2-assets/phone-call.png';
 import Email from '../../assets/cv2-assets/envelope.png';
 import { withTranslation } from 'react-i18next';
 import i18n from '../../i18n';
-import { getTemplateColors } from '../templateUtils';
+import { getTemplateColors, getContrastTextColor } from '../templateUtils';
 
 class Cv2 extends Component {
     constructor(props) {
@@ -21,6 +21,13 @@ class Cv2 extends Component {
     getPrimaryColor() {
         const templateColors = getTemplateColors(this.props.values?.colors, 1, '#1E40AF', '#F8FAFC');
         return templateColors.primary;
+    }
+
+    // Text set in the primary color must remain WCAG-AA readable on light
+    // backgrounds; the bright gold accents stay gold for decorations only.
+    getTextPrimaryColor() {
+        const primary = String(this.getPrimaryColor() || '').toLowerCase();
+        return ['#f0c30e', '#f59e0b', '#eab308'].includes(primary) ? '#854d0e' : this.getPrimaryColor();
     }
 
     getSecondaryColor() {
@@ -206,7 +213,8 @@ class Cv2 extends Component {
 
         const fullAddress = values.fullAddress || [values.address, values.city, values.postalcode || values.postalCode || values.postalecode, values.country].map(i => (i || '').trim()).filter(Boolean).join(', ');
 
-        const footerName = values.signName || fullName || 'Bhaskar Babu';
+        // Placeholder names must never leak into a real document.
+        const footerName = values.signName || fullName;
         const todayStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-');
         const footerDate = values.signDate || todayStr;
 
@@ -224,14 +232,14 @@ class Cv2 extends Component {
                             {values.photo ? (
                                 <img src={values.photo} alt="profile" />
                             ) : (
-                                <div className="avatar-initials">
+                                <div className="avatar-initials" style={{ color: getContrastTextColor(primaryColor) }}>
                                     {((firstname[0] || '') + (lastname[0] || '')).toUpperCase() || 'CV'}
                                 </div>
                             )}
                         </div>
                         <div className="head-details">
-                            <h2>{fullName || 'Your Name'}</h2>
-                            {occupation && <p style={{ color: primaryColor }}>{occupation}</p>}
+                            <h1>{fullName || 'Your Name'}</h1>
+                            {occupation && <p style={{ color: this.getTextPrimaryColor() }}>{occupation}</p>}
                         </div>
                     </div>
 
@@ -279,7 +287,7 @@ class Cv2 extends Component {
                         {/* Personal Summary */}
                         {values.summary && (
                             <div className="cv-bodySection">
-                                <div className="cv-sectionLeft" style={{ color: primaryColor }}>
+                                <div className="cv-sectionLeft" style={{ color: this.getTextPrimaryColor() }}>
                                     {t('resume.personalSummary') || 'Personal Summary'}
                                 </div>
                                 <div className="cv-sectionRight">
@@ -294,7 +302,7 @@ class Cv2 extends Component {
                         {/* Employment History */}
                         {hasEmployments && (
                             <div className="cv-bodySection">
-                                <div className="cv-sectionLeft" style={{ color: primaryColor }}>
+                                <div className="cv-sectionLeft" style={{ color: this.getTextPrimaryColor() }}>
                                     {t('resume.employmentHistory') || 'Experience'}
                                 </div>
                                 <div className="cv-sectionRight">
@@ -306,7 +314,7 @@ class Cv2 extends Component {
                         {/* Education History */}
                         {hasEducations && (
                             <div className="cv-bodySection">
-                                <div className="cv-sectionLeft" style={{ color: primaryColor }}>
+                                <div className="cv-sectionLeft" style={{ color: this.getTextPrimaryColor() }}>
                                     {t('resume.educationHistory') || 'Education'}
                                 </div>
                                 <div className="cv-sectionRight">
@@ -318,7 +326,7 @@ class Cv2 extends Component {
                         {/* Skills */}
                         {hasSkills && (
                             <div className="cv-bodySection">
-                                <div className="cv-sectionLeft" style={{ color: primaryColor }}>
+                                <div className="cv-sectionLeft" style={{ color: this.getTextPrimaryColor() }}>
                                     {t('resume.skills') || 'Skills'}
                                 </div>
                                 <div className="cv-sectionRight">
@@ -330,7 +338,7 @@ class Cv2 extends Component {
                         {/* Languages */}
                         {hasLanguages && (
                             <div className="cv-bodySection">
-                                <div className="cv-sectionLeft" style={{ color: primaryColor }}>
+                                <div className="cv-sectionLeft" style={{ color: this.getTextPrimaryColor() }}>
                                     {t('resume.languages') || 'Languages'}
                                 </div>
                                 <div className="cv-sectionRight">
@@ -341,12 +349,14 @@ class Cv2 extends Component {
                     </div>
 
                     {/* Extreme Bottom-Right Page Footer */}
-                    <div className="cv2-footer">
-                        <div className="footer-signature">
-                            <div><span className="label">Name:</span> {footerName}</div>
-                            <div><span className="label">Date:</span> {footerDate}</div>
+                    {footerName && (
+                        <div className="cv2-footer">
+                            <div className="footer-signature">
+                                <div><span className="label">Name:</span> {footerName}</div>
+                                <div><span className="label">Date:</span> {footerDate}</div>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             </div>
         );

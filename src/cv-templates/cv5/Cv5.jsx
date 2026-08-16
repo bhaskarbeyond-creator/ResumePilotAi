@@ -193,9 +193,9 @@ class Cv5 extends Component {
                         <div className="cv5-rightContent">
                             {/* Head Start */}
                             <div className="cv5-rightHead">
-                                <span className="cv5-name" style={{ color: this.getPrimaryColor() }}>
+                                <h1 className="cv5-name" style={{ color: this.getPrimaryColor() }}>
                                     {this.props.values.firstname} {this.props.values.lastname}
-                                </span>
+                                </h1>
                                 <span className="cv5-occupation">{this.props.values.occupation}</span>
                             </div>{' '}
                             {/* Head End */}

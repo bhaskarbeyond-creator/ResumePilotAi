@@ -282,9 +282,9 @@ class Cv51 extends Component {
                         </div>
                         <div className="cv51-section-right">
                             <div className="cv51-name-display">
-                                <span className="cv51-name-large">
+                                <h1 className="cv51-name-large">
                                     {this.props.values.firstname} {this.props.values.lastname}
-                                </span>
+                                </h1>
                                 {this.props.values.occupation && (
                                     <span className="cv51-occupation">
                                         {this.props.values.occupation}

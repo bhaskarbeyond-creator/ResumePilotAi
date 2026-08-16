@@ -94,9 +94,9 @@ class Cv11 extends Component {
             <div id="resumen" className="cv11-board">
                 <div className="cv11-content">
                     <div className="cv11-content-head">
-                        <h2>
+                        <h1>
                             {this.props.values.firstname} {this.props.values.lastname}
-                        </h2>
+                        </h1>
                         <h3>{this.props.values.occupation} </h3>
                     </div>
 

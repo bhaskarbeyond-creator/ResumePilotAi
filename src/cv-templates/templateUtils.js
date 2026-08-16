@@ -226,13 +226,16 @@ export function formatDateRange(startDate, endDate, isCurrent) {
 }
 
 /**
- * Calculates accessible text color (#ffffff or #1a202c) based on background hex luminance
+ * Calculates accessible text color (#ffffff or #1a202c) based on background hex luminance.
+ * Picks whichever of the two colors scores the higher WCAG contrast ratio against
+ * the background, so light accent backgrounds receive dark text instead of
+ * sub-AA white text.
  */
 export function getContrastTextColor(bgHex, fallback = '#ffffff') {
     if (!bgHex || typeof bgHex !== 'string') return fallback;
     const hex = bgHex.replace('#', '').trim();
     if (hex.length !== 3 && hex.length !== 6) return fallback;
-    
+
     let r, g, b;
     if (hex.length === 3) {
         r = parseInt(hex[0] + hex[0], 16);
@@ -244,8 +247,19 @@ export function getContrastTextColor(bgHex, fallback = '#ffffff') {
         b = parseInt(hex.substring(4, 6), 16);
     }
 
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    return luminance > 0.65 ? '#1a202c' : '#ffffff';
+    const linear = (value) => {
+        const s = value / 255;
+        return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+    };
+    const luminance = 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
+    const ratioWith = (foregroundLuminance) => {
+        const [hi, lo] = luminance > foregroundLuminance ? [luminance, foregroundLuminance] : [foregroundLuminance, luminance];
+        return (hi + 0.05) / (lo + 0.05);
+    };
+    // #ffffff vs #1a202c (relative luminance ≈ 0.0118)
+    const whiteRatio = ratioWith(1.0);
+    const darkRatio = ratioWith(0.0118);
+    return whiteRatio >= darkRatio ? '#ffffff' : '#1a202c';
 }
 
 /**

@@ -15,7 +15,7 @@ class Cv9 extends Component {
 
     // Get primary color from props or default to original color
     getPrimaryColor() {
-        return this.props.values?.colors?.primary || '#838383';
+        return this.props.values?.colors?.primary || '#555555';
     }
 
     // Get secondary color from props or default to original color

@@ -81,6 +81,7 @@ async function domMetrics(page, templateId) {
       return { ...fg, a: 1 };
     };
     const contrastViolations = [];
+    const unverifiable = [];
     const walkers = [...board.querySelectorAll('*')];
     let checked = 0;
     for (const el of walkers) {
@@ -89,12 +90,15 @@ async function domMetrics(page, templateId) {
       if (!direct) continue;
       const fg = solidify(getComputedStyle(el).color, '#ffffff');
       if (!fg) continue;
-      let bgNode = el;
       let bg = null;
+      let gradientHit = false;
       for (let n = el; n && n !== document.body; n = n.parentElement) {
-        const c = lum(getComputedStyle(n).backgroundColor);
-        if (c && c.a > 0.5) { bg = { ...c, a: 1 }; bgNode = n; break; }
+        const cs = getComputedStyle(n);
+        if (cs.backgroundImage && cs.backgroundImage !== 'none') { gradientHit = true; break; }
+        const c = lum(cs.backgroundColor);
+        if (c && c.a > 0.5) { bg = { ...c, a: 1 }; break; }
       }
+      if (gradientHit) { unverifiable.push(String(el.className).slice(0, 40)); continue; }
       if (!bg) bg = { r: 1, g: 1, b: 1, a: 1 };
       const r = ratio(fg, bg);
       const size = parseFloat(getComputedStyle(el).fontSize) || 14;
@@ -102,7 +106,8 @@ async function domMetrics(page, templateId) {
       if (r < threshold) {
         contrastViolations.push({
           cls: String(el.className).slice(0, 40) || el.tagName.toLowerCase(),
-          fg: getComputedStyle(el).color, bg: getComputedStyle(bgNode).backgroundColor,
+          fg: getComputedStyle(el).color,
+          bg: bg ? `rgb(${Math.round(bg.r * 255)}, ${Math.round(bg.g * 255)}, ${Math.round(bg.b * 255)})` : 'rgb(255, 255, 255)',
           ratio: Math.round(r * 100) / 100, size: Math.round(size * 10) / 10,
           text: (el.textContent || '').trim().slice(0, 40),
         });
@@ -165,7 +170,7 @@ async function domMetrics(page, templateId) {
     const lrBalance = leftInk + rightInk === 0 ? 1 : Math.abs(leftInk - rightInk) / (leftInk + rightInk);
 
     return {
-      contrast: { violations: contrastViolations.slice(0, 8), total: contrastViolations.length },
+      contrast: { violations: contrastViolations.slice(0, 8), total: contrastViolations.length, unverifiableGradientCount: unverifiable.length },
       typography: { sizes: Object.fromEntries(Object.entries(sizes).sort((a, b) => b[1] - a[1]).slice(0, 10)), distinctSizeCount: Object.keys(sizes).length, distinctFamilyCount: Object.keys(families).length, families: Object.entries(families).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([f]) => f) },
       density: { inkRatio: Math.round(inkRatio * 1000) / 1000, bottomWhitespace: Math.round(bottomWhitespace * 1000) / 1000, bands: rows.map((r) => Math.round(r)) },
       balance: { lrBalance: Math.round(lrBalance * 1000) / 1000, leftInk: Math.round(leftInk), rightInk: Math.round(rightInk) },

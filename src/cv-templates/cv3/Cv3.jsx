@@ -3,7 +3,7 @@ import React, { Component } from 'react';
 import './Cv3.scss';
 import { withTranslation } from 'react-i18next';
 import i18n from '../../i18n';
-import { formatLocation, formatDateRange, getTemplateColors } from '../templateUtils';
+import { formatLocation, formatDateRange, getTemplateColors, getContrastTextColor } from '../templateUtils';
 
 class Cv3 extends Component {
     constructor(props) {
@@ -20,6 +20,7 @@ class Cv3 extends Component {
         // Replace pink/magenta/rose tones with Deep Executive Navy for 10/10 presentation
         const isPinkOrRose = rawPrimary && (
             rawPrimary.toLowerCase().includes('b86877') ||
+            rawPrimary.toLowerCase().includes('be8a95') ||
             rawPrimary.toLowerCase().includes('d946ef') ||
             rawPrimary.toLowerCase().includes('ec4899') ||
             rawPrimary.toLowerCase().includes('f43f5e') ||
@@ -170,7 +171,7 @@ class Cv3 extends Component {
                                     <img src={this.props.values.photo} alt="profile" className="cv3-photoImg" />
                                 </div>
                             ) : (
-                                <div className="cv3-avatar" style={{ backgroundColor: colors.primary }}>
+                                <div className="cv3-avatar" style={{ backgroundColor: colors.primary, color: getContrastTextColor(colors.primary) }}>
                                     {initials}
                                 </div>
                             )}
