@@ -114,10 +114,22 @@ class CoverLetter extends Component {
         this.loadSavedLetters();
         await this.loadUserProfileData();
         document.addEventListener('keydown', this.handleKeyDown);
+
+        // Listen for Firebase Auth initialization to dynamically hydrate master profile
+        this.authUnsubscribe = fire.auth().onAuthStateChanged(async (user) => {
+            if (user) {
+                this.loadSavedLetters();
+                await this.loadUserProfileData();
+            }
+        });
     }
 
     componentWillUnmount() {
         document.removeEventListener('keydown', this.handleKeyDown);
+        if (typeof this.authUnsubscribe === 'function') {
+            this.authUnsubscribe();
+            this.authUnsubscribe = null;
+        }
         const controller = this.aiRequestController;
         this.aiRequestController = null;
         controller?.abort();
@@ -140,41 +152,17 @@ class CoverLetter extends Component {
 
     loadUserProfileData = async () => {
         try {
-            let firstname = '';
-            let lastname = '';
-            let email = '';
-            let phone = '';
-            let address = '';
-            let city = '';
-            let postalcode = '';
-            let occupation = '';
-            let skills = '';
+            let firstname = this.state.candidateFirstname || '';
+            let lastname = this.state.candidateLastname || '';
+            let email = this.state.candidateEmail || '';
+            let phone = this.state.candidatePhone || '';
+            let address = this.state.candidateAddress || '';
+            let city = this.state.candidateCity || '';
+            let postalcode = this.state.candidatePostalCode || '';
+            let occupation = this.state.jobTitle || '';
+            let skills = this.state.userSkills || '';
 
-            // 1. Try reading from active resume item in localStorage
-            const localItem = localStorage.getItem('currentResumeItem');
-            if (localItem && localItem !== 'null' && localItem !== 'undefined') {
-                try {
-                    const parsed = JSON.parse(localItem);
-                    const item = parsed.item || parsed;
-                    if (item) {
-                        firstname = item.firstname || '';
-                        lastname = item.lastname || '';
-                        email = item.email || '';
-                        phone = item.phone || '';
-                        address = item.address || '';
-                        city = item.city || '';
-                        postalcode = item.postalcode || item.postalCode || '';
-                        occupation = item.occupation || item.jobTitle || '';
-                        if (Array.isArray(item.skills)) {
-                            skills = item.skills.map(s => s.name || s).join(', ');
-                        } else if (typeof item.skills === 'string') {
-                            skills = item.skills;
-                        }
-                    }
-                } catch (e) {}
-            }
-
-            // 2. Fallback to Firestore User Profile if empty
+            // 1. Authoritative Firestore Master Profile
             const user = fire.auth().currentUser;
             if (user) {
                 if (!email) email = user.email || '';
@@ -183,16 +171,59 @@ class CoverLetter extends Component {
                     firstname = parts[0] || '';
                     lastname = parts.slice(1).join(' ') || '';
                 }
-                const profile = await getProfileOfUser(user.uid);
-                if (profile) {
-                    if (!firstname) firstname = profile.name ? profile.name.split(' ')[0] : '';
-                    if (!lastname && profile.name) lastname = profile.name.split(' ').slice(1).join(' ') || '';
-                    if (!email) email = profile.email || '';
-                    if (!phone) phone = profile.phone || '';
-                    if (!address) address = profile.address || '';
-                    if (!city) city = profile.city || '';
-                    if (!postalcode) postalcode = profile.postalCode || profile.postalcode || '';
-                    if (!occupation) occupation = profile.occupation || '';
+
+                try {
+                    const profile = await getProfileOfUser(user.uid);
+                    if (profile) {
+                        if (profile.firstname) firstname = profile.firstname;
+                        else if (profile.name) {
+                            const parts = profile.name.split(' ');
+                            firstname = parts[0] || firstname;
+                            lastname = parts.slice(1).join(' ') || lastname;
+                        }
+                        if (profile.lastname) lastname = profile.lastname;
+                        if (profile.email) email = profile.email;
+                        if (profile.phone) phone = profile.phone;
+                        if (profile.address) address = profile.address;
+                        if (profile.city) city = profile.city;
+                        if (profile.postalCode || profile.postalcode) postalcode = profile.postalCode || profile.postalcode;
+                        if (profile.occupation) occupation = profile.occupation;
+                        if (Array.isArray(profile.skills)) {
+                            skills = profile.skills.map(s => s.name || s).join(', ');
+                        } else if (typeof profile.skills === 'string' && profile.skills) {
+                            skills = profile.skills;
+                        }
+                    }
+                } catch (profileErr) {
+                    console.warn('[CoverLetter] Firestore profile fetch error:', profileErr);
+                }
+            }
+
+            // 2. Active Resume Item in localStorage (for additional skills / occupation context if empty)
+            if (!skills || !occupation) {
+                const localItem = localStorage.getItem('currentResumeItem');
+                if (localItem && localItem !== 'null' && localItem !== 'undefined') {
+                    try {
+                        const parsed = JSON.parse(localItem);
+                        const item = parsed.item || parsed;
+                        if (item) {
+                            if (!firstname && item.firstname) firstname = item.firstname;
+                            if (!lastname && item.lastname) lastname = item.lastname;
+                            if (!email && item.email) email = item.email;
+                            if (!phone && item.phone) phone = item.phone;
+                            if (!address && item.address) address = item.address;
+                            if (!city && item.city) city = item.city;
+                            if (!postalcode && (item.postalcode || item.postalCode)) postalcode = item.postalcode || item.postalCode;
+                            if (!occupation && (item.occupation || item.jobTitle)) occupation = item.occupation || item.jobTitle;
+                            if (!skills) {
+                                if (Array.isArray(item.skills)) {
+                                    skills = item.skills.map(s => s.name || s).join(', ');
+                                } else if (typeof item.skills === 'string') {
+                                    skills = item.skills;
+                                }
+                            }
+                        }
+                    } catch (e) {}
                 }
             }
 
@@ -204,8 +235,8 @@ class CoverLetter extends Component {
                 candidateAddress: address,
                 candidateCity: city,
                 candidatePostalCode: postalcode,
-                jobTitle: occupation,
-                userSkills: skills,
+                jobTitle: this.state.jobTitle || occupation,
+                userSkills: this.state.userSkills || skills,
             });
         } catch (err) {
             console.error('Error loading user profile for cover letter:', err);
