@@ -24,7 +24,7 @@ import download from 'downloadjs';
 import config from '../../conf/configuration';
 import { getJsonById, IncrementDownloads, addOneToNumberOfDocumentsDownloaded, getProfileOfUser, getSystemSettings } from '../../firestore/dbOperations';
 import { createResumeDraft, loadResumeDraft, saveResumeDraft, publishResume, unpublishResume, getResumePublication, writeResumeRecovery, readResumeRecovery, clearResumeRecovery } from '../../services/resumePersistence';
-import { EMPTY_RESUME, normalizeResumeData } from '../../utils/resumeData';
+import { EMPTY_RESUME, normalizeResumeData, buildCanonicalResumeDocument } from '../../utils/resumeData';
 import { trackDownload, trackEvent, trackEngagement } from '../../utils/ga4';
 import { toValidatedPdfBlob, pdfFileName } from '../../utils/pdfDownload';
 
@@ -216,17 +216,10 @@ const BuildResume = () => {
     const currentStepIndex = getCurrentStepIndex();
     const currentStep = currentStepIndex >= 0 ? orderedSteps[currentStepIndex] : orderedSteps[0];
 
-    const buildCanonicalSnapshot = useCallback((data = resumeDataRef.current) => {
-        const snapshot = normalizeResumeData({
-            ...data,
-            template: currentTemplateRef.current || data.template || 'Cv1',
-        });
-        // Presentation state (template palette) must not be persisted inside the
-        // core resume document. The preview re-derives it from template selection,
-        // so switching templates can never destroy user data or stale palettes.
-        delete snapshot.colors;
-        return snapshot;
-    }, []);
+    const buildCanonicalSnapshot = useCallback((data = resumeDataRef.current) => buildCanonicalResumeDocument(
+        data,
+        currentTemplateRef.current || data?.template || 'Cv1',
+    ), []);
 
     const persistLatest = useCallback(async ({ manual = false } = {}) => {
         if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
