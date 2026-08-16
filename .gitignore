@@ -55,3 +55,7 @@ template-lab/shots/
 template-lab/sheets/
 template-lab/audit-results.json
 template-lab/visual-metrics.json
+
+# A4 PDF evidence artifacts (regenerable)
+template-lab/evidence/
+template-lab/pdf-evidence.json

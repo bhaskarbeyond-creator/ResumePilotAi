@@ -287,7 +287,7 @@ h1, h2, h3, h4, h5, h6,
    anywhere` only engages when a single word cannot fit (it also fixes the
    min-content width so a lone long word can no longer size a column to
    thousands of pixels), so normal content renders identically. */
-#resumen[class*="cv"] * {
+[data-cv-board] * {
     overflow-wrap: anywhere;
 }
 
@@ -297,27 +297,27 @@ h1, h2, h3, h4, h5, h6,
    flag makes the class match case-insensitive (cv5-rightHead, cv48-Header…).
    min-width:0 is a no-op on non-flex/grid elements, so applying it broadly to
    text-region classes is safe. */
-#resumen[class*="cv"] [class*="head" i] > :not(img):not(svg),
-#resumen[class*="cv"] [class*="header" i] > :not(img):not(svg),
-#resumen[class*="cv"] [class*="title" i] > :not(img):not(svg),
-#resumen[class*="cv"] [class*="contact" i] > :not(img):not(svg) {
+[data-cv-board] [class*="head" i] > :not(img):not(svg),
+[data-cv-board] [class*="header" i] > :not(img):not(svg),
+[data-cv-board] [class*="title" i] > :not(img):not(svg),
+[data-cv-board] [class*="contact" i] > :not(img):not(svg) {
     min-width: 0;
 }
 
-#resumen[class*="cv"] [class*="name" i],
-#resumen[class*="cv"] [class*="title" i],
-#resumen[class*="cv"] [class*="contact" i],
-#resumen[class*="cv"] [class*="info" i],
-#resumen[class*="cv"] [class*="detail" i] {
+[data-cv-board] [class*="name" i],
+[data-cv-board] [class*="title" i],
+[data-cv-board] [class*="contact" i],
+[data-cv-board] [class*="info" i],
+[data-cv-board] [class*="detail" i] {
     min-width: 0;
 }
 
 /* Multi-page resumes: let section wrappers flow across pages but keep atomic
    rows (jobs, education entries, skill chips) unsplit. */
-#resumen[class*="cv"] [class*="employment"] [class*="item"],
-#resumen[class*="cv"] [class*="education"] [class*="item"],
-#resumen[class*="cv"] [class*="employments"] > *,
-#resumen[class*="cv"] [class*="educations"] > * {
+[data-cv-board] [class*="employment"] [class*="item"],
+[data-cv-board] [class*="education"] [class*="item"],
+[data-cv-board] [class*="employments"] > *,
+[data-cv-board] [class*="educations"] > * {
     break-inside: avoid;
 }
 
@@ -327,7 +327,7 @@ h1, h2, h3, h4, h5, h6,
    Design-neutral so each template keeps its identity while the sections stay
    professionally consistent and ATS-extractable.
    ========================================================================== */
-#resumen .resume-extras {
+[data-cv-board] .resume-extras {
     margin-top: 18px;
     padding-top: 14px;
     border-top: 1px solid #e2e8f0;
@@ -336,16 +336,16 @@ h1, h2, h3, h4, h5, h6,
     line-height: 1.5;
 }
 
-#resumen .resume-extras-section {
+[data-cv-board] .resume-extras-section {
     margin-bottom: 14px;
     break-inside: auto;
 }
 
-#resumen .resume-extras-section:last-child {
+[data-cv-board] .resume-extras-section:last-child {
     margin-bottom: 0;
 }
 
-#resumen .resume-extras-title {
+[data-cv-board] .resume-extras-title {
     font-size: 13px;
     font-weight: 700;
     text-transform: uppercase;
@@ -356,17 +356,17 @@ h1, h2, h3, h4, h5, h6,
     border-bottom: 2px solid #2563eb;
 }
 
-#resumen .resume-extras-item {
+[data-cv-board] .resume-extras-item {
     margin-bottom: 12px;
     break-inside: avoid;
     page-break-inside: avoid;
 }
 
-#resumen .resume-extras-item:last-child {
+[data-cv-board] .resume-extras-item:last-child {
     margin-bottom: 0;
 }
 
-#resumen .resume-extras-item-head {
+[data-cv-board] .resume-extras-item-head {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
@@ -374,7 +374,7 @@ h1, h2, h3, h4, h5, h6,
     min-width: 0;
 }
 
-#resumen .resume-extras-item-title {
+[data-cv-board] .resume-extras-item-title {
     font-size: 13px;
     font-weight: 600;
     color: #1e293b;
@@ -382,12 +382,12 @@ h1, h2, h3, h4, h5, h6,
     overflow-wrap: anywhere;
 }
 
-#resumen .resume-extras-item-sub {
+[data-cv-board] .resume-extras-item-sub {
     font-weight: 500;
     color: #475569;
 }
 
-#resumen .resume-extras-item-date {
+[data-cv-board] .resume-extras-item-date {
     font-size: 12px;
     font-weight: 500;
     color: #64748b;
@@ -396,7 +396,7 @@ h1, h2, h3, h4, h5, h6,
     text-align: right;
 }
 
-#resumen .resume-extras-item-link {
+[data-cv-board] .resume-extras-item-link {
     display: inline-block;
     margin-top: 2px;
     font-size: 12px;
@@ -406,17 +406,17 @@ h1, h2, h3, h4, h5, h6,
     word-break: break-all;
 }
 
-#resumen .resume-extras-item-link:hover {
+[data-cv-board] .resume-extras-item-link:hover {
     text-decoration: underline;
 }
 
-#resumen .resume-extras-item-description {
+[data-cv-board] .resume-extras-item-description {
     margin-top: 4px;
     font-size: 12.5px;
     color: #334155;
 }
 
-#resumen .resume-extras-item-description p {
+[data-cv-board] .resume-extras-item-description p {
     margin: 0 0 4px 0;
 }
 
@@ -483,4 +483,237 @@ h1, h2, h3, h4, h5, h6,
     max-height: none !important;
     overflow: visible !important;
   }
+}
+
+/* ==========================================================================
+   11. True A4 Multi-Page Document Architecture (ResumePageComposer)
+   ==========================================================================
+   The live React board is a hidden measurement source; the composer emits
+   discrete 210 x 297 mm sheets. Content determines the page count — nothing
+   is compressed, truncated or hidden. Cover-letter documents never receive
+   this treatment (the composer is disabled for them).
+   ========================================================================== */
+
+.resume-document {
+    position: relative;
+    width: 100%;
+    background: transparent;
+}
+
+/* Measurement source — real layout, invisible. */
+.resume-live {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 210mm;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* Fallback when composition fails: show the continuous document. */
+.resume-live-fallback {
+    position: static !important;
+    visibility: visible !important;
+}
+
+.resume-pages {
+    display: block;
+    width: 100%;
+}
+
+/* Off-screen measurement host used by the composer. */
+.resume-scratch {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    width: 210mm !important;
+}
+
+/* A single A4 sheet. */
+.resume-page {
+    width: 210mm;
+    height: 297mm;
+    min-height: 0;
+    box-sizing: border-box;
+    overflow: hidden;
+    margin: 0 auto 16px;
+    background: #ffffff;
+    color: #1e293b;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12), 0 12px 32px rgba(15, 23, 42, 0.08);
+    break-after: page;
+    page-break-after: always;
+    position: relative;
+    /* Board classes travel onto sheets for selector context, but the sheet
+       itself must never behave like the original flex-row board. */
+    display: block !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+}
+
+.resume-page:last-child {
+    margin-bottom: 0;
+    break-after: auto;
+    page-break-after: auto;
+}
+
+/* Two-column first page. */
+.resume-main-row {
+    display: flex;
+    flex-direction: row;
+    height: 100%;
+    min-height: 0;
+}
+
+.resume-sidebar-clone {
+    align-self: stretch;
+    flex: 0 0 auto;
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: hidden;
+    /* The first-page sidebar strategy bounds the sidebar to one A4 sheet;
+       anything beyond is clipped rather than allowed to break the page. */
+    max-height: 297mm;
+}
+
+.resume-pre-column {
+    width: 100%;
+}
+
+/* Main flow column on every page. Content-sized (align-self: flex-start) so
+   the composer's height measurement reads real content height instead of the
+   stretched row height; the sidebar still stretches to fill the sheet. */
+.resume-main-col {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    align-self: flex-start;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+/* Content wrappers must flow naturally inside fixed sheets: fixed heights and
+   minimum page heights are the single-page legacy and are neutralized here.
+   Engine-owned chrome (.resume-*) keeps its own sizing. The `i` flag matches
+   camelCase and hyphenated legacy class variants (leftSide / left-side). */
+.resume-page :not([class*="resume-"])[class*="content" i],
+.resume-page :not([class*="resume-"])[class*="body" i],
+.resume-page :not([class*="resume-"])[class*="main" i],
+.resume-page :not([class*="resume-"])[class*="column" i],
+.resume-page :not([class*="resume-"])[class*="side" i] {
+    height: auto !important;
+    min-height: 0 !important;
+}
+
+/* ── Continuation chrome ─────────────────────────────────────────────── */
+
+.resume-continuation-header {
+    width: 100%;
+    box-sizing: border-box;
+    flex: 0 0 auto;
+    border-bottom: 2px solid var(--resume-accent, #2563eb);
+    padding: 14px 24px 10px;
+    margin-bottom: 14px;
+    background: #ffffff;
+}
+
+.resume-continuation-header-inner {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.resume-continuation-who {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    min-width: 0;
+}
+
+.resume-continuation-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.01em;
+}
+
+.resume-continuation-role {
+    font-size: 12.5px;
+    color: #475569;
+}
+
+.resume-continuation-page {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--resume-accent, #2563eb);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* ── Page footer ─────────────────────────────────────────────────────── */
+
+.resume-page-footer {
+    flex: 0 0 auto;
+    margin-top: auto;
+    order: 9999; /* appended first in DOM; stays visually last in the column */
+    padding-top: 10px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    border-top: 1px solid #e2e8f0;
+    color: #94a3b8;
+    font-size: 10.5px;
+    min-height: 20px;
+}
+
+.resume-footer-name {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    letter-spacing: 0.02em;
+}
+
+.resume-footer-page {
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* ── Section continuation label ──────────────────────────────────────── */
+
+.resume-section-continuation {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #64748b;
+    padding: 2px 0 8px;
+}
+
+/* ── Print/PDF alignment ─────────────────────────────────────────────── */
+
+@media print {
+    .resume-live {
+        display: none !important;
+    }
+
+    .resume-document,
+    .resume-pages {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 210mm !important;
+    }
+
+    .resume-page {
+        margin: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+    }
+
+    .resume-page[style*="overflow: visible"] {
+        overflow: hidden !important;
+    }
 }

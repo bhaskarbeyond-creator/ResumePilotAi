@@ -58,9 +58,9 @@ async function captureMetrics(browser, { vitePort, shotsPort, templateId }) {
     await page.waitForFunction(() => document.documentElement.getAttribute('data-lab-state') !== 'rendering', null, { timeout: 20_000 });
     await page.waitForTimeout(250);
     const boardRect = await page.evaluate(() => {
-        const board = document.querySelector('#resumen') || document.querySelector('[class*="board"], [class*="Board"]');
-        if (!board) return null;
-        const r = board.getBoundingClientRect();
+        const pageEl = document.querySelector('.resume-pages:not(.resume-scratch) .resume-page');
+        if (!pageEl) return null;
+        const r = pageEl.getBoundingClientRect();
         return { left: r.left, top: r.top, width: r.width, height: r.height };
     });
     if (!boardRect) { await page.close(); return null; }
