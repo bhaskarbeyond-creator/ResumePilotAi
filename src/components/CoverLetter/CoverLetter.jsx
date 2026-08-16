@@ -7,7 +7,7 @@ import { saveCoverLetter, getUserCoverLetters, deleteCoverLetter, getProfileOfUs
 import { generateUserAiContent } from '../../services/aiService';
 import fire from '../../conf/fire';
 import TemplateRenderer from '../TemplateRenderer';
-import { FaWhatsapp, FaEnvelope, FaLinkedin, FaTelegramPlane, FaCopy, FaPrint, FaFileDownload, FaExpand, FaTimes, FaSearchPlus, FaSearchMinus } from 'react-icons/fa';
+import { FaWhatsapp, FaEnvelope, FaLinkedin, FaTelegramPlane, FaCopy, FaPrint, FaFileDownload, FaExpand, FaTimes, FaSearchPlus, FaSearchMinus, FaEye, FaEdit, FaTrashAlt, FaClone } from 'react-icons/fa';
 
 const COVER_TEMPLATES = [
     {
@@ -446,6 +446,37 @@ class CoverLetter extends Component {
         } catch (err) {
             console.error('Clipboard copy error:', err);
         }
+    };
+
+    handleViewSavedLetter = (letter) => {
+        this.setState({
+            currentId: letter.id,
+            candidateFirstname: letter.candidateFirstname || this.state.candidateFirstname,
+            candidateLastname: letter.candidateLastname || this.state.candidateLastname,
+            candidateEmail: letter.candidateEmail || this.state.candidateEmail,
+            candidatePhone: letter.candidatePhone || this.state.candidatePhone,
+            candidateAddress: letter.candidateAddress || this.state.candidateAddress,
+            candidateCity: letter.candidateCity || this.state.candidateCity,
+            candidatePostalCode: letter.candidatePostalCode || this.state.candidatePostalCode,
+            jobTitle: letter.jobTitle,
+            companyName: letter.companyName,
+            recipientName: letter.recipientName,
+            companyAddress: letter.companyAddress || '',
+            companyCity: letter.companyCity || '',
+            companyPostalCode: letter.companyPostalCode || '',
+            letterBody: letter.letterBody,
+            templateId: letter.templateId || 'Cover1',
+            showPreviewModal: true,
+        });
+    };
+
+    getTemplateInfo = (templateId) => {
+        return COVER_TEMPLATES.find(t => t.id === templateId) || {
+            id: templateId || 'Cover1',
+            name: templateId === 'Cover4' ? 'Accent Icons' : templateId === 'Cover2' ? 'Modern Left-Aligned' : templateId === 'Cover3' ? 'Split Sidebar' : 'Executive Classic',
+            badge: 'Classic',
+            color: 'from-blue-600 to-indigo-700'
+        };
     };
 
     handlePrintCoverLetter = () => {
@@ -1115,93 +1146,124 @@ class CoverLetter extends Component {
                         <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-4 shadow-sm">
                             <h3 className="text-sm font-bold text-slate-900 mb-2">Saved Cover Letters ({this.state.savedLetters.length})</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {this.state.savedLetters.map(letter => (
-                                    <div key={letter.id} className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-100/80 transition-all">
-                                        <div className="space-y-0.5">
-                                            <h4 className="text-xs font-bold text-slate-900">{letter.jobTitle || 'Target Position'}</h4>
-                                            <p className="text-[11px] text-slate-500">
-                                                {letter.companyName || 'Company'} • Template: <span className="font-semibold text-slate-700">{letter.templateId || 'Cover1'}</span>
-                                            </p>
-                                            <p className="text-[10px] text-slate-400">
-                                                Candidate: {letter.candidateFirstname ? `${letter.candidateFirstname} ${letter.candidateLastname || ''}` : (candidateFullName || 'User Profile')}
-                                            </p>
-                                        </div>
-                                        <div className="flex flex-wrap items-center gap-1.5 self-end sm:self-center">
-                                            {/* Small Social & Messaging Share Buttons */}
-                                            <div className="flex items-center gap-1 pr-2 border-r border-slate-300/70">
+                                {this.state.savedLetters.map(letter => {
+                                    const tplInfo = this.getTemplateInfo(letter.templateId);
+                                    return (
+                                        <div key={letter.id} className="bg-white border border-slate-200/90 hover:border-indigo-300 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between space-y-4 group">
+                                            {/* Card Top Row: Title, Template Badge, and View Popup Icon */}
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div className="space-y-1 min-w-0 flex-1">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <h4 className="text-sm font-bold text-slate-900 tracking-tight truncate">
+                                                            {letter.jobTitle || 'Target Position'}
+                                                        </h4>
+                                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full text-white bg-gradient-to-r ${tplInfo.color} shadow-2xs`}>
+                                                            {tplInfo.name}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-xs text-slate-600 font-medium truncate">
+                                                        {letter.companyName ? `🏢 ${letter.companyName}` : 'Company Not Specified'}
+                                                    </p>
+                                                    <p className="text-[11px] text-slate-400">
+                                                        Candidate: <span className="font-semibold text-slate-700">{letter.candidateFirstname ? `${letter.candidateFirstname} ${letter.candidateLastname || ''}` : (candidateFullName || 'User Profile')}</span>
+                                                    </p>
+                                                </div>
+
+                                                {/* View Modal Popup Button */}
                                                 <button
                                                     type="button"
-                                                    title="Share via WhatsApp"
-                                                    onClick={() => this.handleShareLetterWhatsApp(letter)}
-                                                    className="w-7 h-7 bg-white hover:bg-emerald-50 text-emerald-600 border border-slate-200 hover:border-emerald-300 rounded-lg flex items-center justify-center transition-all shadow-2xs">
-                                                    <FaWhatsapp className="w-3.5 h-3.5" />
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    title="Share via Email"
-                                                    onClick={() => this.handleShareLetterEmail(letter)}
-                                                    className="w-7 h-7 bg-white hover:bg-blue-50 text-blue-600 border border-slate-200 hover:border-blue-300 rounded-lg flex items-center justify-center transition-all shadow-2xs">
-                                                    <FaEnvelope className="w-3 h-3" />
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    title="Share via Telegram"
-                                                    onClick={() => this.handleShareLetterTelegram(letter)}
-                                                    className="w-7 h-7 bg-white hover:bg-sky-50 text-sky-500 border border-slate-200 hover:border-sky-300 rounded-lg flex items-center justify-center transition-all shadow-2xs">
-                                                    <FaTelegramPlane className="w-3 h-3" />
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    title="Share via LinkedIn"
-                                                    onClick={() => this.handleShareLetterLinkedIn(letter)}
-                                                    className="w-7 h-7 bg-white hover:bg-indigo-50 text-indigo-600 border border-slate-200 hover:border-indigo-300 rounded-lg flex items-center justify-center transition-all shadow-2xs">
-                                                    <FaLinkedin className="w-3 h-3" />
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    title="Copy Cover Letter Text"
-                                                    onClick={() => this.handleCopyLetterText(letter)}
-                                                    className="w-7 h-7 bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg flex items-center justify-center transition-all shadow-2xs">
-                                                    <FaCopy className="w-3 h-3" />
+                                                    title="Preview Cover Letter (Fullscreen A4)"
+                                                    onClick={() => this.handleViewSavedLetter(letter)}
+                                                    className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 rounded-xl transition-all shadow-2xs flex items-center gap-1.5 text-xs font-bold shrink-0">
+                                                    <FaEye className="w-3.5 h-3.5" />
+                                                    <span>View</span>
                                                 </button>
                                             </div>
 
-                                            <button
-                                                onClick={() => this.setState({
-                                                    currentId: letter.id,
-                                                    candidateFirstname: letter.candidateFirstname || this.state.candidateFirstname,
-                                                    candidateLastname: letter.candidateLastname || this.state.candidateLastname,
-                                                    candidateEmail: letter.candidateEmail || this.state.candidateEmail,
-                                                    candidatePhone: letter.candidatePhone || this.state.candidatePhone,
-                                                    candidateAddress: letter.candidateAddress || this.state.candidateAddress,
-                                                    candidateCity: letter.candidateCity || this.state.candidateCity,
-                                                    candidatePostalCode: letter.candidatePostalCode || this.state.candidatePostalCode,
-                                                    jobTitle: letter.jobTitle,
-                                                    companyName: letter.companyName,
-                                                    recipientName: letter.recipientName,
-                                                    companyAddress: letter.companyAddress || '',
-                                                    companyCity: letter.companyCity || '',
-                                                    companyPostalCode: letter.companyPostalCode || '',
-                                                    letterBody: letter.letterBody,
-                                                    templateId: letter.templateId || 'Cover1',
-                                                    step: 2
-                                                })}
-                                                className="text-xs font-semibold text-indigo-700 hover:text-indigo-900 bg-white px-2.5 py-1.5 rounded-lg border border-slate-200 shadow-2xs transition-all">
-                                                Edit
-                                            </button>
-                                            <button
-                                                onClick={() => this.handleDuplicateCoverLetter(letter)}
-                                                className="text-xs font-semibold text-slate-600 hover:text-slate-900 bg-white px-2.5 py-1.5 rounded-lg border border-slate-200 shadow-2xs transition-all">
-                                                Duplicate
-                                            </button>
-                                            <button
-                                                onClick={() => this.setState({ letterToDelete: letter })}
-                                                className="text-xs font-semibold text-red-600 hover:text-red-900 bg-white px-2.5 py-1.5 rounded-lg border border-slate-200 shadow-2xs transition-all">
-                                                Delete
-                                            </button>
+                                            {/* Card Bottom Row: Share Icons & Primary Actions */}
+                                            <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                                                {/* Quick Share Icons */}
+                                                <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-xl border border-slate-200/70">
+                                                    <button
+                                                        type="button"
+                                                        title="Share via WhatsApp"
+                                                        onClick={() => this.handleShareLetterWhatsApp(letter)}
+                                                        className="w-7 h-7 bg-white hover:bg-emerald-500 hover:text-white text-emerald-600 border border-slate-200/80 rounded-lg flex items-center justify-center transition-all shadow-2xs">
+                                                        <FaWhatsapp className="w-3.5 h-3.5" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        title="Share via Email"
+                                                        onClick={() => this.handleShareLetterEmail(letter)}
+                                                        className="w-7 h-7 bg-white hover:bg-blue-500 hover:text-white text-blue-600 border border-slate-200/80 rounded-lg flex items-center justify-center transition-all shadow-2xs">
+                                                        <FaEnvelope className="w-3 h-3" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        title="Share via Telegram"
+                                                        onClick={() => this.handleShareLetterTelegram(letter)}
+                                                        className="w-7 h-7 bg-white hover:bg-sky-500 hover:text-white text-sky-500 border border-slate-200/80 rounded-lg flex items-center justify-center transition-all shadow-2xs">
+                                                        <FaTelegramPlane className="w-3.5 h-3.5" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        title="Share via LinkedIn"
+                                                        onClick={() => this.handleShareLetterLinkedIn(letter)}
+                                                        className="w-7 h-7 bg-white hover:bg-indigo-600 hover:text-white text-indigo-600 border border-slate-200/80 rounded-lg flex items-center justify-center transition-all shadow-2xs">
+                                                        <FaLinkedin className="w-3.5 h-3.5" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        title="Copy Cover Letter Text"
+                                                        onClick={() => this.handleCopyLetterText(letter)}
+                                                        className="w-7 h-7 bg-white hover:bg-slate-700 hover:text-white text-slate-600 border border-slate-200/80 rounded-lg flex items-center justify-center transition-all shadow-2xs">
+                                                        <FaCopy className="w-3 h-3" />
+                                                    </button>
+                                                </div>
+
+                                                {/* Action Buttons: Edit, Duplicate, Delete */}
+                                                <div className="flex items-center gap-1.5">
+                                                    <button
+                                                        onClick={() => this.setState({
+                                                            currentId: letter.id,
+                                                            candidateFirstname: letter.candidateFirstname || this.state.candidateFirstname,
+                                                            candidateLastname: letter.candidateLastname || this.state.candidateLastname,
+                                                            candidateEmail: letter.candidateEmail || this.state.candidateEmail,
+                                                            candidatePhone: letter.candidatePhone || this.state.candidatePhone,
+                                                            candidateAddress: letter.candidateAddress || this.state.candidateAddress,
+                                                            candidateCity: letter.candidateCity || this.state.candidateCity,
+                                                            candidatePostalCode: letter.candidatePostalCode || this.state.candidatePostalCode,
+                                                            jobTitle: letter.jobTitle,
+                                                            companyName: letter.companyName,
+                                                            recipientName: letter.recipientName,
+                                                            companyAddress: letter.companyAddress || '',
+                                                            companyCity: letter.companyCity || '',
+                                                            companyPostalCode: letter.companyPostalCode || '',
+                                                            letterBody: letter.letterBody,
+                                                            templateId: letter.templateId || 'Cover1',
+                                                            step: 2
+                                                        })}
+                                                        className="text-xs font-bold text-indigo-700 hover:text-indigo-900 bg-indigo-50/80 hover:bg-indigo-100 px-3 py-1.5 rounded-xl border border-indigo-200/80 shadow-2xs transition-all flex items-center gap-1">
+                                                        <FaEdit className="w-3 h-3" />
+                                                        <span>Edit</span>
+                                                    </button>
+                                                    <button
+                                                        onClick={() => this.handleDuplicateCoverLetter(letter)}
+                                                        className="text-xs font-semibold text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 shadow-2xs transition-all flex items-center gap-1">
+                                                        <FaClone className="w-3 h-3" />
+                                                        <span>Duplicate</span>
+                                                    </button>
+                                                    <button
+                                                        onClick={() => this.setState({ letterToDelete: letter })}
+                                                        className="text-xs font-semibold text-red-600 hover:text-red-800 bg-white hover:bg-red-50 px-3 py-1.5 rounded-xl border border-slate-200 hover:border-red-200 shadow-2xs transition-all flex items-center gap-1">
+                                                        <FaTrashAlt className="w-3 h-3" />
+                                                        <span>Delete</span>
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
