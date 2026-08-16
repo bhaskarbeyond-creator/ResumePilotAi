@@ -10,18 +10,21 @@
     position: relative;
     overflow: hidden;
     display: flex;
+    // The name (h1) lives in cv49-main, which now comes first in the DOM for
+    // ATS reading order; row-reverse keeps the sidebar visually on the left.
+    flex-direction: row-reverse;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 
     // Color Variables
     $primary: #455a64; // Blue Gray
     $primary-dark: #37474f;
     $primary-light: #607d8b;
-    $accent: #ff5722; // Deep Orange
+    $accent: #fb923c; // Bright Orange (AA on dark sidebar)
     $accent-light: #ff7043;
     $accent-dark: #e64a19;
     $dark-text: #263238;
     $medium-text: #455a64;
-    $light-text: #78909c;
+    $light-text: #455a64;
     $ultra-light: #eceff1;
     $white: #ffffff;
     $sidebar-bg: #263238;
@@ -360,7 +363,7 @@
 
             .profession {
                 font-size: 16px;
-                color: $accent;
+                color: #c2410c; // AA on the white header band (sidebar keeps $accent)
                 font-weight: 500;
                 margin: 0;
                 letter-spacing: 1px;

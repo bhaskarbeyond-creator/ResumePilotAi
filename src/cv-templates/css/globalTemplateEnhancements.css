@@ -277,6 +277,150 @@ h1, h2, h3, h4, h5, h6,
 }
 
 /* ==========================================================================
+   9. Content Engine — deterministic long-content guards (Resume boards only).
+   Cover-letter boards (frozen CV module) do NOT match [class*="cv"] and are
+   deliberately left byte-identical.
+   ========================================================================== */
+
+/* Unbreakable strings (very long names, titles, URLs, company names) must wrap
+   inside the A4 board instead of blowing out its layout. `overflow-wrap:
+   anywhere` only engages when a single word cannot fit (it also fixes the
+   min-content width so a lone long word can no longer size a column to
+   thousands of pixels), so normal content renders identically. */
+#resumen[class*="cv"] * {
+    overflow-wrap: anywhere;
+}
+
+/* Flex/grid text containers must be allowed to shrink below their intrinsic
+   content size (min-width:auto is what lets one long word size a column to
+   thousands of pixels). Images and icons keep their natural minimum. The `i`
+   flag makes the class match case-insensitive (cv5-rightHead, cv48-Header…).
+   min-width:0 is a no-op on non-flex/grid elements, so applying it broadly to
+   text-region classes is safe. */
+#resumen[class*="cv"] [class*="head" i] > :not(img):not(svg),
+#resumen[class*="cv"] [class*="header" i] > :not(img):not(svg),
+#resumen[class*="cv"] [class*="title" i] > :not(img):not(svg),
+#resumen[class*="cv"] [class*="contact" i] > :not(img):not(svg) {
+    min-width: 0;
+}
+
+#resumen[class*="cv"] [class*="name" i],
+#resumen[class*="cv"] [class*="title" i],
+#resumen[class*="cv"] [class*="contact" i],
+#resumen[class*="cv"] [class*="info" i],
+#resumen[class*="cv"] [class*="detail" i] {
+    min-width: 0;
+}
+
+/* Multi-page resumes: let section wrappers flow across pages but keep atomic
+   rows (jobs, education entries, skill chips) unsplit. */
+#resumen[class*="cv"] [class*="employment"] [class*="item"],
+#resumen[class*="cv"] [class*="education"] [class*="item"],
+#resumen[class*="cv"] [class*="employments"] > *,
+#resumen[class*="cv"] [class*="educations"] > * {
+    break-inside: avoid;
+}
+
+/* ==========================================================================
+   10. Content Engine extras — Projects / Certifications / Achievements /
+   References appended to every Resume Builder board by TemplateRenderer.
+   Design-neutral so each template keeps its identity while the sections stay
+   professionally consistent and ATS-extractable.
+   ========================================================================== */
+#resumen .resume-extras {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid #e2e8f0;
+    font-family: inherit;
+    color: #1e293b;
+    line-height: 1.5;
+}
+
+#resumen .resume-extras-section {
+    margin-bottom: 14px;
+    break-inside: auto;
+}
+
+#resumen .resume-extras-section:last-child {
+    margin-bottom: 0;
+}
+
+#resumen .resume-extras-title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #0f172a;
+    margin: 0 0 10px 0;
+    padding-bottom: 4px;
+    border-bottom: 2px solid #2563eb;
+}
+
+#resumen .resume-extras-item {
+    margin-bottom: 12px;
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+
+#resumen .resume-extras-item:last-child {
+    margin-bottom: 0;
+}
+
+#resumen .resume-extras-item-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    min-width: 0;
+}
+
+#resumen .resume-extras-item-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1e293b;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+#resumen .resume-extras-item-sub {
+    font-weight: 500;
+    color: #475569;
+}
+
+#resumen .resume-extras-item-date {
+    font-size: 12px;
+    font-weight: 500;
+    color: #64748b;
+    white-space: normal;
+    flex-shrink: 0;
+    text-align: right;
+}
+
+#resumen .resume-extras-item-link {
+    display: inline-block;
+    margin-top: 2px;
+    font-size: 12px;
+    color: #2563eb;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+    word-break: break-all;
+}
+
+#resumen .resume-extras-item-link:hover {
+    text-decoration: underline;
+}
+
+#resumen .resume-extras-item-description {
+    margin-top: 4px;
+    font-size: 12.5px;
+    color: #334155;
+}
+
+#resumen .resume-extras-item-description p {
+    margin: 0 0 4px 0;
+}
+
+/* ==========================================================================
    8. Browser Print (Ctrl/Cmd+P) — application chrome removal
    --------------------------------------------------------------------------
    The headless PDF pipeline renders the isolated /export page, which contains no

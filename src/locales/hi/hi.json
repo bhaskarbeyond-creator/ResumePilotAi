@@ -129,7 +129,11 @@
     "phone": "फ़ोन",
     "email": "ईमेल",
     "languages": "भाषाएँ",
-    "skills": "कौशल"
+    "skills": "कौशल",
+    "projects": "परियोजनाएँ",
+    "certifications": "प्रमाणपत्र",
+    "achievements": "उपलब्धियाँ",
+    "references": "संदर्भ"
   },
   "Language": {
     "elemntary": "प्रारंभिक",

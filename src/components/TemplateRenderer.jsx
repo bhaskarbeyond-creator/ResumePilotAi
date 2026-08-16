@@ -1,5 +1,7 @@
-import React, { Suspense, useEffect } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { getTemplateComponent, isKnownTemplate } from '../utils/templateRegistry';
+import ResumeExtras from '../cv-templates/shared/ResumeExtras';
 
 class TemplateErrorBoundary extends React.Component {
     constructor(props) {
@@ -36,9 +38,29 @@ function TemplateCommit({ onReady, children }) {
     return children;
 }
 
+/**
+ * Content Engine bridge: resumes carry Projects / Certifications / Achievements /
+ * References in the canonical data model, but the 51 template boards predate
+ * those sections. This portal appends a design-neutral extras block at the end
+ * of the board so the data is never silently invisible. Resume Builder
+ * templates only — the frozen cover-letter module is excluded by the caller.
+ */
+function ResumeExtrasPortal({ enabled, values }) {
+    const [board, setBoard] = useState(null);
+    useEffect(() => {
+        if (!enabled) return undefined;
+        const node = document.querySelector('#resumen') || document.querySelector('[class*="board"], [class*="Board"]');
+        setBoard(node);
+        return () => setBoard(null);
+    }, [enabled]);
+    if (!enabled || !board) return null;
+    return createPortal(<ResumeExtras values={values} />, board);
+}
+
 export default function TemplateRenderer({ templateId = 'Cv1', values, language = 'en', loadingFallback, errorFallback, onError, onReady }) {
     const safeTemplateId = isKnownTemplate(templateId) ? templateId : 'Cv1';
     const TemplateComponent = getTemplateComponent(safeTemplateId);
+    const isResumeTemplate = /^Cv\d+$/.test(safeTemplateId);
     return (
         <TemplateErrorBoundary resetKey={`${safeTemplateId}:${language}`} errorFallback={errorFallback} onError={onError}>
             <Suspense fallback={loadingFallback || (
@@ -48,6 +70,7 @@ export default function TemplateRenderer({ templateId = 'Cv1', values, language 
             )}>
                 <TemplateCommit key={`${safeTemplateId}:${language}`} onReady={onReady}>
                     <TemplateComponent values={values} language={language} />
+                    <ResumeExtrasPortal enabled={isResumeTemplate} values={values} />
                 </TemplateCommit>
             </Suspense>
         </TemplateErrorBoundary>

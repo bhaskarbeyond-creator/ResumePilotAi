@@ -72,6 +72,18 @@ export function normalizeResumeData(input = {}, { template = 'Cv1' } = {}) {
     };
 }
 
+/**
+ * Canonical resume document for persistence: normalized data + template id,
+ * with presentation-only state (template palette) excluded. The preview layer
+ * re-derives colors from template selection, so switching templates can never
+ * destroy or stale user data.
+ */
+export function buildCanonicalResumeDocument(input = {}, template = 'Cv1') {
+    const snapshot = normalizeResumeData({ ...(input && typeof input === 'object' ? input : {}), template });
+    delete snapshot.colors;
+    return snapshot;
+}
+
 export function moveResumeItem(items, id, direction) {
     const list = Array.isArray(items) ? items : [];
     const index = list.findIndex(item => item?.id === id || item?.date === id);

@@ -15,7 +15,7 @@
     --accent: #f6ad55;
     --dark: #2d3748;
     --light: #f7fafc;
-    --gray: #a0aec0;
+    --gray: #4a5568;
     --border: #e2e8f0;
 
     * {
@@ -41,6 +41,8 @@
         border-bottom: 1px solid var(--border);
 
         .cv18-header-left {
+            flex: 1;
+            min-width: 0;
             .cv18-name {
                 font-size: 28px;
                 font-weight: 700;
@@ -58,6 +60,7 @@
         }
 
         .cv18-header-right {
+            flex: 0 0 auto;
             .cv18-photo {
                 width: 85px;
                 height: 85px;
@@ -147,6 +150,7 @@
                             margin-bottom: 10px;
 
                             .cv18-time-period {
+                                flex: 0 0 auto;
                                 min-width: 100px;
                                 padding: 4px 8px;
                                 background-color: var(--primary-light);
@@ -158,7 +162,8 @@
                                 align-items: center;
                                 justify-content: center;
                                 margin-right: 12px;
-                                white-space: nowrap;
+                                white-space: normal;
+                                overflow-wrap: anywhere;
 
                                 .cv18-separator {
                                     margin: 0 4px;

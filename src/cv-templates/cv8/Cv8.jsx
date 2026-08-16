@@ -59,18 +59,20 @@ class Cv8 extends Component {
     returnEmployments() {
         var elements = [];
         for (let index = 0; index < this.props.values.employments.length; index++) {
+            const item = this.props.values.employments[index];
             elements.push(
                 <div key={index} className="cv8-employment">
                     <div className="cv8-employmentsHead">
-                        <span className="cv8-jobTitle"> {this.props.values.employments[index].jobTitle}</span>
+                        <span className="cv8-jobTitle"> {item.jobTitle}</span>
+                        {item.employer && <span className="cv8-employer"> — {item.employer}</span>}
                         <div className="cv8-dates">
                             <span>
-                                {this.props.values.employments[index].begin} - {this.props.values.employments[index].end}
+                                {item.begin} - {item.end}
                             </span>
                         </div>
                     </div>
                     <div className="cv8-employmentBody">
-                        <p dangerouslySetInnerHTML={{ __html: sanitizeRichText(this.props.values.employments[index].description) }}></p>
+                        <p dangerouslySetInnerHTML={{ __html: sanitizeRichText(item.description) }}></p>
                     </div>
                 </div>
             );
@@ -80,18 +82,20 @@ class Cv8 extends Component {
     returnEducations() {
         var elements = [];
         for (let index = 0; index < this.props.values.educations.length; index++) {
+            const item = this.props.values.educations[index];
             elements.push(
                 <div key={index} className="cv8-employment">
                     <div className="cv8-employmentsHead">
-                        <span className="cv8-jobTitle"> {this.props.values.educations[index].degree}</span>
+                        <span className="cv8-jobTitle"> {item.degree}</span>
+                        {item.school && <span className="cv8-employer"> — {item.school}</span>}
                         <div className="cv8-dates">
                             <span>
-                                {this.props.values.educations[index].started} - {this.props.values.educations[index].finished}
+                                {item.started} - {item.finished}
                             </span>
                         </div>
                     </div>
                     <div className="cv8-employmentBody">
-                        <p dangerouslySetInnerHTML={{ __html: sanitizeRichText(this.props.values.educations[index].description) }}></p>
+                        <p dangerouslySetInnerHTML={{ __html: sanitizeRichText(item.description) }}></p>
                     </div>
                 </div>
             );

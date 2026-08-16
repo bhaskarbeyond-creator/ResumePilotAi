@@ -176,7 +176,39 @@ class Cv44 extends Component {
 
         return (
             <div id="resumen" className="cv44-board">
-                <div className="cv44-sidebar">
+                <div className="cv44-main">
+                    <div className="header">
+                        <h1 className="name">
+                            {this.props.values.firstname} {this.props.values.lastname}
+                        </h1>
+                        <h2 className="title">{this.props.values.occupation}</h2>
+                    </div>
+
+                    <div className="summary-section section">
+                        <div className="section-header">
+                            <FaFileAlt className="section-icon" />
+                            <h2 className="section-title">{t('resume.personalSummary')}</h2>
+                        </div>
+                        <div className="summary-text" dangerouslySetInnerHTML={{ __html: sanitizeRichText(this.props.values.summary) }}></div>
+                    </div>
+
+                    <div className="experience-section section">
+                        <div className="section-header">
+                            <FaBriefcase className="section-icon" />
+                            <h2 className="section-title">{t('resume.employmentHistory')}</h2>
+                        </div>
+                        <div className="timeline">{this.returnEmployments()}</div>
+                    </div>
+
+                    <div className="education-section section">
+                        <div className="section-header">
+                            <FaGraduationCap className="section-icon" />
+                            <h2 className="section-title">{t('resume.educationHistory')}</h2>
+                        </div>
+                        <div className="timeline">{this.returnEducations()}</div>
+                    </div>
+                </div>
+            <div className="cv44-sidebar">
                     <div className="photo-container">
                         {this.props.values.photo !== null ? (
                             <img alt="profile" src={this.props.values.photo} className="profile-photo" />
@@ -230,39 +262,7 @@ class Cv44 extends Component {
                     </div>
                 </div>
 
-                <div className="cv44-main">
-                    <div className="header">
-                        <h1 className="name">
-                            {this.props.values.firstname} {this.props.values.lastname}
-                        </h1>
-                        <h2 className="title">{this.props.values.occupation}</h2>
-                    </div>
-
-                    <div className="summary-section section">
-                        <div className="section-header">
-                            <FaFileAlt className="section-icon" />
-                            <h2 className="section-title">{t('resume.personalSummary')}</h2>
-                        </div>
-                        <div className="summary-text" dangerouslySetInnerHTML={{ __html: sanitizeRichText(this.props.values.summary) }}></div>
-                    </div>
-
-                    <div className="experience-section section">
-                        <div className="section-header">
-                            <FaBriefcase className="section-icon" />
-                            <h2 className="section-title">{t('resume.employmentHistory')}</h2>
-                        </div>
-                        <div className="timeline">{this.returnEmployments()}</div>
-                    </div>
-
-                    <div className="education-section section">
-                        <div className="section-header">
-                            <FaGraduationCap className="section-icon" />
-                            <h2 className="section-title">{t('resume.educationHistory')}</h2>
-                        </div>
-                        <div className="timeline">{this.returnEducations()}</div>
-                    </div>
                 </div>
-            </div>
         );
     }
 }

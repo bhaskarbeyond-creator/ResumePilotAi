@@ -12,11 +12,11 @@
     display: flex;
 
     // Variables
-    $primary-color: #0d9488; // Teal
+    $primary-color: #0b6b63; // Teal
     $secondary-color: #f97066; // Coral
     $text-dark: #1e293b;
     $text-medium: #475569;
-    $text-light: #94a3b8;
+    $text-light: #475569;
     $sidebar-bg: #1e293b;
     $sidebar-text: #f1f5f9;
     $border-color: #e2e8f0;
@@ -175,9 +175,8 @@
                     text-align: center;
                     color: rgba(255, 255, 255, 0.9);
                     max-width: 100%;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    white-space: nowrap;
+                    white-space: normal;
+                    overflow-wrap: anywhere;
                 }
             }
         }

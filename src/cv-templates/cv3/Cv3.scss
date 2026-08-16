@@ -188,7 +188,10 @@
                                 font-size: 12px;
                                 font-weight: 600;
                                 color: #64748b;
-                                white-space: nowrap;
+                                white-space: normal;
+                                flex-shrink: 1;
+                                min-width: 0;
+                                text-align: right;
                             }
                         }
 

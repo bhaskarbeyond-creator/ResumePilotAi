@@ -12,7 +12,7 @@
 
     // Header section
     .cv23-header {
-        background: #219ebc;
+        background: #0e7490;
         padding: 35px 40px;
         display: flex;
         justify-content: space-between;
@@ -41,7 +41,7 @@
             }
 
             .cv23-occupation {
-                color: #f0f0f0;
+                color: #ffffff;
                 font-size: 17px;
                 font-weight: 400;
                 margin: 0;
@@ -82,7 +82,7 @@
             margin-bottom: 18px;
 
             .cv23-section-icon {
-                color: #219ebc;
+                color: #0e7490;
                 font-size: 22px;
                 margin-right: 10px;
             }
@@ -94,7 +94,7 @@
                 margin: 0;
                 letter-spacing: 0.8px;
                 padding-bottom: 4px;
-                border-bottom: 2px solid #219ebc;
+                border-bottom: 2px solid #0e7490;
                 text-transform: uppercase;
             }
         }
@@ -117,7 +117,7 @@
                     align-items: flex-start;
 
                     .cv23-contact-icon {
-                        color: #219ebc;
+                        color: #0e7490;
                         font-size: 16px;
                         margin-right: 12px;
                         margin-top: 3px;
@@ -208,7 +208,7 @@
                                         font-size: 15px;
                                         font-weight: 500;
                                         margin: 0;
-                                        color: #219ebc;
+                                        color: #0e7490;
                                     }
                                 }
                             }
@@ -275,7 +275,7 @@
                                         font-size: 15px;
                                         font-weight: 500;
                                         margin: 0;
-                                        color: #219ebc;
+                                        color: #0e7490;
                                     }
                                 }
                             }
@@ -317,6 +317,9 @@
 
                 .cv23-skills-content {
                     .cv23-skill-item {
+                        .cv23-skill-percent {
+                            color: #ffffff;
+                        }
                         margin-bottom: 18px;
 
                         &:last-child {
@@ -333,7 +336,7 @@
 
                             &:after {
                                 content: attr(data-value);
-                                color: #219ebc;
+                                color: #0e7490;
                                 font-weight: 600;
                             }
                         }
@@ -347,7 +350,7 @@
 
                             .cv23-skill-bar {
                                 height: 100%;
-                                background: #219ebc;
+                                background: #0e7490;
                                 border-radius: 4px;
                                 position: relative;
                             }
@@ -386,7 +389,7 @@
                         }
 
                         .cv23-language-level {
-                            background: #219ebc;
+                            background: #0e7490;
                             color: white;
                             font-size: 12px;
                             padding: 3px 10px;

@@ -256,6 +256,13 @@ class Cv51 extends Component {
     render() {
         const { t } = this.props;
         const primaryColor = this.getPrimaryColor();
+        // Personal details render only for fields the user actually supplied —
+        // placeholder sample values must never leak into a real resume.
+        const personalDetails = [
+            this.props.values.gender && <span key="gender"><span>Sex</span> {this.props.values.gender}</span>,
+            this.props.values.dateOfBirth && <span key="dob"><span>Date of birth</span> {this.props.values.dateOfBirth}</span>,
+            this.props.values.nationality && <span key="nationality"><span>Nationality</span> {this.props.values.nationality}</span>,
+        ].filter(Boolean);
 
         return (
             <div id="resumen" className="cv51-board">
@@ -275,9 +282,14 @@ class Cv51 extends Component {
                         </div>
                         <div className="cv51-section-right">
                             <div className="cv51-name-display">
-                                <span className="cv51-name-large">
+                                <h1 className="cv51-name-large">
                                     {this.props.values.firstname} {this.props.values.lastname}
-                                </span>
+                                </h1>
+                                {this.props.values.occupation && (
+                                    <span className="cv51-occupation">
+                                        {this.props.values.occupation}
+                                    </span>
+                                )}
                             </div>
                             <div className="cv51-contact-info">
                                 <div className="cv51-contact-item">
@@ -303,16 +315,22 @@ class Cv51 extends Component {
                                 {this.props.values.linkedin && (
                                     <div className="cv51-contact-item">
                                         <FiMessageCircle className="cv51-contact-icon" />
-                                        <span>Skype {this.props.values.linkedin}</span>
+                                        <span>LinkedIn {this.props.values.linkedin}</span>
                                     </div>
                                 )}
                             </div>
-                            <div className="cv51-personal-details">
-                                <span>
-                                    <span>Sex</span> {this.props.values.gender || 'Female'} | <span>Date of birth</span> {this.props.values.dateOfBirth || '01/04/1964'} | <span>Nationality</span>{' '}
-                                    {this.props.values.nationality || 'Italian'}
-                                </span>
-                            </div>
+                            {personalDetails.length > 0 && (
+                                <div className="cv51-personal-details">
+                                    <span>
+                                        {personalDetails.map((item, index) => (
+                                            <React.Fragment key={`detail-${index}`}>
+                                                {index > 0 && ' | '}
+                                                {item}
+                                            </React.Fragment>
+                                        ))}
+                                    </span>
+                                </div>
+                            )}
                         </div>
                     </div>
 

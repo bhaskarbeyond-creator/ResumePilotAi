@@ -179,7 +179,59 @@ class Cv49 extends Component {
 
         return (
             <div id="resumen" className="cv49-board">
-                <div className="cv49-sidebar">
+                <div className="cv49-main">
+                    <header className="main-header">
+                        <h1 className="name">
+                            {this.props.values.firstname} {this.props.values.lastname}
+                        </h1>
+                        <h2 className="profession">{this.props.values.occupation}</h2>
+                    </header>
+
+                    <div className="summary-section">
+                        <div className="section-header">
+                            <div className="header-line"></div>
+                            <h3 className="section-title">
+                                <FaUser className="section-icon" />
+                                <span>{t('resume.personalSummary')}</span>
+                            </h3>
+                            <div className="header-line"></div>
+                        </div>
+
+                        <div className="summary-content">
+                            <div className="summary-quote">
+                                <div dangerouslySetInnerHTML={{ __html: sanitizeRichText(this.props.values.summary) }}></div>
+                                <FaQuoteRight className="quote-icon" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="experience-section">
+                        <div className="section-header">
+                            <div className="header-line"></div>
+                            <h3 className="section-title">
+                                <FaBriefcase className="section-icon" />
+                                <span>{t('resume.employmentHistory')}</span>
+                            </h3>
+                            <div className="header-line"></div>
+                        </div>
+
+                        <div className="timeline-container">{this.returnEmployments()}</div>
+                    </div>
+
+                    <div className="education-section">
+                        <div className="section-header">
+                            <div className="header-line"></div>
+                            <h3 className="section-title">
+                                <FaGraduationCap className="section-icon" />
+                                <span>{t('resume.educationHistory')}</span>
+                            </h3>
+                            <div className="header-line"></div>
+                        </div>
+
+                        <div className="timeline-container">{this.returnEducations()}</div>
+                    </div>
+                </div>
+            <div className="cv49-sidebar">
                     <div className="sidebar-top">
                         <div className="photo-container">
                             {this.props.values.photo !== null ? (
@@ -255,59 +307,7 @@ class Cv49 extends Component {
                     </div>
                 </div>
 
-                <div className="cv49-main">
-                    <header className="main-header">
-                        <h1 className="name">
-                            {this.props.values.firstname} {this.props.values.lastname}
-                        </h1>
-                        <h2 className="profession">{this.props.values.occupation}</h2>
-                    </header>
-
-                    <div className="summary-section">
-                        <div className="section-header">
-                            <div className="header-line"></div>
-                            <h3 className="section-title">
-                                <FaUser className="section-icon" />
-                                <span>{t('resume.personalSummary')}</span>
-                            </h3>
-                            <div className="header-line"></div>
-                        </div>
-
-                        <div className="summary-content">
-                            <div className="summary-quote">
-                                <div dangerouslySetInnerHTML={{ __html: sanitizeRichText(this.props.values.summary) }}></div>
-                                <FaQuoteRight className="quote-icon" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="experience-section">
-                        <div className="section-header">
-                            <div className="header-line"></div>
-                            <h3 className="section-title">
-                                <FaBriefcase className="section-icon" />
-                                <span>{t('resume.employmentHistory')}</span>
-                            </h3>
-                            <div className="header-line"></div>
-                        </div>
-
-                        <div className="timeline-container">{this.returnEmployments()}</div>
-                    </div>
-
-                    <div className="education-section">
-                        <div className="section-header">
-                            <div className="header-line"></div>
-                            <h3 className="section-title">
-                                <FaGraduationCap className="section-icon" />
-                                <span>{t('resume.educationHistory')}</span>
-                            </h3>
-                            <div className="header-line"></div>
-                        </div>
-
-                        <div className="timeline-container">{this.returnEducations()}</div>
-                    </div>
                 </div>
-            </div>
         );
     }
 }

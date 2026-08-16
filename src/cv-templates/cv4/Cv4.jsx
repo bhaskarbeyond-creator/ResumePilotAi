@@ -62,6 +62,7 @@ class Cv4 extends Component {
                 <div key={index} className="cv4-employment">
                     <div className="cv4-employmentsHead">
                         <span className="cv4-jobTitle"> {item.jobTitle}</span>
+                        {item.employer && <span className="cv4-employer"> — {item.employer}</span>}
                         {dateStr && (
                             <div className="cv4-dates">
                                 <span>{dateStr}</span>
@@ -86,6 +87,7 @@ class Cv4 extends Component {
                 <div key={index} className="cv4-employment">
                     <div className="cv4-employmentsHead">
                         <span className="cv4-jobTitle"> {item.degree}</span>
+                        {item.school && <span className="cv4-employer"> — {item.school}</span>}
                         {dateStr && (
                             <div className="cv4-dates">
                                 <span>{dateStr}</span>

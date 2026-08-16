@@ -12,7 +12,7 @@
     --primary-light: #eef0ff;
     --accent: #f7c873;
     --text-dark: #383e50;
-    --text-muted: #7b8299;
+    --text-muted: #565d75;
     --border: #e5e8f0;
     --background-light: #f8f9fc;
 
@@ -383,9 +383,8 @@
                                 font-size: 12px;
                                 margin-bottom: 4px;
                                 color: var(--text-dark);
-                                white-space: nowrap;
-                                overflow: hidden;
-                                text-overflow: ellipsis;
+                                white-space: normal;
+                                overflow-wrap: anywhere;
                                 display: block;
                                 width: 100%;
                             }

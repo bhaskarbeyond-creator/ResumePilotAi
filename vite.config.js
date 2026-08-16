@@ -7,6 +7,10 @@ export default defineConfig({
     plugins: [tailwindcss(), react()],
     build: {
         rollupOptions: {
+            input: {
+                main: 'index.html',
+                lab: 'template-lab/index.html',
+            },
             output: {
                 entryFileNames: 'assets/index-[hash].js',
                 chunkFileNames: 'assets/[name]-[hash].js',

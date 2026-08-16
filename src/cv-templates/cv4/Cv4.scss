@@ -106,8 +106,15 @@
                             .cv4-jobTitle {
                                 font-weight: 600;
                             }
+                            .cv4-employer {
+                                font-weight: 500;
+                                color: #4b5563;
+                            }
                             .cv4-dates {
                                 font-weight: 600;
+                                white-space: normal;
+                                flex-shrink: 1;
+                                min-width: 0;
                             }
                         }
                     }

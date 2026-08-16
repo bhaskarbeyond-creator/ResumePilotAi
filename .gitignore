@@ -49,3 +49,9 @@ dist-ssr
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Forensic lab artifacts (evidence, regenerable)
+template-lab/shots/
+template-lab/sheets/
+template-lab/audit-results.json
+template-lab/visual-metrics.json

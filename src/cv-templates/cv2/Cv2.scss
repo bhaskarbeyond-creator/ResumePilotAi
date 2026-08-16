@@ -60,11 +60,12 @@
                 justify-content: center;
                 min-width: 0;
 
-                h2 {
+                h1 {
                     margin: 0;
-                    font-size: 30px;
-                    font-weight: 800;
-                    line-height: 1.2;
+                    font-size: 30px !important;
+                    font-weight: 800 !important;
+                    letter-spacing: 0 !important;
+                    line-height: 1.2 !important;
                     color: #0f172a;
                     letter-spacing: -0.02em;
                     word-break: break-word;

@@ -24,7 +24,7 @@ import download from 'downloadjs';
 import config from '../../conf/configuration';
 import { getJsonById, IncrementDownloads, addOneToNumberOfDocumentsDownloaded, getProfileOfUser, getSystemSettings } from '../../firestore/dbOperations';
 import { createResumeDraft, loadResumeDraft, saveResumeDraft, publishResume, unpublishResume, getResumePublication, writeResumeRecovery, readResumeRecovery, clearResumeRecovery } from '../../services/resumePersistence';
-import { EMPTY_RESUME, normalizeResumeData } from '../../utils/resumeData';
+import { EMPTY_RESUME, normalizeResumeData, buildCanonicalResumeDocument } from '../../utils/resumeData';
 import { trackDownload, trackEvent, trackEngagement } from '../../utils/ga4';
 import { toValidatedPdfBlob, pdfFileName } from '../../utils/pdfDownload';
 
@@ -216,10 +216,10 @@ const BuildResume = () => {
     const currentStepIndex = getCurrentStepIndex();
     const currentStep = currentStepIndex >= 0 ? orderedSteps[currentStepIndex] : orderedSteps[0];
 
-    const buildCanonicalSnapshot = useCallback((data = resumeDataRef.current) => normalizeResumeData({
-        ...data,
-        template: currentTemplateRef.current || data.template || 'Cv1',
-    }), []);
+    const buildCanonicalSnapshot = useCallback((data = resumeDataRef.current) => buildCanonicalResumeDocument(
+        data,
+        currentTemplateRef.current || data?.template || 'Cv1',
+    ), []);
 
     const persistLatest = useCallback(async ({ manual = false } = {}) => {
         if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
@@ -420,6 +420,7 @@ const BuildResume = () => {
             Cv48: t('BuildResume.templates.professional48'),
             Cv49: t('BuildResume.templates.professional49'),
             Cv50: t('BuildResume.templates.professional50'),
+            Cv51: 'Europass Executive Classic',
         };
 
         return templateNames[templateId] || templateId;
@@ -437,13 +438,15 @@ const BuildResume = () => {
     };
 
     const handleTemplateSelect = (templateId) => {
-        const templateColors = getTemplateDefaultColors(templateId);
         currentTemplateRef.current = templateId;
         setCurrentTemplate(templateId);
+        // Template selection changes presentation only. Colors are not written
+        // into the resume data model: the preview derives the palette from the
+        // selected template (with legacy user palettes still honored), so
+        // switching to Cv21+ can no longer wipe a previously chosen palette.
         const updated = normalizeResumeData({
             ...resumeDataRef.current,
             template: templateId,
-            colors: templateColors || null,
         });
         resumeDataRef.current = updated;
         setResumeData(updated);
@@ -475,8 +478,8 @@ const BuildResume = () => {
             Cv6: { primary: '#000000', secondary: '#09043c' },
             Cv7: { primary: '#000000', secondary: '#f5f5f5' },
             Cv8: { primary: '#353f58', secondary: '#3d3e42' },
-            Cv9: { primary: '#838383', secondary: '#000000' },
-            Cv10: { primary: '#078dff', secondary: '#000000' },
+            Cv9: { primary: '#555555', secondary: '#000000' },
+            Cv10: { primary: '#0369c4', secondary: '#000000' },
             Cv11: { primary: '#86198f', secondary: '#fdf4ff' },
             Cv12: { primary: '#166534', secondary: '#f0fdf4' },
             Cv13: { primary: '#1e40af', secondary: '#eff6ff' },

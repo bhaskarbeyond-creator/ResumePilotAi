@@ -21,7 +21,7 @@ class Cv10 extends Component {
 
     // Get primary color from props or default to original color
     getPrimaryColor() {
-        return this.props.values?.colors?.primary || '#078dff';
+        return this.props.values?.colors?.primary || '#0369c4';
     }
 
     // Get secondary color from props or default to original color
@@ -120,9 +120,9 @@ class Cv10 extends Component {
             <div id="resumen" className="cv10-board">
                 <div className="cv10-content">
                     <div className="cv10-content-head">
-                        <h2>
+                        <h1>
                             {this.props.values.firstname} {this.props.values.lastname}
-                        </h2>
+                        </h1>
                         <h3 style={{ color: primaryColor }}>{this.props.values.occupation} </h3>
                     </div>
                     {/* Body */}
