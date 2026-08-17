@@ -48,11 +48,11 @@ export default function PrivacyConsentBanner() {
 
     if (!configLoaded || !config.enableCookieBanner) return null;
 
-    // Inside active dashboard or editing workspaces, hide the floating pill so it doesn't obstruct the sidebar/tools
-    const isAppWorkspace = /^\/(dashboard|dashboard2|build-resume|admin|interview|job-tracker|portfolio|cover-letter)/i.test(location.pathname);
+    // Inside active dashboard, resume builder, or editing workspaces, completely suppress the banner so it never obstructs the resume
+    const isAppWorkspace = /^\/(dashboard|dashboard2|build-resume|create-resume|export|shared|admin|adm|interview|job-tracker|portfolio|coverletter|cover-letter|billing|pricing)/i.test(location.pathname);
+    if (isAppWorkspace) return null;
 
     if (!showChoices) {
-        if (isAppWorkspace) return null;
         return (
             <button type="button" onClick={() => setShowChoices(true)} className="fixed bottom-3 left-3 z-[9998] rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-md hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
                 Privacy choices
