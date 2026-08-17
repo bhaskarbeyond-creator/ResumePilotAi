@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const PhotoUpload = ({ label, value, onChange, required = false }) => {
+const PhotoUpload = ({ label, value, onChange, showPhoto = true, onToggleShowPhoto, required = false }) => {
     const { t } = useTranslation('common');
     const [isDragging, setIsDragging] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -137,6 +137,7 @@ const PhotoUpload = ({ label, value, onChange, required = false }) => {
             </label>
 
             {value ? (
+                <>
                 <div className="relative group">
                     <div className="w-32 h-32 rounded-lg overflow-hidden border-2 border-slate-200 bg-slate-50">
                         <img src={value} alt="Profile" className="w-full h-full object-cover" />
@@ -174,6 +175,23 @@ const PhotoUpload = ({ label, value, onChange, required = false }) => {
                         </button>
                     </div>
                 </div>
+
+                {/* Show / Hide Photo on Resume Checkbox */}
+                <div className="mt-2.5 flex items-center justify-between p-2 bg-slate-50 border border-slate-200/80 rounded-lg w-full max-w-[200px]">
+                    <label className="flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-slate-700">
+                        <input
+                            type="checkbox"
+                            checked={showPhoto !== false}
+                            onChange={(e) => onToggleShowPhoto && onToggleShowPhoto(e.target.checked)}
+                            className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
+                        />
+                        <span>{showPhoto !== false ? 'Show on CV' : 'Hide from CV'}</span>
+                    </label>
+                    <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${showPhoto !== false ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-600'}`}>
+                        {showPhoto !== false ? 'ON' : 'OFF'}
+                    </span>
+                </div>
+            </>
             ) : (
                 <div
                     className={`w-32 h-32 border-2 border-dashed rounded-lg cursor-pointer transition-all duration-200 flex flex-col items-center justify-center space-y-2 ${

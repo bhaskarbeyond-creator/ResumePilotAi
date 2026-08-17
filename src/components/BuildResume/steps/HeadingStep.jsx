@@ -22,6 +22,7 @@ const HeadingStep = ({ resumeData, updateResumeData }) => {
         linkedin: resumeData.linkedin || '',
         github: resumeData.github || '',
         photo: resumeData.photo || null,
+        showPhoto: resumeData.showPhoto !== undefined ? resumeData.showPhoto : true,
     });
 
     useEffect(() => {
@@ -39,8 +40,9 @@ const HeadingStep = ({ resumeData, updateResumeData }) => {
             linkedin: resumeData.linkedin || '',
             github: resumeData.github || '',
             photo: resumeData.photo || null,
+            showPhoto: resumeData.showPhoto !== undefined ? resumeData.showPhoto : true,
         });
-    }, [resumeData.firstname, resumeData.lastname, resumeData.email, resumeData.phone, resumeData.occupation, resumeData.city, resumeData.country, resumeData.address, resumeData.postalcode, resumeData.website, resumeData.linkedin, resumeData.github, resumeData.photo]);
+    }, [resumeData.firstname, resumeData.lastname, resumeData.email, resumeData.phone, resumeData.occupation, resumeData.city, resumeData.country, resumeData.address, resumeData.postalcode, resumeData.website, resumeData.linkedin, resumeData.github, resumeData.photo, resumeData.showPhoto]);
 
     const [errors, setErrors] = useState({});
     const [touched, setTouched] = useState({});
@@ -195,7 +197,14 @@ const HeadingStep = ({ resumeData, updateResumeData }) => {
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
                             {/* Photo Upload */}
                             <div className="lg:col-span-1 order-1 lg:order-1">
-                                <PhotoUpload label={t('HeadingStep.fields.profilePhoto.label')} value={formData.photo} onChange={handlePhotoChange} hint={t('HeadingStep.fields.profilePhoto.hint')} />
+                                <PhotoUpload
+                                    label={t('HeadingStep.fields.profilePhoto.label')}
+                                    value={formData.photo}
+                                    onChange={handlePhotoChange}
+                                    showPhoto={formData.showPhoto !== false}
+                                    onToggleShowPhoto={(show) => setFormData((prev) => ({ ...prev, showPhoto: show }))}
+                                    hint={t('HeadingStep.fields.profilePhoto.hint')}
+                                />
                             </div>
 
                             {/* Name Fields */}

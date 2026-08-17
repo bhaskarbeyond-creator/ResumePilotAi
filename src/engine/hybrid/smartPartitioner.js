@@ -34,7 +34,9 @@ export function partitionResumeContent(values = {}, theme = {}) {
   const hobbies = values.hobbies || values.hobby || values.interests || values.interest || [];
   const achievements = values.achievements || [];
   const references = values.references || [];
-  const photo = values.photo || values.selectedImage || values.image || values.avatar || values.picture || null;
+  const rawPhoto = values.photo || values.selectedImage || values.image || values.avatar || values.picture || null;
+  const isPhotoVisible = Boolean(rawPhoto && values.showPhoto !== false && values.hidePhoto !== true && values.includePhoto !== false);
+  const photo = isPhotoVisible ? rawPhoto : null;
 
   const isSingleCol = theme.archetype === 'minimal-ats' || theme.archetype === 'compact-euro';
   const isBanner = theme.archetype === 'executive-banner';

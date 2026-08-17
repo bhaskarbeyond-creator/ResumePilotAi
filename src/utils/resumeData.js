@@ -2,7 +2,7 @@ export const DEFAULT_SECTION_ORDER = Object.freeze(['heading', 'employment', 'ed
 
 export const EMPTY_RESUME = Object.freeze({
     title: 'Untitled Resume', template: 'Cv1', firstname: '', lastname: '', email: '', phone: '', occupation: '',
-    country: '', city: '', address: '', postalcode: '', website: '', linkedin: '', github: '', photo: null, summary: '',
+    country: '', city: '', address: '', postalcode: '', website: '', linkedin: '', github: '', photo: null, showPhoto: true, summary: '',
     employments: [], educations: [], skills: [], languages: [], hobbies: [], projects: [], certifications: [], achievements: [], references: [], customSections: [],
     sectionOrder: DEFAULT_SECTION_ORDER, hiddenSections: [], completedSteps: [],
 });
@@ -63,6 +63,7 @@ export function normalizeResumeData(input = {}, { template = 'Cv1' } = {}) {
         country: text(raw.country), city: text(raw.city), address: text(raw.address), postalcode: text(raw.postalcode || raw.postalCode),
         website: text(raw.website || raw.websiteUrl), linkedin: text(raw.linkedin || raw.linkedinUrl), github: text(raw.github || raw.githubUrl),
         photo: typeof raw.photo === 'string' && raw.photo.trim() ? raw.photo : null,
+        showPhoto: raw.showPhoto !== undefined ? Boolean(raw.showPhoto) : (raw.hidePhoto !== undefined ? !raw.hidePhoto : true),
         summary: text(raw.summary || raw.professionalSummary),
         employments, educations, skills, languages,
         hobbies: Array.isArray(raw.hobbies) ? raw.hobbies : (raw.hobbies ? (typeof raw.hobbies === 'string' ? raw.hobbies : [raw.hobbies]) : []),

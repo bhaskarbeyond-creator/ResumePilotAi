@@ -13,7 +13,8 @@ export default function SmartHeader({ values = {}, theme = {}, variant = 'standa
   const website = values.website || values.websiteUrl || '';
   const linkedin = values.linkedin || values.linkedinUrl || '';
   const github = values.github || values.githubUrl || '';
-  const photo = values.photo || values.selectedImage || values.image || values.avatar || values.picture || null;
+  const rawPhoto = values.photo || values.selectedImage || values.image || values.avatar || values.picture || null;
+  const isPhotoVisible = Boolean(rawPhoto && values.showPhoto !== false && values.hidePhoto !== true && values.includePhoto !== false);
 
   const fullName = [firstname, lastname].filter(Boolean).join(' ') || values.name || 'Your Name';
   const cityZip = [city, postalcode].filter(Boolean).join(' ');
@@ -25,9 +26,9 @@ export default function SmartHeader({ values = {}, theme = {}, variant = 'standa
   return (
     <header className={`smart-header smart-header--${variant}`} style={{ '--primary': theme.primary, '--secondary': theme.secondary }}>
       <div className="smart-header__main">
-        {photo && (
+        {isPhotoVisible && (
           <div className="smart-header__avatar-wrap">
-            <img src={photo} alt={fullName} className="smart-header__avatar" loading="eager" decoding="sync" crossOrigin="anonymous" />
+            <img src={rawPhoto} alt={fullName} className="smart-header__avatar" loading="eager" decoding="sync" crossOrigin="anonymous" />
           </div>
         )}
         <div className="smart-header__titles">
