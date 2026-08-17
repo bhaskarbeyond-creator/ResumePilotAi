@@ -174,12 +174,14 @@ export function partitionResumeContent(values = {}, theme = {}) {
     const p1BottomItems = [];
     const p2FlowItems = [];
     let currentBottomHeight = 0;
+    let hasOverflowed = false;
 
     bottomSections.forEach(section => {
-      if (currentBottomHeight + section.estHeight <= remainingP1Capacity) {
+      if (!hasOverflowed && currentBottomHeight + section.estHeight <= remainingP1Capacity) {
         p1BottomItems.push(...section.items);
         currentBottomHeight += section.estHeight;
       } else {
+        hasOverflowed = true;
         p2FlowItems.push(...section.items);
       }
     });
@@ -195,9 +197,9 @@ export function partitionResumeContent(values = {}, theme = {}) {
             isAdaptiveSplit: true,
             sidebar: {
               skills,
-              languages,
               hobbies,
               certifications: certsInSidebar ? certifications : [],
+              languages,
             },
             heroFlowItems,
             bottomFlowItems: p1BottomItems,
@@ -217,9 +219,9 @@ export function partitionResumeContent(values = {}, theme = {}) {
           isAdaptiveSplit: true,
           sidebar: {
             skills,
-            languages,
             hobbies,
             certifications: certsInSidebar ? certifications : [],
+            languages,
           },
           heroFlowItems,
           bottomFlowItems: p1BottomItems,
@@ -244,12 +246,14 @@ export function partitionResumeContent(values = {}, theme = {}) {
   const p1BottomItems = [];
   const p2FlowItems = [];
   let currentBottomHeight = 0;
+  let hasOverflowedSingleCol = false;
 
   bottomSections.forEach(section => {
-    if (currentBottomHeight + section.estHeight <= remainingP1Capacity) {
+    if (!hasOverflowedSingleCol && currentBottomHeight + section.estHeight <= remainingP1Capacity) {
       p1BottomItems.push(...section.items);
       currentBottomHeight += section.estHeight;
     } else {
+      hasOverflowedSingleCol = true;
       p2FlowItems.push(...section.items);
     }
   });
