@@ -1,5 +1,5 @@
 import React from 'react';
-import { sanitizeRichText } from '../../../utils/sanitizeHtml';
+import { formatRichText } from '../utils/formatText';
 
 export default function SmartProjects({ projects = [], theme = {}, title = 'Projects' }) {
   if (!projects || !projects.length) return null;
@@ -25,7 +25,7 @@ export default function SmartProjects({ projects = [], theme = {}, title = 'Proj
             {proj.description && (
               <div
                 className="smart-card-desc rich-text"
-                dangerouslySetInnerHTML={{ __html: sanitizeRichText(proj.description) }}
+                dangerouslySetInnerHTML={{ __html: formatRichText(proj.description) }}
               />
             )}
           </div>

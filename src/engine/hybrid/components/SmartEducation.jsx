@@ -1,5 +1,5 @@
 import React from 'react';
-import { sanitizeRichText } from '../../../utils/sanitizeHtml';
+import { formatDateRange, formatRichText } from '../utils/formatText';
 
 export default function SmartEducation({ educations = [], theme = {}, title = 'Education' }) {
   if (!educations || !educations.length) return null;
@@ -13,7 +13,7 @@ export default function SmartEducation({ educations = [], theme = {}, title = 'E
 
       <div className={`smart-timeline smart-timeline--${theme.timelineStyle || 'modern-node'}`}>
         {educations.map((edu, idx) => {
-          const dateRange = [edu.started, edu.finished].filter(Boolean).join(' - ');
+          const dateRange = formatDateRange(edu.started, edu.finished);
           const institution = [edu.school, edu.city].filter(Boolean).join(' · ');
 
           return (
@@ -35,7 +35,7 @@ export default function SmartEducation({ educations = [], theme = {}, title = 'E
                 {edu.description && (
                   <div
                     className="smart-timeline-desc rich-text"
-                    dangerouslySetInnerHTML={{ __html: sanitizeRichText(edu.description) }}
+                    dangerouslySetInnerHTML={{ __html: formatRichText(edu.description) }}
                   />
                 )}
               </div>

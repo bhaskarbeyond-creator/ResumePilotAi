@@ -271,6 +271,27 @@
   color: rgba(255, 255, 255, 0.8);
 }
 
+.smart-sidebar .smart-header__contacts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.smart-sidebar .smart-contact-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.smart-sidebar .smart-contact-icon {
+  margin-top: 2.5px;
+  flex-shrink: 0;
+}
+
 /* ── Section Titles ─────────────────────────────────────────────────── */
 
 .smart-section {
@@ -285,8 +306,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 13.5px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--primary, #0f172a);
@@ -455,7 +476,15 @@
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 8px;
+  gap: 12px;
+}
+
+.smart-timeline-title-group {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
 
 .smart-timeline-role {
@@ -463,6 +492,8 @@
   font-weight: 700;
   color: #0f172a;
   margin: 0;
+  line-height: 1.3;
+  word-break: break-word;
 }
 
 .smart-timeline-company {
@@ -476,17 +507,30 @@
   font-weight: 600;
   color: #64748b;
   white-space: nowrap;
+  flex-shrink: 0;
+  text-align: right;
 }
 
-/* Rich Text inside items */
+/* Rich Text & Summary Typography */
+.smart-summary-content {
+  text-align: justify;
+  text-justify: inter-word;
+  hyphens: auto;
+  line-height: 1.55;
+  font-size: 12.5px;
+  color: #334155;
+}
+
 .rich-text {
   font-size: 12.5px;
   color: #334155;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
 .rich-text p {
   margin: 0 0 4px;
+  text-align: justify;
+  text-justify: inter-word;
 }
 
 .rich-text p:last-child {
@@ -494,12 +538,15 @@
 }
 
 .rich-text ul {
-  margin: 4px 0 0 16px;
+  margin: 4px 0 0 18px;
   padding: 0;
+  list-style-type: disc;
+  text-align: left;
 }
 
 .rich-text li {
-  margin-bottom: 2px;
+  margin-bottom: 3px;
+  line-height: 1.5;
 }
 
 /* ── Smart Cards (Projects & References) ────────────────────────────── */

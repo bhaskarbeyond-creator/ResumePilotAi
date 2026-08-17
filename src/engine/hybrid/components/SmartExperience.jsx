@@ -1,5 +1,5 @@
 import React from 'react';
-import { sanitizeRichText } from '../../../utils/sanitizeHtml';
+import { formatDateRange, formatRichText } from '../utils/formatText';
 
 export default function SmartExperience({ employments = [], theme = {}, title = 'Employment History' }) {
   if (!employments || !employments.length) return null;
@@ -13,7 +13,7 @@ export default function SmartExperience({ employments = [], theme = {}, title = 
 
       <div className={`smart-timeline smart-timeline--${theme.timelineStyle || 'modern-node'}`}>
         {employments.map((job, idx) => {
-          const dateRange = [job.begin, job.end].filter(Boolean).join(' - ');
+          const dateRange = formatDateRange(job.begin, job.end);
           const companyLocation = [job.employer, job.city].filter(Boolean).join(' · ');
 
           return (
@@ -35,7 +35,7 @@ export default function SmartExperience({ employments = [], theme = {}, title = 
                 {job.description && (
                   <div
                     className="smart-timeline-desc rich-text"
-                    dangerouslySetInnerHTML={{ __html: sanitizeRichText(job.description) }}
+                    dangerouslySetInnerHTML={{ __html: formatRichText(job.description) }}
                   />
                 )}
               </div>

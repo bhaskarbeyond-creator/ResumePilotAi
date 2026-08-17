@@ -1,5 +1,5 @@
 import React from 'react';
-import { sanitizeRichText } from '../../../utils/sanitizeHtml';
+import { formatRichText } from '../utils/formatText';
 
 export default function SmartAchievements({ achievements = [], theme = {}, title = 'Key Achievements' }) {
   if (!achievements || !achievements.length) return null;
@@ -22,7 +22,7 @@ export default function SmartAchievements({ achievements = [], theme = {}, title
               {ach.description && (
                 <div
                   className="smart-achievement-desc rich-text"
-                  dangerouslySetInnerHTML={{ __html: sanitizeRichText(ach.description) }}
+                  dangerouslySetInnerHTML={{ __html: formatRichText(ach.description) }}
                 />
               )}
             </div>
