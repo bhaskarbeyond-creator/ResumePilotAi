@@ -2241,26 +2241,34 @@ function DashboardSettings(props) {
                                     </div>
                                 </div>
 
-                                {/* Custom Hobby Input */}
-                                <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        value={hobbyInput}
-                                        onChange={(e) => setHobbyInput(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                e.preventDefault();
-                                                addHobby();
-                                            }
-                                        }}
-                                        placeholder="Type a custom hobby (e.g. Marathon Running, Open Source, Astronomy)..."
-                                        className="flex-1 text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
-                                    />
+                                {/* Custom Hobby Input with AI Dropdown Suggestion */}
+                                <div className="flex gap-2 items-start">
+                                    <div className="flex-1">
+                                        <AutocompleteInputField
+                                            hideLabel
+                                            name="hobbyInput"
+                                            value={hobbyInput}
+                                            onChange={(e) => setHobbyInput(e.target.value)}
+                                            onSelect={(val) => {
+                                                addHobby(val);
+                                                setHobbyInput('');
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    addHobby();
+                                                }
+                                            }}
+                                            placeholder="Type a custom hobby (e.g. Marathon Running, Open Source, Astronomy)..."
+                                            suggestionType="hobby"
+                                            inputClassName="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none h-[42px]"
+                                        />
+                                    </div>
                                     <button
                                         type="button"
                                         onClick={() => addHobby()}
                                         disabled={!hobbyInput.trim()}
-                                        className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
+                                        className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs cursor-pointer h-[42px] shrink-0"
                                     >
                                         <FaPlus className="w-3 h-3" /> Add Hobby
                                     </button>

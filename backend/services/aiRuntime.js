@@ -28,7 +28,7 @@ const ENABLE_FIELDS = Object.freeze({
 const MODEL_PATTERN = /^[A-Za-z0-9._:/-]{1,150}$/;
 const AUTOCOMPLETE_TYPES = new Set([
     'jobTitle', 'occupation', 'employer', 'company', 'school', 'degree', 'skill', 'city',
-    'certification', 'certificationIssuer', 'language',
+    'certification', 'certificationIssuer', 'language', 'hobby', 'hobbies', 'interest', 'interests',
 ]);
 const configurationCache = new WeakMap();
 const CONFIGURATION_CACHE_MS = 15_000;
@@ -269,6 +269,7 @@ ${type === 'jobTitle' ? 'Return only professional job titles.' : ''}
 ${type === 'certification' ? 'Return only official industry-recognized professional certification names (e.g. AWS Certified Solutions Architect, PMP, Certified Scrum Master, Google Analytics, CompTIA Security+, Six Sigma Green Belt). Return the FULL official credential title.' : ''}
 ${type === 'certificationIssuer' ? 'Return only official certification issuing organizations (e.g. Amazon Web Services, PMI, Scrum Alliance, Google, Microsoft, CompTIA, EC-Council). Return ONLY the organization name.' : ''}
 ${type === 'language' ? 'Return only world language names (e.g. English, Hindi, Spanish, French, Telugu, Tamil, German, Mandarin, Arabic). Return ONLY the language name.' : ''}
+${type === 'hobby' || type === 'hobbies' || type === 'interest' || type === 'interests' ? 'Return only popular, engaging, resume-worthy hobbies and personal interests (e.g. Marathon Running, Open Source Contributor, Photography, Chess, Hiking, Mountain Biking, Creative Writing, Astronomy, Drone Piloting, Volunteering, 3D Printing, Culinary Arts, Podcasting). Return concise hobby names.' : ''}
 
 Keep each suggestion concise and professional.
 Return ONLY valid JSON format:

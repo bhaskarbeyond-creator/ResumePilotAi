@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdDelete, MdAdd, MdCheck, MdTranslate, MdLanguage, MdSportsSoccer, MdClose } from 'react-icons/md';
 import InputField from './components/InputField';
+import AutocompleteInputField from './components/AutocompleteInputField';
 import { duplicateResumeItem, moveResumeItem } from '../../../utils/resumeData';
 
 const POPULAR_LANGUAGES = [
@@ -307,26 +308,34 @@ const LanguagesStep = ({ resumeData, updateResumeData }) => {
                     </div>
                 )}
 
-                {/* Custom Hobby Input */}
-                <div className="flex gap-3 mb-6">
-                    <input
-                        type="text"
-                        value={hobbyInput}
-                        onChange={(e) => setHobbyInput(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                addHobby();
-                            }
-                        }}
-                        placeholder="Type a custom hobby (e.g. Marathon Running, Open Source, Drone Piloting)"
-                        className="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
-                    />
+                {/* Custom Hobby Input with AI Dropdown Suggestion */}
+                <div className="flex gap-3 mb-6 items-start">
+                    <div className="flex-1">
+                        <AutocompleteInputField
+                            hideLabel
+                            name="hobbyInput"
+                            value={hobbyInput}
+                            onChange={(e) => setHobbyInput(e.target.value)}
+                            onSelect={(val) => {
+                                addHobby(val);
+                                setHobbyInput('');
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    addHobby();
+                                }
+                            }}
+                            placeholder="Type a custom hobby (e.g. Marathon Running, Open Source, Drone Piloting)"
+                            suggestionType="hobby"
+                            inputClassName="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all h-[42px]"
+                        />
+                    </div>
                     <button
                         type="button"
                         onClick={() => addHobby()}
                         disabled={!hobbyInput.trim()}
-                        className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-semibold rounded-xl transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
+                        className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-semibold rounded-xl transition-all shadow-sm flex items-center gap-1.5 cursor-pointer h-[42px] shrink-0"
                     >
                         <MdAdd className="w-4 h-4" />
                         Add Hobby

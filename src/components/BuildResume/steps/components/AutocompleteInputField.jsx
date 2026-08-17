@@ -13,8 +13,10 @@ const AutocompleteInputField = ({
     required = false,
     value = '',
     onChange,
+    onSelect,
+    onKeyDown,
     disabled = false,
-    suggestionType = 'jobTitle', // 'jobTitle', 'company', 'city', 'school', 'degree', 'skill', 'certification', 'certificationIssuer'
+    suggestionType = 'jobTitle', // 'jobTitle', 'company', 'city', 'school', 'degree', 'skill', 'certification', 'certificationIssuer', 'language', 'hobby'
     error = '',
     hint = '',
     inputClassName = '',
@@ -122,29 +124,39 @@ const AutocompleteInputField = ({
     const handleSelectOption = (option) => {
         isUserTypingRef.current = false;
         onChange({ target: { name, value: option } });
+        if (typeof onSelect === 'function') {
+            onSelect(option);
+        }
         setShowDropdown(false);
         setSuggestions([]);
         setActiveIndex(-1);
     };
 
     const handleKeyDown = (e) => {
-        if (!showDropdown || suggestions.length === 0) return;
-
-        if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            setActiveIndex(prev => (prev < suggestions.length - 1 ? prev + 1 : 0));
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            setActiveIndex(prev => (prev > 0 ? prev - 1 : suggestions.length - 1));
-        } else if (e.key === 'Enter') {
-            if (activeIndex >= 0 && activeIndex < suggestions.length) {
+        if (showDropdown && suggestions.length > 0) {
+            if (e.key === 'ArrowDown') {
                 e.preventDefault();
-                handleSelectOption(suggestions[activeIndex]);
+                setActiveIndex(prev => (prev < suggestions.length - 1 ? prev + 1 : 0));
+                return;
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                setActiveIndex(prev => (prev > 0 ? prev - 1 : suggestions.length - 1));
+                return;
+            } else if (e.key === 'Enter') {
+                if (activeIndex >= 0 && activeIndex < suggestions.length) {
+                    e.preventDefault();
+                    handleSelectOption(suggestions[activeIndex]);
+                    return;
+                }
+            } else if (e.key === 'Escape') {
+                setShowDropdown(false);
+                isUserTypingRef.current = false;
+                setActiveIndex(-1);
+                return;
             }
-        } else if (e.key === 'Escape') {
-            setShowDropdown(false);
-            isUserTypingRef.current = false;
-            setActiveIndex(-1);
+        }
+        if (typeof onKeyDown === 'function') {
+            onKeyDown(e);
         }
     };
 
