@@ -1,23 +1,21 @@
 import React from 'react';
 
 export default function SmartHeader({ values = {}, theme = {}, variant = 'standard' }) {
-  const {
-    firstname = '',
-    lastname = '',
-    occupation = '',
-    phone = '',
-    email = '',
-    address = '',
-    city = '',
-    country = '',
-    postalcode = '',
-    website = '',
-    linkedin = '',
-    github = '',
-    photo = null,
-  } = values;
+  const firstname = values.firstname || values.firstName || '';
+  const lastname = values.lastname || values.lastName || '';
+  const occupation = values.occupation || values.jobTitle || values.title || '';
+  const phone = values.phone || values.phoneNumber || '';
+  const email = values.email || values.userEmail || '';
+  const address = values.address || '';
+  const city = values.city || '';
+  const country = values.country || '';
+  const postalcode = values.postalcode || values.postalCode || values.zipCode || '';
+  const website = values.website || values.websiteUrl || '';
+  const linkedin = values.linkedin || values.linkedinUrl || '';
+  const github = values.github || values.githubUrl || '';
+  const photo = values.photo || values.selectedImage || values.image || values.avatar || values.picture || null;
 
-  const fullName = [firstname, lastname].filter(Boolean).join(' ') || 'Your Name';
+  const fullName = [firstname, lastname].filter(Boolean).join(' ') || values.name || 'Your Name';
   const cityZip = [city, postalcode].filter(Boolean).join(' ');
   const location = [address, cityZip, country].filter(Boolean).join(', ');
 

@@ -12,8 +12,10 @@ export default function SmartResumeComposer({ templateId = 'Cv1', values = {}, l
   const theme = getThemePreset(templateId);
   const partition = partitionResumeContent(values, theme);
 
-  const fullName = [values.firstname, values.lastname].filter(Boolean).join(' ') || 'Your Name';
-  const occupation = values.occupation || '';
+  const firstname = values.firstname || values.firstName || '';
+  const lastname = values.lastname || values.lastName || '';
+  const fullName = [firstname, lastname].filter(Boolean).join(' ') || values.name || 'Your Name';
+  const occupation = values.occupation || values.jobTitle || values.title || '';
   const totalPages = partition.totalPages;
 
   useEffect(() => {

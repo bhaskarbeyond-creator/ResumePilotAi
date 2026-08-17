@@ -12,17 +12,16 @@ function getTextLength(htmlOrStr = '') {
 }
 
 export function partitionResumeContent(values = {}, theme = {}) {
-  const {
-    summary = '',
-    employments = [],
-    educations = [],
-    skills = [],
-    projects = [],
-    certifications = [],
-    languages = [],
-    achievements = [],
-    references = [],
-  } = values;
+  const summary = values.summary || '';
+  const employments = values.employments || values.workExperiences || [];
+  const educations = values.educations || values.education || [];
+  const skills = values.skills || [];
+  const projects = values.projects || [];
+  const certifications = values.certifications || [];
+  const languages = values.languages || [];
+  const achievements = values.achievements || [];
+  const references = values.references || [];
+  const photo = values.photo || values.selectedImage || values.image || values.avatar || values.picture || null;
 
   const isSingleCol = theme.archetype === 'minimal-ats' || theme.archetype === 'compact-euro';
   const isBanner = theme.archetype === 'executive-banner';
