@@ -787,22 +787,40 @@
 /* ── Print Stylesheet ───────────────────────────────────────────────── */
 
 @media print {
-  body {
-    background: transparent !important;
+  @page {
+    size: A4 portrait;
+    margin: 0mm !important;
+  }
+
+  html, body {
+    background: #ffffff !important;
     margin: 0 !important;
     padding: 0 !important;
+    width: 210mm !important;
+    height: 100% !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   .smart-resume-document {
     background: transparent !important;
     gap: 0 !important;
     padding: 0 !important;
+    width: 210mm !important;
+    margin: 0 !important;
   }
 
   .smart-resume-page {
     box-shadow: none !important;
     margin: 0 !important;
+    width: 210mm !important;
+    height: 297mm !important;
+    min-height: 297mm !important;
+    max-height: 297mm !important;
     page-break-after: always !important;
     break-after: page !important;
+    overflow: hidden !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 }

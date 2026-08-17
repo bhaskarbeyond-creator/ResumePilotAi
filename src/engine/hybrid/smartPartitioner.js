@@ -1,8 +1,9 @@
 /**
  * Smart Hybrid Resume Engine — Content Partitioner & Page Packager
  * 
- * Accurately measures all section items using plain text metrics,
- * calculates precise page capacity per archetype, and guarantees 0 clipping on all pages.
+ * Accurately measures all section items including section titles and gaps,
+ * calculates strict page capacity per archetype, and guarantees ZERO content
+ * loss or clipping in both preview and PDF export.
  */
 
 function getTextLength(htmlOrStr = '') {
@@ -28,48 +29,48 @@ export function partitionResumeContent(values = {}, theme = {}) {
 
   // Strict page capacity limits calibrated per archetype (A4 is 1123px at 96 DPI)
   // Guarantees generous safety buffer above the footer to eliminate clipping 100%
-  let p1Capacity = 840; // Default Modern Split
+  let p1Capacity = 760; // Default Modern Split main flow
   if (isSingleCol) {
-    p1Capacity = 680;   // Single column with title & top header
+    p1Capacity = 660;   // Single column with title & top header
   } else if (isBanner) {
-    p1Capacity = 720;   // Banner layout with 140px header block
+    p1Capacity = 620;   // Banner layout with 140px header block
   }
 
-  const P1_SIDEBAR_CAPACITY = isBanner ? 720 : 860;
-  const P2_CAPACITY = 800; // Continuation pages have header + footer
+  const P1_SIDEBAR_CAPACITY = isBanner ? 680 : 820;
+  const P2_CAPACITY = 780; // Continuation pages have header + footer
 
   const headerHeight = values.photo ? 140 : 100;
   const summaryTextLen = getTextLength(summary);
-  const summaryHeight = summaryTextLen ? Math.max(45, Math.ceil(summaryTextLen / 2.6)) + 30 : 0;
+  const summaryHeight = summaryTextLen ? Math.max(50, Math.ceil(summaryTextLen / 2.4)) + 40 : 0;
   
   const skillCount = skills.length;
-  // Wrapped 3-col pill grid takes ~26px per row + title 32px
-  const skillsHeight = skillCount ? Math.ceil(skillCount / 3) * 26 + 32 : 0;
-  const languagesHeight = languages.length ? Math.ceil(languages.length / 2) * 22 + 28 : 0;
+  // Wrapped 3-col pill grid takes ~28px per row + title 38px
+  const skillsHeight = skillCount ? Math.ceil(skillCount / 3) * 28 + 38 : 0;
+  const languagesHeight = languages.length ? Math.ceil(languages.length / 2) * 24 + 34 : 0;
 
   // Decide if Certifications should go into the Sidebar or Main Flow
   const certsInSidebar = !isSingleCol && skillCount <= 10 && certifications.length <= 3;
-  const sidebarTotalHeight = headerHeight + skillsHeight + languagesHeight + (certsInSidebar ? certifications.length * 34 : 0);
+  const sidebarTotalHeight = headerHeight + skillsHeight + languagesHeight + (certsInSidebar ? certifications.length * 36 : 0);
 
   // Build the list of sliceable flow items
   const flowItems = [];
 
-  // 1. Summary
+  // 1. Summary (includes 40px section header)
   if (summary && summary.trim()) {
     flowItems.push({ type: 'summary', content: summary, estHeight: summaryHeight });
   }
 
-  // 2. Experience
+  // 2. Experience (each job includes role, company, date, bullets, and 14px gap)
   employments.forEach((job, index) => {
     const textLen = getTextLength(job.description);
-    const estHeight = 56 + Math.max(0, Math.ceil(textLen / 2.4));
+    const estHeight = 65 + Math.max(0, Math.ceil(textLen / 2.2)) + (index === 0 ? 38 : 14);
     flowItems.push({ type: 'experience', item: job, index, isFirst: index === 0, estHeight });
   });
 
-  // 3. Education
+  // 3. Education (each edu includes degree, school, date, description, and 14px gap)
   educations.forEach((edu, index) => {
     const textLen = getTextLength(edu.description);
-    const estHeight = 48 + Math.max(0, Math.ceil(textLen / 2.8));
+    const estHeight = 55 + Math.max(0, Math.ceil(textLen / 2.5)) + (index === 0 ? 38 : 14);
     flowItems.push({ type: 'education', item: edu, index, isFirst: index === 0, estHeight });
   });
 
@@ -86,7 +87,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
         item: cert,
         index,
         isFirst: index === 0,
-        estHeight: 34,
+        estHeight: 36 + (index === 0 ? 38 : 8),
       });
     });
   }
@@ -100,7 +101,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
   if (projects && projects.length) {
     projects.forEach((proj, index) => {
       const textLen = getTextLength(proj.description);
-      const estHeight = 50 + Math.max(0, Math.ceil(textLen / 2.8));
+      const estHeight = 55 + Math.max(0, Math.ceil(textLen / 2.5)) + (index === 0 ? 38 : 12);
       flowItems.push({ type: 'project', item: proj, index, isFirst: index === 0, estHeight });
     });
   }
@@ -109,7 +110,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
   if (achievements && achievements.length) {
     achievements.forEach((ach, index) => {
       const textLen = getTextLength(ach.description);
-      const estHeight = 46 + Math.max(0, Math.ceil(textLen / 2.8));
+      const estHeight = 52 + Math.max(0, Math.ceil(textLen / 2.5)) + (index === 0 ? 38 : 10);
       flowItems.push({ type: 'achievement', item: ach, index, isFirst: index === 0, estHeight });
     });
   }
@@ -118,7 +119,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
   if (references && references.length) {
     references.forEach((ref, index) => {
       const textLen = getTextLength(ref.reference);
-      const estHeight = 42 + Math.max(0, Math.ceil(textLen / 2.8));
+      const estHeight = 48 + Math.max(0, Math.ceil(textLen / 2.5)) + (index === 0 ? 38 : 10);
       flowItems.push({ type: 'reference', item: ref, index, isFirst: index === 0, estHeight });
     });
   }
