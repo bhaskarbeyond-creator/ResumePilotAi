@@ -1,4 +1,5 @@
 import React from 'react';
+import { sanitizeRichText } from '../../../utils/sanitizeHtml';
 import { formatDateRange, formatRichText } from '../utils/formatText';
 
 export default function SmartEducation({ educations = [], theme = {}, title = 'Education' }) {
@@ -35,7 +36,7 @@ export default function SmartEducation({ educations = [], theme = {}, title = 'E
                 {edu.description && (
                   <div
                     className="smart-timeline-desc rich-text"
-                    dangerouslySetInnerHTML={{ __html: formatRichText(edu.description) }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeRichText(formatRichText(edu.description)) }}
                   />
                 )}
               </div>

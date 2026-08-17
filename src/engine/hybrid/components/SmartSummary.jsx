@@ -1,4 +1,5 @@
 import React from 'react';
+import { sanitizeRichText } from '../../../utils/sanitizeHtml';
 import { formatRichText } from '../utils/formatText';
 
 export default function SmartSummary({ summary = '', title = 'Professional Summary' }) {
@@ -12,7 +13,7 @@ export default function SmartSummary({ summary = '', title = 'Professional Summa
       </h3>
       <div
         className="smart-summary-content rich-text"
-        dangerouslySetInnerHTML={{ __html: formatRichText(summary) }}
+        dangerouslySetInnerHTML={{ __html: sanitizeRichText(formatRichText(summary)) }}
       />
     </section>
   );

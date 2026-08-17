@@ -1,4 +1,5 @@
 import React from 'react';
+import { sanitizeRichText } from '../../../utils/sanitizeHtml';
 import { formatDateRange, formatRichText } from '../utils/formatText';
 
 export default function SmartExperience({ employments = [], theme = {}, title = 'Employment History' }) {
@@ -35,7 +36,7 @@ export default function SmartExperience({ employments = [], theme = {}, title = 
                 {job.description && (
                   <div
                     className="smart-timeline-desc rich-text"
-                    dangerouslySetInnerHTML={{ __html: formatRichText(job.description) }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeRichText(formatRichText(job.description)) }}
                   />
                 )}
               </div>
