@@ -1637,14 +1637,28 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
         browser = await chromium.launch(launchOptions);
         const context = await browser.newContext({ viewport: { width: 794, height: 1123 }, deviceScaleFactor: 1 });
         const allowedRenderOrigin = new URL(`${protocol}://${websiteName}`).origin;
-        // A resume can contain remote image/font URLs. Prevent the renderer from becoming
-        // a blind SSRF client into cloud metadata or internal services.
+        const allowedHosts = new Set([
+            new URL(`${protocol}://${websiteName}`).hostname,
+            'firebasestorage.googleapis.com',
+            'storage.googleapis.com',
+            'lh3.googleusercontent.com',
+            'fonts.googleapis.com',
+            'fonts.gstatic.com',
+            'cdnjs.cloudflare.com',
+            'unpkg.com'
+        ]);
+
+        // Allow remote photo/image and font URLs while preventing SSRF to private IP ranges
         await context.route('**/*', async route => {
             const requestUrl = route.request().url();
             if (requestUrl.startsWith('data:') || requestUrl.startsWith('blob:')) return route.continue();
             try {
                 const parsed = new URL(requestUrl);
-                if (parsed.origin === allowedRenderOrigin) return route.continue();
+                if (allowedHosts.has(parsed.hostname) || parsed.origin === allowedRenderOrigin) return route.continue();
+                const resourceType = route.request().resourceType();
+                if (['image', 'font', 'stylesheet'].includes(resourceType) && parsed.protocol === 'https:') {
+                    return route.continue();
+                }
             } catch (_) {}
             return route.abort('blockedbyclient');
         });

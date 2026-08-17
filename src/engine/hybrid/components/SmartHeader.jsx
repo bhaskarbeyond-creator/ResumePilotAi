@@ -18,7 +18,8 @@ export default function SmartHeader({ values = {}, theme = {}, variant = 'standa
   } = values;
 
   const fullName = [firstname, lastname].filter(Boolean).join(' ') || 'Your Name';
-  const location = [address, city, country].filter(Boolean).join(', ');
+  const cityZip = [city, postalcode].filter(Boolean).join(' ');
+  const location = [address, cityZip, country].filter(Boolean).join(', ');
 
   const isBanner = variant === 'banner';
   const isMinimal = variant === 'minimal';
@@ -28,7 +29,7 @@ export default function SmartHeader({ values = {}, theme = {}, variant = 'standa
       <div className="smart-header__main">
         {photo && (
           <div className="smart-header__avatar-wrap">
-            <img src={photo} alt={fullName} className="smart-header__avatar" />
+            <img src={photo} alt={fullName} className="smart-header__avatar" loading="eager" decoding="sync" crossOrigin="anonymous" />
           </div>
         )}
         <div className="smart-header__titles">
