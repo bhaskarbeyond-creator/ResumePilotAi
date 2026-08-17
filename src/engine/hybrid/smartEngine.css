@@ -68,11 +68,11 @@
 
 .smart-layout--modern-split .smart-main-content {
   flex: 1 1 auto;
-  padding: 24px 24px;
+  padding: 24px 24px 28px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
   min-width: 0;
 }
 
