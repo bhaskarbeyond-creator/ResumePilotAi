@@ -93,22 +93,15 @@ export function partitionResumeContent(values = {}, theme = {}) {
     });
   }
 
-  // Languages Section (in Single-Col mode)
-  if (isSingleCol && languages.length) {
-    bottomSections.push({
-      type: 'languages',
-      items: [{ type: 'languages', items: languages, estHeight: Math.round(languagesHeight) }],
-      estHeight: Math.round(languagesHeight)
+  // Projects Section
+  if (projects && projects.length) {
+    const projItems = projects.map((proj, index) => {
+      const textLen = getTextLength(proj.description);
+      const estHeight = Math.round(38 + calcTextHeight(textLen) + (index === 0 ? 32 : 10));
+      return { type: 'project', item: proj, index, isFirst: index === 0, estHeight };
     });
-  }
-
-  // Hobbies Section (in Single-Col mode)
-  if (isSingleCol && hobbiesCount > 0) {
-    bottomSections.push({
-      type: 'hobbies',
-      items: [{ type: 'hobbies', items: hobbies, estHeight: Math.round(hobbiesHeight) }],
-      estHeight: Math.round(hobbiesHeight)
-    });
+    const sectionHeight = projItems.reduce((sum, it) => sum + it.estHeight, 0);
+    bottomSections.push({ type: 'project', items: projItems, estHeight: sectionHeight });
   }
 
   // Certifications Section (2-column responsive grid)
@@ -129,17 +122,6 @@ export function partitionResumeContent(values = {}, theme = {}) {
     bottomSections.push({ type: 'certification', items: certItems, estHeight: sectionHeight });
   }
 
-  // Projects Section
-  if (projects && projects.length) {
-    const projItems = projects.map((proj, index) => {
-      const textLen = getTextLength(proj.description);
-      const estHeight = Math.round(38 + calcTextHeight(textLen) + (index === 0 ? 32 : 10));
-      return { type: 'project', item: proj, index, isFirst: index === 0, estHeight };
-    });
-    const sectionHeight = projItems.reduce((sum, it) => sum + it.estHeight, 0);
-    bottomSections.push({ type: 'project', items: projItems, estHeight: sectionHeight });
-  }
-
   // Achievements Section
   if (achievements && achievements.length) {
     const achItems = achievements.map((ach, index) => {
@@ -151,6 +133,15 @@ export function partitionResumeContent(values = {}, theme = {}) {
     bottomSections.push({ type: 'achievement', items: achItems, estHeight: sectionHeight });
   }
 
+  // Hobbies Section (in Single-Col mode)
+  if (isSingleCol && hobbiesCount > 0) {
+    bottomSections.push({
+      type: 'hobbies',
+      items: [{ type: 'hobbies', items: hobbies, estHeight: Math.round(hobbiesHeight) }],
+      estHeight: Math.round(hobbiesHeight)
+    });
+  }
+
   // References Section
   if (references && references.length) {
     const refItems = references.map((ref, index) => {
@@ -160,6 +151,15 @@ export function partitionResumeContent(values = {}, theme = {}) {
     });
     const sectionHeight = refItems.reduce((sum, it) => sum + it.estHeight, 0);
     bottomSections.push({ type: 'reference', items: refItems, estHeight: sectionHeight });
+  }
+
+  // Languages Section (in Single-Col mode - lowest priority at bottom)
+  if (isSingleCol && languages.length) {
+    bottomSections.push({
+      type: 'languages',
+      items: [{ type: 'languages', items: languages, estHeight: Math.round(languagesHeight) }],
+      estHeight: Math.round(languagesHeight)
+    });
   }
 
   // Safe page capacities
