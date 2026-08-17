@@ -41,7 +41,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
   const hasSidebar = !isSingleCol;
 
   // In Executive Banner, header is in the top banner (110px), so sidebar starts with skills
-  const headerHeight = isBanner ? 0 : (photo ? 130 : 90);
+  const headerHeight = isBanner ? 0 : (photo ? 155 : 95);
   const summaryTextLen = getTextLength(summary);
   const summaryHeight = summaryTextLen ? calcTextHeight(summaryTextLen) + 34 : 0;
   
