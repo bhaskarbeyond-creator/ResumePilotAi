@@ -63,7 +63,6 @@ const BuildResume = () => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isMobilePreviewOpen, setIsMobilePreviewOpen] = useState(false);
     const [isFooterCompressed, setIsFooterCompressed] = useState(true);
-    const [isReorderOpen, setIsReorderOpen] = useState(false);
 
     // Toast notification states
     const [isSuccessToastVisible, setIsSuccessToastVisible] = useState(false);
@@ -313,31 +312,6 @@ const BuildResume = () => {
         if (userId && resumeId) writeResumeRecovery(userId, resumeId, revisionRef.current, merged);
         scheduleSave();
     }, [scheduleSave]);
-
-    const toggleSectionVisibility = stepPath => {
-        const sectionKey = sectionKeyForPath(stepPath);
-        const hidden = new Set(resumeDataRef.current.hiddenSections || []);
-        if (hidden.has(sectionKey)) hidden.delete(sectionKey); else hidden.add(sectionKey);
-        updateResumeData({ hiddenSections: [...hidden] });
-    };
-
-    const moveSection = (stepPath, direction) => {
-        const currentOrderedKeys = orderedSteps.map(s => sectionKeyForPath(s.path));
-        const targetKey = sectionKeyForPath(stepPath);
-        const index = currentOrderedKeys.indexOf(targetKey);
-        const target = index + direction;
-        if (index < 0 || target < 0 || target >= currentOrderedKeys.length) return;
-
-        const newOrderedKeys = [...currentOrderedKeys];
-        [newOrderedKeys[index], newOrderedKeys[target]] = [newOrderedKeys[target], newOrderedKeys[index]];
-
-        const allKeys = [...new Set([...newOrderedKeys, ...(resumeDataRef.current.sectionOrder || [])])];
-        updateResumeData({ sectionOrder: allKeys });
-    };
-
-    const resetSectionOrder = () => {
-        updateResumeData({ sectionOrder: [...DEFAULT_SECTION_ORDER], hiddenSections: [] });
-    };
 
     const resolveConflictWithRemote = () => {
         if (!saveConflict?.remoteData) return;
@@ -1562,107 +1536,6 @@ const BuildResume = () => {
                         </div>
                         <span>Add Custom Section</span>
                     </button>
-
-                    {/* Reorder & Visibility Sections Accordion */}
-                    <div className="mt-2.5 bg-slate-50/80 rounded-xl border border-slate-200/80 overflow-hidden transition-all shadow-2xs">
-                        <button
-                            type="button"
-                            onClick={() => setIsReorderOpen(!isReorderOpen)}
-                            className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-slate-700 hover:text-indigo-600 hover:bg-slate-100/70 transition-colors">
-                            <div className="flex items-center gap-1.5">
-                                <svg className="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                                </svg>
-                                <span>Reorder Sections</span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-slate-200/80 text-slate-600">
-                                    {orderedSteps.filter(s => !resumeData.hiddenSections.includes(sectionKeyForPath(s.path))).length} active
-                                </span>
-                                <svg className={`w-3.5 h-3.5 text-slate-400 transform transition-transform duration-200 ${isReorderOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </div>
-                        </button>
-
-                        {isReorderOpen && (
-                            <div className="p-2.5 pt-1 border-t border-slate-200/70 space-y-1.5 bg-white">
-                                <p className="text-[10px] text-slate-500 px-1 pb-1">Use ↑ ↓ to customize layout order on your CV:</p>
-                                <ul className="space-y-1" aria-label="Resume section order">
-                                    {orderedSteps.map((step, index) => {
-                                        const isHidden = resumeData.hiddenSections.includes(sectionKeyForPath(step.path));
-                                        return (
-                                            <li
-                                                key={`order-${step.id}`}
-                                                className={`flex items-center justify-between gap-1.5 px-2 py-1.5 rounded-lg border text-xs transition-all ${
-                                                    isHidden ? 'bg-slate-50 border-slate-200/60 opacity-60' : 'bg-white border-slate-200/90 shadow-2xs'
-                                                }`}>
-                                                <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                                                    <span className="w-4 h-4 rounded bg-slate-100 text-slate-500 text-[10px] font-bold flex items-center justify-center shrink-0">
-                                                        {index + 1}
-                                                    </span>
-                                                    <span className={`truncate font-medium ${isHidden ? 'line-through text-slate-400' : 'text-slate-700'}`}>
-                                                        {step.name}
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center gap-1 shrink-0">
-                                                    {/* Toggle visibility eye icon */}
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => toggleSectionVisibility(step.path)}
-                                                        className={`p-1 rounded hover:bg-slate-100 transition-colors ${isHidden ? 'text-slate-400' : 'text-indigo-600'}`}
-                                                        title={isHidden ? "Show section on CV" : "Hide section from CV"}>
-                                                        {isHidden ? (
-                                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
-                                                            </svg>
-                                                        ) : (
-                                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                            </svg>
-                                                        )}
-                                                    </button>
-                                                    {/* Move Up */}
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => moveSection(step.path, -1)}
-                                                        disabled={index === 0}
-                                                        aria-label={`Move ${step.name} up`}
-                                                        title="Move section up"
-                                                        className="p-1 rounded hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 disabled:opacity-25 disabled:hover:bg-transparent transition-colors">
-                                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
-                                                        </svg>
-                                                    </button>
-                                                    {/* Move Down */}
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => moveSection(step.path, 1)}
-                                                        disabled={index === orderedSteps.length - 1}
-                                                        aria-label={`Move ${step.name} down`}
-                                                        title="Move section down"
-                                                        className="p-1 rounded hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 disabled:opacity-25 disabled:hover:bg-transparent transition-colors">
-                                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                                                        </svg>
-                                                    </button>
-                                                </div>
-                                            </li>
-                                        );
-                                    })}
-                                </ul>
-                                <div className="pt-1.5 flex justify-end">
-                                    <button
-                                        type="button"
-                                        onClick={resetSectionOrder}
-                                        className="text-[10px] font-semibold text-slate-500 hover:text-indigo-600 transition-colors">
-                                        Reset to Default Order
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
 
                     {/* Real-Time ATS Score Meter Widget */}
                     <div className="mt-4">
