@@ -897,4 +897,35 @@
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
+
+  /* Guarantee Header, Footer, and Contact details are 100% visible in print/PDF */
+  header.smart-header,
+  .smart-header,
+  .smart-header__main,
+  .smart-header__titles,
+  .smart-header__name,
+  .smart-header__role,
+  .smart-header__contacts,
+  .smart-header__avatar-wrap,
+  .smart-header__avatar,
+  footer.smart-page-footer,
+  .smart-page-footer {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  .smart-header__titles {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .smart-header__name {
+    display: block !important;
+  }
+
+  .smart-header__avatar {
+    display: block !important;
+    max-width: 100% !important;
+  }
 }
