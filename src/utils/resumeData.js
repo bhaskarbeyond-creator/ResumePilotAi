@@ -1,9 +1,9 @@
-export const DEFAULT_SECTION_ORDER = Object.freeze(['heading', 'employment', 'education', 'skills', 'languages', 'summary', 'projects', 'certifications', 'custom']);
+export const DEFAULT_SECTION_ORDER = Object.freeze(['heading', 'employment', 'education', 'skills', 'languages', 'hobbies', 'summary', 'projects', 'certifications', 'custom']);
 
 export const EMPTY_RESUME = Object.freeze({
     title: 'Untitled Resume', template: 'Cv1', firstname: '', lastname: '', email: '', phone: '', occupation: '',
-    country: '', city: '', address: '', postalcode: '', photo: null, summary: '',
-    employments: [], educations: [], skills: [], languages: [], projects: [], certifications: [], achievements: [], references: [], customSections: [],
+    country: '', city: '', address: '', postalcode: '', website: '', linkedin: '', github: '', photo: null, summary: '',
+    employments: [], educations: [], skills: [], languages: [], hobbies: [], projects: [], certifications: [], achievements: [], references: [], customSections: [],
     sectionOrder: DEFAULT_SECTION_ORDER, hiddenSections: [], completedSteps: [],
 });
 
@@ -61,9 +61,11 @@ export function normalizeResumeData(input = {}, { template = 'Cv1' } = {}) {
         firstname: text(raw.firstname || raw.firstName), lastname: text(raw.lastname || raw.lastName),
         email: text(raw.email), phone: text(raw.phone), occupation: text(raw.occupation || raw.jobTitle),
         country: text(raw.country), city: text(raw.city), address: text(raw.address), postalcode: text(raw.postalcode || raw.postalCode),
+        website: text(raw.website || raw.websiteUrl), linkedin: text(raw.linkedin || raw.linkedinUrl), github: text(raw.github || raw.githubUrl),
         photo: typeof raw.photo === 'string' && raw.photo.trim() ? raw.photo : null,
         summary: text(raw.summary || raw.professionalSummary),
         employments, educations, skills, languages,
+        hobbies: Array.isArray(raw.hobbies) ? raw.hobbies : (raw.hobbies ? (typeof raw.hobbies === 'string' ? raw.hobbies : [raw.hobbies]) : []),
         projects: array(raw.projects), certifications: array(raw.certifications), achievements: array(raw.achievements || raw.awards),
         references: array(raw.references), customSections: array(raw.customSections),
         sectionOrder, hiddenSections,

@@ -46,6 +46,12 @@ export const FIXTURES = Object.freeze({
       { name: 'తెలుగు', level: 'Native' },
       { name: 'हिन्दी', level: 'Professional' },
     ],
+    hobbies: [
+      'Photography',
+      'Chess',
+      'Marathon Running',
+      'Open Source Contributor',
+    ],
     projects: [
       { title: 'ResumePilot', description: 'Open-source resume analytics toolkit with 2.4k GitHub stars.', url: 'https://github.com/bhaskar/resumepilot' },
     ],

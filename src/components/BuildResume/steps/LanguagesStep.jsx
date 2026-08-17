@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MdDelete, MdAdd, MdCheck, MdTranslate, MdLanguage } from 'react-icons/md';
+import { MdDelete, MdAdd, MdCheck, MdTranslate, MdLanguage, MdSportsSoccer, MdClose } from 'react-icons/md';
 import InputField from './components/InputField';
 import { duplicateResumeItem, moveResumeItem } from '../../../utils/resumeData';
 
@@ -20,6 +20,21 @@ const POPULAR_LANGUAGES = [
     'Dutch',
 ];
 
+const POPULAR_HOBBIES = [
+    'Photography',
+    'Chess',
+    'Marathon Running',
+    'Open Source Contributor',
+    'Reading',
+    'Hiking',
+    'Writing & Blogging',
+    'Volunteering',
+    'Traveling',
+    'Podcasting',
+    'Music Production',
+    'Cooking',
+];
+
 const PROFICIENCY_LEVELS = [
     'Native / Bilingual',
     'Full Professional (Fluent)',
@@ -31,13 +46,18 @@ const PROFICIENCY_LEVELS = [
 const LanguagesStep = ({ resumeData, updateResumeData }) => {
     const { t } = useTranslation('common');
     const [languages, setLanguages] = useState(resumeData.languages || []);
+    const [hobbies, setHobbies] = useState(Array.isArray(resumeData.hobbies) ? resumeData.hobbies : (resumeData.hobbies ? [resumeData.hobbies] : []));
+    const [hobbyInput, setHobbyInput] = useState('');
     const idCounter = useRef(0);
 
     useEffect(() => {
         if (resumeData.languages && Array.isArray(resumeData.languages)) {
             setLanguages(resumeData.languages);
         }
-    }, [resumeData.languages]);
+        if (resumeData.hobbies) {
+            setHobbies(Array.isArray(resumeData.hobbies) ? resumeData.hobbies : [resumeData.hobbies]);
+        }
+    }, [resumeData.languages, resumeData.hobbies]);
 
     const createNewLanguage = (name = '', level = 'Native / Bilingual') => {
         idCounter.current += 1;
@@ -71,22 +91,39 @@ const LanguagesStep = ({ resumeData, updateResumeData }) => {
         );
     };
 
+    const addHobby = (hobbyName) => {
+        const trimmed = (hobbyName || hobbyInput).trim();
+        if (!trimmed) return;
+        const exists = hobbies.some(h => {
+            const val = typeof h === 'string' ? h : (h.name || h.hobby || '');
+            return val.toLowerCase() === trimmed.toLowerCase();
+        });
+        if (!exists) {
+            setHobbies(prev => [...prev, trimmed]);
+        }
+        setHobbyInput('');
+    };
+
+    const removeHobby = (index) => {
+        setHobbies(prev => prev.filter((_, idx) => idx !== index));
+    };
+
     const handleSave = () => {
-        updateResumeData({ languages });
+        updateResumeData({ languages, hobbies });
 
         const validLangs = languages.filter((lang) => (lang.name || lang.language || '').trim() !== '');
 
-        if (validLangs.length > 0) {
+        if (validLangs.length > 0 || hobbies.length > 0) {
             const completedSteps = [...(resumeData.completedSteps || [])];
             if (!completedSteps.includes(5)) {
                 completedSteps.push(5);
-                updateResumeData({ languages, completedSteps });
+                updateResumeData({ languages, hobbies, completedSteps });
             }
         } else {
             const completedSteps = [...(resumeData.completedSteps || [])];
             const updatedSteps = completedSteps.filter((step) => step !== 5);
             if (updatedSteps.length !== completedSteps.length) {
-                updateResumeData({ languages, completedSteps: updatedSteps });
+                updateResumeData({ languages, hobbies, completedSteps: updatedSteps });
             }
         }
     };
@@ -97,136 +134,239 @@ const LanguagesStep = ({ resumeData, updateResumeData }) => {
         }, 500);
 
         return () => clearTimeout(timeoutId);
-    }, [languages]);
+    }, [languages, hobbies]);
 
     const existingNames = languages.map((l) => (l.name || l.language || '').toLowerCase());
     const availablePills = POPULAR_LANGUAGES.filter((p) => !existingNames.includes(p.toLowerCase()));
 
+    const existingHobbies = hobbies.map(h => (typeof h === 'string' ? h : (h.name || h.hobby || '')).toLowerCase());
+    const availableHobbyPills = POPULAR_HOBBIES.filter(p => !existingHobbies.includes(p.toLowerCase()));
+
     return (
-        <div className="px-4 py-6 max-w-6xl mx-auto w-full min-h-full">
-            {/* Header */}
-            <div className="mb-6">
-                <div className="flex items-center gap-3 mb-2">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-semibold text-sm">
-                        <MdTranslate className="w-5 h-5" />
+        <div className="px-4 py-6 max-w-6xl mx-auto w-full min-h-full space-y-8">
+            {/* 1. Languages Section */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
+                <div className="mb-6">
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-semibold text-sm">
+                            5
+                        </div>
+                        <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                            <MdTranslate className="w-6 h-6 text-blue-600" />
+                            {t('BuildResume.steps.languages', 'Languages')}
+                        </h1>
                     </div>
-                    <h2 className="text-xl font-bold text-slate-800">
-                        {t('BuildResume.steps.languages', 'Languages')}
-                    </h2>
+                    <p className="text-slate-600 text-sm">
+                        {t('BuildResume.languages.subtitle', 'Add the languages you speak and your proficiency level.')}
+                    </p>
                 </div>
-                <p className="text-slate-500 text-sm">
-                    {t('BuildResume.languages.subtitle', 'Add languages you speak and your level of proficiency.')}
-                </p>
-            </div>
 
-            {/* Quick Add Pills */}
-            {availablePills.length > 0 && (
-                <div className="mb-6 bg-slate-50 border border-slate-200 rounded-xl p-4">
-                    <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                        <MdLanguage className="w-4 h-4 text-blue-600" />
-                        {t('BuildResume.languages.quickAdd', 'Quick Add Popular Languages')}
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                        {availablePills.map((langName) => (
+                {/* Popular Language Quick-Add Pills */}
+                {availablePills.length > 0 && (
+                    <div className="mb-6">
+                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                            {t('BuildResume.languages.suggested', 'Quick Add Popular Languages')}
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                            {availablePills.slice(0, 8).map((lang) => (
+                                <button
+                                    key={lang}
+                                    type="button"
+                                    onClick={() => addLanguage(lang)}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 border border-slate-200 rounded-full text-xs font-medium text-slate-700 transition-all cursor-pointer"
+                                >
+                                    <MdAdd className="w-3.5 h-3.5" />
+                                    {lang}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Languages List */}
+                <div className="space-y-4 mb-6">
+                    {languages.length === 0 ? (
+                        <div className="text-center py-8 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+                            <MdLanguage className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                            <p className="text-sm font-medium text-slate-600 mb-1">
+                                {t('BuildResume.languages.emptyTitle', 'No languages added yet')}
+                            </p>
+                            <p className="text-xs text-slate-600 mb-4 max-w-sm mx-auto">
+                                {t('BuildResume.languages.emptyDescription', 'Showcase your multilingual abilities to stand out in global hiring.')}
+                            </p>
                             <button
-                                key={langName}
                                 type="button"
-                                onClick={() => addLanguage(langName)}
-                                className="px-3 py-1.5 bg-white hover:bg-blue-50 hover:border-blue-300 border border-slate-200 rounded-lg text-sm text-slate-700 hover:text-blue-700 font-medium transition-colors flex items-center gap-1 shadow-sm"
+                                onClick={() => addLanguage('English', 'Native / Bilingual')}
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-colors shadow-sm cursor-pointer"
                             >
-                                <MdAdd className="w-4 h-4 text-blue-500" />
-                                {langName}
+                                <MdAdd className="w-4 h-4" />
+                                {t('BuildResume.languages.addFirst', 'Add Your First Language')}
                             </button>
-                        ))}
-                    </div>
-                </div>
-            )}
+                        </div>
+                    ) : (
+                        languages.map((lang, index) => {
+                            const itemKey = lang.id || lang.date || `lang-${index}`;
+                            const langName = lang.name || lang.language || '';
+                            const langLevel = lang.level || 'Native / Bilingual';
 
-            {/* Language Cards */}
-            <div className="space-y-4 mb-6">
-                {languages.length === 0 ? (
-                    <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl p-8 text-center">
-                        <MdTranslate className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                        <h3 className="text-slate-700 font-medium mb-1">
-                            {t('BuildResume.languages.emptyTitle', 'No languages added yet')}
-                        </h3>
-                        <p className="text-slate-400 text-sm mb-4">
-                            {t('BuildResume.languages.emptyDesc', 'Click a language pill above or the button below to add your languages.')}
-                        </p>
-                        <button
-                            type="button"
-                            onClick={() => addLanguage()}
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
-                        >
-                            <MdAdd className="w-4 h-4" />
-                            {t('BuildResume.languages.addLanguage', 'Add Language')}
-                        </button>
-                    </div>
-                ) : (
-                    languages.map((lang, index) => {
-                        const langName = lang.name || lang.language || '';
-                        const langLevel = lang.level || lang.proficiency || 'Native / Bilingual';
-                        const itemKey = lang.id || lang.date || `lang_${index}`;
-
-                        return (
-                            <div
-                                key={itemKey}
-                                className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:border-slate-300 transition-all flex flex-col md:flex-row md:items-center gap-4"
-                            >
-                                <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <InputField
-                                        label={t('BuildResume.languages.nameLabel', 'Language')}
-                                        value={langName}
-                                        onChange={(e) => updateLanguage(itemKey, 'name', e.target.value)}
-                                        placeholder="e.g. English, Spanish, French"
-                                    />
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">
-                                            {t('BuildResume.languages.levelLabel', 'Proficiency Level')}
-                                        </label>
-                                        <select
-                                            value={langLevel}
-                                            onChange={(e) => updateLanguage(itemKey, 'level', e.target.value)}
-                                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                            return (
+                                <div
+                                    key={itemKey}
+                                    className="flex flex-col md:flex-row items-stretch md:items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-xl hover:border-slate-300 transition-all"
+                                >
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
+                                        <InputField
+                                            label={t('BuildResume.languages.nameLabel', 'Language')}
+                                            value={langName}
+                                            onChange={(e) => updateLanguage(itemKey, 'name', e.target.value)}
+                                            placeholder="e.g. English, Spanish, French"
+                                        />
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-1">
+                                                {t('BuildResume.languages.levelLabel', 'Proficiency Level')}
+                                            </label>
+                                            <select
+                                                value={langLevel}
+                                                onChange={(e) => updateLanguage(itemKey, 'level', e.target.value)}
+                                                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                            >
+                                                {PROFICIENCY_LEVELS.map((lvl) => (
+                                                    <option key={lvl} value={lvl}>
+                                                        {lvl}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-1 self-end md:self-center">
+                                        <button type="button" onClick={() => moveLanguage(itemKey, -1)} disabled={index === 0} aria-label={`Move ${langName || 'language'} up`} className="p-2 text-slate-500 disabled:opacity-30">↑</button>
+                                        <button type="button" onClick={() => moveLanguage(itemKey, 1)} disabled={index === languages.length - 1} aria-label={`Move ${langName || 'language'} down`} className="p-2 text-slate-500 disabled:opacity-30">↓</button>
+                                        <button type="button" onClick={() => duplicateLanguage(itemKey)} aria-label={`Duplicate ${langName || 'language'}`} className="p-2 text-slate-500">⧉</button>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeLanguage(itemKey)}
+                                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors self-end md:self-center"
+                                            title={t('BuildResume.languages.delete', 'Remove Language')}
                                         >
-                                            {PROFICIENCY_LEVELS.map((lvl) => (
-                                                <option key={lvl} value={lvl}>
-                                                    {lvl}
-                                                </option>
-                                            ))}
-                                        </select>
+                                            <MdDelete className="w-5 h-5" />
+                                        </button>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-1 self-end md:self-center">
-                                    <button type="button" onClick={() => moveLanguage(itemKey, -1)} disabled={index === 0} aria-label={`Move ${langName || 'language'} up`} className="p-2 text-slate-500 disabled:opacity-30">↑</button>
-                                    <button type="button" onClick={() => moveLanguage(itemKey, 1)} disabled={index === languages.length - 1} aria-label={`Move ${langName || 'language'} down`} className="p-2 text-slate-500 disabled:opacity-30">↓</button>
-                                    <button type="button" onClick={() => duplicateLanguage(itemKey)} aria-label={`Duplicate ${langName || 'language'}`} className="p-2 text-slate-500">⧉</button>
-                                <button
-                                    type="button"
-                                    onClick={() => removeLanguage(itemKey)}
-                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors self-end md:self-center"
-                                    title={t('BuildResume.languages.delete', 'Remove Language')}
-                                >
-                                    <MdDelete className="w-5 h-5" />
-                                </button>
-                                </div>
-                            </div>
-                        );
-                    })
+                            );
+                        })
+                    )}
+                </div>
+
+                {languages.length > 0 && (
+                    <button
+                        type="button"
+                        onClick={() => addLanguage()}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-medium transition-colors shadow-sm cursor-pointer"
+                    >
+                        <MdAdd className="w-4 h-4" />
+                        {t('BuildResume.languages.addLanguage', 'Add Another Language')}
+                    </button>
                 )}
             </div>
 
-            {/* Add Language Button */}
-            {languages.length > 0 && (
-                <button
-                    type="button"
-                    onClick={() => addLanguage()}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
-                >
-                    <MdAdd className="w-4 h-4" />
-                    {t('BuildResume.languages.addLanguage', 'Add Another Language')}
-                </button>
-            )}
+            {/* 2. Hobbies & Interests Section */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
+                <div className="mb-6">
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-semibold text-sm">
+                            <MdSportsSoccer className="w-5 h-5" />
+                        </div>
+                        <h2 className="text-xl font-bold text-slate-900">
+                            Hobbies & Personal Interests
+                        </h2>
+                    </div>
+                    <p className="text-slate-600 text-sm">
+                        Showcase your passions, sports, or creative activities. These appear right after Languages across all templates.
+                    </p>
+                </div>
+
+                {/* Quick Add Popular Hobbies */}
+                {availableHobbyPills.length > 0 && (
+                    <div className="mb-6">
+                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                            Quick Add Hobbies
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                            {availableHobbyPills.slice(0, 8).map((hobby) => (
+                                <button
+                                    key={hobby}
+                                    type="button"
+                                    onClick={() => addHobby(hobby)}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 border border-slate-200 rounded-full text-xs font-medium text-slate-700 transition-all cursor-pointer"
+                                >
+                                    <MdAdd className="w-3.5 h-3.5" />
+                                    {hobby}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Custom Hobby Input */}
+                <div className="flex gap-3 mb-6">
+                    <input
+                        type="text"
+                        value={hobbyInput}
+                        onChange={(e) => setHobbyInput(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                addHobby();
+                            }
+                        }}
+                        placeholder="Type a custom hobby (e.g. Marathon Running, Open Source, Drone Piloting)"
+                        className="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
+                    />
+                    <button
+                        type="button"
+                        onClick={() => addHobby()}
+                        disabled={!hobbyInput.trim()}
+                        className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-semibold rounded-xl transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
+                    >
+                        <MdAdd className="w-4 h-4" />
+                        Add Hobby
+                    </button>
+                </div>
+
+                {/* Active Hobbies Pills */}
+                {hobbies.length > 0 ? (
+                    <div>
+                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2.5">
+                            Active Hobbies & Interests ({hobbies.length})
+                        </label>
+                        <div className="flex flex-wrap gap-2.5 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                            {hobbies.map((h, idx) => {
+                                const name = typeof h === 'string' ? h : (h.name || h.hobby || '');
+                                return (
+                                    <span
+                                        key={idx}
+                                        className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-white border border-slate-300 text-slate-800 rounded-lg text-xs font-semibold shadow-2xs hover:border-slate-400 transition-all"
+                                    >
+                                        {name}
+                                        <button
+                                            type="button"
+                                            onClick={() => removeHobby(idx)}
+                                            className="text-slate-400 hover:text-red-600 transition-colors cursor-pointer"
+                                            title="Remove hobby"
+                                        >
+                                            <MdClose className="w-3.5 h-3.5" />
+                                        </button>
+                                    </span>
+                                );
+                            })}
+                        </div>
+                    </div>
+                ) : (
+                    <div className="text-center py-6 border border-dashed border-slate-200 rounded-xl bg-slate-50/40">
+                        <p className="text-xs text-slate-500">No hobbies added yet. Add a hobby above or choose from the quick-add suggestions.</p>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

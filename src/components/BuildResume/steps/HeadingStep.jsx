@@ -18,6 +18,9 @@ const HeadingStep = ({ resumeData, updateResumeData }) => {
         city: resumeData.city || '',
         address: resumeData.address || '',
         postalcode: resumeData.postalcode || '',
+        website: resumeData.website || '',
+        linkedin: resumeData.linkedin || '',
+        github: resumeData.github || '',
         photo: resumeData.photo || null,
     });
 
@@ -32,9 +35,12 @@ const HeadingStep = ({ resumeData, updateResumeData }) => {
             city: resumeData.city || '',
             address: resumeData.address || '',
             postalcode: resumeData.postalcode || '',
+            website: resumeData.website || '',
+            linkedin: resumeData.linkedin || '',
+            github: resumeData.github || '',
             photo: resumeData.photo || null,
         });
-    }, [resumeData.firstname, resumeData.lastname, resumeData.email, resumeData.phone, resumeData.occupation, resumeData.city, resumeData.country, resumeData.address, resumeData.postalcode, resumeData.photo]);
+    }, [resumeData.firstname, resumeData.lastname, resumeData.email, resumeData.phone, resumeData.occupation, resumeData.city, resumeData.country, resumeData.address, resumeData.postalcode, resumeData.website, resumeData.linkedin, resumeData.github, resumeData.photo]);
 
     const [errors, setErrors] = useState({});
     const [touched, setTouched] = useState({});
@@ -355,6 +361,65 @@ const HeadingStep = ({ resumeData, updateResumeData }) => {
                                 placeholder={t('HeadingStep.fields.country.placeholder')}
                                 value={formData.country}
                                 onChange={handleInputChange}
+                            />
+                        </div>
+                    </div>
+                </SectionCard>
+
+                {/* Online Profiles & Social Links Section */}
+                <SectionCard
+                    title={t('HeadingStep.sections.socialLinks.title', 'Online Profiles & Links')}
+                    icon={
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                        </svg>
+                    }
+                    iconColor="text-indigo-600"
+                    badge={['website', 'linkedin', 'github'].filter((f) => (formData[f] || '').trim() !== '').length > 0
+                        ? `${['website', 'linkedin', 'github'].filter((f) => (formData[f] || '').trim() !== '').length} Added`
+                        : 'Optional'}>
+                    <div className="space-y-4">
+                        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                            <div className="flex items-start gap-3">
+                                <svg className="w-5 h-5 text-indigo-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path
+                                        fillRule="evenodd"
+                                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                        clipRule="evenodd"
+                                    />
+                                </svg>
+                                <div>
+                                    <h4 className="text-sm font-medium text-indigo-900 mb-1">Showcase Your Online Presence</h4>
+                                    <p className="text-sm text-indigo-700">Add your personal portfolio website, LinkedIn profile, or GitHub repository to impress recruiters.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <InputField
+                                label={t('HeadingStep.fields.website.label', 'Website / Portfolio')}
+                                name="website"
+                                type="url"
+                                placeholder="https://yourportfolio.com"
+                                value={formData.website}
+                                onChange={handleInputChange}
+                                hint="Your personal blog, portfolio or personal page"
+                            />
+                            <InputField
+                                label={t('HeadingStep.fields.linkedin.label', 'LinkedIn Profile')}
+                                name="linkedin"
+                                placeholder="linkedin.com/in/username"
+                                value={formData.linkedin}
+                                onChange={handleInputChange}
+                                hint="Your LinkedIn public profile URL"
+                            />
+                            <InputField
+                                label={t('HeadingStep.fields.github.label', 'GitHub / Portfolio')}
+                                name="github"
+                                placeholder="github.com/username"
+                                value={formData.github}
+                                onChange={handleInputChange}
+                                hint="Your GitHub or developer profile"
                             />
                         </div>
                     </div>
