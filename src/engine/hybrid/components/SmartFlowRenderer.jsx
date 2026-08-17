@@ -8,6 +8,7 @@ import SmartLanguages from './SmartLanguages';
 import SmartProjects from './SmartProjects';
 import SmartAchievements from './SmartAchievements';
 import SmartReferences from './SmartReferences';
+import SmartHobbies from './SmartHobbies';
 
 export default function SmartFlowRenderer({ flowItems = [], theme = {}, isContinuation = false }) {
   if (!flowItems || !flowItems.length) return null;
@@ -93,6 +94,16 @@ export default function SmartFlowRenderer({ flowItems = [], theme = {}, isContin
                 languages={group.items[0].items}
                 theme={theme}
                 title="Languages"
+              />
+            );
+
+          case 'hobbies':
+            return (
+              <SmartHobbies
+                key={gIdx}
+                hobbies={group.items[0].items || group.items[0].item}
+                theme={theme}
+                title="Hobbies & Interests"
               />
             );
 

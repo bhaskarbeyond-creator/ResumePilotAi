@@ -795,6 +795,40 @@
   color: #64748b;
 }
 
+/* ── Smart Hobbies & Interests ────────────────────────────────────────── */
+
+.smart-hobbies-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+}
+
+.smart-hobby-pill {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #334155;
+  background-color: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--badge-radius, 6px);
+  padding: 3px 9px;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1.3;
+}
+
+.smart-sidebar--dark .smart-hobby-pill {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.smart-hobbies-text {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #475569;
+}
+
 /* ── Smart Flow Container ───────────────────────────────────────────── */
 
 .smart-flow-container {

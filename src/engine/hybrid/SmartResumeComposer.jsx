@@ -5,6 +5,7 @@ import SmartHeader from './components/SmartHeader';
 import SmartSkills from './components/SmartSkills';
 import SmartLanguages from './components/SmartLanguages';
 import SmartCertifications from './components/SmartCertifications';
+import SmartHobbies from './components/SmartHobbies';
 import SmartFlowRenderer from './components/SmartFlowRenderer';
 import './smartEngine.css';
 
@@ -94,6 +95,9 @@ export default function SmartResumeComposer({ templateId = 'Cv1', values = {}, l
                               {pageData.sidebar.languages && pageData.sidebar.languages.length > 0 && (
                                 <SmartLanguages languages={pageData.sidebar.languages} theme={theme} />
                               )}
+                              {pageData.sidebar.hobbies && (
+                                <SmartHobbies hobbies={pageData.sidebar.hobbies} theme={theme} />
+                              )}
                               {pageData.sidebar.certifications && pageData.sidebar.certifications.length > 0 && (
                                 <SmartCertifications certifications={pageData.sidebar.certifications} theme={theme} />
                               )}
@@ -135,6 +139,9 @@ export default function SmartResumeComposer({ templateId = 'Cv1', values = {}, l
                               {pageData.sidebar.languages && pageData.sidebar.languages.length > 0 && (
                                 <SmartLanguages languages={pageData.sidebar.languages} theme={theme} />
                               )}
+                              {pageData.sidebar.hobbies && (
+                                <SmartHobbies hobbies={pageData.sidebar.hobbies} theme={theme} />
+                              )}
                               {pageData.sidebar.certifications && pageData.sidebar.certifications.length > 0 && (
                                 <SmartCertifications certifications={pageData.sidebar.certifications} theme={theme} />
                               )}
@@ -162,6 +169,9 @@ export default function SmartResumeComposer({ templateId = 'Cv1', values = {}, l
                             )}
                             {pageData.sidebar.languages && pageData.sidebar.languages.length > 0 && (
                               <SmartLanguages languages={pageData.sidebar.languages} theme={theme} />
+                            )}
+                            {pageData.sidebar.hobbies && (
+                              <SmartHobbies hobbies={pageData.sidebar.hobbies} theme={theme} />
                             )}
                             {pageData.sidebar.certifications && pageData.sidebar.certifications.length > 0 && (
                               <SmartCertifications certifications={pageData.sidebar.certifications} theme={theme} />

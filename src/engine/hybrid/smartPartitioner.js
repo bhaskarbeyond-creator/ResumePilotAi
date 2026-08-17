@@ -4,7 +4,8 @@
  * Universal Greedy-Packing Architecture:
  * - 2-Column Layouts (Modern Split & Executive Banner): Adaptive Split Flow with extreme-left full-width bottom flow.
  * - Single-Column Layouts (Minimal ATS & Compact Euro): Full-page greedy packing with zero wasted space on Page 1.
- * - Section-Level Cohesion: Keeps entire sections together (Education, Certifications, Skills, Projects).
+ * - Hobbies & Interests: Rendered seamlessly in the sidebar (after Languages) or in the bottom flow.
+ * - Section-Level Cohesion: Keeps entire sections together (Education, Certifications, Skills, Hobbies, Projects).
  * - Safe Capacity Limits: Strict 720px–760px ceilings guarantee positive breathing margin above footers with ZERO collisions.
  */
 
@@ -30,6 +31,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
   const projects = values.projects || [];
   const certifications = values.certifications || [];
   const languages = values.languages || [];
+  const hobbies = values.hobbies || values.hobby || values.interests || values.interest || [];
   const achievements = values.achievements || [];
   const references = values.references || [];
   const photo = values.photo || values.selectedImage || values.image || values.avatar || values.picture || null;
@@ -47,9 +49,12 @@ export function partitionResumeContent(values = {}, theme = {}) {
   const skillsHeight = skillCount ? Math.ceil(skillCount / 3) * 26 + 32 : 0;
   const languagesHeight = languages.length ? Math.ceil(languages.length / 2) * 22 + 28 : 0;
 
+  const hobbiesCount = Array.isArray(hobbies) ? hobbies.length : (hobbies ? 1 : 0);
+  const hobbiesHeight = hobbiesCount ? Math.ceil(hobbiesCount / 2) * 24 + 28 : 0;
+
   // Decide if Certifications should go into the Sidebar
-  const certsInSidebar = hasSidebar && skillCount <= 6 && certifications.length <= 3;
-  const sidebarTotalHeight = headerHeight + skillsHeight + languagesHeight + (certsInSidebar ? certifications.length * 34 : 0);
+  const certsInSidebar = hasSidebar && (skillCount + hobbiesCount) <= 7 && certifications.length <= 3;
+  const sidebarTotalHeight = headerHeight + skillsHeight + languagesHeight + hobbiesHeight + (certsInSidebar ? certifications.length * 34 : 0);
 
   // 1. Build Hero Flow Items (Summary + Experience)
   const heroFlowItems = [];
@@ -63,7 +68,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
     heroFlowItems.push({ type: 'experience', item: job, index, isFirst: index === 0, estHeight });
   });
 
-  // 2. Build Sections for Bottom Flow (Education, Skills, Languages, Certifications, Projects, Achievements, References)
+  // 2. Build Sections for Bottom Flow (Education, Skills, Languages, Hobbies, Certifications, Projects, Achievements, References)
   const bottomSections = [];
 
   // Education Section
@@ -92,6 +97,15 @@ export function partitionResumeContent(values = {}, theme = {}) {
       type: 'languages',
       items: [{ type: 'languages', items: languages, estHeight: Math.round(languagesHeight) }],
       estHeight: Math.round(languagesHeight)
+    });
+  }
+
+  // Hobbies Section (in Single-Col mode)
+  if (isSingleCol && hobbiesCount > 0) {
+    bottomSections.push({
+      type: 'hobbies',
+      items: [{ type: 'hobbies', items: hobbies, estHeight: Math.round(hobbiesHeight) }],
+      estHeight: Math.round(hobbiesHeight)
     });
   }
 
@@ -180,6 +194,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
             sidebar: {
               skills,
               languages,
+              hobbies,
               certifications: certsInSidebar ? certifications : [],
             },
             heroFlowItems,
@@ -201,6 +216,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
           sidebar: {
             skills,
             languages,
+            hobbies,
             certifications: certsInSidebar ? certifications : [],
           },
           heroFlowItems,
