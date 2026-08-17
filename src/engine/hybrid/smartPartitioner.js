@@ -12,7 +12,8 @@
 const CHARS_PER_LINE = 68;
 const LINE_HEIGHT_PX = 20;
 
-export const DEFAULT_SECTION_ORDER = ['heading', 'summary', 'employment', 'education', 'skills', 'languages', 'hobbies', 'certifications', 'projects', 'achievements', 'references', 'custom'];
+import { DEFAULT_SECTION_ORDER } from '../../utils/resumeData.js';
+export { DEFAULT_SECTION_ORDER };
 
 function getTextLength(htmlOrStr = '') {
   if (!htmlOrStr) return 0;
