@@ -11,6 +11,7 @@ export function normalizeProfileData(input = {}) {
   result.education = list(profile.education, 50).map(item => normalizeEntry(item, ['degree','school','city','startDate','endDate','description']));
   result.skills = list(profile.skills, 100).map(item => normalizeEntry(item, ['name','level']));
   result.languages = list(profile.languages, 30).map(item => normalizeEntry(item, ['name','level']));
+  result.hobbies = list(profile.hobbies || profile.interests, 50).map(item => typeof item === 'string' ? clean(item, 200) : (item && typeof item === 'object' ? clean(item.name || item.hobby || item.title || '', 200) : '')).filter(Boolean);
   result.certifications = list(profile.certifications, 50).map(item => normalizeEntry(item, ['title','issuer','date']));
   result.projects = list(profile.projects, 50).map(item => normalizeEntry(item, ['title','description','link']));
   result.isLinkedinConnected = profile.isLinkedinConnected === true;

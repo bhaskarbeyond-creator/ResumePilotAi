@@ -27,7 +27,7 @@ function DashboardSettings(props) {
     // State management
     const [selectedSettings, setSelectedSettings] = useState('Profile');
     const [profileSubTab, setProfileSubTab] = useState('basic');
-    const SUB_TAB_ORDER = ['basic', 'experience', 'education', 'skills', 'certifications', 'projects', 'languages', 'summary'];
+    const SUB_TAB_ORDER = ['basic', 'experience', 'education', 'skills', 'certifications', 'projects', 'languages', 'hobbies', 'summary'];
 
     // Reactive URL query parameter listener for ?tab=Account or ?tab=Profile
     useEffect(() => {
@@ -129,6 +129,7 @@ function DashboardSettings(props) {
         education: [],
         skills: [],
         languages: [],
+        hobbies: [],
         certifications: [],
         projects: [],
         revision: 0,
@@ -159,6 +160,18 @@ function DashboardSettings(props) {
             if (item && typeof item === 'object') return { id: item.id || `lang_${idx}`, name: item.name || item.language || '', level: item.level || item.proficiency || 'Native / Bilingual' };
             return { id: `lang_${idx}`, name: String(item || ''), level: 'Native / Bilingual' };
         });
+    };
+
+    const normalizeHobbies = (arr) => {
+        if (!Array.isArray(arr)) {
+            if (typeof arr === 'string' && arr.trim()) return [arr.trim()];
+            return [];
+        }
+        return arr.map(item => {
+            if (typeof item === 'string') return item;
+            if (item && typeof item === 'object') return item.name || item.hobby || item.title || item.interest || '';
+            return String(item || '');
+        }).filter(Boolean);
     };
 
     const normalizeCertifications = (arr) => {
@@ -245,6 +258,7 @@ function DashboardSettings(props) {
                     education: normalizeEducation(userProfile.education),
                     skills: normalizeSkills(userProfile.skills),
                     languages: normalizeLanguages(userProfile.languages),
+                    hobbies: normalizeHobbies(userProfile.hobbies || userProfile.interests),
                     certifications: normalizeCertifications(userProfile.certifications),
                     projects: normalizeProjects(userProfile.projects),
                     revision: Number(userProfile.revision) || 0,
@@ -479,7 +493,7 @@ function DashboardSettings(props) {
         const unsubscribe = fire.auth().onAuthStateChanged(async currentUser => {
             if (!currentUser) { loadedProfileUidRef.current = null; navigate('/'); return; }
             if (loadedProfileUidRef.current && loadedProfileUidRef.current !== currentUser.uid) {
-                setProfile(current => ({ ...current, firstname: '', lastname: '', name: '', email: '', phone: '', address: '', city: '', postalCode: '', country: '', occupation: '', linkedinUrl: '', githubUrl: '', websiteUrl: '', summary: '', selectedImage: null, workExperiences: [], education: [], skills: [], languages: [], certifications: [], projects: [], revision: 0 }));
+                setProfile(current => ({ ...current, firstname: '', lastname: '', name: '', email: '', phone: '', address: '', city: '', postalCode: '', country: '', occupation: '', linkedinUrl: '', githubUrl: '', websiteUrl: '', summary: '', selectedImage: null, workExperiences: [], education: [], skills: [], languages: [], hobbies: [], certifications: [], projects: [], revision: 0 }));
                 setUserTransactions([]); setLoginHistory([]); setPreferences({ language: 'en', emailNotifications: true, securityNotifications: true, productUpdates: false, profileDiscoverable: false, revision: 0 }); setProfileConflict(null); setProfileSaveState('loading');
             }
             loadedProfileUidRef.current = currentUser.uid;
@@ -1354,6 +1368,22 @@ function DashboardSettings(props) {
     };
     const POPULAR_LANGUAGES = ['English','Hindi','Telugu','Tamil','Kannada','Malayalam','Marathi','Bengali','Gujarati','Punjabi','Spanish','French','German','Mandarin','Arabic','Portuguese','Japanese','Russian','Korean'];
 
+    // Hobbies Handlers
+    const [hobbyInput, setHobbyInput] = useState('');
+    const POPULAR_HOBBIES = ['Photography', 'Chess', 'Marathon Running', 'Open Source Contributor', 'Reading', 'Hiking', 'Writing', 'Cooking', 'Traveling', 'Volunteering', 'Music Production'];
+    const addHobby = (hobbyName) => {
+        const trimmed = (hobbyName || hobbyInput).trim();
+        if (!trimmed) return;
+        const exists = (profile.hobbies || []).some(h => (typeof h === 'string' ? h : h.name || h.hobby || '').toLowerCase() === trimmed.toLowerCase());
+        if (!exists) {
+            setProfile(prev => ({ ...prev, hobbies: [...(prev.hobbies || []), trimmed] }));
+        }
+        setHobbyInput('');
+    };
+    const removeHobby = (index) => {
+        setProfile(prev => ({ ...prev, hobbies: (prev.hobbies || []).filter((_, i) => i !== index) }));
+    };
+
     // Drag & Drop Avatar
     const handleDragOver = (e) => { e.preventDefault(); setIsDragging(true); };
     const handleDragLeave = () => setIsDragging(false);
@@ -1553,6 +1583,9 @@ function DashboardSettings(props) {
                             </button>
                             <button onClick={() => setProfileSubTab('languages')} className={`flex-shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'languages' ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
                                 🌐 Languages ({profile.languages.length})
+                            </button>
+                            <button onClick={() => setProfileSubTab('hobbies')} className={`flex-shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'hobbies' ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                                ⚽ Hobbies ({(profile.hobbies || []).length})
                             </button>
                             <button onClick={() => setProfileSubTab('summary')} className={`flex-shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'summary' ? 'bg-indigo-600 text-white font-bold' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200'}`}>
                                 ✨ Executive Bio (AI)
@@ -2176,6 +2209,96 @@ function DashboardSettings(props) {
                                         <button type="button" onClick={addLanguage} className="w-full py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-2xs">
                                             <FaPlus className="w-3.5 h-3.5" /> Add Language
                                         </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Sub-Tab: Hobbies & Personal Interests */}
+                        {profileSubTab === 'hobbies' && (
+                            <div className="space-y-6">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div>
+                                        <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Hobbies &amp; Personal Interests</h3>
+                                        <p className="text-xs text-slate-500">Showcase your passions, sports, or creative activities to add personality to your resume.</p>
+                                    </div>
+                                </div>
+
+                                {/* Quick-add pills */}
+                                <div className="space-y-2">
+                                    <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider">Quick Add Popular Hobbies</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {POPULAR_HOBBIES.filter(h => !(profile.hobbies || []).some(ex => (typeof ex === 'string' ? ex : ex.name || ex.hobby || '').toLowerCase() === h.toLowerCase())).map((hobby) => (
+                                            <button
+                                                key={hobby}
+                                                type="button"
+                                                onClick={() => addHobby(hobby)}
+                                                className="px-3 py-1.5 text-[11px] font-semibold bg-slate-100 hover:bg-indigo-100 hover:text-indigo-700 text-slate-700 rounded-lg border border-slate-200 hover:border-indigo-300 transition-all cursor-pointer"
+                                            >
+                                                + {hobby}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Custom Hobby Input */}
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={hobbyInput}
+                                        onChange={(e) => setHobbyInput(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                addHobby();
+                                            }
+                                        }}
+                                        placeholder="Type a custom hobby (e.g. Marathon Running, Open Source, Astronomy)..."
+                                        className="flex-1 text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => addHobby()}
+                                        disabled={!hobbyInput.trim()}
+                                        className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
+                                    >
+                                        <FaPlus className="w-3 h-3" /> Add Hobby
+                                    </button>
+                                </div>
+
+                                {/* Active Hobbies List */}
+                                {(!profile.hobbies || profile.hobbies.length === 0) ? (
+                                    <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-300 rounded-2xl">
+                                        <p className="text-2xl mb-2">⚽</p>
+                                        <p className="text-xs font-semibold text-slate-700 mb-1">No hobbies saved in Master Profile</p>
+                                        <p className="text-[11px] text-slate-500">Click a quick-add suggestion above or type a custom hobby.</p>
+                                    </div>
+                                ) : (
+                                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                                        <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-2.5">
+                                            Active Hobbies ({profile.hobbies.length})
+                                        </label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {profile.hobbies.map((hobby, idx) => {
+                                                const name = typeof hobby === 'string' ? hobby : (hobby.name || hobby.hobby || '');
+                                                return (
+                                                    <span
+                                                        key={idx}
+                                                        className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-white border border-slate-300 text-slate-800 rounded-lg text-xs font-semibold shadow-2xs hover:border-slate-400 transition-all"
+                                                    >
+                                                        <span>{name}</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeHobby(idx)}
+                                                            className="text-slate-400 hover:text-red-600 transition-colors cursor-pointer"
+                                                            title="Remove hobby"
+                                                        >
+                                                            ✕
+                                                        </button>
+                                                    </span>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
                                 )}
                             </div>
