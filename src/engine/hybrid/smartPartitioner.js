@@ -42,7 +42,7 @@ export function normalizeSectionKey(key) {
 }
 
 export function partitionResumeContent(values = {}, theme = {}) {
-  const summary = values.summary || '';
+  const summary = values.summary || values.professionalSummary || values.objective || values.aboutMe || values.profile || values.summaryText || '';
   const employments = values.employments || values.workExperiences || values.experience || [];
   const educations = values.educations || values.education || [];
   const skills = values.skills || [];
@@ -79,6 +79,16 @@ export function partitionResumeContent(values = {}, theme = {}) {
   // Normalize Section Order & Hidden Sections
   const rawSectionOrder = Array.isArray(values.sectionOrder) && values.sectionOrder.length ? values.sectionOrder : DEFAULT_SECTION_ORDER;
   const normalizedSectionOrder = rawSectionOrder.map(normalizeSectionKey);
+
+  // Guarantee Professional Summary always precedes Employment History in main content flow
+  const sumIdx = normalizedSectionOrder.indexOf('summary');
+  const empIdx = normalizedSectionOrder.indexOf('employment');
+  if (sumIdx !== -1 && empIdx !== -1 && sumIdx > empIdx) {
+    normalizedSectionOrder.splice(sumIdx, 1);
+    const newEmpIdx = normalizedSectionOrder.indexOf('employment');
+    normalizedSectionOrder.splice(newEmpIdx, 0, 'summary');
+  }
+
   const rawHiddenSections = Array.isArray(values.hiddenSections) ? values.hiddenSections : [];
   const normalizedHiddenSections = new Set(rawHiddenSections.map(normalizeSectionKey));
 

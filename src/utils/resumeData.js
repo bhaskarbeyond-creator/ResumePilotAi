@@ -50,7 +50,15 @@ export function normalizeResumeData(input = {}, { template = 'Cv1' } = {}) {
         const name = text(item.name || item.language);
         return { ...item, id: item.id || `language-${index}`, name, language: name, level: text(item.level || item.proficiency), date: Number(item.date) || index + 1 };
     });
-    const sectionOrder = [...new Set((Array.isArray(raw.sectionOrder) ? raw.sectionOrder : DEFAULT_SECTION_ORDER).map(text).filter(Boolean))];
+    const rawOrder = Array.isArray(raw.sectionOrder) && raw.sectionOrder.length ? raw.sectionOrder : DEFAULT_SECTION_ORDER;
+    const sectionOrder = [...new Set(rawOrder.map(text).filter(Boolean))];
+    const sumIdx = sectionOrder.indexOf('summary');
+    const empIdx = sectionOrder.indexOf('employment') !== -1 ? sectionOrder.indexOf('employment') : sectionOrder.indexOf('work-history');
+    if (sumIdx !== -1 && empIdx !== -1 && sumIdx > empIdx) {
+        sectionOrder.splice(sumIdx, 1);
+        const newEmpIdx = sectionOrder.indexOf('employment') !== -1 ? sectionOrder.indexOf('employment') : sectionOrder.indexOf('work-history');
+        sectionOrder.splice(newEmpIdx, 0, 'summary');
+    }
     const hiddenSections = [...new Set((Array.isArray(raw.hiddenSections) ? raw.hiddenSections : []).map(text).filter(Boolean))];
 
     return {
