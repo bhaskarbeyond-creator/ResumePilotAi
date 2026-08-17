@@ -1,54 +1,21 @@
 import React, { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { FaCrop } from 'react-icons/fa';
+import ImageCropModal from '../../../Dashboard/DashboardSettings/ImageCropModal';
 
 const PhotoUpload = ({ label, value, onChange, showPhoto = true, onToggleShowPhoto, required = false }) => {
     const { t } = useTranslation('common');
     const [isDragging, setIsDragging] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [cropModalSrc, setCropModalSrc] = useState(null);
     const fileInputRef = useRef(null);
 
-    const resizeImage = (base64Str, maxWidth = 200, maxHeight = 200) => {
-        return new Promise((resolve, reject) => {
-            let img = new Image();
-            img.src = base64Str;
-            img.onload = () => {
-                let canvas = document.createElement('canvas');
-                const MAX_WIDTH = maxWidth;
-                const MAX_HEIGHT = maxHeight;
-                let width = img.width;
-                let height = img.height;
-                if (!width || !height || width * height > 25_000_000) {
-                    reject(new Error('Image dimensions are invalid or too large'));
-                    return;
-                }
-
-                if (width > height) {
-                    if (width > MAX_WIDTH) {
-                        height *= MAX_WIDTH / width;
-                        width = MAX_WIDTH;
-                    }
-                } else {
-                    if (height > MAX_HEIGHT) {
-                        width *= MAX_HEIGHT / height;
-                        height = MAX_HEIGHT;
-                    }
-                }
-                canvas.width = width;
-                canvas.height = height;
-                let ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-                resolve(canvas.toDataURL('image/jpeg', 0.9));
-            };
-            img.onerror = () => reject(new Error('Invalid image data'));
-        });
-    };
-
-    const handleFileChange = async (file) => {
+    const handleFileChange = (file) => {
         if (!file) return;
 
         if (file.size > 5 * 1024 * 1024) {
-            setError(t('PhotoUpload.errors.sizeLimit'));
+            setError(t('PhotoUpload.errors.sizeLimit', 'File size must be 5 MB or less.'));
             return;
         }
         if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
@@ -56,28 +23,26 @@ const PhotoUpload = ({ label, value, onChange, showPhoto = true, onToggleShowPho
             return;
         }
 
-        setIsLoading(true);
         setError(null);
-
         const reader = new FileReader();
 
-        reader.onload = async (event) => {
-            try {
-                const img = await resizeImage(event.target.result);
-                onChange(img);
-                setIsLoading(false);
-            } catch (err) {
-                setIsLoading(false);
-                setError(t('PhotoUpload.errors.processingError'));
+        reader.onload = (event) => {
+            setCropModalSrc(event.target.result);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
             }
         };
 
         reader.onerror = () => {
-            setIsLoading(false);
-            setError(t('PhotoUpload.errors.readingError'));
+            setError(t('PhotoUpload.errors.readingError', 'Failed to read image.'));
         };
 
         reader.readAsDataURL(file);
+    };
+
+    const handleCroppedImage = (croppedDataUrl) => {
+        setCropModalSrc(null);
+        onChange(croppedDataUrl);
     };
 
     const handleInputChange = (e) => {
@@ -145,6 +110,13 @@ const PhotoUpload = ({ label, value, onChange, showPhoto = true, onToggleShowPho
 
                     {/* Action buttons overlay */}
                     <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg flex items-center justify-center space-x-2">
+                        <button
+                            type="button"
+                            onClick={() => setCropModalSrc(value)}
+                            className="p-2 bg-white bg-opacity-90 rounded-full hover:bg-opacity-100 transition-all duration-200"
+                            title="Crop & Adjust Photo">
+                            <FaCrop className="w-3.5 h-3.5 text-indigo-600" />
+                        </button>
                         <button
                             type="button"
                             onClick={triggerFileInput}
@@ -240,6 +212,16 @@ const PhotoUpload = ({ label, value, onChange, showPhoto = true, onToggleShowPho
 
             {/* Help text */}
             <p className="text-xs text-slate-500">{t('PhotoUpload.hints.recommended')}</p>
+
+            {/* Image Crop Modal Popup */}
+            {cropModalSrc && (
+                <ImageCropModal
+                    imageSrc={cropModalSrc}
+                    onCrop={handleCroppedImage}
+                    onCancel={() => setCropModalSrc(null)}
+                    outputSize={400}
+                />
+            )}
         </div>
     );
 };
