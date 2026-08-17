@@ -43,6 +43,7 @@ import config from "../../../conf/configuration";
 import { trackDownload, trackEvent, trackEngagement } from "../../../utils/ga4";
 import { toValidatedPdfBlob, pdfFileName } from "../../../utils/pdfDownload";
 import { getTemplateComponent } from "../../../utils/templateRegistry";
+import TemplateRenderer from "../../TemplateRenderer";
 import PreviewModal from "../../BuildResume/PreviewModal";
 
 const LoaderView = () => {
@@ -663,15 +664,14 @@ class DashboardHomepage extends Component {
   renderTemplatePreview(document) {
     const templateName =
       document?.template || document?.item?.template || "Cv1";
-    const TemplateComponent = getTemplateComponent(templateName);
     const cvData = this.generateSampleCvData(document);
 
     try {
       return (
-        <TemplateComponent
+        <TemplateRenderer
+          templateId={templateName}
           values={cvData}
           language="en"
-          t={(key, fallback) => fallback || key}
         />
       );
     } catch (error) {
@@ -703,120 +703,11 @@ class DashboardHomepage extends Component {
     );
   }
 
-  // Generate CV data using actual document data with fallbacks
+  // Generate CV data using actual document data with truthful normalizer
   generateSampleCvData(document) {
-    const item = document?.item || document || {};
-    const employments = document?.employments || item?.employments || [];
-    const educations = document?.educations || item?.educations || [];
-    const skills = document?.skills || item?.skills || [];
-    const languages = document?.languages || item?.languages || [];
-
-    return {
-      // Basic personal information
-      firstname: item.firstname || document?.firstname || "John",
-      lastname: item.lastname || document?.lastname || "Doe",
-      occupation: item.occupation || document?.occupation || "Software Developer",
-      email: item.email || document?.email || "john.doe@example.com",
-      phone: item.phone || document?.phone || "+1 (555) 123-4567",
-      address: item.address || document?.address || "123 Main St",
-      city: item.city || document?.city || "New York",
-      country: item.country || document?.country || "USA",
-      postalcode: item.postalcode || document?.postalcode || "10001",
-      photo: item.photo || document?.photo || null,
-      summary:
-        item.summary ||
-        document?.summary ||
-        "Experienced software developer with expertise in web technologies.",
-
-      skills:
-        skills.length > 0
-          ? skills
-              .filter(
-                (skill) =>
-                  skill && (skill.skillName || skill.name || skill.skill)
-              )
-              .map((skill, index) => ({
-                name:
-                  skill.skillName ||
-                  skill.name ||
-                  skill.skill ||
-                  "Unknown Skill",
-                rating: skill.rating || 50,
-                date: skill.date || index + 1,
-              }))
-          : [
-              { name: "JavaScript", rating: 90, date: 1 },
-              { name: "React", rating: 85, date: 2 },
-              { name: "CSS/SASS", rating: 80, date: 3 },
-            ],
-
-      // Transform employments to ensure correct field names
-      employments:
-        document.employments && document.employments.length > 0
-          ? document.employments
-              .filter((emp) => emp && (emp.jobTitle || emp.job_title)) // Filter out null/undefined
-              .map((emp, index) => ({
-                jobTitle: emp.jobTitle || emp.job_title || "Position",
-                employer: emp.employer || emp.company || "Company",
-                begin: emp.begin || emp.start_date || "Start Date",
-                end: emp.end || emp.end_date || "End Date",
-                description: emp.description || "Job description",
-                date: emp.date || index + 1,
-              }))
-          : [
-              {
-                jobTitle: "Senior Developer",
-                employer: "Tech Corp",
-                begin: "Jan 2020",
-                end: "Present",
-                description: "Led development of web applications",
-                date: 1,
-              },
-            ],
-
-      // Transform educations to ensure correct field names
-      educations:
-        document.educations && document.educations.length > 0
-          ? document.educations
-              .filter((edu) => edu && (edu.degree || edu.qualification)) // Filter out null/undefined
-              .map((edu, index) => ({
-                degree: edu.degree || edu.qualification || "Degree",
-                school: edu.school || edu.institution || "Institution",
-                started: edu.started || edu.start_year || "Start Year",
-                finished: edu.finished || edu.end_year || "End Year",
-                description: edu.description || "Education description",
-                date: edu.date || index + 1,
-              }))
-          : [
-              {
-                degree: "Computer Science",
-                school: "University",
-                started: "2016",
-                finished: "2020",
-                description: "Bachelor's degree in Computer Science",
-                date: 1,
-              },
-            ],
-
-      languages:
-        languages.length > 0
-          ? languages
-              .filter((lang) => lang && (lang.name || lang.language))
-              .map((lang, index) => ({
-                name: lang.name || lang.language || "Language",
-                level: lang.level || lang.proficiency || "Intermediate",
-                date: lang.date || index + 1,
-              }))
-          : [
-              { name: "English", level: "Professional Working (Advanced)", date: 1 },
-              { name: "Telugu", level: "Native / Bilingual", date: 2 },
-              { name: "Hindi", level: "Limited Working (Intermediate)", date: 3 },
-            ],
-
-      colors: this.getTemplateColors(
-        document?.template || document?.item?.template || "Cv1"
-      ),
-    };
+    if (!document) return normalizeResumeData({});
+    const rawData = document.item || document.data || document;
+    return normalizeResumeData(rawData, { template: document.template || rawData.template || 'Cv1' });
   }
 
   render() {

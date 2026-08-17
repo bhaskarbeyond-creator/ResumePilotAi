@@ -159,16 +159,14 @@ const PreviewModal = ({ showPreview, setShowPreview, resumeData, onDownload, isD
 
                     <div className="relative h-[calc(95vh-100px)] sm:h-[calc(90vh-140px)] overflow-auto p-2 sm:p-4 custom-scrollbar">
                         <div className="flex justify-center items-start min-h-full">
-                            {/* Enhanced CV Container with better shadow and styling - Mobile responsive */}
+                            {/* Enhanced CV Container with multi-page support */}
                             <div
-                                className="bg-white rounded-lg sm:rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-2xl"
+                                className="bg-transparent transition-all duration-300 pb-16"
                                 style={{
                                     // Mobile: smaller scale for better fit
                                     transform: window.innerWidth < 640 ? 'scale(0.45)' : window.innerWidth < 1024 ? 'scale(0.55)' : 'scale(0.65)',
                                     transformOrigin: 'top center',
-                                    minHeight: '1122px',
                                     width: '794px',
-                                    boxShadow: '0 20px 40px -12px rgba(0, 0, 0, 0.15), 0 8px 32px -8px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05)',
                                 }}>
                                 <TemplateRenderer
                                     templateId={currentTemplate}
