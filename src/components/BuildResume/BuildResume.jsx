@@ -24,7 +24,7 @@ import download from 'downloadjs';
 import config from '../../conf/configuration';
 import { getJsonById, IncrementDownloads, addOneToNumberOfDocumentsDownloaded, getProfileOfUser, getSystemSettings } from '../../firestore/dbOperations';
 import { createResumeDraft, loadResumeDraft, saveResumeDraft, publishResume, unpublishResume, getResumePublication, writeResumeRecovery, readResumeRecovery, clearResumeRecovery } from '../../services/resumePersistence';
-import { EMPTY_RESUME, normalizeResumeData, buildCanonicalResumeDocument } from '../../utils/resumeData';
+import { EMPTY_RESUME, DEFAULT_SECTION_ORDER, normalizeResumeData, buildCanonicalResumeDocument } from '../../utils/resumeData';
 import { trackDownload, trackEvent, trackEngagement } from '../../utils/ga4';
 import { toValidatedPdfBlob, pdfFileName } from '../../utils/pdfDownload';
 
@@ -333,7 +333,7 @@ const BuildResume = () => {
     };
 
     const resetSectionOrder = () => {
-        updateResumeData({ sectionOrder: DEFAULT_SECTION_ORDER, hiddenSections: [] });
+        updateResumeData({ sectionOrder: [...DEFAULT_SECTION_ORDER], hiddenSections: [] });
     };
 
     const resolveConflictWithRemote = () => {
