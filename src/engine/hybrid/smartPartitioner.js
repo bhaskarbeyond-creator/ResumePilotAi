@@ -1,13 +1,11 @@
 /**
  * Smart Hybrid Resume Engine — Content Partitioner & Page Packager
  * 
- * Section-Cohesive Adaptive Split Flow:
- * - Applied across ALL 2-column templates (both Modern Split and Executive Banner).
- * - Upper Split Hero: Left Sidebar (Header/Skills/Languages) + Right Main Flow (Summary/Experience).
- * - Lower Full-Width Flow: Education, Certifications, Projects, etc. spanning 100% full width.
- * - Section-Level Integrity: Keeps entire sections (like Certifications) together rather than
- *   awkwardly splitting 2 items on Page 1 and 1 item on Page 2.
- * - Strict safe content ceiling guarantees ZERO footer collisions under all scenarios.
+ * Universal Greedy-Packing Architecture:
+ * - 2-Column Layouts (Modern Split & Executive Banner): Adaptive Split Flow with extreme-left full-width bottom flow.
+ * - Single-Column Layouts (Minimal ATS & Compact Euro): Full-page greedy packing with zero wasted space on Page 1.
+ * - Section-Level Cohesion: Keeps entire sections together (Education, Certifications, Skills, Projects).
+ * - Safe Capacity Limits: Strict 720px–760px ceilings guarantee positive breathing margin above footers with ZERO collisions.
  */
 
 const CHARS_PER_LINE = 68;
@@ -65,7 +63,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
     heroFlowItems.push({ type: 'experience', item: job, index, isFirst: index === 0, estHeight });
   });
 
-  // 2. Build Sections for Bottom Flow (Education, Certifications, Projects, Achievements, References)
+  // 2. Build Sections for Bottom Flow (Education, Skills, Languages, Certifications, Projects, Achievements, References)
   const bottomSections = [];
 
   // Education Section
@@ -77,6 +75,24 @@ export function partitionResumeContent(values = {}, theme = {}) {
     });
     const sectionHeight = eduItems.reduce((sum, it) => sum + it.estHeight, 0);
     bottomSections.push({ type: 'education', items: eduItems, estHeight: sectionHeight });
+  }
+
+  // Skills Section (in Single-Col mode)
+  if (isSingleCol && skills.length) {
+    bottomSections.push({
+      type: 'skills',
+      items: [{ type: 'skills', items: skills, estHeight: Math.round(skillsHeight) }],
+      estHeight: Math.round(skillsHeight)
+    });
+  }
+
+  // Languages Section (in Single-Col mode)
+  if (isSingleCol && languages.length) {
+    bottomSections.push({
+      type: 'languages',
+      items: [{ type: 'languages', items: languages, estHeight: Math.round(languagesHeight) }],
+      estHeight: Math.round(languagesHeight)
+    });
   }
 
   // Certifications Section (2-column responsive grid)
@@ -130,17 +146,15 @@ export function partitionResumeContent(values = {}, theme = {}) {
     bottomSections.push({ type: 'reference', items: refItems, estHeight: sectionHeight });
   }
 
-  // Strict safe capacity limits (guarantees positive breathing margin above footer)
-  // ModernSplit safe content ceiling is 720px; ExecutiveBanner (with 110px top banner) is 610px.
-  const TOTAL_PAGE_CAPACITY = isBanner ? 610 : 720;
-  const P2_CAPACITY = 740;
+  // Safe page capacities
+  const TOTAL_PAGE_CAPACITY = isBanner ? 610 : 740;
 
   if (hasSidebar) {
+    // 2-Column Split / Banner Layout with Adaptive Flow
     const heroHeight = heroFlowItems.reduce((sum, it) => sum + it.estHeight, 0);
     const upperSplitHeight = Math.max(sidebarTotalHeight, heroHeight);
     const remainingP1Capacity = Math.max(0, TOTAL_PAGE_CAPACITY - upperSplitHeight);
 
-    // Pack entire sections into Page 1 bottom flow
     const p1BottomItems = [];
     const p2FlowItems = [];
     let currentBottomHeight = 0;
@@ -155,7 +169,6 @@ export function partitionResumeContent(values = {}, theme = {}) {
     });
 
     if (p2FlowItems.length === 0) {
-      // 1-Page Document!
       return {
         isMultiPage: false,
         totalPages: 1,
@@ -177,7 +190,6 @@ export function partitionResumeContent(values = {}, theme = {}) {
       };
     }
 
-    // 2-Page Document: Page 1 has hero + p1BottomItems, Page 2 has continuation with p2FlowItems
     return {
       isMultiPage: true,
       totalPages: 2,
@@ -206,14 +218,25 @@ export function partitionResumeContent(values = {}, theme = {}) {
     };
   }
 
-  // Fallback for single-column layouts (Minimal ATS & Compact Euro)
-  const allFlow = [];
-  bottomSections.forEach(s => allFlow.push(...s.items));
-  const combined = [...heroFlowItems, ...allFlow];
+  // Single-Column Layouts (Minimal ATS & Compact Euro) Greedy Packing
+  const singleColHeaderHeight = 90;
+  const heroHeight = heroFlowItems.reduce((sum, it) => sum + it.estHeight, 0);
+  const remainingP1Capacity = Math.max(0, 760 - singleColHeaderHeight - heroHeight);
 
-  const totalFlowHeight = combined.reduce((sum, it) => sum + it.estHeight, 0);
+  const p1BottomItems = [];
+  const p2FlowItems = [];
+  let currentBottomHeight = 0;
 
-  if (totalFlowHeight <= 720) {
+  bottomSections.forEach(section => {
+    if (currentBottomHeight + section.estHeight <= remainingP1Capacity) {
+      p1BottomItems.push(...section.items);
+      currentBottomHeight += section.estHeight;
+    } else {
+      p2FlowItems.push(...section.items);
+    }
+  });
+
+  if (p2FlowItems.length === 0) {
     return {
       isMultiPage: false,
       totalPages: 1,
@@ -222,12 +245,8 @@ export function partitionResumeContent(values = {}, theme = {}) {
           pageNumber: 1,
           isFirstPage: true,
           isAdaptiveSplit: false,
-          sidebar: isSingleCol ? null : {
-            skills,
-            languages,
-            certifications: certsInSidebar ? certifications : [],
-          },
-          flowItems: combined,
+          sidebar: null,
+          flowItems: [...heroFlowItems, ...p1BottomItems],
         }
       ]
     };
@@ -241,19 +260,15 @@ export function partitionResumeContent(values = {}, theme = {}) {
         pageNumber: 1,
         isFirstPage: true,
         isAdaptiveSplit: false,
-        sidebar: isSingleCol ? null : {
-          skills,
-          languages,
-          certifications: certsInSidebar ? certifications : [],
-        },
-        flowItems: heroFlowItems,
+        sidebar: null,
+        flowItems: [...heroFlowItems, ...p1BottomItems],
       },
       {
         pageNumber: 2,
         isFirstPage: false,
         isAdaptiveSplit: false,
         sidebar: null,
-        flowItems: allFlow,
+        flowItems: p2FlowItems,
       }
     ]
   };
