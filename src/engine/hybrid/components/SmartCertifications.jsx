@@ -10,7 +10,7 @@ export default function SmartCertifications({ certifications = [], theme = {}, t
         <span className="smart-section-title__line" />
       </h3>
 
-      <div className="smart-cert-list">
+      <div className="smart-cert-grid">
         {certifications.map((cert, idx) => {
           const meta = [cert.issuer, cert.date].filter(Boolean).join(' · ');
           return (

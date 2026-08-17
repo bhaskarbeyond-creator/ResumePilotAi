@@ -69,13 +69,6 @@ export default function SmartResumeComposer({ templateId = 'Cv1', values = {}, l
                   <div className="smart-layout smart-layout--minimal-ats">
                     {isFirstPage && <SmartHeader values={values} theme={theme} variant="minimal" />}
                     <SmartFlowRenderer flowItems={pageData.flowItems} theme={theme} isContinuation={!isFirstPage} />
-                    {isFirstPage && pageData.sidebar && (
-                      <>
-                        <SmartSkills skills={pageData.sidebar.skills} theme={theme} />
-                        <SmartCertifications certifications={pageData.sidebar.certifications} theme={theme} />
-                        <SmartLanguages languages={pageData.sidebar.languages} theme={theme} />
-                      </>
-                    )}
                   </div>
                 )}
 
@@ -90,9 +83,15 @@ export default function SmartResumeComposer({ templateId = 'Cv1', values = {}, l
                     <div className="smart-body-columns">
                       {isFirstPage && pageData.sidebar && (
                         <aside className="smart-sidebar">
-                          <SmartSkills skills={pageData.sidebar.skills} theme={theme} />
-                          <SmartLanguages languages={pageData.sidebar.languages} theme={theme} />
-                          <SmartCertifications certifications={pageData.sidebar.certifications} theme={theme} />
+                          {pageData.sidebar.skills && pageData.sidebar.skills.length > 0 && (
+                            <SmartSkills skills={pageData.sidebar.skills} theme={theme} />
+                          )}
+                          {pageData.sidebar.languages && pageData.sidebar.languages.length > 0 && (
+                            <SmartLanguages languages={pageData.sidebar.languages} theme={theme} />
+                          )}
+                          {pageData.sidebar.certifications && pageData.sidebar.certifications.length > 0 && (
+                            <SmartCertifications certifications={pageData.sidebar.certifications} theme={theme} />
+                          )}
                         </aside>
                       )}
                       <main className={`smart-main-content ${!isFirstPage ? 'smart-main-content--full' : ''}`}>
@@ -108,9 +107,15 @@ export default function SmartResumeComposer({ templateId = 'Cv1', values = {}, l
                     {isFirstPage && pageData.sidebar && (
                       <aside className="smart-sidebar">
                         <SmartHeader values={values} theme={theme} variant="sidebar" />
-                        <SmartSkills skills={pageData.sidebar.skills} theme={theme} />
-                        <SmartLanguages languages={pageData.sidebar.languages} theme={theme} />
-                        <SmartCertifications certifications={pageData.sidebar.certifications} theme={theme} />
+                        {pageData.sidebar.skills && pageData.sidebar.skills.length > 0 && (
+                          <SmartSkills skills={pageData.sidebar.skills} theme={theme} />
+                        )}
+                        {pageData.sidebar.languages && pageData.sidebar.languages.length > 0 && (
+                          <SmartLanguages languages={pageData.sidebar.languages} theme={theme} />
+                        )}
+                        {pageData.sidebar.certifications && pageData.sidebar.certifications.length > 0 && (
+                          <SmartCertifications certifications={pageData.sidebar.certifications} theme={theme} />
+                        )}
                       </aside>
                     )}
                     <main className={`smart-main-content ${!isFirstPage ? 'smart-main-content--full' : ''}`}>

@@ -541,9 +541,69 @@
   text-decoration: none;
 }
 
+/* ── Smart Key Achievements ─────────────────────────────────────────── */
+
+.smart-achievements-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.smart-achievement-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 8px 12px;
+  break-inside: avoid;
+}
+
+.smart-achievement-icon {
+  width: 15px;
+  height: 15px;
+  color: var(--secondary, #3b82f6);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.smart-achievement-icon svg {
+  width: 15px;
+  height: 15px;
+  display: block;
+}
+
+.smart-achievement-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.smart-achievement-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.smart-achievement-desc {
+  font-size: 12px;
+  color: #475569;
+}
+
 /* ── Smart Certifications & Languages ───────────────────────────────── */
 
-.smart-cert-list {
+.smart-cert-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px 16px;
+  width: 100%;
+}
+
+.smart-sidebar .smart-cert-grid {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -551,8 +611,9 @@
 
 .smart-cert-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
+  min-width: 0;
 }
 
 .smart-cert-badge {
@@ -560,13 +621,28 @@
   height: 14px;
   color: var(--secondary, #3b82f6);
   flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.smart-cert-badge svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+.smart-cert-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
 }
 
 .smart-cert-title {
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   color: #1e293b;
   margin: 0;
+  line-height: 1.3;
 }
 
 .smart-cert-meta {

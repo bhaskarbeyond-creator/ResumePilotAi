@@ -2,8 +2,10 @@ import React from 'react';
 import SmartSummary from './SmartSummary';
 import SmartExperience from './SmartExperience';
 import SmartEducation from './SmartEducation';
-import SmartProjects from './SmartProjects';
+import SmartSkills from './SmartSkills';
 import SmartCertifications from './SmartCertifications';
+import SmartLanguages from './SmartLanguages';
+import SmartProjects from './SmartProjects';
 import SmartAchievements from './SmartAchievements';
 import SmartReferences from './SmartReferences';
 
@@ -60,6 +62,39 @@ export default function SmartFlowRenderer({ flowItems = [], theme = {}, isContin
               />
             );
           }
+
+          case 'skills':
+            return (
+              <SmartSkills
+                key={gIdx}
+                skills={group.items[0].items}
+                theme={theme}
+                title="Key Skills"
+              />
+            );
+
+          case 'certification': {
+            const certifications = group.items.map((i) => i.item);
+            const isFirstInDoc = group.items[0].isFirst;
+            return (
+              <SmartCertifications
+                key={gIdx}
+                certifications={certifications}
+                theme={theme}
+                title={isFirstInDoc ? 'Certifications' : 'Certifications (Continued)'}
+              />
+            );
+          }
+
+          case 'languages':
+            return (
+              <SmartLanguages
+                key={gIdx}
+                languages={group.items[0].items}
+                theme={theme}
+                title="Languages"
+              />
+            );
 
           case 'project': {
             const projects = group.items.map((i) => i.item);
