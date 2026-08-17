@@ -1,14 +1,25 @@
 /**
  * Smart Hybrid Resume Engine — Content Partitioner & Page Packager
  * 
- * Accurately measures all section items including section titles and gaps,
- * calculates strict page capacity per archetype, and guarantees ZERO content
- * loss or clipping in both preview and PDF export.
+ * Accurately calibrated with typographic metrics:
+ * - 72 characters per line in 480px main column
+ * - 19px per text line at 12.5px font-size with 1.55 line-height
+ * - 2-column grid packing for certifications
+ * - Seamless 1-page packing for standard resumes, clean 2-page flow for senior profiles
  */
+
+const CHARS_PER_LINE = 72;
+const LINE_HEIGHT_PX = 19;
 
 function getTextLength(htmlOrStr = '') {
   if (!htmlOrStr) return 0;
   return String(htmlOrStr).replace(/<[^>]*>/g, '').trim().length;
+}
+
+function calcTextHeight(textLen = 0) {
+  if (!textLen) return 0;
+  const lines = Math.max(1, Math.ceil(textLen / CHARS_PER_LINE));
+  return lines * LINE_HEIGHT_PX;
 }
 
 export function partitionResumeContent(values = {}, theme = {}) {
@@ -26,67 +37,69 @@ export function partitionResumeContent(values = {}, theme = {}) {
   const isSingleCol = theme.archetype === 'minimal-ats' || theme.archetype === 'compact-euro';
   const isBanner = theme.archetype === 'executive-banner';
 
-  // Strict page capacity limits calibrated per archetype (A4 is 1123px at 96 DPI)
-  // Guarantees generous safety buffer above the footer to eliminate clipping 100%
-  let p1Capacity = 760; // Default Modern Split main flow
+  // Usable Page 1 main content capacity in real DOM (Total page 1123px - padding - footer)
+  let p1Capacity = 850; // Modern Split
   if (isSingleCol) {
-    p1Capacity = 660;   // Single column with title & top header
+    p1Capacity = 780;   // Single column
   } else if (isBanner) {
-    p1Capacity = 620;   // Banner layout with 140px header block
+    p1Capacity = 720;   // Banner layout (accounting for top banner)
   }
 
-  const P1_SIDEBAR_CAPACITY = isBanner ? 680 : 820;
-  const P2_CAPACITY = 780; // Continuation pages have header + footer
+  const P1_SIDEBAR_CAPACITY = isBanner ? 700 : 860;
+  const P2_CAPACITY = 850;
 
-  const headerHeight = values.photo ? 140 : 100;
+  const headerHeight = photo ? 130 : 90;
   const summaryTextLen = getTextLength(summary);
-  const summaryHeight = summaryTextLen ? Math.max(50, Math.ceil(summaryTextLen / 2.4)) + 40 : 0;
+  const summaryHeight = summaryTextLen ? calcTextHeight(summaryTextLen) + 32 : 0;
   
   const skillCount = skills.length;
-  // Wrapped 3-col pill grid takes ~28px per row + title 38px
-  const skillsHeight = skillCount ? Math.ceil(skillCount / 3) * 28 + 38 : 0;
-  const languagesHeight = languages.length ? Math.ceil(languages.length / 2) * 24 + 34 : 0;
+  const skillsHeight = skillCount ? Math.ceil(skillCount / 3) * 26 + 30 : 0;
+  const languagesHeight = languages.length ? Math.ceil(languages.length / 2) * 22 + 28 : 0;
 
   // Decide if Certifications should go into the Sidebar or Main Flow
-  const certsInSidebar = !isSingleCol && skillCount <= 10 && certifications.length <= 3;
-  const sidebarTotalHeight = headerHeight + skillsHeight + languagesHeight + (certsInSidebar ? certifications.length * 36 : 0);
+  const certsInSidebar = !isSingleCol && skillCount <= 8 && certifications.length <= 3;
+  const sidebarTotalHeight = headerHeight + skillsHeight + languagesHeight + (certsInSidebar ? certifications.length * 30 : 0);
 
   // Build the list of sliceable flow items
   const flowItems = [];
 
-  // 1. Summary (includes 40px section header)
+  // 1. Summary
   if (summary && summary.trim()) {
     flowItems.push({ type: 'summary', content: summary, estHeight: summaryHeight });
   }
 
-  // 2. Experience (each job includes role, company, date, bullets, and 14px gap)
+  // 2. Experience
   employments.forEach((job, index) => {
     const textLen = getTextLength(job.description);
-    const estHeight = 65 + Math.max(0, Math.ceil(textLen / 2.2)) + (index === 0 ? 38 : 14);
+    const estHeight = 42 + calcTextHeight(textLen) + (index === 0 ? 32 : 12);
     flowItems.push({ type: 'experience', item: job, index, isFirst: index === 0, estHeight });
   });
 
-  // 3. Education (each edu includes degree, school, date, description, and 14px gap)
+  // 3. Education
   educations.forEach((edu, index) => {
     const textLen = getTextLength(edu.description);
-    const estHeight = 55 + Math.max(0, Math.ceil(textLen / 2.5)) + (index === 0 ? 38 : 14);
+    const estHeight = 38 + calcTextHeight(textLen) + (index === 0 ? 32 : 12);
     flowItems.push({ type: 'education', item: edu, index, isFirst: index === 0, estHeight });
   });
 
-  // 4. Skills (in Single-Col mode, skills are in the main flow)
+  // 4. Skills (in Single-Col mode)
   if (isSingleCol && skills.length) {
     flowItems.push({ type: 'skills', items: skills, estHeight: skillsHeight });
   }
 
-  // 5. Certifications (if in flow)
+  // 5. Certifications (2-column responsive grid)
   if ((isSingleCol || !certsInSidebar) && certifications.length) {
     certifications.forEach((cert, index) => {
+      // In 2-col grid, every odd item opens a new row (26px), even item shares row (0px height increase)
+      const isNewRow = index % 2 === 0;
+      const rowHeight = isNewRow ? 26 : 0;
+      const titleHeight = index === 0 ? 32 : 0;
       flowItems.push({
         type: 'certification',
         item: cert,
         index,
         isFirst: index === 0,
-        estHeight: 36 + (index === 0 ? 38 : 8),
+        estHeight: rowHeight + titleHeight,
       });
     });
   }
@@ -100,7 +113,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
   if (projects && projects.length) {
     projects.forEach((proj, index) => {
       const textLen = getTextLength(proj.description);
-      const estHeight = 55 + Math.max(0, Math.ceil(textLen / 2.5)) + (index === 0 ? 38 : 12);
+      const estHeight = 40 + calcTextHeight(textLen) + (index === 0 ? 32 : 10);
       flowItems.push({ type: 'project', item: proj, index, isFirst: index === 0, estHeight });
     });
   }
@@ -109,7 +122,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
   if (achievements && achievements.length) {
     achievements.forEach((ach, index) => {
       const textLen = getTextLength(ach.description);
-      const estHeight = 52 + Math.max(0, Math.ceil(textLen / 2.5)) + (index === 0 ? 38 : 10);
+      const estHeight = 34 + calcTextHeight(textLen) + (index === 0 ? 32 : 8);
       flowItems.push({ type: 'achievement', item: ach, index, isFirst: index === 0, estHeight });
     });
   }
@@ -118,7 +131,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
   if (references && references.length) {
     references.forEach((ref, index) => {
       const textLen = getTextLength(ref.reference);
-      const estHeight = 48 + Math.max(0, Math.ceil(textLen / 2.5)) + (index === 0 ? 38 : 10);
+      const estHeight = 34 + calcTextHeight(textLen) + (index === 0 ? 32 : 8);
       flowItems.push({ type: 'reference', item: ref, index, isFirst: index === 0, estHeight });
     });
   }
