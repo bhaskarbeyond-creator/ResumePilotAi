@@ -1441,28 +1441,38 @@ const BuildResume = () => {
             {/* Left Sidebar - Steps Navigation - Always Visible */}
             <div className="hidden md:flex flex-col w-56 lg:w-64 bg-white border-r border-slate-200 shadow-sm min-h-screen flex-shrink-0 relative z-20">
                 {/* Header */}
-                <div className="px-4 py-4 border-b border-slate-100 flex-shrink-0 flex items-center justify-between gap-2">
-                    <button type="button" onClick={handleExitBuilder} aria-label="Save and exit to dashboard">
-                        <img src={logo} alt="Logo" className="h-7 w-auto object-contain" />
-                    </button>
-                    <div className="flex items-center gap-2">
-                        <div role="status" aria-live="polite" className={`hidden sm:flex items-center gap-1.5 text-[11px] font-semibold px-2 py-1 rounded-md border ${
-                            saveState.status === 'saved' ? 'text-emerald-700 bg-emerald-50 border-emerald-200' :
-                            saveState.status === 'error' || saveState.status === 'conflict' ? 'text-red-700 bg-red-50 border-red-200' :
-                            'text-amber-700 bg-amber-50 border-amber-200'
-                        }`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${saveState.status === 'saved' ? 'bg-emerald-500' : saveState.status === 'error' || saveState.status === 'conflict' ? 'bg-red-500' : 'bg-amber-500 animate-pulse'}`}></span>
-                            <span>{saveState.message || 'Draft ready'}</span>
-                        </div>
+                <div className="px-4 py-3.5 border-b border-slate-100 flex-shrink-0 flex flex-col gap-2.5">
+                    {/* Top Row: Logo & Exit to Dashboard */}
+                    <div className="flex items-center justify-between gap-2">
+                        <button type="button" onClick={handleExitBuilder} aria-label="Save and exit to dashboard" className="hover:opacity-85 transition-opacity">
+                            <img src={logo} alt="ResumePilot Logo" className="h-7 w-auto object-contain" />
+                        </button>
                         <button
                             type="button"
                             onClick={handleExitBuilder}
-                            className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-indigo-600 bg-slate-100 hover:bg-indigo-50 px-2.5 py-1.5 rounded-lg border border-slate-200/80 transition-all shadow-sm">
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-indigo-600 bg-slate-100 hover:bg-indigo-50 px-2.5 py-1.5 rounded-lg border border-slate-200/80 transition-all shadow-2xs">
+                            <svg className="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                             </svg>
                             <span>Dashboard</span>
                         </button>
+                    </div>
+
+                    {/* Dedicated Auto-Save Status Bar: Clean 1-line display */}
+                    <div role="status" aria-live="polite" className={`flex items-center justify-between text-[11px] font-medium px-2.5 py-1.5 rounded-lg border transition-all ${
+                        saveState.status === 'saved' ? 'text-emerald-800 bg-emerald-50/90 border-emerald-200/90' :
+                        saveState.status === 'error' || saveState.status === 'conflict' ? 'text-red-800 bg-red-50 border-red-200' :
+                        'text-amber-800 bg-amber-50 border-amber-200'
+                    }`}>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                            <span className={`w-2 h-2 rounded-full shrink-0 ${saveState.status === 'saved' ? 'bg-emerald-500' : saveState.status === 'error' || saveState.status === 'conflict' ? 'bg-red-500' : 'bg-amber-500 animate-pulse'}`}></span>
+                            <span className="truncate font-medium">{saveState.status === 'saved' ? 'All changes saved' : (saveState.message || 'Saving changes...')}</span>
+                        </div>
+                        {saveState.status === 'saved' && (
+                            <svg className="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                        )}
                     </div>
                 </div>
 
