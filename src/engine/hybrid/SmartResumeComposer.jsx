@@ -74,7 +74,7 @@ export default function SmartResumeComposer({ templateId = 'Cv1', values = {}, l
                   </div>
                 )}
 
-                {/* 2. Executive Banner Layout */}
+                {/* 2. Executive Banner Layout with Adaptive Split-to-Full-Width Flow */}
                 {!isSingleCol && isBanner && (
                   <div className="smart-layout smart-layout--executive-banner">
                     {isFirstPage && (
@@ -82,24 +82,40 @@ export default function SmartResumeComposer({ templateId = 'Cv1', values = {}, l
                         <SmartHeader values={values} theme={theme} variant="banner" />
                       </div>
                     )}
-                    <div className="smart-body-columns">
-                      {isFirstPage && pageData.sidebar && (
-                        <aside className="smart-sidebar">
-                          {pageData.sidebar.skills && pageData.sidebar.skills.length > 0 && (
-                            <SmartSkills skills={pageData.sidebar.skills} theme={theme} />
+                    {isFirstPage && pageData.isAdaptiveSplit ? (
+                      <div className="smart-adaptive-page">
+                        {/* Upper Split: Left Sidebar (Skills/Languages) + Right Hero Flow (Summary/Jobs) */}
+                        <div className="smart-split-hero">
+                          {pageData.sidebar && (
+                            <aside className="smart-sidebar">
+                              {pageData.sidebar.skills && pageData.sidebar.skills.length > 0 && (
+                                <SmartSkills skills={pageData.sidebar.skills} theme={theme} />
+                              )}
+                              {pageData.sidebar.languages && pageData.sidebar.languages.length > 0 && (
+                                <SmartLanguages languages={pageData.sidebar.languages} theme={theme} />
+                              )}
+                              {pageData.sidebar.certifications && pageData.sidebar.certifications.length > 0 && (
+                                <SmartCertifications certifications={pageData.sidebar.certifications} theme={theme} />
+                              )}
+                            </aside>
                           )}
-                          {pageData.sidebar.languages && pageData.sidebar.languages.length > 0 && (
-                            <SmartLanguages languages={pageData.sidebar.languages} theme={theme} />
-                          )}
-                          {pageData.sidebar.certifications && pageData.sidebar.certifications.length > 0 && (
-                            <SmartCertifications certifications={pageData.sidebar.certifications} theme={theme} />
-                          )}
-                        </aside>
-                      )}
+                          <main className="smart-main-content">
+                            <SmartFlowRenderer flowItems={pageData.heroFlowItems || pageData.flowItems} theme={theme} isContinuation={false} />
+                          </main>
+                        </div>
+
+                        {/* Lower Full-Width Flow: Education, Certifications, etc. across 100% width */}
+                        {pageData.bottomFlowItems && pageData.bottomFlowItems.length > 0 && (
+                          <div className="smart-fullwidth-bottom-flow">
+                            <SmartFlowRenderer flowItems={pageData.bottomFlowItems} theme={theme} isContinuation={false} />
+                          </div>
+                        )}
+                      </div>
+                    ) : (
                       <main className={`smart-main-content ${!isFirstPage ? 'smart-main-content--full' : ''}`}>
                         <SmartFlowRenderer flowItems={pageData.flowItems} theme={theme} isContinuation={!isFirstPage} />
                       </main>
-                    </div>
+                    )}
                   </div>
                 )}
 

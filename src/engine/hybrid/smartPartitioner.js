@@ -2,11 +2,12 @@
  * Smart Hybrid Resume Engine — Content Partitioner & Page Packager
  * 
  * Section-Cohesive Adaptive Split Flow:
- * - Upper Split Hero: Left Sidebar (Header/Skills/Languages) + Right Main Flow (Summary/Experience)
+ * - Applied across ALL 2-column templates (both Modern Split and Executive Banner).
+ * - Upper Split Hero: Left Sidebar (Header/Skills/Languages) + Right Main Flow (Summary/Experience).
  * - Lower Full-Width Flow: Education, Certifications, Projects, etc. spanning 100% full width.
  * - Section-Level Integrity: Keeps entire sections (like Certifications) together rather than
  *   awkwardly splitting 2 items on Page 1 and 1 item on Page 2.
- * - Strict 720px safe content ceiling on A4 guarantees ZERO footer collisions under all scenarios.
+ * - Strict safe content ceiling guarantees ZERO footer collisions under all scenarios.
  */
 
 const CHARS_PER_LINE = 68;
@@ -37,9 +38,10 @@ export function partitionResumeContent(values = {}, theme = {}) {
 
   const isSingleCol = theme.archetype === 'minimal-ats' || theme.archetype === 'compact-euro';
   const isBanner = theme.archetype === 'executive-banner';
-  const isModernSplit = !isSingleCol && !isBanner;
+  const hasSidebar = !isSingleCol;
 
-  const headerHeight = photo ? 130 : 90;
+  // In Executive Banner, header is in the top banner (110px), so sidebar starts with skills
+  const headerHeight = isBanner ? 0 : (photo ? 130 : 90);
   const summaryTextLen = getTextLength(summary);
   const summaryHeight = summaryTextLen ? calcTextHeight(summaryTextLen) + 34 : 0;
   
@@ -48,7 +50,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
   const languagesHeight = languages.length ? Math.ceil(languages.length / 2) * 22 + 28 : 0;
 
   // Decide if Certifications should go into the Sidebar
-  const certsInSidebar = !isSingleCol && skillCount <= 6 && certifications.length <= 3;
+  const certsInSidebar = hasSidebar && skillCount <= 6 && certifications.length <= 3;
   const sidebarTotalHeight = headerHeight + skillsHeight + languagesHeight + (certsInSidebar ? certifications.length * 34 : 0);
 
   // 1. Build Hero Flow Items (Summary + Experience)
@@ -129,10 +131,11 @@ export function partitionResumeContent(values = {}, theme = {}) {
   }
 
   // Strict safe capacity limits (guarantees positive breathing margin above footer)
-  const TOTAL_PAGE_CAPACITY = 720;
+  // ModernSplit safe content ceiling is 720px; ExecutiveBanner (with 110px top banner) is 610px.
+  const TOTAL_PAGE_CAPACITY = isBanner ? 610 : 720;
   const P2_CAPACITY = 740;
 
-  if (isModernSplit) {
+  if (hasSidebar) {
     const heroHeight = heroFlowItems.reduce((sum, it) => sum + it.estHeight, 0);
     const upperSplitHeight = Math.max(sidebarTotalHeight, heroHeight);
     const remainingP1Capacity = Math.max(0, TOTAL_PAGE_CAPACITY - upperSplitHeight);
@@ -203,7 +206,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
     };
   }
 
-  // Fallback for single-column layouts
+  // Fallback for single-column layouts (Minimal ATS & Compact Euro)
   const allFlow = [];
   bottomSections.forEach(s => allFlow.push(...s.items));
   const combined = [...heroFlowItems, ...allFlow];
