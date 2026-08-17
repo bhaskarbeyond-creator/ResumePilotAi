@@ -58,17 +58,22 @@ export function partitionResumeContent(values = {}, theme = {}) {
   const certsInSidebar = hasSidebar && (skillCount + hobbiesCount) <= 7 && certifications.length <= 3;
   const sidebarTotalHeight = headerHeight + skillsHeight + languagesHeight + hobbiesHeight + (certsInSidebar ? certifications.length * 34 : 0);
 
+  const hiddenSections = Array.isArray(values.hiddenSections) ? values.hiddenSections : [];
+  const sectionOrder = Array.isArray(values.sectionOrder) ? values.sectionOrder : [];
+
   // 1. Build Hero Flow Items (Summary + Experience)
   const heroFlowItems = [];
-  if (summary && summary.trim()) {
+  if (summary && summary.trim() && !hiddenSections.includes('summary')) {
     heroFlowItems.push({ type: 'summary', content: summary, estHeight: Math.round(summaryHeight) });
   }
 
-  employments.forEach((job, index) => {
-    const textLen = getTextLength(job.description);
-    const estHeight = Math.round(44 + calcTextHeight(textLen) + (index === 0 ? 32 : 12));
-    heroFlowItems.push({ type: 'experience', item: job, index, isFirst: index === 0, estHeight });
-  });
+  if (!hiddenSections.includes('employment') && !hiddenSections.includes('work-history')) {
+    employments.forEach((job, index) => {
+      const textLen = getTextLength(job.description);
+      const estHeight = Math.round(44 + calcTextHeight(textLen) + (index === 0 ? 32 : 12));
+      heroFlowItems.push({ type: 'experience', item: job, index, isFirst: index === 0, estHeight });
+    });
+  }
 
   // 2. Build Sections for Bottom Flow (Education, Skills, Languages, Hobbies, Certifications, Projects, Achievements, References)
   const bottomSections = [];
@@ -162,8 +167,31 @@ export function partitionResumeContent(values = {}, theme = {}) {
     bottomSections.push({ type: 'reference', items: refItems, estHeight: sectionHeight });
   }
 
+  // Filter out any hidden bottom sections and sort by sectionOrder
+  const filteredBottomSections = bottomSections.filter(s => {
+    const key = s.type === 'certification' ? 'certifications' : s.type;
+    return !hiddenSections.includes(key);
+  });
+
+  if (sectionOrder.length > 0) {
+    filteredBottomSections.sort((a, b) => {
+      const aKey = a.type === 'certification' ? 'certifications' : a.type;
+      const bKey = b.type === 'certification' ? 'certifications' : b.type;
+      const aIdx = sectionOrder.indexOf(aKey);
+      const bIdx = sectionOrder.indexOf(bKey);
+      return (aIdx === -1 ? 999 : aIdx) - (bIdx === -1 ? 999 : bIdx);
+    });
+  }
+
   // Safe page capacities
   const TOTAL_PAGE_CAPACITY = isBanner ? 610 : 740;
+
+  const sidebarPayload = {
+    skills: hiddenSections.includes('skills') ? [] : skills,
+    languages: hiddenSections.includes('languages') ? [] : languages,
+    hobbies: hiddenSections.includes('hobbies') ? [] : hobbies,
+    certifications: (certsInSidebar && !hiddenSections.includes('certifications')) ? certifications : [],
+  };
 
   if (hasSidebar) {
     // 2-Column Split / Banner Layout with Adaptive Flow
@@ -175,7 +203,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
     const p2FlowItems = [];
     let currentBottomHeight = 0;
 
-    bottomSections.forEach(section => {
+    filteredBottomSections.forEach(section => {
       if (currentBottomHeight + section.estHeight <= remainingP1Capacity) {
         p1BottomItems.push(...section.items);
         currentBottomHeight += section.estHeight;
@@ -193,12 +221,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
             pageNumber: 1,
             isFirstPage: true,
             isAdaptiveSplit: true,
-            sidebar: {
-              skills,
-              languages,
-              hobbies,
-              certifications: certsInSidebar ? certifications : [],
-            },
+            sidebar: sidebarPayload,
             heroFlowItems,
             bottomFlowItems: p1BottomItems,
             flowItems: [...heroFlowItems, ...p1BottomItems],
@@ -215,12 +238,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
           pageNumber: 1,
           isFirstPage: true,
           isAdaptiveSplit: true,
-          sidebar: {
-            skills,
-            languages,
-            hobbies,
-            certifications: certsInSidebar ? certifications : [],
-          },
+          sidebar: sidebarPayload,
           heroFlowItems,
           bottomFlowItems: p1BottomItems,
           flowItems: [...heroFlowItems, ...p1BottomItems],
@@ -245,7 +263,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
   const p2FlowItems = [];
   let currentBottomHeight = 0;
 
-  bottomSections.forEach(section => {
+  filteredBottomSections.forEach(section => {
     if (currentBottomHeight + section.estHeight <= remainingP1Capacity) {
       p1BottomItems.push(...section.items);
       currentBottomHeight += section.estHeight;

@@ -63,6 +63,7 @@ const BuildResume = () => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isMobilePreviewOpen, setIsMobilePreviewOpen] = useState(false);
     const [isFooterCompressed, setIsFooterCompressed] = useState(true);
+    const [isReorderOpen, setIsReorderOpen] = useState(false);
 
     // Toast notification states
     const [isSuccessToastVisible, setIsSuccessToastVisible] = useState(false);
@@ -318,13 +319,21 @@ const BuildResume = () => {
     };
 
     const moveSection = (stepPath, direction) => {
-        const sectionKey = sectionKeyForPath(stepPath);
-        const order = [...resumeDataRef.current.sectionOrder];
-        const index = order.indexOf(sectionKey);
+        const currentOrderedKeys = orderedSteps.map(s => sectionKeyForPath(s.path));
+        const targetKey = sectionKeyForPath(stepPath);
+        const index = currentOrderedKeys.indexOf(targetKey);
         const target = index + direction;
-        if (index < 0 || target < 0 || target >= order.length) return;
-        [order[index], order[target]] = [order[target], order[index]];
-        updateResumeData({ sectionOrder: order });
+        if (index < 0 || target < 0 || target >= currentOrderedKeys.length) return;
+
+        const newOrderedKeys = [...currentOrderedKeys];
+        [newOrderedKeys[index], newOrderedKeys[target]] = [newOrderedKeys[target], newOrderedKeys[index]];
+
+        const allKeys = [...new Set([...newOrderedKeys, ...(resumeDataRef.current.sectionOrder || [])])];
+        updateResumeData({ sectionOrder: allKeys });
+    };
+
+    const resetSectionOrder = () => {
+        updateResumeData({ sectionOrder: DEFAULT_SECTION_ORDER, hiddenSections: [] });
     };
 
     const resolveConflictWithRemote = () => {
@@ -1116,7 +1125,7 @@ const BuildResume = () => {
 
                             {/* Mobile Steps Navigation */}
                             <div className="flex-1 px-3 py-4 overflow-y-auto">
-                                <nav className="space-y-1">
+                                <nav className="space-y-1.5">
                                     {orderedSteps.map((step, index) => {
                                         const isActive = currentStep.id === step.id;
                                         const isCompleted = isStepCompleted(step.id);
@@ -1129,49 +1138,50 @@ const BuildResume = () => {
                                                     handleStepClick(step.path);
                                                     setIsMobileMenuOpen(false);
                                                 }}
-                                                className={`w-full flex items-center text-left p-3 rounded-lg transition-all duration-200 group relative ${
+                                                className={`w-full flex items-center justify-between p-2.5 rounded-xl transition-all duration-200 group relative ${
                                                     isActive
-                                                        ? 'bg-blue-50 border border-blue-200 text-blue-900 shadow-sm'
-                                                        : isCompleted || isPrevious
-                                                        ? 'text-slate-700 hover:bg-slate-50 hover:border-slate-200 border border-transparent'
+                                                        ? 'bg-gradient-to-r from-blue-50/90 to-indigo-50/60 border border-blue-200/90 text-blue-900 shadow-2xs'
+                                                        : isCompleted
+                                                        ? 'text-slate-700 hover:bg-slate-50/90 hover:border-slate-200/80 border border-transparent'
+                                                        : isPrevious
+                                                        ? 'text-slate-600 hover:bg-slate-50 hover:border-slate-200/80 border border-transparent'
                                                         : 'text-slate-400 hover:text-slate-600 border border-transparent'
                                                 }`}
                                                 disabled={!isCompleted && !isPrevious && !isActive}
                                                 aria-current={isActive ? 'step' : undefined}>
-                                                <div className="flex items-center">
-                                                    {/* Step Icon/Number */}
+                                                <div className="flex items-center gap-2.5 min-w-0">
+                                                    {/* Step Icon/Status */}
                                                     <div
-                                                        className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-semibold mr-3 transition-all duration-200 ${
+                                                        className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-semibold shrink-0 transition-all duration-200 ${
                                                             isActive
-                                                                ? 'bg-blue-600 text-white shadow-sm'
+                                                                ? 'bg-blue-600 text-white shadow-xs'
                                                                 : isCompleted
-                                                                ? 'bg-green-500 text-white'
+                                                                ? 'bg-emerald-500 text-white shadow-2xs'
                                                                 : isPrevious
-                                                                ? 'bg-slate-200 text-slate-600'
-                                                                : 'bg-slate-100 text-slate-400'
+                                                                ? 'bg-slate-100 text-slate-600 border border-slate-200'
+                                                                : 'bg-slate-50 text-slate-400 border border-slate-200/60'
                                                         }`}>
                                                         {isCompleted ? (
-                                                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                                                <path
-                                                                    fillRule="evenodd"
-                                                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                                    clipRule="evenodd"
-                                                                />
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                                                             </svg>
                                                         ) : (
                                                             step.icon
                                                         )}
                                                     </div>
 
-                                                    <div className="flex-1 min-w-0">
-                                                        <span className="text-sm font-medium block truncate">{step.name}</span>
-                                                        {isActive && <span className="text-xs text-blue-600">{t('BuildResume.navigation.current')}</span>}
-                                                        {isCompleted && !isActive && <span className="text-xs text-green-600">✓</span>}
+                                                    <div className="min-w-0 text-left">
+                                                        <span className={`text-xs block truncate ${isActive ? 'font-bold text-blue-950' : isCompleted ? 'font-semibold text-slate-800' : 'font-medium text-slate-600'}`}>
+                                                            {step.name}
+                                                        </span>
+                                                        <span className={`text-[10px] block leading-tight ${isActive ? 'font-bold text-blue-600' : isCompleted ? 'font-medium text-emerald-600' : 'text-slate-400'}`}>
+                                                            {isActive ? 'Editing' : isCompleted ? 'Complete' : 'Pending'}
+                                                        </span>
                                                     </div>
                                                 </div>
 
-                                                {/* Active indicator */}
-                                                {isActive && <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-blue-600 rounded-r-full"></div>}
+                                                {/* Active left indicator */}
+                                                {isActive && <div className="absolute left-0 top-2 bottom-2 w-1 bg-blue-600 rounded-r-full"></div>}
                                             </button>
                                         );
                                     })}
@@ -1477,8 +1487,8 @@ const BuildResume = () => {
                 </div>
 
                 {/* Steps Navigation */}
-                <div className="flex-1 px-3 py-4 overflow-y-auto">
-                    <nav className="space-y-1">
+                <div className="flex-1 px-3 py-3.5 overflow-y-auto">
+                    <nav className="space-y-1.5">
                         {orderedSteps.map((step, index) => {
                             const isActive = currentStep.id === step.id;
                             const isCompleted = isStepCompleted(step.id);
@@ -1488,49 +1498,50 @@ const BuildResume = () => {
                                 <button
                                     key={step.id}
                                     onClick={() => handleStepClick(step.path)}
-                                    className={`w-full flex items-center text-left p-2 rounded-lg transition-all duration-200 group relative ${
+                                    className={`w-full flex items-center justify-between p-2.5 rounded-xl transition-all duration-200 group relative ${
                                         isActive
-                                            ? 'bg-blue-50 border border-blue-200 text-blue-900 shadow-sm'
-                                            : isCompleted || isPrevious
-                                            ? 'text-slate-700 hover:bg-slate-50 hover:border-slate-200 border border-transparent'
+                                            ? 'bg-gradient-to-r from-blue-50/90 to-indigo-50/60 border border-blue-200/90 text-blue-900 shadow-2xs'
+                                            : isCompleted
+                                            ? 'text-slate-700 hover:bg-slate-50/90 hover:border-slate-200/80 border border-transparent'
+                                            : isPrevious
+                                            ? 'text-slate-600 hover:bg-slate-50 hover:border-slate-200/80 border border-transparent'
                                             : 'text-slate-400 hover:text-slate-600 border border-transparent'
                                     }`}
                                     disabled={!isCompleted && !isPrevious && !isActive}
                                     aria-current={isActive ? 'step' : undefined}>
-                                    <div className="flex items-center">
-                                        {/* Step Icon/Number */}
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                        {/* Step Icon/Status */}
                                         <div
-                                            className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-semibold mr-2 transition-all duration-200 ${
+                                            className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-semibold shrink-0 transition-all duration-200 ${
                                                 isActive
-                                                    ? 'bg-blue-600 text-white shadow-sm'
+                                                    ? 'bg-blue-600 text-white shadow-xs'
                                                     : isCompleted
-                                                    ? 'bg-green-500 text-white'
+                                                    ? 'bg-emerald-500 text-white shadow-2xs'
                                                     : isPrevious
-                                                    ? 'bg-slate-200 text-slate-600'
-                                                    : 'bg-slate-100 text-slate-400'
+                                                    ? 'bg-slate-100 text-slate-600 border border-slate-200'
+                                                    : 'bg-slate-50 text-slate-400 border border-slate-200/60'
                                             }`}>
                                             {isCompleted ? (
-                                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path
-                                                        fillRule="evenodd"
-                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                        clipRule="evenodd"
-                                                    />
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                                                 </svg>
                                             ) : (
                                                 step.icon
                                             )}
                                         </div>
 
-                                        <div className="flex-1 min-w-0">
-                                            <span className="text-xs font-medium block truncate">{step.name}</span>
-                                            {isActive && <span className="text-xs text-blue-600">{t('BuildResume.navigation.current')}</span>}
-                                            {isCompleted && !isActive && <span className="text-xs text-green-600">✓</span>}
+                                        <div className="min-w-0 text-left">
+                                            <span className={`text-xs block truncate ${isActive ? 'font-bold text-blue-950' : isCompleted ? 'font-semibold text-slate-800' : 'font-medium text-slate-600'}`}>
+                                                {step.name}
+                                            </span>
+                                            <span className={`text-[10px] block leading-tight ${isActive ? 'font-bold text-blue-600' : isCompleted ? 'font-medium text-emerald-600' : 'text-slate-400'}`}>
+                                                {isActive ? 'Editing' : isCompleted ? 'Complete' : 'Pending'}
+                                            </span>
                                         </div>
                                     </div>
 
-                                    {/* Active indicator */}
-                                    {isActive && <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-blue-600 rounded-r-full"></div>}
+                                    {/* Active indicator bar */}
+                                    {isActive && <div className="absolute left-0 top-2 bottom-2 w-1 bg-blue-600 rounded-r-full"></div>}
                                 </button>
                             );
                         })}
@@ -1540,27 +1551,115 @@ const BuildResume = () => {
                     <button
                         type="button"
                         onClick={handleAddCustomSection}
-                        className="mt-3 w-full flex items-center justify-center gap-1.5 py-2 px-3 border border-dashed border-indigo-300 text-indigo-700 bg-indigo-50/50 hover:bg-indigo-100/70 hover:border-indigo-400 font-semibold text-xs rounded-xl transition-all shadow-2xs group">
-                        <svg className="w-3.5 h-3.5 text-indigo-600 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
+                        className="mt-3 w-full flex items-center justify-center gap-2 py-2 px-3 bg-gradient-to-r from-indigo-50/70 to-purple-50/70 hover:from-indigo-100 hover:to-purple-100 text-indigo-700 font-semibold text-xs rounded-xl border border-indigo-200/70 hover:border-indigo-300 transition-all shadow-2xs group">
+                        <div className="w-4 h-4 rounded-md bg-indigo-600/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <svg className="w-3 h-3 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                            </svg>
+                        </div>
                         <span>Add Custom Section</span>
                     </button>
 
-                    <details className="mt-2.5 rounded-lg border border-slate-200 bg-slate-50 p-2">
-                        <summary className="cursor-pointer text-xs font-semibold text-slate-700">Reorder sections</summary>
-                        <ul className="mt-2 space-y-1" aria-label="Resume section order">
-                            {orderedSteps.map((step, index) => (
-                                <li key={`order-${step.id}`} className="flex items-center justify-between gap-2 text-xs text-slate-700">
-                                    <label className="flex min-w-0 items-center gap-1"><input type="checkbox" checked={!resumeData.hiddenSections.includes(sectionKeyForPath(step.path))} onChange={() => toggleSectionVisibility(step.path)} /><span className="truncate">{step.name}</span></label>
-                                    <span className="flex gap-1">
-                                        <button type="button" onClick={() => moveSection(step.path, -1)} disabled={index === 0} aria-label={`Move ${step.name} up`} className="rounded border px-1.5 py-0.5 disabled:opacity-40">↑</button>
-                                        <button type="button" onClick={() => moveSection(step.path, 1)} disabled={index === orderedSteps.length - 1} aria-label={`Move ${step.name} down`} className="rounded border px-1.5 py-0.5 disabled:opacity-40">↓</button>
-                                    </span>
-                                </li>
-                            ))}
-                        </ul>
-                    </details>
+                    {/* Reorder & Visibility Sections Accordion */}
+                    <div className="mt-2.5 bg-slate-50/80 rounded-xl border border-slate-200/80 overflow-hidden transition-all shadow-2xs">
+                        <button
+                            type="button"
+                            onClick={() => setIsReorderOpen(!isReorderOpen)}
+                            className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-slate-700 hover:text-indigo-600 hover:bg-slate-100/70 transition-colors">
+                            <div className="flex items-center gap-1.5">
+                                <svg className="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                                </svg>
+                                <span>Reorder Sections</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-slate-200/80 text-slate-600">
+                                    {orderedSteps.filter(s => !resumeData.hiddenSections.includes(sectionKeyForPath(s.path))).length} active
+                                </span>
+                                <svg className={`w-3.5 h-3.5 text-slate-400 transform transition-transform duration-200 ${isReorderOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </button>
+
+                        {isReorderOpen && (
+                            <div className="p-2.5 pt-1 border-t border-slate-200/70 space-y-1.5 bg-white">
+                                <p className="text-[10px] text-slate-500 px-1 pb-1">Use ↑ ↓ to customize layout order on your CV:</p>
+                                <ul className="space-y-1" aria-label="Resume section order">
+                                    {orderedSteps.map((step, index) => {
+                                        const isHidden = resumeData.hiddenSections.includes(sectionKeyForPath(step.path));
+                                        return (
+                                            <li
+                                                key={`order-${step.id}`}
+                                                className={`flex items-center justify-between gap-1.5 px-2 py-1.5 rounded-lg border text-xs transition-all ${
+                                                    isHidden ? 'bg-slate-50 border-slate-200/60 opacity-60' : 'bg-white border-slate-200/90 shadow-2xs'
+                                                }`}>
+                                                <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                                    <span className="w-4 h-4 rounded bg-slate-100 text-slate-500 text-[10px] font-bold flex items-center justify-center shrink-0">
+                                                        {index + 1}
+                                                    </span>
+                                                    <span className={`truncate font-medium ${isHidden ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+                                                        {step.name}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-1 shrink-0">
+                                                    {/* Toggle visibility eye icon */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSectionVisibility(step.path)}
+                                                        className={`p-1 rounded hover:bg-slate-100 transition-colors ${isHidden ? 'text-slate-400' : 'text-indigo-600'}`}
+                                                        title={isHidden ? "Show section on CV" : "Hide section from CV"}>
+                                                        {isHidden ? (
+                                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                                                            </svg>
+                                                        ) : (
+                                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                            </svg>
+                                                        )}
+                                                    </button>
+                                                    {/* Move Up */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => moveSection(step.path, -1)}
+                                                        disabled={index === 0}
+                                                        aria-label={`Move ${step.name} up`}
+                                                        title="Move section up"
+                                                        className="p-1 rounded hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 disabled:opacity-25 disabled:hover:bg-transparent transition-colors">
+                                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+                                                        </svg>
+                                                    </button>
+                                                    {/* Move Down */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => moveSection(step.path, 1)}
+                                                        disabled={index === orderedSteps.length - 1}
+                                                        aria-label={`Move ${step.name} down`}
+                                                        title="Move section down"
+                                                        className="p-1 rounded hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 disabled:opacity-25 disabled:hover:bg-transparent transition-colors">
+                                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                                <div className="pt-1.5 flex justify-end">
+                                    <button
+                                        type="button"
+                                        onClick={resetSectionOrder}
+                                        className="text-[10px] font-semibold text-slate-500 hover:text-indigo-600 transition-colors">
+                                        Reset to Default Order
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
 
                     {/* Real-Time ATS Score Meter Widget */}
                     <div className="mt-4">
