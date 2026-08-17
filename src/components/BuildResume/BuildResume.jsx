@@ -135,6 +135,21 @@ const BuildResume = () => {
         },
         {
             id: 2,
+            name: t('BuildResume.steps.summary'),
+            path: 'summary',
+            component: SummaryStep,
+            icon: (
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                        fillRule="evenodd"
+                        d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1z"
+                        clipRule="evenodd"
+                    />
+                </svg>
+            ),
+        },
+        {
+            id: 3,
             name: t('BuildResume.steps.workHistory'),
             path: 'work-history',
             component: WorkHistoryStep,
@@ -145,7 +160,7 @@ const BuildResume = () => {
             ),
         },
         {
-            id: 3,
+            id: 4,
             name: t('BuildResume.steps.education'),
             path: 'education',
             component: EducationStep,
@@ -156,7 +171,7 @@ const BuildResume = () => {
             ),
         },
         {
-            id: 4,
+            id: 5,
             name: t('BuildResume.steps.skills'),
             path: 'skills',
             component: SkillsStep,
@@ -171,28 +186,13 @@ const BuildResume = () => {
             ),
         },
         {
-            id: 5,
+            id: 6,
             name: t('BuildResume.steps.languages', 'Languages'),
             path: 'languages',
             component: LanguagesStep,
             icon: (
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
-                </svg>
-            ),
-        },
-        {
-            id: 6,
-            name: t('BuildResume.steps.summary'),
-            path: 'summary',
-            component: SummaryStep,
-            icon: (
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                        fillRule="evenodd"
-                        d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1z"
-                        clipRule="evenodd"
-                    />
                 </svg>
             ),
         },

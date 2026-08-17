@@ -1,4 +1,4 @@
-export const DEFAULT_SECTION_ORDER = Object.freeze(['heading', 'employment', 'education', 'skills', 'languages', 'summary', 'hobbies', 'projects', 'certifications', 'achievements', 'references', 'custom']);
+export const DEFAULT_SECTION_ORDER = Object.freeze(['heading', 'summary', 'employment', 'education', 'skills', 'languages', 'hobbies', 'projects', 'certifications', 'achievements', 'references', 'custom']);
 
 export const EMPTY_RESUME = Object.freeze({
     title: 'Untitled Resume', template: 'Cv1', firstname: '', lastname: '', email: '', phone: '', occupation: '',
