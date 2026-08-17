@@ -9,6 +9,32 @@ import SmartHobbies from './components/SmartHobbies';
 import SmartFlowRenderer from './components/SmartFlowRenderer';
 import './smartEngine.css';
 
+function renderSidebarSection(sectionKey, sidebar, theme) {
+  if (!sidebar) return null;
+  switch (sectionKey) {
+    case 'skills':
+      return sidebar.skills && sidebar.skills.length > 0 ? (
+        <SmartSkills key="skills" skills={sidebar.skills} theme={theme} />
+      ) : null;
+    case 'languages':
+      return sidebar.languages && sidebar.languages.length > 0 ? (
+        <SmartLanguages key="languages" languages={sidebar.languages} theme={theme} />
+      ) : null;
+    case 'hobbies':
+    case 'interests':
+      return sidebar.hobbies ? (
+        <SmartHobbies key="hobbies" hobbies={sidebar.hobbies} theme={theme} />
+      ) : null;
+    case 'certifications':
+    case 'certification':
+      return sidebar.certifications && sidebar.certifications.length > 0 ? (
+        <SmartCertifications key="certifications" certifications={sidebar.certifications} theme={theme} />
+      ) : null;
+    default:
+      return null;
+  }
+}
+
 export default function SmartResumeComposer({ templateId = 'Cv1', values = {}, language = 'en' }) {
   const theme = getThemePreset(templateId);
   const partition = partitionResumeContent(values, theme);
@@ -89,17 +115,8 @@ export default function SmartResumeComposer({ templateId = 'Cv1', values = {}, l
                         <div className="smart-split-hero">
                           {pageData.sidebar && (
                             <aside className="smart-sidebar">
-                              {pageData.sidebar.skills && pageData.sidebar.skills.length > 0 && (
-                                <SmartSkills skills={pageData.sidebar.skills} theme={theme} />
-                              )}
-                              {pageData.sidebar.languages && pageData.sidebar.languages.length > 0 && (
-                                <SmartLanguages languages={pageData.sidebar.languages} theme={theme} />
-                              )}
-                              {pageData.sidebar.hobbies && (
-                                <SmartHobbies hobbies={pageData.sidebar.hobbies} theme={theme} />
-                              )}
-                              {pageData.sidebar.certifications && pageData.sidebar.certifications.length > 0 && (
-                                <SmartCertifications certifications={pageData.sidebar.certifications} theme={theme} />
+                              {(pageData.sidebar.order || ['skills', 'languages', 'hobbies', 'certifications']).map(key =>
+                                renderSidebarSection(key, pageData.sidebar, theme)
                               )}
                             </aside>
                           )}
@@ -133,17 +150,8 @@ export default function SmartResumeComposer({ templateId = 'Cv1', values = {}, l
                           {pageData.sidebar && (
                             <aside className="smart-sidebar">
                               <SmartHeader values={values} theme={theme} variant="sidebar" />
-                              {pageData.sidebar.skills && pageData.sidebar.skills.length > 0 && (
-                                <SmartSkills skills={pageData.sidebar.skills} theme={theme} />
-                              )}
-                              {pageData.sidebar.languages && pageData.sidebar.languages.length > 0 && (
-                                <SmartLanguages languages={pageData.sidebar.languages} theme={theme} />
-                              )}
-                              {pageData.sidebar.hobbies && (
-                                <SmartHobbies hobbies={pageData.sidebar.hobbies} theme={theme} />
-                              )}
-                              {pageData.sidebar.certifications && pageData.sidebar.certifications.length > 0 && (
-                                <SmartCertifications certifications={pageData.sidebar.certifications} theme={theme} />
+                              {(pageData.sidebar.order || ['skills', 'languages', 'hobbies', 'certifications']).map(key =>
+                                renderSidebarSection(key, pageData.sidebar, theme)
                               )}
                             </aside>
                           )}
@@ -164,17 +172,8 @@ export default function SmartResumeComposer({ templateId = 'Cv1', values = {}, l
                         {isFirstPage && pageData.sidebar && (
                           <aside className="smart-sidebar">
                             <SmartHeader values={values} theme={theme} variant="sidebar" />
-                            {pageData.sidebar.skills && pageData.sidebar.skills.length > 0 && (
-                              <SmartSkills skills={pageData.sidebar.skills} theme={theme} />
-                            )}
-                            {pageData.sidebar.languages && pageData.sidebar.languages.length > 0 && (
-                              <SmartLanguages languages={pageData.sidebar.languages} theme={theme} />
-                            )}
-                            {pageData.sidebar.hobbies && (
-                              <SmartHobbies hobbies={pageData.sidebar.hobbies} theme={theme} />
-                            )}
-                            {pageData.sidebar.certifications && pageData.sidebar.certifications.length > 0 && (
-                              <SmartCertifications certifications={pageData.sidebar.certifications} theme={theme} />
+                            {(pageData.sidebar.order || ['skills', 'languages', 'hobbies', 'certifications']).map(key =>
+                              renderSidebarSection(key, pageData.sidebar, theme)
                             )}
                           </aside>
                         )}
