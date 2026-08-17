@@ -1,0 +1,663 @@
+/**
+ * Smart Hybrid Resume Engine — Core CSS Design System
+ * Pixel-perfect A4 sheets (210mm x 297mm), zero overflow, micro-typography,
+ * dynamic multi-column skill wrap, and crisp vector timeline connectors.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+/* ── A4 Page Sheet Geometry ─────────────────────────────────────────── */
+
+.smart-resume-document {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  background-color: #f1f5f9;
+  padding: 24px 0;
+  width: 100%;
+}
+
+.smart-resume-page {
+  width: 210mm;
+  min-height: 297mm;
+  max-height: 297mm;
+  box-sizing: border-box;
+  background: #ffffff;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: #1e293b;
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.smart-page-body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* ── Layout Archetypes ──────────────────────────────────────────────── */
+
+/* 1. Modern Split */
+.smart-layout--modern-split {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 100%;
+  width: 100%;
+}
+
+.smart-layout--modern-split .smart-sidebar {
+  width: var(--sidebar-width, 34%);
+  flex-shrink: 0;
+  background-color: var(--sidebar-bg, #f8fafc);
+  color: var(--sidebar-text, #1e293b);
+  padding: 24px 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  border-right: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.smart-layout--modern-split .smart-main-content {
+  flex: 1 1 auto;
+  padding: 24px 24px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+/* 2. Executive Banner */
+.smart-layout--executive-banner {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  width: 100%;
+}
+
+.smart-banner-wrapper {
+  background: var(--header-bg, var(--primary));
+  color: var(--header-text, #ffffff);
+  padding: 24px 28px;
+  box-sizing: border-box;
+}
+
+.smart-layout--executive-banner .smart-body-columns {
+  display: flex;
+  flex: 1 1 auto;
+}
+
+.smart-layout--executive-banner .smart-sidebar {
+  width: var(--sidebar-width, 34%);
+  flex-shrink: 0;
+  background-color: #f8fafc;
+  padding: 20px 18px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  border-right: 1px solid #e2e8f0;
+}
+
+.smart-layout--executive-banner .smart-main-content {
+  flex: 1 1 auto;
+  padding: 20px 24px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+/* 3. Minimal ATS */
+.smart-layout--minimal-ats {
+  padding: 28px 32px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+/* 4. Tech Grid */
+.smart-layout--tech-grid {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  width: 100%;
+}
+
+.smart-layout--tech-grid .smart-header {
+  padding: 24px 28px 16px;
+  border-bottom: 2px solid #0f172a;
+}
+
+.smart-layout--tech-grid .smart-body-columns {
+  display: flex;
+  flex: 1 1 auto;
+}
+
+.smart-layout--tech-grid .smart-sidebar {
+  width: var(--sidebar-width, 34%);
+  flex-shrink: 0;
+  background-color: #f8fafc;
+  padding: 20px 18px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  border-right: 1px solid #e2e8f0;
+}
+
+.smart-layout--tech-grid .smart-main-content {
+  flex: 1 1 auto;
+  padding: 20px 24px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+/* 5. Compact Euro */
+.smart-layout--compact-euro {
+  padding: 24px 28px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+/* ── Smart Header ───────────────────────────────────────────────────── */
+
+.smart-header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.smart-header__main {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.smart-header__avatar-wrap {
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 3px solid #ffffff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.smart-header__avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.smart-header__titles {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.smart-header__name {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0;
+  line-height: 1.15;
+  color: var(--primary, #0f172a);
+}
+
+.smart-banner-wrapper .smart-header__name {
+  color: #ffffff !important;
+}
+
+.smart-header__role {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--secondary, #3b82f6);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.smart-banner-wrapper .smart-header__role {
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+
+.smart-header__contacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.smart-banner-wrapper .smart-header__contacts {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.smart-contact-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.smart-contact-icon {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  color: var(--secondary, #3b82f6);
+}
+
+.smart-banner-wrapper .smart-contact-icon {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* ── Section Titles ─────────────────────────────────────────────────── */
+
+.smart-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  break-inside: avoid;
+}
+
+.smart-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--primary, #0f172a);
+  margin: 0 0 2px;
+  padding: 0;
+  border: none;
+}
+
+.smart-section-title__line {
+  flex: 1 1 auto;
+  height: 1.5px;
+  background-color: var(--secondary, #3b82f6);
+  opacity: 0.4;
+}
+
+/* ── Smart Skills (Key Fix: Multi-Column Flow Wrapping) ──────────────── */
+
+.smart-skills-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+}
+
+.smart-skills-grid--pills .smart-skill-item {
+  background-color: rgba(59, 130, 246, 0.08);
+  color: var(--primary, #1e3a8a);
+  border: 1px solid rgba(59, 130, 246, 0.18);
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.15s ease;
+}
+
+.smart-skills-grid--badges .smart-skill-item {
+  background-color: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+}
+
+.smart-skills-grid--dots .smart-skill-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 3px 0;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.smart-skill-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.smart-skill-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #cbd5e1;
+}
+
+.smart-skill-dot--filled {
+  background-color: var(--secondary, #3b82f6);
+}
+
+.smart-skills-grid--bars .smart-skill-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  padding: 2px 0;
+}
+
+.smart-skill-bar-wrap {
+  width: 100%;
+  height: 4px;
+  background-color: #e2e8f0;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.smart-skill-bar {
+  height: 100%;
+  background: var(--secondary, #3b82f6);
+  border-radius: 2px;
+}
+
+.smart-skills-grid--inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+
+.smart-skills-grid--inline .smart-skill-item {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.smart-skills-grid--inline .smart-skill-item:not(:last-child)::after {
+  content: '•';
+  margin-left: 8px;
+  color: #94a3b8;
+}
+
+/* ── Smart Timeline (Experience & Education) ────────────────────────── */
+
+.smart-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+}
+
+.smart-timeline-item {
+  display: flex;
+  gap: 12px;
+  position: relative;
+  break-inside: avoid;
+}
+
+.smart-timeline-marker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 14px;
+  padding-top: 4px;
+}
+
+.smart-timeline-node {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background-color: var(--secondary, #3b82f6);
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 1.5px var(--secondary, #3b82f6);
+}
+
+.smart-timeline-connector {
+  flex: 1 1 auto;
+  width: 1.5px;
+  background-color: #e2e8f0;
+  margin-top: 4px;
+}
+
+.smart-timeline-body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.smart-timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.smart-timeline-role {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.smart-timeline-company {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--secondary, #3b82f6);
+}
+
+.smart-timeline-date {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+/* Rich Text inside items */
+.rich-text {
+  font-size: 12.5px;
+  color: #334155;
+  line-height: 1.5;
+}
+
+.rich-text p {
+  margin: 0 0 4px;
+}
+
+.rich-text p:last-child {
+  margin-bottom: 0;
+}
+
+.rich-text ul {
+  margin: 4px 0 0 16px;
+  padding: 0;
+}
+
+.rich-text li {
+  margin-bottom: 2px;
+}
+
+/* ── Smart Cards (Projects & References) ────────────────────────────── */
+
+.smart-cards-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.smart-card-item {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  break-inside: avoid;
+}
+
+.smart-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.smart-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.smart-card-link {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--secondary, #3b82f6);
+  text-decoration: none;
+}
+
+/* ── Smart Certifications & Languages ───────────────────────────────── */
+
+.smart-cert-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.smart-cert-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.smart-cert-badge {
+  width: 14px;
+  height: 14px;
+  color: var(--secondary, #3b82f6);
+  flex-shrink: 0;
+}
+
+.smart-cert-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.smart-cert-meta {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.smart-languages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.smart-language-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  padding: 2px 0;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.08);
+}
+
+.smart-language-name {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.smart-language-level {
+  font-size: 11px;
+  color: #64748b;
+}
+
+/* ── Continuation Header & Footer ───────────────────────────────────── */
+
+.smart-continuation-header {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 24px 8px;
+  border-bottom: 2px solid var(--secondary, #3b82f6);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  background: #ffffff;
+}
+
+.smart-continuation-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.smart-continuation-role {
+  font-size: 12px;
+  color: #64748b;
+  margin-left: 8px;
+}
+
+.smart-continuation-page {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--secondary, #3b82f6);
+}
+
+.smart-page-footer {
+  padding: 6px 24px 10px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+/* ── Print Stylesheet ───────────────────────────────────────────────── */
+
+@media print {
+  body {
+    background: transparent !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .smart-resume-document {
+    background: transparent !important;
+    gap: 0 !important;
+    padding: 0 !important;
+  }
+
+  .smart-resume-page {
+    box-shadow: none !important;
+    margin: 0 !important;
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+}
