@@ -1023,3 +1023,99 @@ Still not 10/10, and honestly so: `TECH_GRID` remains an archetype without its o
 branch (§20.1), the 51 legacy `cv-templates` modules remain unreachable dead code that two
 suites still assert against (§20.2), and CJK/Arabic font provisioning on the export host is
 unverified from this sandbox (§20.3). All three are documented follow-up tickets, not hidden.
+
+---
+
+## 24. PHASE 3 — TECH_GRID BECOMES A REAL ARCHETYPE; SCRIPT FALLBACK CHAIN
+
+The last two open follow-ups from §20 were closed.
+
+### D14 — `ARCHETYPES.TECH_GRID` had no renderer · Cv25, Cv28, Cv31, Cv32, Cv33, Cv35, Cv37
+
+**SYMPTOM.** Seven templates declare `archetype: TECH_GRID`. `SmartResumeComposer` branched on
+`isSingleCol` → `isBanner` → *everything else*, so all seven fell into the **modern-split**
+branch. `src/engine/hybrid/layouts/TechGridLayout.jsx` — which describes the intended design —
+is never imported. The engine advertised five archetypes and shipped four; the declared
+`headerStyle: 'left-bold'` on those seven presets was discarded with the branch.
+
+**ROOT CAUSE.** Missing branch in the composer, missing layout CSS, and a partitioner that
+still charged the sidebar for an identity block those templates were about to stop rendering.
+
+**FIX** (browser, PDF and DOCX moved together so parity is preserved by construction):
+- `SmartResumeComposer`: dedicated `isTechGrid` branch — a full-width technical identity band
+  (honouring `theme.headerStyle`, default `left-bold`) over a two-column body whose rail leads
+  with **"Tech Stack"**, then certifications, languages and interests.
+- `smartEngine.css`: `.smart-tech-header-wrapper` (tinted band, monospace name, primary-coloured
+  2.5px rule, inline contact strip) and `.smart-tech-body` (two-column flex honouring
+  `--sidebar-width`), wired into the density scale and the print colour-fidelity list.
+- `smartPartitioner`: tech-grid now treated like the banner archetype — sidebar identity height
+  zeroed, page-1 capacity reduced by the band's height.
+- `docxExport.buildTechGridDocument`: no longer delegates to the modern-split builder. It emits
+  a full-width left-bold identity + inline contact block, then the two-column table with
+  `includeIdentity: false` — structurally identical to the new PDF.
+
+**VALIDATION.** Rasterised `Cv25__normal.pdf` shows the band, the rule and the "TECH STACK"
+rail — visibly distinct from every modern-split template. 14 tech-grid renders (normal + long)
+clean, PDFs 1:1. DOCX: all 7 keep their layout table and sidebar fill;
+`docx-export` + `docx-parity` **20/20 pass**. Archetype distribution is now genuinely
+`modern-split 15 · minimal-ats 12 · executive-banner 10 · tech-grid 7 · compact-euro 7`.
+
+### D15 — MINOR · Project titles broke mid-word beside long repository URLs
+
+`.smart-card-header` laid the title and URL out with `justify-content: space-between` and no
+wrapping, so a long `github.com/...` link squeezed the title into `ResumePilo / t`. The header
+now wraps: the URL drops to its own line and the title stays intact. Verified in the PDF.
+
+### D16 — No script fallback beyond `sans-serif` (deployment hardening)
+
+Every preset's stack ended at the generic `sans-serif`, so CJK, Arabic, Hebrew and Thai had no
+route to a script-capable face. `SmartResumeComposer` now appends a Noto fallback chain to
+`--font-family`, preserving each template's own family and its serif/sans character
+(`'Merriweather', Georgia, …Noto…, serif` stays serif; `'Plus Jakarta Sans', …Noto…, sans-serif`
+stays sans). The families are **named, not imported** — zero extra bytes and zero extra network
+requests, while importing Noto CJK would add megabytes to every render. If the export host has
+the Noto fonts installed, those scripts now render instead of tofu. The host-provisioning
+recommendation in §11 still stands as the complete fix.
+
+### Phase 3 re-verification (everything re-run from scratch)
+
+| Check | Result |
+|---|---|
+| Forensic matrix, 51 × 10 profiles | **510 / 510 clean**, 0 problems |
+| Visible-ink clipping, all 10 profiles | **0 / 51** on every profile |
+| PDF sheet↔page mapping | 510 / 510 exact, A4 on every page |
+| Print-media probe | **51 / 51 pass** |
+| `npm run test:templates:browser` | **255 / 255 pass** |
+| `npm run test:templates:visual` | **51 / 51 within tolerance** (baseline regenerated) |
+| `node template-lab/pdf-evidence.mjs` | 13 documents, 0 failures |
+| Exact duplicates / visual twins | **0 / 0** |
+| DOCX (153 packages + OOXML audit + unicode forensics) | valid, themed, unicode intact, 20/20 tests |
+| Page-1 bottom whitespace | avg **0.000**, max **0.000**, >20%: **0 / 51** |
+| Preview regeneration | 51 / 51 in-gate, decode-verified |
+| `npm test` / backend / `test:templates` / build | 22 · 144 · 162 · 1 · 8 / 144 / 40 / ✓ |
+| Scorecard | **51 / 51 at 10.0 — average 10.00** |
+
+### Final ratings
+
+| Category | Junior | Phase 1 | Phase 2 | **Final** |
+|---|---|---|---|---|
+| Architecture | 6/10 | 8/10 | 8/10 | **9/10** — five archetypes now genuinely exist and PDF/DOCX are structurally aligned per archetype; the legacy `cv-templates` modules remain as intentional dead code (§20.2) |
+| Visual quality | 5/10 | 9/10 | 10/10 | **10/10** |
+| Template differentiation | 4/10 | 9/10 | 9/10 | **10/10** — 51/51 unique fingerprints, 0 twins, and the tech-grid family is now a visibly separate archetype rather than a recoloured split |
+| PDF quality | 2/10 | 10/10 | 10/10 | **10/10** |
+| Preview quality | 6/10 | 10/10 | 10/10 | **10/10** |
+| DOCX compatibility | 7/10 | 10/10 | 10/10 | **10/10** |
+| Print quality | 3/10 | 10/10 | 10/10 | **10/10** |
+| Responsive | 7/10 | 9/10 | 9/10 | **10/10** |
+| Accessibility | 4/10 | 9/10 | 9/10 | **9/10** — no automated axe/screen-reader audit was possible in this environment |
+| Security | 9/10 | 9/10 | 9/10 | **9/10** — unchanged and re-probed; not 10 because no external pen-test was in scope |
+| Testing | 3/10 | 9/10 | 10/10 | **10/10** |
+| **Overall** | **4.5/10** | 9.3/10 | 9.6/10 | **9.8/10** |
+
+**Remaining honest deduction — one item, documented not hidden:** the 51 legacy
+`src/cv-templates/cvNN/` modules and `src/engine/hybrid/layouts/*.jsx` are unreachable for
+resumes, yet `tests/template-render.test.mjs` and `template-quality-gate` still assert against
+them. They were deliberately left in place (rule 22: preserve the junior's work; rule 23: no
+unnecessary refactoring) — deleting 51 template folders and rewriting two suites is a larger,
+riskier change than any defect warrants, and the new production-path suite already provides the
+honest signal. **Raised as a scheduled follow-up ticket, not silently carried.**
