@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState, useRef } from 'react';
 import TemplateRenderer from '../TemplateRenderer';
 import { useTranslation } from 'react-i18next';
 
-const PreviewModal = ({ showPreview, setShowPreview, resumeData, onDownload, isDownloading, currentTemplate = 'Cv1', getTemplateName }) => {
+const PreviewModal = ({ showPreview, setShowPreview, resumeData, onDownload, isDownloading, onDownloadDocx, isDownloadingDocx, currentTemplate = 'Cv1', getTemplateName }) => {
     const { t, i18n } = useTranslation('common');
     const [isVisible, setIsVisible] = useState(false);
     const dialogRef = useRef(null);
@@ -108,6 +108,39 @@ const PreviewModal = ({ showPreview, setShowPreview, resumeData, onDownload, isD
                         </div>
 
                         <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
+                            {/* Enhanced Download Word (DOCX) Button */}
+                            {onDownloadDocx && (
+                                <button
+                                    onClick={onDownloadDocx}
+                                    disabled={isDownloadingDocx}
+                                    className={`relative px-3 sm:px-4 lg:px-5 py-2 sm:py-2.5 lg:py-3 rounded-lg sm:rounded-xl font-semibold transition-all duration-300 flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm shadow-lg ${
+                                        isDownloadingDocx
+                                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
+                                            : 'bg-gradient-to-r from-emerald-600 to-green-700 hover:from-emerald-700 hover:to-green-800 text-white shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:shadow-xl transform hover:-translate-y-0.5'
+                                    }`}>
+                                    {isDownloadingDocx ? (
+                                        <>
+                                            <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
+                                            <span className="hidden sm:inline">Generating DOCX...</span>
+                                            <span className="sm:hidden">DOCX...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth={2}
+                                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                                />
+                                            </svg>
+                                            <span className="hidden sm:inline">Download Word (DOCX)</span>
+                                            <span className="sm:hidden">Word</span>
+                                        </>
+                                    )}
+                                </button>
+                            )}
+
                             {/* Enhanced Download Button - Mobile responsive */}
                             <button
                                 onClick={onDownload}

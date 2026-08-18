@@ -42,6 +42,7 @@ import download from "downloadjs";
 import config from "../../../conf/configuration";
 import { trackDownload, trackEvent, trackEngagement } from "../../../utils/ga4";
 import { toValidatedPdfBlob, pdfFileName } from "../../../utils/pdfDownload";
+import { executeDocxDownload } from "../../../utils/docxDownload";
 import { getTemplateComponent } from "../../../utils/templateRegistry";
 import TemplateRenderer from "../../TemplateRenderer";
 import PreviewModal from "../../BuildResume/PreviewModal";
@@ -120,6 +121,7 @@ class DashboardHomepage extends Component {
       },
       loadedTemplates: {}, // Store dynamically loaded template components
       downloadingResumeIds: new Set(), // Track which resumes are currently being downloaded
+      downloadingDocxIds: new Set(), // Track which resumes are currently downloading DOCX
       isDownloading: false, // Add loading state
       showPreviewModal: false,
       previewingDocument: null,
@@ -622,6 +624,101 @@ class DashboardHomepage extends Component {
     }
   }
 
+  // Download resume as Word (DOCX)
+  async downloadResumeDocx(document) {
+    if (this.state.downloadingDocxIds.has(document.id)) {
+      return;
+    }
+
+    this.setState((prevState) => ({
+      downloadingDocxIds: new Set(prevState.downloadingDocxIds).add(
+        document.id
+      ),
+    }));
+
+    try {
+      const templateName =
+        document?.template || document?.item?.template || "Cv1";
+      const resumeId = document.id;
+      const language = document?.item?.language || "en";
+
+      const completeResumeData = {
+        ...document.item,
+        firstname: document.item?.firstname || "",
+        lastname: document.item?.lastname || "",
+        email: document.item?.email || "",
+        phone: document.item?.phone || "",
+        address: document.item?.address || "",
+        city: document.item?.city || "",
+        country: document.item?.country || "",
+        postalcode: document.item?.postalcode || "",
+        occupation: document.item?.occupation || "",
+        photo: document.item?.photo || null,
+        employments: (document.employments || []).map((emp, index) => ({
+          jobTitle: emp.jobTitle || emp.job_title || "",
+          employer: emp.employer || emp.company || "",
+          begin: emp.begin || emp.start_date || "",
+          end: emp.end || emp.end_date || "",
+          description: emp.description || "",
+          date: emp.date || index + 1,
+        })),
+        educations: (document.educations || []).map((edu, index) => ({
+          degree: edu.degree || edu.qualification || "",
+          school: edu.school || edu.institution || "",
+          started: edu.started || edu.start_year || "",
+          finished: edu.finished || edu.end_year || "",
+          description: edu.description || "",
+          date: edu.date || index + 1,
+        })),
+        skills: (document.skills || []).map((skill, index) => ({
+          name: skill.skillName || skill.name || skill.skill || "",
+          rating: skill.rating || 50,
+          date: skill.date || index + 1,
+        })),
+        languages: (document.languages || []).map((lang, index) => ({
+          name: lang.name || lang.language || "",
+          level: lang.level || lang.proficiency || "Intermediate",
+          date: lang.date || index + 1,
+        })),
+        template: templateName,
+        resumeName: templateName,
+        summary: document.item?.summary || '',
+        components: document.item?.components || [],
+        colors: document.item?.colors || this.getTemplateColors(templateName),
+        language: language,
+      };
+
+      const userId = fire.auth().currentUser?.uid;
+      if (!userId) throw new Error('Authentication is required');
+      const saved = await saveResumeDraft(userId, resumeId, completeResumeData, { expectedRevision: Number(document.item?.revision) || 0 });
+      document.item = { ...saved.data, revision: saved.revision };
+
+      await executeDocxDownload({
+        resumeId,
+        resumeName: templateName,
+        language,
+        firstname: document.item?.firstname,
+        lastname: document.item?.lastname,
+        userId,
+      });
+
+      this.props.showToast?.('DOCX download successful!', 'success');
+    } catch (error) {
+      console.error('DOCX download failed:', error);
+      trackEvent('download_failed_docx', 'Documents', document?.template || 'Unknown', 0);
+      this.props.showToast?.(
+        error?.message?.startsWith('Download failed') ? error.message : 'The DOCX could not be generated. Please try again.',
+        'error'
+      );
+    } finally {
+      this.setState((prevState) => {
+        const newSet = new Set(prevState.downloadingDocxIds);
+        newSet.delete(document.id);
+        return { downloadingDocxIds: newSet };
+      });
+    }
+  }
+
   // Dynamic template loader
   async loadTemplate(templateName) {
     if (!templateName || this.state.loadedTemplates[templateName]) {
@@ -1109,6 +1206,34 @@ class DashboardHomepage extends Component {
                                   "Download PDF"
                                 )}
                               </span>
+                            </>
+                          )}
+                        </button>
+
+                        {/* Download Word (DOCX) Button */}
+                        <button className={`w-full text-white text-sm font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 shadow-sm ${this.state.downloadingDocxIds.has(document.id)
+                              ? "bg-slate-400 cursor-not-allowed"
+                              : "bg-blue-600 hover:bg-blue-700"
+                          }`} onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (
+                              !this.state.downloadingDocxIds.has(
+                                document.id
+                              )
+                            ) {
+                              this.downloadResumeDocx(document);
+                            }
+                          }}>
+                          {this.state.downloadingDocxIds.has(document.id) ? (
+                            <>
+                              <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                              <span>Generating DOCX...</span>
+                            </>
+                          ) : (
+                            <>
+                              <FaDownload className="w-3.5 h-3.5" />
+                              <span>Download Word (DOCX)</span>
                             </>
                           )}
                         </button>
