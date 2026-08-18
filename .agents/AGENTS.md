@@ -27,4 +27,12 @@
   - **Resume Builder + 51 Resume Templates**: `1ffa9f7`
   - **DOCX High-Fidelity Export Pipeline (51 Templates)**: `2c45381`
 - **Freeze Status**: The CV Module, 4 CV Templates, Print/PDF Download Pipeline, Resume Builder Wizard, 51 Resume Templates, and the 51-Template High-Fidelity DOCX Export Pipeline are **FROZEN** (Certified 10/10 Enterprise Production Grade).
-- **Modification Protocol**: Do not modify these certified baselines directly. If a future task touches these areas, first submit an impact report detailing: (1) Dependencies, (2) Affected files, (3) Rationale, and (4) Regression risk assessment. All existing functionality and test suites (145/145 tests) must remain 100% passing.
+- **Modification Protocol**: Do not modify these certified baselines directly without strict regression testing (all test suites must remain 100% passing).
+
+## 7. Continuous Synchronization & Deployment Protocol
+- **Automatic Repo & Production Sync**: For every code update, bugfix, or feature implemented and verified:
+  1. Verify zero regressions via test suite (`npm test`).
+  2. Build production assets via `npm run build`.
+  3. Commit and push the clean change set directly to GitHub remote `origin/main` with clear semantic commit messaging.
+
+

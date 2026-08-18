@@ -121,8 +121,8 @@ const PreviewModal = ({ showPreview, setShowPreview, resumeData, onDownload, isD
                                     {isDownloadingDocx ? (
                                         <>
                                             <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
-                                            <span className="hidden sm:inline">Generating DOCX...</span>
-                                            <span className="sm:hidden">DOCX...</span>
+                                            <span className="hidden sm:inline">{t('PreviewModal.actions.generatingDocx', 'Generating DOCX...')}</span>
+                                            <span className="sm:hidden">{t('PreviewModal.actions.generatingDocxShort', 'DOCX...')}</span>
                                         </>
                                     ) : (
                                         <>
@@ -134,8 +134,8 @@ const PreviewModal = ({ showPreview, setShowPreview, resumeData, onDownload, isD
                                                     d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                                                 />
                                             </svg>
-                                            <span className="hidden sm:inline">Download Word (DOCX)</span>
-                                            <span className="sm:hidden">Word</span>
+                                            <span className="hidden sm:inline">{t('PreviewModal.actions.downloadDocx', 'Download Word (DOCX)')}</span>
+                                            <span className="sm:hidden">{t('PreviewModal.actions.downloadDocxShort', 'Word')}</span>
                                         </>
                                     )}
                                 </button>

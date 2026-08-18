@@ -1443,6 +1443,8 @@ class DashboardHomepage extends Component {
               getTemplateName={(tId) => tId}
               onDownload={() => this.downloadResume(this.state.previewingDocument)}
               isDownloading={this.state.downloadingResumeIds.has(this.state.previewingDocument.id)}
+              onDownloadDocx={() => this.downloadResumeDocx(this.state.previewingDocument)}
+              isDownloadingDocx={this.state.downloadingDocxIds.has(this.state.previewingDocument.id)}
             />
           )}
         </div>

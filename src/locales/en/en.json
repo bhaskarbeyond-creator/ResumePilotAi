@@ -1598,6 +1598,8 @@
     "actions": {
       "downloadPdf": "Download PDF",
       "generatingPdf": "Generating PDF...",
+      "downloadDocx": "Download Word (DOCX)",
+      "generatingDocx": "Generating DOCX...",
       "close": "Close preview"
     },
     "keyboard": {

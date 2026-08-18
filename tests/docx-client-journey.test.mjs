@@ -22,6 +22,12 @@ test('Preview, Finalize, and Dashboard still share the executeDocxDownload journ
 
   const preview = await fs.readFile('src/components/BuildResume/PreviewModal.jsx', 'utf8');
   assert.match(preview, /onDownloadDocx/, 'Preview modal must expose Download Word');
+
+  const buildResume = await fs.readFile('src/components/BuildResume/BuildResume.jsx', 'utf8');
+  assert.match(buildResume, /onDownloadDocx=\{/, 'BuildResume PreviewModal invocation must provide onDownloadDocx');
+
+  const dashboard = await fs.readFile('src/components/Dashboard/DashboardHomepage/DashboardHomepage.jsx', 'utf8');
+  assert.match(dashboard, /onDownloadDocx=\{/, 'Dashboard PreviewModal invocation must provide onDownloadDocx');
 });
 
 test('backend DOCX route does not blindly trust client colors or resumeName', async () => {
