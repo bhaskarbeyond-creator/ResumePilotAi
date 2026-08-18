@@ -191,9 +191,21 @@ export function detectNonEnglish(text) {
     return { nonEnglish: false, reason: 'english-or-mixed' };
 }
 
+const DOMAIN_ANCHOR_TERMS = new Set([
+    'software', 'engineer', 'engineering', 'developer', 'development', 'manager', 'management',
+    'lead', 'senior', 'data', 'project', 'projects', 'product', 'products', 'system', 'systems',
+    'design', 'designed', 'designer', 'sales', 'business', 'team', 'teams', 'client', 'clients',
+    'customer', 'customers', 'service', 'services', 'health', 'healthcare', 'nurse', 'nursing',
+    'patient', 'patients', 'medical', 'financial', 'finance', 'marketing', 'operations', 'operational',
+    'director', 'analyst', 'analysis', 'cloud', 'security', 'infrastructure', 'architecture',
+    'architect', 'technical', 'technology', 'technologies', 'code', 'quality', 'built', 'led',
+    'managed', 'created', 'worked', 'work', 'using', 'used', 'including', 'years', 'experience',
+    'responsible', 'skills', 'education', 'degree', 'university', 'college', 'school'
+]);
+
 export function analyzeStuffing(text) {
     const tokens = tokenize(text).filter((token) => token.length >= 3 && !ENGLISH_STOPWORDS.has(token));
-    if (tokens.length < 8) {
+    if (tokens.length < 6) {
         return { stuffed: false, uniqueRatio: tokens.length ? 1 : 0, repeatedToken: null, consecutive: false, empty: tokens.length === 0, tokenCount: tokens.length };
     }
     const counts = new Map();
@@ -215,7 +227,11 @@ export function analyzeStuffing(text) {
     let maxShare = 0;
     for (const [token, count] of counts) {
         const share = count / tokens.length;
-        if (count >= 8 || share >= 0.14) {
+        const isAnchor = DOMAIN_ANCHOR_TERMS.has(token);
+        const thresholdCount = isAnchor ? 25 : 10;
+        const thresholdShare = isAnchor ? 0.28 : 0.18;
+
+        if (count >= thresholdCount || (count >= 5 && share >= thresholdShare)) {
             if (share > maxShare) {
                 maxShare = share;
                 repeatedToken = token;
@@ -223,7 +239,7 @@ export function analyzeStuffing(text) {
         }
     }
     return {
-        stuffed: Boolean(repeatedToken) || consecutive || uniqueRatio < 0.32,
+        stuffed: Boolean(repeatedToken) || consecutive || (tokens.length >= 8 && uniqueRatio < 0.32),
         uniqueRatio,
         repeatedToken,
         consecutive,
@@ -461,11 +477,21 @@ function scoreEducation(data) {
         score += 1;
         findings.push({ ok: true, text: 'Education includes a date.' });
     }
+    let action = 'Education is complete enough for ATS.';
+    if (score < ATS_WEIGHTS.education) {
+        if (meaningful.length === 0) {
+            action = 'Add school name, degree, and graduation year or field of study.';
+        } else if (complete.length === 0) {
+            action = 'Specify both the degree title and school name.';
+        } else {
+            action = 'Add graduation year or dates to complete your education entry.';
+        }
+    }
     return {
         score,
         maxScore: ATS_WEIGHTS.education,
         findings,
-        action: score >= 7 ? 'Education is complete enough for ATS.' : 'Add school, degree, and a date.',
+        action,
         navigateTo: 'education',
     };
 }
@@ -497,14 +523,25 @@ function scoreSkills(data, stuffing) {
         findings.push({ ok: false, text: 'Repeated skill keywords elsewhere on the resume do not add extra points.' });
     }
 
+    let action = 'Skill list is in a healthy range.';
+    if (score < ATS_WEIGHTS.skills) {
+        if (skills.length === 0) {
+            action = 'Add 6–12 core skills and tools relevant to your target role.';
+        } else if (skills.length < 6) {
+            action = 'Add 3–5 more skills or tools to strengthen keyword coverage.';
+        } else if (skills.length < 8) {
+            action = 'Add 2–3 specialized technical tools or frameworks to maximize score.';
+        } else if (skills.length > 18) {
+            action = 'Prune skill list down to 8–16 high-impact core skills.';
+        }
+    }
+
     return {
         score: Math.min(ATS_WEIGHTS.skills, score),
         maxScore: ATS_WEIGHTS.skills,
         findings,
         facts: { count: skills.length, names: skills },
-        action: skills.length >= 6 && skills.length <= 18
-            ? 'Skill list is in a healthy range.'
-            : 'Keep 6–16 distinct, relevant skills — quality over volume.',
+        action,
         navigateTo: 'skills',
     };
 }
@@ -641,13 +678,17 @@ function scoreIntegrity({ stuffing, skills, datedRoles, hasNarrative, empty }) {
         findings.push({ ok: false, text: 'Add real sentences in the summary or experience — not only keywords.' });
     }
     if (stuffing.stuffed) score = Math.min(score, 6);
+    let action = 'Integrity looks healthy — keep writing naturally.';
+    if (stuffing.stuffed) {
+        action = 'Remove repeated keywords and keep each claim in one natural sentence.';
+    } else if (score < ATS_WEIGHTS.integrity) {
+        action = 'Ensure employment dates are chronological and bullet points have clear context.';
+    }
     return {
         score: Math.min(ATS_WEIGHTS.integrity, score),
         maxScore: ATS_WEIGHTS.integrity,
         findings,
-        action: stuffing.stuffed
-            ? 'Remove repeated keywords and keep each claim in one natural sentence.'
-            : 'Integrity looks healthy — keep writing naturally.',
+        action,
         navigateTo: 'work-history',
     };
 }
@@ -860,6 +901,11 @@ function buildStrengths(sections, jdMatch, stuffing, language) {
     return uniqueStrings(strengths).slice(0, 3);
 }
 
+function isPassiveStatus(text) {
+    if (!text || typeof text !== 'string') return true;
+    return /is in a healthy range|looks complete|looks healthy|is complete enough|is doing its job|is strong|looks good/i.test(text);
+}
+
 function buildImprovements(sections, jdMatch, stuffing, qualityScore) {
     if (!qualityScore) {
         return [{
@@ -874,7 +920,7 @@ function buildImprovements(sections, jdMatch, stuffing, qualityScore) {
             gap: section.maxScore - section.score,
             ratio: section.score / section.maxScore,
         }))
-        .filter((item) => item.gap > 0)
+        .filter((item) => item.gap > 0 && !isPassiveStatus(item.section.action))
         .sort((left, right) => right.gap - left.gap || left.ratio - right.ratio);
 
     const actions = [];
