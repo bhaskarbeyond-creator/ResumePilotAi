@@ -16,7 +16,8 @@ Inspected after fetch:
 
 ## 2. Final SHA
 
-See the commit created at the end of this pass on `arena/01a016a4-resumepilotai`.
+`5c82e7a` — `fix(ats): calibrate JD blend, harden matching, and finish regression gates`  
+Ancestry: `bb0a804` → `7e9d8d6` → `eeaf1df` → `4e22a36` → `5c82e7a`.
 
 ## 3. Exact scoring formula
 
