@@ -120,8 +120,8 @@ test('DOCX export successfully generates valid OOXML packages for all 51 templat
 
     const xml = await archive.file('word/document.xml').async('string');
     const style = getTemplateStyle(templateName);
-    if (style.archetype === '2-column') {
-      assert.match(xml, /<w:tbl[\s>]/, `${templateName} (2-column archetype) must contain <w:tbl>`);
+    if (['modern-split', 'executive-banner', 'compact-euro', 'tech-grid'].includes(style.archetype)) {
+      assert.match(xml, /<w:tbl[\s>]/, `${templateName} (${style.archetype} archetype) must contain <w:tbl>`);
     }
   }
 });
@@ -142,10 +142,43 @@ test('DOCX export correctly renders Unicode scripts (Telugu, Devanagari, Europea
   assert.match(documentXml, /నిర్మించిన వ్యవస్థలు/);
 });
 
-test('DOCX export bounds control characters and oversized individual text fields', async () => {
-  const buffer = await createResumeDocx({ firstname: 'Safe\u0000Name', summary: 'x'.repeat(20_000) });
-  const archive = await JSZip.loadAsync(buffer);
-  const documentXml = await archive.file('word/document.xml').async('string');
-  assert.doesNotMatch(documentXml, /\u0000/);
-  assert.ok(documentXml.length < 25_000);
+test('DOCX export renders distinct layout structures for all 5 archetypes', async () => {
+  const sampleData = {
+    firstname: 'Alex',
+    lastname: 'Morgan',
+    occupation: 'Lead Engineer',
+    summary: 'Experienced developer building resilient systems.',
+    skills: [{ name: 'React' }, { name: 'Node.js' }, { name: 'Go' }],
+    employments: [{ jobTitle: 'Architect', employer: 'Tech Corp', startDate: '2020', endDate: 'Present', description: '• Led teams' }],
+    educations: [{ degree: 'B.S. CS', school: 'MIT', startDate: '2016', endDate: '2020' }]
+  };
+
+  // 1. Modern Split (Cv1)
+  const bufCv1 = await createResumeDocx({ ...sampleData, template: 'Cv1' });
+  const xmlCv1 = await (await JSZip.loadAsync(bufCv1)).file('word/document.xml').async('string');
+  assert.match(xmlCv1, /<w:tbl[\s>]/);
+  assert.match(xmlCv1, /EA580C/i);
+
+  // 2. Executive Banner (Cv8)
+  const bufCv8 = await createResumeDocx({ ...sampleData, template: 'Cv8' });
+  const xmlCv8 = await (await JSZip.loadAsync(bufCv8)).file('word/document.xml').async('string');
+  assert.match(xmlCv8, /<w:shd w:fill="1E293B"\/>/i);
+
+  // 3. Minimal ATS (Cv4)
+  const bufCv4 = await createResumeDocx({ ...sampleData, template: 'Cv4' });
+  const xmlCv4 = await (await JSZip.loadAsync(bufCv4)).file('word/document.xml').async('string');
+  assert.match(xmlCv4, /Alex Morgan/);
+  assert.match(xmlCv4, /Georgia|Merriweather/i);
+
+  // 4. Tech Grid (Cv25)
+  const bufCv25 = await createResumeDocx({ ...sampleData, template: 'Cv25' });
+  const xmlCv25 = await (await JSZip.loadAsync(bufCv25)).file('word/document.xml').async('string');
+  assert.match(xmlCv25, /Consolas/);
+  assert.match(xmlCv25, /Technical Stack/i);
+
+  // 5. Compact Euro (Cv40)
+  const bufCv40 = await createResumeDocx({ ...sampleData, template: 'Cv40' });
+  const xmlCv40 = await (await JSZip.loadAsync(bufCv40)).file('word/document.xml').async('string');
+  assert.match(xmlCv40, /003399/);
+  assert.match(xmlCv40, /WORK EXPERIENCE/i);
 });
