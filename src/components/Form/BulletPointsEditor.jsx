@@ -25,10 +25,57 @@ const ACTION_VERBS = new Set([
 ]);
 
 /**
+ * Parses any incoming string (HTML list, paragraphs, bullet characters, or plain text)
+ * into a clean array of bullet strings.
+ */
+function parseBullets(val) {
+    if (!val || typeof val !== 'string') return [''];
+    const str = val.trim();
+    if (!str) return [''];
+
+    // 1. If HTML containing <li> or <p>
+    if (str.includes('<li>') || str.includes('<p>')) {
+        const liMatches = str.match(/<li[^>]*>(.*?)<\/li>/gi);
+        if (liMatches && liMatches.length > 0) {
+            const items = liMatches
+                .map((li) => li.replace(/<[^>]*>/g, '').replace(/^[\s•\-\*\d\.\)\s]+/, '').trim())
+                .filter(Boolean);
+            if (items.length > 0) return items;
+        }
+        const pMatches = str.match(/<p[^>]*>(.*?)<\/p>/gi);
+        if (pMatches && pMatches.length > 0) {
+            const items = pMatches
+                .map((p) => p.replace(/<[^>]*>/g, '').replace(/^[\s•\-\*\d\.\)\s]+/, '').trim())
+                .filter(Boolean);
+            if (items.length > 0) return items;
+        }
+    }
+
+    // 2. Plain text - strip HTML tags if any left
+    const cleanStr = str.replace(/<[^>]*>/g, '');
+    const lines = cleanStr
+        .split(/\r?\n/)
+        .map((line) => line.replace(/^[\s•\-\*\d\.\)\s]+/, '').trim())
+        .filter(Boolean);
+
+    return lines.length > 0 ? lines : [''];
+}
+
+function serializeBullets(bullets) {
+    const cleaned = (bullets || [])
+        .map((b) => (typeof b === 'string' ? b.trim() : ''))
+        .filter(Boolean)
+        .map((b) => `• ${b}`);
+    return cleaned.join('\n');
+}
+
+/**
  * 10/10 World-Class BulletPointsEditor with Live Green/Amber/Red Bullet Scoring
  * - 🟢 Green: Strong Action Verb + Quantifiable Metrics/Scale (ATS Ready)
  * - 🟡 Amber: Good (Missing Metrics or Strong Action Verb)
  * - 🔴 Red: Needs Improvement (Too Short, Passive "Responsible for", or Over Limit)
+ * - Instant Add Bullet Point (+ auto-focus, Enter key shortcut, Backspace deletion)
+ * - Multi-line paste auto-split into individual bullet items
  * - Live Quality Counter & Status Banner (🟢 Strong · 🟡 Good · 🔴 Needs Work)
  * - 1-Click Individual & Batch "✨ AI Enhance" to elevate any bullet to 10/10 Green
  * - Drag & drop reordering, undo history, and character limit protection
@@ -40,62 +87,133 @@ const BulletPointsEditor = ({
     maxLength = 220,
     disabled = false
 }) => {
+    // Internal local state holds the array of bullets (including any blank draft bullet)
+    const [localBullets, setLocalBullets] = useState(() => parseBullets(value));
+    const lastEmittedValueRef = useRef(serializeBullets(localBullets));
+    const textareaRefs = useRef([]);
+
     const [enhancingIndex, setEnhancingIndex] = useState(null);
     const [isEnhancingAll, setIsEnhancingAll] = useState(false);
     const [draggedIdx, setDraggedIdx] = useState(null);
     const [historyMap, setHistoryMap] = useState({}); // Stores previous text for undo
     const aiRequestControllerRef = useRef(null);
-    useEffect(() => () => { const controller = aiRequestControllerRef.current; aiRequestControllerRef.current = null; controller?.abort(); }, []);
 
-    // Parse value string into array of bullet strings
-    const bullets = useMemo(() => {
-        if (!value || typeof value !== 'string') return [''];
-        const lines = value
-            .split(/\r?\n/)
-            .map((line) => line.replace(/^[\s•\-\*\d\.\)\s]+/, '').trim())
-            .filter((line) => line.length > 0);
-        return lines.length > 0 ? lines : [''];
+    // Sync from external value changes (e.g. AI suggestion modal, reset, switching entries)
+    useEffect(() => {
+        const incomingSerialized = serializeBullets(parseBullets(value));
+        const currentSerialized = serializeBullets(localBullets);
+
+        if (incomingSerialized !== currentSerialized && value !== lastEmittedValueRef.current) {
+            const parsed = parseBullets(value);
+            setLocalBullets(parsed.length > 0 ? parsed : ['']);
+            lastEmittedValueRef.current = serializeBullets(parsed);
+        }
     }, [value]);
+
+    useEffect(() => () => {
+        const controller = aiRequestControllerRef.current;
+        aiRequestControllerRef.current = null;
+        controller?.abort();
+    }, []);
 
     // Emit updated string to parent
     const emitChanges = (newBullets) => {
-        const cleaned = newBullets
-            .map((b) => b.trim())
-            .filter(Boolean)
-            .map((b) => `• ${b}`);
-        const resultString = cleaned.join('\n');
+        const resultString = serializeBullets(newBullets);
+        lastEmittedValueRef.current = resultString;
         if (onChange) {
             onChange(resultString);
         }
     };
 
     const handleBulletChange = (index, newText, recordHistory = false) => {
-        if (recordHistory && bullets[index] !== newText) {
-            setHistoryMap((prev) => ({ ...prev, [index]: bullets[index] }));
+        if (recordHistory && localBullets[index] !== newText) {
+            setHistoryMap((prev) => ({ ...prev, [index]: localBullets[index] }));
         }
-        const updated = [...bullets];
+
+        // Check if user pasted multi-line text with newlines
+        if (newText.includes('\n')) {
+            const pastedLines = newText
+                .split(/\r?\n/)
+                .map((l) => l.replace(/^[\s•\-\*\d\.\)\s]+/, '').trim())
+                .filter(Boolean);
+
+            if (pastedLines.length > 1) {
+                const updated = [...localBullets];
+                updated.splice(index, 1, ...pastedLines);
+                setLocalBullets(updated);
+                emitChanges(updated);
+                return;
+            }
+        }
+
+        const updated = [...localBullets];
         updated[index] = newText;
+        setLocalBullets(updated);
         emitChanges(updated);
     };
 
-    const handleAddBullet = () => {
-        const updated = [...bullets, ''];
+    const handleAddBullet = (insertAtIndex = null) => {
+        let updated;
+        let newFocusIndex;
+
+        if (typeof insertAtIndex === 'number' && insertAtIndex >= 0 && insertAtIndex < localBullets.length) {
+            updated = [...localBullets];
+            updated.splice(insertAtIndex + 1, 0, '');
+            newFocusIndex = insertAtIndex + 1;
+        } else {
+            updated = [...localBullets, ''];
+            newFocusIndex = updated.length - 1;
+        }
+
+        setLocalBullets(updated);
         emitChanges(updated);
+
+        // Auto-focus the newly created bullet textarea
+        setTimeout(() => {
+            if (textareaRefs.current[newFocusIndex]) {
+                textareaRefs.current[newFocusIndex].focus();
+            }
+        }, 30);
     };
 
     const handleDeleteBullet = (index) => {
-        if (bullets.length <= 1) {
-            emitChanges(['']);
+        if (localBullets.length <= 1) {
+            const reset = [''];
+            setLocalBullets(reset);
+            emitChanges(reset);
             return;
         }
-        const updated = bullets.filter((_, i) => i !== index);
+
+        const updated = localBullets.filter((_, i) => i !== index);
+        setLocalBullets(updated);
+
         // Clean up history
         setHistoryMap((prev) => {
             const next = { ...prev };
             delete next[index];
             return next;
         });
+
         emitChanges(updated);
+
+        // Focus adjacent bullet
+        const nextFocusIndex = Math.max(0, index - 1);
+        setTimeout(() => {
+            if (textareaRefs.current[nextFocusIndex]) {
+                textareaRefs.current[nextFocusIndex].focus();
+            }
+        }, 30);
+    };
+
+    // Keyboard shortcuts (Enter creates next bullet, Backspace on empty deletes)
+    const handleKeyDown = (e, index) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleAddBullet(index);
+        } else if (e.key === 'Backspace' && !localBullets[index] && localBullets.length > 1) {
+            e.preventDefault();
+            handleDeleteBullet(index);
+        }
     };
 
     // Drag and Drop Handlers
@@ -107,11 +225,12 @@ const BulletPointsEditor = ({
     const handleDragOver = (e, index) => {
         e.preventDefault();
         if (draggedIdx === null || draggedIdx === index) return;
-        const updated = [...bullets];
+        const updated = [...localBullets];
         const item = updated[draggedIdx];
         updated.splice(draggedIdx, 1);
         updated.splice(index, 0, item);
         setDraggedIdx(index);
+        setLocalBullets(updated);
         emitChanges(updated);
     };
 
@@ -120,7 +239,7 @@ const BulletPointsEditor = ({
     };
 
     const handleEnhanceSingleBullet = async (index) => {
-        const currentText = bullets[index];
+        const currentText = localBullets[index];
         if (!currentText || !currentText.trim() || enhancingIndex !== null || isEnhancingAll) return;
 
         // Record history before enhancement
@@ -147,7 +266,7 @@ const BulletPointsEditor = ({
 
     const handleEnhanceAll = async () => {
         if (isEnhancingAll || enhancingIndex !== null) return;
-        const validIndices = bullets
+        const validIndices = localBullets
             .map((b, i) => (b && b.trim() ? i : null))
             .filter((i) => i !== null);
         if (validIndices.length === 0) return;
@@ -156,14 +275,15 @@ const BulletPointsEditor = ({
         aiRequestControllerRef.current?.abort();
         const requestController = new AbortController();
         aiRequestControllerRef.current = requestController;
+
         // Snapshot current history
         const newHistory = { ...historyMap };
-        bullets.forEach((b, i) => {
+        localBullets.forEach((b, i) => {
             if (b && b.trim()) newHistory[i] = b;
         });
         setHistoryMap(newHistory);
 
-        const currentBullets = [...bullets];
+        const currentBullets = [...localBullets];
         for (const idx of validIndices) {
             setEnhancingIndex(idx);
             try {
@@ -176,7 +296,10 @@ const BulletPointsEditor = ({
                 console.error(`Failed to enhance bullet ${idx}:`, err);
             }
         }
-        if (!requestController.signal.aborted) emitChanges(currentBullets);
+        if (!requestController.signal.aborted) {
+            setLocalBullets(currentBullets);
+            emitChanges(currentBullets);
+        }
         if (aiRequestControllerRef.current === requestController) {
             aiRequestControllerRef.current = null;
             setEnhancingIndex(null);
@@ -187,9 +310,8 @@ const BulletPointsEditor = ({
     const handleUndo = (index) => {
         const previousText = historyMap[index];
         if (previousText !== undefined) {
-            const currentText = bullets[index];
+            const currentText = localBullets[index];
             handleBulletChange(index, previousText, false);
-            // Swap or clear undo history
             setHistoryMap((prev) => ({ ...prev, [index]: currentText }));
         }
     };
@@ -284,16 +406,16 @@ const BulletPointsEditor = ({
 
     // Calculate overall stats
     const stats = useMemo(() => {
-        const valid = bullets.filter(b => b && b.trim());
+        const valid = localBullets.filter((b) => b && b.trim());
         let green = 0, amber = 0, red = 0;
-        valid.forEach(b => {
+        valid.forEach((b) => {
             const q = getBulletQuality(b);
             if (q.status === 'green') green++;
             else if (q.status === 'amber') amber++;
             else red++;
         });
         return { total: valid.length, green, amber, red };
-    }, [bullets]);
+    }, [localBullets]);
 
     return (
         <div className="space-y-3">
@@ -339,8 +461,8 @@ const BulletPointsEditor = ({
             </div>
 
             {/* Bullet Points List */}
-            {bullets.map((bulletText, index) => {
-                const quality = getBulletQuality(bulletText, maxLength);
+            {localBullets.map((bulletText, index) => {
+                const quality = getBulletQuality(bulletText);
                 const charCount = bulletText.length;
                 const isOverLimit = charCount > maxLength;
                 const isEnhancing = enhancingIndex === index;
@@ -389,12 +511,14 @@ const BulletPointsEditor = ({
 
                             {/* Textarea — spacious vertical area */}
                             <textarea
+                                ref={(el) => (textareaRefs.current[index] = el)}
                                 value={bulletText}
                                 onChange={(e) => handleBulletChange(index, e.target.value)}
+                                onKeyDown={(e) => handleKeyDown(e, index)}
                                 disabled={disabled || isEnhancing || isEnhancingAll}
-                                rows={3}
+                                rows={2}
                                 placeholder={placeholder}
-                                className="w-full text-xs text-slate-800 bg-transparent border-0 outline-none p-0 min-h-[65px] font-normal leading-relaxed resize-y"
+                                className="w-full text-xs text-slate-800 bg-transparent border-0 outline-none p-0 min-h-[52px] font-normal leading-relaxed resize-y focus:ring-0"
                             />
 
                             {/* Card Footer Bar — Quality Badge & Tip (Left) + Undo & AI Enhance (Right) */}
@@ -453,10 +577,10 @@ const BulletPointsEditor = ({
             {/* Add Bullet Button */}
             <button
                 type="button"
-                onClick={handleAddBullet}
+                onClick={() => handleAddBullet()}
                 disabled={disabled || isEnhancingAll}
-                className="w-full py-2.5 bg-indigo-50/60 hover:bg-indigo-100/80 text-indigo-700 border border-dashed border-indigo-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-2xs mt-2">
-                <FaPlus className="w-3 h-3" /> Add Bullet Point
+                className="w-full py-2.5 bg-indigo-50/60 hover:bg-indigo-100/80 text-indigo-700 border border-dashed border-indigo-300 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-2xs mt-2 cursor-pointer hover:shadow-xs">
+                <FaPlus className="w-3.5 h-3.5 text-indigo-600" /> Add Bullet Point
             </button>
         </div>
     );
