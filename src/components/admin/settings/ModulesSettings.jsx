@@ -42,6 +42,7 @@ const ModulesSettings = () => {
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [savingKey, setSavingKey] = useState(null);
     const [toastMessage, setToastMessage] = useState(null);
 
     useEffect(() => {
@@ -75,58 +76,75 @@ const ModulesSettings = () => {
         });
     }, []);
 
-    const toggleModule = (moduleKey) => {
-        setModulesConfig((prev) => ({
-            ...prev,
-            [moduleKey]: !prev[moduleKey],
-        }));
-    };
-
-    const handleSave = async (e) => {
-        e.preventDefault();
+    const persistModules = async (nextConfig, targetKey = null) => {
+        if (targetKey) setSavingKey(targetKey);
         setSaving(true);
         setToastMessage(null);
 
         try {
             const updatedModules = {
-                ...modulesConfig,
-                enableLinkedinLogin: modulesConfig.enableLinkedinAuthModule,
-                enableGithubLogin: modulesConfig.enableGithubAuthModule,
+                ...nextConfig,
+                enableLinkedinLogin: nextConfig.enableLinkedinAuthModule,
+                enableGithubLogin: nextConfig.enableGithubAuthModule,
             };
 
             // Save module settings under category 'modules'
             await saveSystemSettings('modules', updatedModules);
-            // Sync enableEmailVerification to auth namespace for cross-tab reads
-            await saveSystemSettings('auth', { enableEmailVerification: modulesConfig.enableEmailVerification });
 
-            // Social sign-on flags share a public configuration projection.
-            const currentSettings = (await getSystemSettings()) || {};
-            await saveSystemSettings('socialAuth', {
-                ...(currentSettings.socialAuth || {}),
-                enableLinkedinLogin: modulesConfig.enableLinkedinAuthModule,
-                enableGithubLogin: modulesConfig.enableGithubAuthModule,
-            });
+            // Best-effort sync to auth and socialAuth namespaces without blocking modules
+            try {
+                await saveSystemSettings('auth', { enableEmailVerification: nextConfig.enableEmailVerification });
+            } catch (authErr) {
+                console.warn('Auth sync notice:', authErr);
+            }
+
+            try {
+                const currentSettings = (await getSystemSettings()) || {};
+                await saveSystemSettings('socialAuth', {
+                    ...(currentSettings.socialAuth || {}),
+                    enableLinkedinLogin: nextConfig.enableLinkedinAuthModule,
+                    enableGithubLogin: nextConfig.enableGithubAuthModule,
+                });
+            } catch (socialErr) {
+                console.warn('Social auth sync notice:', socialErr);
+            }
 
             // Dispatch global event so all open tabs / components update state in real-time
             window.dispatchEvent(new CustomEvent('systemSettingsUpdated', {
                 detail: {
                     modules: updatedModules,
                     socialAuth: {
-                        enableLinkedinLogin: modulesConfig.enableLinkedinAuthModule,
-                        enableGithubLogin: modulesConfig.enableGithubAuthModule,
+                        enableLinkedinLogin: nextConfig.enableLinkedinAuthModule,
+                        enableGithubLogin: nextConfig.enableGithubAuthModule,
                     },
-                    ai: { enableImportModule: modulesConfig.enableImportModule }
+                    ai: { enableImportModule: nextConfig.enableImportModule }
                 }
             }));
 
             setToastMessage({ type: 'success', text: 'Module settings saved successfully!' });
         } catch (error) {
             console.error('Error saving module settings:', error);
-            setToastMessage({ type: 'error', text: 'Failed to save module settings. Please try again.' });
+            setToastMessage({ type: 'error', text: error?.message || 'Failed to save module settings. Please try again.' });
         } finally {
             setSaving(false);
+            if (targetKey) setTimeout(() => setSavingKey(null), 1500);
             setTimeout(() => setToastMessage(null), 4000);
         }
+    };
+
+    const toggleModule = async (moduleKey) => {
+        const nextValue = !modulesConfig[moduleKey];
+        const nextConfig = {
+            ...modulesConfig,
+            [moduleKey]: nextValue,
+        };
+        setModulesConfig(nextConfig);
+        await persistModules(nextConfig, moduleKey);
+    };
+
+    const handleSave = async (e) => {
+        e.preventDefault();
+        await persistModules(modulesConfig);
     };
 
     if (loading) {
@@ -328,8 +346,10 @@ const ModulesSettings = () => {
                                     {/* Toggle Switch */}
                                     <button
                                         type="button"
+                                        disabled={saving}
                                         onClick={() => toggleModule(mod.key)}
-                                        className="flex items-center space-x-2 focus:outline-none shrink-0"
+                                        className="flex items-center space-x-2 focus:outline-none shrink-0 disabled:opacity-60"
+                                        title={isEnabled ? 'Click to Disable' : 'Click to Enable'}
                                     >
                                         <div className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors ${
                                             isEnabled ? 'bg-indigo-600' : 'bg-slate-300'
@@ -355,7 +375,13 @@ const ModulesSettings = () => {
                                     {mod.statusText}
                                 </span>
                                 <span className="text-[11px] font-medium text-slate-600">
-                                    {isEnabled ? 'Active in App' : 'Disabled'}
+                                    {savingKey === mod.key ? (
+                                        <span className="text-indigo-600 font-semibold flex items-center gap-1">
+                                            <FaSpinner className="w-3 h-3 animate-spin" /> Saving...
+                                        </span>
+                                    ) : (
+                                        isEnabled ? 'Active in App' : 'Disabled'
+                                    )}
                                 </span>
                             </div>
                         </div>
