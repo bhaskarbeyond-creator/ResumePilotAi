@@ -15,7 +15,7 @@ After fetch:
 
 ## 2. Final SHA
 
-See the commit created at the end of this pass.
+`61ed5a3` — `fix(ats): split readiness from job match and stop punishing missing JDs`
 
 ## 3. Scoring architecture
 
