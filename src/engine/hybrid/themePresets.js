@@ -297,14 +297,14 @@ export const THEME_PRESETS = {
   Cv18: {
     name: 'Princeton Minimal ATS',
     archetype: ARCHETYPES.MINIMAL_ATS,
-    primary: '#27272a',
-    secondary: '#d97706',
+    primary: '#c2410c',
+    secondary: '#ea580c',
     font: "'Georgia', serif",
-    skillVariant: SKILL_VARIANTS.INLINE,
-    headerStyle: 'centered-classic',
-    dividerStyle: 'solid-thin',
-    timelineStyle: 'compact-clean',
-    density: 'standard',
+    skillVariant: SKILL_VARIANTS.PILLS,
+    headerStyle: 'accent-bracket',
+    dividerStyle: 'left-bar',
+    timelineStyle: 'accent-bullet',
+    density: 'spacious',
   },
 
   Cv19: {
