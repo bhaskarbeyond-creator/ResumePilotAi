@@ -1009,7 +1009,10 @@
       "skills": "Competențe",
       "summary": "Rezumat",
       "projects": "Proiecte",
-      "certifications": "Certificări"
+      "certifications": "Certificări",
+      "achievements": "Realizări",
+      "references": "Referințe",
+      "customSections": "Secțiuni personalizate"
     },
     "navigation": {
       "previous": "Anterior",
@@ -1102,6 +1105,11 @@
     },
     "analytics": {
       "templateChanged": "Șablon modificat în: {{templateName}} ({{templateId}})"
+    },
+    "customSection": {
+      "add": "Adaugă secțiune personalizată",
+      "prompt": "Introduceți titlul secțiunii (ex. Voluntariat, Premii, Publicații):",
+      "defaultTitle": "Premii și distincții"
     }
   },
   "HeadingStep": {
@@ -1366,32 +1374,32 @@
     }
   },
   "ProjectsStep": {
-  "title": "Proiecte",
-  "subtitle": "Adăugați proiecte personale, academice sau profesionale care vă pun în valoare abilitățile.",
-  "defaultValues": {
-    "untitledProject": "Proiect Fără Titlu"
-  },
-  "actions": {
-    "collapse": "Restrânge",
-    "expand": "Extinde",
-    "remove": "Eliminare Proiect",
-    "addProject": "Adăugare Proiect"
-  },
-  "fields": {
-    "title": {
-      "label": "Nume Proiect",
-      "placeholder": "de ex. Platformă de comerț electronic"
+    "title": "Proiecte",
+    "subtitle": "Adăugați proiecte personale, academice sau profesionale care vă pun în valoare abilitățile.",
+    "defaultValues": {
+      "untitledProject": "Proiect Fără Titlu"
     },
-    "url": {
-      "label": "URL Proiect",
-      "placeholder": "https://github.com/..."
+    "actions": {
+      "collapse": "Restrânge",
+      "expand": "Extinde",
+      "remove": "Eliminare Proiect",
+      "addProject": "Adăugare Proiect"
     },
-    "description": {
-      "label": "Descriere",
-      "placeholder": "Descrieți ce face proiectul, tehnologiile folosite, contribuțiile și impactul dvs.…"
+    "fields": {
+      "title": {
+        "label": "Nume Proiect",
+        "placeholder": "de ex. Platformă de comerț electronic"
+      },
+      "url": {
+        "label": "URL Proiect",
+        "placeholder": "https://github.com/..."
+      },
+      "description": {
+        "label": "Descriere",
+        "placeholder": "Descrieți ce face proiectul, tehnologiile folosite, contribuțiile și impactul dvs.…"
+      }
     }
-  }
-},
+  },
   "CertificationsStep": {
     "title": "Certificări",
     "subtitle": "Adăugați certificări și licențe profesionale care vă atestă expertiza.",
@@ -2614,5 +2622,94 @@
     "relatedArticles": "Articole similare",
     "views": "vizualizări",
     "tags": "Etichete"
+  },
+  "AchievementsStep": {
+    "title": "Realizări",
+    "subtitle": "Adăugați premii, distincții și rezultate măsurabile care consolidează CV-ul.",
+    "defaultValues": {
+      "untitledAchievement": "Realizare fără titlu"
+    },
+    "empty": {
+      "title": "Nicio realizare adăugată",
+      "description": "Evidențiați premii, publicații, promovări sau rezultate de care sunteți mândru."
+    },
+    "actions": {
+      "collapse": "Restrânge",
+      "expand": "Extinde",
+      "remove": "Elimină realizarea",
+      "addAchievement": "Adaugă realizare"
+    },
+    "fields": {
+      "title": {
+        "label": "Titlul realizării",
+        "placeholder": "ex. Premiul pentru excelență în inginerie"
+      },
+      "description": {
+        "label": "Descriere",
+        "placeholder": "Descrieți rezultatul, recunoașterea sau impactul…"
+      }
+    }
+  },
+  "ReferencesStep": {
+    "title": "Referințe",
+    "subtitle": "Adăugați persoane de referință care pot vorbi despre munca dvs.",
+    "defaultValues": {
+      "untitledReference": "Referință fără titlu"
+    },
+    "empty": {
+      "title": "Nicio referință adăugată",
+      "description": "Adăugați un manager, mentor sau coleg și o notă scurtă."
+    },
+    "actions": {
+      "collapse": "Restrânge",
+      "expand": "Extinde",
+      "remove": "Elimină referința",
+      "addReference": "Adaugă referință"
+    },
+    "fields": {
+      "name": {
+        "label": "Numele persoanei de referință",
+        "placeholder": "ex. Priya Nair"
+      },
+      "reference": {
+        "label": "Detalii referință",
+        "placeholder": "ex. VP Engineering, Meridian — disponibil la cerere"
+      }
+    }
+  },
+  "CustomSectionsStep": {
+    "title": "Secțiuni personalizate",
+    "subtitle": "Adăugați secțiuni extra precum voluntariat, publicații sau brevete, inclusiv elementele din fiecare secțiune.",
+    "defaultValues": {
+      "untitledSection": "Secțiune fără titlu",
+      "untitledItem": "Element fără titlu"
+    },
+    "empty": {
+      "title": "Nicio secțiune personalizată",
+      "description": "Creați o secțiune, apoi adăugați elementele care trebuie să apară în CV."
+    },
+    "itemCount": "{{count}} elemente",
+    "actions": {
+      "collapse": "Restrânge",
+      "expand": "Extinde",
+      "removeSection": "Elimină secțiunea",
+      "removeItem": "Elimină elementul",
+      "addItem": "Adaugă element",
+      "addSection": "Adaugă secțiune personalizată"
+    },
+    "fields": {
+      "sectionTitle": {
+        "label": "Titlul secțiunii",
+        "placeholder": "ex. Voluntariat, Publicații, Brevete"
+      },
+      "itemTitle": {
+        "label": "Titlul elementului",
+        "placeholder": "ex. Mentor comunitar"
+      },
+      "itemDescription": {
+        "label": "Descrierea elementului",
+        "placeholder": "Descrieți munca, publicația sau contribuția…"
+      }
+    }
   }
 }

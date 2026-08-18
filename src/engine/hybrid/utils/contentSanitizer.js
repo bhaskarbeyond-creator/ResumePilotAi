@@ -160,11 +160,37 @@ export function filterMeaningfulReferences(list) {
     return (
       hasMeaningfulText(ref.name) ||
       hasMeaningfulText(ref.reference) ||
+      hasMeaningfulText(ref.description) ||
       hasMeaningfulText(ref.contact) ||
       hasMeaningfulText(ref.email) ||
       hasMeaningfulText(ref.phone)
     );
   });
+}
+
+/**
+ * Filters custom sections, dropping sections that have no meaningful title,
+ * items, or body. Individual blank items inside an otherwise valid section
+ * are removed so a heading is never paired with empty cards.
+ */
+export function filterMeaningfulCustomSections(list) {
+  if (!Array.isArray(list)) return [];
+  return list.map((section) => {
+    if (!section || typeof section !== 'object') return null;
+    const items = (Array.isArray(section.items) ? section.items : []).filter((item) => {
+      if (typeof item === 'string') return hasMeaningfulText(item);
+      if (!item || typeof item !== 'object') return false;
+      return (
+        hasMeaningfulText(item.title) ||
+        hasMeaningfulText(item.name) ||
+        hasMeaningfulText(item.description) ||
+        hasMeaningfulText(item.content)
+      );
+    });
+    const hasBody = items.length > 0 || hasMeaningfulText(section.content);
+    if (!hasBody) return null;
+    return { ...section, items };
+  }).filter(Boolean);
 }
 
 /**

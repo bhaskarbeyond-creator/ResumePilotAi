@@ -1009,7 +1009,10 @@
       "skills": "Färdigheter",
       "summary": "Sammanfattning",
       "projects": "Projekt",
-      "certifications": "Certifieringar"
+      "certifications": "Certifieringar",
+      "achievements": "Prestationer",
+      "references": "Referenser",
+      "customSections": "Egna avsnitt"
     },
     "navigation": {
       "previous": "Föregående",
@@ -1102,6 +1105,11 @@
     },
     "analytics": {
       "templateChanged": "Mall ändrad till: {{templateName}} ({{templateId}})"
+    },
+    "customSection": {
+      "add": "Lägg till eget avsnitt",
+      "prompt": "Ange avsnittets titel (t.ex. Volontärarbete, Utmärkelser, Publikationer):",
+      "defaultTitle": "Utmärkelser och hedersbetygelser"
     }
   },
   "HeadingStep": {
@@ -1366,32 +1374,32 @@
     }
   },
   "ProjectsStep": {
-  "title": "Projekt",
-  "subtitle": "Lägg till personliga, akademiska eller professionella projekt som visar dina färdigheter.",
-  "defaultValues": {
-    "untitledProject": "Projekt Utan Namn"
-  },
-  "actions": {
-    "collapse": "Fäll ihop",
-    "expand": "Expandera",
-    "remove": "Ta bort Projekt",
-    "addProject": "Lägg till Projekt"
-  },
-  "fields": {
-    "title": {
-      "label": "Projektnamn",
-      "placeholder": "t.ex. E-handelsplattform"
+    "title": "Projekt",
+    "subtitle": "Lägg till personliga, akademiska eller professionella projekt som visar dina färdigheter.",
+    "defaultValues": {
+      "untitledProject": "Projekt Utan Namn"
     },
-    "url": {
-      "label": "Projekt-URL",
-      "placeholder": "https://github.com/..."
+    "actions": {
+      "collapse": "Fäll ihop",
+      "expand": "Expandera",
+      "remove": "Ta bort Projekt",
+      "addProject": "Lägg till Projekt"
     },
-    "description": {
-      "label": "Beskrivning",
-      "placeholder": "Beskriv vad projektet gör, teknik som används, dina bidrag och resultat…"
+    "fields": {
+      "title": {
+        "label": "Projektnamn",
+        "placeholder": "t.ex. E-handelsplattform"
+      },
+      "url": {
+        "label": "Projekt-URL",
+        "placeholder": "https://github.com/..."
+      },
+      "description": {
+        "label": "Beskrivning",
+        "placeholder": "Beskriv vad projektet gör, teknik som används, dina bidrag och resultat…"
+      }
     }
-  }
-},
+  },
   "CertificationsStep": {
     "title": "Certifieringar",
     "subtitle": "Lägg till professionella certifieringar och licenser som styrker din expertis.",
@@ -2614,5 +2622,94 @@
     "relatedArticles": "Relaterade artiklar",
     "views": "visningar",
     "tags": "Taggar"
+  },
+  "AchievementsStep": {
+    "title": "Prestationer",
+    "subtitle": "Lägg till priser, utmärkelser och mätbara resultat som stärker ditt CV.",
+    "defaultValues": {
+      "untitledAchievement": "Namnlös prestation"
+    },
+    "empty": {
+      "title": "Inga prestationer tillagda ännu",
+      "description": "Lyft fram priser, publikationer, befordringar eller resultat du är stolt över."
+    },
+    "actions": {
+      "collapse": "Minimera",
+      "expand": "Expandera",
+      "remove": "Ta bort prestation",
+      "addAchievement": "Lägg till prestation"
+    },
+    "fields": {
+      "title": {
+        "label": "Prestationens titel",
+        "placeholder": "t.ex. Engineering Excellence Award"
+      },
+      "description": {
+        "label": "Beskrivning",
+        "placeholder": "Beskriv resultatet, erkännandet eller effekten…"
+      }
+    }
+  },
+  "ReferencesStep": {
+    "title": "Referenser",
+    "subtitle": "Lägg till yrkesreferenser som kan tala om ditt arbete.",
+    "defaultValues": {
+      "untitledReference": "Namnlös referens"
+    },
+    "empty": {
+      "title": "Inga referenser tillagda ännu",
+      "description": "Lägg till en chef, mentor eller kollega och en kort notering."
+    },
+    "actions": {
+      "collapse": "Minimera",
+      "expand": "Expandera",
+      "remove": "Ta bort referens",
+      "addReference": "Lägg till referens"
+    },
+    "fields": {
+      "name": {
+        "label": "Referensens namn",
+        "placeholder": "t.ex. Priya Nair"
+      },
+      "reference": {
+        "label": "Referensuppgifter",
+        "placeholder": "t.ex. VP Engineering, Meridian — lämnas på begäran"
+      }
+    }
+  },
+  "CustomSectionsStep": {
+    "title": "Egna avsnitt",
+    "subtitle": "Lägg till extra avsnitt som volontärarbete, publikationer eller patent — inklusive posterna i varje avsnitt.",
+    "defaultValues": {
+      "untitledSection": "Namnlöst avsnitt",
+      "untitledItem": "Namnlös post"
+    },
+    "empty": {
+      "title": "Inga egna avsnitt ännu",
+      "description": "Skapa ett avsnitt och lägg sedan till de poster som ska synas i CV:t."
+    },
+    "itemCount": "{{count}} poster",
+    "actions": {
+      "collapse": "Minimera",
+      "expand": "Expandera",
+      "removeSection": "Ta bort avsnitt",
+      "removeItem": "Ta bort post",
+      "addItem": "Lägg till post",
+      "addSection": "Lägg till eget avsnitt"
+    },
+    "fields": {
+      "sectionTitle": {
+        "label": "Avsnittets titel",
+        "placeholder": "t.ex. Volontärarbete, Publikationer, Patent"
+      },
+      "itemTitle": {
+        "label": "Postens titel",
+        "placeholder": "t.ex. Communitymentor"
+      },
+      "itemDescription": {
+        "label": "Postens beskrivning",
+        "placeholder": "Beskriv arbetet, publikationen eller bidraget…"
+      }
+    }
   }
 }

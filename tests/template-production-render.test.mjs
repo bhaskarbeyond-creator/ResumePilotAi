@@ -52,6 +52,7 @@ const baseResume = {
     certifications: [{ title: 'CKA', issuer: 'CNCF', date: '2022' }],
     achievements: [{ title: 'Excellence Award', description: 'Zero-downtime migration.' }],
     references: [{ name: 'Priya Nair', reference: 'VP Engineering' }],
+    customSections: [{ id: 'patents', title: 'Patents', items: [{ title: 'Distributed Locking', description: 'Consensus method.' }] }],
 };
 
 /** A deliberately long profile: 14 roles, 32 skills, 10 certifications. */
@@ -84,6 +85,13 @@ test('every template renders through the production composer without invalid out
                 const markup = renderTemplate(id, values);
                 assert.ok(markup.includes('smart-resume-page'), `${id}/${name} produced no A4 sheet`);
                 assert.doesNotMatch(markup, />\s*(?:undefined|NaN)\s*</, `${id}/${name} rendered invalid values`);
+                if (name === 'base') {
+                    assert.ok(markup.includes('Excellence Award'), `${id}/base lost achievements`);
+                    assert.ok(markup.includes('Priya Nair'), `${id}/base lost references`);
+                    assert.ok(markup.includes('Distributed Locking'), `${id}/base lost custom sections`);
+                    assert.ok(markup.includes('ResumePilot'), `${id}/base lost projects`);
+                    assert.ok(markup.includes('CKA'), `${id}/base lost certifications`);
+                }
             } catch (error) {
                 failures.push(`${id}/${name}: ${error.message}`);
             }

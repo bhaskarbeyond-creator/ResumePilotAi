@@ -15,6 +15,28 @@ const clone = value => {
 const array = value => Array.isArray(value) ? value.filter(item => item && typeof item === 'object') : [];
 const text = value => value == null ? '' : String(value);
 
+function normalizeCustomItems(section, sectionIndex) {
+    const rawItems = Array.isArray(section?.items) ? section.items : [];
+    const items = rawItems.map((item, index) => {
+        if (typeof item === 'string') {
+            const title = text(item);
+            return title ? { id: `custom-${sectionIndex}-item-${index}`, title, description: '' } : null;
+        }
+        if (!item || typeof item !== 'object') return null;
+        return {
+            ...item,
+            id: item.id || `custom-${sectionIndex}-item-${index}`,
+            title: text(item.title || item.name),
+            description: text(item.description || item.content),
+        };
+    }).filter(Boolean);
+    const content = text(section?.content);
+    if (!items.length && content) {
+        items.push({ id: `custom-${sectionIndex}-body`, title: '', description: content });
+    }
+    return items;
+}
+
 export function normalizeResumeData(input = {}, { template = 'Cv1' } = {}) {
     const source = input?.data && typeof input.data === 'object' ? input.data : input?.item && typeof input.item === 'object' ? { ...input.item, ...input } : input;
     const raw = source && typeof source === 'object' ? clone(source) : {};
@@ -75,8 +97,27 @@ export function normalizeResumeData(input = {}, { template = 'Cv1' } = {}) {
         summary: text(raw.summary || raw.professionalSummary),
         employments, educations, skills, languages,
         hobbies: Array.isArray(raw.hobbies) ? raw.hobbies : (raw.hobbies ? (typeof raw.hobbies === 'string' ? raw.hobbies : [raw.hobbies]) : []),
-        projects: array(raw.projects), certifications: array(raw.certifications), achievements: array(raw.achievements || raw.awards),
-        references: array(raw.references), customSections: array(raw.customSections),
+        projects: array(raw.projects), certifications: array(raw.certifications),
+        achievements: array(raw.achievements || raw.awards).map((item, index) => ({
+            ...item,
+            id: item.id || `achievement-${index}`,
+            title: text(item.title || item.name),
+            description: text(item.description || item.summary),
+        })),
+        references: array(raw.references).map((item, index) => ({
+            ...item,
+            id: item.id || `reference-${index}`,
+            name: text(item.name || item.title),
+            reference: text(item.reference || item.description || item.content),
+        })),
+        customSections: array(raw.customSections).map((section, index) => ({
+            ...section,
+            id: section.id || `custom-${index}`,
+            title: text(section.title).slice(0, 100),
+            visible: section.visible !== false,
+            content: text(section.content),
+            items: normalizeCustomItems(section, index),
+        })),
         sectionOrder, hiddenSections,
         completedSteps: Array.isArray(raw.completedSteps) ? [...new Set(raw.completedSteps.map(Number).filter(Number.isFinite))] : [],
         colors: raw.colors && typeof raw.colors === 'object' ? { ...raw.colors } : null,
@@ -116,7 +157,7 @@ export function duplicateResumeItem(items, id, patch = {}) {
 export function resumeHasMeaningfulData(input) {
     const resume = normalizeResumeData(input);
     return Boolean([resume.firstname, resume.lastname, resume.email, resume.phone, resume.occupation, resume.summary]
-        .some(value => value.trim()) || ['employments', 'educations', 'skills', 'languages', 'projects', 'certifications', 'customSections']
+        .some(value => value.trim()) || ['employments', 'educations', 'skills', 'languages', 'projects', 'certifications', 'achievements', 'references', 'customSections']
         .some(key => resume[key].length));
 }
 

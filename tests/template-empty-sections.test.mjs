@@ -12,6 +12,7 @@ import {
   filterMeaningfulReferences,
   filterMeaningfulLanguages,
   filterMeaningfulHobbies,
+  filterMeaningfulCustomSections,
 } from '../src/engine/hybrid/utils/contentSanitizer.js';
 import docxPkg from '../backend/services/docxExport.js';
 const { createResumeDocx, hasMeaningfulDocxText } = docxPkg;
@@ -130,6 +131,7 @@ describe('Smart Partitioner Conditional Section Suppression', () => {
       hobbies: '<p>&nbsp;</p>',
       achievements: [{}],
       references: [{}],
+      customSections: [{ title: 'Volunteer', items: [] }, { title: '', items: [{ title: '', description: '<p></p>' }] }],
     };
 
     const theme = { archetype: 'modern-split', density: 'standard' };

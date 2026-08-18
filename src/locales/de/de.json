@@ -1009,7 +1009,10 @@
       "skills": "Fähigkeiten",
       "summary": "Zusammenfassung",
       "projects": "Projekte",
-      "certifications": "Zertifizierungen"
+      "certifications": "Zertifizierungen",
+      "achievements": "Erfolge",
+      "references": "Referenzen",
+      "customSections": "Eigene Abschnitte"
     },
     "navigation": {
       "previous": "Zurück",
@@ -1102,6 +1105,11 @@
     },
     "analytics": {
       "templateChanged": "Vorlage geändert zu: {{templateName}} ({{templateId}})"
+    },
+    "customSection": {
+      "add": "Eigenen Abschnitt hinzufügen",
+      "prompt": "Titel des eigenen Abschnitts eingeben (z. B. Ehrenamt, Auszeichnungen, Publikationen):",
+      "defaultTitle": "Auszeichnungen & Ehrungen"
     }
   },
   "HeadingStep": {
@@ -1366,32 +1374,32 @@
     }
   },
   "ProjectsStep": {
-  "title": "Projekte",
-  "subtitle": "Fügen Sie persönliche, akademische oder berufliche Projekte hinzu, die Ihre Fähigkeiten unterstreichen.",
-  "defaultValues": {
-    "untitledProject": "Unbenanntes Projekt"
-  },
-  "actions": {
-    "collapse": "Einklappen",
-    "expand": "Ausklappen",
-    "remove": "Projekt entfernen",
-    "addProject": "Projekt hinzufügen"
-  },
-  "fields": {
-    "title": {
-      "label": "Projektname",
-      "placeholder": "z. B. E-Commerce-Plattform"
+    "title": "Projekte",
+    "subtitle": "Fügen Sie persönliche, akademische oder berufliche Projekte hinzu, die Ihre Fähigkeiten unterstreichen.",
+    "defaultValues": {
+      "untitledProject": "Unbenanntes Projekt"
     },
-    "url": {
-      "label": "Projekt-URL",
-      "placeholder": "https://github.com/..."
+    "actions": {
+      "collapse": "Einklappen",
+      "expand": "Ausklappen",
+      "remove": "Projekt entfernen",
+      "addProject": "Projekt hinzufügen"
     },
-    "description": {
-      "label": "Beschreibung",
-      "placeholder": "Beschreiben Sie, was das Projekt macht, verwendete Technologien, Ihre Beiträge und Wirkung…"
+    "fields": {
+      "title": {
+        "label": "Projektname",
+        "placeholder": "z. B. E-Commerce-Plattform"
+      },
+      "url": {
+        "label": "Projekt-URL",
+        "placeholder": "https://github.com/..."
+      },
+      "description": {
+        "label": "Beschreibung",
+        "placeholder": "Beschreiben Sie, was das Projekt macht, verwendete Technologien, Ihre Beiträge und Wirkung…"
+      }
     }
-  }
-},
+  },
   "CertificationsStep": {
     "title": "Zertifizierungen",
     "subtitle": "Fügen Sie berufliche Zertifizierungen und Lizenzen hinzu, die Ihre Fachkenntnisse belegen.",
@@ -2614,5 +2622,94 @@
     "relatedArticles": "Ähnliche Artikel",
     "views": "Aufrufe",
     "tags": "Schlagwörter"
+  },
+  "AchievementsStep": {
+    "title": "Erfolge",
+    "subtitle": "Fügen Sie Auszeichnungen, Ehrungen und messbare Erfolge hinzu, die Ihren Lebenslauf stärken.",
+    "defaultValues": {
+      "untitledAchievement": "Unbenannter Erfolg"
+    },
+    "empty": {
+      "title": "Noch keine Erfolge hinzugefügt",
+      "description": "Heben Sie Auszeichnungen, Publikationen, Beförderungen oder Ergebnisse hervor, auf die Sie stolz sind."
+    },
+    "actions": {
+      "collapse": "Einklappen",
+      "expand": "Ausklappen",
+      "remove": "Erfolg entfernen",
+      "addAchievement": "Erfolg hinzufügen"
+    },
+    "fields": {
+      "title": {
+        "label": "Titel des Erfolgs",
+        "placeholder": "z. B. Engineering Excellence Award"
+      },
+      "description": {
+        "label": "Beschreibung",
+        "placeholder": "Beschreiben Sie das Ergebnis, die Anerkennung oder die Wirkung…"
+      }
+    }
+  },
+  "ReferencesStep": {
+    "title": "Referenzen",
+    "subtitle": "Fügen Sie berufliche Referenzpersonen hinzu, die über Ihre Arbeit Auskunft geben können.",
+    "defaultValues": {
+      "untitledReference": "Unbenannte Referenz"
+    },
+    "empty": {
+      "title": "Noch keine Referenzen hinzugefügt",
+      "description": "Fügen Sie eine Führungskraft, eine Mentorin oder einen Kollegen und eine kurze Notiz hinzu."
+    },
+    "actions": {
+      "collapse": "Einklappen",
+      "expand": "Ausklappen",
+      "remove": "Referenz entfernen",
+      "addReference": "Referenz hinzufügen"
+    },
+    "fields": {
+      "name": {
+        "label": "Name der Referenzperson",
+        "placeholder": "z. B. Priya Nair"
+      },
+      "reference": {
+        "label": "Angaben zur Referenz",
+        "placeholder": "z. B. VP Engineering, Meridian — auf Anfrage"
+      }
+    }
+  },
+  "CustomSectionsStep": {
+    "title": "Eigene Abschnitte",
+    "subtitle": "Fügen Sie zusätzliche Abschnitte wie Ehrenamt, Publikationen oder Patente hinzu — einschließlich der einzelnen Einträge.",
+    "defaultValues": {
+      "untitledSection": "Unbenannter Abschnitt",
+      "untitledItem": "Unbenannter Eintrag"
+    },
+    "empty": {
+      "title": "Noch keine eigenen Abschnitte",
+      "description": "Erstellen Sie einen Abschnitt und fügen Sie dann die Einträge hinzu, die im Lebenslauf erscheinen sollen."
+    },
+    "itemCount": "{{count}} Einträge",
+    "actions": {
+      "collapse": "Einklappen",
+      "expand": "Ausklappen",
+      "removeSection": "Abschnitt entfernen",
+      "removeItem": "Eintrag entfernen",
+      "addItem": "Eintrag hinzufügen",
+      "addSection": "Eigenen Abschnitt hinzufügen"
+    },
+    "fields": {
+      "sectionTitle": {
+        "label": "Abschnittstitel",
+        "placeholder": "z. B. Ehrenamt, Publikationen, Patente"
+      },
+      "itemTitle": {
+        "label": "Eintragstitel",
+        "placeholder": "z. B. Community-Mentor"
+      },
+      "itemDescription": {
+        "label": "Eintragsbeschreibung",
+        "placeholder": "Beschreiben Sie die Arbeit, Publikation oder den Beitrag…"
+      }
+    }
   }
 }

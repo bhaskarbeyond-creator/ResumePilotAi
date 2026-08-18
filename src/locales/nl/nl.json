@@ -1009,7 +1009,10 @@
       "skills": "Vaardigheden",
       "summary": "Samenvatting",
       "projects": "Projecten",
-      "certifications": "Certificeringen"
+      "certifications": "Certificeringen",
+      "achievements": "Prestaties",
+      "references": "Referenties",
+      "customSections": "Aangepaste secties"
     },
     "navigation": {
       "previous": "Vorige",
@@ -1102,6 +1105,11 @@
     },
     "analytics": {
       "templateChanged": "Sjabloon gewijzigd naar: {{templateName}} ({{templateId}})"
+    },
+    "customSection": {
+      "add": "Aangepaste sectie toevoegen",
+      "prompt": "Voer de titel van de sectie in (bijv. Vrijwilligerswerk, Prijzen, Publicaties):",
+      "defaultTitle": "Prijzen en onderscheidingen"
     }
   },
   "HeadingStep": {
@@ -1366,32 +1374,32 @@
     }
   },
   "ProjectsStep": {
-  "title": "Projecten",
-  "subtitle": "Voeg persoonlijke, academische of professionele projecten toe die uw vaardigheden laten zien.",
-  "defaultValues": {
-    "untitledProject": "Project Zonder Naam"
-  },
-  "actions": {
-    "collapse": "Inklappen",
-    "expand": "Uitklappen",
-    "remove": "Project Verwijderen",
-    "addProject": "Project Toevoegen"
-  },
-  "fields": {
-    "title": {
-      "label": "Projectnaam",
-      "placeholder": "bijv. E-commerceplatform"
+    "title": "Projecten",
+    "subtitle": "Voeg persoonlijke, academische of professionele projecten toe die uw vaardigheden laten zien.",
+    "defaultValues": {
+      "untitledProject": "Project Zonder Naam"
     },
-    "url": {
-      "label": "Project-URL",
-      "placeholder": "https://github.com/..."
+    "actions": {
+      "collapse": "Inklappen",
+      "expand": "Uitklappen",
+      "remove": "Project Verwijderen",
+      "addProject": "Project Toevoegen"
     },
-    "description": {
-      "label": "Beschrijving",
-      "placeholder": "Beschrijf wat het project doet, gebruikte technologieën, uw bijdragen en impact…"
+    "fields": {
+      "title": {
+        "label": "Projectnaam",
+        "placeholder": "bijv. E-commerceplatform"
+      },
+      "url": {
+        "label": "Project-URL",
+        "placeholder": "https://github.com/..."
+      },
+      "description": {
+        "label": "Beschrijving",
+        "placeholder": "Beschrijf wat het project doet, gebruikte technologieën, uw bijdragen en impact…"
+      }
     }
-  }
-},
+  },
   "CertificationsStep": {
     "title": "Certificeringen",
     "subtitle": "Voeg professionele certificeringen en licenties toe die uw expertise bevestigen.",
@@ -2614,5 +2622,94 @@
     "relatedArticles": "Gerelateerde artikelen",
     "views": "weergaven",
     "tags": "Tags"
+  },
+  "AchievementsStep": {
+    "title": "Prestaties",
+    "subtitle": "Voeg prijzen, onderscheidingen en meetbare prestaties toe die je cv versterken.",
+    "defaultValues": {
+      "untitledAchievement": "Naamloze prestatie"
+    },
+    "empty": {
+      "title": "Nog geen prestaties toegevoegd",
+      "description": "Licht prijzen, publicaties, promoties of resultaten uit waar je trots op bent."
+    },
+    "actions": {
+      "collapse": "Inklappen",
+      "expand": "Uitklappen",
+      "remove": "Prestatie verwijderen",
+      "addAchievement": "Prestatie toevoegen"
+    },
+    "fields": {
+      "title": {
+        "label": "Titel van de prestatie",
+        "placeholder": "bijv. Engineering Excellence Award"
+      },
+      "description": {
+        "label": "Beschrijving",
+        "placeholder": "Beschrijf het resultaat, de erkenning of de impact…"
+      }
+    }
+  },
+  "ReferencesStep": {
+    "title": "Referenties",
+    "subtitle": "Voeg professionele referenties toe die over je werk kunnen spreken.",
+    "defaultValues": {
+      "untitledReference": "Naamloze referentie"
+    },
+    "empty": {
+      "title": "Nog geen referenties toegevoegd",
+      "description": "Voeg een manager, mentor of collega toe en een korte toelichting."
+    },
+    "actions": {
+      "collapse": "Inklappen",
+      "expand": "Uitklappen",
+      "remove": "Referentie verwijderen",
+      "addReference": "Referentie toevoegen"
+    },
+    "fields": {
+      "name": {
+        "label": "Naam van de referentie",
+        "placeholder": "bijv. Priya Nair"
+      },
+      "reference": {
+        "label": "Referentiegegevens",
+        "placeholder": "bijv. VP Engineering, Meridian — op aanvraag beschikbaar"
+      }
+    }
+  },
+  "CustomSectionsStep": {
+    "title": "Aangepaste secties",
+    "subtitle": "Voeg extra secties toe zoals vrijwilligerswerk, publicaties of patenten, inclusief de items in elke sectie.",
+    "defaultValues": {
+      "untitledSection": "Naamloze sectie",
+      "untitledItem": "Naamloos item"
+    },
+    "empty": {
+      "title": "Nog geen aangepaste secties",
+      "description": "Maak een sectie en voeg daarna de items toe die op je cv moeten staan."
+    },
+    "itemCount": "{{count}} items",
+    "actions": {
+      "collapse": "Inklappen",
+      "expand": "Uitklappen",
+      "removeSection": "Sectie verwijderen",
+      "removeItem": "Item verwijderen",
+      "addItem": "Item toevoegen",
+      "addSection": "Aangepaste sectie toevoegen"
+    },
+    "fields": {
+      "sectionTitle": {
+        "label": "Sectietitel",
+        "placeholder": "bijv. Vrijwilligerswerk, Publicaties, Patenten"
+      },
+      "itemTitle": {
+        "label": "Itemtitel",
+        "placeholder": "bijv. Communitymentor"
+      },
+      "itemDescription": {
+        "label": "Itembeschrijving",
+        "placeholder": "Beschrijf het werk, de publicatie of de bijdrage…"
+      }
+    }
   }
 }

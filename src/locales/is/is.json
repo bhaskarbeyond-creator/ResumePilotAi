@@ -1009,7 +1009,10 @@
       "skills": "Hæfni",
       "summary": "Yfirlit",
       "projects": "Verkefni",
-      "certifications": "Vottanir"
+      "certifications": "Vottanir",
+      "achievements": "Afrek",
+      "references": "Meðmæli",
+      "customSections": "Sérsniðnir kaflar"
     },
     "navigation": {
       "previous": "Fyrri",
@@ -1102,6 +1105,11 @@
     },
     "analytics": {
       "templateChanged": "Sniðmát breytt í: {{templateName}} ({{templateId}})"
+    },
+    "customSection": {
+      "add": "Bæta við sérsniðnum kafla",
+      "prompt": "Sláðu inn titil kaflans (t.d. Sjálfboðaliðastarf, Verðlaun, Útgefið efni):",
+      "defaultTitle": "Verðlaun og heiður"
     }
   },
   "HeadingStep": {
@@ -1366,32 +1374,32 @@
     }
   },
   "ProjectsStep": {
-  "title": "Verkefni",
-  "subtitle": "Bættu við persónulegum, akademískum eða faglegum verkefnum sem sýna hæfni þína.",
-  "defaultValues": {
-    "untitledProject": "Ónefnt Verkefni"
-  },
-  "actions": {
-    "collapse": "Loka",
-    "expand": "Opna",
-    "remove": "Fjarlægja Verkefni",
-    "addProject": "Bæta við Verkefni"
-  },
-  "fields": {
-    "title": {
-      "label": "Verkefnisnafn",
-      "placeholder": "t.d. Netverslunarvettvangur"
+    "title": "Verkefni",
+    "subtitle": "Bættu við persónulegum, akademískum eða faglegum verkefnum sem sýna hæfni þína.",
+    "defaultValues": {
+      "untitledProject": "Ónefnt Verkefni"
     },
-    "url": {
-      "label": "Verkefnis-URL",
-      "placeholder": "https://github.com/..."
+    "actions": {
+      "collapse": "Loka",
+      "expand": "Opna",
+      "remove": "Fjarlægja Verkefni",
+      "addProject": "Bæta við Verkefni"
     },
-    "description": {
-      "label": "Lýsing",
-      "placeholder": "Lýstu hvað verkefnið gerir, tækninni sem notuð var, framlagi þínu og áhrifum…"
+    "fields": {
+      "title": {
+        "label": "Verkefnisnafn",
+        "placeholder": "t.d. Netverslunarvettvangur"
+      },
+      "url": {
+        "label": "Verkefnis-URL",
+        "placeholder": "https://github.com/..."
+      },
+      "description": {
+        "label": "Lýsing",
+        "placeholder": "Lýstu hvað verkefnið gerir, tækninni sem notuð var, framlagi þínu og áhrifum…"
+      }
     }
-  }
-},
+  },
   "CertificationsStep": {
     "title": "Vottanir",
     "subtitle": "Bættu við faglegum vottunum og leyfum sem staðfesta sérfræðiþekkingu þína.",
@@ -2677,5 +2685,94 @@
     "relatedArticles": "Tengdar greinar",
     "views": "áhorf",
     "tags": "Merki"
+  },
+  "AchievementsStep": {
+    "title": "Afrek",
+    "subtitle": "Bættu við verðlaunum, heiðurstitlum og mælanlegum árangri sem styrkir ferilskrána.",
+    "defaultValues": {
+      "untitledAchievement": "Ónefnt afrek"
+    },
+    "empty": {
+      "title": "Engin afrek bætt við enn",
+      "description": "Leggðu áherslu á verðlaun, útgáfur, stöðuhækkanir eða árangur sem þú ert stolt(ur) af."
+    },
+    "actions": {
+      "collapse": "Fella saman",
+      "expand": "Opna",
+      "remove": "Fjarlægja afrek",
+      "addAchievement": "Bæta við afreki"
+    },
+    "fields": {
+      "title": {
+        "label": "Titill afreks",
+        "placeholder": "t.d. Engineering Excellence Award"
+      },
+      "description": {
+        "label": "Lýsing",
+        "placeholder": "Lýstu árangrinum, viðurkenningunni eða áhrifunum…"
+      }
+    }
+  },
+  "ReferencesStep": {
+    "title": "Meðmæli",
+    "subtitle": "Bættu við faglegum meðmælendum sem geta talað um starf þitt.",
+    "defaultValues": {
+      "untitledReference": "Ónefnd meðmæli"
+    },
+    "empty": {
+      "title": "Engin meðmæli bætt við enn",
+      "description": "Bættu við stjórnanda, leiðbeinanda eða samstarfsmanni og stuttri athugasemd."
+    },
+    "actions": {
+      "collapse": "Fella saman",
+      "expand": "Opna",
+      "remove": "Fjarlægja meðmæli",
+      "addReference": "Bæta við meðmælum"
+    },
+    "fields": {
+      "name": {
+        "label": "Nafn meðmælanda",
+        "placeholder": "t.d. Priya Nair"
+      },
+      "reference": {
+        "label": "Upplýsingar um meðmæli",
+        "placeholder": "t.d. VP Engineering, Meridian — veitt sé þess óskað"
+      }
+    }
+  },
+  "CustomSectionsStep": {
+    "title": "Sérsniðnir kaflar",
+    "subtitle": "Bættu við auka köflum eins og sjálfboðaliðastarfi, útgáfum eða einkaleyfum — ásamt færslunum í hverjum kafla.",
+    "defaultValues": {
+      "untitledSection": "Ónefndur kafli",
+      "untitledItem": "Ónefnd færsla"
+    },
+    "empty": {
+      "title": "Engir sérsniðnir kaflar enn",
+      "description": "Búðu til kafla og bættu síðan við færslunum sem eiga að birtast á ferilskránni."
+    },
+    "itemCount": "{{count}} færslur",
+    "actions": {
+      "collapse": "Fella saman",
+      "expand": "Opna",
+      "removeSection": "Fjarlægja kafla",
+      "removeItem": "Fjarlægja færslu",
+      "addItem": "Bæta við færslu",
+      "addSection": "Bæta við sérsniðnum kafla"
+    },
+    "fields": {
+      "sectionTitle": {
+        "label": "Titill kafla",
+        "placeholder": "t.d. Sjálfboðaliðastarf, Útgefið efni, Einkaleyfi"
+      },
+      "itemTitle": {
+        "label": "Titill færslu",
+        "placeholder": "t.d. Leiðbeinandi í samfélaginu"
+      },
+      "itemDescription": {
+        "label": "Lýsing færslu",
+        "placeholder": "Lýstu vinnunni, útgáfunni eða framlaginu…"
+      }
+    }
   }
 }

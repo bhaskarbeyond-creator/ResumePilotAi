@@ -1009,7 +1009,10 @@
       "skills": "Færdigheder",
       "summary": "Resumé",
       "projects": "Projekter",
-      "certifications": "Certificeringer"
+      "certifications": "Certificeringer",
+      "achievements": "Resultater",
+      "references": "Referencer",
+      "customSections": "Egne sektioner"
     },
     "navigation": {
       "previous": "Forrige",
@@ -1102,6 +1105,11 @@
     },
     "analytics": {
       "templateChanged": "Skabelon ændret til: {{templateName}} ({{templateId}})"
+    },
+    "customSection": {
+      "add": "Tilføj egen sektion",
+      "prompt": "Indtast sektionens titel (f.eks. Frivilligt arbejde, Priser, Publikationer):",
+      "defaultTitle": "Priser og hædersbevisninger"
     }
   },
   "HeadingStep": {
@@ -1366,32 +1374,32 @@
     }
   },
   "ProjectsStep": {
-  "title": "Projekter",
-  "subtitle": "Tilføj personlige, akademiske eller professionelle projekter, der viser dine færdigheder.",
-  "defaultValues": {
-    "untitledProject": "Unavngivet Projekt"
-  },
-  "actions": {
-    "collapse": "Fold Sammen",
-    "expand": "Udvid",
-    "remove": "Fjern Projekt",
-    "addProject": "Tilføj Projekt"
-  },
-  "fields": {
-    "title": {
-      "label": "Projektnavn",
-      "placeholder": "f.eks. E-handelsplatform"
+    "title": "Projekter",
+    "subtitle": "Tilføj personlige, akademiske eller professionelle projekter, der viser dine færdigheder.",
+    "defaultValues": {
+      "untitledProject": "Unavngivet Projekt"
     },
-    "url": {
-      "label": "Projekt-URL",
-      "placeholder": "https://github.com/..."
+    "actions": {
+      "collapse": "Fold Sammen",
+      "expand": "Udvid",
+      "remove": "Fjern Projekt",
+      "addProject": "Tilføj Projekt"
     },
-    "description": {
-      "label": "Beskrivelse",
-      "placeholder": "Beskriv, hvad projektet gør, anvendte teknologier, dine bidrag og resultater…"
+    "fields": {
+      "title": {
+        "label": "Projektnavn",
+        "placeholder": "f.eks. E-handelsplatform"
+      },
+      "url": {
+        "label": "Projekt-URL",
+        "placeholder": "https://github.com/..."
+      },
+      "description": {
+        "label": "Beskrivelse",
+        "placeholder": "Beskriv, hvad projektet gør, anvendte teknologier, dine bidrag og resultater…"
+      }
     }
-  }
-},
+  },
   "CertificationsStep": {
     "title": "Certificeringer",
     "subtitle": "Tilføj professionelle certificeringer og licenser, der dokumenterer din ekspertise.",
@@ -2614,5 +2622,94 @@
     "relatedArticles": "Relaterede artikler",
     "views": "visninger",
     "tags": "Tags"
+  },
+  "AchievementsStep": {
+    "title": "Resultater",
+    "subtitle": "Tilføj priser, hædersbevisninger og målbare resultater, der styrker dit CV.",
+    "defaultValues": {
+      "untitledAchievement": "Unavngivet resultat"
+    },
+    "empty": {
+      "title": "Ingen resultater tilføjet endnu",
+      "description": "Fremhæv priser, publikationer, forfremmelser eller resultater, du er stolt af."
+    },
+    "actions": {
+      "collapse": "Skjul",
+      "expand": "Udvid",
+      "remove": "Fjern resultat",
+      "addAchievement": "Tilføj resultat"
+    },
+    "fields": {
+      "title": {
+        "label": "Resultatets titel",
+        "placeholder": "f.eks. Engineering Excellence Award"
+      },
+      "description": {
+        "label": "Beskrivelse",
+        "placeholder": "Beskriv resultatet, anerkendelsen eller effekten…"
+      }
+    }
+  },
+  "ReferencesStep": {
+    "title": "Referencer",
+    "subtitle": "Tilføj professionelle referencer, der kan tale om dit arbejde.",
+    "defaultValues": {
+      "untitledReference": "Unavngivet reference"
+    },
+    "empty": {
+      "title": "Ingen referencer tilføjet endnu",
+      "description": "Tilføj en leder, mentor eller kollega og en kort note."
+    },
+    "actions": {
+      "collapse": "Skjul",
+      "expand": "Udvid",
+      "remove": "Fjern reference",
+      "addReference": "Tilføj reference"
+    },
+    "fields": {
+      "name": {
+        "label": "Referencens navn",
+        "placeholder": "f.eks. Priya Nair"
+      },
+      "reference": {
+        "label": "Referencedetaljer",
+        "placeholder": "f.eks. VP Engineering, Meridian — oplyses på forespørgsel"
+      }
+    }
+  },
+  "CustomSectionsStep": {
+    "title": "Egne sektioner",
+    "subtitle": "Tilføj ekstra sektioner som frivilligt arbejde, publikationer eller patenter — inklusive punkterne i hver sektion.",
+    "defaultValues": {
+      "untitledSection": "Unavngivet sektion",
+      "untitledItem": "Unavngivet punkt"
+    },
+    "empty": {
+      "title": "Ingen egne sektioner endnu",
+      "description": "Opret en sektion, og tilføj derefter de punkter, der skal vises på CV'et."
+    },
+    "itemCount": "{{count}} punkter",
+    "actions": {
+      "collapse": "Skjul",
+      "expand": "Udvid",
+      "removeSection": "Fjern sektion",
+      "removeItem": "Fjern punkt",
+      "addItem": "Tilføj punkt",
+      "addSection": "Tilføj egen sektion"
+    },
+    "fields": {
+      "sectionTitle": {
+        "label": "Sektionens titel",
+        "placeholder": "f.eks. Frivilligt arbejde, Publikationer, Patenter"
+      },
+      "itemTitle": {
+        "label": "Punktets titel",
+        "placeholder": "f.eks. Community-mentor"
+      },
+      "itemDescription": {
+        "label": "Punktets beskrivelse",
+        "placeholder": "Beskriv arbejdet, publikationen eller bidraget…"
+      }
+    }
   }
 }

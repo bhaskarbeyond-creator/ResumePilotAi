@@ -1009,7 +1009,10 @@
       "skills": "Competenze",
       "summary": "Riepilogo",
       "projects": "Progetti",
-      "certifications": "Certificazioni"
+      "certifications": "Certificazioni",
+      "achievements": "Risultati",
+      "references": "Referenze",
+      "customSections": "Sezioni personalizzate"
     },
     "navigation": {
       "previous": "Precedente",
@@ -1102,6 +1105,11 @@
     },
     "analytics": {
       "templateChanged": "Modello modificato in: {{templateName}} ({{templateId}})"
+    },
+    "customSection": {
+      "add": "Aggiungi sezione personalizzata",
+      "prompt": "Inserisci il titolo della sezione (es. Volontariato, Premi, Pubblicazioni):",
+      "defaultTitle": "Premi e riconoscimenti"
     }
   },
   "HeadingStep": {
@@ -1366,32 +1374,32 @@
     }
   },
   "ProjectsStep": {
-  "title": "Progetti",
-  "subtitle": "Aggiungi progetti personali, accademici o professionali che mettono in mostra le tue competenze.",
-  "defaultValues": {
-    "untitledProject": "Progetto Senza Titolo"
-  },
-  "actions": {
-    "collapse": "Riduci",
-    "expand": "Espandi",
-    "remove": "Rimuovi Progetto",
-    "addProject": "Aggiungi Progetto"
-  },
-  "fields": {
-    "title": {
-      "label": "Nome del Progetto",
-      "placeholder": "es. Piattaforma di e-commerce"
+    "title": "Progetti",
+    "subtitle": "Aggiungi progetti personali, accademici o professionali che mettono in mostra le tue competenze.",
+    "defaultValues": {
+      "untitledProject": "Progetto Senza Titolo"
     },
-    "url": {
-      "label": "URL del Progetto",
-      "placeholder": "https://github.com/..."
+    "actions": {
+      "collapse": "Riduci",
+      "expand": "Espandi",
+      "remove": "Rimuovi Progetto",
+      "addProject": "Aggiungi Progetto"
     },
-    "description": {
-      "label": "Descrizione",
-      "placeholder": "Descrivi cosa fa il progetto, le tecnologie utilizzate, i tuoi contributi e il tuo impatto…"
+    "fields": {
+      "title": {
+        "label": "Nome del Progetto",
+        "placeholder": "es. Piattaforma di e-commerce"
+      },
+      "url": {
+        "label": "URL del Progetto",
+        "placeholder": "https://github.com/..."
+      },
+      "description": {
+        "label": "Descrizione",
+        "placeholder": "Descrivi cosa fa il progetto, le tecnologie utilizzate, i tuoi contributi e il tuo impatto…"
+      }
     }
-  }
-},
+  },
   "CertificationsStep": {
     "title": "Certificazioni",
     "subtitle": "Aggiungi certificazioni e licenze professionali che attestano la tua competenza.",
@@ -2614,5 +2622,94 @@
     "relatedArticles": "Articoli correlati",
     "views": "visualizzazioni",
     "tags": "Tag"
+  },
+  "AchievementsStep": {
+    "title": "Risultati",
+    "subtitle": "Aggiungi premi, riconoscimenti e risultati misurabili che rafforzano il tuo CV.",
+    "defaultValues": {
+      "untitledAchievement": "Risultato senza titolo"
+    },
+    "empty": {
+      "title": "Nessun risultato aggiunto",
+      "description": "Metti in evidenza premi, pubblicazioni, promozioni o risultati di cui sei orgoglioso."
+    },
+    "actions": {
+      "collapse": "Comprimi",
+      "expand": "Espandi",
+      "remove": "Rimuovi risultato",
+      "addAchievement": "Aggiungi risultato"
+    },
+    "fields": {
+      "title": {
+        "label": "Titolo del risultato",
+        "placeholder": "es. Premio per l'eccellenza ingegneristica"
+      },
+      "description": {
+        "label": "Descrizione",
+        "placeholder": "Descrivi il risultato, il riconoscimento o l'impatto…"
+      }
+    }
+  },
+  "ReferencesStep": {
+    "title": "Referenze",
+    "subtitle": "Aggiungi referenti professionali che possano parlare del tuo lavoro.",
+    "defaultValues": {
+      "untitledReference": "Referenza senza titolo"
+    },
+    "empty": {
+      "title": "Nessuna referenza aggiunta",
+      "description": "Aggiungi un responsabile, un mentore o un collega e una breve nota."
+    },
+    "actions": {
+      "collapse": "Comprimi",
+      "expand": "Espandi",
+      "remove": "Rimuovi referenza",
+      "addReference": "Aggiungi referenza"
+    },
+    "fields": {
+      "name": {
+        "label": "Nome del referente",
+        "placeholder": "es. Priya Nair"
+      },
+      "reference": {
+        "label": "Dettagli della referenza",
+        "placeholder": "es. VP Engineering, Meridian — disponibile su richiesta"
+      }
+    }
+  },
+  "CustomSectionsStep": {
+    "title": "Sezioni personalizzate",
+    "subtitle": "Aggiungi sezioni extra come volontariato, pubblicazioni o brevetti, comprese le voci di ciascuna sezione.",
+    "defaultValues": {
+      "untitledSection": "Sezione senza titolo",
+      "untitledItem": "Voce senza titolo"
+    },
+    "empty": {
+      "title": "Nessuna sezione personalizzata",
+      "description": "Crea una sezione, poi aggiungi le voci che devono comparire nel CV."
+    },
+    "itemCount": "{{count}} voci",
+    "actions": {
+      "collapse": "Comprimi",
+      "expand": "Espandi",
+      "removeSection": "Rimuovi sezione",
+      "removeItem": "Rimuovi voce",
+      "addItem": "Aggiungi voce",
+      "addSection": "Aggiungi sezione personalizzata"
+    },
+    "fields": {
+      "sectionTitle": {
+        "label": "Titolo della sezione",
+        "placeholder": "es. Volontariato, Pubblicazioni, Brevetti"
+      },
+      "itemTitle": {
+        "label": "Titolo della voce",
+        "placeholder": "es. Mentore della community"
+      },
+      "itemDescription": {
+        "label": "Descrizione della voce",
+        "placeholder": "Descrivi il lavoro, la pubblicazione o il contributo…"
+      }
+    }
   }
 }
