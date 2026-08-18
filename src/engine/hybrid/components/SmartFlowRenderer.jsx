@@ -117,36 +117,39 @@ export default function SmartFlowRenderer({ flowItems = [], theme = {}, isContin
 
           case 'project': {
             const projects = group.items.map((i) => i.item);
+            const isFirstInDoc = group.items[0].isFirst;
             return (
               <SmartProjects
                 key={gIdx}
                 projects={projects}
                 theme={theme}
-                title="Projects"
+                title={isFirstInDoc ? 'Projects' : 'Projects (Continued)'}
               />
             );
           }
 
           case 'achievement': {
             const achievements = group.items.map((i) => i.item);
+            const isFirstInDoc = group.items[0].isFirst;
             return (
               <SmartAchievements
                 key={gIdx}
                 achievements={achievements}
                 theme={theme}
-                title="Key Achievements"
+                title={isFirstInDoc ? 'Key Achievements' : 'Key Achievements (Continued)'}
               />
             );
           }
 
           case 'reference': {
             const references = group.items.map((i) => i.item);
+            const isFirstInDoc = group.items[0].isFirst;
             return (
               <SmartReferences
                 key={gIdx}
                 references={references}
                 theme={theme}
-                title="References"
+                title={isFirstInDoc ? 'References' : 'References (Continued)'}
               />
             );
           }

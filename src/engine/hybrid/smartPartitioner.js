@@ -374,12 +374,15 @@ export function partitionResumeContent(values = {}, theme = {}) {
   /**
    * Greedy multi-page packer.
    *
-   * Previously this packed at most two pages and dropped everything that did
-   * not fit into page 2 — combined with `overflow:hidden` on the A4 sheet that
-   * silently deleted content from the browser, the PDF and the print output
-   * (a 14-role resume lost roughly three pages of ink). The packer now emits as
-   * many pages as the content genuinely needs and splits oversized sections at
-   * item boundaries so a single long section can never overflow a sheet.
+   * Packs content tightly onto Page 1 and subsequent pages, eliminating blank
+   * trailing gaps while preventing orphan section headers. When a multi-item
+   * section does not fit entirely on the current page:
+   * 1. If the current page has enough capacity for the section title + at least 1 item/row,
+   *    it packs as many items as can fit on the current page.
+   * 2. When the current page is full, it overflows remaining items to the next page,
+   *    where SmartFlowRenderer seamlessly renders a "... (Continued)" continuation header.
+   * 3. If the current page does NOT have enough space to even start the section cleanly,
+   *    it pushes the section to start at the top of the next page (avoiding orphan headers).
    */
   const pageBuckets = [];
   let current = [];
@@ -396,30 +399,47 @@ export function partitionResumeContent(values = {}, theme = {}) {
 
   sections.forEach((section) => {
     const capacity = capacityFor(pageIndex);
-    // Charge the inter-section gap that `.smart-flow-container` paints between
-    // consecutive sections. Before the spacing work the container had no gap,
-    // so omitting it here happened to be correct; once the gap became real
-    // (11/14/18 px by density) a nine-section single-column resume gained
-    // ~120 px of unaccounted height and the tail was clipped by the sheet's
-    // `overflow:hidden`. Measured: 16/51 templates clipped up to 123 px.
     const gapBefore = current.length ? SECTION_GAP_PX : 0;
+
+    // Fast path: entire section fits in remaining space of current page
     if (currentHeight + gapBefore + section.estHeight <= capacity) {
       current.push(...section.items);
       currentHeight += gapBefore + section.estHeight;
       return;
     }
-    // Section does not fit in the remaining space: start a new page when the
-    // current one already carries content, then place items one by one so a
-    // section taller than a whole page is split instead of clipped.
-    if (current.length) pushPage();
-    section.items.forEach((item) => {
+
+    // Section does not fit as a whole:
+    // Check if the current page has enough room to start the section cleanly.
+    // An orphan header or tiny sliver (< first item + gap) should not be started on current page.
+    const firstItem = section.items[0];
+    const minStartHeight = (firstItem?.estHeight || 40) + gapBefore;
+    const canStartOnCurrentPage = current.length === 0 || (currentHeight + minStartHeight <= capacity);
+
+    if (!canStartOnCurrentPage && current.length > 0) {
+      // Current page is too full to start this section cleanly; start fresh on next page
+      pushPage();
+    }
+
+    // Pack items greedily one by one across pages
+    let sectionStartedOnThisPage = false;
+    section.items.forEach((item, itemIdx) => {
       const itemCapacity = capacityFor(pageIndex);
-      const itemHeight = item.estHeight || 0;
-      if (current.length && currentHeight + itemHeight > itemCapacity) pushPage();
+      const isFirstOnPage = current.length === 0;
+      const continuationTitleHeight = (isFirstOnPage && itemIdx > 0) ? 26 : 0;
+      const interSectionGap = (isFirstOnPage || sectionStartedOnThisPage) ? 0 : SECTION_GAP_PX;
+      const itemHeight = (item.estHeight || 0) + continuationTitleHeight + interSectionGap;
+
+      if (current.length && currentHeight + itemHeight > itemCapacity) {
+        pushPage();
+        sectionStartedOnThisPage = false;
+      }
+
       current.push(item);
-      currentHeight += itemHeight;
+      currentHeight += (item.estHeight || 0) + (current.length === 1 ? 0 : interSectionGap) + ((current.length === 1 && itemIdx > 0) ? 26 : 0);
+      sectionStartedOnThisPage = true;
     });
   });
+
   if (current.length) pushPage();
   if (!pageBuckets.length) pageBuckets.push([]);
 
