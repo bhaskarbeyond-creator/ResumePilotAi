@@ -1,196 +1,131 @@
-/**
- * Smart Hybrid Resume Engine — Universal Dynamic Page Composer
- * 
- * Renders all 51 templates (Cv1 through Cv51) with deterministic adaptive pagination,
- * dynamic theme styling, purposeful visual differentiation, and unified page boundaries.
- */
-
-import React, { useEffect } from 'react';
+import React from 'react';
 import { getThemePreset, ARCHETYPES } from './themePresets';
 import { partitionResumeContent } from './smartPartitioner';
 import SmartHeader from './components/SmartHeader';
 import SmartSkills from './components/SmartSkills';
-import SmartLanguages from './components/SmartLanguages';
 import SmartHobbies from './components/SmartHobbies';
 import SmartCertifications from './components/SmartCertifications';
+import SmartLanguages from './components/SmartLanguages';
 import SmartFlowRenderer from './components/SmartFlowRenderer';
 import './smartEngine.css';
 
-export default function SmartResumeComposer({ templateId = 'Cv1', values = {}, language = 'en' }) {
+export default function SmartResumeComposer({ templateId = 'Cv1', language = 'en', values = {} }) {
   const theme = getThemePreset(templateId);
-  const partition = partitionResumeContent(values, theme);
-
-  const firstname = values.firstname || values.firstName || '';
-  const lastname = values.lastname || values.lastName || '';
-  const fullName = [firstname, lastname].filter(Boolean).join(' ') || values.name || 'Your Name';
-  const occupation = values.occupation || values.jobTitle || values.title || '';
-  const totalPages = partition.totalPages;
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-lab-state', 'ready');
-    document.dispatchEvent(new CustomEvent('resume-composed', { detail: { templateId, pages: totalPages } }));
-  }, [templateId, values, language, totalPages]);
+  const partitionResult = partitionResumeContent(values, theme);
+  const totalPages = partitionResult.totalPages || 1;
+  const pages = partitionResult.pages || [];
 
   const isSingleCol = theme.archetype === ARCHETYPES.MINIMAL_ATS || theme.archetype === ARCHETYPES.COMPACT_EURO;
   const isBanner = theme.archetype === ARCHETYPES.EXECUTIVE_BANNER;
   const isReverseSplit = theme.sidebarPosition === 'right';
 
+  const fullName = [values.firstname, values.lastname].filter(Boolean).join(' ') || 'Resume';
+
+  // Build custom CSS variables object for theme tokens
+  const themeStyle = {
+    '--primary': theme.primary || '#1e3a8a',
+    '--secondary': theme.secondary || '#3b82f6',
+    '--font-family': theme.font || "'Inter', sans-serif",
+    '--sidebar-bg': theme.sidebarBg || '#f8fafc',
+    '--sidebar-text': theme.sidebarText || '#1e293b',
+    '--sidebar-width': theme.sidebarWidth || '34%',
+    '--badge-radius': theme.badgeRadius || '6px',
+    '--header-bg': theme.headerBg || theme.primary || '#1e3a8a',
+    '--header-text': theme.headerText || '#ffffff',
+  };
+
   return (
-    <div className="smart-resume-composer">
+    <div className="smart-resume-engine-root" style={themeStyle}>
       <div className="smart-resume-document">
-        {partition.pages.map((pageData, pageIdx) => {
-          const isFirstPage = pageData.isFirstPage;
-          const pageNumber = pageData.pageNumber;
+        {pages.map((pageData, pageIdx) => {
+          const pageNumber = pageData.pageNumber || pageIdx + 1;
+          const isFirstPage = pageNumber === 1;
 
           return (
             <div
-              key={pageIdx}
-              className={`smart-resume-page smart-resume-page--${theme.archetype} ${isReverseSplit ? 'smart-resume-page--reverse' : ''} ${!isFirstPage ? 'smart-resume-page--continuation' : ''}`}
+              key={pageNumber}
+              className={`smart-resume-page smart-resume-page--${templateId.toLowerCase()}`}
+              data-page-index={pageIdx}
               data-page-number={pageNumber}
-              data-cv-board="true"
-              id={isFirstPage ? 'resumen' : undefined}
-              style={{
-                '--primary': theme.primary,
-                '--secondary': theme.secondary,
-                '--sidebar-bg': theme.sidebarBg || '#f8fafc',
-                '--sidebar-text': theme.sidebarText || '#1e293b',
-                '--header-bg': theme.headerBg || theme.primary,
-                '--header-text': theme.headerText || '#ffffff',
-                '--sidebar-width': theme.sidebarWidth || '34%',
-                fontFamily: theme.font,
-              }}
+              style={{ fontFamily: 'var(--font-family)' }}
             >
-              {/* Top Chrome: Continuation Header on Page 2+ */}
-              {!isFirstPage && (
-                <div className="smart-continuation-header">
-                  <div className="smart-continuation-who">
-                    <span className="smart-continuation-name">{fullName}</span>
-                    {occupation && <span className="smart-continuation-role">· {occupation}</span>}
-                  </div>
-                  <span className="smart-continuation-page">
-                    Page {pageNumber} of {totalPages}
-                  </span>
-                </div>
-              )}
-
-              {/* Page Body */}
               <div className="smart-page-body">
-                {/* 1. Single-Column ATS / Europass Layout */}
+                {/* 1. Continuation Header (Page 2+) */}
+                {!isFirstPage && (
+                  <header className="smart-continuation-header">
+                    <span className="smart-continuation-name">{fullName}</span>
+                    {values.occupation && (
+                      <span className="smart-continuation-role">{values.occupation}</span>
+                    )}
+                    <span className="smart-continuation-page">Page {pageNumber} of {totalPages}</span>
+                  </header>
+                )}
+
+                {/* 2. Single-Column Layouts (Minimal ATS, Compact Euro) */}
                 {isSingleCol && (
-                  <div className="smart-layout smart-layout--minimal-ats">
-                    {isFirstPage && <SmartHeader values={values} theme={theme} />}
+                  <div className={`smart-layout smart-layout--${theme.archetype}`}>
+                    {isFirstPage && (
+                      <SmartHeader values={values} theme={theme} variant={theme.headerStyle || 'standard'} />
+                    )}
                     <SmartFlowRenderer flowItems={pageData.flowItems} theme={theme} isContinuation={!isFirstPage} />
                   </div>
                 )}
 
-                {/* 2. Executive Banner Layout with Adaptive Split-to-Full-Width Flow */}
-                {!isSingleCol && isBanner && (
+                {/* 3. Executive Banner Layout */}
+                {isBanner && (
                   <div className="smart-layout smart-layout--executive-banner">
                     {isFirstPage && (
-                      <div className="smart-banner-wrapper">
+                      <header className="smart-banner-wrapper">
                         <SmartHeader values={values} theme={theme} variant="banner" />
-                      </div>
+                      </header>
                     )}
-                    {isFirstPage && pageData.isAdaptiveSplit ? (
-                      <div className="smart-adaptive-page">
-                        {/* Upper Split: Left Sidebar (Skills/Languages) + Right Hero Flow (Summary/Jobs) */}
-                        <div className="smart-split-hero">
-                          {pageData.sidebar && (
-                            <aside className="smart-sidebar">
-                              {pageData.sidebar.skills && pageData.sidebar.skills.length > 0 && (
-                                <SmartSkills skills={pageData.sidebar.skills} theme={theme} />
-                              )}
-                              {pageData.sidebar.hobbies && (
-                                <SmartHobbies hobbies={pageData.sidebar.hobbies} theme={theme} />
-                              )}
-                              {pageData.sidebar.certifications && pageData.sidebar.certifications.length > 0 && (
-                                <SmartCertifications certifications={pageData.sidebar.certifications} theme={theme} />
-                              )}
-                              {pageData.sidebar.languages && pageData.sidebar.languages.length > 0 && (
-                                <SmartLanguages languages={pageData.sidebar.languages} theme={theme} />
-                              )}
-                            </aside>
+                    <div className="smart-banner-body">
+                      {isFirstPage && pageData.sidebar && (
+                        <aside className="smart-sidebar">
+                          {pageData.sidebar.skills && pageData.sidebar.skills.length > 0 && (
+                            <SmartSkills skills={pageData.sidebar.skills} theme={theme} />
                           )}
-                          <main className="smart-main-content">
-                            <SmartFlowRenderer flowItems={pageData.heroFlowItems || pageData.flowItems} theme={theme} isContinuation={false} />
-                          </main>
-                        </div>
-
-                        {/* Lower Full-Width Flow: Education, Certifications, etc. across 100% width */}
-                        {pageData.bottomFlowItems && pageData.bottomFlowItems.length > 0 && (
-                          <div className="smart-fullwidth-bottom-flow">
-                            <SmartFlowRenderer flowItems={pageData.bottomFlowItems} theme={theme} isContinuation={false} />
-                          </div>
-                        )}
-                      </div>
-                    ) : (
+                          {pageData.sidebar.hobbies && (
+                            <SmartHobbies hobbies={pageData.sidebar.hobbies} theme={theme} />
+                          )}
+                          {pageData.sidebar.certifications && pageData.sidebar.certifications.length > 0 && (
+                            <SmartCertifications certifications={pageData.sidebar.certifications} theme={theme} />
+                          )}
+                          {pageData.sidebar.languages && pageData.sidebar.languages.length > 0 && (
+                            <SmartLanguages languages={pageData.sidebar.languages} theme={theme} />
+                          )}
+                        </aside>
+                      )}
                       <main className={`smart-main-content ${!isFirstPage ? 'smart-main-content--full' : ''}`}>
                         <SmartFlowRenderer flowItems={pageData.flowItems} theme={theme} isContinuation={!isFirstPage} />
                       </main>
-                    )}
+                    </div>
                   </div>
                 )}
 
-                {/* 3. Modern Split Layout (Default or Reverse) with Adaptive Split-to-Full-Width Flow */}
+                {/* 4. Modern Split Layout (Default or Reverse) */}
                 {!isSingleCol && !isBanner && (
                   <div className={`smart-layout smart-layout--modern-split ${isReverseSplit ? 'smart-layout--reverse' : ''}`}>
-                    {isFirstPage && pageData.isAdaptiveSplit ? (
-                      <div className="smart-adaptive-page">
-                        {/* Upper Split: Sidebar + Hero Flow (Summary/Jobs) */}
-                        <div className={`smart-split-hero ${isReverseSplit ? 'smart-split-hero--reverse' : ''}`}>
-                          {pageData.sidebar && (
-                            <aside className="smart-sidebar">
-                              <SmartHeader values={values} theme={theme} variant="sidebar" />
-                              {pageData.sidebar.skills && pageData.sidebar.skills.length > 0 && (
-                                <SmartSkills skills={pageData.sidebar.skills} theme={theme} />
-                              )}
-                              {pageData.sidebar.hobbies && (
-                                <SmartHobbies hobbies={pageData.sidebar.hobbies} theme={theme} />
-                              )}
-                              {pageData.sidebar.certifications && pageData.sidebar.certifications.length > 0 && (
-                                <SmartCertifications certifications={pageData.sidebar.certifications} theme={theme} />
-                              )}
-                              {pageData.sidebar.languages && pageData.sidebar.languages.length > 0 && (
-                                <SmartLanguages languages={pageData.sidebar.languages} theme={theme} />
-                              )}
-                            </aside>
-                          )}
-                          <main className="smart-main-content">
-                            <SmartFlowRenderer flowItems={pageData.heroFlowItems || pageData.flowItems} theme={theme} isContinuation={false} />
-                          </main>
-                        </div>
-
-                        {/* Lower Full-Width Flow: Education, Certifications, etc. across 100% width */}
-                        {pageData.bottomFlowItems && pageData.bottomFlowItems.length > 0 && (
-                          <div className="smart-fullwidth-bottom-flow">
-                            <SmartFlowRenderer flowItems={pageData.bottomFlowItems} theme={theme} isContinuation={false} />
-                          </div>
+                    {isFirstPage && pageData.sidebar && (
+                      <aside className="smart-sidebar">
+                        <SmartHeader values={values} theme={theme} variant="sidebar" />
+                        {pageData.sidebar.skills && pageData.sidebar.skills.length > 0 && (
+                          <SmartSkills skills={pageData.sidebar.skills} theme={theme} />
                         )}
-                      </div>
-                    ) : (
-                      <>
-                        {isFirstPage && pageData.sidebar && (
-                          <aside className="smart-sidebar">
-                            <SmartHeader values={values} theme={theme} variant="sidebar" />
-                            {pageData.sidebar.skills && pageData.sidebar.skills.length > 0 && (
-                              <SmartSkills skills={pageData.sidebar.skills} theme={theme} />
-                            )}
-                            {pageData.sidebar.hobbies && (
-                              <SmartHobbies hobbies={pageData.sidebar.hobbies} theme={theme} />
-                            )}
-                            {pageData.sidebar.certifications && pageData.sidebar.certifications.length > 0 && (
-                              <SmartCertifications certifications={pageData.sidebar.certifications} theme={theme} />
-                            )}
-                            {pageData.sidebar.languages && pageData.sidebar.languages.length > 0 && (
-                              <SmartLanguages languages={pageData.sidebar.languages} theme={theme} />
-                            )}
-                          </aside>
+                        {pageData.sidebar.hobbies && (
+                          <SmartHobbies hobbies={pageData.sidebar.hobbies} theme={theme} />
                         )}
-                        <main className={`smart-main-content ${!isFirstPage ? 'smart-main-content--full' : ''}`}>
-                          <SmartFlowRenderer flowItems={pageData.flowItems} theme={theme} isContinuation={!isFirstPage} />
-                        </main>
-                      </>
+                        {pageData.sidebar.certifications && pageData.sidebar.certifications.length > 0 && (
+                          <SmartCertifications certifications={pageData.sidebar.certifications} theme={theme} />
+                        )}
+                        {pageData.sidebar.languages && pageData.sidebar.languages.length > 0 && (
+                          <SmartLanguages languages={pageData.sidebar.languages} theme={theme} />
+                        )}
+                      </aside>
                     )}
+                    <main className={`smart-main-content ${!isFirstPage ? 'smart-main-content--full' : ''}`}>
+                      <SmartFlowRenderer flowItems={pageData.flowItems} theme={theme} isContinuation={!isFirstPage} />
+                    </main>
                   </div>
                 )}
               </div>

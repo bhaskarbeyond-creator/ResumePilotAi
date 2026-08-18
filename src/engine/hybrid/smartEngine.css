@@ -1,7 +1,7 @@
 /**
  * Smart Hybrid Resume Engine — Core CSS Design System
  * Pixel-perfect A4 sheets (210mm x 297mm), zero overflow, micro-typography,
- * dynamic multi-column skill wrap, and crisp vector timeline connectors.
+ * dynamic multi-column skill wrap, crisp vector timeline connectors, and full-height sidebars.
  */
 
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -31,8 +31,8 @@
   flex-direction: column;
   justify-content: space-between;
   color: #1e293b;
-  font-size: 12.5px;
-  line-height: 1.45;
+  font-size: 12px;
+  line-height: 1.42;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -42,12 +42,11 @@
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
-  padding-bottom: 8px;
 }
 
 /* ── Layout Archetypes ──────────────────────────────────────────────── */
 
-/* 1. Modern Split */
+/* 1. Modern Split (Full-Height Sidebar & Balanced Main Flow) */
 .smart-layout--modern-split {
   display: flex;
   flex: 1 1 auto;
@@ -60,21 +59,22 @@
   flex-shrink: 0;
   background-color: var(--sidebar-bg, #f8fafc);
   color: var(--sidebar-text, #1e293b);
-  padding: 22px 18px;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  border-right: 1px solid rgba(0, 0, 0, 0.06);
-}
-
-.smart-layout--modern-split .smart-main-content {
-  flex: 1 1 auto;
-  padding: 22px 22px 20px;
+  padding: 24px 18px 20px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  border-right: 1px solid rgba(0, 0, 0, 0.06);
+  min-height: 100%;
+}
+
+.smart-layout--modern-split .smart-main-content {
+  flex: 1 1 auto;
+  padding: 24px 24px 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   min-width: 0;
 }
 
@@ -93,94 +93,12 @@
   border-left: 1px solid rgba(0, 0, 0, 0.08);
 }
 
-.smart-split-hero--reverse {
-  flex-direction: row-reverse;
-}
-
-.smart-split-hero--reverse .smart-sidebar {
-  border-right: none;
-  border-left: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-/* Adaptive Split-to-Full-Width Flow Layout */
-.smart-adaptive-page {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  flex: 1 1 auto;
-  min-height: 0;
-}
-
-.smart-split-hero {
-  display: flex;
-  width: 100%;
-  flex-shrink: 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-.smart-split-hero--full {
-  flex: 1 1 auto;
-  border-bottom: none;
-}
-
-.smart-split-hero .smart-sidebar {
-  width: var(--sidebar-width, 34%);
-  flex-shrink: 0;
-  background-color: var(--sidebar-bg, #f8fafc);
-  color: var(--sidebar-text, #1e293b);
-  padding: 18px 16px 14px;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  border-right: 1px solid rgba(0, 0, 0, 0.06);
-}
-
-.smart-split-hero .smart-main-content {
-  flex: 1 1 auto;
-  padding: 18px 18px 14px;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 0;
-}
-
-.smart-fullwidth-bottom-flow {
-  width: 100%;
-  padding: 12px 20px 14px;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.smart-fullwidth-bottom-flow .smart-section {
-  width: 100%;
-  margin-bottom: 0;
-}
-
-.smart-fullwidth-bottom-flow .smart-section-title {
-  width: 100%;
-  margin-bottom: 4px;
-}
-
-.smart-fullwidth-bottom-flow .smart-timeline {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.smart-fullwidth-bottom-flow .smart-timeline-item {
-  width: 100%;
-  margin-bottom: 3px;
-}
-
 /* 2. Executive Banner */
 .smart-layout--executive-banner {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
+  min-height: 100%;
   width: 100%;
 }
 
@@ -189,15 +107,37 @@
   color: var(--header-text, #ffffff);
   padding: 22px 26px;
   box-sizing: border-box;
+  flex-shrink: 0;
 }
 
-.smart-layout--executive-banner .smart-main-content {
+.smart-banner-body {
+  display: flex;
   flex: 1 1 auto;
-  padding: 18px 22px;
+  min-height: 100%;
+  width: 100%;
+}
+
+.smart-banner-body .smart-sidebar {
+  width: var(--sidebar-width, 34%);
+  flex-shrink: 0;
+  background-color: var(--sidebar-bg, #f8fafc);
+  color: var(--sidebar-text, #1e293b);
+  padding: 20px 18px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
+  border-right: 1px solid rgba(0, 0, 0, 0.06);
+  min-height: 100%;
+}
+
+.smart-banner-body .smart-main-content {
+  flex: 1 1 auto;
+  padding: 20px 24px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   min-width: 0;
 }
 
@@ -207,7 +147,7 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   width: 100%;
 }
 
@@ -217,7 +157,7 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   width: 100%;
 }
 
@@ -227,7 +167,7 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   width: 100%;
 }
 
@@ -247,8 +187,8 @@
 }
 
 .smart-header__avatar-wrap {
-  width: 64px;
-  height: 64px;
+  width: 62px;
+  height: 62px;
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
@@ -269,7 +209,7 @@
 }
 
 .smart-header__name {
-  font-size: 24px;
+  font-size: 23px;
   font-weight: 800;
   letter-spacing: -0.02em;
   margin: 0;
@@ -282,7 +222,7 @@
 }
 
 .smart-header__role {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--secondary, #3b82f6);
   margin: 0;
@@ -357,13 +297,13 @@
 
 /* Variant: Left Bold (Stanford, Geneva, MIT, PM) */
 .smart-header--left-bold .smart-header__name {
-  font-size: 26px;
+  font-size: 25px;
   font-weight: 800;
   letter-spacing: -0.03em;
 }
 
 .smart-header--left-bold .smart-header__role {
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--primary);
 }
@@ -375,7 +315,7 @@
 }
 
 .smart-header--accent-bracket .smart-header__name {
-  font-size: 25px;
+  font-size: 24px;
   letter-spacing: -0.01em;
 }
 
@@ -392,11 +332,11 @@
 }
 
 .smart-header--minimal-inline .smart-header__name {
-  font-size: 23px;
+  font-size: 22px;
 }
 
 .smart-header--minimal-inline .smart-header__role {
-  font-size: 12.5px;
+  font-size: 12px;
   color: #64748b;
 }
 
@@ -449,7 +389,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -550,7 +490,7 @@
   justify-content: space-between;
   width: 100%;
   padding: 2px 0;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 500;
 }
 
@@ -561,8 +501,8 @@
 }
 
 .smart-skill-dot {
-  width: 5.5px;
-  height: 5.5px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background-color: #cbd5e1;
 }
@@ -601,7 +541,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 11px;
+  font-size: 10.5px;
 }
 
 .smart-language-info {
@@ -615,7 +555,7 @@
 }
 
 .smart-language-level {
-  font-size: 10px;
+  font-size: 9.5px;
   color: #64748b;
 }
 
@@ -685,7 +625,7 @@
 }
 
 .smart-timeline-role {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
   color: #0f172a;
   margin: 0;
@@ -698,7 +638,7 @@
 }
 
 .smart-timeline-date {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 500;
   color: #64748b;
   flex-shrink: 0;
@@ -706,7 +646,7 @@
 }
 
 .smart-timeline-desc {
-  font-size: 11.5px;
+  font-size: 11px;
   color: #334155;
   line-height: 1.4;
   margin-top: 2px;
@@ -732,7 +672,7 @@
 
 .smart-timeline--date-rail .smart-timeline-header {
   display: grid;
-  grid-template-columns: 120px 1fr;
+  grid-template-columns: 110px 1fr;
   gap: 10px;
   align-items: baseline;
 }
@@ -741,7 +681,7 @@
   order: -1;
   color: var(--primary, #003399);
   font-weight: 700;
-  font-size: 11px;
+  font-size: 10.5px;
 }
 
 /* Timeline Style: Compact Clean (ATS) */
@@ -756,7 +696,7 @@
 
 .smart-timeline--code-tag .smart-timeline-role {
   font-family: 'Fira Code', 'Courier New', monospace;
-  font-size: 12.5px;
+  font-size: 12px;
   color: var(--primary, #0f172a);
 }
 
@@ -825,7 +765,7 @@
 }
 
 .smart-cert-title {
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 700;
   color: #0f172a;
   margin: 0;
@@ -833,7 +773,7 @@
 }
 
 .smart-cert-meta {
-  font-size: 10px;
+  font-size: 9.5px;
   color: #64748b;
 }
 
@@ -881,16 +821,16 @@
 }
 
 .smart-achievement-title {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 700;
   color: #0f172a;
   margin: 0;
 }
 
 .smart-achievement-desc {
-  font-size: 11px;
+  font-size: 10.5px;
   color: #334155;
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
 /* ── Smart Projects ─────────────────────────────────────────────────── */
@@ -913,7 +853,7 @@
   border-radius: 5px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .smart-card-header {
@@ -924,21 +864,21 @@
 }
 
 .smart-card-title {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 700;
   color: #0f172a;
   margin: 0;
 }
 
 .smart-card-link {
-  font-size: 10.5px;
+  font-size: 10px;
   color: var(--secondary, #3b82f6);
   text-decoration: none;
   word-break: break-all;
 }
 
 .smart-card-desc {
-  font-size: 11px;
+  font-size: 10.5px;
   color: #334155;
   line-height: 1.35;
 }
@@ -962,9 +902,9 @@
 }
 
 .smart-hobbies-text {
-  font-size: 11px;
+  font-size: 10.5px;
   color: #334155;
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
 /* ── Continuation Header & Footer ───────────────────────────────────── */
@@ -976,7 +916,7 @@
   padding: 8px 24px;
   border-bottom: 1px solid #e2e8f0;
   background-color: #f8fafc;
-  font-size: 10.5px;
+  font-size: 10px;
   color: #64748b;
 }
 
@@ -991,6 +931,6 @@
   align-items: center;
   padding: 6px 24px;
   border-top: 1px solid rgba(0, 0, 0, 0.05);
-  font-size: 9.5px;
+  font-size: 9px;
   color: #94a3b8;
 }
