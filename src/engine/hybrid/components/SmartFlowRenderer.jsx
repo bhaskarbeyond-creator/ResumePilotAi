@@ -67,15 +67,20 @@ export default function SmartFlowRenderer({ flowItems = [], theme = {}, isContin
             );
           }
 
-          case 'skills':
+          case 'skills': {
+            // Flatten skills from all chunk items on this page (handles both the
+            // legacy single-block path and the new chunked path from smartPartitioner).
+            const skillsList = group.items.flatMap((i) => i.items || []);
+            const isFirstSkillsBlock = group.items[0].isFirst !== false;
             return (
               <SmartSkills
                 key={gIdx}
-                skills={group.items[0].items}
+                skills={skillsList}
                 theme={theme}
-                title="Key Skills"
+                title={isFirstSkillsBlock ? 'Key Skills' : 'Key Skills (Continued)'}
               />
             );
+          }
 
           case 'certification': {
             const certifications = group.items.map((i) => i.item);

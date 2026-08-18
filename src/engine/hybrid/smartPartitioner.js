@@ -216,6 +216,16 @@ export function partitionResumeContent(values = {}, theme = {}) {
   const mainHobbiesHeight = mainFlowHobbiesCount ? (Math.ceil(mainFlowHobbiesCount / 3) * 20 + 24) : 0;
   const mainLanguagesHeight = languagesInMainFlow.length ? (languagesInMainFlow.length * 22 + 26) : 0;
 
+  // Usable vertical page capacity constants.
+  // Page 1 of a banner layout loses height to the full-width banner.
+  // A ~5 % headroom absorbs residual estimator error (font metrics, wrapping)
+  // so a page is never packed marginally past the sheet.
+  const P1_CAPACITY = (isBanner || isTechGrid) ? 815 : 900;
+  // Continuation pages carry only the slim continuation header + footer.
+  const PN_CAPACITY = 930;
+  // Must track --smart-section-gap in smartEngine.css (compact/standard/spacious).
+  const SECTION_GAP_PX = density === 'compact' ? 11 : density === 'spacious' ? 18 : 14;
+
   // 1. Build All Main Flow Sections in Priority Sequence
   const sections = [];
 
@@ -261,12 +271,32 @@ export function partitionResumeContent(values = {}, theme = {}) {
   // Skills in the main flow: always for single-column archetypes, and for the
   // sidebar archetypes whatever did not fit inside the sidebar.
   if (skillsInMainFlow.length) {
-    const height = isSingleCol ? skillsHeight : mainSkillsHeight;
-    sections.push({
-      type: 'skills',
-      items: [{ type: 'skills', items: skillsInMainFlow, estHeight: Math.round(height) }],
-      estHeight: Math.round(height)
-    });
+    // Chunk skills into page-sized pieces so the greedy packer can distribute
+    // them across pages, just like experience/education items.  A single atomic
+    // block caused Cv41/Cv44 (single-column DOTS variant, 50 skills ≈ 1 200 px)
+    // to overflow PN_CAPACITY (930 px) and clip at the A4 boundary.
+    const SKILLS_CHUNK_CAP = PN_CAPACITY - 30; // leave headroom for section title
+    const skillChunkItems = [];
+    let chunkStart = 0;
+    while (chunkStart < skillsInMainFlow.length) {
+      let chunkEnd = chunkStart + 1;
+      // Grow chunk until the next skill would exceed the page capacity.
+      while (chunkEnd < skillsInMainFlow.length) {
+        const candidateHeight = skillsHeightFor(skillsInMainFlow.slice(chunkStart, chunkEnd + 1), false);
+        if (candidateHeight > SKILLS_CHUNK_CAP) break;
+        chunkEnd++;
+      }
+      const chunk = skillsInMainFlow.slice(chunkStart, chunkEnd);
+      skillChunkItems.push({
+        type: 'skills',
+        items: chunk,
+        isFirst: chunkStart === 0,
+        estHeight: Math.round(skillsHeightFor(chunk, false)),
+      });
+      chunkStart = chunkEnd;
+    }
+    const totalSkillsHeight = Math.round(isSingleCol ? skillsHeight : mainSkillsHeight);
+    sections.push({ type: 'skills', items: skillChunkItems, estHeight: totalSkillsHeight });
   }
 
   // Projects
@@ -340,16 +370,6 @@ export function partitionResumeContent(values = {}, theme = {}) {
     });
   }
 
-  // Usable vertical page capacity (conservative to prevent any footer collision).
-  // Page 1 of a banner layout loses height to the full-width banner.
-  // A ~5 % headroom absorbs residual estimator error (font metrics, wrapping)
-  // so a page is never packed marginally past the sheet.
-  const P1_CAPACITY = (isBanner || isTechGrid) ? 815 : 900;
-  // Continuation pages carry only the slim continuation header + footer, so they
-  // have more usable height than page 1.
-  const PN_CAPACITY = 930;
-  // Must track --smart-section-gap in smartEngine.css (compact/standard/spacious).
-  const SECTION_GAP_PX = density === 'compact' ? 11 : density === 'spacious' ? 18 : 14;
 
   /**
    * Greedy multi-page packer.

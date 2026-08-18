@@ -1106,7 +1106,8 @@
       "education": "Education",
       "skills": "Skills",
       "languages": "Languages",
-      "summary": "Summary"
+      "summary": "Summary",
+      "projects": "Projects"
     },
     "navigation": {
       "previous": "Previous",
