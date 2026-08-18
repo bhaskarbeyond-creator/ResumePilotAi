@@ -737,13 +737,18 @@ const TemplateSelectionModal = ({ showModal, setShowModal, currentTemplate = 'Cv
                 <div className="aspect-[3/4] bg-gradient-to-br from-gray-100 to-gray-50 overflow-hidden">
                     <LazyLoadImage
                         src={template.src}
-                        alt={template.name}
+                        alt={`Preview of ${template.id} ${template.name} resume template`}
                         effect="blur"
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         onClick={() => handleTemplateSelect(template.id)}
                         threshold={200}
                         placeholderSrc="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2YwZjBmMCIvPjwvc3ZnPg=="
                         visibleByDefault={loadedTemplates[template.id] || false}
+                        onError={(e) => {
+                            if (e?.currentTarget) {
+                                e.currentTarget.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2U0ZTRlNyIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzcxNzE3YSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+VGVtcGxhdGUgUHJldmlldzwvdGV4dD48L3N2Zz4=";
+                            }
+                        }}
                     />
                 </div>
 
@@ -813,11 +818,16 @@ const TemplateSelectionModal = ({ showModal, setShowModal, currentTemplate = 'Cv
                         <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200/50 aspect-[3/4] max-h-[50vh]">
                             <LazyLoadImage
                                 src={previewTemplate.src}
-                                alt={previewTemplate.name}
+                                alt={`Full preview of ${previewTemplate.id} ${previewTemplate.name} resume template`}
                                 effect="blur"
                                 className="w-full h-full object-cover object-top"
                                 threshold={200}
                                 placeholderSrc="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2YwZjBmMCIvPjwvc3ZnPg=="
+                                onError={(e) => {
+                                    if (e?.currentTarget) {
+                                        e.currentTarget.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2U0ZTRlNyIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzcxNzE3YSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+VGVtcGxhdGUgUHJldmlldzwvdGV4dD48L3N2Zz4=";
+                                    }
+                                }}
                             />
                         </div>
                     </div>
