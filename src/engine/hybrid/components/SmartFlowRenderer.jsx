@@ -9,17 +9,20 @@ import SmartProjects from './SmartProjects';
 import SmartAchievements from './SmartAchievements';
 import SmartReferences from './SmartReferences';
 import SmartHobbies from './SmartHobbies';
+import SmartCustomSection from './SmartCustomSection';
 
 export default function SmartFlowRenderer({ flowItems = [], theme = {}, isContinuation = false }) {
   if (!flowItems || !flowItems.length) return null;
 
-  // Group consecutive flow items by type
+  // Group consecutive flow items by type. Custom sections also key on
+  // sectionId so two independently titled custom blocks cannot collapse.
   const groups = [];
   let currentGroup = null;
 
   flowItems.forEach((item) => {
-    if (!currentGroup || currentGroup.type !== item.type) {
-      currentGroup = { type: item.type, items: [] };
+    const key = item.sectionId ? `${item.type}:${item.sectionId}` : item.type;
+    if (!currentGroup || currentGroup.key !== key) {
+      currentGroup = { type: item.type, key, items: [], sectionTitle: item.sectionTitle };
       groups.push(currentGroup);
     }
     currentGroup.items.push(item);
@@ -150,6 +153,19 @@ export default function SmartFlowRenderer({ flowItems = [], theme = {}, isContin
                 references={references}
                 theme={theme}
                 title={isFirstInDoc ? 'References' : 'References (Continued)'}
+              />
+            );
+          }
+
+          case 'custom': {
+            const customItems = group.items.map((i) => i.item);
+            const heading = group.sectionTitle || group.items[0]?.sectionTitle || 'Additional Information';
+            return (
+              <SmartCustomSection
+                key={gIdx}
+                items={customItems}
+                theme={theme}
+                title={heading}
               />
             );
           }

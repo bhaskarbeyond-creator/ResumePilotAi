@@ -1009,7 +1009,10 @@
       "skills": "Umiejętności",
       "summary": "Podsumowanie",
       "projects": "Projekty",
-      "certifications": "Certyfikaty"
+      "certifications": "Certyfikaty",
+      "achievements": "Osiągnięcia",
+      "references": "Referencje",
+      "customSections": "Własne sekcje"
     },
     "navigation": {
       "previous": "Poprzedni",
@@ -1102,6 +1105,11 @@
     },
     "analytics": {
       "templateChanged": "Szablon zmieniony na: {{templateName}} ({{templateId}})"
+    },
+    "customSection": {
+      "add": "Dodaj własną sekcję",
+      "prompt": "Podaj tytuł sekcji (np. Wolontariat, Nagrody, Publikacje):",
+      "defaultTitle": "Nagrody i wyróżnienia"
     }
   },
   "HeadingStep": {
@@ -2634,5 +2642,94 @@
     "relatedArticles": "Powiązane artykuły",
     "views": "wyświetleń",
     "tags": "Tagi"
+  },
+  "AchievementsStep": {
+    "title": "Osiągnięcia",
+    "subtitle": "Dodaj nagrody, wyróżnienia i mierzalne osiągnięcia, które wzmocnią CV.",
+    "defaultValues": {
+      "untitledAchievement": "Osiągnięcie bez tytułu"
+    },
+    "empty": {
+      "title": "Nie dodano jeszcze osiągnięć",
+      "description": "Wyróżnij nagrody, publikacje, awanse lub wyniki, z których jesteś dumny."
+    },
+    "actions": {
+      "collapse": "Zwiń",
+      "expand": "Rozwiń",
+      "remove": "Usuń osiągnięcie",
+      "addAchievement": "Dodaj osiągnięcie"
+    },
+    "fields": {
+      "title": {
+        "label": "Tytuł osiągnięcia",
+        "placeholder": "np. Nagroda za doskonałość inżynierską"
+      },
+      "description": {
+        "label": "Opis",
+        "placeholder": "Opisz wynik, uznanie lub wpływ…"
+      }
+    }
+  },
+  "ReferencesStep": {
+    "title": "Referencje",
+    "subtitle": "Dodaj osoby, które mogą potwierdzić Twoją pracę.",
+    "defaultValues": {
+      "untitledReference": "Referencja bez tytułu"
+    },
+    "empty": {
+      "title": "Nie dodano jeszcze referencji",
+      "description": "Dodaj menedżera, mentora lub kolegę i krótką notatkę."
+    },
+    "actions": {
+      "collapse": "Zwiń",
+      "expand": "Rozwiń",
+      "remove": "Usuń referencję",
+      "addReference": "Dodaj referencję"
+    },
+    "fields": {
+      "name": {
+        "label": "Imię i nazwisko osoby polecającej",
+        "placeholder": "np. Priya Nair"
+      },
+      "reference": {
+        "label": "Szczegóły referencji",
+        "placeholder": "np. VP Engineering, Meridian — dostępne na życzenie"
+      }
+    }
+  },
+  "CustomSectionsStep": {
+    "title": "Własne sekcje",
+    "subtitle": "Dodaj dodatkowe sekcje, takie jak wolontariat, publikacje lub patenty — wraz z pozycjami w każdej sekcji.",
+    "defaultValues": {
+      "untitledSection": "Sekcja bez tytułu",
+      "untitledItem": "Pozycja bez tytułu"
+    },
+    "empty": {
+      "title": "Brak własnych sekcji",
+      "description": "Utwórz sekcję, a następnie dodaj pozycje, które mają pojawić się w CV."
+    },
+    "itemCount": "{{count}} pozycji",
+    "actions": {
+      "collapse": "Zwiń",
+      "expand": "Rozwiń",
+      "removeSection": "Usuń sekcję",
+      "removeItem": "Usuń pozycję",
+      "addItem": "Dodaj pozycję",
+      "addSection": "Dodaj własną sekcję"
+    },
+    "fields": {
+      "sectionTitle": {
+        "label": "Tytuł sekcji",
+        "placeholder": "np. Wolontariat, Publikacje, Patenty"
+      },
+      "itemTitle": {
+        "label": "Tytuł pozycji",
+        "placeholder": "np. Mentor społeczności"
+      },
+      "itemDescription": {
+        "label": "Opis pozycji",
+        "placeholder": "Opisz pracę, publikację lub wkład…"
+      }
+    }
   }
 }

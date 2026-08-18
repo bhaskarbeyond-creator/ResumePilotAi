@@ -15,8 +15,10 @@ export default function SmartReferences({ references = [], theme = {}, title = '
       <div className="smart-references-grid">
         {validRefs.map((ref, idx) => (
           <div key={idx} className="smart-reference-card" data-flow-item="reference">
-            <h4 className="smart-reference-name">{ref.name}</h4>
-            {ref.reference && <div className="smart-reference-detail">{ref.reference}</div>}
+            <h4 className="smart-reference-name">{ref.name || ref.title}</h4>
+            {(ref.reference || ref.description) && (
+              <div className="smart-reference-detail">{ref.reference || ref.description}</div>
+            )}
           </div>
         ))}
       </div>

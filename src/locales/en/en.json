@@ -1108,7 +1108,10 @@
       "languages": "Languages",
       "summary": "Summary",
       "projects": "Projects",
-      "certifications": "Certifications"
+      "certifications": "Certifications",
+      "achievements": "Achievements",
+      "references": "References",
+      "customSections": "Custom Sections"
     },
     "navigation": {
       "previous": "Previous",
@@ -1201,6 +1204,11 @@
     },
     "analytics": {
       "templateChanged": "Template changed to: {{templateName}} ({{templateId}})"
+    },
+    "customSection": {
+      "add": "Add Custom Section",
+      "prompt": "Enter Custom Section Title (e.g. Volunteer Work, Awards, Publications):",
+      "defaultTitle": "Awards & Honors"
     }
   },
   "HeadingStep": {
@@ -2735,5 +2743,94 @@
     "relatedArticles": "Related Articles",
     "views": "views",
     "tags": "Tags"
+  },
+  "AchievementsStep": {
+    "title": "Achievements",
+    "subtitle": "Add awards, honours, and measurable accomplishments that strengthen your resume.",
+    "defaultValues": {
+      "untitledAchievement": "Untitled Achievement"
+    },
+    "empty": {
+      "title": "No achievements added yet",
+      "description": "Highlight awards, publications, promotions, or results you are proud of."
+    },
+    "actions": {
+      "collapse": "Collapse",
+      "expand": "Expand",
+      "remove": "Remove achievement",
+      "addAchievement": "Add Achievement"
+    },
+    "fields": {
+      "title": {
+        "label": "Achievement Title",
+        "placeholder": "e.g. Engineering Excellence Award"
+      },
+      "description": {
+        "label": "Description",
+        "placeholder": "Describe the result, recognition, or impact…"
+      }
+    }
+  },
+  "ReferencesStep": {
+    "title": "References",
+    "subtitle": "Add professional referees who can speak to your work.",
+    "defaultValues": {
+      "untitledReference": "Untitled Reference"
+    },
+    "empty": {
+      "title": "No references added yet",
+      "description": "Add a manager, mentor, or colleague and a short note about how they know you."
+    },
+    "actions": {
+      "collapse": "Collapse",
+      "expand": "Expand",
+      "remove": "Remove reference",
+      "addReference": "Add Reference"
+    },
+    "fields": {
+      "name": {
+        "label": "Referee Name",
+        "placeholder": "e.g. Priya Nair"
+      },
+      "reference": {
+        "label": "Reference Details",
+        "placeholder": "e.g. VP Engineering, Meridian — available on request"
+      }
+    }
+  },
+  "CustomSectionsStep": {
+    "title": "Custom Sections",
+    "subtitle": "Add extra sections such as volunteer work, publications, or patents — including the individual entries inside each section.",
+    "defaultValues": {
+      "untitledSection": "Untitled Section",
+      "untitledItem": "Untitled Item"
+    },
+    "empty": {
+      "title": "No custom sections yet",
+      "description": "Create a section, then add the items that should appear on your resume."
+    },
+    "itemCount": "{{count}} items",
+    "actions": {
+      "collapse": "Collapse",
+      "expand": "Expand",
+      "removeSection": "Remove section",
+      "removeItem": "Remove item",
+      "addItem": "Add Item",
+      "addSection": "Add Custom Section"
+    },
+    "fields": {
+      "sectionTitle": {
+        "label": "Section Title",
+        "placeholder": "e.g. Volunteer Work, Publications, Patents"
+      },
+      "itemTitle": {
+        "label": "Item Title",
+        "placeholder": "e.g. Community Mentor"
+      },
+      "itemDescription": {
+        "label": "Item Description",
+        "placeholder": "Describe the work, publication, or contribution…"
+      }
+    }
   }
 }

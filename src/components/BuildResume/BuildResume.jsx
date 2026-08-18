@@ -11,6 +11,9 @@ import LanguagesStep from './steps/LanguagesStep';
 import SummaryStep from './steps/SummaryStep';
 import ProjectsStep from './steps/ProjectsStep';
 import CertificationsStep from './steps/CertificationsStep';
+import AchievementsStep from './steps/AchievementsStep';
+import ReferencesStep from './steps/ReferencesStep';
+import CustomSectionsStep from './steps/CustomSectionsStep';
 
 import TemplateRenderer from '../TemplateRenderer';
 import { getTemplateMeta } from '../../utils/templateCatalog';
@@ -224,6 +227,39 @@ const BuildResume = () => {
                 </svg>
             ),
         },
+        {
+            id: 9,
+            name: t('BuildResume.steps.achievements', 'Achievements'),
+            path: 'achievements',
+            component: AchievementsStep,
+            icon: (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+            ),
+        },
+        {
+            id: 10,
+            name: t('BuildResume.steps.references', 'References'),
+            path: 'references',
+            component: ReferencesStep,
+            icon: (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+            ),
+        },
+        ...((resumeData.customSections || []).length > 0 || /\/custom\/?$/.test(location.pathname) ? [{
+            id: 11,
+            name: t('BuildResume.steps.customSections', 'Custom Sections'),
+            path: 'custom',
+            component: CustomSectionsStep,
+            icon: (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                </svg>
+            ),
+        }] : []),
     ];
     const sectionKeyForPath = path => ({ 'work-history': 'employment' }[path] || path);
     const sectionOrderList = Array.isArray(resumeData?.sectionOrder) && resumeData.sectionOrder.length
@@ -604,14 +640,18 @@ const BuildResume = () => {
     };
 
     const handleAddCustomSection = () => {
-        const title = window.prompt('Enter Custom Section Title (e.g. Volunteer Work, Awards, Publications):', 'Awards & Honors');
+        const title = window.prompt(
+            t('BuildResume.customSection.prompt', 'Enter Custom Section Title (e.g. Volunteer Work, Awards, Publications):'),
+            t('BuildResume.customSection.defaultTitle', 'Awards & Honors')
+        );
         if (!title?.trim()) return;
         const id = `custom-${globalThis.crypto?.randomUUID?.() || Date.now()}`;
         const customSections = [...(resumeDataRef.current.customSections || []), { id, title: title.trim().slice(0, 100), items: [], visible: true }];
-        const sectionOrder = resumeDataRef.current.sectionOrder.includes(id)
-            ? resumeDataRef.current.sectionOrder
-            : [...resumeDataRef.current.sectionOrder, id];
+        const sectionOrder = [...resumeDataRef.current.sectionOrder];
+        if (!sectionOrder.includes(id)) sectionOrder.push(id);
+        if (!sectionOrder.includes('custom')) sectionOrder.push('custom');
         updateResumeData({ customSections, sectionOrder });
+        navigate('/build-resume/custom');
     };
 
     const handlePublishForReview = async () => {
@@ -1042,7 +1082,9 @@ const BuildResume = () => {
                     postalcode: profile.postalCode || profile.postalcode || '', photo: profile.selectedImage || profile.photo || null,
                     employments: profile.employments || profile.workExperiences || [], educations: profile.educations || profile.education || [],
                     skills: profile.skills || [], languages: profile.languages || [], projects: profile.projects || [],
-                    certifications: profile.certifications || [], summary: profile.summary || '',
+                    certifications: profile.certifications || [], achievements: profile.achievements || profile.awards || [],
+                    references: profile.references || [], customSections: profile.customSections || [],
+                    hobbies: profile.hobbies || [], summary: profile.summary || '',
                 });
             } catch (error) {
                 console.warn('[BuildResume] Profile prefill unavailable:', error.message);
@@ -1630,7 +1672,7 @@ const BuildResume = () => {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
                             </svg>
                         </div>
-                        <span>Add Custom Section</span>
+                        <span>{t('BuildResume.customSection.add', 'Add Custom Section')}</span>
                     </button>
 
                     {/* Real-Time ATS Score Meter Widget */}
@@ -1742,6 +1784,9 @@ const BuildResume = () => {
                                 <Route path="summary" element={<SummaryStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
                                 <Route path="projects" element={<ProjectsStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
                                 <Route path="certifications" element={<CertificationsStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
+                                <Route path="achievements" element={<AchievementsStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
+                                <Route path="references" element={<ReferencesStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
+                                <Route path="custom" element={<CustomSectionsStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
                                 <Route path="" element={<HeadingStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
                             </Routes>
                         </div>

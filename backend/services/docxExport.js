@@ -886,24 +886,29 @@ function buildCustomSections(resume, style, options = {}) {
   const nodes = [];
   for (const custom of list(resume.customSections)) {
     const title = stripAllHtmlTags(custom.title) || 'Additional Information';
-    nodes.push(createSectionHeading(title, style, { beforeSpacing: options.beforeSpacing ?? 160, color: options.headingColor, underlined: options.underlined }));
     const items = list(custom.items);
+    const entryNodes = [];
     if (items.length) {
       for (const item of items) {
-        const itemTitle = stripAllHtmlTags(item.title || item.name || '');
+        const itemTitle = stripAllHtmlTags(typeof item === 'string' ? item : (item.title || item.name || ''));
+        const body = typeof item === 'string' ? '' : (item.description || item.content);
         if (itemTitle) {
-          nodes.push(new Paragraph({
+          entryNodes.push(new Paragraph({
             spacing: { before: 50, after: 20 },
             children: [new TextRun({ text: itemTitle, bold: true, size: 21, font: style.font, color: '111827' })],
           }));
         }
-        if (item.description || item.content) {
-          nodes.push(...parseRichTextToParagraphs(item.description || item.content, style, { size: 20 }));
+        if (body) {
+          entryNodes.push(...parseRichTextToParagraphs(body, style, { size: 20 }));
         }
       }
     } else if (custom.content) {
-      nodes.push(...parseRichTextToParagraphs(custom.content, style, { size: 20 }));
+      entryNodes.push(...parseRichTextToParagraphs(custom.content, style, { size: 20 }));
     }
+    // Title-only / empty custom sections must not print a phantom heading.
+    if (!entryNodes.length) continue;
+    nodes.push(createSectionHeading(title, style, { beforeSpacing: options.beforeSpacing ?? 160, color: options.headingColor, underlined: options.underlined }));
+    nodes.push(...entryNodes);
   }
   for (const component of list(resume.components)) {
     const title = stripAllHtmlTags(component.name || component.title || 'Additional');

@@ -21,6 +21,7 @@ import {
   filterMeaningfulReferences,
   filterMeaningfulLanguages,
   filterMeaningfulHobbies,
+  filterMeaningfulCustomSections,
 } from './utils/contentSanitizer.js';
 
 const LINE_HEIGHT_PX = 15;
@@ -71,6 +72,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
   const hobbies = filterMeaningfulHobbies(values.hobbies || values.hobby || values.interests || values.interest);
   const achievements = filterMeaningfulAchievements(values.achievements);
   const references = filterMeaningfulReferences(values.references);
+  const customSections = filterMeaningfulCustomSections(values.customSections);
   const rawPhoto = values.photo || values.selectedImage || values.image || values.avatar || values.picture || null;
   const isPhotoVisible = Boolean(rawPhoto && values.showPhoto !== false && values.hidePhoto !== true && values.includePhoto !== false);
   const photo = isPhotoVisible ? rawPhoto : null;
@@ -367,6 +369,35 @@ export function partitionResumeContent(values = {}, theme = {}) {
       type: 'languages',
       items: [{ type: 'languages', items: languagesInMainFlow, estHeight: Math.round(height) }],
       estHeight: Math.round(height)
+    });
+  }
+
+  // Custom sections — one flow group per section so two custom headings
+  // cannot collapse into a single renderer group.
+  if (customSections.length) {
+    customSections.forEach((section) => {
+      const bodyItems = (Array.isArray(section.items) && section.items.length)
+        ? section.items
+        : (section.content ? [{ title: '', description: section.content }] : []);
+      if (!bodyItems.length) return;
+      const customItems = bodyItems.map((item, index) => {
+        const textLen = getTextLength(typeof item === 'string' ? item : (item.description || item.content || item.title || item.name || ''));
+        const estHeight = Math.round(26 + calcTextHeight(textLen) + (index === 0 ? 26 : 8));
+        return {
+          type: 'custom',
+          item,
+          sectionId: section.id || section.title || 'custom',
+          sectionTitle: section.title || 'Additional Information',
+          index,
+          isFirst: index === 0,
+          estHeight,
+        };
+      });
+      sections.push({
+        type: 'custom',
+        items: customItems,
+        estHeight: customItems.reduce((sum, it) => sum + it.estHeight, 0),
+      });
     });
   }
 
