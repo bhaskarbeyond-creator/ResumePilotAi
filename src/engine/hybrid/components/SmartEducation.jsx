@@ -1,9 +1,11 @@
 import React from 'react';
 import { sanitizeRichText } from '../../../utils/sanitizeHtml';
 import { formatDateRange, formatRichText } from '../utils/formatText';
+import { filterMeaningfulEducations } from '../utils/contentSanitizer';
 
 export default function SmartEducation({ educations = [], theme = {}, title = 'Education' }) {
-  if (!educations || !educations.length) return null;
+  const validEducations = filterMeaningfulEducations(educations);
+  if (!validEducations.length) return null;
 
   const dividerClass = `smart-section-title--${theme.dividerStyle || 'solid-thin'}`;
   const timelineClass = `smart-timeline--${theme.timelineStyle || 'modern-node'}`;
@@ -16,9 +18,9 @@ export default function SmartEducation({ educations = [], theme = {}, title = 'E
       </h3>
 
       <div className={`smart-timeline ${timelineClass}`}>
-        {educations.map((edu, idx) => {
-          const dateRange = formatDateRange(edu.started, edu.finished);
-          const institution = [edu.school, edu.city].filter(Boolean).join(' · ');
+        {validEducations.map((edu, idx) => {
+          const dateRange = formatDateRange(edu.started || edu.startDate || edu.begin, edu.finished || edu.endDate || edu.end);
+          const institution = [edu.school || edu.institution, edu.city].filter(Boolean).join(' · ');
 
           return (
             <div key={idx} className="smart-timeline-item" data-flow-item="education">
@@ -30,7 +32,7 @@ export default function SmartEducation({ educations = [], theme = {}, title = 'E
               <div className="smart-timeline-body">
                 <div className="smart-timeline-header">
                   <div className="smart-timeline-title-group">
-                    <h4 className="smart-timeline-role">{edu.degree || 'Degree'}</h4>
+                    <h4 className="smart-timeline-role">{edu.degree || edu.fieldOfStudy || 'Degree'}</h4>
                     {institution && <div className="smart-timeline-company">{institution}</div>}
                   </div>
                   {dateRange && <div className="smart-timeline-date">{dateRange}</div>}

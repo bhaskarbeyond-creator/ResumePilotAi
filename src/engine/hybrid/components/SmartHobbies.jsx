@@ -1,12 +1,14 @@
 import React from 'react';
 import { sanitizeRichText } from '../../../utils/sanitizeHtml';
+import { filterMeaningfulHobbies, hasMeaningfulText } from '../utils/contentSanitizer';
 
 export default function SmartHobbies({ hobbies = [], theme = {}, title = 'Hobbies & Interests' }) {
-  if (!hobbies || (Array.isArray(hobbies) && !hobbies.length)) return null;
+  const validHobbies = filterMeaningfulHobbies(hobbies);
+  if (!validHobbies.length) return null;
 
   // If hobbies is a string / HTML block
   if (typeof hobbies === 'string') {
-    if (!hobbies.trim()) return null;
+    if (!hasMeaningfulText(hobbies)) return null;
     return (
       <section className="smart-section smart-hobbies-section">
         <h3 className="smart-section-title">
@@ -21,10 +23,6 @@ export default function SmartHobbies({ hobbies = [], theme = {}, title = 'Hobbie
     );
   }
 
-  // If hobbies is an array of items (strings or objects)
-  const items = Array.isArray(hobbies) ? hobbies : [hobbies];
-  if (!items.length) return null;
-
   return (
     <section className="smart-section smart-hobbies-section">
       <h3 className="smart-section-title">
@@ -33,7 +31,7 @@ export default function SmartHobbies({ hobbies = [], theme = {}, title = 'Hobbie
       </h3>
 
       <div className="smart-hobbies-pills">
-        {items.map((item, idx) => {
+        {validHobbies.map((item, idx) => {
           const name = typeof item === 'string' ? item : (item.name || item.hobby || item.title || item.interest || '');
           if (!name) return null;
 

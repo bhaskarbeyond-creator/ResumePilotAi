@@ -34,6 +34,29 @@
   font-size: 11.5px;
   line-height: 1.42;
   -webkit-font-smoothing: antialiased;
+  --smart-section-gap: 14px;
+  --smart-sidebar-gap: 14px;
+}
+
+.smart-resume-page[data-density="compact"] {
+  --smart-section-gap: 11px;
+  --smart-sidebar-gap: 11px;
+  font-size: 10.5px;
+  line-height: 1.36;
+}
+
+.smart-resume-page[data-density="standard"] {
+  --smart-section-gap: 14px;
+  --smart-sidebar-gap: 14px;
+  font-size: 11.5px;
+  line-height: 1.42;
+}
+
+.smart-resume-page[data-density="spacious"] {
+  --smart-section-gap: 18px;
+  --smart-sidebar-gap: 18px;
+  font-size: 12px;
+  line-height: 1.48;
 }
 
 .smart-page-body {
@@ -63,7 +86,7 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--smart-sidebar-gap, 14px);
   border-right: 1px solid rgba(0, 0, 0, 0.06);
   min-height: 100%;
 }
@@ -74,7 +97,7 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--smart-section-gap, 14px);
   min-width: 0;
 }
 
@@ -126,7 +149,7 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--smart-sidebar-gap, 14px);
   border-right: 1px solid rgba(0, 0, 0, 0.06);
   min-height: 100%;
 }
@@ -137,7 +160,7 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--smart-section-gap, 14px);
   min-width: 0;
 }
 
@@ -147,7 +170,7 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--smart-section-gap, 14px);
   width: 100%;
 }
 
@@ -157,7 +180,7 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--smart-section-gap, 14px);
   width: 100%;
 }
 
@@ -167,7 +190,7 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--smart-section-gap, 14px);
   width: 100%;
 }
 
@@ -439,12 +462,21 @@
 
 /* ── Section Titles & Dividers (Main Column) ────────────────────────── */
 
+.smart-flow-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--smart-section-gap, 14px);
+  width: 100%;
+  min-width: 0;
+}
+
 .smart-section {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 6px;
   width: 100%;
   break-inside: avoid;
+  min-width: 0;
 }
 
 .smart-section-title {
@@ -456,7 +488,7 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--primary, #0891b2);
-  margin: 0 0 2px;
+  margin: 0 0 3px;
   padding: 0;
   border: none;
 }

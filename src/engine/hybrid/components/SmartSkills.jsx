@@ -1,16 +1,18 @@
 import React from 'react';
+import { filterMeaningfulSkills } from '../utils/contentSanitizer';
 
 export default function SmartSkills({ skills = [], theme = {}, title = 'Skills' }) {
-  if (!skills || !skills.length) return null;
+  const validSkills = filterMeaningfulSkills(skills);
+  if (!validSkills.length) return null;
 
   const variant = theme.skillVariant || 'pills';
   const dividerClass = `smart-section-title--${theme.dividerStyle || 'solid-thin'}`;
 
   // Normalize skills into objects: { name, rating }
-  const normalized = skills.map((s) => {
-    if (typeof s === 'string') return { name: s, rating: 80 };
+  const normalized = validSkills.map((s) => {
+    if (typeof s === 'string') return { name: s.trim(), rating: 80 };
     return {
-      name: s.name || s.skillName || '',
+      name: (s.name || s.skillName || s.skill || s.title || '').trim(),
       rating: typeof s.rating === 'number' ? s.rating : 80,
     };
   }).filter((s) => s.name);

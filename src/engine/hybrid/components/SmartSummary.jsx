@@ -1,9 +1,10 @@
 import React from 'react';
 import { sanitizeRichText } from '../../../utils/sanitizeHtml';
 import { formatRichText } from '../utils/formatText';
+import { hasMeaningfulText } from '../utils/contentSanitizer';
 
 export default function SmartSummary({ summary = '', title = 'Professional Summary', theme = {} }) {
-  if (!summary || !summary.trim()) return null;
+  if (!hasMeaningfulText(summary)) return null;
 
   const dividerClass = `smart-section-title--${theme.dividerStyle || 'solid-thin'}`;
 

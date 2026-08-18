@@ -10,6 +10,19 @@
  * - Zero Empty Space: Items fill Page 1 cleanly; multi-page overflow activates only when Page 1 capacity is genuinely reached.
  */
 
+import {
+  hasMeaningfulText,
+  filterMeaningfulEmployments,
+  filterMeaningfulEducations,
+  filterMeaningfulSkills,
+  filterMeaningfulProjects,
+  filterMeaningfulCertifications,
+  filterMeaningfulAchievements,
+  filterMeaningfulReferences,
+  filterMeaningfulLanguages,
+  filterMeaningfulHobbies,
+} from './utils/contentSanitizer.js';
+
 const LINE_HEIGHT_PX = 15;
 
 function getTextLength(htmlOrStr = '') {
@@ -27,7 +40,7 @@ function getTextLength(htmlOrStr = '') {
  */
 function splitSummaryBlocks(html = '', maxChars = 900) {
   const raw = String(html || '').trim();
-  if (!raw) return [];
+  if (!raw || !hasMeaningfulText(raw)) return [];
   const paragraphs = raw.includes('</p>')
     ? raw.split(/(?<=<\/p>)/).map((part) => part.trim()).filter(Boolean)
     : [raw];
@@ -47,16 +60,17 @@ function splitSummaryBlocks(html = '', maxChars = 900) {
 }
 
 export function partitionResumeContent(values = {}, theme = {}) {
-  const summary = values.summary || values.professionalSummary || values.objective || values.aboutMe || values.profile || values.summaryText || '';
-  const employments = values.employments || values.workExperiences || values.experience || [];
-  const educations = values.educations || values.education || [];
-  const skills = values.skills || [];
-  const projects = values.projects || [];
-  const certifications = values.certifications || [];
-  const languages = values.languages || [];
-  const hobbies = values.hobbies || values.hobby || values.interests || values.interest || [];
-  const achievements = values.achievements || [];
-  const references = values.references || [];
+  const rawSummary = values.summary || values.professionalSummary || values.objective || values.aboutMe || values.profile || values.summaryText || '';
+  const summary = hasMeaningfulText(rawSummary) ? String(rawSummary).trim() : '';
+  const employments = filterMeaningfulEmployments(values.employments || values.workExperiences || values.experience);
+  const educations = filterMeaningfulEducations(values.educations || values.education);
+  const skills = filterMeaningfulSkills(values.skills);
+  const projects = filterMeaningfulProjects(values.projects);
+  const certifications = filterMeaningfulCertifications(values.certifications);
+  const languages = filterMeaningfulLanguages(values.languages);
+  const hobbies = filterMeaningfulHobbies(values.hobbies || values.hobby || values.interests || values.interest);
+  const achievements = filterMeaningfulAchievements(values.achievements);
+  const references = filterMeaningfulReferences(values.references);
   const rawPhoto = values.photo || values.selectedImage || values.image || values.avatar || values.picture || null;
   const isPhotoVisible = Boolean(rawPhoto && values.showPhoto !== false && values.hidePhoto !== true && values.includePhoto !== false);
   const photo = isPhotoVisible ? rawPhoto : null;

@@ -1,9 +1,11 @@
 import React from 'react';
 import { sanitizeRichText } from '../../../utils/sanitizeHtml';
 import { formatRichText } from '../utils/formatText';
+import { filterMeaningfulAchievements } from '../utils/contentSanitizer';
 
 export default function SmartAchievements({ achievements = [], theme = {}, title = 'Key Achievements' }) {
-  if (!achievements || !achievements.length) return null;
+  const validAchievements = filterMeaningfulAchievements(achievements);
+  if (!validAchievements.length) return null;
 
   return (
     <section className="smart-section smart-achievements-section">
@@ -13,7 +15,7 @@ export default function SmartAchievements({ achievements = [], theme = {}, title
       </h3>
 
       <div className="smart-achievements-list">
-        {achievements.map((ach, idx) => (
+        {validAchievements.map((ach, idx) => (
           <div key={idx} className="smart-achievement-item" data-flow-item="achievement">
             <div className="smart-achievement-icon">
               <svg className="smart-achievement-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

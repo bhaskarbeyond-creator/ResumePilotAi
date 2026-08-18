@@ -1,7 +1,8 @@
 import React from 'react';
+import { filterMeaningfulLanguages } from '../utils/contentSanitizer';
 
 function getLanguageDots(level = '') {
-  const lower = level.toLowerCase();
+  const lower = String(level || '').toLowerCase();
   if (lower.includes('native') || lower.includes('bilingual') || lower.includes('c2')) return 5;
   if (lower.includes('fluent') || lower.includes('advanced') || lower.includes('c1')) return 4;
   if (lower.includes('professional') || lower.includes('intermediate') || lower.includes('b2') || lower.includes('b1')) return 3;
@@ -11,7 +12,8 @@ function getLanguageDots(level = '') {
 }
 
 export default function SmartLanguages({ languages = [], theme = {}, title = 'Languages' }) {
-  if (!languages || !languages.length) return null;
+  const validLanguages = filterMeaningfulLanguages(languages);
+  if (!validLanguages.length) return null;
 
   const dividerClass = `smart-section-title--${theme.dividerStyle || 'solid-thin'}`;
   const showDots = theme.skillVariant === 'dots';
@@ -24,7 +26,7 @@ export default function SmartLanguages({ languages = [], theme = {}, title = 'La
       </h3>
 
       <div className="smart-languages-list">
-        {languages.map((lang, idx) => {
+        {validLanguages.map((lang, idx) => {
           const name = typeof lang === 'string' ? lang : lang.name || lang.language;
           const level = typeof lang === 'string' ? '' : lang.level || '';
           const dotsCount = getLanguageDots(level);

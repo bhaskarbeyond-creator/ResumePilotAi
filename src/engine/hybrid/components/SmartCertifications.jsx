@@ -1,7 +1,9 @@
 import React from 'react';
+import { filterMeaningfulCertifications } from '../utils/contentSanitizer';
 
 export default function SmartCertifications({ certifications = [], theme = {}, title = 'Certifications' }) {
-  if (!certifications || !certifications.length) return null;
+  const validCerts = filterMeaningfulCertifications(certifications);
+  if (!validCerts.length) return null;
 
   return (
     <section className="smart-section smart-certifications-section">
@@ -11,8 +13,11 @@ export default function SmartCertifications({ certifications = [], theme = {}, t
       </h3>
 
       <div className="smart-cert-grid">
-        {certifications.map((cert, idx) => {
-          const meta = [cert.issuer, cert.date].filter(Boolean).join(' · ');
+        {validCerts.map((cert, idx) => {
+          const certTitle = typeof cert === 'string' ? cert : (cert.title || cert.name || '');
+          const certIssuer = typeof cert === 'string' ? '' : (cert.issuer || cert.authority || '');
+          const certDate = typeof cert === 'string' ? '' : (cert.date || '');
+          const meta = [certIssuer, certDate].filter(Boolean).join(' · ');
           return (
             <div key={idx} className="smart-cert-item" data-flow-item="certification">
               <div className="smart-cert-badge">
@@ -22,7 +27,7 @@ export default function SmartCertifications({ certifications = [], theme = {}, t
                 </svg>
               </div>
               <div className="smart-cert-content">
-                <h4 className="smart-cert-title">{cert.title || cert.name}</h4>
+                <h4 className="smart-cert-title">{certTitle}</h4>
                 {meta && <div className="smart-cert-meta">{meta}</div>}
               </div>
             </div>

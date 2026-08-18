@@ -1,9 +1,11 @@
 import React from 'react';
 import { sanitizeRichText } from '../../../utils/sanitizeHtml';
 import { formatRichText } from '../utils/formatText';
+import { filterMeaningfulProjects } from '../utils/contentSanitizer';
 
 export default function SmartProjects({ projects = [], theme = {}, title = 'Projects' }) {
-  if (!projects || !projects.length) return null;
+  const validProjects = filterMeaningfulProjects(projects);
+  if (!validProjects.length) return null;
 
   return (
     <section className="smart-section smart-projects-section">
@@ -13,7 +15,7 @@ export default function SmartProjects({ projects = [], theme = {}, title = 'Proj
       </h3>
 
       <div className="smart-cards-grid">
-        {projects.map((proj, idx) => (
+        {validProjects.map((proj, idx) => (
           <div key={idx} className="smart-card-item" data-flow-item="project">
             <div className="smart-card-header">
               <h4 className="smart-card-title">{proj.title || proj.name}</h4>

@@ -1,9 +1,11 @@
 import React from 'react';
 import { sanitizeRichText } from '../../../utils/sanitizeHtml';
 import { formatDateRange, formatRichText } from '../utils/formatText';
+import { filterMeaningfulEmployments } from '../utils/contentSanitizer';
 
 export default function SmartExperience({ employments = [], theme = {}, title = 'Employment History' }) {
-  if (!employments || !employments.length) return null;
+  const validEmployments = filterMeaningfulEmployments(employments);
+  if (!validEmployments.length) return null;
 
   const dividerClass = `smart-section-title--${theme.dividerStyle || 'solid-thin'}`;
   const timelineClass = `smart-timeline--${theme.timelineStyle || 'modern-node'}`;
@@ -16,9 +18,9 @@ export default function SmartExperience({ employments = [], theme = {}, title = 
       </h3>
 
       <div className={`smart-timeline ${timelineClass}`}>
-        {employments.map((job, idx) => {
-          const dateRange = formatDateRange(job.begin, job.end);
-          const companyLocation = [job.employer, job.city].filter(Boolean).join(' · ');
+        {validEmployments.map((job, idx) => {
+          const dateRange = formatDateRange(job.begin || job.started || job.startDate, job.end || job.finished || job.endDate);
+          const companyLocation = [job.employer || job.company, job.city].filter(Boolean).join(' · ');
 
           return (
             <div key={idx} className="smart-timeline-item" data-flow-item="experience">
@@ -30,7 +32,7 @@ export default function SmartExperience({ employments = [], theme = {}, title = 
               <div className="smart-timeline-body">
                 <div className="smart-timeline-header">
                   <div className="smart-timeline-title-group">
-                    <h4 className="smart-timeline-role">{job.jobTitle || 'Role'}</h4>
+                    <h4 className="smart-timeline-role">{job.jobTitle || job.title || job.role || job.position || 'Role'}</h4>
                     {companyLocation && <div className="smart-timeline-company">{companyLocation}</div>}
                   </div>
                   {dateRange && <div className="smart-timeline-date">{dateRange}</div>}
