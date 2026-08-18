@@ -6,11 +6,11 @@
  * - Sidebar contains Header, Skills, Languages, Hobbies with 100% full-height column background.
  * - Single-Column Layouts (Minimal ATS & Compact Euro): Full-page greedy packing maximizing Page 1 space utilization.
  * - Accurate Typographic Estimators: Calibrated per-variant skills, timeline items, and language rails.
- * - Safe Capacity Limits: Strict 760px usable page budget prevents ANY element from colliding with page footers.
+ * - Safe Capacity Limits: Strict 650px usable page budget prevents ANY element from colliding with page footers.
  * - Zero Empty Space: Items fill Page 1 cleanly; multi-page overflow activates only when Page 1 capacity is genuinely reached.
  */
 
-const CHARS_PER_LINE = 85;
+const CHARS_PER_LINE = 75;
 const LINE_HEIGHT_PX = 15;
 
 function getTextLength(htmlOrStr = '') {
@@ -76,7 +76,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
 
   // Summary
   if (summary && summary.trim() && getTextLength(summary) > 0) {
-    const sumHeight = calcTextHeight(getTextLength(summary)) + 24;
+    const sumHeight = calcTextHeight(getTextLength(summary)) + 30;
     sections.push({
       type: 'summary',
       items: [{ type: 'summary', content: summary, estHeight: Math.round(sumHeight) }],
@@ -88,7 +88,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
   if (employments && employments.length) {
     const expItems = employments.map((job, index) => {
       const textLen = getTextLength(job.description);
-      const estHeight = Math.round(26 + calcTextHeight(textLen) + (index === 0 ? 24 : 8));
+      const estHeight = Math.round(32 + calcTextHeight(textLen) + (index === 0 ? 26 : 10));
       return { type: 'experience', item: job, index, isFirst: index === 0, estHeight };
     });
     const sectionHeight = expItems.reduce((sum, it) => sum + it.estHeight, 0);
@@ -99,7 +99,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
   if (educations && educations.length) {
     const eduItems = educations.map((edu, index) => {
       const textLen = getTextLength(edu.description);
-      const estHeight = Math.round(24 + calcTextHeight(textLen) + (index === 0 ? 24 : 6));
+      const estHeight = Math.round(28 + calcTextHeight(textLen) + (index === 0 ? 26 : 8));
       return { type: 'education', item: edu, index, isFirst: index === 0, estHeight };
     });
     const sectionHeight = eduItems.reduce((sum, it) => sum + it.estHeight, 0);
@@ -119,7 +119,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
   if (projects && projects.length) {
     const projItems = projects.map((proj, index) => {
       const textLen = getTextLength(proj.description);
-      const estHeight = Math.round(24 + calcTextHeight(textLen) + (index === 0 ? 24 : 6));
+      const estHeight = Math.round(28 + calcTextHeight(textLen) + (index === 0 ? 26 : 8));
       return { type: 'project', item: proj, index, isFirst: index === 0, estHeight };
     });
     const sectionHeight = projItems.reduce((sum, it) => sum + it.estHeight, 0);
@@ -130,8 +130,8 @@ export function partitionResumeContent(values = {}, theme = {}) {
   if ((isSingleCol || !certsInSidebar) && certifications.length) {
     const certItems = certifications.map((cert, index) => {
       const isNewRow = index % 2 === 0;
-      const rowHeight = isNewRow ? 30 : 0;
-      const titleHeight = index === 0 ? 26 : 0;
+      const rowHeight = isNewRow ? 52 : 0;
+      const titleHeight = index === 0 ? 28 : 0;
       return {
         type: 'certification',
         item: cert,
@@ -148,7 +148,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
   if (achievements && achievements.length) {
     const achItems = achievements.map((ach, index) => {
       const textLen = getTextLength(ach.description);
-      const estHeight = Math.round(22 + calcTextHeight(textLen) + (index === 0 ? 24 : 6));
+      const estHeight = Math.round(26 + calcTextHeight(textLen) + (index === 0 ? 26 : 8));
       return { type: 'achievement', item: ach, index, isFirst: index === 0, estHeight };
     });
     const sectionHeight = achItems.reduce((sum, it) => sum + it.estHeight, 0);
@@ -168,7 +168,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
   if (references && references.length) {
     const refItems = references.map((ref, index) => {
       const textLen = getTextLength(ref.reference);
-      const estHeight = Math.round(22 + calcTextHeight(textLen) + (index === 0 ? 24 : 6));
+      const estHeight = Math.round(24 + calcTextHeight(textLen) + (index === 0 ? 26 : 8));
       return { type: 'reference', item: ref, index, isFirst: index === 0, estHeight };
     });
     const sectionHeight = refItems.reduce((sum, it) => sum + it.estHeight, 0);
@@ -184,8 +184,8 @@ export function partitionResumeContent(values = {}, theme = {}) {
     });
   }
 
-  // Usable vertical page capacity on Page 1
-  const P1_CAPACITY = isBanner ? 680 : (isSingleCol ? 740 : 760);
+  // Usable vertical page capacity on Page 1 (conservative to prevent any footer collision)
+  const P1_CAPACITY = isBanner ? 580 : (isSingleCol ? 650 : 650);
 
   const p1Items = [];
   const p2Items = [];

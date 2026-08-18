@@ -31,7 +31,7 @@
   flex-direction: column;
   justify-content: space-between;
   color: #1e293b;
-  font-size: 12px;
+  font-size: 11.5px;
   line-height: 1.42;
   -webkit-font-smoothing: antialiased;
 }
@@ -209,7 +209,7 @@
 }
 
 .smart-header__name {
-  font-size: 23px;
+  font-size: 22px;
   font-weight: 800;
   letter-spacing: -0.02em;
   margin: 0;
@@ -222,9 +222,9 @@
 }
 
 .smart-header__role {
-  font-size: 12.5px;
+  font-size: 11.5px;
   font-weight: 600;
-  color: var(--secondary, #3b82f6);
+  color: var(--secondary, #0891b2);
   margin: 0;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -238,7 +238,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 5px 12px;
-  font-size: 11px;
+  font-size: 10.5px;
   color: #475569;
 }
 
@@ -297,13 +297,13 @@
 
 /* Variant: Left Bold (Stanford, Geneva, MIT, PM) */
 .smart-header--left-bold .smart-header__name {
-  font-size: 25px;
+  font-size: 24px;
   font-weight: 800;
   letter-spacing: -0.03em;
 }
 
 .smart-header--left-bold .smart-header__role {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
   color: var(--primary);
 }
@@ -315,7 +315,7 @@
 }
 
 .smart-header--accent-bracket .smart-header__name {
-  font-size: 24px;
+  font-size: 23px;
   letter-spacing: -0.01em;
 }
 
@@ -332,21 +332,22 @@
 }
 
 .smart-header--minimal-inline .smart-header__name {
-  font-size: 22px;
+  font-size: 21px;
 }
 
 .smart-header--minimal-inline .smart-header__role {
-  font-size: 12px;
+  font-size: 11.5px;
   color: #64748b;
 }
 
-/* Sidebar Specific Header */
+/* ── Sidebar Styling & High Contrast Rules ──────────────────────────── */
+
 .smart-sidebar .smart-header {
   display: flex;
   flex-direction: column;
   gap: 10px;
   padding-bottom: 12px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .smart-sidebar .smart-header__main {
@@ -356,8 +357,15 @@
 }
 
 .smart-sidebar .smart-header__name {
-  font-size: 20px;
+  font-size: 19px;
   line-height: 1.15;
+  color: var(--sidebar-text, #ffffff) !important;
+}
+
+.smart-sidebar .smart-header__role {
+  color: var(--secondary, #38bdf8) !important;
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
 }
 
 .smart-sidebar .smart-header__contacts {
@@ -365,22 +373,76 @@
   flex-direction: column;
   gap: 5px;
   width: 100%;
+  color: var(--sidebar-text, #e2e8f0) !important;
+  opacity: 0.9;
 }
 
 .smart-sidebar .smart-contact-item {
   display: flex;
   align-items: flex-start;
-  gap: 5px;
-  font-size: 10.5px;
+  gap: 6px;
+  font-size: 10px;
   word-break: break-word;
+  color: inherit !important;
 }
 
-/* ── Section Titles & Dividers ───────────────────────────────────────── */
+.smart-sidebar .smart-contact-icon {
+  color: var(--secondary, #38bdf8) !important;
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.smart-sidebar .smart-section-title {
+  color: var(--sidebar-text, #ffffff) !important;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  padding-bottom: 3px;
+  margin-bottom: 4px;
+}
+
+.smart-sidebar .smart-section-title__line {
+  display: none;
+}
+
+/* Sidebar Badges / Pills (Glassmorphism on dark sidebars, crisp on light) */
+.smart-sidebar .smart-skills-grid--badges .smart-skill-item,
+.smart-sidebar .smart-skills-grid--pills .smart-skill-item {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: var(--sidebar-text, #f1f5f9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 4px;
+  font-size: 9.5px;
+  font-weight: 500;
+  padding: 2.5px 6.5px;
+}
+
+.smart-sidebar .smart-language-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 10px;
+}
+
+.smart-sidebar .smart-language-name {
+  color: var(--sidebar-text, #f8fafc) !important;
+  font-weight: 600;
+}
+
+.smart-sidebar .smart-language-level {
+  color: var(--sidebar-text, #94a3b8) !important;
+  opacity: 0.75;
+  font-size: 9px;
+}
+
+/* ── Section Titles & Dividers (Main Column) ────────────────────────── */
 
 .smart-section {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
   width: 100%;
   break-inside: avoid;
 }
@@ -389,11 +451,11 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--primary, #0f172a);
+  color: var(--primary, #0891b2);
   margin: 0 0 2px;
   padding: 0;
   border: none;
@@ -402,8 +464,8 @@
 .smart-section-title__line {
   flex: 1 1 auto;
   height: 1.5px;
-  background-color: var(--secondary, #3b82f6);
-  opacity: 0.4;
+  background-color: var(--secondary, #06b6d4);
+  opacity: 0.35;
 }
 
 /* Divider: Solid Thick (Yale) */
@@ -429,7 +491,7 @@
   content: '';
   display: inline-block;
   width: 3.5px;
-  height: 14px;
+  height: 13px;
   background-color: var(--secondary, var(--primary));
   border-radius: 2px;
   flex-shrink: 0;
@@ -451,22 +513,22 @@
   display: none;
 }
 
-/* ── Smart Skills (Pills, Badges, Dots, Bars, Inline) ───────────────── */
+/* ── Smart Skills (Main Column Single-Col Mode) ─────────────────────── */
 
 .smart-skills-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 4px;
   width: 100%;
 }
 
 .smart-skills-grid--pills .smart-skill-item {
-  background-color: rgba(59, 130, 246, 0.08);
-  color: var(--primary, #1e3a8a);
-  border: 1px solid rgba(59, 130, 246, 0.18);
+  background-color: rgba(8, 145, 178, 0.08);
+  color: var(--primary, #0891b2);
+  border: 1px solid rgba(8, 145, 178, 0.2);
   padding: 2.5px 7px;
   border-radius: 5px;
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
@@ -478,7 +540,7 @@
   border: 1px solid #cbd5e1;
   padding: 2px 6px;
   border-radius: 4px;
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
@@ -490,7 +552,7 @@
   justify-content: space-between;
   width: 100%;
   padding: 2px 0;
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 500;
 }
 
@@ -508,7 +570,7 @@
 }
 
 .smart-skill-dot--filled {
-  background-color: var(--secondary, #3b82f6);
+  background-color: var(--secondary, #06b6d4);
 }
 
 .smart-skills-grid--inline {
@@ -518,7 +580,7 @@
 }
 
 .smart-skills-grid--inline .smart-skill-item {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 500;
 }
 
@@ -533,7 +595,7 @@
 .smart-languages-list {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
   width: 100%;
 }
 
@@ -541,7 +603,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 10.5px;
+  font-size: 10px;
 }
 
 .smart-language-info {
@@ -555,7 +617,7 @@
 }
 
 .smart-language-level {
-  font-size: 9.5px;
+  font-size: 9px;
   color: #64748b;
 }
 
@@ -564,13 +626,13 @@
 .smart-timeline {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 9px;
   width: 100%;
 }
 
 .smart-timeline-item {
   display: flex;
-  gap: 10px;
+  gap: 9px;
   position: relative;
   break-inside: avoid;
 }
@@ -580,22 +642,22 @@
   flex-direction: column;
   align-items: center;
   flex-shrink: 0;
-  width: 10px;
+  width: 9px;
   padding-top: 3px;
 }
 
 .smart-timeline-node {
-  width: 7px;
-  height: 7px;
+  width: 6.5px;
+  height: 6.5px;
   border-radius: 50%;
-  background-color: var(--secondary, #3b82f6);
+  background-color: var(--secondary, #06b6d4);
   flex-shrink: 0;
 }
 
 .smart-timeline-connector {
   width: 1.5px;
   flex: 1 1 auto;
-  background-color: rgba(59, 130, 246, 0.2);
+  background-color: rgba(6, 182, 212, 0.2);
   margin-top: 3px;
 }
 
@@ -615,7 +677,7 @@
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 10px;
+  gap: 8px;
 }
 
 .smart-timeline-title-group {
@@ -625,20 +687,20 @@
 }
 
 .smart-timeline-role {
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 700;
   color: #0f172a;
   margin: 0;
 }
 
 .smart-timeline-company {
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 600;
-  color: var(--primary, #1e3a8a);
+  color: var(--primary, #0891b2);
 }
 
 .smart-timeline-date {
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 500;
   color: #64748b;
   flex-shrink: 0;
@@ -646,9 +708,9 @@
 }
 
 .smart-timeline-desc {
-  font-size: 11px;
+  font-size: 10.5px;
   color: #334155;
-  line-height: 1.4;
+  line-height: 1.45;
   margin-top: 2px;
 }
 
@@ -672,7 +734,7 @@
 
 .smart-timeline--date-rail .smart-timeline-header {
   display: grid;
-  grid-template-columns: 110px 1fr;
+  grid-template-columns: 100px 1fr;
   gap: 10px;
   align-items: baseline;
 }
@@ -681,7 +743,7 @@
   order: -1;
   color: var(--primary, #003399);
   font-weight: 700;
-  font-size: 10.5px;
+  font-size: 10px;
 }
 
 /* Timeline Style: Compact Clean (ATS) */
@@ -696,7 +758,7 @@
 
 .smart-timeline--code-tag .smart-timeline-role {
   font-family: 'Fira Code', 'Courier New', monospace;
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--primary, #0f172a);
 }
 
@@ -716,32 +778,33 @@
 .smart-cert-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px 12px;
+  gap: 7px 10px;
   width: 100%;
 }
 
 .smart-sidebar .smart-cert-grid {
   grid-template-columns: 1fr;
-  gap: 6px;
+  gap: 5px;
 }
 
 .smart-cert-item {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  padding: 6px 8px;
+  padding: 6px 9px;
   background-color: #f8fafc;
-  border-radius: 5px;
+  border-radius: 6px;
   border: 1px solid #e2e8f0;
   min-width: 0;
+  box-sizing: border-box;
 }
 
 .smart-cert-badge {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 5px;
-  background-color: rgba(59, 130, 246, 0.1);
-  color: var(--primary, #1e3a8a);
+  background-color: rgba(8, 145, 178, 0.1);
+  color: var(--primary, #0891b2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -750,10 +813,10 @@
 
 .smart-cert-badge svg,
 .smart-cert-icon {
-  width: 14px !important;
-  height: 14px !important;
-  max-width: 14px !important;
-  max-height: 14px !important;
+  width: 13px !important;
+  height: 13px !important;
+  max-width: 13px !important;
+  max-height: 13px !important;
   flex-shrink: 0;
 }
 
@@ -765,7 +828,7 @@
 }
 
 .smart-cert-title {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   color: #0f172a;
   margin: 0;
@@ -773,7 +836,7 @@
 }
 
 .smart-cert-meta {
-  font-size: 9.5px;
+  font-size: 9px;
   color: #64748b;
 }
 
@@ -782,7 +845,7 @@
 .smart-achievements-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
   width: 100%;
 }
 
@@ -794,9 +857,9 @@
 }
 
 .smart-achievement-icon {
-  width: 20px;
-  height: 20px;
-  color: var(--secondary, #3b82f6);
+  width: 18px;
+  height: 18px;
+  color: var(--secondary, #06b6d4);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -805,30 +868,30 @@
 
 .smart-achievement-icon svg,
 .smart-achievement-icon-svg {
-  width: 14px !important;
-  height: 14px !important;
-  max-width: 14px !important;
-  max-height: 14px !important;
+  width: 13px !important;
+  height: 13px !important;
+  max-width: 13px !important;
+  max-height: 13px !important;
   flex-shrink: 0;
 }
 
 .smart-achievement-content {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   min-width: 0;
   flex: 1 1 auto;
 }
 
 .smart-achievement-title {
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 700;
   color: #0f172a;
   margin: 0;
 }
 
 .smart-achievement-desc {
-  font-size: 10.5px;
+  font-size: 10px;
   color: #334155;
   line-height: 1.35;
 }
@@ -838,7 +901,7 @@
 .smart-cards-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px 12px;
+  gap: 7px 10px;
   width: 100%;
 }
 
@@ -847,13 +910,13 @@
 }
 
 .smart-card-item {
-  padding: 8px 10px;
+  padding: 7px 9px;
   background-color: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 5px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 
 .smart-card-header {
@@ -864,21 +927,21 @@
 }
 
 .smart-card-title {
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 700;
   color: #0f172a;
   margin: 0;
 }
 
 .smart-card-link {
-  font-size: 10px;
-  color: var(--secondary, #3b82f6);
+  font-size: 9.5px;
+  color: var(--secondary, #06b6d4);
   text-decoration: none;
   word-break: break-all;
 }
 
 .smart-card-desc {
-  font-size: 10.5px;
+  font-size: 10px;
   color: #334155;
   line-height: 1.35;
 }
@@ -895,14 +958,14 @@
 .smart-hobby-pill {
   background-color: #f1f5f9;
   color: #475569;
-  padding: 2px 7px;
+  padding: 2px 6px;
   border-radius: 4px;
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 500;
 }
 
 .smart-hobbies-text {
-  font-size: 10.5px;
+  font-size: 10px;
   color: #334155;
   line-height: 1.35;
 }
