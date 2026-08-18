@@ -210,9 +210,16 @@ test('partially populated extras keep legitimate titles and do not over-suppress
 
 test('all 16 locales ship the new editor strings without English-only fallbacks', () => {
   const required = [
+    'BuildResume.steps.languages',
     'BuildResume.steps.achievements',
     'BuildResume.steps.references',
     'BuildResume.steps.customSections',
+    'PreviewModal.actions.downloadDocx',
+    'PreviewModal.actions.generatingDocx',
+    'resume.projects',
+    'resume.certifications',
+    'resume.achievements',
+    'resume.references',
     'BuildResume.customSection.add',
     'AchievementsStep.title',
     'AchievementsStep.actions.addAchievement',
@@ -249,6 +256,7 @@ test('all 16 locales ship the new editor strings without English-only fallbacks'
     if (code !== 'en') {
       assert.notEqual(locale['AchievementsStep.title'], 'Achievements', `${code} left AchievementsStep.title in English`);
       assert.notEqual(locale['ReferencesStep.title'], 'References', `${code} left ReferencesStep.title in English`);
+      assert.notEqual(locale['BuildResume.steps.languages'], 'Languages', `${code} left BuildResume.steps.languages in English`);
     }
   }
 });

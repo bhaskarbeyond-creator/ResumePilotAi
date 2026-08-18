@@ -129,7 +129,11 @@
     "phone": "Téléphone",
     "email": "Email",
     "languages": "Langues",
-    "skills": "Compétences"
+    "skills": "Compétences",
+    "projects": "Projets",
+    "certifications": "Certifications",
+    "achievements": "Réalisations",
+    "references": "Références"
   },
   "Language": {
     "elemntary": "Élémentaire",
@@ -193,7 +197,8 @@
     "passChangedDesc": "Mot de passe changé avec succès",
     "passError": "Mot de passe trop court",
     "passErrorDesc": "Le mot de passe doit comporter au moins 6 caractères",
-    "profile": "Profil"
+    "profile": "Profil",
+    "saveChanges": "Enregistrer les modifications"
   },
   "static": {
     "plansHeader": "Tarifs simples et transparents",
@@ -577,7 +582,9 @@
       "paypal": "paypal",
       "applepay": "applepay",
       "googlepay": "googlepay",
-      "discover": "discover"
+      "discover": "discover",
+      "amex": "American Express",
+      "jcb": "JCB"
     },
     "legal": {
       "privacyPolicy": "Politique de confidentialité",
@@ -668,7 +675,8 @@
     "menu": {
       "dashboard": "Tableau de bord",
       "interviews": "Entretiens",
-      "settings": "Paramètres"
+      "settings": "Paramètres",
+      "portfolios": "Portfolios"
     }
   },
   "DashboardHomepage": {
@@ -685,7 +693,8 @@
       "editResume": "Modifier le CV",
       "shareResume": "Partager le CV",
       "delete": "Supprimer",
-      "createNewDocument": "Créer un nouveau document"
+      "createNewDocument": "Créer un nouveau document",
+      "deleteResume": "Supprimer le CV"
     },
     "promotion": {
       "title": "Prêt à donner un coup de pouce à votre recherche d'emploi et à obtenir plus de visibilité ?",
@@ -709,7 +718,37 @@
       "page": "Page",
       "of": "sur"
     },
-    "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce CV ? Cette action est irréversible."
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce CV ? Cette action est irréversible.",
+    "completed": "terminé",
+    "title": "Mes documents",
+    "subtitle": "Gérez vos CV et lettres de motivation",
+    "stats": {
+      "totalDocuments": "Documents au total",
+      "recentActivity": "Activité récente",
+      "profileViews": "Vues du profil",
+      "downloads": "Téléchargements",
+      "today": "Aujourd’hui",
+      "documentsCount": "documents"
+    },
+    "onboarding": {
+      "welcomeMessage": "Bienvenue ! Commençons",
+      "completionMessage": "Suivez les étapes ci-dessous pour configurer votre profil",
+      "steps": {
+        "createResume": {
+          "title": "Créez votre premier CV",
+          "description": "Créez ou modifiez des CV avec notre éditeur, plus de 20 modèles et l’IA pour les adapter à chaque offre."
+        }
+      }
+    },
+    "tips": {
+      "sectionTitle": "Conseils rapides",
+      "keepUpdated": "Tenez-le à jour",
+      "updatedDescription": "Des mises à jour régulières améliorent la visibilité de votre profil",
+      "tailor": "Adaptez-le aux offres",
+      "tailorDescription": "Personnalisez votre CV pour chaque candidature",
+      "organize": "Restez organisé",
+      "organizeDescription": "Utilisez des noms clairs pour vos documents"
+    }
   },
   "DashboardSettings": {
     "pageTitle": "Paramètres",
@@ -847,15 +886,72 @@
         "cardholderName": "Nom du titulaire de la carte",
         "address": "Adresse de facturation",
         "country": "Pays",
-        "postalCode": "Code postal"
+        "postalCode": "Code postal",
+        "description": "Vos informations de paiement sont chiffrées et sécurisées.",
+        "nameLabel": "Nom du titulaire *",
+        "namePlaceholder": "Saisissez le nom figurant sur la carte",
+        "addressLabel": "Adresse de facturation *",
+        "addressPlaceholder": "Saisissez votre adresse de facturation",
+        "detailsLabel": "Détails de la carte *",
+        "backButton": "Retour au paiement",
+        "completeButton": "Finaliser le paiement",
+        "processing": "Traitement..."
       },
       "success": {
         "title": "Paiement réussi !",
         "subtitle": "Votre abonnement a été activé",
         "message": "Merci pour votre achat. Vous avez maintenant un accès complet à toutes les fonctionnalités premium.",
-        "button": "Continuer vers le tableau de bord"
+        "button": "Continuer vers le tableau de bord",
+        "emailNotice": "Vous recevrez bientôt un e-mail de confirmation avec le reçu et les détails de l’abonnement.",
+        "activeMessage": "Votre abonnement est maintenant actif",
+        "continueButton": "Continuer vers le tableau de bord"
       },
-      "or": "OU"
+      "or": "OU",
+      "secureCheckout": "Paiement sécurisé via Stripe et PayPal",
+      "steps": {
+        "billingInfo": "Informations de facturation",
+        "paymentMethod": "Moyen de paiement",
+        "cardDetails": "Détails de la carte",
+        "confirmation": "Confirmation"
+      },
+      "orderSummary": {
+        "title": "Récapitulatif de commande",
+        "plan": "Formule",
+        "billingCycle": "Cycle de facturation",
+        "subtotal": "Sous-total",
+        "tax": "Taxes",
+        "taxCalculated": "Calculé au paiement",
+        "total": "Total",
+        "whatsIncluded": "Inclus :",
+        "weAccept": "Nous acceptons :"
+      },
+      "security": {
+        "sslSecured": "Sécurisé par SSL",
+        "encryption": "Chiffrement 256 bits",
+        "pciCompliant": "Conforme PCI",
+        "moneyBack": "Garantie satisfait ou remboursé 30 jours",
+        "support": "Support client 24h/24 et 7j/7",
+        "cancelAnytime": "Annulez à tout moment",
+        "securePaymentInfo": "Votre paiement est sécurisé",
+        "securePaymentDescription": "Nous utilisons un chiffrement de niveau professionnel pour protéger vos données de carte. Elles ne sont jamais stockées sur nos serveurs."
+      },
+      "billingForm": {
+        "title": "Informations de facturation",
+        "description": "Nous avons besoin de ces informations pour traiter le paiement et vous envoyer les reçus.",
+        "countryLabel": "Pays/région *",
+        "countryPlaceholder": "Sélectionnez votre pays",
+        "postalLabel": "Code postal *",
+        "continueButton": "Continuer vers le moyen de paiement"
+      },
+      "paymentMethod": {
+        "title": "Choisissez le moyen de paiement",
+        "description": "Sélectionnez comment vous souhaitez payer votre abonnement.",
+        "cardTitle": "Carte de crédit ou de débit",
+        "cardDescription": "Visa, Mastercard, American Express",
+        "paypalTitle": "PayPal",
+        "paypalDescription": "Payez en toute sécurité avec votre compte PayPal",
+        "backButton": "Retour à la facturation"
+      }
     },
     "success": {
       "title": "Paiement réussi !",
@@ -866,7 +962,14 @@
     "error": {
       "payment": "Le paiement a échoué. Veuillez réessayer.",
       "login": "Veuillez vous connecter pour finaliser le paiement.",
-      "general": "Quelque chose s'est mal passé. Veuillez réessayer."
+      "general": "Quelque chose s'est mal passé. Veuillez réessayer.",
+      "paypal": "Le paiement PayPal a échoué. Veuillez réessayer."
+    },
+    "paypal": {
+      "title": "Paiement PayPal",
+      "description": "Finalisez votre paiement en toute sécurité avec PayPal.",
+      "secureTitle": "Paiement PayPal sécurisé",
+      "secureDescription": "Vous serez redirigé vers PayPal pour finaliser le paiement en toute sécurité."
     }
   },
   "DashboardInterviews": {
@@ -1012,7 +1115,8 @@
       "certifications": "Certifications",
       "achievements": "Réalisations",
       "references": "Références",
-      "customSections": "Sections personnalisées"
+      "customSections": "Sections personnalisées",
+      "languages": "Langues"
     },
     "navigation": {
       "previous": "Précédent",
@@ -1555,7 +1659,11 @@
     "actions": {
       "downloadPdf": "Télécharger le PDF",
       "generatingPdf": "Génération du PDF...",
-      "close": "Fermer l'aperçu"
+      "close": "Fermer l'aperçu",
+      "downloadDocx": "Télécharger Word (DOCX)",
+      "generatingDocx": "Génération du DOCX...",
+      "downloadDocxShort": "Word",
+      "generatingDocxShort": "DOCX..."
     },
     "keyboard": {
       "escToClose": "pour fermer"
@@ -2614,6 +2722,9 @@
         "myJobs": "Mes emplois",
         "myCompanies": "Mes entreprises"
       }
+    },
+    "DashboardHomepageFix1": {
+      "subtitle": "Gérez vos CV et lettres de motivation"
     }
   },
   "blog": {

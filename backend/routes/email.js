@@ -296,7 +296,7 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
             '{{retry_url}}': vars.retry_url || `${siteUrl}/pricing`,
             '{{gstin}}': vars.gstin || '',
             '{{otp_code}}': vars.otp_code || '849204',
-            '{{ats_score}}': vars.ats_score || '94',
+            '{{ats_score}}': vars.ats_score || 'Not measured',
             '{{job_title}}': vars.job_title || 'Senior Software Engineer',
             '{{company_name}}': vars.company_name || 'TechCorp',
             '{{application_status}}': vars.application_status || 'Shortlisted for Interview 🎯',
@@ -524,7 +524,9 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
             break;
 
         case 'ai_resume_ready':
-            subject = `✨ Your AI Resume is Ready! (ATS Score: ${vars.ats_score || '94'}/100)`;
+            subject = vars.ats_score && vars.ats_score !== 'Not measured'
+                ? `✨ Your AI Resume is Ready! (ATS Score: ${vars.ats_score}/100)`
+                : `✨ Your AI Resume is Ready!`;
             bodyHtml = buildEmailWrapper(
                 'AI Resume Optimization Complete',
                 'AI COMPLETED ✨',
@@ -535,8 +537,8 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
 
                     <div style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border-radius: 16px; padding: 24px; color: #ffffff; margin: 24px 0; box-shadow: 0 10px 25px -5px rgba(79,70,229,0.3);">
                         <span style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; font-weight: 700;">ATS Compatibility Score</span>
-                        <div style="font-size: 48px; font-weight: 900; margin: 8px 0; font-family: monospace;">${vars.ats_score || '94'}<span style="font-size: 24px;">/100</span></div>
-                        <p style="margin: 0; font-size: 13px; opacity: 0.9;">High ATS Pass Rate Guaranteed for Top Employers!</p>
+                        <div style="font-size: 48px; font-weight: 900; margin: 8px 0; font-family: monospace;">${vars.ats_score && vars.ats_score !== 'Not measured' ? `${vars.ats_score}<span style="font-size: 24px;">/100</span>` : 'Not measured'}</div>
+                        <p style="margin: 0; font-size: 13px; opacity: 0.9;">Open your dashboard to review the generated resume.</p>
                     </div>
 
                     <a href="${siteUrl}/dashboard" style="background-color: #15803d; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 14px; display: inline-block; box-shadow: 0 10px 20px -5px rgba(21,128,61,0.3);">View &amp; Download PDF &rarr;</a>

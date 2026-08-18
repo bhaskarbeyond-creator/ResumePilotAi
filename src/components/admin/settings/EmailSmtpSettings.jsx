@@ -1666,7 +1666,7 @@ const EmailSmtpSettings = () => {
                                                 {previewModalKey === 'ai_resume_ready' && (
                                                     <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-4 rounded-xl text-center space-y-1 my-2">
                                                         <div className="text-[10px] uppercase font-bold text-indigo-200">ATS Optimization Score</div>
-                                                        <div className="text-3xl font-black font-mono">94 / 100</div>
+                                                        <div className="text-3xl font-black font-mono">{targetSpec.sampleVars.ats_score || 'Not measured'}</div>
                                                     </div>
                                                 )}
                                             </div>

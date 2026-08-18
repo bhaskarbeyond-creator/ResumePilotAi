@@ -129,7 +129,11 @@
     "phone": "Sími",
     "email": "Netfang",
     "languages": "Tungumál",
-    "skills": "Hæfni"
+    "skills": "Hæfni",
+    "projects": "Verkefni",
+    "certifications": "Vottanir",
+    "achievements": "Afrek",
+    "references": "Meðmæli"
   },
   "Language": {
     "elemntary": "Grunnskóli",
@@ -193,7 +197,8 @@
     "passChangedDesc": "Lykilorðið breytt með góðum árangri",
     "passError": "Lykilorð of stutt",
     "passErrorDesc": "Lykilorð verður að vera að minnsta kosti 6 stafir",
-    "profile": "Prófíll"
+    "profile": "Prófíll",
+    "saveChanges": "Vista breytingar"
   },
   "static": {
     "plansHeader": "Einfalt, gegnsætt verðlag",
@@ -577,7 +582,9 @@
       "paypal": "Paypal",
       "applepay": "Apple Pay",
       "googlepay": "Google Pay",
-      "discover": "Discover"
+      "discover": "Discover",
+      "amex": "American Express",
+      "jcb": "JCB"
     },
     "legal": {
       "privacyPolicy": "Persónuverndarstefna",
@@ -668,7 +675,8 @@
     "menu": {
       "dashboard": "Stjórnborð",
       "interviews": "Viðtöl",
-      "settings": "Stillingar"
+      "settings": "Stillingar",
+      "portfolios": "Möppur"
     }
   },
   "DashboardHomepage": {
@@ -685,7 +693,8 @@
       "editResume": "Breyta ferilskrá",
       "shareResume": "Deila ferilskrá",
       "delete": "Eyða",
-      "createNewDocument": "Búa til nýtt skjal"
+      "createNewDocument": "Búa til nýtt skjal",
+      "deleteResume": "Eyða ferilskrá"
     },
     "promotion": {
       "title": "Tilbúinn til að gefa starfsleitinni þinni uppörvun og fá meiri sýnileika?",
@@ -709,7 +718,37 @@
       "page": "Síða",
       "of": "af"
     },
-    "confirmDelete": "Ertu viss um að þú viljir eyða þessari ferilskrá? Þessi aðgerð er ekki afturkræf."
+    "confirmDelete": "Ertu viss um að þú viljir eyða þessari ferilskrá? Þessi aðgerð er ekki afturkræf.",
+    "completed": "lokið",
+    "title": "Skjölin mín",
+    "subtitle": "Stjórnaðu ferilskrám og kynningarbréfum",
+    "stats": {
+      "totalDocuments": "Skjöl alls",
+      "recentActivity": "Nýleg virkni",
+      "profileViews": "Prófílskoðanir",
+      "downloads": "Niðurhal",
+      "today": "Í dag",
+      "documentsCount": "skjöl"
+    },
+    "onboarding": {
+      "welcomeMessage": "Velkomin! Byrjum",
+      "completionMessage": "Ljúktu skrefunum hér að neðan til að setja upp prófílinn þinn",
+      "steps": {
+        "createResume": {
+          "title": "Búðu til fyrstu ferilskrána",
+          "description": "Búðu til eða breyttu ferilskrám með ritlinum okkar, yfir 20 sniðmátum og gervigreind til að laga þær að tilteknum störfum."
+        }
+      }
+    },
+    "tips": {
+      "sectionTitle": "Flýtiráð",
+      "keepUpdated": "Haltu henni uppfærðri",
+      "updatedDescription": "Reglulegar uppfærslur bæta sýnileika prófílsins",
+      "tailor": "Sníddu að störfum",
+      "tailorDescription": "Aðlagaðu ferilskrána að hverri umsókn",
+      "organize": "Haltu röð og reglu",
+      "organizeDescription": "Notaðu skýr heiti á skjölunum þínum"
+    }
   },
   "DashboardSettings": {
     "pageTitle": "Stillingar",
@@ -847,15 +886,72 @@
         "cardholderName": "Nafn korthafa",
         "address": "Reikningsfang",
         "country": "Land",
-        "postalCode": "Póstnúmer"
+        "postalCode": "Póstnúmer",
+        "description": "Greiðsluupplýsingar þínar eru dulkóðaðar og öruggar.",
+        "nameLabel": "Nafn korthafa *",
+        "namePlaceholder": "Sláðu inn nafnið á kortinu",
+        "addressLabel": "Reikningsfang *",
+        "addressPlaceholder": "Sláðu inn reikningsfangið þitt",
+        "detailsLabel": "Kortaupplýsingar *",
+        "backButton": "Til baka í greiðslu",
+        "completeButton": "Ljúka greiðslu",
+        "processing": "Í vinnslu..."
       },
       "success": {
         "title": "Greiðsla tókst!",
         "subtitle": "Áskrift þín hefur verið virkjuð",
         "message": "Takk fyrir kaupin. Þú hefur nú fullan aðgang að öllum premium eiginleikum.",
-        "button": "Halda áfram á stjórnborð"
+        "button": "Halda áfram á stjórnborð",
+        "emailNotice": "Þú færð fljótlega staðfestingarpóst með kvittun og áskriftarupplýsingum.",
+        "activeMessage": "Áskriftin þín er nú virk",
+        "continueButton": "Halda áfram á stjórnborðið"
       },
-      "or": "EÐA"
+      "or": "EÐA",
+      "secureCheckout": "Örugg greiðsla með Stripe og PayPal",
+      "steps": {
+        "billingInfo": "Reikningsupplýsingar",
+        "paymentMethod": "Greiðslumáti",
+        "cardDetails": "Kortaupplýsingar",
+        "confirmation": "Staðfesting"
+      },
+      "orderSummary": {
+        "title": "Pöntunaryfirlit",
+        "plan": "Áskrift",
+        "billingCycle": "Innheimtutímabil",
+        "subtotal": "Millisamtala",
+        "tax": "Skattur",
+        "taxCalculated": "Reiknað við greiðslu",
+        "total": "Samtals",
+        "whatsIncluded": "Innifalið:",
+        "weAccept": "Við tökum við:"
+      },
+      "security": {
+        "sslSecured": "SSL-varið",
+        "encryption": "256-bita dulkóðun",
+        "pciCompliant": "PCI-samhæft",
+        "moneyBack": "30 daga endurgreiðsluábyrgð",
+        "support": "Þjónusta allan sólarhringinn",
+        "cancelAnytime": "Hætta við hvenær sem er",
+        "securePaymentInfo": "Greiðslan þín er örugg",
+        "securePaymentDescription": "Við notum dulkóðun í iðnaðarstaðli til að vernda kortaupplýsingar. Gögnin eru aldrei geymd á þjónum okkar."
+      },
+      "billingForm": {
+        "title": "Reikningsupplýsingar",
+        "description": "Við þurfum þessar upplýsingar til að vinna greiðsluna og senda kvittanir.",
+        "countryLabel": "Land/svæði *",
+        "countryPlaceholder": "Veldu landið þitt",
+        "postalLabel": "Póstnúmer *",
+        "continueButton": "Halda áfram í greiðslumáta"
+      },
+      "paymentMethod": {
+        "title": "Veldu greiðslumáta",
+        "description": "Veldu hvernig þú vilt greiða áskriftina.",
+        "cardTitle": "Kredit- eða debetkort",
+        "cardDescription": "Visa, Mastercard, American Express",
+        "paypalTitle": "PayPal",
+        "paypalDescription": "Greiddu örugglega með PayPal-reikningnum þínum",
+        "backButton": "Til baka í reikningsupplýsingar"
+      }
     },
     "success": {
       "title": "Greiðsla tókst!",
@@ -866,7 +962,14 @@
     "error": {
       "payment": "Greiðsla mistókst. Vinsamlegast reyndu aftur.",
       "login": "Vinsamlegast skráðu þig inn til að ljúka greiðslu.",
-      "general": "Eitthvað fór úrskeiðis. Vinsamlegast reyndu aftur."
+      "general": "Eitthvað fór úrskeiðis. Vinsamlegast reyndu aftur.",
+      "paypal": "PayPal-greiðsla mistókst. Reyndu aftur."
+    },
+    "paypal": {
+      "title": "PayPal-greiðsla",
+      "description": "Ljúktu greiðslunni örugglega með PayPal.",
+      "secureTitle": "Örugg PayPal-greiðsla",
+      "secureDescription": "Þér verður beint á PayPal til að ljúka greiðslunni örugglega."
     }
   },
   "DashboardInterviews": {
@@ -1012,7 +1115,8 @@
       "certifications": "Vottanir",
       "achievements": "Afrek",
       "references": "Meðmæli",
-      "customSections": "Sérsniðnir kaflar"
+      "customSections": "Sérsniðnir kaflar",
+      "languages": "Tungumál"
     },
     "navigation": {
       "previous": "Fyrri",
@@ -1555,7 +1659,11 @@
     "actions": {
       "downloadPdf": "Hlaða Niður PDF",
       "generatingPdf": "Býr til PDF...",
-      "close": "Loka Forskoðun"
+      "close": "Loka Forskoðun",
+      "downloadDocx": "Sækja Word (DOCX)",
+      "generatingDocx": "Býr til DOCX...",
+      "downloadDocxShort": "Word",
+      "generatingDocxShort": "DOCX..."
     },
     "keyboard": {
       "escToClose": "til að loka"

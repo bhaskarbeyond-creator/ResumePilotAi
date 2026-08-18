@@ -129,7 +129,11 @@
     "phone": "Telefono",
     "email": "Email",
     "languages": "Lingue",
-    "skills": "Competenze"
+    "skills": "Competenze",
+    "projects": "Progetti",
+    "certifications": "Certificazioni",
+    "achievements": "Risultati",
+    "references": "Referenze"
   },
   "Language": {
     "elemntary": "Elementare",
@@ -193,7 +197,8 @@
     "passChangedDesc": "Password cambiata con successo",
     "passError": "Password troppo corta",
     "passErrorDesc": "La password deve essere lunga almeno 6 caratteri",
-    "profile": "Profilo"
+    "profile": "Profilo",
+    "saveChanges": "Salva modifiche"
   },
   "static": {
     "plansHeader": "Prezzi Semplici e Trasparenti",
@@ -577,7 +582,9 @@
       "paypal": "paypal",
       "applepay": "applepay",
       "googlepay": "googlepay",
-      "discover": "discover"
+      "discover": "discover",
+      "amex": "American Express",
+      "jcb": "JCB"
     },
     "legal": {
       "privacyPolicy": "Informativa sulla Privacy",
@@ -668,7 +675,8 @@
     "menu": {
       "dashboard": "Dashboard",
       "interviews": "Colloqui",
-      "settings": "Impostazioni"
+      "settings": "Impostazioni",
+      "portfolios": "Portfolio"
     }
   },
   "DashboardHomepage": {
@@ -685,7 +693,8 @@
       "editResume": "Modifica Curriculum",
       "shareResume": "Condividi Curriculum",
       "delete": "Elimina",
-      "createNewDocument": "Crea Nuovo Documento"
+      "createNewDocument": "Crea Nuovo Documento",
+      "deleteResume": "Elimina curriculum"
     },
     "promotion": {
       "title": "Pronto a dare una spinta alla tua ricerca di lavoro e ottenere più visibilità?",
@@ -709,7 +718,37 @@
       "page": "Pagina",
       "of": "di"
     },
-    "confirmDelete": "Sei sicuro di voler eliminare questo curriculum? Questa azione non può essere annullata."
+    "confirmDelete": "Sei sicuro di voler eliminare questo curriculum? Questa azione non può essere annullata.",
+    "completed": "completato",
+    "title": "I miei documenti",
+    "subtitle": "Gestisci curriculum e lettere di presentazione",
+    "stats": {
+      "totalDocuments": "Documenti totali",
+      "recentActivity": "Attività recente",
+      "profileViews": "Visualizzazioni del profilo",
+      "downloads": "Download",
+      "today": "Oggi",
+      "documentsCount": "documenti"
+    },
+    "onboarding": {
+      "welcomeMessage": "Benvenuto! Iniziamo",
+      "completionMessage": "Completa i passaggi seguenti per configurare il profilo",
+      "steps": {
+        "createResume": {
+          "title": "Crea il tuo primo curriculum",
+          "description": "Crea o modifica curriculum con il nostro editor, oltre 20 modelli e l’IA per adattarli a ogni offerta."
+        }
+      }
+    },
+    "tips": {
+      "sectionTitle": "Suggerimenti rapidi",
+      "keepUpdated": "Tienilo aggiornato",
+      "updatedDescription": "Aggiornamenti regolari migliorano la visibilità del profilo",
+      "tailor": "Adattalo alle offerte",
+      "tailorDescription": "Personalizza il curriculum per ogni candidatura",
+      "organize": "Resta organizzato",
+      "organizeDescription": "Usa nomi chiari per i documenti"
+    }
   },
   "DashboardSettings": {
     "pageTitle": "Impostazioni",
@@ -847,15 +886,72 @@
         "cardholderName": "Nome Titolare Carta",
         "address": "Indirizzo di Fatturazione",
         "country": "Paese",
-        "postalCode": "Codice Postale"
+        "postalCode": "Codice Postale",
+        "description": "I dati di pagamento sono crittografati e sicuri.",
+        "nameLabel": "Intestatario della carta *",
+        "namePlaceholder": "Inserisci il nome sulla carta",
+        "addressLabel": "Indirizzo di fatturazione *",
+        "addressPlaceholder": "Inserisci l’indirizzo di fatturazione",
+        "detailsLabel": "Dati della carta *",
+        "backButton": "Torna al pagamento",
+        "completeButton": "Completa il pagamento",
+        "processing": "Elaborazione..."
       },
       "success": {
         "title": "Pagamento Riuscito!",
         "subtitle": "Il tuo abbonamento è stato attivato",
         "message": "Grazie per il tuo acquisto. Ora hai pieno accesso a tutte le funzionalità premium.",
-        "button": "Continua sulla Dashboard"
+        "button": "Continua sulla Dashboard",
+        "emailNotice": "Riceverai a breve un’email di conferma con ricevuta e dettagli dell’abbonamento.",
+        "activeMessage": "Il tuo abbonamento è ora attivo",
+        "continueButton": "Continua alla dashboard"
       },
-      "or": "O"
+      "or": "O",
+      "secureCheckout": "Pagamento sicuro con Stripe e PayPal",
+      "steps": {
+        "billingInfo": "Dati di fatturazione",
+        "paymentMethod": "Metodo di pagamento",
+        "cardDetails": "Dati della carta",
+        "confirmation": "Conferma"
+      },
+      "orderSummary": {
+        "title": "Riepilogo ordine",
+        "plan": "Piano",
+        "billingCycle": "Ciclo di fatturazione",
+        "subtotal": "Subtotale",
+        "tax": "Imposte",
+        "taxCalculated": "Calcolato al pagamento",
+        "total": "Totale",
+        "whatsIncluded": "Cosa è incluso:",
+        "weAccept": "Accettiamo:"
+      },
+      "security": {
+        "sslSecured": "Protetto da SSL",
+        "encryption": "Crittografia a 256 bit",
+        "pciCompliant": "Conforme PCI",
+        "moneyBack": "Garanzia di rimborso di 30 giorni",
+        "support": "Assistenza clienti 24/7",
+        "cancelAnytime": "Annulla in qualsiasi momento",
+        "securePaymentInfo": "Il pagamento è sicuro",
+        "securePaymentDescription": "Usiamo la crittografia di settore per proteggere i dati della carta. I dati non vengono mai salvati sui nostri server."
+      },
+      "billingForm": {
+        "title": "Dati di fatturazione",
+        "description": "Ci servono questi dati per elaborare il pagamento e inviarti le ricevute.",
+        "countryLabel": "Paese/regione *",
+        "countryPlaceholder": "Seleziona il tuo paese",
+        "postalLabel": "Codice postale *",
+        "continueButton": "Continua al metodo di pagamento"
+      },
+      "paymentMethod": {
+        "title": "Scegli il metodo di pagamento",
+        "description": "Seleziona come vuoi pagare l’abbonamento.",
+        "cardTitle": "Carta di credito o debito",
+        "cardDescription": "Visa, Mastercard, American Express",
+        "paypalTitle": "PayPal",
+        "paypalDescription": "Paga in modo sicuro con il tuo account PayPal",
+        "backButton": "Torna alla fatturazione"
+      }
     },
     "success": {
       "title": "Pagamento Riuscito!",
@@ -866,7 +962,14 @@
     "error": {
       "payment": "Pagamento fallito. Riprova.",
       "login": "Accedi per completare il pagamento.",
-      "general": "Qualcosa è andato storto. Riprova."
+      "general": "Qualcosa è andato storto. Riprova.",
+      "paypal": "Pagamento PayPal non riuscito. Riprova."
+    },
+    "paypal": {
+      "title": "Pagamento PayPal",
+      "description": "Completa il pagamento in modo sicuro con PayPal.",
+      "secureTitle": "Pagamento PayPal sicuro",
+      "secureDescription": "Verrai reindirizzato a PayPal per completare il pagamento in modo sicuro."
     }
   },
   "DashboardInterviews": {
@@ -1012,7 +1115,8 @@
       "certifications": "Certificazioni",
       "achievements": "Risultati",
       "references": "Referenze",
-      "customSections": "Sezioni personalizzate"
+      "customSections": "Sezioni personalizzate",
+      "languages": "Lingue"
     },
     "navigation": {
       "previous": "Precedente",
@@ -1555,7 +1659,11 @@
     "actions": {
       "downloadPdf": "Scarica PDF",
       "generatingPdf": "Generazione PDF in corso...",
-      "close": "Chiudi anteprima"
+      "close": "Chiudi anteprima",
+      "downloadDocx": "Scarica Word (DOCX)",
+      "generatingDocx": "Generazione DOCX in corso...",
+      "downloadDocxShort": "Word",
+      "generatingDocxShort": "DOCX..."
     },
     "keyboard": {
       "escToClose": "per chiudere"

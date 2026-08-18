@@ -3,7 +3,8 @@ import './CoverLetter.scss';
 import logo from '../../assets/logo/logo.png';
 import { withTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { saveCoverLetter, getUserCoverLetters, deleteCoverLetter, getProfileOfUser, createTrackedJob } from '../../firestore/dbOperations';
+import { saveCoverLetter, getUserCoverLetters, deleteCoverLetter, getProfileOfUser, createTrackedJob, getSystemSettings } from '../../firestore/dbOperations';
+import { resolveAtsScoreVisibility } from '../../utils/moduleFlags';
 import { generateUserAiContent } from '../../services/aiService';
 import fire from '../../conf/fire';
 import TemplateRenderer from '../TemplateRenderer';
@@ -106,14 +107,19 @@ class CoverLetter extends Component {
             jobDescription: '',
             showAtsSection: false,
             isSyncingTracker: false,
+            isAtsEnabled: null,
+            isCoverLetterEnabled: true,
         };
         this.aiRequestController = null;
+        this.unsubscribePublicConfig = null;
+        this.handleSettingsUpdated = null;
     }
 
     async componentDidMount() {
         this.loadSavedLetters();
         await this.loadUserProfileData();
         document.addEventListener('keydown', this.handleKeyDown);
+        this.subscribeAtsVisibility();
 
         // Listen for Firebase Auth initialization to dynamically hydrate master profile
         this.authUnsubscribe = fire.auth().onAuthStateChanged(async (user) => {
@@ -130,10 +136,60 @@ class CoverLetter extends Component {
             this.authUnsubscribe();
             this.authUnsubscribe = null;
         }
+        if (typeof this.handleSettingsUpdated === 'function') {
+            window.removeEventListener('systemSettingsUpdated', this.handleSettingsUpdated);
+            this.handleSettingsUpdated = null;
+        }
+        if (typeof this.unsubscribePublicConfig === 'function') {
+            this.unsubscribePublicConfig();
+            this.unsubscribePublicConfig = null;
+        }
         const controller = this.aiRequestController;
         this.aiRequestController = null;
         controller?.abort();
     }
+
+    applyAtsVisibility = (settings, { allowMissingDefault = true } = {}) => {
+        const atsVisible = resolveAtsScoreVisibility(settings, { allowMissingDefault });
+        const nextState = {};
+        if (atsVisible !== null) nextState.isAtsEnabled = atsVisible;
+        if (settings?.modules && Object.prototype.hasOwnProperty.call(settings.modules, 'enableCoverLetterModule')) {
+            nextState.isCoverLetterEnabled = settings.modules.enableCoverLetterModule === true;
+        }
+        if (Object.keys(nextState).length) this.setState(nextState);
+    };
+
+    subscribeAtsVisibility = () => {
+        getSystemSettings().then((settings) => {
+            this.applyAtsVisibility(settings, { allowMissingDefault: true });
+        }).catch(() => {
+            this.setState({ isAtsEnabled: false });
+        });
+
+        this.handleSettingsUpdated = (event) => {
+            if (event.detail?.modules) {
+                this.applyAtsVisibility({ modules: event.detail.modules }, { allowMissingDefault: false });
+                return;
+            }
+            if (event.detail?.category === 'modules') {
+                getSystemSettings().then((settings) => {
+                    this.applyAtsVisibility(settings, { allowMissingDefault: true });
+                }).catch(() => {});
+            }
+        };
+        window.addEventListener('systemSettingsUpdated', this.handleSettingsUpdated);
+
+        try {
+            this.unsubscribePublicConfig = fire.firestore().collection('data').doc('public_config').onSnapshot(
+                (snapshot) => {
+                    if (snapshot.exists) this.applyAtsVisibility(snapshot.data() || {});
+                },
+                () => { /* keep the last known ATS flag if the listener drops */ }
+            );
+        } catch {
+            this.unsubscribePublicConfig = () => {};
+        }
+    };
 
     handleKeyDown = (e) => {
         if (e.key === 'Escape' && this.state.showPreviewModal) {
@@ -357,14 +413,16 @@ class CoverLetter extends Component {
             .sort((a, b) => freqMap[b] - freqMap[a])
             .slice(0, 12);
 
-        if (targetKeywords.length === 0) return { score: 95, matched: [], missing: [] };
+        if (targetKeywords.length === 0) return null;
 
         const lowerLetter = (letterBody || '').toLowerCase();
         const matched = [];
         const missing = [];
 
         targetKeywords.forEach(kw => {
-            if (lowerLetter.includes(kw)) {
+            const escaped = String(kw).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const bounded = new RegExp(`(?:^|[^a-z0-9+#.])${escaped}(?:$|[^a-z0-9+#.])`, 'i');
+            if (bounded.test(lowerLetter)) {
                 matched.push(kw);
             } else {
                 missing.push(kw);
@@ -601,6 +659,16 @@ class CoverLetter extends Component {
         }
     };
 
+    handleCopyFormattedText = async () => {
+        await this.handleCopyLetterText({
+            candidateFirstname: this.state.candidateFirstname,
+            candidateLastname: this.state.candidateLastname,
+            recipientName: this.state.recipientName,
+            letterBody: this.state.letterBody || this.getDefaultLetterBody(),
+            jobTitle: this.state.jobTitle,
+        });
+    };
+
     handleViewSavedLetter = (letter) => {
         this.setState({
             currentId: letter.id,
@@ -730,11 +798,24 @@ class CoverLetter extends Component {
     };
 
     render() {
+        if (this.state.isCoverLetterEnabled === false) {
+            return (
+                <div className="cover-letter min-h-screen bg-slate-50 p-8">
+                    <div className="max-w-lg mx-auto bg-white border border-slate-200 rounded-2xl p-8 text-center">
+                        <h1 className="text-lg font-bold text-slate-900">Cover letters are unavailable</h1>
+                        <p className="text-sm text-slate-600 mt-2">This workspace has the cover letter module turned off.</p>
+                        <Link to="/dashboard" className="inline-block mt-5 px-4 py-2 bg-slate-900 text-white text-xs font-semibold rounded-xl">Back to Dashboard</Link>
+                    </div>
+                </div>
+            );
+        }
         const { t } = this.props;
         const candidateFullName = `${this.state.candidateFirstname} ${this.state.candidateLastname}`.trim();
         const activeTemplate = COVER_TEMPLATES.find(tpl => tpl.id === (this.state.templateId || 'Cover1')) || COVER_TEMPLATES[0];
         const effectiveBody = this.state.letterBody || this.getDefaultLetterBody();
-        const atsMetrics = this.calculateAtsMetrics(effectiveBody, this.state.jobDescription);
+        const atsMetrics = this.state.isAtsEnabled === true
+            ? this.calculateAtsMetrics(effectiveBody, this.state.jobDescription)
+            : null;
 
         // Format multi-paragraph components
         const paragraphList = effectiveBody
@@ -1057,63 +1138,89 @@ class CoverLetter extends Component {
                                 </div>
                             </div>
 
-                            {/* Target Job Description & ATS Keyword Matcher */}
+                            {/* Target Job Description. ATS matcher/score only when admin module is ON. */}
                             <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-3">
-                                <div className="flex items-center justify-between cursor-pointer" onClick={() => this.setState(prev => ({ showAtsSection: !prev.showAtsSection }))}>
-                                    <div className="flex items-center gap-2">
-                                        <div className="p-1.5 bg-indigo-100 text-indigo-700 rounded-lg">
-                                            <FaBullseye className="w-3.5 h-3.5" />
+                                {this.state.isAtsEnabled === true ? (
+                                    <>
+                                        <div className="flex items-center justify-between cursor-pointer" onClick={() => this.setState(prev => ({ showAtsSection: !prev.showAtsSection }))}>
+                                            <div className="flex items-center gap-2">
+                                                <div className="p-1.5 bg-indigo-100 text-indigo-700 rounded-lg">
+                                                    <FaBullseye className="w-3.5 h-3.5" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                                                        Target Job Description & ATS Keyword Matcher (Optional)
+                                                    </h3>
+                                                    <p className="text-[11px] text-slate-500">
+                                                        Paste the job description to optimize keywords and compute your real-time ATS match score.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <button type="button" className="text-xs font-bold text-indigo-600 hover:text-indigo-800">
+                                                {this.state.showAtsSection ? '▲ Hide ATS Drawer' : '▼ Expand ATS Drawer'}
+                                            </button>
                                         </div>
-                                        <div>
-                                            <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                                                Target Job Description & ATS Keyword Matcher (Optional)
-                                            </h3>
-                                            <p className="text-[11px] text-slate-500">
-                                                Paste the job description to optimize keywords and compute your real-time ATS match score.
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <button type="button" className="text-xs font-bold text-indigo-600 hover:text-indigo-800">
-                                        {this.state.showAtsSection ? '▲ Hide ATS Drawer' : '▼ Expand ATS Drawer'}
-                                    </button>
-                                </div>
 
-                                {this.state.showAtsSection && (
-                                    <div className="space-y-3 pt-2">
+                                        {this.state.showAtsSection && (
+                                            <div className="space-y-3 pt-2">
+                                                <textarea
+                                                    value={this.state.jobDescription}
+                                                    onChange={(e) => this.setState({ jobDescription: e.target.value })}
+                                                    placeholder="Paste the target job description or core requirements here (e.g. 'Looking for a Senior Software Engineer experienced in React, TypeScript, Cloud Architecture, GraphQL, micro-services, and agile team delivery...')..."
+                                                    className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900 focus:border-indigo-600 focus:outline-hidden min-h-[90px] font-sans"
+                                                />
+
+                                                {atsMetrics && (
+                                                    <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-2.5">
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                                                <FaCheckCircle className={atsMetrics.score >= 80 ? 'text-emerald-500' : 'text-amber-500'} />
+                                                                <span>Estimated ATS Compatibility Score:</span>
+                                                            </span>
+                                                            <span className={`text-xs font-mono font-bold px-2.5 py-0.5 rounded-full ${atsMetrics.score >= 80 ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'}`}>
+                                                                {atsMetrics.score}% Match
+                                                            </span>
+                                                        </div>
+
+                                                        <div className="flex flex-wrap gap-1.5 text-[10px]">
+                                                            {atsMetrics.matched.map(kw => (
+                                                                <span key={kw} className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-md font-semibold">
+                                                                    ✓ {kw}
+                                                                </span>
+                                                            ))}
+                                                            {atsMetrics.missing.map(kw => (
+                                                                <span key={kw} className="px-2 py-0.5 bg-rose-50 text-rose-700 border border-rose-200 rounded-md font-semibold">
+                                                                    + {kw}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="flex items-center gap-2">
+                                            <div className="p-1.5 bg-indigo-100 text-indigo-700 rounded-lg">
+                                                <FaBullseye className="w-3.5 h-3.5" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                                                    Target Job Description (Optional)
+                                                </h3>
+                                                <p className="text-[11px] text-slate-500">
+                                                    Paste the job description so AI can tailor the letter. This is not an ATS score.
+                                                </p>
+                                            </div>
+                                        </div>
                                         <textarea
                                             value={this.state.jobDescription}
                                             onChange={(e) => this.setState({ jobDescription: e.target.value })}
-                                            placeholder="Paste the target job description or core requirements here (e.g. 'Looking for a Senior Software Engineer experienced in React, TypeScript, Cloud Architecture, GraphQL, micro-services, and agile team delivery...')..."
+                                            placeholder="Paste the target job description or core requirements here..."
                                             className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900 focus:border-indigo-600 focus:outline-hidden min-h-[90px] font-sans"
                                         />
-
-                                        {atsMetrics && (
-                                            <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-2.5">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                                                        <FaCheckCircle className={atsMetrics.score >= 80 ? 'text-emerald-500' : 'text-amber-500'} />
-                                                        <span>Estimated ATS Compatibility Score:</span>
-                                                    </span>
-                                                    <span className={`text-xs font-mono font-bold px-2.5 py-0.5 rounded-full ${atsMetrics.score >= 80 ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'}`}>
-                                                        {atsMetrics.score}% Match
-                                                    </span>
-                                                </div>
-
-                                                <div className="flex flex-wrap gap-1.5 text-[10px]">
-                                                    {atsMetrics.matched.map(kw => (
-                                                        <span key={kw} className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-md font-semibold">
-                                                            ✓ {kw}
-                                                        </span>
-                                                    ))}
-                                                    {atsMetrics.missing.map(kw => (
-                                                        <span key={kw} className="px-2 py-0.5 bg-rose-50 text-rose-700 border border-rose-200 rounded-md font-semibold">
-                                                            + {kw}
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
+                                    </>
                                 )}
                             </div>
 

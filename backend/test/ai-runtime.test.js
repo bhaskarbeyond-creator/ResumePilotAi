@@ -49,7 +49,8 @@ test('restored prompts preserve old contextual product instructions and response
     certifications: ['AWS'], projects: 'Payments modernization', language: 'en',
   }, { sessionId: 'fixture' }).prompt;
   for (const context of ['Asha Rao', '6+ years', 'Engineer at Acme', 'M.Tech', 'React, Node.js', 'AWS', 'Payments modernization']) assert.match(summary, new RegExp(context.replace(/[+.]/g, '\\$&')));
-  assert.match(summary, /50-70 words maximum/);
+  assert.match(summary, /3 complete, rich sentences/);
+  assert.match(summary, /45-65 words total/);
   assert.match(summary, /RESUME SUMMARY, NOT a cover letter/);
 
   const skills = buildLegacyPrompt('generate-skills', {

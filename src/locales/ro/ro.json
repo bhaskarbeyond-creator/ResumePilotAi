@@ -129,7 +129,11 @@
     "phone": "Telefon",
     "email": "E-mail",
     "languages": "Limbi Străine",
-    "skills": "Abilități"
+    "skills": "Abilități",
+    "projects": "Proiecte",
+    "certifications": "Certificări",
+    "achievements": "Realizări",
+    "references": "Referințe"
   },
   "Language": {
     "elemntary": "Elementar",
@@ -193,7 +197,8 @@
     "passChangedDesc": "Parola a fost schimbată cu succes",
     "passError": "Parola prea scurtă",
     "passErrorDesc": "Parola trebuie să aibă cel puțin 6 caractere",
-    "profile": "Profil"
+    "profile": "Profil",
+    "saveChanges": "Salvează modificările"
   },
   "static": {
     "plansHeader": "Prețuri simple, transparente",
@@ -577,7 +582,9 @@
       "paypal": "paypal",
       "applepay": "applepay",
       "googlepay": "googlepay",
-      "discover": "discover"
+      "discover": "discover",
+      "amex": "American Express",
+      "jcb": "JCB"
     },
     "legal": {
       "privacyPolicy": "Politica de confidențialitate",
@@ -668,7 +675,8 @@
     "menu": {
       "dashboard": "Tablou de bord",
       "interviews": "Interviuri",
-      "settings": "Setări"
+      "settings": "Setări",
+      "portfolios": "Portofolii"
     }
   },
   "DashboardHomepage": {
@@ -685,7 +693,8 @@
       "editResume": "Editează CV",
       "shareResume": "Distribuie CV",
       "delete": "Șterge",
-      "createNewDocument": "Creează Document Nou"
+      "createNewDocument": "Creează Document Nou",
+      "deleteResume": "Șterge CV-ul"
     },
     "promotion": {
       "title": "Ești gata să-ți impulsionezi căutarea de locuri de muncă și să obții mai multă expunere?",
@@ -709,7 +718,37 @@
       "page": "Pagină",
       "of": "din"
     },
-    "confirmDelete": "Sigur dorești să ștergi acest CV? Această acțiune nu poate fi anulată."
+    "confirmDelete": "Sigur dorești să ștergi acest CV? Această acțiune nu poate fi anulată.",
+    "completed": "finalizat",
+    "title": "Documentele mele",
+    "subtitle": "Gestionează CV-urile și scrisorile de intenție",
+    "stats": {
+      "totalDocuments": "Total documente",
+      "recentActivity": "Activitate recentă",
+      "profileViews": "Vizualizări profil",
+      "downloads": "Descărcări",
+      "today": "Astăzi",
+      "documentsCount": "documente"
+    },
+    "onboarding": {
+      "welcomeMessage": "Bine ai venit! Să începem",
+      "completionMessage": "Parcurge pașii de mai jos pentru a-ți configura profilul",
+      "steps": {
+        "createResume": {
+          "title": "Creează primul CV",
+          "description": "Creează sau editează CV-uri cu editorul nostru, peste 20 de șabloane și IA pentru adaptarea la posturi concrete."
+        }
+      }
+    },
+    "tips": {
+      "sectionTitle": "Sfaturi rapide",
+      "keepUpdated": "Păstrează-l actualizat",
+      "updatedDescription": "Actualizările regulate îmbunătățesc vizibilitatea profilului",
+      "tailor": "Adaptează-l la joburi",
+      "tailorDescription": "Personalizează CV-ul pentru fiecare aplicație",
+      "organize": "Rămâi organizat",
+      "organizeDescription": "Folosește denumiri clare pentru documente"
+    }
   },
   "DashboardSettings": {
     "pageTitle": "Setări",
@@ -847,15 +886,72 @@
         "cardholderName": "Numele titularului cardului",
         "address": "Adresă de facturare",
         "country": "Țara",
-        "postalCode": "Cod poștal"
+        "postalCode": "Cod poștal",
+        "description": "Informațiile de plată sunt criptate și sigure.",
+        "nameLabel": "Numele titularului *",
+        "namePlaceholder": "Introdu numele de pe card",
+        "addressLabel": "Adresa de facturare *",
+        "addressPlaceholder": "Introdu adresa de facturare",
+        "detailsLabel": "Datele cardului *",
+        "backButton": "Înapoi la plată",
+        "completeButton": "Finalizează plata",
+        "processing": "Se procesează..."
       },
       "success": {
         "title": "Plată reușită!",
         "subtitle": "Abonamentul tău a fost activat",
         "message": "Vă mulțumim pentru achiziție. Aveți acum acces complet la toate funcționalitățile premium.",
-        "button": "Continuați către tabloul de bord"
+        "button": "Continuați către tabloul de bord",
+        "emailNotice": "Vei primi în curând un e-mail de confirmare cu chitanța și detaliile abonamentului.",
+        "activeMessage": "Abonamentul tău este acum activ",
+        "continueButton": "Continuă către tabloul de bord"
       },
-      "or": "SAU"
+      "or": "SAU",
+      "secureCheckout": "Plată sigură prin Stripe și PayPal",
+      "steps": {
+        "billingInfo": "Informații de facturare",
+        "paymentMethod": "Metodă de plată",
+        "cardDetails": "Datele cardului",
+        "confirmation": "Confirmare"
+      },
+      "orderSummary": {
+        "title": "Rezumat comandă",
+        "plan": "Plan",
+        "billingCycle": "Ciclu de facturare",
+        "subtotal": "Subtotal",
+        "tax": "Taxă",
+        "taxCalculated": "Calculată la plată",
+        "total": "Total",
+        "whatsIncluded": "Ce este inclus:",
+        "weAccept": "Acceptăm:"
+      },
+      "security": {
+        "sslSecured": "Securizat SSL",
+        "encryption": "Criptare pe 256 de biți",
+        "pciCompliant": "Conform PCI",
+        "moneyBack": "Garanție de rambursare 30 de zile",
+        "support": "Asistență clienți 24/7",
+        "cancelAnytime": "Anulează oricând",
+        "securePaymentInfo": "Plata ta este sigură",
+        "securePaymentDescription": "Folosim criptare la standard industrial pentru a proteja datele cardului. Datele nu sunt stocate pe serverele noastre."
+      },
+      "billingForm": {
+        "title": "Informații de facturare",
+        "description": "Avem nevoie de aceste informații pentru a procesa plata și a trimite chitanțe.",
+        "countryLabel": "Țară/regiune *",
+        "countryPlaceholder": "Selectează țara",
+        "postalLabel": "Cod poștal *",
+        "continueButton": "Continuă către metoda de plată"
+      },
+      "paymentMethod": {
+        "title": "Alege metoda de plată",
+        "description": "Selectează cum vrei să plătești abonamentul.",
+        "cardTitle": "Card de credit sau debit",
+        "cardDescription": "Visa, Mastercard, American Express",
+        "paypalTitle": "PayPal",
+        "paypalDescription": "Plătește în siguranță cu contul PayPal",
+        "backButton": "Înapoi la facturare"
+      }
     },
     "success": {
       "title": "Plată reușită!",
@@ -866,7 +962,14 @@
     "error": {
       "payment": "Plată eșuată. Vă rugăm să încercați din nou.",
       "login": "Vă rugăm să vă autentificați pentru a finaliza plata.",
-      "general": "Ceva nu a mers bine. Vă rugăm să încercați din nou."
+      "general": "Ceva nu a mers bine. Vă rugăm să încercați din nou.",
+      "paypal": "Plata PayPal a eșuat. Încearcă din nou."
+    },
+    "paypal": {
+      "title": "Plată PayPal",
+      "description": "Finalizează plata în siguranță cu PayPal.",
+      "secureTitle": "Plată PayPal sigură",
+      "secureDescription": "Vei fi redirecționat către PayPal pentru a finaliza plata în siguranță."
     }
   },
   "DashboardInterviews": {
@@ -1012,7 +1115,8 @@
       "certifications": "Certificări",
       "achievements": "Realizări",
       "references": "Referințe",
-      "customSections": "Secțiuni personalizate"
+      "customSections": "Secțiuni personalizate",
+      "languages": "Limbi Străine"
     },
     "navigation": {
       "previous": "Anterior",
@@ -1555,7 +1659,11 @@
     "actions": {
       "downloadPdf": "Descărcare PDF",
       "generatingPdf": "Generare PDF...",
-      "close": "Închidere Previzualizare"
+      "close": "Închidere Previzualizare",
+      "downloadDocx": "Descarcă Word (DOCX)",
+      "generatingDocx": "Se generează DOCX...",
+      "downloadDocxShort": "Word",
+      "generatingDocxShort": "DOCX..."
     },
     "keyboard": {
       "escToClose": "pentru închidere"

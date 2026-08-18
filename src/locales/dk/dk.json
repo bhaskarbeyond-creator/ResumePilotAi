@@ -129,7 +129,11 @@
     "phone": "Telefon",
     "email": "E-mail",
     "languages": "Sprog",
-    "skills": "Færdigheder"
+    "skills": "Færdigheder",
+    "projects": "Projekter",
+    "certifications": "Certificeringer",
+    "achievements": "Resultater",
+    "references": "Referencer"
   },
   "Language": {
     "elemntary": "Grundlæggende",
@@ -193,7 +197,8 @@
     "passChangedDesc": "Adgangskode skiftet med succes",
     "passError": "Adgangskode for kort",
     "passErrorDesc": "Adgangskoden skal være mindst 6 tegn",
-    "profile": "Profil"
+    "profile": "Profil",
+    "saveChanges": "Gem ændringer"
   },
   "static": {
     "plansHeader": "Enkel, gennemsigtig pris",
@@ -577,7 +582,9 @@
       "paypal": "PayPal",
       "applepay": "Apple Pay",
       "googlepay": "Google Pay",
-      "discover": "Discover"
+      "discover": "Discover",
+      "amex": "American Express",
+      "jcb": "JCB"
     },
     "legal": {
       "privacyPolicy": "Privatlivspolitik",
@@ -668,7 +675,8 @@
     "menu": {
       "dashboard": "Kontrolpanel",
       "interviews": "Interviews",
-      "settings": "Indstillinger"
+      "settings": "Indstillinger",
+      "portfolios": "Porteføljer"
     }
   },
   "DashboardHomepage": {
@@ -685,7 +693,8 @@
       "editResume": "Rediger CV",
       "shareResume": "Del CV",
       "delete": "Slet",
-      "createNewDocument": "Opret nyt dokument"
+      "createNewDocument": "Opret nyt dokument",
+      "deleteResume": "Slet CV"
     },
     "promotion": {
       "title": "Klar til at give din jobsøgning et boost og få mere eksponering?",
@@ -709,7 +718,37 @@
       "page": "Side",
       "of": "af"
     },
-    "confirmDelete": "Er du sikker på, at du vil slette dette CV? Denne handling kan ikke fortrydes."
+    "confirmDelete": "Er du sikker på, at du vil slette dette CV? Denne handling kan ikke fortrydes.",
+    "completed": "fuldført",
+    "title": "Mine dokumenter",
+    "subtitle": "Administrer dine CV’er og følgebreve",
+    "stats": {
+      "totalDocuments": "Dokumenter i alt",
+      "recentActivity": "Seneste aktivitet",
+      "profileViews": "Profilvisninger",
+      "downloads": "Downloads",
+      "today": "I dag",
+      "documentsCount": "dokumenter"
+    },
+    "onboarding": {
+      "welcomeMessage": "Velkommen! Lad os komme i gang",
+      "completionMessage": "Gennemfør trinnene nedenfor for at oprette din profil",
+      "steps": {
+        "createResume": {
+          "title": "Opret dit første CV",
+          "description": "Opret eller rediger CV’er med vores builder, 20+ skabeloner og AI til tilpasning til konkrete stillinger."
+        }
+      }
+    },
+    "tips": {
+      "sectionTitle": "Hurtige tips",
+      "keepUpdated": "Hold det opdateret",
+      "updatedDescription": "Regelmæssige opdateringer forbedrer din profils synlighed",
+      "tailor": "Tilpas til job",
+      "tailorDescription": "Tilpas dit CV til hver ansøgning",
+      "organize": "Hold orden",
+      "organizeDescription": "Brug tydelige navne til dine dokumenter"
+    }
   },
   "DashboardSettings": {
     "pageTitle": "Indstillinger",
@@ -847,15 +886,72 @@
         "cardholderName": "Kortholderens navn",
         "address": "Faktureringsadresse",
         "country": "Land",
-        "postalCode": "Postnummer"
+        "postalCode": "Postnummer",
+        "description": "Dine betalingsoplysninger er krypteret og sikre.",
+        "nameLabel": "Kortholders navn *",
+        "namePlaceholder": "Indtast navnet på kortet",
+        "addressLabel": "Faktureringsadresse *",
+        "addressPlaceholder": "Indtast din faktureringsadresse",
+        "detailsLabel": "Kortoplysninger *",
+        "backButton": "Tilbage til betaling",
+        "completeButton": "Fuldfør betaling",
+        "processing": "Behandler..."
       },
       "success": {
         "title": "Betaling lykkedes!",
         "subtitle": "Dit abonnement er blevet aktiveret",
         "message": "Tak for dit køb. Du har nu fuld adgang til alle premium-funktioner.",
-        "button": "Fortsæt til kontrolpanelet"
+        "button": "Fortsæt til kontrolpanelet",
+        "emailNotice": "Du modtager snart en bekræftelsesmail med kvittering og abonnementsoplysninger.",
+        "activeMessage": "Dit abonnement er nu aktivt",
+        "continueButton": "Fortsæt til dashboardet"
       },
-      "or": "ELLER"
+      "or": "ELLER",
+      "secureCheckout": "Sikker betaling via Stripe og PayPal",
+      "steps": {
+        "billingInfo": "Faktureringsoplysninger",
+        "paymentMethod": "Betalingsmetode",
+        "cardDetails": "Kortoplysninger",
+        "confirmation": "Bekræftelse"
+      },
+      "orderSummary": {
+        "title": "Ordreoversigt",
+        "plan": "Plan",
+        "billingCycle": "Faktureringsperiode",
+        "subtotal": "Subtotal",
+        "tax": "Moms",
+        "taxCalculated": "Beregnes ved betaling",
+        "total": "I alt",
+        "whatsIncluded": "Inkluderet:",
+        "weAccept": "Vi accepterer:"
+      },
+      "security": {
+        "sslSecured": "SSL-sikret",
+        "encryption": "256-bit kryptering",
+        "pciCompliant": "PCI-kompatibel",
+        "moneyBack": "30 dages pengene-tilbage-garanti",
+        "support": "Kundesupport døgnet rundt",
+        "cancelAnytime": "Opsig når som helst",
+        "securePaymentInfo": "Din betaling er sikker",
+        "securePaymentDescription": "Vi bruger branchesstandardkryptering til at beskytte dine kortoplysninger. Dine data gemmes aldrig på vores servere."
+      },
+      "billingForm": {
+        "title": "Faktureringsoplysninger",
+        "description": "Vi skal bruge disse oplysninger for at behandle betalingen og sende kvitteringer.",
+        "countryLabel": "Land/region *",
+        "countryPlaceholder": "Vælg dit land",
+        "postalLabel": "Postnummer *",
+        "continueButton": "Fortsæt til betalingsmetode"
+      },
+      "paymentMethod": {
+        "title": "Vælg betalingsmetode",
+        "description": "Vælg, hvordan du vil betale for dit abonnement.",
+        "cardTitle": "Kredit- eller debetkort",
+        "cardDescription": "Visa, Mastercard, American Express",
+        "paypalTitle": "PayPal",
+        "paypalDescription": "Betal sikkert med din PayPal-konto",
+        "backButton": "Tilbage til fakturering"
+      }
     },
     "success": {
       "title": "Betaling lykkedes!",
@@ -866,7 +962,14 @@
     "error": {
       "payment": "Betaling mislykkedes. Prøv igen.",
       "login": "Log venligst ind for at gennemføre betalingen.",
-      "general": "Noget gik galt. Prøv igen."
+      "general": "Noget gik galt. Prøv igen.",
+      "paypal": "PayPal-betalingen mislykkedes. Prøv igen."
+    },
+    "paypal": {
+      "title": "PayPal-betaling",
+      "description": "Gennemfør din betaling sikkert med PayPal.",
+      "secureTitle": "Sikker PayPal-betaling",
+      "secureDescription": "Du bliver omdirigeret til PayPal for at gennemføre betalingen sikkert."
     }
   },
   "DashboardInterviews": {
@@ -1012,7 +1115,8 @@
       "certifications": "Certificeringer",
       "achievements": "Resultater",
       "references": "Referencer",
-      "customSections": "Egne sektioner"
+      "customSections": "Egne sektioner",
+      "languages": "Sprog"
     },
     "navigation": {
       "previous": "Forrige",
@@ -1555,7 +1659,11 @@
     "actions": {
       "downloadPdf": "Download PDF",
       "generatingPdf": "Genererer PDF...",
-      "close": "Luk forhåndsvisning"
+      "close": "Luk forhåndsvisning",
+      "downloadDocx": "Download Word (DOCX)",
+      "generatingDocx": "Genererer DOCX...",
+      "downloadDocxShort": "Word",
+      "generatingDocxShort": "DOCX..."
     },
     "keyboard": {
       "escToClose": "for at lukke"

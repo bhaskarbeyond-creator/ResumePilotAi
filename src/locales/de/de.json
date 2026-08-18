@@ -129,7 +129,11 @@
     "phone": "Telefon",
     "email": "E-Mail",
     "languages": "Sprachen",
-    "skills": "Fähigkeiten"
+    "skills": "Fähigkeiten",
+    "projects": "Projekte",
+    "certifications": "Zertifizierungen",
+    "achievements": "Erfolge",
+    "references": "Referenzen"
   },
   "Language": {
     "elemntary": "Grundkenntnisse",
@@ -193,7 +197,8 @@
     "passChangedDesc": "Passwort erfolgreich geändert",
     "passError": "Passwort zu kurz",
     "passErrorDesc": "Passwort muss mindestens 6 Zeichen lang sein",
-    "profile": "Profil"
+    "profile": "Profil",
+    "saveChanges": "Änderungen speichern"
   },
   "static": {
     "plansHeader": "Einfache, transparente Preise",
@@ -577,7 +582,9 @@
       "paypal": "PayPal",
       "applepay": "Apple Pay",
       "googlepay": "Google Pay",
-      "discover": "Discover"
+      "discover": "Discover",
+      "amex": "American Express",
+      "jcb": "JCB"
     },
     "legal": {
       "privacyPolicy": "Datenschutzrichtlinie",
@@ -668,7 +675,8 @@
     "menu": {
       "dashboard": "Dashboard",
       "interviews": "Interviews",
-      "settings": "Einstellungen"
+      "settings": "Einstellungen",
+      "portfolios": "Portfolios"
     }
   },
   "DashboardHomepage": {
@@ -685,7 +693,8 @@
       "editResume": "Lebenslauf bearbeiten",
       "shareResume": "Lebenslauf teilen",
       "delete": "Löschen",
-      "createNewDocument": "Neues Dokument erstellen"
+      "createNewDocument": "Neues Dokument erstellen",
+      "deleteResume": "Lebenslauf löschen"
     },
     "promotion": {
       "title": "Sind Sie bereit, Ihre Jobsuche zu beschleunigen und mehr Aufmerksamkeit zu erregen?",
@@ -709,7 +718,37 @@
       "page": "Seite",
       "of": "von"
     },
-    "confirmDelete": "Sind Sie sicher, dass Sie diesen Lebenslauf löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden."
+    "confirmDelete": "Sind Sie sicher, dass Sie diesen Lebenslauf löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "completed": "abgeschlossen",
+    "title": "Meine Dokumente",
+    "subtitle": "Verwalten Sie Ihre Lebensläufe und Anschreiben",
+    "stats": {
+      "totalDocuments": "Dokumente insgesamt",
+      "recentActivity": "Letzte Aktivität",
+      "profileViews": "Profilaufrufe",
+      "downloads": "Downloads",
+      "today": "Heute",
+      "documentsCount": "Dokumente"
+    },
+    "onboarding": {
+      "welcomeMessage": "Willkommen! Lassen Sie uns starten",
+      "completionMessage": "Schließen Sie die folgenden Schritte ab, um Ihr Profil einzurichten",
+      "steps": {
+        "createResume": {
+          "title": "Erstellen Sie Ihren ersten Lebenslauf",
+          "description": "Erstellen oder bearbeiten Sie Lebensläufe mit unserem Builder, über 20 Vorlagen und KI für die Anpassung an konkrete Stellen."
+        }
+      }
+    },
+    "tips": {
+      "sectionTitle": "Kurztipps",
+      "keepUpdated": "Aktuell halten",
+      "updatedDescription": "Regelmäßige Updates verbessern die Sichtbarkeit Ihres Profils",
+      "tailor": "Auf Stellen zuschneiden",
+      "tailorDescription": "Passen Sie Ihren Lebenslauf für jede Bewerbung an",
+      "organize": "Organisiert bleiben",
+      "organizeDescription": "Verwenden Sie klare Namen für Ihre Dokumente"
+    }
   },
   "DashboardSettings": {
     "pageTitle": "Einstellungen",
@@ -847,15 +886,72 @@
         "cardholderName": "Name des Karteninhabers",
         "address": "Rechnungsadresse",
         "country": "Land",
-        "postalCode": "Postleitzahl"
+        "postalCode": "Postleitzahl",
+        "description": "Ihre Zahlungsdaten sind verschlüsselt und sicher.",
+        "nameLabel": "Name des Karteninhabers *",
+        "namePlaceholder": "Geben Sie den Namen auf der Karte ein",
+        "addressLabel": "Rechnungsadresse *",
+        "addressPlaceholder": "Geben Sie Ihre Rechnungsadresse ein",
+        "detailsLabel": "Kartendaten *",
+        "backButton": "Zurück zur Zahlung",
+        "completeButton": "Zahlung abschließen",
+        "processing": "Wird verarbeitet..."
       },
       "success": {
         "title": "Zahlung erfolgreich!",
         "subtitle": "Ihr Abonnement wurde aktiviert",
         "message": "Vielen Dank für Ihren Kauf. Sie haben jetzt vollen Zugriff auf alle Premium-Funktionen.",
-        "button": "Weiter zum Dashboard"
+        "button": "Weiter zum Dashboard",
+        "emailNotice": "Sie erhalten in Kürze eine Bestätigungs-E-Mail mit Beleg und Abonnementdetails.",
+        "activeMessage": "Ihr Abonnement ist jetzt aktiv",
+        "continueButton": "Weiter zum Dashboard"
       },
-      "or": "ODER"
+      "or": "ODER",
+      "secureCheckout": "Sichere Zahlung über Stripe und PayPal",
+      "steps": {
+        "billingInfo": "Rechnungsdaten",
+        "paymentMethod": "Zahlungsmethode",
+        "cardDetails": "Kartendaten",
+        "confirmation": "Bestätigung"
+      },
+      "orderSummary": {
+        "title": "Bestellübersicht",
+        "plan": "Plan",
+        "billingCycle": "Abrechnungszyklus",
+        "subtotal": "Zwischensumme",
+        "tax": "Steuer",
+        "taxCalculated": "Wird an der Kasse berechnet",
+        "total": "Gesamt",
+        "whatsIncluded": "Enthalten:",
+        "weAccept": "Wir akzeptieren:"
+      },
+      "security": {
+        "sslSecured": "SSL-gesichert",
+        "encryption": "256-Bit-Verschlüsselung",
+        "pciCompliant": "PCI-konform",
+        "moneyBack": "30-Tage-Geld-zurück-Garantie",
+        "support": "Kundensupport rund um die Uhr",
+        "cancelAnytime": "Jederzeit kündbar",
+        "securePaymentInfo": "Ihre Zahlung ist sicher",
+        "securePaymentDescription": "Wir schützen Ihre Kartendaten mit branchenüblicher Verschlüsselung. Ihre Daten werden nicht auf unseren Servern gespeichert."
+      },
+      "billingForm": {
+        "title": "Rechnungsdaten",
+        "description": "Wir benötigen diese Angaben, um Ihre Zahlung zu verarbeiten und Belege zu senden.",
+        "countryLabel": "Land/Region *",
+        "countryPlaceholder": "Wählen Sie Ihr Land",
+        "postalLabel": "Postleitzahl *",
+        "continueButton": "Weiter zur Zahlungsmethode"
+      },
+      "paymentMethod": {
+        "title": "Zahlungsmethode wählen",
+        "description": "Wählen Sie, wie Sie Ihr Abonnement bezahlen möchten.",
+        "cardTitle": "Kredit- oder Debitkarte",
+        "cardDescription": "Visa, Mastercard, American Express",
+        "paypalTitle": "PayPal",
+        "paypalDescription": "Sicher mit Ihrem PayPal-Konto bezahlen",
+        "backButton": "Zurück zu den Rechnungsdaten"
+      }
     },
     "success": {
       "title": "Zahlung erfolgreich!",
@@ -866,7 +962,14 @@
     "error": {
       "payment": "Zahlung fehlgeschlagen. Bitte versuchen Sie es erneut.",
       "login": "Bitte melden Sie sich an, um die Zahlung abzuschließen.",
-      "general": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
+      "general": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+      "paypal": "PayPal-Zahlung fehlgeschlagen. Bitte versuchen Sie es erneut."
+    },
+    "paypal": {
+      "title": "PayPal-Zahlung",
+      "description": "Schließen Sie Ihre Zahlung sicher mit PayPal ab.",
+      "secureTitle": "Sichere PayPal-Zahlung",
+      "secureDescription": "Sie werden zu PayPal weitergeleitet, um die Zahlung sicher abzuschließen."
     }
   },
   "DashboardInterviews": {
@@ -1012,7 +1115,8 @@
       "certifications": "Zertifizierungen",
       "achievements": "Erfolge",
       "references": "Referenzen",
-      "customSections": "Eigene Abschnitte"
+      "customSections": "Eigene Abschnitte",
+      "languages": "Sprachen"
     },
     "navigation": {
       "previous": "Zurück",
@@ -1555,7 +1659,11 @@
     "actions": {
       "downloadPdf": "PDF herunterladen",
       "generatingPdf": "PDF wird generiert...",
-      "close": "Vorschau schließen"
+      "close": "Vorschau schließen",
+      "downloadDocx": "Word herunterladen (DOCX)",
+      "generatingDocx": "DOCX wird generiert...",
+      "downloadDocxShort": "Word",
+      "generatingDocxShort": "DOCX..."
     },
     "keyboard": {
       "escToClose": "zum Schließen"

@@ -1130,7 +1130,8 @@
       "certifications": "प्रमाणपत्र",
       "achievements": "उपलब्धियाँ",
       "references": "संदर्भ",
-      "customSections": "कस्टम अनुभाग"
+      "customSections": "कस्टम अनुभाग",
+      "languages": "भाषाएँ"
     },
     "navigation": {
       "previous": "पिछला",
@@ -1673,7 +1674,11 @@
     "actions": {
       "downloadPdf": "PDF डाउनलोड करें",
       "generatingPdf": "PDF जनरेट किया जा रहा है...",
-      "close": "पूर्वावलोकन बंद करें"
+      "close": "पूर्वावलोकन बंद करें",
+      "downloadDocx": "Word डाउनलोड करें (DOCX)",
+      "generatingDocx": "DOCX जनरेट किया जा रहा है...",
+      "downloadDocxShort": "Word",
+      "generatingDocxShort": "DOCX..."
     },
     "keyboard": {
       "escToClose": "बंद करने के लिए"
@@ -2863,5 +2868,29 @@
       "evidence": "परियोजनाएँ",
       "integrity": "ईमानदारी"
     }
+  },
+  "blog": {
+    "title": "ब्लॉग",
+    "description": "नवीनतम करियर सुझाव और रुझान",
+    "knowledgeHub": "ज्ञान केंद्र",
+    "blogTitle": "अंतर्दृष्टि और संसाधन",
+    "blogDescription": "विशेषज्ञ ज्ञान, उद्योग रुझान और व्यावहारिक मार्गदर्शिकाएँ",
+    "searchPlaceholder": "लेख, गाइड और अंतर्दृष्टि खोजें...",
+    "search": "खोजें",
+    "allArticles": "सभी लेख",
+    "allCategories": "सभी श्रेणियाँ",
+    "noArticlesFound": "कोई लेख नहीं मिला",
+    "adjustSearch": "अपनी खोज या श्रेणी फ़िल्टर समायोजित करें।",
+    "loadMore": "और लेख लोड करें",
+    "articleLabel": "लेख",
+    "minRead": "मिनट पढ़ें",
+    "recently": "हाल ही में",
+    "articleNotFound": "लेख नहीं मिला",
+    "backToArticles": "लेखों पर वापस जाएँ",
+    "backToBlog": "ब्लॉग पर वापस जाएँ",
+    "shareArticle": "लेख साझा करें",
+    "relatedArticles": "संबंधित लेख",
+    "views": "दृश्य",
+    "tags": "टैग"
   }
 }

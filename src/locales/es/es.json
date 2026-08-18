@@ -129,7 +129,11 @@
     "phone": "Teléfono",
     "email": "Correo electrónico",
     "languages": "Idiomas",
-    "skills": "Habilidades"
+    "skills": "Habilidades",
+    "projects": "Proyectos",
+    "certifications": "Certificaciones",
+    "achievements": "Logros",
+    "references": "Referencias"
   },
   "Language": {
     "elemntary": "Elemental",
@@ -1109,7 +1113,8 @@
       "certifications": "Certificaciones",
       "achievements": "Logros",
       "references": "Referencias",
-      "customSections": "Secciones personalizadas"
+      "customSections": "Secciones personalizadas",
+      "languages": "Idiomas"
     },
     "navigation": {
       "previous": "Anterior",
@@ -1652,7 +1657,11 @@
     "actions": {
       "downloadPdf": "Descargar PDF",
       "generatingPdf": "Generando PDF...",
-      "close": "Cerrar vista previa"
+      "close": "Cerrar vista previa",
+      "downloadDocx": "Descargar Word (DOCX)",
+      "generatingDocx": "Generando DOCX...",
+      "downloadDocxShort": "Word",
+      "generatingDocxShort": "DOCX..."
     },
     "keyboard": {
       "escToClose": "para cerrar"

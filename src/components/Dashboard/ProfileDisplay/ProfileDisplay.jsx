@@ -514,6 +514,7 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
                                     </div>
                                 </Link>
 
+                                {modulesConfig.enableCoverLetterModule && (
                                 <Link to="/dashboard/cover-letters" onClick={closeMobileSidebar}>
                                     <div
                                         className={`flex items-center text-xs transition-all duration-150 rounded-xl ${
@@ -525,6 +526,7 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
                                         {!sidebarCollapsed && <span className="flex-1">Cover Letters</span>}
                                     </div>
                                 </Link>
+                                )}
 
                                 {modulesConfig.enablePortfolioModule && (
                                     <Link to="/dashboard/portfolios" onClick={closeMobileSidebar}>
@@ -804,6 +806,7 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
                     <span>Home</span>
                 </Link>
 
+                {modulesConfig.enableCoverLetterModule ? (
                 <Link
                     to="/dashboard/cover-letters"
                     className={`flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors ${
@@ -811,8 +814,19 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
                     }`}
                 >
                     <FiFileText className="w-5 h-5 mb-0.5" />
-                    <span>Resumes</span>
+                    <span>Letters</span>
                 </Link>
+                ) : (
+                <Link
+                    to="/dashboard/job-tracker"
+                    className={`flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors ${
+                        location.pathname === '/dashboard/job-tracker' ? 'text-indigo-600' : 'text-gray-500'
+                    }`}
+                >
+                    <FaBriefcase className="w-5 h-5 mb-0.5" />
+                    <span>Jobs</span>
+                </Link>
+                )}
 
                 <Link
                     to="/dashboard/settings"

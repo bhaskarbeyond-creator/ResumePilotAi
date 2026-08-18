@@ -129,7 +129,11 @@
     "phone": "Telefoon",
     "email": "E-mail",
     "languages": "Talen",
-    "skills": "Vaardigheden"
+    "skills": "Vaardigheden",
+    "projects": "Projecten",
+    "certifications": "Certificeringen",
+    "achievements": "Prestaties",
+    "references": "Referenties"
   },
   "Language": {
     "elemntary": "Beginner",
@@ -193,7 +197,8 @@
     "passChangedDesc": "Wachtwoord succesvol gewijzigd",
     "passError": "Wachtwoord te kort",
     "passErrorDesc": "Wachtwoord moet minimaal 6 tekens lang zijn",
-    "profile": "Profiel"
+    "profile": "Profiel",
+    "saveChanges": "Wijzigingen opslaan"
   },
   "static": {
     "plansHeader": "Eenvoudige, transparante prijzen",
@@ -577,7 +582,9 @@
       "paypal": "paypal",
       "applepay": "applepay",
       "googlepay": "googlepay",
-      "discover": "discover"
+      "discover": "discover",
+      "amex": "American Express",
+      "jcb": "JCB"
     },
     "legal": {
       "privacyPolicy": "Privacybeleid",
@@ -668,7 +675,8 @@
     "menu": {
       "dashboard": "Dashboard",
       "interviews": "Sollicitatiegesprekken",
-      "settings": "Instellingen"
+      "settings": "Instellingen",
+      "portfolios": "Portfolio’s"
     }
   },
   "DashboardHomepage": {
@@ -685,7 +693,8 @@
       "editResume": "Cv Bewerken",
       "shareResume": "Cv Delen",
       "delete": "Verwijderen",
-      "createNewDocument": "Nieuw Document Maken"
+      "createNewDocument": "Nieuw Document Maken",
+      "deleteResume": "Cv verwijderen"
     },
     "promotion": {
       "title": "Klaar om je zoektocht naar werk een boost te geven en meer bekendheid te krijgen?",
@@ -709,7 +718,37 @@
       "page": "Pagina",
       "of": "van"
     },
-    "confirmDelete": "Weet je zeker dat je dit cv wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt."
+    "confirmDelete": "Weet je zeker dat je dit cv wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.",
+    "completed": "voltooid",
+    "title": "Mijn documenten",
+    "subtitle": "Beheer je cv’s en sollicitatiebrieven",
+    "stats": {
+      "totalDocuments": "Documenten in totaal",
+      "recentActivity": "Recente activiteit",
+      "profileViews": "Profielweergaven",
+      "downloads": "Downloads",
+      "today": "Vandaag",
+      "documentsCount": "documenten"
+    },
+    "onboarding": {
+      "welcomeMessage": "Welkom! Laten we beginnen",
+      "completionMessage": "Voltooi de onderstaande stappen om je profiel in te stellen",
+      "steps": {
+        "createResume": {
+          "title": "Maak je eerste cv",
+          "description": "Maak of bewerk cv’s met onze editor, 20+ sjablonen en AI om ze af te stemmen op specifieke vacatures."
+        }
+      }
+    },
+    "tips": {
+      "sectionTitle": "Snelle tips",
+      "keepUpdated": "Houd het actueel",
+      "updatedDescription": "Regelmatige updates verbeteren de zichtbaarheid van je profiel",
+      "tailor": "Stem af op vacatures",
+      "tailorDescription": "Pas je cv aan voor elke sollicitatie",
+      "organize": "Blijf georganiseerd",
+      "organizeDescription": "Gebruik duidelijke namen voor je documenten"
+    }
   },
   "DashboardSettings": {
     "pageTitle": "Instellingen",
@@ -847,15 +886,72 @@
         "cardholderName": "Naam Kaarthouder",
         "address": "Factuuradres",
         "country": "Land",
-        "postalCode": "Postcode"
+        "postalCode": "Postcode",
+        "description": "Je betalingsgegevens zijn versleuteld en veilig.",
+        "nameLabel": "Naam kaarthouder *",
+        "namePlaceholder": "Voer de naam op de kaart in",
+        "addressLabel": "Factuuradres *",
+        "addressPlaceholder": "Voer je factuuradres in",
+        "detailsLabel": "Kaartgegevens *",
+        "backButton": "Terug naar betaling",
+        "completeButton": "Betaling afronden",
+        "processing": "Verwerken..."
       },
       "success": {
         "title": "Betaling Gelukt!",
         "subtitle": "Je abonnement is geactiveerd",
         "message": "Bedankt voor je aankoop. Je hebt nu volledige toegang tot alle premium functies.",
-        "button": "Doorgaan naar Dashboard"
+        "button": "Doorgaan naar Dashboard",
+        "emailNotice": "Je ontvangt binnenkort een bevestigingsmail met bon en abonnementsgegevens.",
+        "activeMessage": "Je abonnement is nu actief",
+        "continueButton": "Doorgaan naar het dashboard"
       },
-      "or": "OF"
+      "or": "OF",
+      "secureCheckout": "Veilig afrekenen via Stripe en PayPal",
+      "steps": {
+        "billingInfo": "Factuurgegevens",
+        "paymentMethod": "Betaalmethode",
+        "cardDetails": "Kaartgegevens",
+        "confirmation": "Bevestiging"
+      },
+      "orderSummary": {
+        "title": "Besteloverzicht",
+        "plan": "Abonnement",
+        "billingCycle": "Factureringscyclus",
+        "subtotal": "Subtotaal",
+        "tax": "Belasting",
+        "taxCalculated": "Berekend bij het afrekenen",
+        "total": "Totaal",
+        "whatsIncluded": "Inbegrepen:",
+        "weAccept": "Wij accepteren:"
+      },
+      "security": {
+        "sslSecured": "Beveiligd met SSL",
+        "encryption": "256-bits versleuteling",
+        "pciCompliant": "PCI-conform",
+        "moneyBack": "30 dagen niet-goed-geld-terug",
+        "support": "Klantenservice 24/7",
+        "cancelAnytime": "Op elk moment opzeggen",
+        "securePaymentInfo": "Je betaling is veilig",
+        "securePaymentDescription": "We gebruiken industriestandaardversleuteling om je kaartgegevens te beschermen. Je gegevens worden nooit op onze servers opgeslagen."
+      },
+      "billingForm": {
+        "title": "Factuurgegevens",
+        "description": "We hebben deze gegevens nodig om je betaling te verwerken en bonnen te sturen.",
+        "countryLabel": "Land/regio *",
+        "countryPlaceholder": "Selecteer je land",
+        "postalLabel": "Postcode *",
+        "continueButton": "Doorgaan naar betaalmethode"
+      },
+      "paymentMethod": {
+        "title": "Kies een betaalmethode",
+        "description": "Selecteer hoe je je abonnement wilt betalen.",
+        "cardTitle": "Creditcard of debitcard",
+        "cardDescription": "Visa, Mastercard, American Express",
+        "paypalTitle": "PayPal",
+        "paypalDescription": "Betaal veilig met je PayPal-account",
+        "backButton": "Terug naar facturering"
+      }
     },
     "success": {
       "title": "Betaling Gelukt!",
@@ -866,7 +962,14 @@
     "error": {
       "payment": "Betaling mislukt. Probeer het opnieuw.",
       "login": "Meld je aan om de betaling te voltooien.",
-      "general": "Er ging iets mis. Probeer het opnieuw."
+      "general": "Er ging iets mis. Probeer het opnieuw.",
+      "paypal": "PayPal-betaling mislukt. Probeer het opnieuw."
+    },
+    "paypal": {
+      "title": "PayPal-betaling",
+      "description": "Rond je betaling veilig af met PayPal.",
+      "secureTitle": "Veilige PayPal-betaling",
+      "secureDescription": "Je wordt doorgestuurd naar PayPal om de betaling veilig af te ronden."
     }
   },
   "DashboardInterviews": {
@@ -1012,7 +1115,8 @@
       "certifications": "Certificeringen",
       "achievements": "Prestaties",
       "references": "Referenties",
-      "customSections": "Aangepaste secties"
+      "customSections": "Aangepaste secties",
+      "languages": "Talen"
     },
     "navigation": {
       "previous": "Vorige",
@@ -1555,7 +1659,11 @@
     "actions": {
       "downloadPdf": "Download PDF",
       "generatingPdf": "PDF genereren...",
-      "close": "Voorbeeld Sluiten"
+      "close": "Voorbeeld Sluiten",
+      "downloadDocx": "Word downloaden (DOCX)",
+      "generatingDocx": "DOCX genereren...",
+      "downloadDocxShort": "Word",
+      "generatingDocxShort": "DOCX..."
     },
     "keyboard": {
       "escToClose": "om te sluiten"

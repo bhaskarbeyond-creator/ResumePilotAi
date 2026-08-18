@@ -129,7 +129,11 @@
     "phone": "Telefon",
     "email": "E-mail",
     "languages": "Języki",
-    "skills": "Umiejętności"
+    "skills": "Umiejętności",
+    "projects": "Projekty",
+    "certifications": "Certyfikaty",
+    "achievements": "Osiągnięcia",
+    "references": "Referencje"
   },
   "Language": {
     "elemntary": "Podstawowy",
@@ -193,7 +197,8 @@
     "passChangedDesc": "Hasło zostało zmienione",
     "passError": "Hasło za krótkie",
     "passErrorDesc": "Hasło musi mieć co najmniej 6 znaków",
-    "profile": "Profil"
+    "profile": "Profil",
+    "saveChanges": "Zapisz zmiany"
   },
   "static": {
     "plansHeader": "Proste, przejrzyste ceny",
@@ -577,7 +582,9 @@
       "paypal": "paypal",
       "applepay": "applepay",
       "googlepay": "googlepay",
-      "discover": "discover"
+      "discover": "discover",
+      "amex": "American Express",
+      "jcb": "JCB"
     },
     "legal": {
       "privacyPolicy": "Polityka prywatności",
@@ -668,7 +675,8 @@
     "menu": {
       "dashboard": "Panel",
       "interviews": "Rozmowy kwalifikacyjne",
-      "settings": "Ustawienia"
+      "settings": "Ustawienia",
+      "portfolios": "Portfolio"
     }
   },
   "DashboardHomepage": {
@@ -685,7 +693,8 @@
       "editResume": "Edytuj CV",
       "shareResume": "Udostępnij CV",
       "delete": "Usuń",
-      "createNewDocument": "Utwórz nowy dokument"
+      "createNewDocument": "Utwórz nowy dokument",
+      "deleteResume": "Usuń CV"
     },
     "promotion": {
       "title": "Gotowy, aby dać impuls swojej karierze i zyskać większą widoczność?",
@@ -709,7 +718,37 @@
       "page": "Strona",
       "of": "z"
     },
-    "confirmDelete": "Czy na pewno chcesz usunąć to CV? Tej operacji nie można cofnąć."
+    "confirmDelete": "Czy na pewno chcesz usunąć to CV? Tej operacji nie można cofnąć.",
+    "completed": "ukończono",
+    "title": "Moje dokumenty",
+    "subtitle": "Zarządzaj CV i listami motywacyjnymi",
+    "stats": {
+      "totalDocuments": "Łącznie dokumentów",
+      "recentActivity": "Ostatnia aktywność",
+      "profileViews": "Wyświetlenia profilu",
+      "downloads": "Pobrania",
+      "today": "Dzisiaj",
+      "documentsCount": "dokumenty"
+    },
+    "onboarding": {
+      "welcomeMessage": "Witamy! Zaczynamy",
+      "completionMessage": "Wykonaj poniższe kroki, aby skonfigurować profil",
+      "steps": {
+        "createResume": {
+          "title": "Utwórz pierwsze CV",
+          "description": "Twórz lub edytuj CV w naszym kreatorze, korzystając z ponad 20 szablonów i AI dopasowującej treść do konkretnych ofert."
+        }
+      }
+    },
+    "tips": {
+      "sectionTitle": "Szybkie wskazówki",
+      "keepUpdated": "Aktualizuj regularnie",
+      "updatedDescription": "Regularne aktualizacje poprawiają widoczność profilu",
+      "tailor": "Dopasuj do ofert",
+      "tailorDescription": "Dostosuj CV do każdego zgłoszenia",
+      "organize": "Zachowaj porządek",
+      "organizeDescription": "Używaj czytelnych nazw dokumentów"
+    }
   },
   "DashboardSettings": {
     "pageTitle": "Ustawienia",
@@ -847,15 +886,72 @@
         "cardholderName": "Imię i nazwisko właściciela karty",
         "address": "Adres rozliczeniowy",
         "country": "Kraj",
-        "postalCode": "Kod pocztowy"
+        "postalCode": "Kod pocztowy",
+        "description": "Dane płatności są szyfrowane i bezpieczne.",
+        "nameLabel": "Imię i nazwisko posiadacza karty *",
+        "namePlaceholder": "Wpisz imię i nazwisko z karty",
+        "addressLabel": "Adres rozliczeniowy *",
+        "addressPlaceholder": "Wpisz adres rozliczeniowy",
+        "detailsLabel": "Dane karty *",
+        "backButton": "Wróć do płatności",
+        "completeButton": "Dokończ płatność",
+        "processing": "Przetwarzanie..."
       },
       "success": {
         "title": "Płatność zakończona pomyślnie!",
         "subtitle": "Twoja subskrypcja została aktywowana",
         "message": "Dziękujemy za zakup. Masz teraz pełny dostęp do wszystkich funkcji premium.",
-        "button": "Przejdź do panelu"
+        "button": "Przejdź do panelu",
+        "emailNotice": "Wkrótce otrzymasz e-mail z potwierdzeniem, paragonem i szczegółami subskrypcji.",
+        "activeMessage": "Twoja subskrypcja jest już aktywna",
+        "continueButton": "Przejdź do panelu"
       },
-      "or": "LUB"
+      "or": "LUB",
+      "secureCheckout": "Bezpieczna płatność przez Stripe i PayPal",
+      "steps": {
+        "billingInfo": "Dane rozliczeniowe",
+        "paymentMethod": "Metoda płatności",
+        "cardDetails": "Dane karty",
+        "confirmation": "Potwierdzenie"
+      },
+      "orderSummary": {
+        "title": "Podsumowanie zamówienia",
+        "plan": "Plan",
+        "billingCycle": "Okres rozliczeniowy",
+        "subtotal": "Suma częściowa",
+        "tax": "Podatek",
+        "taxCalculated": "Obliczane przy płatności",
+        "total": "Razem",
+        "whatsIncluded": "Co jest wliczone:",
+        "weAccept": "Akceptujemy:"
+      },
+      "security": {
+        "sslSecured": "Zabezpieczone SSL",
+        "encryption": "Szyfrowanie 256-bitowe",
+        "pciCompliant": "Zgodność z PCI",
+        "moneyBack": "30-dniowa gwarancja zwrotu pieniędzy",
+        "support": "Całodobowa pomoc",
+        "cancelAnytime": "Anuluj w dowolnym momencie",
+        "securePaymentInfo": "Twoja płatność jest bezpieczna",
+        "securePaymentDescription": "Chronimy dane karty standardowym szyfrowaniem branżowym. Nie przechowujemy ich na naszych serwerach."
+      },
+      "billingForm": {
+        "title": "Dane rozliczeniowe",
+        "description": "Potrzebujemy tych danych, aby przetworzyć płatność i wysłać potwierdzenia.",
+        "countryLabel": "Kraj/region *",
+        "countryPlaceholder": "Wybierz kraj",
+        "postalLabel": "Kod pocztowy *",
+        "continueButton": "Przejdź do metody płatności"
+      },
+      "paymentMethod": {
+        "title": "Wybierz metodę płatności",
+        "description": "Wybierz, jak chcesz opłacić subskrypcję.",
+        "cardTitle": "Karta kredytowa lub debetowa",
+        "cardDescription": "Visa, Mastercard, American Express",
+        "paypalTitle": "PayPal",
+        "paypalDescription": "Zapłać bezpiecznie kontem PayPal",
+        "backButton": "Wróć do rozliczenia"
+      }
     },
     "success": {
       "title": "Płatność zakończona pomyślnie!",
@@ -866,7 +962,14 @@
     "error": {
       "payment": "Płatność nie powiodła się. Spróbuj ponownie.",
       "login": "Proszę zalogować się, aby zakończyć płatność.",
-      "general": "Coś poszło nie tak. Spróbuj ponownie."
+      "general": "Coś poszło nie tak. Spróbuj ponownie.",
+      "paypal": "Płatność PayPal nie powiodła się. Spróbuj ponownie."
+    },
+    "paypal": {
+      "title": "Płatność PayPal",
+      "description": "Dokończ płatność bezpiecznie przez PayPal.",
+      "secureTitle": "Bezpieczna płatność PayPal",
+      "secureDescription": "Zostaniesz przekierowany do PayPal, aby bezpiecznie dokończyć płatność."
     }
   },
   "DashboardInterviews": {
@@ -1012,7 +1115,8 @@
       "certifications": "Certyfikaty",
       "achievements": "Osiągnięcia",
       "references": "Referencje",
-      "customSections": "Własne sekcje"
+      "customSections": "Własne sekcje",
+      "languages": "Języki"
     },
     "navigation": {
       "previous": "Poprzedni",
@@ -1555,7 +1659,11 @@
     "actions": {
       "downloadPdf": "Pobierz PDF",
       "generatingPdf": "Generowanie PDF...",
-      "close": "Zamknij podgląd"
+      "close": "Zamknij podgląd",
+      "downloadDocx": "Pobierz Word (DOCX)",
+      "generatingDocx": "Generowanie DOCX...",
+      "downloadDocxShort": "Word",
+      "generatingDocxShort": "DOCX..."
     },
     "keyboard": {
       "escToClose": "aby zamknąć"

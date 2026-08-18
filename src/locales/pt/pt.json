@@ -129,7 +129,11 @@
     "phone": "Telefone",
     "email": "E-mail",
     "languages": "Idiomas",
-    "skills": "Competências"
+    "skills": "Competências",
+    "projects": "Projetos",
+    "certifications": "Certificações",
+    "achievements": "Conquistas",
+    "references": "Referências"
   },
   "Language": {
     "elemntary": "Elementar",
@@ -193,7 +197,8 @@
     "passChangedDesc": "Palavra-passe alterada com sucesso",
     "passError": "Palavra-passe muito curta",
     "passErrorDesc": "A palavra-passe deve ter pelo menos 6 caracteres",
-    "profile": "Perfil"
+    "profile": "Perfil",
+    "saveChanges": "Salvar alterações"
   },
   "static": {
     "plansHeader": "Preços Simples e Transparentes",
@@ -577,7 +582,9 @@
       "paypal": "paypal",
       "applepay": "applepay",
       "googlepay": "googlepay",
-      "discover": "discover"
+      "discover": "discover",
+      "amex": "American Express",
+      "jcb": "JCB"
     },
     "legal": {
       "privacyPolicy": "Política de Privacidade",
@@ -668,7 +675,8 @@
     "menu": {
       "dashboard": "Painel",
       "interviews": "Entrevistas",
-      "settings": "Definições"
+      "settings": "Definições",
+      "portfolios": "Portfólios"
     }
   },
   "DashboardHomepage": {
@@ -685,7 +693,8 @@
       "editResume": "Editar Currículo",
       "shareResume": "Partilhar Currículo",
       "delete": "Eliminar",
-      "createNewDocument": "Criar Novo Documento"
+      "createNewDocument": "Criar Novo Documento",
+      "deleteResume": "Excluir currículo"
     },
     "promotion": {
       "title": "Pronto para dar um impulso à sua procura de emprego e obter mais exposição?",
@@ -709,7 +718,37 @@
       "page": "Página",
       "of": "de"
     },
-    "confirmDelete": "Tem a certeza de que deseja eliminar este currículo? Esta ação não pode ser desfeita."
+    "confirmDelete": "Tem a certeza de que deseja eliminar este currículo? Esta ação não pode ser desfeita.",
+    "completed": "concluído",
+    "title": "Meus documentos",
+    "subtitle": "Gerencie seus currículos e cartas de apresentação",
+    "stats": {
+      "totalDocuments": "Total de documentos",
+      "recentActivity": "Atividade recente",
+      "profileViews": "Visualizações do perfil",
+      "downloads": "Downloads",
+      "today": "Hoje",
+      "documentsCount": "documentos"
+    },
+    "onboarding": {
+      "welcomeMessage": "Bem-vindo! Vamos começar",
+      "completionMessage": "Conclua as etapas abaixo para configurar seu perfil",
+      "steps": {
+        "createResume": {
+          "title": "Crie seu primeiro currículo",
+          "description": "Crie ou edite currículos com nosso editor, mais de 20 modelos e IA para adaptá-los a vagas específicas."
+        }
+      }
+    },
+    "tips": {
+      "sectionTitle": "Dicas rápidas",
+      "keepUpdated": "Mantenha atualizado",
+      "updatedDescription": "Atualizações regulares melhoram a visibilidade do perfil",
+      "tailor": "Adapte às vagas",
+      "tailorDescription": "Personalize o currículo para cada candidatura",
+      "organize": "Mantenha-se organizado",
+      "organizeDescription": "Use nomes claros para seus documentos"
+    }
   },
   "DashboardSettings": {
     "pageTitle": "Definições",
@@ -847,15 +886,72 @@
         "cardholderName": "Nome do Titular do Cartão",
         "address": "Endereço de Faturação",
         "country": "País",
-        "postalCode": "Código Postal"
+        "postalCode": "Código Postal",
+        "description": "Suas informações de pagamento estão criptografadas e seguras.",
+        "nameLabel": "Nome do titular *",
+        "namePlaceholder": "Digite o nome impresso no cartão",
+        "addressLabel": "Endereço de cobrança *",
+        "addressPlaceholder": "Digite seu endereço de cobrança",
+        "detailsLabel": "Dados do cartão *",
+        "backButton": "Voltar ao pagamento",
+        "completeButton": "Concluir pagamento",
+        "processing": "Processando..."
       },
       "success": {
         "title": "Pagamento com Sucesso!",
         "subtitle": "A sua subscrição foi ativada",
         "message": "Obrigado pela sua compra. Tem agora acesso total a todas as funcionalidades premium.",
-        "button": "Continuar para o Painel"
+        "button": "Continuar para o Painel",
+        "emailNotice": "Você receberá em breve um e-mail de confirmação com o recibo e os detalhes da assinatura.",
+        "activeMessage": "Sua assinatura agora está ativa",
+        "continueButton": "Continuar para o painel"
       },
-      "or": "OU"
+      "or": "OU",
+      "secureCheckout": "Checkout seguro com Stripe e PayPal",
+      "steps": {
+        "billingInfo": "Informações de cobrança",
+        "paymentMethod": "Método de pagamento",
+        "cardDetails": "Dados do cartão",
+        "confirmation": "Confirmação"
+      },
+      "orderSummary": {
+        "title": "Resumo do pedido",
+        "plan": "Plano",
+        "billingCycle": "Ciclo de cobrança",
+        "subtotal": "Subtotal",
+        "tax": "Imposto",
+        "taxCalculated": "Calculado no checkout",
+        "total": "Total",
+        "whatsIncluded": "O que está incluído:",
+        "weAccept": "Aceitamos:"
+      },
+      "security": {
+        "sslSecured": "Protegido por SSL",
+        "encryption": "Criptografia de 256 bits",
+        "pciCompliant": "Compatível com PCI",
+        "moneyBack": "Garantia de reembolso de 30 dias",
+        "support": "Suporte ao cliente 24/7",
+        "cancelAnytime": "Cancele quando quiser",
+        "securePaymentInfo": "Seu pagamento é seguro",
+        "securePaymentDescription": "Usamos criptografia padrão do setor para proteger os dados do cartão. Seus dados nunca são armazenados em nossos servidores."
+      },
+      "billingForm": {
+        "title": "Informações de cobrança",
+        "description": "Precisamos dessas informações para processar o pagamento e enviar os recibos.",
+        "countryLabel": "País/região *",
+        "countryPlaceholder": "Selecione seu país",
+        "postalLabel": "Código postal *",
+        "continueButton": "Continuar para o método de pagamento"
+      },
+      "paymentMethod": {
+        "title": "Escolha o método de pagamento",
+        "description": "Selecione como deseja pagar sua assinatura.",
+        "cardTitle": "Cartão de crédito ou débito",
+        "cardDescription": "Visa, Mastercard, American Express",
+        "paypalTitle": "PayPal",
+        "paypalDescription": "Pague com segurança com sua conta PayPal",
+        "backButton": "Voltar à cobrança"
+      }
     },
     "success": {
       "title": "Pagamento com Sucesso!",
@@ -866,7 +962,14 @@
     "error": {
       "payment": "Pagamento falhou. Por favor, tente novamente.",
       "login": "Por favor, inicie sessão para completar o pagamento.",
-      "general": "Algo correu mal. Por favor, tente novamente."
+      "general": "Algo correu mal. Por favor, tente novamente.",
+      "paypal": "O pagamento do PayPal falhou. Tente novamente."
+    },
+    "paypal": {
+      "title": "Pagamento PayPal",
+      "description": "Conclua seu pagamento com segurança pelo PayPal.",
+      "secureTitle": "Pagamento PayPal seguro",
+      "secureDescription": "Você será redirecionado ao PayPal para concluir o pagamento com segurança."
     }
   },
   "DashboardInterviews": {
@@ -1012,7 +1115,8 @@
       "certifications": "Certificações",
       "achievements": "Conquistas",
       "references": "Referências",
-      "customSections": "Secções personalizadas"
+      "customSections": "Secções personalizadas",
+      "languages": "Idiomas"
     },
     "navigation": {
       "previous": "Anterior",
@@ -1555,7 +1659,11 @@
     "actions": {
       "downloadPdf": "Baixar PDF",
       "generatingPdf": "Gerando PDF...",
-      "close": "Fechar visualização"
+      "close": "Fechar visualização",
+      "downloadDocx": "Baixar Word (DOCX)",
+      "generatingDocx": "Gerando DOCX...",
+      "downloadDocxShort": "Word",
+      "generatingDocxShort": "DOCX..."
     },
     "keyboard": {
       "escToClose": "para fechar"

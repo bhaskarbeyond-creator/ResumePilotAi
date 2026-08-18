@@ -74,6 +74,7 @@ class DashboardHomepage extends Component {
       hasDocuments: false,
       documentsError: null,
       enableImportModule: false,
+      enableCoverLetterModule: true,
       pagination: {
         totalItems: 0,
         totalPages: 0,
@@ -285,7 +286,14 @@ class DashboardHomepage extends Component {
       const enabled = settings?.modules?.enableImportModule !== undefined
         ? settings.modules.enableImportModule === true
         : settings?.ai?.enableImportModule === true;
-      this.setState({ enableImportModule: enabled });
+      const coverEnabled = settings?.modules?.enableCoverLetterModule !== undefined
+        ? settings.modules.enableCoverLetterModule === true
+        : true;
+      this.setState((prev) => ({
+        enableImportModule: enabled,
+        enableCoverLetterModule: coverEnabled,
+        activeTab: !coverEnabled && prev.activeTab === 'cover-letters' ? 'all' : prev.activeTab,
+      }));
     }).catch(() => {
       this.setState({ enableImportModule: false });
     });
@@ -847,6 +855,7 @@ class DashboardHomepage extends Component {
                   <span className="sm:hidden">New Resume</span>
                 </button>
 
+                {this.state.enableCoverLetterModule && (
                 <button 
                   className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-4 py-2.5 rounded-md flex items-center gap-2 transition-colors text-sm font-medium"
                   onClick={() => this.props.navigate("/dashboard/cover-letters")}
@@ -855,6 +864,7 @@ class DashboardHomepage extends Component {
                   <span className="hidden sm:inline">New Cover Letter</span>
                   <span className="sm:hidden">Cover Letter</span>
                 </button>
+                )}
 
                 {this.state.enableImportModule && (
                   <button 
@@ -880,7 +890,9 @@ class DashboardHomepage extends Component {
           <div className="flex items-center justify-between mb-6 pb-2 border-b border-slate-200 gap-2 overflow-x-auto">
             <div className="flex items-center gap-1.5">
               <button onClick={() => this.setState({ activeTab: 'all' })} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${this.state.activeTab === 'all' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>All Resumes ({this.state.fetchedDocuments?.length || 0})</button>
+              {this.state.enableCoverLetterModule && (
               <button onClick={() => this.setState({ activeTab: 'cover-letters' })} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${this.state.activeTab === 'cover-letters' ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'}`}>Cover Letters ({this.state.savedCoverLetters?.length || 0})</button>
+              )}
               <button onClick={() => this.setState({ activeTab: 'tech' })} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${this.state.activeTab === 'tech' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Tech & Engineering</button>
               <button onClick={() => this.setState({ activeTab: 'mgmt' })} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${this.state.activeTab === 'mgmt' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Management</button>
             </div>
@@ -992,7 +1004,7 @@ class DashboardHomepage extends Component {
             )}
 
             {/* Cover Letters View */}
-            {this.state.activeTab === 'cover-letters' && (
+            {this.state.enableCoverLetterModule && this.state.activeTab === 'cover-letters' && (
               <div className="col-span-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {(!this.state.savedCoverLetters || this.state.savedCoverLetters.length === 0) ? (
                   <div className="col-span-full p-8 text-center bg-slate-50 border border-dashed border-slate-300 rounded-xl">

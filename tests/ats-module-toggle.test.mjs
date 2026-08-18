@@ -163,3 +163,27 @@ test('coupon toggle writes only its own flag so backend merge keeps ATS OFF', ()
   assert.match(subscriptions, /saveSystemSettings\('modules', \{ enableCouponsModule: nextState \}\)/);
   assert.doesNotMatch(subscriptions, /updatedMods = \{ \.\.\.mods, enableCouponsModule/);
 });
+
+test('Cover Letter ATS UI is fail-closed on the same enableAtsScoreModule flag', () => {
+  const cover = fs.readFileSync('src/components/CoverLetter/CoverLetter.jsx', 'utf8');
+  assert.match(cover, /resolveAtsScoreVisibility/);
+  assert.match(cover, /isAtsEnabled: null/);
+  assert.match(cover, /setState\(\{ isAtsEnabled: false \}\)/);
+  assert.match(cover, /isAtsEnabled === true/);
+  assert.match(cover, /public_config/);
+  assert.match(cover, /onSnapshot/);
+  assert.match(cover, /allowMissingDefault: false/);
+  assert.match(cover, /handleCopyFormattedText = async/);
+  assert.doesNotMatch(cover, /score: 95/);
+  assert.match(cover, /Target Job Description \(Optional\)/);
+});
+
+test('Cover Letter module nav is hidden when enableCoverLetterModule is off', () => {
+  const profile = fs.readFileSync('src/components/Dashboard/ProfileDisplay/ProfileDisplay.jsx', 'utf8');
+  assert.match(profile, /enableCoverLetterModule/);
+  assert.match(profile, /modulesConfig\.enableCoverLetterModule &&/);
+  assert.match(profile, /to=\"\/dashboard\/cover-letters\"/);
+  const homepage = fs.readFileSync('src/components/Dashboard/DashboardHomepage/DashboardHomepage.jsx', 'utf8');
+  assert.match(homepage, /enableCoverLetterModule/);
+  assert.match(homepage, /this\.state\.enableCoverLetterModule &&/);
+});

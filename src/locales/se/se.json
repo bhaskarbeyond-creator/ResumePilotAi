@@ -129,7 +129,11 @@
     "phone": "Telefon",
     "email": "E-post",
     "languages": "Språk",
-    "skills": "Färdigheter"
+    "skills": "Färdigheter",
+    "projects": "Projekt",
+    "certifications": "Certifieringar",
+    "achievements": "Prestationer",
+    "references": "Referenser"
   },
   "Language": {
     "elemntary": "Grundläggande",
@@ -193,7 +197,8 @@
     "passChangedDesc": "Lösenordet ändrat",
     "passError": "Lösenordet är för kort",
     "passErrorDesc": "Lösenordet måste vara minst 6 tecken långt",
-    "profile": "Profil"
+    "profile": "Profil",
+    "saveChanges": "Spara ändringar"
   },
   "static": {
     "plansHeader": "Enkla, transparenta priser",
@@ -577,7 +582,9 @@
       "paypal": "paypal",
       "applepay": "applepay",
       "googlepay": "googlepay",
-      "discover": "discover"
+      "discover": "discover",
+      "amex": "American Express",
+      "jcb": "JCB"
     },
     "legal": {
       "privacyPolicy": "Integritetspolicy",
@@ -668,7 +675,8 @@
     "menu": {
       "dashboard": "Kontrollpanel",
       "interviews": "Intervjuer",
-      "settings": "Inställningar"
+      "settings": "Inställningar",
+      "portfolios": "Portfolio"
     }
   },
   "DashboardHomepage": {
@@ -685,7 +693,8 @@
       "editResume": "Redigera CV",
       "shareResume": "Dela CV",
       "delete": "Ta bort",
-      "createNewDocument": "Skapa nytt dokument"
+      "createNewDocument": "Skapa nytt dokument",
+      "deleteResume": "Ta bort CV"
     },
     "promotion": {
       "title": "Är du redo att ge din jobbjakt en skjuts och få mer uppmärksamhet?",
@@ -709,7 +718,37 @@
       "page": "Sida",
       "of": "av"
     },
-    "confirmDelete": "Är du säker på att du vill radera detta CV? Den här åtgärden kan inte ångras."
+    "confirmDelete": "Är du säker på att du vill radera detta CV? Den här åtgärden kan inte ångras.",
+    "completed": "slutfört",
+    "title": "Mina dokument",
+    "subtitle": "Hantera dina CV och personliga brev",
+    "stats": {
+      "totalDocuments": "Dokument totalt",
+      "recentActivity": "Senaste aktivitet",
+      "profileViews": "Profilvisningar",
+      "downloads": "Nedladdningar",
+      "today": "I dag",
+      "documentsCount": "dokument"
+    },
+    "onboarding": {
+      "welcomeMessage": "Välkommen! Nu sätter vi igång",
+      "completionMessage": "Slutför stegen nedan för att konfigurera din profil",
+      "steps": {
+        "createResume": {
+          "title": "Skapa ditt första CV",
+          "description": "Skapa eller redigera CV:n med vår editor, 20+ mallar och AI för att anpassa dem till specifika jobb."
+        }
+      }
+    },
+    "tips": {
+      "sectionTitle": "Snabbtips",
+      "keepUpdated": "Håll det uppdaterat",
+      "updatedDescription": "Regelbundna uppdateringar förbättrar profilens synlighet",
+      "tailor": "Anpassa till jobb",
+      "tailorDescription": "Skräddarsy CV:t för varje ansökan",
+      "organize": "Håll ordning",
+      "organizeDescription": "Använd tydliga namn på dokumenten"
+    }
   },
   "DashboardSettings": {
     "pageTitle": "Inställningar",
@@ -847,15 +886,72 @@
         "cardholderName": "Kortinnehavarens namn",
         "address": "Faktureringsadress",
         "country": "Land",
-        "postalCode": "Postnummer"
+        "postalCode": "Postnummer",
+        "description": "Din betalningsinformation är krypterad och säker.",
+        "nameLabel": "Kortinnehavarens namn *",
+        "namePlaceholder": "Ange namnet på kortet",
+        "addressLabel": "Faktureringsadress *",
+        "addressPlaceholder": "Ange din faktureringsadress",
+        "detailsLabel": "Kortuppgifter *",
+        "backButton": "Tillbaka till betalning",
+        "completeButton": "Slutför betalning",
+        "processing": "Bearbetar..."
       },
       "success": {
         "title": "Betalning lyckades!",
         "subtitle": "Din prenumeration har aktiverats",
         "message": "Tack för ditt köp. Du har nu full tillgång till alla premiumfunktioner.",
-        "button": "Fortsätt till kontrollpanelen"
+        "button": "Fortsätt till kontrollpanelen",
+        "emailNotice": "Du får snart ett bekräftelsemejl med kvitto och prenumerationsuppgifter.",
+        "activeMessage": "Din prenumeration är nu aktiv",
+        "continueButton": "Fortsätt till instrumentpanelen"
       },
-      "or": "ELLER"
+      "or": "ELLER",
+      "secureCheckout": "Säker betalning via Stripe och PayPal",
+      "steps": {
+        "billingInfo": "Faktureringsuppgifter",
+        "paymentMethod": "Betalningsmetod",
+        "cardDetails": "Kortuppgifter",
+        "confirmation": "Bekräftelse"
+      },
+      "orderSummary": {
+        "title": "Ordersammanfattning",
+        "plan": "Plan",
+        "billingCycle": "Faktureringsperiod",
+        "subtotal": "Delsumma",
+        "tax": "Skatt",
+        "taxCalculated": "Beräknas i kassan",
+        "total": "Totalt",
+        "whatsIncluded": "Vad som ingår:",
+        "weAccept": "Vi accepterar:"
+      },
+      "security": {
+        "sslSecured": "SSL-skyddad",
+        "encryption": "256-bitars kryptering",
+        "pciCompliant": "PCI-kompatibel",
+        "moneyBack": "30 dagars pengarna-tillbaka-garanti",
+        "support": "Kundsupport dygnet runt",
+        "cancelAnytime": "Avsluta när som helst",
+        "securePaymentInfo": "Din betalning är säker",
+        "securePaymentDescription": "Vi använder branschstandardkryptering för att skydda dina kortuppgifter. Dina data lagras aldrig på våra servrar."
+      },
+      "billingForm": {
+        "title": "Faktureringsuppgifter",
+        "description": "Vi behöver dessa uppgifter för att behandla betalningen och skicka kvitton.",
+        "countryLabel": "Land/region *",
+        "countryPlaceholder": "Välj ditt land",
+        "postalLabel": "Postnummer *",
+        "continueButton": "Fortsätt till betalningsmetod"
+      },
+      "paymentMethod": {
+        "title": "Välj betalningsmetod",
+        "description": "Välj hur du vill betala din prenumeration.",
+        "cardTitle": "Kredit- eller betalkort",
+        "cardDescription": "Visa, Mastercard, American Express",
+        "paypalTitle": "PayPal",
+        "paypalDescription": "Betala säkert med ditt PayPal-konto",
+        "backButton": "Tillbaka till fakturering"
+      }
     },
     "success": {
       "title": "Betalning lyckades!",
@@ -866,7 +962,14 @@
     "error": {
       "payment": "Betalning misslyckades. Försök igen.",
       "login": "Vänligen logga in för att slutföra betalningen.",
-      "general": "Något gick fel. Försök igen."
+      "general": "Något gick fel. Försök igen.",
+      "paypal": "PayPal-betalningen misslyckades. Försök igen."
+    },
+    "paypal": {
+      "title": "PayPal-betalning",
+      "description": "Slutför din betalning säkert med PayPal.",
+      "secureTitle": "Säker PayPal-betalning",
+      "secureDescription": "Du omdirigeras till PayPal för att slutföra betalningen säkert."
     }
   },
   "DashboardInterviews": {
@@ -1012,7 +1115,8 @@
       "certifications": "Certifieringar",
       "achievements": "Prestationer",
       "references": "Referenser",
-      "customSections": "Egna avsnitt"
+      "customSections": "Egna avsnitt",
+      "languages": "Språk"
     },
     "navigation": {
       "previous": "Föregående",
@@ -1555,7 +1659,11 @@
     "actions": {
       "downloadPdf": "Ladda Ner PDF",
       "generatingPdf": "Genererar PDF...",
-      "close": "Stäng förhandsgranskning"
+      "close": "Stäng förhandsgranskning",
+      "downloadDocx": "Ladda ner Word (DOCX)",
+      "generatingDocx": "Genererar DOCX...",
+      "downloadDocxShort": "Word",
+      "generatingDocxShort": "DOCX..."
     },
     "keyboard": {
       "escToClose": "för att stänga"

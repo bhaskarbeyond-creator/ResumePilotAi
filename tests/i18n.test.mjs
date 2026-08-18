@@ -27,14 +27,14 @@ for (const code of languageCodes) {
   resources[code] = JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
-test('configured locale inventory is complete and every locale is valid JSON with broad English coverage', () => {
+test('configured locale inventory is complete and every locale is valid JSON with full English coverage', () => {
   assert.deepEqual(languageCodes, expectedCodes);
   const english = flatten(resources.en);
   assert.ok(Object.keys(english).length > 1700);
   for (const code of languageCodes) {
     const locale = flatten(resources[code]);
-    const coverage = Object.keys(english).filter((key) => Object.hasOwn(locale, key)).length / Object.keys(english).length;
-    assert.ok(coverage >= 0.95, `${code} translation coverage fell to ${(coverage * 100).toFixed(1)}%`);
+    const missing = Object.keys(english).filter((key) => !Object.hasOwn(locale, key));
+    assert.deepEqual(missing, [], `${code} missing ${missing.length} English keys: ${missing.slice(0, 12).join(', ')}`);
   }
 });
 
@@ -64,7 +64,8 @@ test('i18next falls back to English and interpolates without exposing raw tokens
     returnEmptyString: false,
     interpolation: { escapeValue: false },
   });
-  assert.equal(instance.t('DashboardHomepage.title'), resources.en.DashboardHomepage.title);
+  resources.en.__fallbackProbe = 'English fallback value';
+  assert.equal(instance.t('__fallbackProbe'), 'English fallback value');
   const interpolated = instance.t('BuildResume.progress.step', { current: 2, total: 8 });
   assert.match(interpolated, /2/);
   assert.match(interpolated, /8/);

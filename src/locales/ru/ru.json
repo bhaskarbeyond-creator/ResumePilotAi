@@ -129,7 +129,11 @@
     "phone": "Телефон",
     "email": "E-mail",
     "languages": "Языки",
-    "skills": "Навыки"
+    "skills": "Навыки",
+    "projects": "Проекты",
+    "certifications": "Сертификаты",
+    "achievements": "Достижения",
+    "references": "Рекомендации"
   },
   "Language": {
     "elemntary": "Начальный",
@@ -193,7 +197,8 @@
     "passChangedDesc": "Пароль успешно изменен",
     "passError": "Пароль слишком короткий",
     "passErrorDesc": "Пароль должен содержать не менее 6 символов",
-    "profile": "Профиль"
+    "profile": "Профиль",
+    "saveChanges": "Сохранить изменения"
   },
   "static": {
     "plansHeader": "Простые, прозрачные цены",
@@ -577,7 +582,9 @@
       "paypal": "paypal",
       "applepay": "applepay",
       "googlepay": "googlepay",
-      "discover": "discover"
+      "discover": "discover",
+      "amex": "American Express",
+      "jcb": "JCB"
     },
     "legal": {
       "privacyPolicy": "Политика конфиденциальности",
@@ -668,7 +675,8 @@
     "menu": {
       "dashboard": "Панель управления",
       "interviews": "Собеседования",
-      "settings": "Настройки"
+      "settings": "Настройки",
+      "portfolios": "Портфолио"
     }
   },
   "DashboardHomepage": {
@@ -685,7 +693,8 @@
       "editResume": "Редактировать резюме",
       "shareResume": "Поделиться резюме",
       "delete": "Удалить",
-      "createNewDocument": "Создать новый документ"
+      "createNewDocument": "Создать новый документ",
+      "deleteResume": "Удалить резюме"
     },
     "promotion": {
       "title": "Готовы дать толчок своему поиску работы и получить больше внимания?",
@@ -709,7 +718,37 @@
       "page": "Страница",
       "of": "из"
     },
-    "confirmDelete": "Вы уверены, что хотите удалить это резюме? Это действие нельзя отменить."
+    "confirmDelete": "Вы уверены, что хотите удалить это резюме? Это действие нельзя отменить.",
+    "completed": "завершено",
+    "title": "Мои документы",
+    "subtitle": "Управляйте резюме и сопроводительными письмами",
+    "stats": {
+      "totalDocuments": "Всего документов",
+      "recentActivity": "Недавняя активность",
+      "profileViews": "Просмотры профиля",
+      "downloads": "Загрузки",
+      "today": "Сегодня",
+      "documentsCount": "документы"
+    },
+    "onboarding": {
+      "welcomeMessage": "Добро пожаловать! Давайте начнём",
+      "completionMessage": "Выполните шаги ниже, чтобы настроить профиль",
+      "steps": {
+        "createResume": {
+          "title": "Создайте первое резюме",
+          "description": "Создавайте и редактируйте резюме в конструкторе: более 20 шаблонов и ИИ для адаптации под конкретные вакансии."
+        }
+      }
+    },
+    "tips": {
+      "sectionTitle": "Быстрые советы",
+      "keepUpdated": "Держите в актуальном состоянии",
+      "updatedDescription": "Регулярные обновления повышают видимость профиля",
+      "tailor": "Адаптируйте под вакансии",
+      "tailorDescription": "Настраивайте резюме под каждую заявку",
+      "organize": "Держите порядок",
+      "organizeDescription": "Используйте понятные названия документов"
+    }
   },
   "DashboardSettings": {
     "pageTitle": "Настройки",
@@ -847,15 +886,72 @@
         "cardholderName": "Имя держателя карты",
         "address": "Платежный адрес",
         "country": "Страна",
-        "postalCode": "Почтовый индекс"
+        "postalCode": "Почтовый индекс",
+        "description": "Платёжные данные зашифрованы и защищены.",
+        "nameLabel": "Имя владельца карты *",
+        "namePlaceholder": "Введите имя на карте",
+        "addressLabel": "Адрес для выставления счёта *",
+        "addressPlaceholder": "Введите платёжный адрес",
+        "detailsLabel": "Данные карты *",
+        "backButton": "Назад к оплате",
+        "completeButton": "Завершить оплату",
+        "processing": "Обработка..."
       },
       "success": {
         "title": "Оплата прошла успешно!",
         "subtitle": "Ваша подписка активирована",
         "message": "Спасибо за покупку. Теперь у вас есть полный доступ ко всем премиум-функциям.",
-        "button": "Продолжить на панель управления"
+        "button": "Продолжить на панель управления",
+        "emailNotice": "Скоро вы получите письмо с квитанцией и сведениями о подписке.",
+        "activeMessage": "Ваша подписка теперь активна",
+        "continueButton": "Перейти в панель"
       },
-      "or": "ИЛИ"
+      "or": "ИЛИ",
+      "secureCheckout": "Безопасная оплата через Stripe и PayPal",
+      "steps": {
+        "billingInfo": "Платёжные данные",
+        "paymentMethod": "Способ оплаты",
+        "cardDetails": "Данные карты",
+        "confirmation": "Подтверждение"
+      },
+      "orderSummary": {
+        "title": "Сводка заказа",
+        "plan": "Тариф",
+        "billingCycle": "Расчётный период",
+        "subtotal": "Промежуточный итог",
+        "tax": "Налог",
+        "taxCalculated": "Рассчитывается при оплате",
+        "total": "Итого",
+        "whatsIncluded": "Что включено:",
+        "weAccept": "Мы принимаем:"
+      },
+      "security": {
+        "sslSecured": "Защищено SSL",
+        "encryption": "256-битное шифрование",
+        "pciCompliant": "Соответствует PCI",
+        "moneyBack": "30-дневная гарантия возврата",
+        "support": "Поддержка 24/7",
+        "cancelAnytime": "Отмена в любое время",
+        "securePaymentInfo": "Ваш платёж защищён",
+        "securePaymentDescription": "Мы используем отраслевое шифрование для защиты данных карты. Они никогда не хранятся на наших серверах."
+      },
+      "billingForm": {
+        "title": "Платёжные данные",
+        "description": "Эти данные нужны, чтобы обработать платёж и отправить квитанции.",
+        "countryLabel": "Страна/регион *",
+        "countryPlaceholder": "Выберите страну",
+        "postalLabel": "Почтовый индекс *",
+        "continueButton": "Перейти к способу оплаты"
+      },
+      "paymentMethod": {
+        "title": "Выберите способ оплаты",
+        "description": "Выберите, как оплатить подписку.",
+        "cardTitle": "Кредитная или дебетовая карта",
+        "cardDescription": "Visa, Mastercard, American Express",
+        "paypalTitle": "PayPal",
+        "paypalDescription": "Оплатите безопасно через аккаунт PayPal",
+        "backButton": "Назад к платежным данным"
+      }
     },
     "success": {
       "title": "Оплата прошла успешно!",
@@ -866,7 +962,14 @@
     "error": {
       "payment": "Ошибка платежа. Пожалуйста, попробуйте еще раз.",
       "login": "Пожалуйста, войдите в систему для завершения платежа.",
-      "general": "Что-то пошло не так. Пожалуйста, попробуйте еще раз."
+      "general": "Что-то пошло не так. Пожалуйста, попробуйте еще раз.",
+      "paypal": "Платёж PayPal не выполнен. Попробуйте ещё раз."
+    },
+    "paypal": {
+      "title": "Оплата PayPal",
+      "description": "Завершите оплату безопасно через PayPal.",
+      "secureTitle": "Безопасная оплата PayPal",
+      "secureDescription": "Вы будете перенаправлены в PayPal, чтобы безопасно завершить оплату."
     }
   },
   "DashboardInterviews": {
@@ -1012,7 +1115,8 @@
       "certifications": "Сертификаты",
       "achievements": "Достижения",
       "references": "Рекомендации",
-      "customSections": "Свои разделы"
+      "customSections": "Свои разделы",
+      "languages": "Языки"
     },
     "navigation": {
       "previous": "Предыдущий",
@@ -1555,7 +1659,11 @@
     "actions": {
       "downloadPdf": "Скачать PDF",
       "generatingPdf": "Генерация PDF...",
-      "close": "Закрыть предпросмотр"
+      "close": "Закрыть предпросмотр",
+      "downloadDocx": "Скачать Word (DOCX)",
+      "generatingDocx": "Создание DOCX...",
+      "downloadDocxShort": "Word",
+      "generatingDocxShort": "DOCX..."
     },
     "keyboard": {
       "escToClose": "для закрытия"

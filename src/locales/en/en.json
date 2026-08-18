@@ -1694,7 +1694,9 @@
       "generatingPdf": "Generating PDF...",
       "downloadDocx": "Download Word (DOCX)",
       "generatingDocx": "Generating DOCX...",
-      "close": "Close preview"
+      "close": "Close preview",
+      "downloadDocxShort": "Word",
+      "generatingDocxShort": "DOCX..."
     },
     "keyboard": {
       "escToClose": "to close"
