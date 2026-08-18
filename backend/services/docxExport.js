@@ -1099,13 +1099,45 @@ function buildMinimalAtsDocument(resume, style) {
 }
 
 function buildTechGridDocument(resume, style) {
-  // PDF SmartResumeComposer renders tech-grid as a two-column split.
-  // Keep that architecture and add a compact developer identity in the sidebar.
-  return buildModernSplitDocument(resume, {
+  // Mirrors the PDF tech-grid archetype: a full-width left-bold technical
+  // identity band, then a two-column body (skills/certifications/languages rail
+  // beside the narrative). Previously this delegated to the modern-split
+  // builder, which placed the identity INSIDE the sidebar — the DOCX therefore
+  // no longer matches the PDF once tech-grid got its own composer branch.
+  const techStyle = {
     ...style,
     sidebarBg: style.sidebarBg || 'F8FAFC',
     sidebarWidth: style.sidebarWidth || 34,
+  };
+  const header = [
+    ...buildIdentityHeader(resume, techStyle, {
+      alignment: AlignmentType.LEFT,
+      nameColor: techStyle.primary,
+      roleColor: techStyle.secondary,
+      nameSize: 38,
+      roleSize: 20,
+    }),
+    ...buildContactBlock(resume, techStyle, {
+      inline: true,
+      alignment: AlignmentType.LEFT,
+      color: '475569',
+      linkColor: techStyle.secondary,
+      separator: '  •  ',
+    }),
+  ];
+  const certsInSidebar = certsBelongInSidebar(resume);
+  const sidebar = buildSidebarStack(resume, techStyle, {
+    includeIdentity: false,
+    includeHobbies: true,
+    includeCerts: certsInSidebar,
   });
+  const hero = buildHeroStack(resume, techStyle, { contentWidth: heroInnerWidth(techStyle) });
+  const bottom = buildBottomStack(resume, techStyle, { includeCerts: !certsInSidebar });
+  return [
+    ...header,
+    twoColumnTable(sidebar, hero, techStyle, techStyle.sidebarWidth),
+    ...bottom,
+  ];
 }
 
 function euroRow(leftNodes, rightNodes, leftWidth, rightWidth) {

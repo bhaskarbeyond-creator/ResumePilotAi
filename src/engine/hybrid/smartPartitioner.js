@@ -77,6 +77,10 @@ export function partitionResumeContent(values = {}, theme = {}) {
 
   const isSingleCol = theme.archetype === 'minimal-ats' || theme.archetype === 'compact-euro';
   const isBanner = theme.archetype === 'executive-banner';
+  // Tech-grid, like the executive banner, carries its identity in a full-width
+  // band above the columns — the sidebar therefore starts with skills, not the
+  // contact block, and page 1 loses the band's height.
+  const isTechGrid = theme.archetype === 'tech-grid';
   const hasSidebar = !isSingleCol;
 
   // The density scale changes both the body size and the leading, so the
@@ -93,7 +97,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
 
   // Sidebar height estimation
   const contactCount = [values.email, values.phone, values.city || values.address, values.website, values.linkedin, values.github].filter(Boolean).length;
-  const sidebarHeaderHeight = isBanner ? 0 : ((photo ? 80 : 0) + 50 + (contactCount * 20) + 20);
+  const sidebarHeaderHeight = (isBanner || isTechGrid) ? 0 : ((photo ? 80 : 0) + 50 + (contactCount * 20) + 20);
   
   const skillNameOf = (item) => (typeof item === 'string' ? item : (item?.name || item?.skillName || ''));
   /**
@@ -340,7 +344,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
   // Page 1 of a banner layout loses height to the full-width banner.
   // A ~5 % headroom absorbs residual estimator error (font metrics, wrapping)
   // so a page is never packed marginally past the sheet.
-  const P1_CAPACITY = isBanner ? 815 : 900;
+  const P1_CAPACITY = (isBanner || isTechGrid) ? 815 : 900;
   // Continuation pages carry only the slim continuation header + footer, so they
   // have more usable height than page 1.
   const PN_CAPACITY = 930;
