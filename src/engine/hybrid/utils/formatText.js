@@ -5,7 +5,7 @@
  * and typographic rhythm.
  */
 
-import { sanitizeRichText } from '../../../utils/sanitizeHtml';
+import { sanitizeRichText } from '../../../utils/sanitizeHtml.js';
 
 /**
  * Normalizes date ranges, eliminating duplicates like "2021 - Present - Present"
