@@ -66,6 +66,7 @@ export async function executeDocxDownload({
     firstname = '',
     lastname = '',
     userId = null,
+    colors = null,
     persistLatest = null,
 }) {
     if (!resumeId) {
@@ -84,6 +85,7 @@ export async function executeDocxDownload({
             language,
             resumeId,
             resumeName,
+            colors,
         },
         {
             responseType: 'blob',

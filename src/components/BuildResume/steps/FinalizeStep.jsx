@@ -110,6 +110,7 @@ const FinalizeStep = ({ resumeData, updateResumeData }) => {
                     language: resumeData.language || 'en',
                     firstname: resumeData?.firstname,
                     lastname: resumeData?.lastname,
+                    colors: resumeData?.colors || null,
                     userId,
                 });
             } else if (format === 'pdf') {

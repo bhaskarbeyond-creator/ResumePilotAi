@@ -766,6 +766,7 @@ const BuildResume = () => {
                 language: i18n.language,
                 firstname: previewData?.firstname,
                 lastname: previewData?.lastname,
+                colors: previewData?.colors || null,
                 userId,
             });
         } catch (error) {

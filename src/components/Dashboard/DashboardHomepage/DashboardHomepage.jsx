@@ -699,6 +699,7 @@ class DashboardHomepage extends Component {
         language,
         firstname: document.item?.firstname,
         lastname: document.item?.lastname,
+        colors: document.item?.colors || null,
         userId,
       });
 

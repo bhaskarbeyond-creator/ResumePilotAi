@@ -2917,7 +2917,14 @@ app.post('/api/export-docx', async (req, res) => {
     }
     const safeName = String(resumeName || resumeSnap.data()?.title || 'Resume').replace(/[^A-Za-z0-9 _-]/g, '').trim().slice(0, 80) || 'Resume';
     try {
-        const buffer = await createResumeDocx(resumeSnap.data() || {});
+        const stored = resumeSnap.data() || {};
+        const resumeData = {
+            ...stored,
+            template: req.body.resumeName || req.body.template || stored.template || stored.resumeName || 'Cv1',
+            resumeName: req.body.resumeName || stored.resumeName || stored.template || 'Cv1',
+            colors: req.body.colors || stored.colors || null
+        };
+        const buffer = await createResumeDocx(resumeData);
         res.setHeader('Cache-Control', 'no-store, private');
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
         res.setHeader('Content-Disposition', `attachment; filename="${safeName.replace(/\s+/g, '_')}.docx"`);

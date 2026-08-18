@@ -130,7 +130,7 @@ function parseRichTextToParagraphs(rawContent, style = {}, options = {}) {
 // --------------------------------------------------------------------------
 
 const THEMES = {
-  Cv1: { name: 'Metropolitan Navy', archetype: '2-column', primary: '1E40AF', secondary: '3B82F6', sidebarBg: 'F1F5F9', sidebarText: '334155', font: 'Calibri' },
+  Cv1: { name: 'Metropolitan Orange', archetype: '2-column', primary: 'EA580C', secondary: 'FB923C', sidebarBg: 'FFF7ED', sidebarText: '1E293B', font: 'Calibri' },
   Cv2: { name: 'Nordic Slate', archetype: '2-column', primary: '0F172A', secondary: '0EA5E9', sidebarBg: 'F1F5F9', sidebarText: '334155', font: 'Arial' },
   Cv3: { name: 'Emerald Executive', archetype: '2-column', primary: '065F46', secondary: '10B981', sidebarBg: 'F0FDF4', sidebarText: '166534', font: 'Calibri' },
   Cv4: { name: 'Harvard Classic ATS', archetype: '1-column', primary: '111827', secondary: '4B5563', font: 'Georgia' },
