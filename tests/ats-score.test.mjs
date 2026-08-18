@@ -425,7 +425,9 @@ test('BuildResume still mounts the meter on desktop and mobile without touching 
   assert.match(build, /<AtsScoreMeter resumeData=\{resumeData\} onNavigate=\{handleStepClick\} \/>/);
   assert.match(build, /setIsMobileMenuOpen\(false\)/);
   assert.match(build, /isAtsEnabled/);
-  assert.match(build, /enableAtsScoreModule/);
+  assert.match(build, /resolveAtsScoreVisibility/);
+  const flags = fs.readFileSync('src/utils/moduleFlags.js', 'utf8');
+  assert.match(flags, /enableAtsScoreModule/);
   assert.equal((build.match(/<AtsScoreMeter /g) || []).length, 2);
   assert.match(build, /import TemplateRenderer/);
   const meter = fs.readFileSync('src/components/BuildResume/AtsScoreMeter.jsx', 'utf8');

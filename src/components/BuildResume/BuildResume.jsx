@@ -29,6 +29,7 @@ import axios from 'axios';
 import download from 'downloadjs';
 import config from '../../conf/configuration';
 import { getJsonById, IncrementDownloads, addOneToNumberOfDocumentsDownloaded, getProfileOfUser, getSystemSettings } from '../../firestore/dbOperations';
+import { resolveAtsScoreVisibility } from '../../utils/moduleFlags';
 import { createResumeDraft, loadResumeDraft, saveResumeDraft, publishResume, unpublishResume, getResumePublication, writeResumeRecovery, readResumeRecovery, clearResumeRecovery } from '../../services/resumePersistence';
 import { EMPTY_RESUME, DEFAULT_SECTION_ORDER, normalizeResumeData, buildCanonicalResumeDocument } from '../../utils/resumeData';
 import { trackDownload, trackEvent, trackEngagement } from '../../utils/ga4';
@@ -58,7 +59,7 @@ const BuildResume = () => {
     const [showTemplateSelection, setShowTemplateSelection] = useState(false);
     const [showImportModal, setShowImportModal] = useState(false);
     const [isImportEnabled, setIsImportEnabled] = useState(false);
-    const [isAtsEnabled, setIsAtsEnabled] = useState(true);
+    const [isAtsEnabled, setIsAtsEnabled] = useState(null);
     const [currentTemplate, setCurrentTemplate] = useState('Cv1');
     const [isDownloading, setIsDownloading] = useState(false);
     const [isDownloadingDocx, setIsDownloadingDocx] = useState(false);
@@ -117,7 +118,7 @@ const BuildResume = () => {
 
     // Load module settings (Import Module, ATS Score Module, etc.)
     useEffect(() => {
-        const syncSettings = (settings) => {
+        const syncSettings = (settings, { allowMissingDefault = true } = {}) => {
             const importEnabled = settings?.modules?.enableImportModule !== undefined
                 ? settings.modules.enableImportModule === true
                 : settings?.ai?.enableImportModule === true;
@@ -126,24 +127,46 @@ const BuildResume = () => {
                 setShowImportModal(true);
             }
 
-            const atsEnabled = settings?.modules?.enableAtsScoreModule !== undefined
-                ? settings.modules.enableAtsScoreModule === true
-                : true;
-            setIsAtsEnabled(atsEnabled);
+            const atsVisible = resolveAtsScoreVisibility(settings, { allowMissingDefault });
+            if (atsVisible !== null) setIsAtsEnabled(atsVisible);
         };
 
-        getSystemSettings().then(syncSettings).catch(() => {
+        getSystemSettings().then((settings) => {
+            syncSettings(settings, { allowMissingDefault: true });
+        }).catch(() => {
             setIsImportEnabled(false);
-            setIsAtsEnabled(true);
+            setIsAtsEnabled(false);
         });
 
         const handleSettingsUpdated = (e) => {
             if (e.detail?.modules) {
-                syncSettings({ modules: e.detail.modules });
+                syncSettings({ modules: e.detail.modules }, { allowMissingDefault: false });
+                return;
+            }
+            if (e.detail?.category === 'modules') {
+                getSystemSettings().then((settings) => {
+                    syncSettings(settings, { allowMissingDefault: true });
+                }).catch(() => {});
             }
         };
         window.addEventListener('systemSettingsUpdated', handleSettingsUpdated);
-        return () => window.removeEventListener('systemSettingsUpdated', handleSettingsUpdated);
+
+        let unsubscribePublicConfig = () => {};
+        try {
+            unsubscribePublicConfig = fire.firestore().collection('data').doc('public_config').onSnapshot(
+                (snapshot) => {
+                    if (snapshot.exists) syncSettings(snapshot.data() || {});
+                },
+                () => { /* keep the last known ATS flag if the listener drops */ }
+            );
+        } catch {
+            unsubscribePublicConfig = () => {};
+        }
+
+        return () => {
+            window.removeEventListener('systemSettingsUpdated', handleSettingsUpdated);
+            if (typeof unsubscribePublicConfig === 'function') unsubscribePublicConfig();
+        };
     }, [location.search]);
 
     const steps = [
@@ -1320,7 +1343,7 @@ const BuildResume = () => {
                                 </nav>
 
                                 {/* Mobile Progress Section */}
-                                {isAtsEnabled && (
+                                {isAtsEnabled === true && (
                                     <div className="mt-4">
                                         <AtsScoreMeter resumeData={resumeData} onNavigate={(path) => { handleStepClick(path); setIsMobileMenuOpen(false); }} />
                                     </div>
@@ -1699,7 +1722,7 @@ const BuildResume = () => {
                     </button>
 
                     {/* Real-Time ATS Score Meter Widget */}
-                    {isAtsEnabled && (
+                    {isAtsEnabled === true && (
                         <div className="mt-4">
                             <AtsScoreMeter resumeData={resumeData} onNavigate={handleStepClick} />
                         </div>

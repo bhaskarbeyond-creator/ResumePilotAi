@@ -1451,14 +1451,12 @@ class SubscriptionSetting extends Component {
         this.setState({ enableCouponsModule: nextState });
 
         try {
-            const settings = (await getSystemSettings()) || {};
-            const mods = settings.modules || {};
-            const updatedMods = { ...mods, enableCouponsModule: nextState };
-            await saveSystemSettings('modules', updatedMods);
+            await saveSystemSettings('modules', { enableCouponsModule: nextState });
 
             window.dispatchEvent(new CustomEvent('systemSettingsUpdated', {
                 detail: {
-                    modules: updatedMods
+                    category: 'modules',
+                    modules: { enableCouponsModule: nextState },
                 }
             }));
 

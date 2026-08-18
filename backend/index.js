@@ -16,6 +16,7 @@ const { queueEmailInTransaction, processOutboxOnce } = require('./services/notif
 const { createResumeDocx, resolveExportTemplate } = require('./services/docxExport');
 const { loadProviderConfiguration, generateWithProviders } = require('./services/aiRuntime');
 const { loadAiAdminSettings, saveAiAdminSettings, testAiProvider, fetchProviderModels } = require('./services/aiAdmin');
+const { mergeAdminSettingCategory } = require('./services/adminSettingsMerge');
 const { createExportRenderToken, consumeExportRenderToken, discardExportRenderToken } = require('./security/exportTokens');
 const app = express();
 const cors = require('cors');
@@ -2044,7 +2045,9 @@ app.post('/api/admin/settings/:category', async (req, res) => {
                 throw stale;
             }
             const nextRevision = currentRevision + 1;
-            const persisted = preserveAdminSettingSecrets(category, snapshot.data()?.[category], normalized);
+            const currentCategory = snapshot.data()?.[category];
+            const mergedInput = mergeAdminSettingCategory(currentCategory, normalized);
+            const persisted = preserveAdminSettingSecrets(category, currentCategory, mergedInput);
             publicSettings = publicAdminSettings(category, persisted);
             transaction.set(secretRef, { [category]: persisted, _revisions: { [category]: nextRevision } }, { merge: true });
             transaction.set(publicRef, { [category]: publicSettings, _settingsRevisions: { [category]: nextRevision } }, { merge: true });

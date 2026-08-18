@@ -6,6 +6,7 @@ import { JOB_TRACKER_STATUSES, normalizeTrackedJob, validateTrackedJob } from '.
 import { blogPostFitsFirestore, normalizeBlogPost } from '../utils/blogData';
 import { normalizeProfileData, profileFitsFirestore } from '../utils/profileData';
 import { fetchAdminWithReauth } from '../services/adminReauth';
+import { mergeSettingsCategory } from '../utils/moduleFlags';
 
 // Utility function to wait for authentication state
 export const waitForAuth = () => {
@@ -5323,42 +5324,34 @@ export async function getSystemSettings() {
     };
 
     try {
-        const fetchWithTimeout = Promise.race([
-            safeDbOperation(async () => {
-                const db = fire.firestore();
-                const docRef = db.collection('data').doc('public_config');
-                const snapshot = await docRef.get();
+        const result = await safeDbOperation(async () => {
+            const db = fire.firestore();
+            const docRef = db.collection('data').doc('public_config');
+            const snapshot = await docRef.get();
 
-                let remoteData = {};
-                if (snapshot && snapshot.exists) {
-                    remoteData = redactClientSecrets(snapshot.data() || {});
-                    systemSettingsRevisions = { ...(remoteData._settingsRevisions || {}) };
-                    delete remoteData._settingsRevisions;
-                }
+            let remoteData = {};
+            if (snapshot && snapshot.exists) {
+                remoteData = redactClientSecrets(snapshot.data() || {});
+                systemSettingsRevisions = { ...(remoteData._settingsRevisions || {}) };
+                delete remoteData._settingsRevisions;
+            }
 
-                const allKeys = new Set([
-                    ...Object.keys(envDefaults),
-                    ...Object.keys(localCache || {}),
-                    ...Object.keys(remoteData || {})
-                ]);
+            const allKeys = new Set([
+                ...Object.keys(envDefaults),
+                ...Object.keys(localCache || {}),
+                ...Object.keys(remoteData || {})
+            ]);
 
-                const merged = {};
-                for (const key of allKeys) {
-                    merged[key] = {
-                        ...(envDefaults[key] || {}),
-                        ...(localCache[key] || {}),
-                        ...(remoteData[key] || {})
-                    };
-                }
-                return merged;
-            }, false),
-            new Promise((resolve) => setTimeout(() => resolve(null), 1200))
-        ]);
+            const merged = {};
+            for (const key of allKeys) {
+                merged[key] = mergeSettingsCategory(envDefaults[key], localCache[key], remoteData[key]);
+            }
+            return { ...merged, _settingsSource: 'remote' };
+        }, false);
 
-        const result = await fetchWithTimeout;
-        return result || getFallback();
+        return result || { ...getFallback(), _settingsSource: 'fallback' };
     } catch (err) {
-        return getFallback();
+        return { ...getFallback(), _settingsSource: 'fallback' };
     }
 }
 
@@ -5416,6 +5409,4 @@ export async function refundOrderTransaction(docId, _transactionId, _userId, rea
         return { success: false, error: error.message };
     }
 }
-
-
 

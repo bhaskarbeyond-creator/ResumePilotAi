@@ -44,9 +44,15 @@ const ModulesSettings = () => {
     const [saving, setSaving] = useState(false);
     const [savingKey, setSavingKey] = useState(null);
     const [toastMessage, setToastMessage] = useState(null);
+    const [settingsHydrated, setSettingsHydrated] = useState(false);
 
     useEffect(() => {
         getSystemSettings().then((settings) => {
+            if (settings?._settingsSource === 'fallback') {
+                setToastMessage({ type: 'error', text: 'Could not load live module settings. Refresh before changing toggles.' });
+                setLoading(false);
+                return;
+            }
             const mods = (settings && settings.modules) || {};
             const ai = (settings && settings.ai) || {};
             const sa = (settings && settings.socialAuth) || {};
@@ -69,14 +75,20 @@ const ModulesSettings = () => {
                 enableCouponsModule: mods.enableCouponsModule !== undefined ? mods.enableCouponsModule : true,
                 enableSalesTaxModule: mods.enableSalesTaxModule !== undefined ? mods.enableSalesTaxModule : true,
             });
+            setSettingsHydrated(true);
             setLoading(false);
         }).catch((err) => {
             console.error('Error loading module settings:', err);
+            setToastMessage({ type: 'error', text: 'Could not load live module settings. Refresh before changing toggles.' });
             setLoading(false);
         });
     }, []);
 
     const persistModules = async (nextConfig, targetKey = null) => {
+        if (!settingsHydrated) {
+            setToastMessage({ type: 'error', text: 'Live module settings are not loaded. Refresh before saving.' });
+            return false;
+        }
         if (targetKey) setSavingKey(targetKey);
         setSaving(true);
         setToastMessage(null);
@@ -122,9 +134,11 @@ const ModulesSettings = () => {
             }));
 
             setToastMessage({ type: 'success', text: 'Module settings saved successfully!' });
+            return true;
         } catch (error) {
             console.error('Error saving module settings:', error);
             setToastMessage({ type: 'error', text: error?.message || 'Failed to save module settings. Please try again.' });
+            return false;
         } finally {
             setSaving(false);
             if (targetKey) setTimeout(() => setSavingKey(null), 1500);
@@ -133,13 +147,15 @@ const ModulesSettings = () => {
     };
 
     const toggleModule = async (moduleKey) => {
+        const previousConfig = modulesConfig;
         const nextValue = !modulesConfig[moduleKey];
         const nextConfig = {
             ...modulesConfig,
             [moduleKey]: nextValue,
         };
         setModulesConfig(nextConfig);
-        await persistModules(nextConfig, moduleKey);
+        const saved = await persistModules(nextConfig, moduleKey);
+        if (!saved) setModulesConfig(previousConfig);
     };
 
     const handleSave = async (e) => {
