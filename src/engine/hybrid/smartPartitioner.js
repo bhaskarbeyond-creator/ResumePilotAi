@@ -2,15 +2,15 @@
  * Smart Hybrid Resume Engine — Content Partitioner & Page Packager
  * 
  * Precision Balanced Greedy-Packing Architecture:
- * - 2-Column Layouts (Modern Split & Executive Banner): Adaptive Split Flow with accurate sidebar height calculations and lower full-width flow.
+ * - 2-Column Layouts (Modern Split & Executive Banner): Adaptive Split Flow with accurate per-variant sidebar height calculations.
  * - Single-Column Layouts (Minimal ATS & Compact Euro): Full-page greedy packing maximizing Page 1 space utilization.
- * - Accurate Typographic Metrics: Calibrated character counts (88 chars/line) and realistic line-heights (17px).
- * - Safe Capacity Limits: Strict 770px usable page budget prevents ANY element from colliding with or overlapping page footers.
+ * - Accurate Typographic Metrics: Calibrated per-variant skills (dots=1/row, pills/badges=1.5/row), timeline items, and language rails.
+ * - Safe Capacity Limits: Strict 700px usable page budget prevents ANY element from colliding with or overlapping page footers.
  * - Strict Sequential Document Reading Order: Primary sections (Summary, Experience, Education, Skills) are strictly prioritized without skips.
  */
 
-const CHARS_PER_LINE = 88;
-const LINE_HEIGHT_PX = 17;
+const CHARS_PER_LINE = 85;
+const LINE_HEIGHT_PX = 16;
 
 function getTextLength(htmlOrStr = '') {
   if (!htmlOrStr) return 0;
@@ -44,20 +44,36 @@ export function partitionResumeContent(values = {}, theme = {}) {
 
   // Real Header and sidebar component height calculations
   const contactCount = [values.email, values.phone, values.city || values.address, values.website, values.linkedin, values.github].filter(Boolean).length;
-  const sidebarHeaderHeight = isBanner ? 0 : ((photo ? 110 : 0) + 55 + (contactCount * 22) + 24);
+  const sidebarHeaderHeight = isBanner ? 0 : ((photo ? 85 : 0) + 55 + (contactCount * 22) + 24);
   
   const summaryTextLen = getTextLength(summary);
-  const summaryHeight = summaryTextLen ? calcTextHeight(summaryTextLen) + 28 : 0;
+  const summaryHeight = summaryTextLen ? calcTextHeight(summaryTextLen) + 26 : 0;
   
   const skillCount = skills.length;
-  const skillsHeight = skillCount ? (Math.ceil(skillCount / (hasSidebar ? 2 : 4)) * 26 + 32) : 0;
-  const languagesHeight = languages.length ? (languages.length * 24 + 30) : 0;
+  let skillsHeight = 0;
+  if (skillCount > 0) {
+    if (hasSidebar) {
+      if (theme.skillVariant === 'dots' || theme.skillVariant === 'bars') {
+        // 1 item per row in sidebar
+        skillsHeight = skillCount * 22 + 30;
+      } else if (theme.skillVariant === 'inline') {
+        skillsHeight = Math.ceil(skillCount / 3) * 18 + 28;
+      } else {
+        // pills or badges in sidebar (avg 1.5 per row in 260px column)
+        skillsHeight = Math.ceil(skillCount / 1.5) * 24 + 30;
+      }
+    } else {
+      skillsHeight = Math.ceil(skillCount / 4) * 24 + 30;
+    }
+  }
+
+  const languagesHeight = languages.length ? (languages.length * 24 + 28) : 0;
 
   const hobbiesCount = Array.isArray(hobbies) ? hobbies.length : (hobbies ? 1 : 0);
-  const hobbiesHeight = hobbiesCount ? (Math.ceil(hobbiesCount / 2) * 22 + 28) : 0;
+  const hobbiesHeight = hobbiesCount ? (Math.ceil(hobbiesCount / (hasSidebar ? 1.5 : 3)) * 22 + 26) : 0;
 
   const certsInSidebar = hasSidebar && (skillCount + hobbiesCount) <= 6 && certifications.length <= 3;
-  const certsSidebarHeight = certsInSidebar ? (certifications.length * 30 + 28) : 0;
+  const certsSidebarHeight = certsInSidebar ? (certifications.length * 34 + 28) : 0;
   
   const sidebarTotalHeight = sidebarHeaderHeight + skillsHeight + languagesHeight + hobbiesHeight + certsSidebarHeight;
 
@@ -69,7 +85,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
 
   employments.forEach((job, index) => {
     const textLen = getTextLength(job.description);
-    const estHeight = Math.round(30 + calcTextHeight(textLen) + (index === 0 ? 28 : 12));
+    const estHeight = Math.round(28 + calcTextHeight(textLen) + (index === 0 ? 26 : 10));
     heroFlowItems.push({ type: 'experience', item: job, index, isFirst: index === 0, estHeight });
   });
 
@@ -80,7 +96,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
   if (educations && educations.length) {
     const eduItems = educations.map((edu, index) => {
       const textLen = getTextLength(edu.description);
-      const estHeight = Math.round(28 + calcTextHeight(textLen) + (index === 0 ? 28 : 10));
+      const estHeight = Math.round(26 + calcTextHeight(textLen) + (index === 0 ? 26 : 8));
       return { type: 'education', item: edu, index, isFirst: index === 0, estHeight };
     });
     const sectionHeight = eduItems.reduce((sum, it) => sum + it.estHeight, 0);
@@ -100,7 +116,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
   if (projects && projects.length) {
     const projItems = projects.map((proj, index) => {
       const textLen = getTextLength(proj.description);
-      const estHeight = Math.round(28 + calcTextHeight(textLen) + (index === 0 ? 28 : 10));
+      const estHeight = Math.round(26 + calcTextHeight(textLen) + (index === 0 ? 26 : 8));
       return { type: 'project', item: proj, index, isFirst: index === 0, estHeight };
     });
     const sectionHeight = projItems.reduce((sum, it) => sum + it.estHeight, 0);
@@ -111,8 +127,8 @@ export function partitionResumeContent(values = {}, theme = {}) {
   if ((isSingleCol || !certsInSidebar) && certifications.length) {
     const certItems = certifications.map((cert, index) => {
       const isNewRow = index % 2 === 0;
-      const rowHeight = isNewRow ? 34 : 0;
-      const titleHeight = index === 0 ? 30 : 0;
+      const rowHeight = isNewRow ? 32 : 0;
+      const titleHeight = index === 0 ? 28 : 0;
       return {
         type: 'certification',
         item: cert,
@@ -129,7 +145,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
   if (achievements && achievements.length) {
     const achItems = achievements.map((ach, index) => {
       const textLen = getTextLength(ach.description);
-      const estHeight = Math.round(26 + calcTextHeight(textLen) + (index === 0 ? 28 : 8));
+      const estHeight = Math.round(24 + calcTextHeight(textLen) + (index === 0 ? 26 : 6));
       return { type: 'achievement', item: ach, index, isFirst: index === 0, estHeight };
     });
     const sectionHeight = achItems.reduce((sum, it) => sum + it.estHeight, 0);
@@ -149,7 +165,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
   if (references && references.length) {
     const refItems = references.map((ref, index) => {
       const textLen = getTextLength(ref.reference);
-      const estHeight = Math.round(26 + calcTextHeight(textLen) + (index === 0 ? 28 : 8));
+      const estHeight = Math.round(24 + calcTextHeight(textLen) + (index === 0 ? 26 : 6));
       return { type: 'reference', item: ref, index, isFirst: index === 0, estHeight };
     });
     const sectionHeight = refItems.reduce((sum, it) => sum + it.estHeight, 0);
@@ -166,7 +182,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
   }
 
   // Safe page capacity limits (guarantees positive margin above page footer)
-  const TOTAL_PAGE_CAPACITY = isBanner ? 740 : 770;
+  const TOTAL_PAGE_CAPACITY = isBanner ? 670 : 700;
 
   if (hasSidebar) {
     // 2-Column Split / Banner Layout with Adaptive Flow
@@ -180,7 +196,8 @@ export function partitionResumeContent(values = {}, theme = {}) {
     let hasOverflowed = false;
 
     bottomSections.forEach(section => {
-      if (!hasOverflowed && currentBottomHeight + section.estHeight <= remainingP1Capacity) {
+      // Only pack section into Page 1 if there is substantial remaining capacity (> 80px) and it fits cleanly
+      if (!hasOverflowed && remainingP1Capacity >= 80 && currentBottomHeight + section.estHeight <= remainingP1Capacity) {
         p1BottomItems.push(...section.items);
         currentBottomHeight += section.estHeight;
       } else {
@@ -242,7 +259,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
   }
 
   // Single-Column Layouts (Minimal ATS & Compact Euro) Greedy Packing
-  const singleColHeaderHeight = 70;
+  const singleColHeaderHeight = 65;
   const heroHeight = heroFlowItems.reduce((sum, it) => sum + it.estHeight, 0);
   const remainingP1Capacity = Math.max(0, TOTAL_PAGE_CAPACITY - singleColHeaderHeight - heroHeight);
 
@@ -252,7 +269,7 @@ export function partitionResumeContent(values = {}, theme = {}) {
   let hasOverflowedSingleCol = false;
 
   bottomSections.forEach(section => {
-    if (!hasOverflowedSingleCol && currentBottomHeight + section.estHeight <= remainingP1Capacity) {
+    if (!hasOverflowedSingleCol && remainingP1Capacity >= 60 && currentBottomHeight + section.estHeight <= remainingP1Capacity) {
       p1BottomItems.push(...section.items);
       currentBottomHeight += section.estHeight;
     } else {

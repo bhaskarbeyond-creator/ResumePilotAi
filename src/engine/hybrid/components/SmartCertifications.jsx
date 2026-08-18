@@ -16,7 +16,10 @@ export default function SmartCertifications({ certifications = [], theme = {}, t
           return (
             <div key={idx} className="smart-cert-item" data-flow-item="certification">
               <div className="smart-cert-badge">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
+                <svg className="smart-cert-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="8" r="7"/>
+                  <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
+                </svg>
               </div>
               <div className="smart-cert-content">
                 <h4 className="smart-cert-title">{cert.title || cert.name}</h4>

@@ -31,8 +31,8 @@
   flex-direction: column;
   justify-content: space-between;
   color: #1e293b;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 12.5px;
+  line-height: 1.45;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -41,6 +41,8 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow: hidden;
+  padding-bottom: 8px;
 }
 
 /* ── Layout Archetypes ──────────────────────────────────────────────── */
@@ -58,22 +60,27 @@
   flex-shrink: 0;
   background-color: var(--sidebar-bg, #f8fafc);
   color: var(--sidebar-text, #1e293b);
-  padding: 24px 20px;
+  padding: 22px 18px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
   border-right: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .smart-layout--modern-split .smart-main-content {
   flex: 1 1 auto;
-  padding: 24px 24px 28px;
+  padding: 22px 22px 20px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   min-width: 0;
+}
+
+.smart-main-content--full {
+  width: 100%;
+  padding: 24px 28px !important;
 }
 
 /* Reverse Split (Right Sidebar) */
@@ -101,12 +108,19 @@
   flex-direction: column;
   width: 100%;
   flex: 1 1 auto;
+  min-height: 0;
 }
 
 .smart-split-hero {
   display: flex;
   width: 100%;
+  flex-shrink: 0;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.smart-split-hero--full {
+  flex: 1 1 auto;
+  border-bottom: none;
 }
 
 .smart-split-hero .smart-sidebar {
@@ -114,17 +128,17 @@
   flex-shrink: 0;
   background-color: var(--sidebar-bg, #f8fafc);
   color: var(--sidebar-text, #1e293b);
-  padding: 20px 18px 14px;
+  padding: 18px 16px 14px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   border-right: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .smart-split-hero .smart-main-content {
   flex: 1 1 auto;
-  padding: 20px 20px 14px;
+  padding: 18px 18px 14px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -134,11 +148,11 @@
 
 .smart-fullwidth-bottom-flow {
   width: 100%;
-  padding: 14px 20px 18px;
+  padding: 12px 20px 14px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .smart-fullwidth-bottom-flow .smart-section {
@@ -148,7 +162,7 @@
 
 .smart-fullwidth-bottom-flow .smart-section-title {
   width: 100%;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .smart-fullwidth-bottom-flow .smart-timeline {
@@ -159,7 +173,7 @@
 
 .smart-fullwidth-bottom-flow .smart-timeline-item {
   width: 100%;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 /* 2. Executive Banner */
@@ -173,47 +187,47 @@
 .smart-banner-wrapper {
   background: var(--header-bg, var(--primary));
   color: var(--header-text, #ffffff);
-  padding: 24px 28px;
+  padding: 22px 26px;
   box-sizing: border-box;
 }
 
 .smart-layout--executive-banner .smart-main-content {
   flex: 1 1 auto;
-  padding: 20px 24px;
+  padding: 18px 22px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
   min-width: 0;
 }
 
 /* 3. Minimal ATS */
 .smart-layout--minimal-ats {
-  padding: 28px 32px;
+  padding: 24px 28px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   width: 100%;
 }
 
 /* 4. Tech Grid */
 .smart-layout--tech-grid {
-  padding: 26px 30px;
+  padding: 24px 28px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   width: 100%;
 }
 
 /* 5. Compact Euro */
 .smart-layout--compact-euro {
-  padding: 24px 28px;
+  padding: 22px 26px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   width: 100%;
 }
 
@@ -222,24 +236,24 @@
 .smart-header {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
 }
 
 .smart-header__main {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
 }
 
 .smart-header__avatar-wrap {
-  width: 70px;
-  height: 70px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
-  border: 3px solid #ffffff;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+  border: 2.5px solid #ffffff;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
 }
 
 .smart-header__avatar {
@@ -251,11 +265,11 @@
 .smart-header__titles {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 
 .smart-header__name {
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 800;
   letter-spacing: -0.02em;
   margin: 0;
@@ -268,7 +282,7 @@
 }
 
 .smart-header__role {
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--secondary, #3b82f6);
   margin: 0;
@@ -283,8 +297,8 @@
 .smart-header__contacts {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 14px;
-  font-size: 11.5px;
+  gap: 5px 12px;
+  font-size: 11px;
   color: #475569;
 }
 
@@ -295,7 +309,7 @@
 .smart-contact-item {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   min-width: 0;
 }
 
@@ -319,7 +333,7 @@
 .smart-header--centered-classic .smart-header__main {
   flex-direction: column;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
 }
 
 .smart-header--centered-classic .smart-header__titles {
@@ -328,12 +342,12 @@
 
 .smart-header--centered-classic .smart-header__contacts {
   justify-content: center;
-  gap: 4px 12px;
+  gap: 4px 10px;
 }
 
 .smart-header--centered-classic .smart-contact-item:not(:last-child)::after {
   content: '•';
-  margin-left: 8px;
+  margin-left: 6px;
   color: #94a3b8;
 }
 
@@ -343,13 +357,13 @@
 
 /* Variant: Left Bold (Stanford, Geneva, MIT, PM) */
 .smart-header--left-bold .smart-header__name {
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 800;
   letter-spacing: -0.03em;
 }
 
 .smart-header--left-bold .smart-header__role {
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 700;
   color: var(--primary);
 }
@@ -357,18 +371,18 @@
 /* Variant: Accent Bracket (Legal, MIT) */
 .smart-header--accent-bracket {
   border-left: 5px solid var(--primary);
-  padding-left: 16px;
+  padding-left: 14px;
 }
 
 .smart-header--accent-bracket .smart-header__name {
-  font-size: 27px;
+  font-size: 25px;
   letter-spacing: -0.01em;
 }
 
 /* Variant: Minimal Inline (Wall Street, Cambridge, Scandinavia) */
 .smart-header--minimal-inline {
   border-bottom: 2px solid var(--primary);
-  padding-bottom: 12px;
+  padding-bottom: 10px;
 }
 
 .smart-header--minimal-inline .smart-header__main {
@@ -378,11 +392,11 @@
 }
 
 .smart-header--minimal-inline .smart-header__name {
-  font-size: 24px;
+  font-size: 23px;
 }
 
 .smart-header--minimal-inline .smart-header__role {
-  font-size: 13px;
+  font-size: 12.5px;
   color: #64748b;
 }
 
@@ -390,34 +404,35 @@
 .smart-sidebar .smart-header {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding-bottom: 14px;
+  gap: 10px;
+  padding-bottom: 12px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .smart-sidebar .smart-header__main {
   flex-direction: column;
   align-items: flex-start;
-  gap: 10px;
+  gap: 8px;
 }
 
 .smart-sidebar .smart-header__name {
-  font-size: 22px;
+  font-size: 20px;
   line-height: 1.15;
 }
 
 .smart-sidebar .smart-header__contacts {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
   width: 100%;
 }
 
 .smart-sidebar .smart-contact-item {
   display: flex;
   align-items: flex-start;
-  gap: 6px;
-  font-size: 11px;
+  gap: 5px;
+  font-size: 10.5px;
+  word-break: break-word;
 }
 
 /* ── Section Titles & Dividers ───────────────────────────────────────── */
@@ -425,7 +440,7 @@
 .smart-section {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
   break-inside: avoid;
 }
@@ -433,8 +448,8 @@
 .smart-section-title {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 13px;
+  gap: 8px;
+  font-size: 12.5px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -453,9 +468,9 @@
 
 /* Divider: Solid Thick (Yale) */
 .smart-section-title--solid-thick {
-  border-bottom: 2.5px solid var(--primary);
-  padding-bottom: 3px;
-  margin-bottom: 6px;
+  border-bottom: 2px solid var(--primary);
+  padding-bottom: 2px;
+  margin-bottom: 4px;
 }
 
 .smart-section-title--solid-thick .smart-section-title__line {
@@ -467,14 +482,14 @@
   border: none;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .smart-section-title--left-bar::before {
   content: '';
   display: inline-block;
-  width: 4px;
-  height: 15px;
+  width: 3.5px;
+  height: 14px;
   background-color: var(--secondary, var(--primary));
   border-radius: 2px;
   flex-shrink: 0;
@@ -488,8 +503,8 @@
 .smart-section-title--double-line {
   border-top: 1px solid #cbd5e1;
   border-bottom: 1px solid #cbd5e1;
-  padding: 3px 0;
-  margin-bottom: 6px;
+  padding: 2.5px 0;
+  margin-bottom: 4px;
 }
 
 .smart-section-title--double-line .smart-section-title__line {
@@ -501,7 +516,7 @@
 .smart-skills-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 5px;
   width: 100%;
 }
 
@@ -509,9 +524,9 @@
   background-color: rgba(59, 130, 246, 0.08);
   color: var(--primary, #1e3a8a);
   border: 1px solid rgba(59, 130, 246, 0.18);
-  padding: 3px 8px;
-  border-radius: 6px;
-  font-size: 11px;
+  padding: 2.5px 7px;
+  border-radius: 5px;
+  font-size: 10.5px;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
@@ -521,9 +536,9 @@
   background-color: #f1f5f9;
   color: #334155;
   border: 1px solid #cbd5e1;
-  padding: 2.5px 7px;
+  padding: 2px 6px;
   border-radius: 4px;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
@@ -534,20 +549,20 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 2.5px 0;
-  font-size: 11.5px;
+  padding: 2px 0;
+  font-size: 11px;
   font-weight: 500;
 }
 
 .smart-skill-dots {
   display: flex;
-  gap: 4px;
+  gap: 3.5px;
   align-items: center;
 }
 
 .smart-skill-dot {
-  width: 6px;
-  height: 6px;
+  width: 5.5px;
+  height: 5.5px;
   border-radius: 50%;
   background-color: #cbd5e1;
 }
@@ -559,17 +574,17 @@
 .smart-skills-grid--inline {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 8px;
+  gap: 3px 6px;
 }
 
 .smart-skills-grid--inline .smart-skill-item {
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 500;
 }
 
 .smart-skills-grid--inline .smart-skill-item:not(:last-child)::after {
   content: '•';
-  margin-left: 8px;
+  margin-left: 6px;
   color: #94a3b8;
 }
 
@@ -578,7 +593,7 @@
 .smart-languages-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
   width: 100%;
 }
 
@@ -586,7 +601,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 11.5px;
+  font-size: 11px;
 }
 
 .smart-language-info {
@@ -600,7 +615,7 @@
 }
 
 .smart-language-level {
-  font-size: 10.5px;
+  font-size: 10px;
   color: #64748b;
 }
 
@@ -609,13 +624,13 @@
 .smart-timeline {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
 }
 
 .smart-timeline-item {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   position: relative;
   break-inside: avoid;
 }
@@ -625,13 +640,13 @@
   flex-direction: column;
   align-items: center;
   flex-shrink: 0;
-  width: 12px;
-  padding-top: 4px;
+  width: 10px;
+  padding-top: 3px;
 }
 
 .smart-timeline-node {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background-color: var(--secondary, #3b82f6);
   flex-shrink: 0;
@@ -641,7 +656,7 @@
   width: 1.5px;
   flex: 1 1 auto;
   background-color: rgba(59, 130, 246, 0.2);
-  margin-top: 4px;
+  margin-top: 3px;
 }
 
 .smart-timeline-item:last-child .smart-timeline-connector {
@@ -652,7 +667,7 @@
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
 }
 
@@ -660,7 +675,7 @@
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 12px;
+  gap: 10px;
 }
 
 .smart-timeline-title-group {
@@ -670,20 +685,20 @@
 }
 
 .smart-timeline-role {
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 700;
   color: #0f172a;
   margin: 0;
 }
 
 .smart-timeline-company {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
   color: var(--primary, #1e3a8a);
 }
 
 .smart-timeline-date {
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 500;
   color: #64748b;
   flex-shrink: 0;
@@ -691,18 +706,18 @@
 }
 
 .smart-timeline-desc {
-  font-size: 12px;
+  font-size: 11.5px;
   color: #334155;
-  line-height: 1.45;
+  line-height: 1.4;
   margin-top: 2px;
 }
 
 .smart-timeline-desc p {
-  margin: 0 0 3px;
+  margin: 0 0 2px;
 }
 
 .smart-timeline-desc ul {
-  margin: 2px 0 3px 14px;
+  margin: 2px 0 2px 14px;
   padding: 0;
 }
 
@@ -717,8 +732,8 @@
 
 .smart-timeline--date-rail .smart-timeline-header {
   display: grid;
-  grid-template-columns: 130px 1fr;
-  gap: 12px;
+  grid-template-columns: 120px 1fr;
+  gap: 10px;
   align-items: baseline;
 }
 
@@ -726,7 +741,7 @@
   order: -1;
   color: var(--primary, #003399);
   font-weight: 700;
-  font-size: 11.5px;
+  font-size: 11px;
 }
 
 /* Timeline Style: Compact Clean (ATS) */
@@ -741,7 +756,7 @@
 
 .smart-timeline--code-tag .smart-timeline-role {
   font-family: 'Fira Code', 'Courier New', monospace;
-  font-size: 13px;
+  font-size: 12.5px;
   color: var(--primary, #0f172a);
 }
 
@@ -756,16 +771,212 @@
   margin-top: 0;
 }
 
+/* ── Smart Certifications (Strictly Contained Badges & Grid) ────────── */
+
+.smart-cert-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  width: 100%;
+}
+
+.smart-sidebar .smart-cert-grid {
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+.smart-cert-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 8px;
+  background-color: #f8fafc;
+  border-radius: 5px;
+  border: 1px solid #e2e8f0;
+  min-width: 0;
+}
+
+.smart-cert-badge {
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  background-color: rgba(59, 130, 246, 0.1);
+  color: var(--primary, #1e3a8a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.smart-cert-badge svg,
+.smart-cert-icon {
+  width: 14px !important;
+  height: 14px !important;
+  max-width: 14px !important;
+  max-height: 14px !important;
+  flex-shrink: 0;
+}
+
+.smart-cert-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.smart-cert-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  line-height: 1.25;
+}
+
+.smart-cert-meta {
+  font-size: 10px;
+  color: #64748b;
+}
+
+/* ── Smart Key Achievements ─────────────────────────────────────────── */
+
+.smart-achievements-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.smart-achievement-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.smart-achievement-icon {
+  width: 20px;
+  height: 20px;
+  color: var(--secondary, #3b82f6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.smart-achievement-icon svg,
+.smart-achievement-icon-svg {
+  width: 14px !important;
+  height: 14px !important;
+  max-width: 14px !important;
+  max-height: 14px !important;
+  flex-shrink: 0;
+}
+
+.smart-achievement-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.smart-achievement-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.smart-achievement-desc {
+  font-size: 11px;
+  color: #334155;
+  line-height: 1.4;
+}
+
+/* ── Smart Projects ─────────────────────────────────────────────────── */
+
+.smart-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  width: 100%;
+}
+
+.smart-sidebar .smart-cards-grid {
+  grid-template-columns: 1fr;
+}
+
+.smart-card-item {
+  padding: 8px 10px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.smart-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.smart-card-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.smart-card-link {
+  font-size: 10.5px;
+  color: var(--secondary, #3b82f6);
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.smart-card-desc {
+  font-size: 11px;
+  color: #334155;
+  line-height: 1.35;
+}
+
+/* ── Smart Hobbies & Interests ──────────────────────────────────────── */
+
+.smart-hobbies-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  width: 100%;
+}
+
+.smart-hobby-pill {
+  background-color: #f1f5f9;
+  color: #475569;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.smart-hobbies-text {
+  font-size: 11px;
+  color: #334155;
+  line-height: 1.4;
+}
+
 /* ── Continuation Header & Footer ───────────────────────────────────── */
 
 .smart-continuation-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 24px;
+  padding: 8px 24px;
   border-bottom: 1px solid #e2e8f0;
   background-color: #f8fafc;
-  font-size: 11px;
+  font-size: 10.5px;
   color: #64748b;
 }
 
@@ -778,8 +989,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 24px;
+  padding: 6px 24px;
   border-top: 1px solid rgba(0, 0, 0, 0.05);
-  font-size: 10px;
+  font-size: 9.5px;
   color: #94a3b8;
 }
