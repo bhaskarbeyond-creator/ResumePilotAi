@@ -1211,6 +1211,31 @@
       "defaultTitle": "Awards & Honors"
     }
   },
+  "AtsScoreMeter": {
+    "region": "ATS score",
+    "title": "ATS Score",
+    "toggle": "Toggle detailed breakdown",
+    "gaugeLabel": "ATS score {{score}} out of 100, {{status}}",
+    "noJdHint": "This is ATS readiness. Paste a target job description to measure role fit.",
+    "blendHint": "Score mixes resume quality ({{quality}}/100) with target-JD match ({{match}}%).",
+    "nonEnglish": "Action-verb coaching is English-oriented. Your content is still scored on structure, evidence, and relevance.",
+    "strengths": "Strengths",
+    "improvements": "Highest-value next steps",
+    "go": "Go",
+    "breakdown": "Why this score",
+    "points": "Points",
+    "improve": "Improve",
+    "jdTitle": "Target job description",
+    "jdMatchPct": "{{score}}% match",
+    "scanJd": "Optional",
+    "jdLabel": "Paste the job you want. Matching stays on this device and is never sent to a server.",
+    "jdPlaceholder": "Paste the job description to check role fit…",
+    "applyJd": "Update match",
+    "clearJd": "Clear",
+    "matched": "Matched",
+    "missing": "Missing",
+    "disclaimer": "Instant heuristic score — not an employer ATS and not an AI audit. No resume data is sent anywhere to compute it."
+  },
   "HeadingStep": {
     "title": "Personal & Contact Information",
     "subtitle": "Tell us about yourself so employers can reach you easily. All required fields must be completed to proceed.",

@@ -1303,6 +1303,10 @@ const BuildResume = () => {
                                 </nav>
 
                                 {/* Mobile Progress Section */}
+                                <div className="mt-4">
+                                    <AtsScoreMeter resumeData={resumeData} onNavigate={(path) => { handleStepClick(path); setIsMobileMenuOpen(false); }} />
+                                </div>
+
                                 <div className="mt-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
                                     <div className="flex items-center justify-between mb-2">
                                         <span className="text-sm font-semibold text-slate-700">{t('BuildResume.progress.progress')}</span>
@@ -1677,7 +1681,7 @@ const BuildResume = () => {
 
                     {/* Real-Time ATS Score Meter Widget */}
                     <div className="mt-4">
-                        <AtsScoreMeter resumeData={resumeData} />
+                        <AtsScoreMeter resumeData={resumeData} onNavigate={handleStepClick} />
                     </div>
 
                     {/* Progress Section */}
