@@ -253,12 +253,9 @@ CLOUDFLARE_ZONE_ID = "725f3d648139c27172638441415bf9d2"
 CLOUDFLARE_API_TOKEN = "cfut_Su0qFg1y8DIfMAMbGP9hNM89hW87cVhEBqfdVzeH84cb9675"
 CF_PURGE_URL = f"https://api.cloudflare.com/client/v4/zones/{CLOUDFLARE_ZONE_ID}/purge_cache"
 
-# Surgical purge: only bust index.html & root URL — JS/CSS assets are content-hashed so they're safe
+# Purge all edge cached routes & assets worldwide
 PURGE_PAYLOAD = {
-    "files": [
-        "https://airesume.projectdemo.guru/",
-        "https://airesume.projectdemo.guru/index.html",
-    ]
+    "purge_everything": True
 }
 
 print("\n🔄 Purging Cloudflare Edge Cache for index.html...")

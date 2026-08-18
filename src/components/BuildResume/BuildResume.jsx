@@ -58,6 +58,7 @@ const BuildResume = () => {
     const [showTemplateSelection, setShowTemplateSelection] = useState(false);
     const [showImportModal, setShowImportModal] = useState(false);
     const [isImportEnabled, setIsImportEnabled] = useState(false);
+    const [isAtsEnabled, setIsAtsEnabled] = useState(true);
     const [currentTemplate, setCurrentTemplate] = useState('Cv1');
     const [isDownloading, setIsDownloading] = useState(false);
     const [isDownloadingDocx, setIsDownloadingDocx] = useState(false);
@@ -114,19 +115,35 @@ const BuildResume = () => {
         return () => document.removeEventListener('keydown', closeOnEscape);
     }, [isMobileMenuOpen, isMobilePreviewOpen]);
 
-    // Load AI module settings & check if import module is enabled (Default OFF)
+    // Load module settings (Import Module, ATS Score Module, etc.)
     useEffect(() => {
-        getSystemSettings().then((settings) => {
-            const enabled = settings?.modules?.enableImportModule !== undefined
+        const syncSettings = (settings) => {
+            const importEnabled = settings?.modules?.enableImportModule !== undefined
                 ? settings.modules.enableImportModule === true
                 : settings?.ai?.enableImportModule === true;
-            setIsImportEnabled(enabled);
-            if (location.search && location.search.includes('import=true') && enabled) {
+            setIsImportEnabled(importEnabled);
+            if (location.search && location.search.includes('import=true') && importEnabled) {
                 setShowImportModal(true);
             }
-        }).catch(() => {
+
+            const atsEnabled = settings?.modules?.enableAtsScoreModule !== undefined
+                ? settings.modules.enableAtsScoreModule === true
+                : true;
+            setIsAtsEnabled(atsEnabled);
+        };
+
+        getSystemSettings().then(syncSettings).catch(() => {
             setIsImportEnabled(false);
+            setIsAtsEnabled(true);
         });
+
+        const handleSettingsUpdated = (e) => {
+            if (e.detail?.modules) {
+                syncSettings({ modules: e.detail.modules });
+            }
+        };
+        window.addEventListener('systemSettingsUpdated', handleSettingsUpdated);
+        return () => window.removeEventListener('systemSettingsUpdated', handleSettingsUpdated);
     }, [location.search]);
 
     const steps = [
@@ -1303,9 +1320,11 @@ const BuildResume = () => {
                                 </nav>
 
                                 {/* Mobile Progress Section */}
-                                <div className="mt-4">
-                                    <AtsScoreMeter resumeData={resumeData} onNavigate={(path) => { handleStepClick(path); setIsMobileMenuOpen(false); }} />
-                                </div>
+                                {isAtsEnabled && (
+                                    <div className="mt-4">
+                                        <AtsScoreMeter resumeData={resumeData} onNavigate={(path) => { handleStepClick(path); setIsMobileMenuOpen(false); }} />
+                                    </div>
+                                )}
 
                                 <div className="mt-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
                                     <div className="flex items-center justify-between mb-2">
@@ -1680,9 +1699,11 @@ const BuildResume = () => {
                     </button>
 
                     {/* Real-Time ATS Score Meter Widget */}
-                    <div className="mt-4">
-                        <AtsScoreMeter resumeData={resumeData} onNavigate={handleStepClick} />
-                    </div>
+                    {isAtsEnabled && (
+                        <div className="mt-4">
+                            <AtsScoreMeter resumeData={resumeData} onNavigate={handleStepClick} />
+                        </div>
+                    )}
 
                     {/* Progress Section */}
                     <div className="mt-4 p-3 bg-slate-50 rounded-lg border border-slate-200">

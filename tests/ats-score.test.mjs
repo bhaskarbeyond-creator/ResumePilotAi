@@ -424,6 +424,8 @@ test('BuildResume still mounts the meter on desktop and mobile without touching 
   const build = fs.readFileSync('src/components/BuildResume/BuildResume.jsx', 'utf8');
   assert.match(build, /<AtsScoreMeter resumeData=\{resumeData\} onNavigate=\{handleStepClick\} \/>/);
   assert.match(build, /setIsMobileMenuOpen\(false\)/);
+  assert.match(build, /isAtsEnabled/);
+  assert.match(build, /enableAtsScoreModule/);
   assert.equal((build.match(/<AtsScoreMeter /g) || []).length, 2);
   assert.match(build, /import TemplateRenderer/);
   const meter = fs.readFileSync('src/components/BuildResume/AtsScoreMeter.jsx', 'utf8');
@@ -432,6 +434,10 @@ test('BuildResume still mounts the meter on desktop and mobile without touching 
   assert.match(meter, /ATS readiness \{\{score\}\} out of 100/);
   assert.match(meter, /data-testid="ats-readiness-score"/);
   assert.match(meter, /data-testid="ats-jd-match"/);
+
+  const modules = fs.readFileSync('src/components/admin/settings/ModulesSettings.jsx', 'utf8');
+  assert.match(modules, /enableAtsScoreModule/);
+  assert.match(modules, /ATS Score Checker & Optimization Meter/);
 });
 
 test('stuffing detector flags consecutive repeats and low lexical diversity', () => {
