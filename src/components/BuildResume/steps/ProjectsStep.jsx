@@ -78,10 +78,10 @@ const ProjectsStep = ({ resumeData, updateResumeData }) => {
             // the Work History / Education / Skills steps follow.
             const completedSteps = [...(resumeData.completedSteps || [])];
             let updatedCompletedSteps = null;
-            if (validProjects.length > 0 && !completedSteps.includes(7)) {
-                updatedCompletedSteps = [...completedSteps, 7];
-            } else if (validProjects.length === 0 && completedSteps.includes(7)) {
-                updatedCompletedSteps = completedSteps.filter((step) => step !== 7);
+            if (validProjects.length > 0 && !completedSteps.includes(6)) {
+                updatedCompletedSteps = [...completedSteps, 6];
+            } else if (validProjects.length === 0 && completedSteps.includes(6)) {
+                updatedCompletedSteps = completedSteps.filter((step) => step !== 6);
             }
 
             updateResumeData({

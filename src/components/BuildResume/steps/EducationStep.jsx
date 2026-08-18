@@ -99,10 +99,10 @@ const EducationStep = ({ resumeData, updateResumeData }) => {
         const hasValidEducation = educations.some((edu) => edu.school.trim() !== '' && edu.degree.trim() !== '');
 
         const completedSteps = [...(resumeData.completedSteps || [])];
-        if (hasValidEducation && !completedSteps.includes(3)) {
-            updateResumeData({ educations, completedSteps: [...completedSteps, 3] });
-        } else if (!hasValidEducation && completedSteps.includes(3)) {
-            updateResumeData({ educations, completedSteps: completedSteps.filter(step => step !== 3) });
+        if (hasValidEducation && !completedSteps.includes(4)) {
+            updateResumeData({ educations, completedSteps: [...completedSteps, 4] });
+        } else if (!hasValidEducation && completedSteps.includes(4)) {
+            updateResumeData({ educations, completedSteps: completedSteps.filter(step => step !== 4) });
         }
     };
 

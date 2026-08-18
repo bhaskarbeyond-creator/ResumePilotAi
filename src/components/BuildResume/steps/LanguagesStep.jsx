@@ -116,13 +116,13 @@ const LanguagesStep = ({ resumeData, updateResumeData }) => {
 
         if (validLangs.length > 0 || hobbies.length > 0) {
             const completedSteps = [...(resumeData.completedSteps || [])];
-            if (!completedSteps.includes(5)) {
-                completedSteps.push(5);
+            if (!completedSteps.includes(7)) {
+                completedSteps.push(7);
                 updateResumeData({ languages, hobbies, completedSteps });
             }
         } else {
             const completedSteps = [...(resumeData.completedSteps || [])];
-            const updatedSteps = completedSteps.filter((step) => step !== 5);
+            const updatedSteps = completedSteps.filter((step) => step !== 7);
             if (updatedSteps.length !== completedSteps.length) {
                 updateResumeData({ languages, hobbies, completedSteps: updatedSteps });
             }

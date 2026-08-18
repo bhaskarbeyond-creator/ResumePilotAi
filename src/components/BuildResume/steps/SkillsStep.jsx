@@ -138,15 +138,14 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
 
         if (validSkills.length >= 3) {
             const completedSteps = [...(resumeData.completedSteps || [])];
-            if (!completedSteps.includes(4)) {
-                // Fixed: Use correct step ID (4 for skills)
-                completedSteps.push(4);
+            if (!completedSteps.includes(5)) {
+                completedSteps.push(5);
                 updateResumeData({ skills, completedSteps });
             }
         } else {
             // Remove step from completed if it no longer meets requirements
             const completedSteps = [...(resumeData.completedSteps || [])];
-            const updatedSteps = completedSteps.filter((step) => step !== 4);
+            const updatedSteps = completedSteps.filter((step) => step !== 5);
             if (updatedSteps.length !== completedSteps.length) {
                 updateResumeData({ skills, completedSteps: updatedSteps });
             }

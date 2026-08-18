@@ -156,14 +156,17 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
     const handleSave = () => {
         updateResumeData({ summary });
 
-        // Mark step as completed if summary is substantial
-        const plainText = summary.replace(/<[^>]*>/g, '');
-        if (plainText.trim().length >= 100) {
-            const completedSteps = [...(resumeData.completedSteps || [])];
-            if (!completedSteps.includes(6)) {
-                completedSteps.push(6);
+        // Mark step as completed if summary is provided
+        const plainText = summary.replace(/<[^>]*>/g, '').trim();
+        const completedSteps = [...(resumeData.completedSteps || [])];
+        if (plainText.length >= 20) {
+            if (!completedSteps.includes(2)) {
+                completedSteps.push(2);
                 updateResumeData({ summary, completedSteps });
             }
+        } else if (completedSteps.includes(2)) {
+            const updatedSteps = completedSteps.filter((step) => step !== 2);
+            updateResumeData({ summary, completedSteps: updatedSteps });
         }
     };
 

@@ -102,10 +102,10 @@ const WorkHistoryStep = ({ resumeData, updateResumeData }) => {
         const hasValidEmployment = employments.some((emp) => emp.jobTitle.trim() !== '' && emp.employer.trim() !== '');
 
         const completedSteps = [...(resumeData.completedSteps || [])];
-        if (hasValidEmployment && !completedSteps.includes(2)) {
-            updateResumeData({ employments, completedSteps: [...completedSteps, 2] });
-        } else if (!hasValidEmployment && completedSteps.includes(2)) {
-            updateResumeData({ employments, completedSteps: completedSteps.filter(step => step !== 2) });
+        if (hasValidEmployment && !completedSteps.includes(3)) {
+            updateResumeData({ employments, completedSteps: [...completedSteps, 3] });
+        } else if (!hasValidEmployment && completedSteps.includes(3)) {
+            updateResumeData({ employments, completedSteps: completedSteps.filter(step => step !== 3) });
         }
     };
 
