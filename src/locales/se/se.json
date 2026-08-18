@@ -1008,7 +1008,8 @@
       "education": "Utbildning",
       "skills": "Färdigheter",
       "summary": "Sammanfattning",
-      "projects": "Projekt"
+      "projects": "Projekt",
+      "certifications": "Certifieringar"
     },
     "navigation": {
       "previous": "Föregående",
@@ -1391,6 +1392,33 @@
     }
   }
 },
+  "CertificationsStep": {
+    "title": "Certifieringar",
+    "subtitle": "Lägg till professionella certifieringar och licenser som styrker din expertis.",
+    "defaultValues": {
+      "untitledCertification": "Certifiering utan namn"
+    },
+    "actions": {
+      "collapse": "Fäll ihop",
+      "expand": "Expandera",
+      "remove": "Ta bort Certifiering",
+      "addCertification": "Lägg till Certifiering"
+    },
+    "fields": {
+      "title": {
+        "label": "Certifieringens Namn",
+        "placeholder": "t.ex. AWS Solutions Architect"
+      },
+      "issuer": {
+        "label": "Utfärdande Organisation",
+        "placeholder": "t.ex. Amazon Web Services"
+      },
+      "date": {
+        "label": "Utfärdandedatum",
+        "placeholder": "t.ex. 2024"
+      }
+    }
+  },
   "EducationSuggestionModal": {
     "title": "AI Utbildningsförslag",
     "subtitle": "Generera professionella beskrivningar baserade på dina utbildningsdetaljer",

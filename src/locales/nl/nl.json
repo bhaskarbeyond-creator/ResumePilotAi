@@ -1008,7 +1008,8 @@
       "education": "Opleiding",
       "skills": "Vaardigheden",
       "summary": "Samenvatting",
-      "projects": "Projecten"
+      "projects": "Projecten",
+      "certifications": "Certificeringen"
     },
     "navigation": {
       "previous": "Vorige",
@@ -1391,6 +1392,33 @@
     }
   }
 },
+  "CertificationsStep": {
+    "title": "Certificeringen",
+    "subtitle": "Voeg professionele certificeringen en licenties toe die uw expertise bevestigen.",
+    "defaultValues": {
+      "untitledCertification": "Naamloze certificering"
+    },
+    "actions": {
+      "collapse": "Inklappen",
+      "expand": "Uitklappen",
+      "remove": "Certificering Verwijderen",
+      "addCertification": "Certificering Toevoegen"
+    },
+    "fields": {
+      "title": {
+        "label": "Naam Certificering",
+        "placeholder": "bijv. AWS Solutions Architect"
+      },
+      "issuer": {
+        "label": "Certificerende Organisatie",
+        "placeholder": "bijv. Amazon Web Services"
+      },
+      "date": {
+        "label": "Datum van Uitgifte",
+        "placeholder": "bijv. 2024"
+      }
+    }
+  },
   "EducationSuggestionModal": {
     "title": "AI Opleidingssuggesties",
     "subtitle": "Genereer professionele beschrijvingen op basis van uw opleidingsgegevens",

@@ -1008,7 +1008,8 @@
       "education": "Educação",
       "skills": "Habilidades",
       "summary": "Resumo",
-      "projects": "Projetos"
+      "projects": "Projetos",
+      "certifications": "Certificações"
     },
     "navigation": {
       "previous": "Anterior",
@@ -1391,6 +1392,33 @@
     }
   }
 },
+  "CertificationsStep": {
+    "title": "Certificações",
+    "subtitle": "Adicione certificações e licenças profissionais que comprovem a sua experiência.",
+    "defaultValues": {
+      "untitledCertification": "Certificação sem título"
+    },
+    "actions": {
+      "collapse": "Recolher",
+      "expand": "Expandir",
+      "remove": "Remover Certificação",
+      "addCertification": "Adicionar Certificação"
+    },
+    "fields": {
+      "title": {
+        "label": "Nome da Certificação",
+        "placeholder": "ex. AWS Solutions Architect"
+      },
+      "issuer": {
+        "label": "Organização Emissora",
+        "placeholder": "ex. Amazon Web Services"
+      },
+      "date": {
+        "label": "Data de Emissão",
+        "placeholder": "ex. 2024"
+      }
+    }
+  },
   "EducationSuggestionModal": {
     "title": "Sugestões de Educação por IA",
     "subtitle": "Gere descrições profissionais com base nos detalhes da sua educação",

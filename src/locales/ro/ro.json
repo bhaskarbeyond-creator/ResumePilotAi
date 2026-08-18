@@ -1008,7 +1008,8 @@
       "education": "Educație",
       "skills": "Competențe",
       "summary": "Rezumat",
-      "projects": "Proiecte"
+      "projects": "Proiecte",
+      "certifications": "Certificări"
     },
     "navigation": {
       "previous": "Anterior",
@@ -1391,6 +1392,33 @@
     }
   }
 },
+  "CertificationsStep": {
+    "title": "Certificări",
+    "subtitle": "Adăugați certificări și licențe profesionale care vă atestă expertiza.",
+    "defaultValues": {
+      "untitledCertification": "Certificare fără titlu"
+    },
+    "actions": {
+      "collapse": "Restrânge",
+      "expand": "Extinde",
+      "remove": "Eliminare Certificare",
+      "addCertification": "Adăugare Certificare"
+    },
+    "fields": {
+      "title": {
+        "label": "Numele Certificării",
+        "placeholder": "de ex. AWS Solutions Architect"
+      },
+      "issuer": {
+        "label": "Organizația Emitentă",
+        "placeholder": "de ex. Amazon Web Services"
+      },
+      "date": {
+        "label": "Data Emiterii",
+        "placeholder": "de ex. 2024"
+      }
+    }
+  },
   "EducationSuggestionModal": {
     "title": "Sugestii Educație AI",
     "subtitle": "Generați descrieri profesionale pe baza detaliilor educaționale",

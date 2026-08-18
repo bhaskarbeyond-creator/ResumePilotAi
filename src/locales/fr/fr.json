@@ -1008,7 +1008,8 @@
       "education": "Éducation",
       "skills": "Compétences",
       "summary": "Résumé",
-      "projects": "Projets"
+      "projects": "Projets",
+      "certifications": "Certifications"
     },
     "navigation": {
       "previous": "Précédent",
@@ -1391,6 +1392,33 @@
     }
   }
 },
+  "CertificationsStep": {
+    "title": "Certifications",
+    "subtitle": "Ajoutez des certifications et licences professionnelles qui attestent de votre expertise.",
+    "defaultValues": {
+      "untitledCertification": "Certification sans titre"
+    },
+    "actions": {
+      "collapse": "Réduire",
+      "expand": "Développer",
+      "remove": "Supprimer la certification",
+      "addCertification": "Ajouter une Certification"
+    },
+    "fields": {
+      "title": {
+        "label": "Nom de la Certification",
+        "placeholder": "p. ex. AWS Solutions Architect"
+      },
+      "issuer": {
+        "label": "Organisme de Certification",
+        "placeholder": "p. ex. Amazon Web Services"
+      },
+      "date": {
+        "label": "Date de Délivrance",
+        "placeholder": "p. ex. 2024"
+      }
+    }
+  },
   "EducationSuggestionModal": {
     "title": "Suggestions d'éducation IA",
     "subtitle": "Générez des descriptions professionnelles basées sur vos détails d'éducation",

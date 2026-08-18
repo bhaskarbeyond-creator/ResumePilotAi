@@ -1008,7 +1008,8 @@
       "education": "Образование",
       "skills": "Навыки",
       "summary": "Резюме",
-      "projects": "Проекты"
+      "projects": "Проекты",
+      "certifications": "Сертификаты"
     },
     "navigation": {
       "previous": "Предыдущий",
@@ -1391,6 +1392,33 @@
     }
   }
 },
+  "CertificationsStep": {
+    "title": "Сертификаты",
+    "subtitle": "Добавьте профессиональные сертификаты и лицензии, подтверждающие ваш опыт.",
+    "defaultValues": {
+      "untitledCertification": "Сертификат без названия"
+    },
+    "actions": {
+      "collapse": "Свернуть",
+      "expand": "Развернуть",
+      "remove": "Удалить сертификат",
+      "addCertification": "Добавить сертификат"
+    },
+    "fields": {
+      "title": {
+        "label": "Название сертификата",
+        "placeholder": "напр. AWS Solutions Architect"
+      },
+      "issuer": {
+        "label": "Выдавшая организация",
+        "placeholder": "напр. Amazon Web Services"
+      },
+      "date": {
+        "label": "Дата выдачи",
+        "placeholder": "напр. 2024"
+      }
+    }
+  },
   "EducationSuggestionModal": {
     "title": "Предложения по образованию от ИИ",
     "subtitle": "Создавайте профессиональные описания на основе ваших образовательных данных",

@@ -10,6 +10,7 @@ import SkillsStep from './steps/SkillsStep';
 import LanguagesStep from './steps/LanguagesStep';
 import SummaryStep from './steps/SummaryStep';
 import ProjectsStep from './steps/ProjectsStep';
+import CertificationsStep from './steps/CertificationsStep';
 
 import TemplateRenderer from '../TemplateRenderer';
 import { getTemplateMeta } from '../../utils/templateCatalog';
@@ -202,6 +203,18 @@ const BuildResume = () => {
         },
         {
             id: 7,
+            name: t('BuildResume.steps.certifications', 'Certifications'),
+            path: 'certifications',
+            component: CertificationsStep,
+            icon: (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="8" r="7" />
+                    <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88" />
+                </svg>
+            ),
+        },
+        {
+            id: 8,
             name: t('BuildResume.steps.languages', 'Languages'),
             path: 'languages',
             component: LanguagesStep,
@@ -1728,6 +1741,7 @@ const BuildResume = () => {
                                 <Route path="languages" element={<LanguagesStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
                                 <Route path="summary" element={<SummaryStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
                                 <Route path="projects" element={<ProjectsStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
+                                <Route path="certifications" element={<CertificationsStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
                                 <Route path="" element={<HeadingStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
                             </Routes>
                         </div>

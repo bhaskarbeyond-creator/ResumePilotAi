@@ -1008,7 +1008,8 @@
       "education": "Utdanning",
       "skills": "Ferdigheter",
       "summary": "Sammendrag",
-      "projects": "Prosjekter"
+      "projects": "Prosjekter",
+      "certifications": "Sertifiseringer"
     },
     "navigation": {
       "previous": "Forrige",
@@ -1391,6 +1392,33 @@
     }
   }
 },
+  "CertificationsStep": {
+    "title": "Sertifiseringer",
+    "subtitle": "Legg til profesjonelle sertifiseringer og lisenser som bekrefter ekspertisen din.",
+    "defaultValues": {
+      "untitledCertification": "Sertifisering uten navn"
+    },
+    "actions": {
+      "collapse": "Kollaps",
+      "expand": "Utvid",
+      "remove": "Fjern Sertifisering",
+      "addCertification": "Legg til Sertifisering"
+    },
+    "fields": {
+      "title": {
+        "label": "Sertifiseringsnavn",
+        "placeholder": "f.eks. AWS Solutions Architect"
+      },
+      "issuer": {
+        "label": "Utstedende Organisasjon",
+        "placeholder": "f.eks. Amazon Web Services"
+      },
+      "date": {
+        "label": "Utstedelsesdato",
+        "placeholder": "f.eks. 2024"
+      }
+    }
+  },
   "EducationSuggestionModal": {
     "title": "AI Utdanningsforslag",
     "subtitle": "Generer profesjonelle beskrivelser basert på dine utdanningsdetaljer",

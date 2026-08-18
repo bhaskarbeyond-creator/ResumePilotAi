@@ -1008,7 +1008,8 @@
       "education": "Menntun",
       "skills": "Hæfni",
       "summary": "Yfirlit",
-      "projects": "Verkefni"
+      "projects": "Verkefni",
+      "certifications": "Vottanir"
     },
     "navigation": {
       "previous": "Fyrri",
@@ -1391,6 +1392,33 @@
     }
   }
 },
+  "CertificationsStep": {
+    "title": "Vottanir",
+    "subtitle": "Bættu við faglegum vottunum og leyfum sem staðfesta sérfræðiþekkingu þína.",
+    "defaultValues": {
+      "untitledCertification": "Ónefnd vottun"
+    },
+    "actions": {
+      "collapse": "Loka",
+      "expand": "Opna",
+      "remove": "Fjarlægja Vottun",
+      "addCertification": "Bæta við Vottun"
+    },
+    "fields": {
+      "title": {
+        "label": "Nafn Vottunar",
+        "placeholder": "t.d. AWS Solutions Architect"
+      },
+      "issuer": {
+        "label": "Útgefandi Stofnun",
+        "placeholder": "t.d. Amazon Web Services"
+      },
+      "date": {
+        "label": "Útgáfudagur",
+        "placeholder": "t.d. 2024"
+      }
+    }
+  },
   "EducationSuggestionModal": {
     "title": "AI Menntunartillögur",
     "subtitle": "Búðu til faglegar lýsingar byggðar á upplýsingum um menntun þína",

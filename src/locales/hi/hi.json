@@ -1126,7 +1126,8 @@
       "education": "शिक्षा",
       "skills": "कौशल",
       "summary": "सारांश",
-      "projects": "परियोजनाएँ"
+      "projects": "परियोजनाएँ",
+      "certifications": "प्रमाणपत्र"
     },
     "navigation": {
       "previous": "पिछला",
@@ -1509,6 +1510,33 @@
     }
   }
 },
+  "CertificationsStep": {
+    "title": "प्रमाणपत्र",
+    "subtitle": "अपनी विशेषज्ञता को प्रमाणित करने वाले पेशेवर प्रमाणपत्र और लाइसेंस जोड़ें।",
+    "defaultValues": {
+      "untitledCertification": "शीर्षक रहित प्रमाणपत्र"
+    },
+    "actions": {
+      "collapse": "संक्षिप्त करें",
+      "expand": "विस्तार करें",
+      "remove": "प्रमाणपत्र हटाएं",
+      "addCertification": "प्रमाणपत्र जोड़ें"
+    },
+    "fields": {
+      "title": {
+        "label": "प्रमाणपत्र का नाम",
+        "placeholder": "जैसे AWS Solutions Architect"
+      },
+      "issuer": {
+        "label": "जारी करने वाला संगठन",
+        "placeholder": "जैसे Amazon Web Services"
+      },
+      "date": {
+        "label": "जारी करने की तिथि",
+        "placeholder": "जैसे 2024"
+      }
+    }
+  },
   "EducationSuggestionModal": {
     "title": "एआई शिक्षा सुझाव",
     "subtitle": "अपने शिक्षा विवरण के आधार पर पेशेवर विवरण उत्पन्न करें",

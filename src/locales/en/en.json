@@ -1107,7 +1107,8 @@
       "skills": "Skills",
       "languages": "Languages",
       "summary": "Summary",
-      "projects": "Projects"
+      "projects": "Projects",
+      "certifications": "Certifications"
     },
     "navigation": {
       "previous": "Previous",
@@ -1490,6 +1491,33 @@
     }
   }
 },
+  "CertificationsStep": {
+    "title": "Certifications",
+    "subtitle": "Add professional certifications and licenses that validate your expertise.",
+    "defaultValues": {
+      "untitledCertification": "Untitled Certification"
+    },
+    "actions": {
+      "collapse": "Collapse",
+      "expand": "Expand",
+      "remove": "Remove certification",
+      "addCertification": "Add Certification"
+    },
+    "fields": {
+      "title": {
+        "label": "Certification Name",
+        "placeholder": "e.g. AWS Solutions Architect"
+      },
+      "issuer": {
+        "label": "Issuing Organization",
+        "placeholder": "e.g. Amazon Web Services"
+      },
+      "date": {
+        "label": "Date Issued",
+        "placeholder": "e.g. 2024"
+      }
+    }
+  },
   "EducationSuggestionModal": {
     "title": "AI Education Suggestions",
     "subtitle": "Generate professional descriptions based on your education details",

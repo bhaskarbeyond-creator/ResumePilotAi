@@ -1008,7 +1008,8 @@
       "education": "Ausbildung",
       "skills": "Fähigkeiten",
       "summary": "Zusammenfassung",
-      "projects": "Projekte"
+      "projects": "Projekte",
+      "certifications": "Zertifizierungen"
     },
     "navigation": {
       "previous": "Zurück",
@@ -1391,6 +1392,33 @@
     }
   }
 },
+  "CertificationsStep": {
+    "title": "Zertifizierungen",
+    "subtitle": "Fügen Sie berufliche Zertifizierungen und Lizenzen hinzu, die Ihre Fachkenntnisse belegen.",
+    "defaultValues": {
+      "untitledCertification": "Unbenannte Zertifizierung"
+    },
+    "actions": {
+      "collapse": "Einklappen",
+      "expand": "Ausklappen",
+      "remove": "Zertifizierung entfernen",
+      "addCertification": "Zertifizierung hinzufügen"
+    },
+    "fields": {
+      "title": {
+        "label": "Zertifizierungsname",
+        "placeholder": "z. B. AWS Solutions Architect"
+      },
+      "issuer": {
+        "label": "Ausstellende Organisation",
+        "placeholder": "z. B. Amazon Web Services"
+      },
+      "date": {
+        "label": "Ausstellungsdatum",
+        "placeholder": "z. B. 2024"
+      }
+    }
+  },
   "EducationSuggestionModal": {
     "title": "KI-Bildungsvorschläge",
     "subtitle": "Generieren Sie professionelle Beschreibungen basierend auf Ihren Bildungsdetails",

@@ -771,7 +771,8 @@ function buildCertificationsBlock(certs, style, options = {}) {
     for (const cert of items) {
       const title = stripAllHtmlTags(cert.name || cert.title || '');
       const issuer = stripAllHtmlTags(cert.issuer || cert.organization || '');
-      const line = [title, issuer].filter(Boolean).join(' — ');
+      const date = stripAllHtmlTags(cert.date || cert.year || '');
+      const line = [title, issuer, date].filter(Boolean).join(' — ');
       if (!line) continue;
       entryNodes.push(new Paragraph({
         numbering: { reference: BULLET_REF, level: 0 },
@@ -790,7 +791,7 @@ function buildCertificationsBlock(certs, style, options = {}) {
   for (let i = 0; i < items.length; i += 2) {
     const cellText = (cert) => {
       if (!cert) return '';
-      return [stripAllHtmlTags(cert.name || cert.title || ''), stripAllHtmlTags(cert.issuer || cert.organization || '')].filter(Boolean).join(' — ');
+      return [stripAllHtmlTags(cert.name || cert.title || ''), stripAllHtmlTags(cert.issuer || cert.organization || ''), stripAllHtmlTags(cert.date || cert.year || '')].filter(Boolean).join(' — ');
     };
     const left = cellText(items[i]);
     const right = cellText(items[i + 1]);

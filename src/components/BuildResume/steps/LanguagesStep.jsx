@@ -116,13 +116,13 @@ const LanguagesStep = ({ resumeData, updateResumeData }) => {
 
         if (validLangs.length > 0 || hobbies.length > 0) {
             const completedSteps = [...(resumeData.completedSteps || [])];
-            if (!completedSteps.includes(7)) {
-                completedSteps.push(7);
+            if (!completedSteps.includes(8)) {
+                completedSteps.push(8);
                 updateResumeData({ languages, hobbies, completedSteps });
             }
         } else {
             const completedSteps = [...(resumeData.completedSteps || [])];
-            const updatedSteps = completedSteps.filter((step) => step !== 7);
+            const updatedSteps = completedSteps.filter((step) => step !== 8);
             if (updatedSteps.length !== completedSteps.length) {
                 updateResumeData({ languages, hobbies, completedSteps: updatedSteps });
             }
@@ -150,7 +150,7 @@ const LanguagesStep = ({ resumeData, updateResumeData }) => {
                 <div className="mb-6">
                     <div className="flex items-center gap-3 mb-2">
                         <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-semibold text-sm">
-                            5
+                            8
                         </div>
                         <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                             <MdTranslate className="w-6 h-6 text-blue-600" />

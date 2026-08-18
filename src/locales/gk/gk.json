@@ -1008,7 +1008,8 @@
       "education": "Εκπαίδευση",
       "skills": "Δεξιότητες",
       "summary": "Περίληψη",
-      "projects": "Έργα"
+      "projects": "Έργα",
+      "certifications": "Πιστοποιήσεις"
     },
     "navigation": {
       "previous": "Προηγούμενο",
@@ -1391,6 +1392,33 @@
     }
   }
 },
+  "CertificationsStep": {
+    "title": "Πιστοποιήσεις",
+    "subtitle": "Προσθέστε επαγγελματικές πιστοποιήσεις και άδειες που επιβεβαιώνουν την εξειδίκευσή σας.",
+    "defaultValues": {
+      "untitledCertification": "Πιστοποίηση χωρίς τίτλο"
+    },
+    "actions": {
+      "collapse": "Σύμπτυξη",
+      "expand": "Επέκταση",
+      "remove": "Αφαίρεση Πιστοποίησης",
+      "addCertification": "Προσθήκη Πιστοποίησης"
+    },
+    "fields": {
+      "title": {
+        "label": "Όνομα Πιστοποίησης",
+        "placeholder": "π.χ. AWS Solutions Architect"
+      },
+      "issuer": {
+        "label": "Φορέας Έκδοσης",
+        "placeholder": "π.χ. Amazon Web Services"
+      },
+      "date": {
+        "label": "Ημερομηνία Έκδοσης",
+        "placeholder": "π.χ. 2024"
+      }
+    }
+  },
   "EducationSuggestionModal": {
     "title": "AI Προτάσεις Εκπαίδευσης",
     "subtitle": "Δημιουργήστε επαγγελματικές περιγραφές με βάση τις λεπτομέρειες της εκπαίδευσής σας",
