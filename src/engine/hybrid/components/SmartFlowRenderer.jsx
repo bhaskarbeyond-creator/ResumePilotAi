@@ -159,7 +159,9 @@ export default function SmartFlowRenderer({ flowItems = [], theme = {}, isContin
 
           case 'custom': {
             const customItems = group.items.map((i) => i.item);
-            const heading = group.sectionTitle || group.items[0]?.sectionTitle || 'Additional Information';
+            const baseHeading = group.sectionTitle || group.items[0]?.sectionTitle || 'Additional Information';
+            const isFirstInDoc = group.items[0]?.isFirst;
+            const heading = isFirstInDoc === false ? `${baseHeading} (Continued)` : baseHeading;
             return (
               <SmartCustomSection
                 key={gIdx}
