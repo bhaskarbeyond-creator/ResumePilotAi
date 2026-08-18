@@ -1364,6 +1364,33 @@
       "generationFailed": "KI-Zusammenfassung konnte nicht generiert werden. Bitte versuchen Sie es erneut."
     }
   },
+  "ProjectsStep": {
+  "title": "Projekte",
+  "subtitle": "Fügen Sie persönliche, akademische oder berufliche Projekte hinzu, die Ihre Fähigkeiten unterstreichen.",
+  "defaultValues": {
+    "untitledProject": "Unbenanntes Projekt"
+  },
+  "actions": {
+    "collapse": "Einklappen",
+    "expand": "Ausklappen",
+    "remove": "Projekt entfernen",
+    "addProject": "Projekt hinzufügen"
+  },
+  "fields": {
+    "title": {
+      "label": "Projektname",
+      "placeholder": "z. B. E-Commerce-Plattform"
+    },
+    "url": {
+      "label": "Projekt-URL",
+      "placeholder": "https://github.com/..."
+    },
+    "description": {
+      "label": "Beschreibung",
+      "placeholder": "Beschreiben Sie, was das Projekt macht, verwendete Technologien, Ihre Beiträge und Wirkung…"
+    }
+  }
+},
   "EducationSuggestionModal": {
     "title": "KI-Bildungsvorschläge",
     "subtitle": "Generieren Sie professionelle Beschreibungen basierend auf Ihren Bildungsdetails",

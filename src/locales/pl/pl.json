@@ -1364,6 +1364,33 @@
       "generationFailed": "Nie udało się wygenerować podsumowania AI. Spróbuj ponownie."
     }
   },
+  "ProjectsStep": {
+  "title": "Projekty",
+  "subtitle": "Dodaj projekty osobiste, akademickie lub zawodowe, które prezentują Twoje umiejętności.",
+  "defaultValues": {
+    "untitledProject": "Projekt Bez Nazwy"
+  },
+  "actions": {
+    "collapse": "Zwiń",
+    "expand": "Rozwiń",
+    "remove": "Usuń Projekt",
+    "addProject": "Dodaj Projekt"
+  },
+  "fields": {
+    "title": {
+      "label": "Nazwa Projektu",
+      "placeholder": "np. Platforma e-commerce"
+    },
+    "url": {
+      "label": "URL Projektu",
+      "placeholder": "https://github.com/..."
+    },
+    "description": {
+      "label": "Opis",
+      "placeholder": "Opisz, co robi projekt, użyte technologie, Twój wkład i wpływ…"
+    }
+  }
+},
   "EducationSuggestionModal": {
     "title": "Sugestie edukacyjne AI",
     "subtitle": "Wygeneruj profesjonalne opisy na podstawie szczegółów Twojego wykształcenia",

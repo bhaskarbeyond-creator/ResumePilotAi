@@ -1364,6 +1364,33 @@
       "generationFailed": "Generarea rezumatului AI a eșuat. Vă rugăm să încercați din nou."
     }
   },
+  "ProjectsStep": {
+  "title": "Proiecte",
+  "subtitle": "Adăugați proiecte personale, academice sau profesionale care vă pun în valoare abilitățile.",
+  "defaultValues": {
+    "untitledProject": "Proiect Fără Titlu"
+  },
+  "actions": {
+    "collapse": "Restrânge",
+    "expand": "Extinde",
+    "remove": "Eliminare Proiect",
+    "addProject": "Adăugare Proiect"
+  },
+  "fields": {
+    "title": {
+      "label": "Nume Proiect",
+      "placeholder": "de ex. Platformă de comerț electronic"
+    },
+    "url": {
+      "label": "URL Proiect",
+      "placeholder": "https://github.com/..."
+    },
+    "description": {
+      "label": "Descriere",
+      "placeholder": "Descrieți ce face proiectul, tehnologiile folosite, contribuțiile și impactul dvs.…"
+    }
+  }
+},
   "EducationSuggestionModal": {
     "title": "Sugestii Educație AI",
     "subtitle": "Generați descrieri profesionale pe baza detaliilor educaționale",

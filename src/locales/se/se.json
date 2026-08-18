@@ -1364,6 +1364,33 @@
       "generationFailed": "Kunde inte generera AI-sammanfattning. Försök igen."
     }
   },
+  "ProjectsStep": {
+  "title": "Projekt",
+  "subtitle": "Lägg till personliga, akademiska eller professionella projekt som visar dina färdigheter.",
+  "defaultValues": {
+    "untitledProject": "Projekt Utan Namn"
+  },
+  "actions": {
+    "collapse": "Fäll ihop",
+    "expand": "Expandera",
+    "remove": "Ta bort Projekt",
+    "addProject": "Lägg till Projekt"
+  },
+  "fields": {
+    "title": {
+      "label": "Projektnamn",
+      "placeholder": "t.ex. E-handelsplattform"
+    },
+    "url": {
+      "label": "Projekt-URL",
+      "placeholder": "https://github.com/..."
+    },
+    "description": {
+      "label": "Beskrivning",
+      "placeholder": "Beskriv vad projektet gör, teknik som används, dina bidrag och resultat…"
+    }
+  }
+},
   "EducationSuggestionModal": {
     "title": "AI Utbildningsförslag",
     "subtitle": "Generera professionella beskrivningar baserade på dina utbildningsdetaljer",

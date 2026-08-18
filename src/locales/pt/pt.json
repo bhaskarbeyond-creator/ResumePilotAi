@@ -1364,6 +1364,33 @@
       "generationFailed": "Falha ao gerar resumo de IA. Por favor, tente novamente."
     }
   },
+  "ProjectsStep": {
+  "title": "Projetos",
+  "subtitle": "Adicione projetos pessoais, acadêmicos ou profissionais que demonstrem suas habilidades.",
+  "defaultValues": {
+    "untitledProject": "Projeto Sem Título"
+  },
+  "actions": {
+    "collapse": "Recolher",
+    "expand": "Expandir",
+    "remove": "Remover Projeto",
+    "addProject": "Adicionar Projeto"
+  },
+  "fields": {
+    "title": {
+      "label": "Nome do Projeto",
+      "placeholder": "ex. Plataforma de E-commerce"
+    },
+    "url": {
+      "label": "URL do Projeto",
+      "placeholder": "https://github.com/..."
+    },
+    "description": {
+      "label": "Descrição",
+      "placeholder": "Descreva o que o projeto faz, as tecnologias usadas, suas contribuições e impacto…"
+    }
+  }
+},
   "EducationSuggestionModal": {
     "title": "Sugestões de Educação por IA",
     "subtitle": "Gere descrições profissionais com base nos detalhes da sua educação",

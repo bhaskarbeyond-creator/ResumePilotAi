@@ -1364,6 +1364,33 @@
       "generationFailed": "Impossibile generare il riepilogo AI. Riprova."
     }
   },
+  "ProjectsStep": {
+  "title": "Progetti",
+  "subtitle": "Aggiungi progetti personali, accademici o professionali che mettono in mostra le tue competenze.",
+  "defaultValues": {
+    "untitledProject": "Progetto Senza Titolo"
+  },
+  "actions": {
+    "collapse": "Riduci",
+    "expand": "Espandi",
+    "remove": "Rimuovi Progetto",
+    "addProject": "Aggiungi Progetto"
+  },
+  "fields": {
+    "title": {
+      "label": "Nome del Progetto",
+      "placeholder": "es. Piattaforma di e-commerce"
+    },
+    "url": {
+      "label": "URL del Progetto",
+      "placeholder": "https://github.com/..."
+    },
+    "description": {
+      "label": "Descrizione",
+      "placeholder": "Descrivi cosa fa il progetto, le tecnologie utilizzate, i tuoi contributi e il tuo impatto…"
+    }
+  }
+},
   "EducationSuggestionModal": {
     "title": "Suggerimenti Educazione AI",
     "subtitle": "Genera descrizioni professionali basate sui tuoi dettagli educativi",

@@ -1461,6 +1461,33 @@
       "generationFailed": "No se pudo generar el resumen con IA. Por favor, inténtalo de nuevo."
     }
   },
+  "ProjectsStep": {
+  "title": "Proyectos",
+  "subtitle": "Añade proyectos personales, académicos o profesionales que demuestren tus habilidades.",
+  "defaultValues": {
+    "untitledProject": "Proyecto sin título"
+  },
+  "actions": {
+    "collapse": "Colapsar",
+    "expand": "Expandir",
+    "remove": "Eliminar proyecto",
+    "addProject": "Añadir Proyecto"
+  },
+  "fields": {
+    "title": {
+      "label": "Nombre del Proyecto",
+      "placeholder": "p. ej. Plataforma de comercio electrónico"
+    },
+    "url": {
+      "label": "URL del Proyecto",
+      "placeholder": "https://github.com/..."
+    },
+    "description": {
+      "label": "Descripción",
+      "placeholder": "Describe qué hace el proyecto, tecnologías utilizadas, tus contribuciones e impacto…"
+    }
+  }
+},
   "EducationSuggestionModal": {
     "title": "Sugerencias de Educación por IA",
     "subtitle": "Genera descripciones profesionales basadas en los detalles de tu educación",

@@ -1364,6 +1364,33 @@
       "generationFailed": "Échec de la génération du résumé IA. Veuillez réessayer."
     }
   },
+  "ProjectsStep": {
+  "title": "Projets",
+  "subtitle": "Ajoutez des projets personnels, académiques ou professionnels qui mettent en valeur vos compétences.",
+  "defaultValues": {
+    "untitledProject": "Projet sans titre"
+  },
+  "actions": {
+    "collapse": "Réduire",
+    "expand": "Développer",
+    "remove": "Supprimer le projet",
+    "addProject": "Ajouter un Projet"
+  },
+  "fields": {
+    "title": {
+      "label": "Nom du Projet",
+      "placeholder": "p. ex. Plateforme e-commerce"
+    },
+    "url": {
+      "label": "URL du Projet",
+      "placeholder": "https://github.com/..."
+    },
+    "description": {
+      "label": "Description",
+      "placeholder": "Décrivez ce que fait le projet, les technologies utilisées, vos contributions et votre impact…"
+    }
+  }
+},
   "EducationSuggestionModal": {
     "title": "Suggestions d'éducation IA",
     "subtitle": "Générez des descriptions professionnelles basées sur vos détails d'éducation",

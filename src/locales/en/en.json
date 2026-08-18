@@ -1463,6 +1463,33 @@
       "generationFailed": "Failed to generate AI summary. Please try again."
     }
   },
+  "ProjectsStep": {
+  "title": "Projects",
+  "subtitle": "Add personal, academic, or professional projects that showcase your skills.",
+  "defaultValues": {
+    "untitledProject": "Untitled Project"
+  },
+  "actions": {
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "remove": "Remove project",
+    "addProject": "Add Project"
+  },
+  "fields": {
+    "title": {
+      "label": "Project Name",
+      "placeholder": "e.g. E-commerce Platform"
+    },
+    "url": {
+      "label": "Project URL",
+      "placeholder": "https://github.com/..."
+    },
+    "description": {
+      "label": "Description",
+      "placeholder": "Describe what the project does, technologies used, your contributions and impact…"
+    }
+  }
+},
   "EducationSuggestionModal": {
     "title": "AI Education Suggestions",
     "subtitle": "Generate professional descriptions based on your education details",

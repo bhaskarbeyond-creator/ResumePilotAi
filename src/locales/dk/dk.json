@@ -1364,6 +1364,33 @@
       "generationFailed": "Kunne ikke generere AI-resumé. Prøv igen."
     }
   },
+  "ProjectsStep": {
+  "title": "Projekter",
+  "subtitle": "Tilføj personlige, akademiske eller professionelle projekter, der viser dine færdigheder.",
+  "defaultValues": {
+    "untitledProject": "Unavngivet Projekt"
+  },
+  "actions": {
+    "collapse": "Fold Sammen",
+    "expand": "Udvid",
+    "remove": "Fjern Projekt",
+    "addProject": "Tilføj Projekt"
+  },
+  "fields": {
+    "title": {
+      "label": "Projektnavn",
+      "placeholder": "f.eks. E-handelsplatform"
+    },
+    "url": {
+      "label": "Projekt-URL",
+      "placeholder": "https://github.com/..."
+    },
+    "description": {
+      "label": "Beskrivelse",
+      "placeholder": "Beskriv, hvad projektet gør, anvendte teknologier, dine bidrag og resultater…"
+    }
+  }
+},
   "EducationSuggestionModal": {
     "title": "AI Uddannelsesforslag",
     "subtitle": "Generer professionelle beskrivelser baseret på dine uddannelsesdetaljer",

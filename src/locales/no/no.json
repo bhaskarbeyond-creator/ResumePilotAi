@@ -1364,6 +1364,33 @@
       "generationFailed": "Kunne ikke generere AI-sammendrag. Prøv igjen."
     }
   },
+  "ProjectsStep": {
+  "title": "Prosjekter",
+  "subtitle": "Legg til personlige, akademiske eller profesjonelle prosjekter som viser ferdighetene dine.",
+  "defaultValues": {
+    "untitledProject": "Uten Navn Prosjekt"
+  },
+  "actions": {
+    "collapse": "Kollaps",
+    "expand": "Utvid",
+    "remove": "Fjern Prosjekt",
+    "addProject": "Legg til Prosjekt"
+  },
+  "fields": {
+    "title": {
+      "label": "Prosjektnavn",
+      "placeholder": "f.eks. E-handelsplattform"
+    },
+    "url": {
+      "label": "Prosjekt-URL",
+      "placeholder": "https://github.com/..."
+    },
+    "description": {
+      "label": "Beskrivelse",
+      "placeholder": "Beskriv hva prosjektet gjør, teknologier som ble brukt, ditt bidrag og resultat…"
+    }
+  }
+},
   "EducationSuggestionModal": {
     "title": "AI Utdanningsforslag",
     "subtitle": "Generer profesjonelle beskrivelser basert på dine utdanningsdetaljer",

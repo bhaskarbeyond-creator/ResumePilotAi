@@ -1364,6 +1364,33 @@
       "generationFailed": "Tókst ekki að búa til AI yfirlit. Reyndu aftur."
     }
   },
+  "ProjectsStep": {
+  "title": "Verkefni",
+  "subtitle": "Bættu við persónulegum, akademískum eða faglegum verkefnum sem sýna hæfni þína.",
+  "defaultValues": {
+    "untitledProject": "Ónefnt Verkefni"
+  },
+  "actions": {
+    "collapse": "Loka",
+    "expand": "Opna",
+    "remove": "Fjarlægja Verkefni",
+    "addProject": "Bæta við Verkefni"
+  },
+  "fields": {
+    "title": {
+      "label": "Verkefnisnafn",
+      "placeholder": "t.d. Netverslunarvettvangur"
+    },
+    "url": {
+      "label": "Verkefnis-URL",
+      "placeholder": "https://github.com/..."
+    },
+    "description": {
+      "label": "Lýsing",
+      "placeholder": "Lýstu hvað verkefnið gerir, tækninni sem notuð var, framlagi þínu og áhrifum…"
+    }
+  }
+},
   "EducationSuggestionModal": {
     "title": "AI Menntunartillögur",
     "subtitle": "Búðu til faglegar lýsingar byggðar á upplýsingum um menntun þína",

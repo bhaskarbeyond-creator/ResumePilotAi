@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdDelete, MdKeyboardArrowDown, MdAdd, MdCheck } from 'react-icons/md';
 import InputField from './components/InputField';
-import RichTextEditor from './components/RichTextEditor';
-import MonthYearPicker from '../../Form/MonthYearPicker';
 import BulletPointsEditor from '../../Form/BulletPointsEditor';
 import { duplicateResumeItem, moveResumeItem } from '../../../utils/resumeData';
 
@@ -22,18 +20,14 @@ const ProjectsStep = ({ resumeData, updateResumeData }) => {
     const createNewProject = () => ({
         id: Date.now(),
         title: '',
-        role: '',
         url: '',
-        begin: '',
-        end: '',
-        current: false,
         description: '',
     });
 
     const addProject = () => {
         const newProject = createNewProject();
         setProjects((prev) => [...prev, newProject]);
-        setExpandedCards((prev) => new Set([newProject.id]));
+        setExpandedCards(() => new Set([newProject.id]));
     };
 
     const removeProject = (id) => {
@@ -77,7 +71,23 @@ const ProjectsStep = ({ resumeData, updateResumeData }) => {
     // Auto-save on change — same 500 ms debounce pattern as other steps
     useEffect(() => {
         const timer = setTimeout(() => {
-            updateResumeData({ projects });
+            const validProjects = projects.filter((p) => (p.title || '').trim() !== '');
+
+            // Mark the step complete once at least one titled project exists,
+            // and unmark it when the list no longer has any — the same contract
+            // the Work History / Education / Skills steps follow.
+            const completedSteps = [...(resumeData.completedSteps || [])];
+            let updatedCompletedSteps = null;
+            if (validProjects.length > 0 && !completedSteps.includes(7)) {
+                updatedCompletedSteps = [...completedSteps, 7];
+            } else if (validProjects.length === 0 && completedSteps.includes(7)) {
+                updatedCompletedSteps = completedSteps.filter((step) => step !== 7);
+            }
+
+            updateResumeData({
+                projects,
+                ...(updatedCompletedSteps ? { completedSteps: updatedCompletedSteps } : {}),
+            });
         }, 500);
         return () => clearTimeout(timer);
     }, [projects]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -161,25 +171,11 @@ const ProjectsStep = ({ resumeData, updateResumeData }) => {
                                             {project.title ||
                                                 t('ProjectsStep.defaultValues.untitledProject', 'Untitled Project')}
                                         </h3>
-                                        <div className="flex items-center text-sm space-x-2">
-                                            {project.role && (
-                                                <span className="font-medium text-gray-600 truncate">
-                                                    {project.role}
-                                                </span>
-                                            )}
-                                            {project.role && (project.begin || project.end) && (
-                                                <span className="w-1 h-1 bg-gray-400 rounded-full flex-shrink-0" />
-                                            )}
-                                            {(project.begin || project.end || project.current) && (
-                                                <span className="text-gray-500 font-medium whitespace-nowrap">
-                                                    {project.begin}
-                                                    {project.begin && (project.end || project.current) && ' - '}
-                                                    {project.current
-                                                        ? t('ProjectsStep.defaultValues.present', 'Present')
-                                                        : project.end}
-                                                </span>
-                                            )}
-                                        </div>
+                                        {project.url && (
+                                            <span className="block text-xs text-blue-500 font-medium truncate">
+                                                {project.url}
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
 
@@ -254,8 +250,8 @@ const ProjectsStep = ({ resumeData, updateResumeData }) => {
                             {/* Expanded form body */}
                             {isExpanded && (
                                 <div className="p-4 sm:p-6 space-y-5 bg-gradient-to-br from-white to-slate-50 rounded-b-xl">
-                                    {/* Project name + Role + URL */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    {/* Project name + URL */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <InputField
                                             label={t('ProjectsStep.fields.title.label', 'Project Name')}
                                             name={`project-title-${project.id}`}
@@ -268,16 +264,6 @@ const ProjectsStep = ({ resumeData, updateResumeData }) => {
                                             required
                                         />
                                         <InputField
-                                            label={t('ProjectsStep.fields.role.label', 'Your Role')}
-                                            name={`project-role-${project.id}`}
-                                            placeholder={t(
-                                                'ProjectsStep.fields.role.placeholder',
-                                                'e.g. Lead Developer'
-                                            )}
-                                            value={project.role || ''}
-                                            onChange={(e) => updateProject(project.id, 'role', e.target.value)}
-                                        />
-                                        <InputField
                                             label={t('ProjectsStep.fields.url.label', 'Project URL')}
                                             name={`project-url-${project.id}`}
                                             placeholder={t(
@@ -287,32 +273,6 @@ const ProjectsStep = ({ resumeData, updateResumeData }) => {
                                             value={project.url || ''}
                                             onChange={(e) => updateProject(project.id, 'url', e.target.value)}
                                             type="url"
-                                        />
-                                    </div>
-
-                                    {/* Date range */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <MonthYearPicker
-                                            label={t('ProjectsStep.fields.startDate.label', 'Start Date')}
-                                            value={project.begin}
-                                            onChange={(val) => updateProject(project.id, 'begin', val)}
-                                        />
-                                        <MonthYearPicker
-                                            label={t('ProjectsStep.fields.endDate.label', 'End Date')}
-                                            value={project.end}
-                                            onChange={(val) => updateProject(project.id, 'end', val)}
-                                            disabled={project.current}
-                                            showPresentCheck
-                                            isCurrent={project.current}
-                                            onCurrentChange={(isChecked) => {
-                                                setProjects((prev) =>
-                                                    prev.map((p) =>
-                                                        p.id === project.id
-                                                            ? { ...p, current: isChecked, end: isChecked ? 'Present' : '' }
-                                                            : p
-                                                    )
-                                                );
-                                            }}
                                         />
                                     </div>
 

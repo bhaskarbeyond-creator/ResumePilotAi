@@ -1364,6 +1364,33 @@
       "generationFailed": "Kon AI-samenvatting niet genereren. Probeer het opnieuw."
     }
   },
+  "ProjectsStep": {
+  "title": "Projecten",
+  "subtitle": "Voeg persoonlijke, academische of professionele projecten toe die uw vaardigheden laten zien.",
+  "defaultValues": {
+    "untitledProject": "Project Zonder Naam"
+  },
+  "actions": {
+    "collapse": "Inklappen",
+    "expand": "Uitklappen",
+    "remove": "Project Verwijderen",
+    "addProject": "Project Toevoegen"
+  },
+  "fields": {
+    "title": {
+      "label": "Projectnaam",
+      "placeholder": "bijv. E-commerceplatform"
+    },
+    "url": {
+      "label": "Project-URL",
+      "placeholder": "https://github.com/..."
+    },
+    "description": {
+      "label": "Beschrijving",
+      "placeholder": "Beschrijf wat het project doet, gebruikte technologieën, uw bijdragen en impact…"
+    }
+  }
+},
   "EducationSuggestionModal": {
     "title": "AI Opleidingssuggesties",
     "subtitle": "Genereer professionele beschrijvingen op basis van uw opleidingsgegevens",
