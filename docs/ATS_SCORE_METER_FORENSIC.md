@@ -292,7 +292,7 @@ Create Resume extras, 51 templates, PDF/DOCX, persistence, and autosave were not
 
 ## 18. Git commit
 
-See the commit on `arena/01a016a4-resumepilotai` after this report is landed.
+`a279596` — `feat(ats): replace presence scoring with an explainable readiness meter` on `arena/01a016a4-resumepilotai`.
 
 ---
 
