@@ -118,6 +118,33 @@ test('owner DOCX export resolves cover documents and returns a real OOXML packag
   assert.equal(response.body.length > 0, true);
 });
 
+test('DOCX export rejects invalid template identifiers and template mismatches', async () => {
+  app.set('db', buildDb());
+  assert.equal((await post('/api/export-docx', 'alice', { resumeId: 'resume-alice-01', resumeName: 'Cv99' })).status, 400);
+  assert.equal((await post('/api/export-docx', 'alice', { resumeId: 'resume-alice-01', resumeName: '../etc/passwd' })).status, 400);
+  assert.equal((await post('/api/export-docx', 'alice', { resumeId: 'resume-alice-01', resumeName: 'Cv8' })).status, 400, 'stored Cv1 vs requested Cv8 is a mismatch');
+});
+
+test('DOCX export ignores client-supplied colors and still returns authentic Cv1 navy', async () => {
+  app.set('db', buildDb());
+  const response = await request(app)
+    .post('/api/export-docx')
+    .set(bearer('alice'))
+    .send({ resumeId: 'resume-alice-01', resumeName: 'Cv1', colors: { primary: '#FF00FF', secondary: '#00FF00' } })
+    .buffer(true)
+    .parse((res, callback) => {
+      const chunks = [];
+      res.on('data', chunk => chunks.push(chunk));
+      res.on('end', () => callback(null, Buffer.concat(chunks)));
+    });
+  assert.equal(response.status, 200);
+  const JSZip = require('jszip');
+  const archive = await JSZip.loadAsync(response.body);
+  const xml = await archive.file('word/document.xml').async('string');
+  assert.match(xml, /1E3A8A/i);
+  assert.doesNotMatch(xml, /FF00FF/i);
+});
+
 test('render-data endpoint is one-time, rejects malformed tokens, and never caches', async () => {
   const db = buildDb();
   app.set('db', db);

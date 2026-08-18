@@ -9,12 +9,43 @@ const {
   TableCell,
   WidthType,
   BorderStyle,
-  convertInchesToTwip
+  convertMillimetersToTwip,
+  ExternalHyperlink,
+  LevelFormat,
+  TableLayoutType,
+  VerticalAlign,
+  UnderlineType,
+  Footer,
+  PageNumber,
+  TabStopType,
 } = require('docx');
 
-// --------------------------------------------------------------------------
-// 1. Text & HTML Normalization Engine (Zero Tag Leakage)
-// --------------------------------------------------------------------------
+const {
+  ARCHETYPES,
+  THEMES,
+  getTemplateStyle,
+  extractHex,
+  sanitizeColorMap,
+  isDarkHex,
+  layoutFamily,
+  resolveExportTemplate,
+  EXPORTABLE_TEMPLATE,
+} = require('./docxThemes');
+
+const PAGE_WIDTH = convertMillimetersToTwip(210);
+const PAGE_MARGIN = convertMillimetersToTwip(11);
+const CONTENT_WIDTH = PAGE_WIDTH - PAGE_MARGIN * 2;
+const NONE_BORDER = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+const NO_BORDERS = {
+  top: NONE_BORDER,
+  bottom: NONE_BORDER,
+  left: NONE_BORDER,
+  right: NONE_BORDER,
+  insideHorizontal: NONE_BORDER,
+  insideVertical: NONE_BORDER,
+};
+const BULLET_REF = 'resume-bullets';
+const NUMBER_REF = 'resume-numbers';
 
 function cleanText(value, maximum = 10_000) {
   return String(value ?? '')
@@ -27,13 +58,18 @@ function cleanText(value, maximum = 10_000) {
 function decodeHtmlEntities(str) {
   return String(str ?? '')
     .replace(/&nbsp;/gi, ' ')
+    .replace(/&#160;/g, ' ')
     .replace(/&amp;/gi, '&')
     .replace(/&lt;/gi, '<')
     .replace(/&gt;/gi, '>')
     .replace(/&quot;/gi, '"')
     .replace(/&#39;/gi, "'")
     .replace(/&#x27;/gi, "'")
-    .replace(/&#x2F;/gi, '/');
+    .replace(/&#x2F;/gi, '/')
+    .replace(/&#(\d+);/g, (_, n) => {
+      const code = Number(n);
+      return Number.isFinite(code) && code > 31 ? String.fromCharCode(code) : ' ';
+    });
 }
 
 function stripAllHtmlTags(html, maximum = 10_000) {
@@ -51,1127 +87,1259 @@ function formatCleanDateRange(start, end, isCurrent = false) {
   return s || e || '';
 }
 
-function parseRichTextToParagraphs(rawContent, style = {}, options = {}) {
-  if (!rawContent) return [];
-  const sanitized = cleanText(rawContent, options.maximum || 10_000);
-  if (!sanitized) return [];
-
-  let processed = String(rawContent)
-    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, ' ')
-    .slice(0, options.maximum || 10_000)
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/p>/gi, '\n')
-    .replace(/<\/div>/gi, '\n')
-    .replace(/<\/li>/gi, '\n')
-    .replace(/<li[^>]*>/gi, '• ');
-
-  processed = decodeHtmlEntities(processed);
-  const rawLines = processed.split(/\r?\n/);
-  const paragraphs = [];
-
-  for (const rawLine of rawLines) {
-    const cleanLine = rawLine.replace(/<[^>]+>/g, '').trim();
-    if (!cleanLine) continue;
-
-    const isBullet = cleanLine.startsWith('•') || cleanLine.startsWith('-') || cleanLine.startsWith('*');
-    const content = isBullet ? cleanLine.replace(/^[•\-*]\s*/, '').trim() : cleanLine;
-    if (!content) continue;
-
-    if (isBullet) {
-      paragraphs.push(
-        new Paragraph({
-          bullet: { level: 0 },
-          children: [
-            new TextRun({
-              text: content,
-              size: options.size || 20,
-              font: style.font || 'Calibri',
-              color: options.color || '333333'
-            })
-          ],
-          spacing: { before: 20, after: 20 }
-        })
-      );
-    } else {
-      paragraphs.push(
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: content,
-              size: options.size || 20,
-              font: style.font || 'Calibri',
-              color: options.color || '333333',
-              bold: options.bold === true
-            })
-          ],
-          spacing: options.spacing || { before: 30, after: 60 }
-        })
-      );
-    }
-  }
-
-  return paragraphs;
-}
-
-// --------------------------------------------------------------------------
-// 2. Authoritative 51-Template Archetypes & Theme Registry
-// --------------------------------------------------------------------------
-
-const ARCHETYPES = {
-  MODERN_SPLIT: 'modern-split',
-  EXECUTIVE_BANNER: 'executive-banner',
-  MINIMAL_ATS: 'minimal-ats',
-  TECH_GRID: 'tech-grid',
-  COMPACT_EURO: 'compact-euro'
-};
-
-const THEMES = {
-  Cv1: { name: 'Metropolitan Orange', archetype: ARCHETYPES.MODERN_SPLIT, primary: 'EA580C', secondary: 'FB923C', sidebarBg: 'FFF7ED', sidebarText: '1E293B', font: 'Calibri' },
-  Cv2: { name: 'Nordic Slate', archetype: ARCHETYPES.MODERN_SPLIT, primary: '0F172A', secondary: '0EA5E9', sidebarBg: 'F1F5F9', sidebarText: '334155', font: 'Arial' },
-  Cv3: { name: 'Emerald Executive', archetype: ARCHETYPES.MODERN_SPLIT, primary: '065F46', secondary: '10B981', sidebarBg: 'F0FDF4', sidebarText: '166534', font: 'Calibri' },
-  Cv4: { name: 'Harvard Classic ATS', archetype: ARCHETYPES.MINIMAL_ATS, primary: '111827', secondary: '4B5563', font: 'Georgia' },
-  Cv5: { name: 'Stanford Clean ATS', archetype: ARCHETYPES.MINIMAL_ATS, primary: '1E293B', secondary: '64748B', font: 'Calibri' },
-  Cv6: { name: 'Wall Street Modern', archetype: ARCHETYPES.MINIMAL_ATS, primary: '0F172A', secondary: '2563EB', font: 'Arial' },
-  Cv7: { name: 'Sapphire Modern Split', archetype: ARCHETYPES.MODERN_SPLIT, primary: '1D4ED8', secondary: '60A5FA', sidebarBg: 'EFF6FF', sidebarText: '1E3A8A', font: 'Calibri' },
-  Cv8: { name: 'Crown Executive Banner', archetype: ARCHETYPES.EXECUTIVE_BANNER, primary: '1E293B', secondary: '3B82F6', headerBg: '1E293B', sidebarBg: 'F8FAFC', sidebarText: '1E293B', font: 'Arial' },
-  Cv9: { name: 'Cobalt Pro Split', archetype: ARCHETYPES.MODERN_SPLIT, primary: '2563EB', secondary: '38BDF8', sidebarBg: '1E293B', sidebarText: 'F8FAFC', font: 'Calibri' },
-  Cv10: { name: 'Titanium Executive', archetype: ARCHETYPES.EXECUTIVE_BANNER, primary: '334155', secondary: '64748B', headerBg: '1E293B', sidebarBg: 'F8FAFC', sidebarText: '1E293B', font: 'Arial' },
-  Cv11: { name: 'Prism Executive Banner', archetype: ARCHETYPES.EXECUTIVE_BANNER, primary: '4338CA', secondary: '818CF8', headerBg: '312E81', sidebarBg: 'EEF2FF', sidebarText: '312E81', font: 'Calibri' },
-  Cv12: { name: 'Oxford Academic ATS', archetype: ARCHETYPES.MINIMAL_ATS, primary: '18181B', secondary: '71717A', font: 'Georgia' },
-  Cv13: { name: 'Cambridge Research', archetype: ARCHETYPES.MINIMAL_ATS, primary: '09090B', secondary: '52525B', font: 'Calibri' },
-  Cv14: { name: 'Yale Corporate ATS', archetype: ARCHETYPES.MINIMAL_ATS, primary: '1E293B', secondary: '0284C7', font: 'Calibri' },
-  Cv15: { name: 'MIT Technical ATS', archetype: ARCHETYPES.MINIMAL_ATS, primary: '0F172A', secondary: '059669', font: 'Arial' },
-  Cv16: { name: 'Apex Navy Banner', archetype: ARCHETYPES.EXECUTIVE_BANNER, primary: '1E3A8A', secondary: '38BDF8', headerBg: '172554', sidebarBg: 'EFF6FF', sidebarText: '172554', font: 'Calibri' },
-  Cv17: { name: 'Teal Horizon Banner', archetype: ARCHETYPES.EXECUTIVE_BANNER, primary: '0F766E', secondary: '14B8A6', headerBg: '134E4A', sidebarBg: 'F0FDFA', sidebarText: '134E4A', font: 'Calibri' },
-  Cv18: { name: 'Princeton Minimal ATS', archetype: ARCHETYPES.MINIMAL_ATS, primary: '27272A', secondary: '52525B', font: 'Georgia' },
-  Cv19: { name: 'Zurich Financial ATS', archetype: ARCHETYPES.MINIMAL_ATS, primary: '0F172A', secondary: '3B82F6', font: 'Calibri' },
-  Cv20: { name: 'Pacific Blue Split', archetype: ARCHETYPES.MODERN_SPLIT, primary: '0284C7', secondary: '38BDF8', sidebarBg: 'F0F9FF', sidebarText: '0369A1', font: 'Calibri' },
-  Cv21: { name: 'Imperial Indigo Banner', archetype: ARCHETYPES.EXECUTIVE_BANNER, primary: '3730A3', secondary: '6366F1', headerBg: '312E81', sidebarBg: 'EEF2FF', sidebarText: '312E81', font: 'Calibri' },
-  Cv22: { name: 'Geneva Executive ATS', archetype: ARCHETYPES.MINIMAL_ATS, primary: '111827', secondary: '4B5563', font: 'Arial' },
-  Cv23: { name: 'Burgundy Prestige Banner', archetype: ARCHETYPES.EXECUTIVE_BANNER, primary: '881337', secondary: 'F43F5E', headerBg: '4C0519', sidebarBg: 'FFF1F2', sidebarText: '4C0519', font: 'Calibri' },
-  Cv24: { name: 'Cyberpunk Modern Split', archetype: ARCHETYPES.MODERN_SPLIT, primary: '4F46E5', secondary: 'EC4899', sidebarBg: 'FAF5FF', sidebarText: '3B0764', font: 'Calibri' },
-  Cv25: { name: 'DevOps Terminal Tech', archetype: ARCHETYPES.TECH_GRID, primary: '0F172A', secondary: '10B981', sidebarBg: 'F8FAFC', sidebarText: '334155', font: 'Consolas' },
-  Cv26: { name: 'FullStack Dark Split', archetype: ARCHETYPES.MODERN_SPLIT, primary: '0284C7', secondary: '38BDF8', sidebarBg: '0F172A', sidebarText: 'F8FAFC', font: 'Calibri' },
-  Cv27: { name: 'Creative Studio Split', archetype: ARCHETYPES.MODERN_SPLIT, primary: 'D97706', secondary: 'FBBF24', sidebarBg: 'FFFBEB', sidebarText: '78350F', font: 'Arial' },
-  Cv28: { name: 'Silicon Valley Engineer', archetype: ARCHETYPES.TECH_GRID, primary: '2563EB', secondary: '60A5FA', sidebarBg: 'F8FAFC', sidebarText: '1E293B', font: 'Calibri' },
-  Cv29: { name: 'Minimal Nordic Slate', archetype: ARCHETYPES.MODERN_SPLIT, primary: '334155', secondary: '64748B', sidebarBg: 'F1F5F9', sidebarText: '0F172A', font: 'Arial' },
-  Cv30: { name: 'Corporate Summit Banner', archetype: ARCHETYPES.EXECUTIVE_BANNER, primary: '1E293B', secondary: 'F59E0B', headerBg: '0F172A', sidebarBg: 'F8FAFC', sidebarText: '1E293B', font: 'Calibri' },
-  Cv31: { name: 'Cloud Native Tech', archetype: ARCHETYPES.TECH_GRID, primary: '0284C7', secondary: '0EA5E9', font: 'Calibri' },
-  Cv32: { name: 'Kubernetes Developer', archetype: ARCHETYPES.TECH_GRID, primary: '326CE5', secondary: '60A5FA', font: 'Arial' },
-  Cv33: { name: 'Data Science Matrix', archetype: ARCHETYPES.TECH_GRID, primary: '059669', secondary: '34D399', font: 'Calibri' },
-  Cv34: { name: 'Fintech Executive', archetype: ARCHETYPES.EXECUTIVE_BANNER, primary: '0F172A', secondary: '38BDF8', headerBg: '0F172A', sidebarBg: 'F8FAFC', sidebarText: '1E293B', font: 'Calibri' },
-  Cv35: { name: 'AI & ML Researcher', archetype: ARCHETYPES.TECH_GRID, primary: '7C3AED', secondary: 'A78BFA', font: 'Arial' },
-  Cv36: { name: 'BioTech Specialist', archetype: ARCHETYPES.EXECUTIVE_BANNER, primary: '0D9488', secondary: '2DD4BF', headerBg: '115E59', sidebarBg: 'F0FDFA', sidebarText: '134E4A', font: 'Calibri' },
-  Cv37: { name: 'Solutions Architect', archetype: ARCHETYPES.TECH_GRID, primary: 'EA580C', secondary: 'FB923C', font: 'Calibri' },
-  Cv38: { name: 'Global Legal ATS', archetype: ARCHETYPES.MINIMAL_ATS, primary: '18181B', secondary: '71717A', font: 'Georgia' },
-  Cv39: { name: 'Product Manager Pro', archetype: ARCHETYPES.MODERN_SPLIT, primary: '2563EB', secondary: '38BDF8', sidebarBg: 'F8FAFC', sidebarText: '1E293B', font: 'Calibri' },
-  Cv40: { name: 'Europass Classic Grid', archetype: ARCHETYPES.COMPACT_EURO, primary: '003399', secondary: '4169E1', font: 'Arial' },
-  Cv41: { name: 'Europass Modern Slate', archetype: ARCHETYPES.COMPACT_EURO, primary: '1E293B', secondary: '3B82F6', font: 'Calibri' },
-  Cv42: { name: 'European Academic Compact', archetype: ARCHETYPES.COMPACT_EURO, primary: '1E3A8A', secondary: '60A5FA', font: 'Arial' },
-  Cv43: { name: 'Brussels International', archetype: ARCHETYPES.COMPACT_EURO, primary: '0F766E', secondary: '14B8A6', font: 'Calibri' },
-  Cv44: { name: 'Scandinavia Clean Compact', archetype: ARCHETYPES.MINIMAL_ATS, primary: '0F172A', secondary: '64748B', font: 'Arial' },
-  Cv45: { name: 'Vienna Diplomatic Euro', archetype: ARCHETYPES.COMPACT_EURO, primary: '881337', secondary: 'E11D48', font: 'Georgia' },
-  Cv46: { name: 'Frankfurt Finance Euro', archetype: ARCHETYPES.COMPACT_EURO, primary: '1E293B', secondary: '0284C7', font: 'Calibri' },
-  Cv47: { name: 'Metro Dual Column Pro', archetype: ARCHETYPES.MODERN_SPLIT, primary: '0369A1', secondary: '38BDF8', sidebarBg: 'F0F9FF', sidebarText: '0C4A6E', font: 'Calibri' },
-  Cv48: { name: 'Modern Gradient Aurora', archetype: ARCHETYPES.MODERN_SPLIT, primary: '6366F1', secondary: 'EC4899', sidebarBg: '312E81', sidebarText: 'F8FAFC', font: 'Calibri' },
-  Cv49: { name: 'Berlin Tech Compact', archetype: ARCHETYPES.COMPACT_EURO, primary: '18181B', secondary: '3B82F6', font: 'Arial' },
-  Cv50: { name: 'Executive Platinum Split', archetype: ARCHETYPES.MODERN_SPLIT, primary: '0F172A', secondary: '475569', sidebarBg: 'F8FAFC', sidebarText: '1E293B', font: 'Calibri' },
-  Cv51: { name: 'Standard Europass Official', archetype: ARCHETYPES.COMPACT_EURO, primary: '003399', secondary: '4169E1', font: 'Arial' }
-};
-
-function getTemplateStyle(templateName, customColors = null) {
-  const name = String(templateName || 'Cv1').trim();
-  let baseTheme = THEMES[name];
-
-  if (!baseTheme) {
-    const numMatch = name.match(/Cv(\d+)/i);
-    if (numMatch) {
-      const key = `Cv${parseInt(numMatch[1], 10)}`;
-      if (THEMES[key]) baseTheme = THEMES[key];
-    }
-  }
-
-  if (!baseTheme) baseTheme = THEMES.Cv1;
-
-  if (customColors && typeof customColors === 'object') {
-    const customPrimary = customColors.primary ? String(customColors.primary).replace('#', '') : null;
-    const customSecondary = customColors.secondary ? String(customColors.secondary).replace('#', '') : null;
-    return {
-      ...baseTheme,
-      primary: customPrimary || baseTheme.primary,
-      secondary: customSecondary || baseTheme.secondary
-    };
-  }
-
-  return baseTheme;
-}
-
-// --------------------------------------------------------------------------
-// 3. Shared Helpers & Micro-Component Builders
-// --------------------------------------------------------------------------
-
 function list(value) {
-  return Array.isArray(value) ? value : [];
+  if (Array.isArray(value)) return value.filter((item) => item != null && item !== '');
+  if (value && typeof value === 'object') return Object.values(value);
+  if (typeof value === 'string' && value.trim()) return value.split(/[,;\n]/).map((s) => s.trim()).filter(Boolean);
+  return [];
+}
+
+function hiddenSet(resume) {
+  return new Set((Array.isArray(resume.hiddenSections) ? resume.hiddenSections : []).map((s) => String(s)));
+}
+
+function isHidden(hidden, ...keys) {
+  return keys.some((key) => hidden.has(key));
+}
+
+function safeUrl(raw) {
+  const value = String(raw || '').trim();
+  if (!value || /[\u0000-\u001f\u007f]/.test(value)) return null;
+  const candidate = /^www\./i.test(value)
+    ? `https://${value}`
+    : /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+      ? `mailto:${value}`
+      : value;
+  try {
+    const parsed = new URL(candidate);
+    if (!['http:', 'https:', 'mailto:'].includes(parsed.protocol)) return null;
+    if (parsed.username || parsed.password) return null;
+    return parsed.href;
+  } catch {
+    return null;
+  }
+}
+
+function hrefFromTag(tag) {
+  const match = String(tag).match(/href\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i);
+  return safeUrl(match ? (match[1] || match[2] || match[3]) : '');
+}
+
+function styleFlags(tag, marks) {
+  const next = { ...marks };
+  const style = String(tag).match(/style\s*=\s*(?:"([^"]*)"|'([^']*)')/i);
+  const css = (style ? (style[1] || style[2]) : '').toLowerCase();
+  if (/font-weight\s*:\s*(bold|[6-9]00)/.test(css)) next.bold = true;
+  if (/font-style\s*:\s*italic/.test(css)) next.italic = true;
+  if (/text-decoration\s*:[^;]*underline/.test(css)) next.underline = true;
+  return next;
+}
+
+function emptyParagraph() {
+  return new Paragraph({ children: [new TextRun({ text: '' })] });
+}
+
+function runFromMark(text, marks, style, options = {}) {
+  const color = options.color || '334155';
+  const size = options.size || 20;
+  if (marks.href) {
+    return new ExternalHyperlink({
+      link: marks.href,
+      children: [
+        new TextRun({
+          text,
+          size,
+          font: style.font || 'Calibri',
+          color: options.linkColor || style.secondary || '2563EB',
+          bold: marks.bold === true || options.bold === true,
+          italics: marks.italic === true,
+          underline: { type: UnderlineType.SINGLE },
+        }),
+      ],
+    });
+  }
+  return new TextRun({
+    text,
+    size,
+    font: style.font || 'Calibri',
+    color,
+    bold: marks.bold === true || options.bold === true,
+    italics: marks.italic === true,
+    underline: marks.underline ? { type: UnderlineType.SINGLE } : undefined,
+  });
+}
+
+function paragraphFromBlock(block, style, options = {}) {
+  const runs = (block.runs || []).filter((run) => run.text);
+  if (!runs.length) return null;
+  const children = runs.map((run) => runFromMark(run.text, run, style, options));
+  if (block.kind === 'ul') {
+    return new Paragraph({
+      numbering: { reference: BULLET_REF, level: Math.min(2, block.level || 0) },
+      children,
+      spacing: { before: 40, after: 40, line: 276 },
+    });
+  }
+  if (block.kind === 'ol') {
+    return new Paragraph({
+      numbering: { reference: NUMBER_REF, level: Math.min(2, block.level || 0) },
+      children,
+      spacing: { before: 40, after: 40, line: 276 },
+    });
+  }
+  return new Paragraph({
+    children,
+    spacing: options.spacing || { before: 40, after: 80, line: 276 },
+    alignment: options.alignment,
+  });
+}
+
+function parseRichTextToBlocks(rawContent, maximum = 10_000) {
+  if (!rawContent) return [];
+  const source = String(rawContent)
+    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, ' ')
+    .slice(0, maximum)
+    .replace(/<br\s*\/?>/gi, '\n');
+
+  if (!/<[a-zA-Z]/.test(source)) {
+    const blocks = [];
+    for (const rawLine of decodeHtmlEntities(source).split(/\r?\n/)) {
+      const line = rawLine.trim();
+      if (!line) continue;
+      const bullet = line.match(/^([•\-*]|\d+[.)])\s+(.*)$/);
+      if (bullet) {
+        const numbered = /^\d+[.)]$/.test(bullet[1]);
+        blocks.push({ kind: numbered ? 'ol' : 'ul', level: 0, runs: [{ text: bullet[2], bold: false, italic: false, underline: false }] });
+      } else {
+        blocks.push({ kind: 'p', level: 0, runs: [{ text: line, bold: false, italic: false, underline: false }] });
+      }
+    }
+    return blocks;
+  }
+
+  const blocks = [];
+  let marks = { bold: false, italic: false, underline: false, href: null };
+  let kind = 'p';
+  let level = 0;
+  let runs = [];
+  const listStack = [];
+
+  const flush = (nextKind = kind, nextLevel = level) => {
+    const compact = [];
+    for (const run of runs) {
+      if (!run.text) continue;
+      const prev = compact[compact.length - 1];
+      if (prev && prev.bold === run.bold && prev.italic === run.italic && prev.underline === run.underline && prev.href === run.href) {
+        prev.text += run.text;
+      } else {
+        compact.push({ ...run });
+      }
+    }
+    if (compact.length) blocks.push({ kind, level, runs: compact });
+    runs = [];
+    kind = nextKind;
+    level = nextLevel;
+  };
+
+  const pushText = (text) => {
+    const decoded = decodeHtmlEntities(text).replace(/\r/g, '');
+    if (!decoded) return;
+    const parts = decoded.split('\n');
+    parts.forEach((part, index) => {
+      if (part) runs.push({ text: part, bold: marks.bold, italic: marks.italic, underline: marks.underline, href: marks.href });
+      if (index < parts.length - 1) flush(kind, level);
+    });
+  };
+
+  const tokenRe = /<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>/g;
+  let last = 0;
+  let match;
+  while ((match = tokenRe.exec(source))) {
+    if (match.index > last) pushText(source.slice(last, match.index));
+    const tag = match[0];
+    const name = match[1].toLowerCase();
+    const closing = tag.startsWith('</');
+    if (name === 'script' || name === 'style') {
+      last = tokenRe.lastIndex;
+      continue;
+    }
+    if (!closing && (name === 'p' || name === 'div' || name === 'h1' || name === 'h2' || name === 'h3')) {
+      flush('p', level);
+    } else if (closing && (name === 'p' || name === 'div' || name === 'h1' || name === 'h2' || name === 'h3')) {
+      flush(listStack.length ? listStack[listStack.length - 1] : 'p', level);
+    } else if (!closing && (name === 'ul' || name === 'ol')) {
+      flush(name, listStack.length);
+      listStack.push(name);
+      kind = name;
+      level = Math.max(0, listStack.length - 1);
+    } else if (closing && (name === 'ul' || name === 'ol')) {
+      flush('p', Math.max(0, listStack.length - 1));
+      listStack.pop();
+      kind = listStack[listStack.length - 1] || 'p';
+      level = Math.max(0, listStack.length - 1);
+    } else if (!closing && name === 'li') {
+      flush(listStack[listStack.length - 1] || 'ul', Math.max(0, listStack.length - 1));
+    } else if (closing && name === 'li') {
+      flush(listStack[listStack.length - 1] || 'p', Math.max(0, listStack.length - 1));
+    } else if (!closing && (name === 'strong' || name === 'b')) {
+      marks = { ...marks, bold: true };
+    } else if (closing && (name === 'strong' || name === 'b')) {
+      marks = { ...marks, bold: false };
+    } else if (!closing && (name === 'em' || name === 'i')) {
+      marks = { ...marks, italic: true };
+    } else if (closing && (name === 'em' || name === 'i')) {
+      marks = { ...marks, italic: false };
+    } else if (!closing && name === 'u') {
+      marks = { ...marks, underline: true };
+    } else if (closing && name === 'u') {
+      marks = { ...marks, underline: false };
+    } else if (!closing && name === 'a') {
+      marks = { ...marks, href: hrefFromTag(tag) };
+    } else if (closing && name === 'a') {
+      marks = { ...marks, href: null };
+    } else if (!closing && name === 'span') {
+      marks = styleFlags(tag, marks);
+    } else if (closing && name === 'span') {
+      marks = { ...marks, bold: false, italic: false, underline: false };
+    }
+    last = tokenRe.lastIndex;
+  }
+  if (last < source.length) pushText(source.slice(last));
+  flush('p', 0);
+  return blocks;
+}
+
+function parseRichTextToParagraphs(rawContent, style = {}, options = {}) {
+  return parseRichTextToBlocks(rawContent, options.maximum || 10_000)
+    .map((block) => paragraphFromBlock(block, style, options))
+    .filter(Boolean);
+}
+
+function ensureChildren(nodes) {
+  const children = (nodes || []).filter(Boolean);
+  return children.length ? children : [emptyParagraph()];
 }
 
 function createSectionHeading(title, style, options = {}) {
+  const color = options.color || style.primary;
   return new Paragraph({
-    border: options.underlined ? {
+    border: options.underlined === false ? undefined : {
       bottom: {
         color: style.secondary || style.primary,
         space: 4,
         style: BorderStyle.SINGLE,
-        size: 10
-      }
-    } : undefined,
-    spacing: { before: options.beforeSpacing !== undefined ? options.beforeSpacing : 140, after: 60 },
+        size: 8,
+      },
+    },
+    spacing: { before: options.beforeSpacing !== undefined ? options.beforeSpacing : 160, after: 60 },
     children: [
       new TextRun({
-        text: title.toUpperCase(),
+        text: String(title || '').toUpperCase(),
         bold: true,
-        size: 22,
+        size: options.size || 21,
         font: style.font,
-        color: style.primary
-      })
-    ]
+        color,
+      }),
+    ],
   });
 }
 
-function createEntryHeaderTable(title, subTitle, dateRange, style) {
-  const leftRuns = [
-    new TextRun({ text: title, bold: true, size: 22, font: style.font, color: '111827' })
-  ];
+function heroInnerWidth(style) {
+  const leftPct = style.sidebarWidth || 34;
+  const leftWidth = Math.round(CONTENT_WIDTH * (leftPct / 100));
+  const rightWidth = CONTENT_WIDTH - leftWidth;
+  // Match the right-cell margins used by twoColumnTable (left 140 + right 80).
+  return Math.max(2400, rightWidth - 220);
+}
+
+function createEntryHeader(title, subTitle, dateRange, style, options = {}) {
+  const width = options.contentWidth || CONTENT_WIDTH;
+  const titleColor = options.titleColor || '111827';
+  const nodes = [];
+  if (title || dateRange) {
+    const children = [
+      new TextRun({ text: title || '', bold: true, size: 22, font: style.font, color: titleColor }),
+    ];
+    if (dateRange) {
+      children.push(new TextRun({ text: '\t' }));
+      children.push(new TextRun({ text: dateRange, size: 18, font: style.font, color: '64748B' }));
+    }
+    nodes.push(new Paragraph({
+      tabStops: dateRange ? [{ type: TabStopType.RIGHT, position: width }] : undefined,
+      spacing: { before: 80, after: subTitle ? 0 : 20 },
+      children,
+    }));
+  }
   if (subTitle) {
-    leftRuns.push(new TextRun({ text: `\n${subTitle}`, bold: true, size: 20, font: style.font, color: style.primary }));
-  }
-
-  const cells = [
-    new TableCell({
-      width: { size: dateRange ? 72 : 100, type: WidthType.PERCENTAGE },
-      children: [
-        new Paragraph({
-          children: leftRuns,
-          spacing: { before: 60, after: 20 }
-        })
-      ]
-    })
-  ];
-
-  if (dateRange) {
-    cells.push(
-      new TableCell({
-        width: { size: 28, type: WidthType.PERCENTAGE },
+    const href = options.subTitleHref || null;
+    if (href) {
+      nodes.push(new Paragraph({
+        spacing: { before: 20, after: 20 },
         children: [
-          new Paragraph({
-            alignment: AlignmentType.RIGHT,
-            children: [
-              new TextRun({ text: dateRange, size: 18, font: style.font, color: '64748B', bold: false })
-            ],
-            spacing: { before: 60, after: 20 }
-          })
-        ]
-      })
-    );
+          new ExternalHyperlink({
+            link: href,
+            children: [new TextRun({
+              text: subTitle,
+              bold: true,
+              size: 20,
+              font: style.font,
+              color: style.secondary || style.primary,
+              underline: { type: UnderlineType.SINGLE },
+            })],
+          }),
+        ],
+      }));
+    } else {
+      nodes.push(new Paragraph({
+        spacing: { before: 20, after: 20 },
+        children: [
+          new TextRun({ text: subTitle, bold: true, size: 20, font: style.font, color: style.primary }),
+        ],
+      }));
+    }
   }
-
-  return new Table({
-    width: { size: 100, type: WidthType.PERCENTAGE },
-    borders: {
-      top: { style: BorderStyle.NONE, size: 0, color: 'auto' },
-      bottom: { style: BorderStyle.NONE, size: 0, color: 'auto' },
-      left: { style: BorderStyle.NONE, size: 0, color: 'auto' },
-      right: { style: BorderStyle.NONE, size: 0, color: 'auto' },
-      insideHorizontal: { style: BorderStyle.NONE, size: 0, color: 'auto' },
-      insideVertical: { style: BorderStyle.NONE, size: 0, color: 'auto' }
-    },
-    rows: [new TableRow({ children: cells })]
-  });
+  return nodes;
 }
 
-// --------------------------------------------------------------------------
-// 4. Archetype 1: MODERN SPLIT (Cv1, Cv2, Cv3, Cv7, Cv9, Cv20, Cv24, etc.)
-// --------------------------------------------------------------------------
+function certsBelongInSidebar(resume) {
+  const skillCount = list(resume.skills).length;
+  const hobbiesCount = list(resume.hobbies || resume.interests).length;
+  const certCount = list(resume.certifications).length;
+  return certCount > 0 && certCount <= 3 && (skillCount + hobbiesCount) <= 6;
+}
 
-function buildModernSplitDocument(resume, style) {
-  const fullName = stripAllHtmlTags(`${resume.firstname || resume.firstName || ''} ${resume.lastname || resume.lastName || ''}`) || stripAllHtmlTags(resume.title) || 'Resume';
-  const occupation = stripAllHtmlTags(resume.occupation || resume.jobTitle || resume.title || '');
-
-  const elements = [
-    new Paragraph({
-      alignment: AlignmentType.LEFT,
+function contactHyperlinkParagraph(label, display, href, style, options = {}) {
+  const children = [];
+  if (label) {
+    children.push(new TextRun({
+      text: `${label} `,
+      size: options.size || 18,
+      font: style.font,
+      color: options.color || '334155',
+      bold: true,
+    }));
+  }
+  if (href) {
+    children.push(new ExternalHyperlink({
+      link: href,
       children: [
         new TextRun({
-          text: fullName,
-          bold: true,
-          size: 34,
-          color: style.primary,
-          font: style.font
-        })
+          text: display,
+          size: options.size || 18,
+          font: style.font,
+          color: options.linkColor || style.secondary || '2563EB',
+          underline: { type: UnderlineType.SINGLE },
+        }),
       ],
-      spacing: { before: 0, after: 30 }
-    })
-  ];
-
-  if (occupation) {
-    elements.push(
-      new Paragraph({
-        alignment: AlignmentType.LEFT,
-        children: [
-          new TextRun({
-            text: occupation.toUpperCase(),
-            bold: true,
-            size: 20,
-            color: style.secondary || style.primary,
-            font: style.font
-          })
-        ],
-        spacing: { before: 0, after: 120 }
-      })
-    );
+    }));
+  } else {
+    children.push(new TextRun({
+      text: display,
+      size: options.size || 18,
+      font: style.font,
+      color: options.color || '334155',
+    }));
   }
+  return new Paragraph({ children, spacing: { before: 20, after: 30 } });
+}
 
-  // Left Sidebar Content
-  const sidebarElements = [];
-  const contactRows = [
-    resume.phone ? `Phone: ${stripAllHtmlTags(resume.phone)}` : null,
-    resume.email ? `Email: ${stripAllHtmlTags(resume.email)}` : null,
-    resume.address || resume.city ? `Location: ${[stripAllHtmlTags(resume.address), stripAllHtmlTags(resume.city), stripAllHtmlTags(resume.country)].filter(Boolean).join(', ')}` : null,
-    resume.website ? `Web: ${stripAllHtmlTags(resume.website)}` : null,
-    resume.linkedin ? `LinkedIn: ${stripAllHtmlTags(resume.linkedin)}` : null,
-    resume.github ? `GitHub: ${stripAllHtmlTags(resume.github)}` : null
+function collectContactItems(resume) {
+  const location = [stripAllHtmlTags(resume.address), [stripAllHtmlTags(resume.city), stripAllHtmlTags(resume.postalcode || resume.postalCode)].filter(Boolean).join(' '), stripAllHtmlTags(resume.country)]
+    .filter(Boolean)
+    .join(', ');
+  const website = stripAllHtmlTags(resume.website || resume.websiteUrl);
+  const linkedin = stripAllHtmlTags(resume.linkedin || resume.linkedinUrl);
+  const github = stripAllHtmlTags(resume.github || resume.githubUrl);
+  return [
+    resume.phone ? { label: 'Phone', display: stripAllHtmlTags(resume.phone), href: null } : null,
+    resume.email ? { label: 'Email', display: stripAllHtmlTags(resume.email), href: safeUrl(resume.email) } : null,
+    location ? { label: 'Location', display: location, href: null } : null,
+    website ? { label: 'Web', display: website.replace(/^https?:\/\//i, ''), href: safeUrl(website) } : null,
+    linkedin ? { label: 'LinkedIn', display: linkedin.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//i, ''), href: safeUrl(linkedin) } : null,
+    github ? { label: 'GitHub', display: github.replace(/^https?:\/\/(www\.)?github\.com\//i, ''), href: safeUrl(github) } : null,
   ].filter(Boolean);
+}
 
-  if (contactRows.length > 0) {
-    sidebarElements.push(createSectionHeading('Contact', style, { beforeSpacing: 0 }));
-    for (const item of contactRows) {
-      sidebarElements.push(
-        new Paragraph({
-          children: [new TextRun({ text: item, size: 18, font: style.font, color: style.sidebarText || '334155' })],
-          spacing: { before: 20, after: 30 }
-        })
-      );
-    }
+function skillNameOf(skill) {
+  if (typeof skill === 'string') return stripAllHtmlTags(skill);
+  return stripAllHtmlTags(skill?.name || skill?.skillName || skill?.skill || skill?.title || skill?.value || '');
+}
+
+function languageLine(lang) {
+  if (typeof lang === 'string') return stripAllHtmlTags(lang);
+  const name = stripAllHtmlTags(lang?.name || lang?.language || '');
+  const level = stripAllHtmlTags(lang?.level || lang?.proficiency || '');
+  return [name, level].filter(Boolean).join(' — ');
+}
+
+function hobbyName(item) {
+  if (typeof item === 'string') return stripAllHtmlTags(item);
+  return stripAllHtmlTags(item?.name || item?.title || item?.hobby || item?.interest || '');
+}
+
+function normalizeResume(input = {}) {
+  const resume = input.item && typeof input.item === 'object' ? { ...input.item, ...input } : { ...input };
+  const hidden = hiddenSet(resume);
+  if (isHidden(hidden, 'heading')) {
+    resume.firstname = '';
+    resume.lastname = '';
+    resume.occupation = '';
+    resume.email = '';
+    resume.phone = '';
+    resume.address = '';
+    resume.city = '';
+    resume.country = '';
+    resume.website = '';
+    resume.linkedin = '';
+    resume.github = '';
   }
+  if (isHidden(hidden, 'summary')) resume.summary = '';
+  if (isHidden(hidden, 'employment', 'employments')) resume.employments = [];
+  if (isHidden(hidden, 'education', 'educations')) resume.educations = [];
+  if (isHidden(hidden, 'skills')) resume.skills = [];
+  if (isHidden(hidden, 'languages')) resume.languages = [];
+  if (isHidden(hidden, 'projects')) resume.projects = [];
+  if (isHidden(hidden, 'certifications')) resume.certifications = [];
+  if (isHidden(hidden, 'achievements', 'awards')) resume.achievements = [];
+  if (isHidden(hidden, 'hobbies')) resume.hobbies = [];
+  if (isHidden(hidden, 'references')) resume.references = [];
+  return resume;
+}
 
-  const skillsList = list(resume.skills);
-  if (skillsList.length > 0) {
-    sidebarElements.push(createSectionHeading('Skills', style, { beforeSpacing: 140, underlined: true }));
-    for (const skill of skillsList) {
-      const skillName = typeof skill === 'string' ? skill : (skill.name || skill.skillName || skill.skill || '');
-      const cleanSkill = stripAllHtmlTags(skillName);
-      if (cleanSkill) {
-        sidebarElements.push(
-          new Paragraph({
-            bullet: { level: 0 },
-            children: [new TextRun({ text: cleanSkill, size: 19, font: style.font, color: '1E293B' })],
-            spacing: { before: 15, after: 15 }
-          })
-        );
+function fullNameOf(resume) {
+  return stripAllHtmlTags(`${resume.firstname || resume.firstName || ''} ${resume.lastname || resume.lastName || ''}`)
+    || stripAllHtmlTags(resume.name)
+    || stripAllHtmlTags(resume.title)
+    || 'Resume';
+}
+
+function occupationOf(resume) {
+  return stripAllHtmlTags(resume.occupation || resume.jobTitle || '');
+}
+
+function buildIdentityHeader(resume, style, options = {}) {
+  const nodes = [];
+  const nameColor = options.nameColor || style.primary;
+  const roleColor = options.roleColor || style.secondary || style.primary;
+  nodes.push(new Paragraph({
+    alignment: options.alignment || AlignmentType.LEFT,
+    spacing: { before: 0, after: 40 },
+    children: [new TextRun({ text: fullNameOf(resume), bold: true, size: options.nameSize || 36, color: nameColor, font: style.font })],
+  }));
+  const occupation = occupationOf(resume);
+  if (occupation) {
+    nodes.push(new Paragraph({
+      alignment: options.alignment || AlignmentType.LEFT,
+      spacing: { before: 0, after: 60 },
+      children: [new TextRun({
+        text: options.uppercaseRole === false ? occupation : occupation.toUpperCase(),
+        bold: true,
+        size: options.roleSize || 20,
+        color: roleColor,
+        font: options.roleFont || style.font,
+      })],
+    }));
+  }
+  return nodes;
+}
+
+function buildContactBlock(resume, style, options = {}) {
+  const items = collectContactItems(resume);
+  if (!items.length) return [];
+  const nodes = [];
+  if (options.heading) nodes.push(createSectionHeading(options.heading, style, { beforeSpacing: options.beforeSpacing || 0, color: options.headingColor, underlined: options.underlined }));
+  if (options.inline) {
+    const children = [];
+    items.forEach((item, index) => {
+      if (index) {
+        children.push(new TextRun({
+          text: options.separator || '  •  ',
+          size: 18,
+          color: options.color || '475569',
+          font: style.font,
+        }));
       }
-    }
-  }
-
-  const languagesList = list(resume.languages);
-  if (languagesList.length > 0) {
-    sidebarElements.push(createSectionHeading('Languages', style, { beforeSpacing: 140, underlined: true }));
-    for (const lang of languagesList) {
-      const langName = typeof lang === 'string' ? lang : (lang.name || lang.language || '');
-      const langLevel = typeof lang === 'object' ? (lang.level || lang.proficiency || '') : '';
-      const cleanLang = [stripAllHtmlTags(langName), stripAllHtmlTags(langLevel)].filter(Boolean).join(' — ');
-      if (cleanLang) {
-        sidebarElements.push(
-          new Paragraph({
-            bullet: { level: 0 },
-            children: [new TextRun({ text: cleanLang, size: 18, font: style.font, color: style.sidebarText || '334155' })],
-            spacing: { before: 15, after: 15 }
-          })
-        );
+      if (item.href) {
+        children.push(new ExternalHyperlink({
+          link: item.href,
+          children: [new TextRun({
+            text: item.display,
+            size: 18,
+            font: style.font,
+            color: options.linkColor || style.secondary || '2563EB',
+            underline: { type: UnderlineType.SINGLE },
+          })],
+        }));
+      } else {
+        children.push(new TextRun({
+          text: item.display,
+          size: 18,
+          color: options.color || '475569',
+          font: style.font,
+        }));
       }
+    });
+    nodes.push(new Paragraph({
+      alignment: options.alignment || AlignmentType.LEFT,
+      spacing: { before: 0, after: 120 },
+      children,
+    }));
+    return nodes;
+  }
+  for (const item of items) {
+    nodes.push(contactHyperlinkParagraph(options.showLabels === false ? '' : `${item.label}:`, item.display, item.href, style, {
+      color: options.color || style.sidebarText || '334155',
+      linkColor: options.linkColor || style.secondary,
+      size: options.size || 18,
+    }));
+  }
+  return nodes;
+}
+
+function buildSkillsBlock(skills, style, options = {}) {
+  const names = list(skills).map(skillNameOf).filter(Boolean);
+  if (!names.length) return [];
+  const nodes = [createSectionHeading(options.title || 'Skills', style, { beforeSpacing: options.beforeSpacing ?? 140, color: options.headingColor, underlined: options.underlined })];
+  const variant = options.variant || style.skillVariant || 'pills';
+  if (variant === 'inline') {
+    nodes.push(new Paragraph({
+      spacing: { before: 20, after: 40 },
+      children: [new TextRun({ text: names.join('  •  '), size: 20, font: style.font, color: options.color || '333333' })],
+    }));
+    return nodes;
+  }
+  if (options.columns && options.columns > 1) {
+    const cols = options.columns;
+    const colWidth = Math.floor(CONTENT_WIDTH / cols);
+    const rows = [];
+    for (let i = 0; i < names.length; i += cols) {
+      rows.push(new TableRow({
+        children: Array.from({ length: cols }, (_, c) => new TableCell({
+          width: { size: colWidth, type: WidthType.DXA },
+          borders: NO_BORDERS,
+          children: names[i + c]
+            ? [new Paragraph({
+              numbering: { reference: BULLET_REF, level: 0 },
+              children: [new TextRun({ text: names[i + c], size: 19, font: style.font, color: options.color || '1E293B' })],
+              spacing: { before: 20, after: 20 },
+            })]
+            : [emptyParagraph()],
+        })),
+      }));
+    }
+    nodes.push(new Table({
+      width: { size: CONTENT_WIDTH, type: WidthType.DXA },
+      columnWidths: Array.from({ length: cols }, () => colWidth),
+      layout: TableLayoutType.FIXED,
+      borders: NO_BORDERS,
+      rows,
+    }));
+    return nodes;
+  }
+  for (const name of names) {
+    nodes.push(new Paragraph({
+      numbering: { reference: BULLET_REF, level: 0 },
+      children: [new TextRun({ text: name, size: options.size || 19, font: style.font, color: options.color || '1E293B' })],
+      spacing: { before: 20, after: 20 },
+    }));
+  }
+  return nodes;
+}
+
+function buildLanguagesBlock(languages, style, options = {}) {
+  const lines = list(languages).map(languageLine).filter(Boolean);
+  if (!lines.length) return [];
+  const nodes = [createSectionHeading(options.title || 'Languages', style, { beforeSpacing: options.beforeSpacing ?? 140, color: options.headingColor, underlined: options.underlined })];
+  for (const line of lines) {
+    nodes.push(new Paragraph({
+      numbering: { reference: BULLET_REF, level: 0 },
+      children: [new TextRun({ text: line, size: 18, font: style.font, color: options.color || style.sidebarText || '334155' })],
+      spacing: { before: 15, after: 15 },
+    }));
+  }
+  return nodes;
+}
+
+function buildHobbiesBlock(hobbies, style, options = {}) {
+  const names = list(hobbies).map(hobbyName).filter(Boolean);
+  if (!names.length) return [];
+  return [
+    createSectionHeading(options.title || 'Hobbies & Interests', style, { beforeSpacing: options.beforeSpacing ?? 140, color: options.headingColor, underlined: options.underlined }),
+    new Paragraph({
+      spacing: { before: 20, after: 40 },
+      children: [new TextRun({ text: names.join('  •  '), size: 18, font: style.font, color: options.color || '334155' })],
+    }),
+  ];
+}
+
+function buildSummaryBlock(summary, style, options = {}) {
+  const paragraphs = parseRichTextToParagraphs(summary, style, { size: options.size || 20, color: options.color || '334155' });
+  if (!paragraphs.length) return [];
+  return [
+    createSectionHeading(options.title || 'Professional Summary', style, { beforeSpacing: options.beforeSpacing ?? 0, color: options.headingColor, underlined: options.underlined }),
+    ...paragraphs,
+  ];
+}
+
+function buildEmploymentBlock(employments, style, options = {}) {
+  const items = list(employments);
+  if (!items.length) return [];
+  const nodes = [createSectionHeading(options.title || 'Employment History', style, { beforeSpacing: options.beforeSpacing ?? 140, color: options.headingColor, underlined: options.underlined })];
+  for (const emp of items) {
+    const jobTitle = stripAllHtmlTags(emp.jobTitle || emp.title || emp.position || '');
+    const employer = stripAllHtmlTags(emp.employer || emp.company || emp.organization || '');
+    const place = [employer, stripAllHtmlTags(emp.city)].filter(Boolean).join(' · ');
+    const dateRange = formatCleanDateRange(emp.begin || emp.startDate || emp.started, emp.end || emp.endDate || emp.finished, emp.currentWork || emp.current);
+    if (jobTitle || place || dateRange) nodes.push(...createEntryHeader(jobTitle, place, dateRange, style, options));
+    if (emp.description) nodes.push(...parseRichTextToParagraphs(emp.description, style, { size: 20 }));
+  }
+  return nodes;
+}
+
+function buildEducationBlock(educations, style, options = {}) {
+  const items = list(educations);
+  if (!items.length) return [];
+  const nodes = [createSectionHeading(options.title || 'Education', style, { beforeSpacing: options.beforeSpacing ?? 160, color: options.headingColor, underlined: options.underlined })];
+  for (const edu of items) {
+    const degree = stripAllHtmlTags(edu.degree || edu.qualification || edu.title || '');
+    const school = stripAllHtmlTags(edu.school || edu.institution || edu.university || '');
+    const dateRange = formatCleanDateRange(edu.started || edu.startDate || edu.begin, edu.finished || edu.endDate || edu.end);
+    if (degree || school || dateRange) nodes.push(...createEntryHeader(degree, school, dateRange, style, options));
+    if (edu.description) nodes.push(...parseRichTextToParagraphs(edu.description, style, { size: 20 }));
+  }
+  return nodes;
+}
+
+function buildProjectsBlock(projects, style, options = {}) {
+  const items = list(projects);
+  if (!items.length) return [];
+  const nodes = [createSectionHeading(options.title || 'Projects', style, { beforeSpacing: options.beforeSpacing ?? 160, color: options.headingColor, underlined: options.underlined })];
+  for (const proj of items) {
+    const title = stripAllHtmlTags(proj.title || proj.name || '');
+    const url = stripAllHtmlTags(proj.url || proj.link || '');
+    const href = safeUrl(url);
+    const displayUrl = url.replace(/^https?:\/\//i, '');
+    if (title || displayUrl) {
+      nodes.push(...createEntryHeader(title, displayUrl, '', style, { ...options, subTitleHref: href }));
+    }
+    if (proj.description) nodes.push(...parseRichTextToParagraphs(proj.description, style, { size: 20 }));
+  }
+  return nodes;
+}
+
+function buildCertificationsBlock(certs, style, options = {}) {
+  const items = list(certs);
+  if (!items.length) return [];
+  const nodes = [createSectionHeading(options.title || 'Certifications', style, { beforeSpacing: options.beforeSpacing ?? 160, color: options.headingColor, underlined: options.underlined })];
+  const twoCol = options.columns !== 1 && items.length > 1;
+  if (!twoCol) {
+    for (const cert of items) {
+      const title = stripAllHtmlTags(cert.name || cert.title || '');
+      const issuer = stripAllHtmlTags(cert.issuer || cert.organization || '');
+      const line = [title, issuer].filter(Boolean).join(' — ');
+      if (!line) continue;
+      nodes.push(new Paragraph({
+        numbering: { reference: BULLET_REF, level: 0 },
+        children: [new TextRun({ text: line, size: 20, font: style.font, color: '333333' })],
+        spacing: { before: 20, after: 20 },
+      }));
+    }
+    return nodes;
+  }
+  const colWidth = Math.floor(CONTENT_WIDTH / 2);
+  const rows = [];
+  for (let i = 0; i < items.length; i += 2) {
+    const cellText = (cert) => {
+      if (!cert) return '';
+      return [stripAllHtmlTags(cert.name || cert.title || ''), stripAllHtmlTags(cert.issuer || cert.organization || '')].filter(Boolean).join(' — ');
+    };
+    const left = cellText(items[i]);
+    const right = cellText(items[i + 1]);
+    rows.push(new TableRow({
+      children: [
+        new TableCell({
+          width: { size: colWidth, type: WidthType.DXA },
+          borders: NO_BORDERS,
+          children: left ? [new Paragraph({
+            numbering: { reference: BULLET_REF, level: 0 },
+            children: [new TextRun({ text: left, size: 20, font: style.font, color: '333333' })],
+            spacing: { before: 20, after: 20 },
+          })] : [emptyParagraph()],
+        }),
+        new TableCell({
+          width: { size: colWidth, type: WidthType.DXA },
+          borders: NO_BORDERS,
+          children: right ? [new Paragraph({
+            numbering: { reference: BULLET_REF, level: 0 },
+            children: [new TextRun({ text: right, size: 20, font: style.font, color: '333333' })],
+            spacing: { before: 20, after: 20 },
+          })] : [emptyParagraph()],
+        }),
+      ],
+    }));
+  }
+  nodes.push(new Table({
+    width: { size: CONTENT_WIDTH, type: WidthType.DXA },
+    columnWidths: [colWidth, colWidth],
+    layout: TableLayoutType.FIXED,
+    borders: NO_BORDERS,
+    rows,
+  }));
+  return nodes;
+}
+
+function buildAchievementsBlock(items, style, options = {}) {
+  const listItems = list(items);
+  if (!listItems.length) return [];
+  const nodes = [createSectionHeading(options.title || 'Key Achievements', style, { beforeSpacing: options.beforeSpacing ?? 160, color: options.headingColor, underlined: options.underlined })];
+  for (const item of listItems) {
+    const title = stripAllHtmlTags(item.title || item.name || '');
+    if (title) {
+      nodes.push(new Paragraph({
+        spacing: { before: 60, after: 20 },
+        children: [new TextRun({ text: title, bold: true, size: 21, font: style.font, color: '111827' })],
+      }));
+    }
+    if (item.description) nodes.push(...parseRichTextToParagraphs(item.description, style, { size: 20 }));
+  }
+  return nodes;
+}
+
+function buildReferencesBlock(items, style, options = {}) {
+  const listItems = list(items);
+  if (!listItems.length) return [];
+  const nodes = [createSectionHeading(options.title || 'References', style, { beforeSpacing: options.beforeSpacing ?? 160, color: options.headingColor, underlined: options.underlined })];
+  for (const item of listItems) {
+    const name = stripAllHtmlTags(item.name || item.title || '');
+    const detail = stripAllHtmlTags(item.reference || item.description || item.content || '');
+    if (name) {
+      nodes.push(new Paragraph({
+        spacing: { before: 50, after: 10 },
+        children: [new TextRun({ text: name, bold: true, size: 21, font: style.font, color: '111827' })],
+      }));
+    }
+    if (detail) {
+      nodes.push(new Paragraph({
+        spacing: { before: 0, after: 40 },
+        children: [new TextRun({ text: detail, size: 20, font: style.font, color: '334155' })],
+      }));
     }
   }
+  return nodes;
+}
 
-  if (sidebarElements.length === 0) sidebarElements.push(new Paragraph({ text: '' }));
-
-  // Right Hero Content
-  const heroElements = [];
-  if (resume.summary) {
-    const summaryParas = parseRichTextToParagraphs(resume.summary, style, { size: 20 });
-    if (summaryParas.length > 0) {
-      heroElements.push(createSectionHeading('Professional Summary', style, { beforeSpacing: 0, underlined: true }));
-      heroElements.push(...summaryParas);
-    }
-  }
-
-  const employmentsList = list(resume.employments || resume.experience || resume.workExperiences);
-  if (employmentsList.length > 0) {
-    heroElements.push(createSectionHeading('Employment History', style, { beforeSpacing: 140, underlined: true }));
-    for (const emp of employmentsList) {
-      const jobTitle = stripAllHtmlTags(emp.jobTitle || emp.title || emp.position || '');
-      const employer = stripAllHtmlTags(emp.employer || emp.company || '');
-      const dateRange = formatCleanDateRange(emp.startDate || emp.begin, emp.endDate || emp.end, emp.currentWork);
-      if (jobTitle || employer) heroElements.push(createEntryHeaderTable(jobTitle, employer, dateRange, style));
-      if (emp.description) heroElements.push(...parseRichTextToParagraphs(emp.description, style, { size: 20 }));
-    }
-  }
-
-  if (heroElements.length === 0) heroElements.push(new Paragraph({ text: '' }));
-
-  // Upper Split Table
-  elements.push(
-    new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      borders: {
-        top: { style: BorderStyle.NONE, size: 0, color: 'auto' },
-        bottom: { style: BorderStyle.NONE, size: 0, color: 'auto' },
-        left: { style: BorderStyle.NONE, size: 0, color: 'auto' },
-        right: { style: BorderStyle.NONE, size: 0, color: 'auto' },
-        insideHorizontal: { style: BorderStyle.NONE, size: 0, color: 'auto' },
-        insideVertical: { style: BorderStyle.NONE, size: 0, color: 'auto' }
-      },
-      rows: [
-        new TableRow({
-          children: [
-            new TableCell({
-              width: { size: 34, type: WidthType.PERCENTAGE },
-              shading: style.sidebarBg ? { fill: style.sidebarBg.replace('#', '') } : undefined,
-              margins: { top: convertInchesToTwip(0.1), bottom: convertInchesToTwip(0.1), left: convertInchesToTwip(0.1), right: convertInchesToTwip(0.1) },
-              children: sidebarElements
-            }),
-            new TableCell({
-              width: { size: 66, type: WidthType.PERCENTAGE },
-              margins: { top: convertInchesToTwip(0.1), bottom: convertInchesToTwip(0.1), left: convertInchesToTwip(0.2), right: convertInchesToTwip(0.1) },
-              children: heroElements
-            })
-          ]
-        })
-      ]
-    })
-  );
-
-  // Bottom Full-Width Flow
-  const educationsList = list(resume.educations || resume.education);
-  if (educationsList.length > 0) {
-    elements.push(createSectionHeading('Education', style, { beforeSpacing: 180, underlined: true }));
-    for (const edu of educationsList) {
-      const degree = stripAllHtmlTags(edu.degree || edu.qualification || edu.title || '');
-      const school = stripAllHtmlTags(edu.school || edu.institution || '');
-      const dateRange = formatCleanDateRange(edu.startDate || edu.started || edu.start_year, edu.endDate || edu.finished || edu.end_year);
-      if (degree || school) elements.push(createEntryHeaderTable(degree, school, dateRange, style));
-      if (edu.description) elements.push(...parseRichTextToParagraphs(edu.description, style, { size: 20 }));
-    }
-  }
-
-  const certsList = list(resume.certifications);
-  if (certsList.length > 0) {
-    elements.push(createSectionHeading('Certifications', style, { beforeSpacing: 180, underlined: true }));
-    const certRows = [];
-    for (let i = 0; i < certsList.length; i += 2) {
-      const c1 = certsList[i];
-      const c2 = certsList[i + 1];
-      const c1Text = c1 ? [stripAllHtmlTags(c1.name || c1.title), stripAllHtmlTags(c1.issuer || c1.organization)].filter(Boolean).join(' — ') : '';
-      const c2Text = c2 ? [stripAllHtmlTags(c2.name || c2.title), stripAllHtmlTags(c2.issuer || c2.organization)].filter(Boolean).join(' — ') : '';
-
-      certRows.push(
-        new TableRow({
-          children: [
-            new TableCell({
-              width: { size: 50, type: WidthType.PERCENTAGE },
-              children: [new Paragraph({ bullet: { level: 0 }, children: [new TextRun({ text: c1Text, size: 20, font: style.font, color: '333333' })], spacing: { before: 20, after: 20 } })]
-            }),
-            new TableCell({
-              width: { size: 50, type: WidthType.PERCENTAGE },
-              children: [c2Text ? new Paragraph({ bullet: { level: 0 }, children: [new TextRun({ text: c2Text, size: 20, font: style.font, color: '333333' })], spacing: { before: 20, after: 20 } }) : new Paragraph({ text: '' })]
-            })
-          ]
-        })
-      );
-    }
-    elements.push(
-      new Table({
-        width: { size: 100, type: WidthType.PERCENTAGE },
-        borders: {
-          top: { style: BorderStyle.NONE, size: 0, color: 'auto' }, bottom: { style: BorderStyle.NONE, size: 0, color: 'auto' },
-          left: { style: BorderStyle.NONE, size: 0, color: 'auto' }, right: { style: BorderStyle.NONE, size: 0, color: 'auto' },
-          insideHorizontal: { style: BorderStyle.NONE, size: 0, color: 'auto' }, insideVertical: { style: BorderStyle.NONE, size: 0, color: 'auto' }
-        },
-        rows: certRows
-      })
-    );
-  }
-
-  const projectsList = list(resume.projects);
-  if (projectsList.length > 0) {
-    elements.push(createSectionHeading('Projects', style, { beforeSpacing: 180, underlined: true }));
-    for (const proj of projectsList) {
-      const projTitle = stripAllHtmlTags(proj.title || proj.name || '');
-      const projUrl = stripAllHtmlTags(proj.url || proj.link || '');
-      if (projTitle) elements.push(createEntryHeaderTable(projTitle, projUrl, '', style));
-      if (proj.description) elements.push(...parseRichTextToParagraphs(proj.description, style, { size: 20 }));
-    }
-  }
-
-  const customSectionsList = list(resume.customSections);
-  for (const custom of customSectionsList) {
-    const customTitle = stripAllHtmlTags(custom.title) || 'Additional Information';
-    elements.push(createSectionHeading(customTitle, style, { beforeSpacing: 180, underlined: true }));
+function buildCustomSections(resume, style, options = {}) {
+  const nodes = [];
+  for (const custom of list(resume.customSections)) {
+    const title = stripAllHtmlTags(custom.title) || 'Additional Information';
+    nodes.push(createSectionHeading(title, style, { beforeSpacing: options.beforeSpacing ?? 160, color: options.headingColor, underlined: options.underlined }));
     const items = list(custom.items);
-    if (items.length > 0) {
+    if (items.length) {
       for (const item of items) {
         const itemTitle = stripAllHtmlTags(item.title || item.name || '');
         if (itemTitle) {
-          elements.push(
-            new Paragraph({
-              children: [new TextRun({ text: itemTitle, bold: true, size: 22, font: style.font, color: '111827' })],
-              spacing: { before: 60, after: 20 }
-            })
-          );
+          nodes.push(new Paragraph({
+            spacing: { before: 50, after: 20 },
+            children: [new TextRun({ text: itemTitle, bold: true, size: 21, font: style.font, color: '111827' })],
+          }));
         }
         if (item.description || item.content) {
-          elements.push(...parseRichTextToParagraphs(item.description || item.content, style, { size: 20 }));
+          nodes.push(...parseRichTextToParagraphs(item.description || item.content, style, { size: 20 }));
         }
       }
     } else if (custom.content) {
-      elements.push(...parseRichTextToParagraphs(custom.content, style, { size: 20 }));
+      nodes.push(...parseRichTextToParagraphs(custom.content, style, { size: 20 }));
     }
   }
-
-  return elements;
+  for (const component of list(resume.components)) {
+    const title = stripAllHtmlTags(component.name || component.title || 'Additional');
+    nodes.push(createSectionHeading(title, style, { beforeSpacing: 160, color: options.headingColor, underlined: options.underlined }));
+    if (Array.isArray(component.content)) {
+      for (const line of component.content) {
+        const text = stripAllHtmlTags(line);
+        if (!text) continue;
+        nodes.push(new Paragraph({
+          numbering: { reference: BULLET_REF, level: 0 },
+          children: [new TextRun({ text, size: 20, font: style.font, color: '333333' })],
+          spacing: { before: 20, after: 20 },
+        }));
+      }
+    } else if (component.content) {
+      nodes.push(...parseRichTextToParagraphs(component.content, style, { size: 20 }));
+    }
+  }
+  return nodes;
 }
 
-// --------------------------------------------------------------------------
-// 5. Archetype 2: EXECUTIVE BANNER (Cv8, Cv10, Cv11, Cv16, Cv17, Cv21, etc.)
-// --------------------------------------------------------------------------
-
-function buildExecutiveBannerDocument(resume, style) {
-  const fullName = stripAllHtmlTags(`${resume.firstname || resume.firstName || ''} ${resume.lastname || resume.lastName || ''}`) || stripAllHtmlTags(resume.title) || 'Resume';
-  const occupation = stripAllHtmlTags(resume.occupation || resume.jobTitle || resume.title || '');
-  const bannerBg = style.headerBg || style.primary;
-
-  const contactParts = [
-    resume.phone ? stripAllHtmlTags(resume.phone) : null,
-    resume.email ? stripAllHtmlTags(resume.email) : null,
-    resume.city ? [stripAllHtmlTags(resume.city), stripAllHtmlTags(resume.country)].filter(Boolean).join(', ') : null
-  ].filter(Boolean);
-
-  const bannerElements = [
-    new Paragraph({
-      alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text: fullName, bold: true, size: 36, color: 'FFFFFF', font: style.font })],
-      spacing: { before: 100, after: 30 }
-    })
-  ];
-
-  if (occupation) {
-    bannerElements.push(
-      new Paragraph({
-        alignment: AlignmentType.CENTER,
-        children: [new TextRun({ text: occupation.toUpperCase(), bold: true, size: 20, color: style.secondary ? style.secondary.replace('#', '') : 'E2E8F0', font: style.font })],
-        spacing: { before: 0, after: 60 }
-      })
-    );
-  }
-
-  if (contactParts.length > 0) {
-    bannerElements.push(
-      new Paragraph({
-        alignment: AlignmentType.CENTER,
-        children: [new TextRun({ text: contactParts.join('  •  '), size: 18, color: 'F8FAFC', font: style.font })],
-        spacing: { before: 0, after: 100 }
-      })
-    );
-  }
-
-  const bannerTable = new Table({
-    width: { size: 100, type: WidthType.PERCENTAGE },
-    borders: {
-      top: { style: BorderStyle.NONE, size: 0, color: 'auto' }, bottom: { style: BorderStyle.NONE, size: 0, color: 'auto' },
-      left: { style: BorderStyle.NONE, size: 0, color: 'auto' }, right: { style: BorderStyle.NONE, size: 0, color: 'auto' },
-      insideHorizontal: { style: BorderStyle.NONE, size: 0, color: 'auto' }, insideVertical: { style: BorderStyle.NONE, size: 0, color: 'auto' }
-    },
+function twoColumnTable(leftChildren, rightChildren, style, leftPercent) {
+  const leftPct = leftPercent || style.sidebarWidth || 34;
+  const leftWidth = Math.round(CONTENT_WIDTH * (leftPct / 100));
+  const rightWidth = CONTENT_WIDTH - leftWidth;
+  const dark = style.sidebarBg && isDarkHex(style.sidebarBg);
+  return new Table({
+    width: { size: CONTENT_WIDTH, type: WidthType.DXA },
+    columnWidths: [leftWidth, rightWidth],
+    layout: TableLayoutType.FIXED,
+    borders: NO_BORDERS,
     rows: [
       new TableRow({
         children: [
           new TableCell({
-            width: { size: 100, type: WidthType.PERCENTAGE },
-            shading: { fill: bannerBg.replace('#', '') },
-            margins: { top: convertInchesToTwip(0.15), bottom: convertInchesToTwip(0.15), left: convertInchesToTwip(0.2), right: convertInchesToTwip(0.2) },
-            children: bannerElements
-          })
-        ]
-      })
-    ]
+            width: { size: leftWidth, type: WidthType.DXA },
+            shading: style.sidebarBg ? { fill: style.sidebarBg } : undefined,
+            margins: { top: 80, bottom: 80, left: 100, right: 80 },
+            borders: NO_BORDERS,
+            verticalAlign: VerticalAlign.TOP,
+            children: ensureChildren(leftChildren),
+          }),
+          new TableCell({
+            width: { size: rightWidth, type: WidthType.DXA },
+            shading: dark ? { fill: 'FFFFFF' } : undefined,
+            margins: { top: 80, bottom: 80, left: 140, right: 80 },
+            borders: NO_BORDERS,
+            verticalAlign: VerticalAlign.TOP,
+            children: ensureChildren(rightChildren),
+          }),
+        ],
+      }),
+    ],
   });
-
-  const elements = [bannerTable];
-
-  // Sidebar (Skills, Languages)
-  const sidebarElements = [];
-  const skillsList = list(resume.skills);
-  if (skillsList.length > 0) {
-    sidebarElements.push(createSectionHeading('Skills', style, { beforeSpacing: 60, underlined: true }));
-    for (const skill of skillsList) {
-      const skillName = typeof skill === 'string' ? skill : (skill.name || skill.skillName || skill.skill || '');
-      const cleanSkill = stripAllHtmlTags(skillName);
-      if (cleanSkill) {
-        sidebarElements.push(
-          new Paragraph({
-            bullet: { level: 0 },
-            children: [new TextRun({ text: cleanSkill, size: 19, font: style.font, color: '1E293B' })],
-            spacing: { before: 15, after: 15 }
-          })
-        );
-      }
-    }
-  }
-
-  const languagesList = list(resume.languages);
-  if (languagesList.length > 0) {
-    sidebarElements.push(createSectionHeading('Languages', style, { beforeSpacing: 140, underlined: true }));
-    for (const lang of languagesList) {
-      const langName = typeof lang === 'string' ? lang : (lang.name || lang.language || '');
-      const langLevel = typeof lang === 'object' ? (lang.level || lang.proficiency || '') : '';
-      const cleanLang = [stripAllHtmlTags(langName), stripAllHtmlTags(langLevel)].filter(Boolean).join(' — ');
-      if (cleanLang) {
-        sidebarElements.push(
-          new Paragraph({
-            bullet: { level: 0 },
-            children: [new TextRun({ text: cleanLang, size: 18, font: style.font, color: style.sidebarText || '334155' })],
-            spacing: { before: 15, after: 15 }
-          })
-        );
-      }
-    }
-  }
-
-  if (sidebarElements.length === 0) sidebarElements.push(new Paragraph({ text: '' }));
-
-  // Main Section (Summary, Experience, Education, Certifications)
-  const mainElements = [];
-  if (resume.summary) {
-    const summaryParas = parseRichTextToParagraphs(resume.summary, style, { size: 20 });
-    if (summaryParas.length > 0) {
-      mainElements.push(createSectionHeading('Executive Summary', style, { beforeSpacing: 60, underlined: true }));
-      mainElements.push(...summaryParas);
-    }
-  }
-
-  const employmentsList = list(resume.employments || resume.experience || resume.workExperiences);
-  if (employmentsList.length > 0) {
-    mainElements.push(createSectionHeading('Experience', style, { beforeSpacing: 140, underlined: true }));
-    for (const emp of employmentsList) {
-      const jobTitle = stripAllHtmlTags(emp.jobTitle || emp.title || emp.position || '');
-      const employer = stripAllHtmlTags(emp.employer || emp.company || '');
-      const dateRange = formatCleanDateRange(emp.startDate || emp.begin, emp.endDate || emp.end, emp.currentWork);
-      if (jobTitle || employer) mainElements.push(createEntryHeaderTable(jobTitle, employer, dateRange, style));
-      if (emp.description) mainElements.push(...parseRichTextToParagraphs(emp.description, style, { size: 20 }));
-    }
-  }
-
-  const educationsList = list(resume.educations || resume.education);
-  if (educationsList.length > 0) {
-    mainElements.push(createSectionHeading('Education', style, { beforeSpacing: 140, underlined: true }));
-    for (const edu of educationsList) {
-      const degree = stripAllHtmlTags(edu.degree || edu.qualification || edu.title || '');
-      const school = stripAllHtmlTags(edu.school || edu.institution || '');
-      const dateRange = formatCleanDateRange(edu.startDate || edu.started || edu.start_year, edu.endDate || edu.finished || edu.end_year);
-      if (degree || school) mainElements.push(createEntryHeaderTable(degree, school, dateRange, style));
-      if (edu.description) mainElements.push(...parseRichTextToParagraphs(edu.description, style, { size: 20 }));
-    }
-  }
-
-  if (mainElements.length === 0) mainElements.push(new Paragraph({ text: '' }));
-
-  elements.push(
-    new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      borders: {
-        top: { style: BorderStyle.NONE, size: 0, color: 'auto' }, bottom: { style: BorderStyle.NONE, size: 0, color: 'auto' },
-        left: { style: BorderStyle.NONE, size: 0, color: 'auto' }, right: { style: BorderStyle.NONE, size: 0, color: 'auto' },
-        insideHorizontal: { style: BorderStyle.NONE, size: 0, color: 'auto' }, insideVertical: { style: BorderStyle.NONE, size: 0, color: 'auto' }
-      },
-      rows: [
-        new TableRow({
-          children: [
-            new TableCell({
-              width: { size: 32, type: WidthType.PERCENTAGE },
-              shading: style.sidebarBg ? { fill: style.sidebarBg.replace('#', '') } : undefined,
-              margins: { top: convertInchesToTwip(0.1), bottom: convertInchesToTwip(0.1), left: convertInchesToTwip(0.1), right: convertInchesToTwip(0.1) },
-              children: sidebarElements
-            }),
-            new TableCell({
-              width: { size: 68, type: WidthType.PERCENTAGE },
-              margins: { top: convertInchesToTwip(0.1), bottom: convertInchesToTwip(0.1), left: convertInchesToTwip(0.2), right: convertInchesToTwip(0.1) },
-              children: mainElements
-            })
-          ]
-        })
-      ]
-    })
-  );
-
-  return elements;
 }
 
-// --------------------------------------------------------------------------
-// 6. Archetype 3: MINIMAL ATS (Cv4, Cv5, Cv6, Cv12, Cv13, Cv14, Cv15, etc.)
-// --------------------------------------------------------------------------
+function bannerTable(children, fill) {
+  return new Table({
+    width: { size: CONTENT_WIDTH, type: WidthType.DXA },
+    columnWidths: [CONTENT_WIDTH],
+    layout: TableLayoutType.FIXED,
+    borders: NO_BORDERS,
+    rows: [
+      new TableRow({
+        children: [
+          new TableCell({
+            width: { size: CONTENT_WIDTH, type: WidthType.DXA },
+            shading: { fill: fill || '1E293B' },
+            margins: { top: 140, bottom: 140, left: 160, right: 160 },
+            borders: NO_BORDERS,
+            children: ensureChildren(children),
+          }),
+        ],
+      }),
+    ],
+  });
+}
+
+function sidebarTone(style) {
+  const dark = style.sidebarBg && isDarkHex(style.sidebarBg);
+  return {
+    headingColor: dark ? (style.sidebarText || 'F8FAFC') : style.primary,
+    color: style.sidebarText || (dark ? 'F8FAFC' : '334155'),
+    underlined: true,
+  };
+}
+
+function buildSidebarStack(resume, style, options = {}) {
+  const tone = sidebarTone(style);
+  const nodes = [];
+  if (options.includeIdentity !== false) {
+    nodes.push(...buildIdentityHeader(resume, style, {
+      nameColor: tone.headingColor,
+      roleColor: style.secondary,
+      nameSize: 28,
+      roleSize: 18,
+    }));
+    nodes.push(...buildContactBlock(resume, style, {
+      heading: 'Contact',
+      headingColor: tone.headingColor,
+      color: tone.color,
+      linkColor: style.secondary,
+      underlined: true,
+      beforeSpacing: 80,
+    }));
+  }
+  nodes.push(...buildSkillsBlock(resume.skills, style, { ...tone, beforeSpacing: 140, size: 18 }));
+  if (options.includeHobbies !== false) {
+    nodes.push(...buildHobbiesBlock(resume.hobbies || resume.interests, style, { ...tone, beforeSpacing: 140 }));
+  }
+  if (options.includeCerts) {
+    nodes.push(...buildCertificationsBlock(resume.certifications, style, { ...tone, columns: 1, beforeSpacing: 140 }));
+  }
+  nodes.push(...buildLanguagesBlock(resume.languages, style, { ...tone, beforeSpacing: 140 }));
+  return nodes;
+}
+
+function buildHeroStack(resume, style, options = {}) {
+  const nodes = [];
+  const contentWidth = options.contentWidth || heroInnerWidth(style);
+  nodes.push(...buildSummaryBlock(resume.summary || resume.professionalSummary, style, {
+    title: options.summaryTitle || 'Professional Summary',
+    beforeSpacing: 0,
+  }));
+  nodes.push(...buildEmploymentBlock(resume.employments || resume.experience || resume.workExperiences, style, {
+    title: options.experienceTitle || 'Employment History',
+    beforeSpacing: 140,
+    contentWidth,
+  }));
+  return nodes;
+}
+
+function buildBottomStack(resume, style, options = {}) {
+  const nodes = [];
+  nodes.push(...buildEducationBlock(resume.educations || resume.education, style, { beforeSpacing: 180 }));
+  if (options.includeSkills) nodes.push(...buildSkillsBlock(resume.skills, style, { beforeSpacing: 180, variant: style.skillVariant }));
+  nodes.push(...buildProjectsBlock(resume.projects, style, { beforeSpacing: 180 }));
+  if (options.includeCerts !== false) nodes.push(...buildCertificationsBlock(resume.certifications, style, { beforeSpacing: 180, columns: 2 }));
+  if (options.includeHobbies) nodes.push(...buildHobbiesBlock(resume.hobbies || resume.interests, style, { beforeSpacing: 180 }));
+  nodes.push(...buildAchievementsBlock(resume.achievements || resume.awards, style, { beforeSpacing: 180 }));
+  nodes.push(...buildReferencesBlock(resume.references, style, { beforeSpacing: 180 }));
+  if (options.includeLanguages) nodes.push(...buildLanguagesBlock(resume.languages, style, { beforeSpacing: 180 }));
+  nodes.push(...buildCustomSections(resume, style, { beforeSpacing: 180 }));
+  return nodes;
+}
+
+function buildModernSplitDocument(resume, style) {
+  const certsInSidebar = certsBelongInSidebar(resume);
+  const sidebar = buildSidebarStack(resume, style, { includeIdentity: true, includeHobbies: true, includeCerts: certsInSidebar });
+  const hero = buildHeroStack(resume, style, { contentWidth: heroInnerWidth(style) });
+  const bottom = buildBottomStack(resume, style, { includeCerts: !certsInSidebar });
+  return [
+    twoColumnTable(sidebar, hero, style, style.sidebarWidth),
+    ...bottom,
+  ];
+}
+
+function buildExecutiveBannerDocument(resume, style) {
+  const bannerFill = style.headerBg || style.primary;
+  const banner = [
+    ...buildIdentityHeader(resume, style, {
+      alignment: AlignmentType.CENTER,
+      nameColor: style.headerText || 'FFFFFF',
+      roleColor: style.secondary || 'E2E8F0',
+      nameSize: 40,
+    }),
+    ...buildContactBlock(resume, style, {
+      inline: true,
+      alignment: AlignmentType.CENTER,
+      color: 'F8FAFC',
+      separator: '  •  ',
+    }),
+  ];
+  const certsInSidebar = certsBelongInSidebar(resume);
+  const sidebar = buildSidebarStack(resume, { ...style, sidebarBg: style.sidebarBg || 'F8FAFC' }, {
+    includeIdentity: false,
+    includeHobbies: true,
+    includeCerts: certsInSidebar,
+  });
+  const hero = buildHeroStack(resume, style, {
+    summaryTitle: 'Executive Summary',
+    experienceTitle: 'Experience',
+    contentWidth: heroInnerWidth({ ...style, sidebarWidth: style.sidebarWidth || 34 }),
+  });
+  const bottom = buildBottomStack(resume, style, { includeCerts: !certsInSidebar });
+  return [
+    bannerTable(banner, bannerFill),
+    twoColumnTable(sidebar, hero, { ...style, sidebarBg: style.sidebarBg || 'F8FAFC' }, style.sidebarWidth || 34),
+    ...bottom,
+  ];
+}
 
 function buildMinimalAtsDocument(resume, style) {
-  const fullName = stripAllHtmlTags(`${resume.firstname || resume.firstName || ''} ${resume.lastname || resume.lastName || ''}`) || stripAllHtmlTags(resume.title) || 'Resume';
-  const occupation = stripAllHtmlTags(resume.occupation || resume.jobTitle || resume.title || '');
-
-  const contactParts = [
-    resume.email ? stripAllHtmlTags(resume.email) : null,
-    resume.phone ? stripAllHtmlTags(resume.phone) : null,
-    resume.city ? [stripAllHtmlTags(resume.city), stripAllHtmlTags(resume.country)].filter(Boolean).join(', ') : null,
-    resume.website ? stripAllHtmlTags(resume.website) : null,
-    resume.linkedin ? stripAllHtmlTags(resume.linkedin) : null,
-    resume.github ? stripAllHtmlTags(resume.github) : null
-  ].filter(Boolean);
-
-  const children = [
-    new Paragraph({
-      alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text: fullName, bold: true, size: 34, color: style.primary, font: style.font })],
-      spacing: { before: 0, after: 30 }
-    })
+  return [
+    ...buildIdentityHeader(resume, style, { alignment: AlignmentType.CENTER, nameSize: 36 }),
+    ...buildContactBlock(resume, style, { inline: true, alignment: AlignmentType.CENTER, color: '555555' }),
+    ...buildSummaryBlock(resume.summary || resume.professionalSummary, style, { beforeSpacing: 80 }),
+    ...buildEmploymentBlock(resume.employments || resume.experience || resume.workExperiences, style, { title: 'Experience', beforeSpacing: 140 }),
+    ...buildEducationBlock(resume.educations || resume.education, style, { beforeSpacing: 140 }),
+    ...buildSkillsBlock(resume.skills, style, { beforeSpacing: 140, variant: style.skillVariant }),
+    ...buildProjectsBlock(resume.projects, style, { beforeSpacing: 140 }),
+    ...buildCertificationsBlock(resume.certifications, style, { beforeSpacing: 140, columns: 2 }),
+    ...buildLanguagesBlock(resume.languages, style, { beforeSpacing: 140 }),
+    ...buildHobbiesBlock(resume.hobbies || resume.interests, style, { beforeSpacing: 140 }),
+    ...buildAchievementsBlock(resume.achievements || resume.awards, style, { beforeSpacing: 140 }),
+    ...buildReferencesBlock(resume.references, style, { beforeSpacing: 140 }),
+    ...buildCustomSections(resume, style, { beforeSpacing: 140 }),
   ];
-
-  if (occupation) {
-    children.push(
-      new Paragraph({
-        alignment: AlignmentType.CENTER,
-        children: [new TextRun({ text: occupation.toUpperCase(), bold: true, size: 20, color: style.secondary || style.primary, font: style.font })],
-        spacing: { before: 0, after: 50 }
-      })
-    );
-  }
-
-  if (contactParts.length > 0) {
-    children.push(
-      new Paragraph({
-        alignment: AlignmentType.CENTER,
-        children: [new TextRun({ text: contactParts.join('  •  '), size: 18, color: '555555', font: style.font })],
-        spacing: { before: 0, after: 160 }
-      })
-    );
-  }
-
-  if (resume.summary) {
-    const summaryParas = parseRichTextToParagraphs(resume.summary, style, { size: 20 });
-    if (summaryParas.length > 0) {
-      children.push(createSectionHeading('Professional Summary', style, { underlined: true }));
-      children.push(...summaryParas);
-    }
-  }
-
-  const employmentsList = list(resume.employments || resume.experience || resume.workExperiences);
-  if (employmentsList.length > 0) {
-    children.push(createSectionHeading('Experience', style, { underlined: true }));
-    for (const emp of employmentsList) {
-      const jobTitle = stripAllHtmlTags(emp.jobTitle || emp.title || emp.position || '');
-      const employer = stripAllHtmlTags(emp.employer || emp.company || '');
-      const dateRange = formatCleanDateRange(emp.startDate || emp.begin, emp.endDate || emp.end, emp.currentWork);
-      if (jobTitle || employer) children.push(createEntryHeaderTable(jobTitle, employer, dateRange, style));
-      if (emp.description) children.push(...parseRichTextToParagraphs(emp.description, style, { size: 20 }));
-    }
-  }
-
-  const educationsList = list(resume.educations || resume.education);
-  if (educationsList.length > 0) {
-    children.push(createSectionHeading('Education', style, { underlined: true }));
-    for (const edu of educationsList) {
-      const degree = stripAllHtmlTags(edu.degree || edu.qualification || edu.title || '');
-      const school = stripAllHtmlTags(edu.school || edu.institution || '');
-      const dateRange = formatCleanDateRange(edu.startDate || edu.started || edu.start_year, edu.endDate || edu.finished || edu.end_year);
-      if (degree || school) children.push(createEntryHeaderTable(degree, school, dateRange, style));
-      if (edu.description) children.push(...parseRichTextToParagraphs(edu.description, style, { size: 20 }));
-    }
-  }
-
-  const skillsList = list(resume.skills);
-  if (skillsList.length > 0) {
-    children.push(createSectionHeading('Skills', style, { underlined: true }));
-    for (const skill of skillsList) {
-      const skillName = typeof skill === 'string' ? skill : (skill.name || skill.skillName || skill.skill || '');
-      const cleanSkill = stripAllHtmlTags(skillName);
-      if (cleanSkill) {
-        children.push(
-          new Paragraph({
-            bullet: { level: 0 },
-            children: [new TextRun({ text: cleanSkill, size: 20, font: style.font, color: '333333' })],
-            spacing: { before: 20, after: 20 }
-          })
-        );
-      }
-    }
-  }
-
-  const languagesList = list(resume.languages);
-  if (languagesList.length > 0) {
-    children.push(createSectionHeading('Languages', style, { underlined: true }));
-    for (const lang of languagesList) {
-      const langName = typeof lang === 'string' ? lang : (lang.name || lang.language || '');
-      const langLevel = typeof lang === 'object' ? (lang.level || lang.proficiency || '') : '';
-      const cleanLang = [stripAllHtmlTags(langName), stripAllHtmlTags(langLevel)].filter(Boolean).join(' — ');
-      if (cleanLang) {
-        children.push(
-          new Paragraph({
-            bullet: { level: 0 },
-            children: [new TextRun({ text: cleanLang, size: 20, font: style.font, color: '333333' })],
-            spacing: { before: 20, after: 20 }
-          })
-        );
-      }
-    }
-  }
-
-  return children;
 }
-
-// --------------------------------------------------------------------------
-// 7. Archetype 4: TECH GRID (Cv25, Cv28, Cv31, Cv32, Cv33, Cv35, Cv37)
-// --------------------------------------------------------------------------
 
 function buildTechGridDocument(resume, style) {
-  const fullName = stripAllHtmlTags(`${resume.firstname || resume.firstName || ''} ${resume.lastname || resume.lastName || ''}`) || stripAllHtmlTags(resume.title) || 'Resume';
-  const occupation = stripAllHtmlTags(resume.occupation || resume.jobTitle || resume.title || 'SOFTWARE ENGINEER');
-
-  const elements = [
-    new Paragraph({
-      children: [
-        new TextRun({ text: `< `, size: 30, color: style.secondary || '60A5FA', font: 'Consolas' }),
-        new TextRun({ text: fullName, bold: true, size: 34, color: style.primary, font: style.font }),
-        new TextRun({ text: ` />`, size: 30, color: style.secondary || '60A5FA', font: 'Consolas' })
-      ],
-      spacing: { before: 0, after: 30 }
-    }),
-    new Paragraph({
-      children: [
-        new TextRun({ text: `[${occupation.toUpperCase()}]`, bold: true, size: 20, color: style.primary, font: 'Consolas' })
-      ],
-      spacing: { before: 0, after: 60 }
-    })
-  ];
-
-  const contactParts = [
-    resume.email ? `✉ ${stripAllHtmlTags(resume.email)}` : null,
-    resume.phone ? `📱 ${stripAllHtmlTags(resume.phone)}` : null,
-    resume.github ? `💻 ${stripAllHtmlTags(resume.github)}` : null,
-    resume.linkedin ? `🔗 ${stripAllHtmlTags(resume.linkedin)}` : null,
-    resume.city ? `📍 ${stripAllHtmlTags(resume.city)}` : null
-  ].filter(Boolean);
-
-  if (contactParts.length > 0) {
-    elements.push(
-      new Paragraph({
-        children: [new TextRun({ text: contactParts.join('   |   '), size: 18, color: '4B5563', font: style.font })],
-        spacing: { before: 0, after: 140 }
-      })
-    );
-  }
-
-  if (resume.summary) {
-    const summaryParas = parseRichTextToParagraphs(resume.summary, style, { size: 20 });
-    if (summaryParas.length > 0) {
-      elements.push(createSectionHeading('Core Competencies & Profile', style, { underlined: true }));
-      elements.push(...summaryParas);
-    }
-  }
-
-  // Tech Skills Multi-Column Grid
-  const skillsList = list(resume.skills);
-  if (skillsList.length > 0) {
-    elements.push(createSectionHeading('Technical Stack & Tools', style, { underlined: true }));
-    const skillRows = [];
-    for (let i = 0; i < skillsList.length; i += 3) {
-      const s1 = skillsList[i];
-      const s2 = skillsList[i + 1];
-      const s3 = skillsList[i + 2];
-      const getSkillName = (s) => stripAllHtmlTags(typeof s === 'string' ? s : (s?.name || s?.skill || ''));
-
-      skillRows.push(
-        new TableRow({
-          children: [
-            new TableCell({
-              width: { size: 33, type: WidthType.PERCENTAGE },
-              children: [new Paragraph({ bullet: { level: 0 }, children: [new TextRun({ text: getSkillName(s1), size: 19, font: style.font, color: '1E293B' })], spacing: { before: 15, after: 15 } })]
-            }),
-            new TableCell({
-              width: { size: 33, type: WidthType.PERCENTAGE },
-              children: [s2 ? new Paragraph({ bullet: { level: 0 }, children: [new TextRun({ text: getSkillName(s2), size: 19, font: style.font, color: '1E293B' })], spacing: { before: 15, after: 15 } }) : new Paragraph({ text: '' })]
-            }),
-            new TableCell({
-              width: { size: 34, type: WidthType.PERCENTAGE },
-              children: [s3 ? new Paragraph({ bullet: { level: 0 }, children: [new TextRun({ text: getSkillName(s3), size: 19, font: style.font, color: '1E293B' })], spacing: { before: 15, after: 15 } }) : new Paragraph({ text: '' })]
-            })
-          ]
-        })
-      );
-    }
-
-    elements.push(
-      new Table({
-        width: { size: 100, type: WidthType.PERCENTAGE },
-        borders: {
-          top: { style: BorderStyle.NONE, size: 0, color: 'auto' }, bottom: { style: BorderStyle.NONE, size: 0, color: 'auto' },
-          left: { style: BorderStyle.NONE, size: 0, color: 'auto' }, right: { style: BorderStyle.NONE, size: 0, color: 'auto' },
-          insideHorizontal: { style: BorderStyle.NONE, size: 0, color: 'auto' }, insideVertical: { style: BorderStyle.NONE, size: 0, color: 'auto' }
-        },
-        rows: skillRows
-      })
-    );
-  }
-
-  const employmentsList = list(resume.employments || resume.experience || resume.workExperiences);
-  if (employmentsList.length > 0) {
-    elements.push(createSectionHeading('Work Experience', style, { beforeSpacing: 160, underlined: true }));
-    for (const emp of employmentsList) {
-      const jobTitle = stripAllHtmlTags(emp.jobTitle || emp.title || emp.position || '');
-      const employer = stripAllHtmlTags(emp.employer || emp.company || '');
-      const dateRange = formatCleanDateRange(emp.startDate || emp.begin, emp.endDate || emp.end, emp.currentWork);
-      if (jobTitle || employer) elements.push(createEntryHeaderTable(jobTitle, employer, dateRange, style));
-      if (emp.description) elements.push(...parseRichTextToParagraphs(emp.description, style, { size: 20 }));
-    }
-  }
-
-  const educationsList = list(resume.educations || resume.education);
-  if (educationsList.length > 0) {
-    elements.push(createSectionHeading('Education', style, { beforeSpacing: 160, underlined: true }));
-    for (const edu of educationsList) {
-      const degree = stripAllHtmlTags(edu.degree || edu.qualification || edu.title || '');
-      const school = stripAllHtmlTags(edu.school || edu.institution || '');
-      const dateRange = formatCleanDateRange(edu.startDate || edu.started || edu.start_year, edu.endDate || edu.finished || edu.end_year);
-      if (degree || school) elements.push(createEntryHeaderTable(degree, school, dateRange, style));
-      if (edu.description) elements.push(...parseRichTextToParagraphs(edu.description, style, { size: 20 }));
-    }
-  }
-
-  return elements;
+  // PDF SmartResumeComposer renders tech-grid as a two-column split.
+  // Keep that architecture and add a compact developer identity in the sidebar.
+  return buildModernSplitDocument(resume, {
+    ...style,
+    sidebarBg: style.sidebarBg || 'F8FAFC',
+    sidebarWidth: style.sidebarWidth || 34,
+  });
 }
 
-// --------------------------------------------------------------------------
-// 8. Archetype 5: COMPACT EURO (Cv40, Cv41, Cv42, Cv43, Cv45, Cv46, Cv49, Cv51)
-// --------------------------------------------------------------------------
+function euroRow(leftNodes, rightNodes, leftWidth, rightWidth) {
+  return new TableRow({
+    children: [
+      new TableCell({
+        width: { size: leftWidth, type: WidthType.DXA },
+        borders: NO_BORDERS,
+        verticalAlign: VerticalAlign.TOP,
+        margins: { top: 40, bottom: 40, left: 0, right: 80 },
+        children: ensureChildren(leftNodes),
+      }),
+      new TableCell({
+        width: { size: rightWidth, type: WidthType.DXA },
+        borders: NO_BORDERS,
+        verticalAlign: VerticalAlign.TOP,
+        margins: { top: 40, bottom: 40, left: 80, right: 0 },
+        children: ensureChildren(rightNodes),
+      }),
+    ],
+  });
+}
 
 function buildCompactEuroDocument(resume, style) {
-  const fullName = stripAllHtmlTags(`${resume.firstname || resume.firstName || ''} ${resume.lastname || resume.lastName || ''}`) || stripAllHtmlTags(resume.title) || 'Resume';
-  const occupation = stripAllHtmlTags(resume.occupation || resume.jobTitle || resume.title || '');
+  const leftWidth = Math.round(CONTENT_WIDTH * 0.28);
+  const rightWidth = CONTENT_WIDTH - leftWidth;
+  const rows = [];
 
-  const contactParts = [
-    resume.email ? `Email: ${stripAllHtmlTags(resume.email)}` : null,
-    resume.phone ? `Phone: ${stripAllHtmlTags(resume.phone)}` : null,
-    resume.city ? `Address: ${[stripAllHtmlTags(resume.city), stripAllHtmlTags(resume.country)].filter(Boolean).join(', ')}` : null
-  ].filter(Boolean);
-
-  const topElements = [
-    new Paragraph({
-      alignment: AlignmentType.LEFT,
-      children: [new TextRun({ text: fullName, bold: true, size: 32, color: style.primary, font: style.font })],
-      spacing: { before: 0, after: 30 }
-    })
-  ];
-
-  if (occupation) {
-    topElements.push(
-      new Paragraph({
-        alignment: AlignmentType.LEFT,
-        children: [new TextRun({ text: occupation.toUpperCase(), bold: true, size: 20, color: style.secondary || style.primary, font: style.font })],
-        spacing: { before: 0, after: 40 }
-      })
-    );
+  const summaryParas = parseRichTextToParagraphs(resume.summary || resume.professionalSummary, style, { size: 20 });
+  if (summaryParas.length) {
+    rows.push(euroRow(
+      [new Paragraph({
+        spacing: { before: 40, after: 20 },
+        children: [new TextRun({ text: 'PERSONAL STATEMENT', bold: true, size: 19, color: style.primary, font: style.font })],
+      })],
+      summaryParas,
+      leftWidth,
+      rightWidth,
+    ));
   }
 
-  if (contactParts.length > 0) {
-    topElements.push(
-      new Paragraph({
-        alignment: AlignmentType.LEFT,
-        children: [new TextRun({ text: contactParts.join('   |   '), size: 18, color: '555555', font: style.font })],
-        spacing: { before: 0, after: 140 }
-      })
-    );
-  }
-
-  // Construct Europass Gutter Table (Left: Dates/Section; Right: Details)
-  const euroRows = [];
-
-  if (resume.summary) {
-    const summaryParas = parseRichTextToParagraphs(resume.summary, style, { size: 20 });
-    if (summaryParas.length > 0) {
-      euroRows.push(
-        new TableRow({
-          children: [
-            new TableCell({
-              width: { size: 28, type: WidthType.PERCENTAGE },
-              children: [new Paragraph({ children: [new TextRun({ text: 'PERSONAL STATEMENT', bold: true, size: 19, color: style.primary, font: style.font })], spacing: { before: 60, after: 40 } })]
-            }),
-            new TableCell({
-              width: { size: 72, type: WidthType.PERCENTAGE },
-              children: summaryParas
-            })
-          ]
-        })
-      );
+  const employments = list(resume.employments || resume.experience || resume.workExperiences);
+  employments.forEach((emp, index) => {
+    const jobTitle = stripAllHtmlTags(emp.jobTitle || emp.title || emp.position || '');
+    const employer = stripAllHtmlTags(emp.employer || emp.company || '');
+    const dateRange = formatCleanDateRange(emp.begin || emp.startDate, emp.end || emp.endDate, emp.currentWork);
+    const right = [];
+    if (jobTitle || employer) {
+      right.push(new Paragraph({
+        spacing: { before: 40, after: 20 },
+        children: [
+          new TextRun({ text: jobTitle, bold: true, size: 22, color: '111827', font: style.font }),
+          ...(employer ? [new TextRun({ text: ` — ${employer}`, bold: true, size: 20, color: style.primary, font: style.font })] : []),
+        ],
+      }));
     }
-  }
-
-  const employmentsList = list(resume.employments || resume.experience || resume.workExperiences);
-  if (employmentsList.length > 0) {
-    for (let i = 0; i < employmentsList.length; i++) {
-      const emp = employmentsList[i];
-      const jobTitle = stripAllHtmlTags(emp.jobTitle || emp.title || emp.position || '');
-      const employer = stripAllHtmlTags(emp.employer || emp.company || '');
-      const dateRange = formatCleanDateRange(emp.startDate || emp.begin, emp.endDate || emp.end, emp.currentWork);
-
-      const rightParas = [];
-      if (jobTitle || employer) {
-        rightParas.push(
-          new Paragraph({
-            children: [
-              new TextRun({ text: jobTitle, bold: true, size: 22, color: '111827', font: style.font }),
-              ...(employer ? [new TextRun({ text: ` — ${employer}`, bold: true, size: 20, color: style.primary, font: style.font })] : [])
-            ],
-            spacing: { before: 60, after: 20 }
-          })
-        );
-      }
-      if (emp.description) rightParas.push(...parseRichTextToParagraphs(emp.description, style, { size: 20 }));
-
-      euroRows.push(
-        new TableRow({
-          children: [
-            new TableCell({
-              width: { size: 28, type: WidthType.PERCENTAGE },
-              children: [
-                new Paragraph({
-                  children: [
-                    ...(i === 0 ? [new TextRun({ text: 'WORK EXPERIENCE\n', bold: true, size: 19, color: style.primary, font: style.font })] : []),
-                    new TextRun({ text: dateRange, size: 18, color: '64748B', font: style.font })
-                  ],
-                  spacing: { before: 60, after: 20 }
-                })
-              ]
-            }),
-            new TableCell({
-              width: { size: 72, type: WidthType.PERCENTAGE },
-              children: rightParas
-            })
-          ]
-        })
-      );
-    }
-  }
-
-  const educationsList = list(resume.educations || resume.education);
-  if (educationsList.length > 0) {
-    for (let i = 0; i < educationsList.length; i++) {
-      const edu = educationsList[i];
-      const degree = stripAllHtmlTags(edu.degree || edu.qualification || edu.title || '');
-      const school = stripAllHtmlTags(edu.school || edu.institution || '');
-      const dateRange = formatCleanDateRange(edu.startDate || edu.started || edu.start_year, edu.endDate || edu.finished || edu.end_year);
-
-      const rightParas = [];
-      if (degree || school) {
-        rightParas.push(
-          new Paragraph({
-            children: [
-              new TextRun({ text: degree, bold: true, size: 22, color: '111827', font: style.font }),
-              ...(school ? [new TextRun({ text: ` — ${school}`, bold: true, size: 20, color: style.primary, font: style.font })] : [])
-            ],
-            spacing: { before: 60, after: 20 }
-          })
-        );
-      }
-      if (edu.description) rightParas.push(...parseRichTextToParagraphs(edu.description, style, { size: 20 }));
-
-      euroRows.push(
-        new TableRow({
-          children: [
-            new TableCell({
-              width: { size: 28, type: WidthType.PERCENTAGE },
-              children: [
-                new Paragraph({
-                  children: [
-                    ...(i === 0 ? [new TextRun({ text: 'EDUCATION & TRAINING\n', bold: true, size: 19, color: style.primary, font: style.font })] : []),
-                    new TextRun({ text: dateRange, size: 18, color: '64748B', font: style.font })
-                  ],
-                  spacing: { before: 60, after: 20 }
-                })
-              ]
-            }),
-            new TableCell({
-              width: { size: 72, type: WidthType.PERCENTAGE },
-              children: rightParas
-            })
-          ]
-        })
-      );
-    }
-  }
-
-  const euroTable = new Table({
-    width: { size: 100, type: WidthType.PERCENTAGE },
-    borders: {
-      top: { style: BorderStyle.NONE, size: 0, color: 'auto' }, bottom: { style: BorderStyle.NONE, size: 0, color: 'auto' },
-      left: { style: BorderStyle.NONE, size: 0, color: 'auto' }, right: { style: BorderStyle.NONE, size: 0, color: 'auto' },
-      insideHorizontal: { style: BorderStyle.NONE, size: 0, color: 'auto' }, insideVertical: { style: BorderStyle.NONE, size: 0, color: 'auto' }
-    },
-    rows: euroRows
+    if (emp.description) right.push(...parseRichTextToParagraphs(emp.description, style, { size: 20 }));
+    rows.push(euroRow(
+      [new Paragraph({
+        spacing: { before: 40, after: 20 },
+        children: [
+          ...(index === 0 ? [new TextRun({ text: 'WORK EXPERIENCE', bold: true, size: 19, color: style.primary, font: style.font }), new TextRun({ text: ' ', size: 19 })] : []),
+          new TextRun({ text: dateRange, size: 18, color: '64748B', font: style.font }),
+        ],
+      })],
+      right,
+      leftWidth,
+      rightWidth,
+    ));
   });
 
-  return [...topElements, euroTable];
+  const educations = list(resume.educations || resume.education);
+  educations.forEach((edu, index) => {
+    const degree = stripAllHtmlTags(edu.degree || edu.qualification || edu.title || '');
+    const school = stripAllHtmlTags(edu.school || edu.institution || '');
+    const dateRange = formatCleanDateRange(edu.started || edu.startDate, edu.finished || edu.endDate);
+    const right = [];
+    if (degree || school) {
+      right.push(new Paragraph({
+        spacing: { before: 40, after: 20 },
+        children: [
+          new TextRun({ text: degree, bold: true, size: 22, color: '111827', font: style.font }),
+          ...(school ? [new TextRun({ text: ` — ${school}`, bold: true, size: 20, color: style.primary, font: style.font })] : []),
+        ],
+      }));
+    }
+    if (edu.description) right.push(...parseRichTextToParagraphs(edu.description, style, { size: 20 }));
+    rows.push(euroRow(
+      [new Paragraph({
+        spacing: { before: 40, after: 20 },
+        children: [
+          ...(index === 0 ? [new TextRun({ text: 'EDUCATION & TRAINING', bold: true, size: 19, color: style.primary, font: style.font }), new TextRun({ text: ' ', size: 19 })] : []),
+          new TextRun({ text: dateRange, size: 18, color: '64748B', font: style.font }),
+        ],
+      })],
+      right,
+      leftWidth,
+      rightWidth,
+    ));
+  });
+
+  const top = [
+    ...buildIdentityHeader(resume, style, { nameSize: 32, uppercaseRole: true }),
+    ...buildContactBlock(resume, style, { inline: true, color: '555555', separator: '   |   ' }),
+  ];
+  const table = rows.length ? [new Table({
+    width: { size: CONTENT_WIDTH, type: WidthType.DXA },
+    columnWidths: [leftWidth, rightWidth],
+    layout: TableLayoutType.FIXED,
+    borders: NO_BORDERS,
+    rows,
+  })] : [];
+  return [
+    ...top,
+    ...table,
+    ...buildSkillsBlock(resume.skills, style, { beforeSpacing: 160, variant: style.skillVariant }),
+    ...buildProjectsBlock(resume.projects, style, { beforeSpacing: 160 }),
+    ...buildCertificationsBlock(resume.certifications, style, { beforeSpacing: 160, columns: 2 }),
+    ...buildLanguagesBlock(resume.languages, style, { beforeSpacing: 160 }),
+    ...buildHobbiesBlock(resume.hobbies || resume.interests, style, { beforeSpacing: 160 }),
+    ...buildAchievementsBlock(resume.achievements || resume.awards, style, { beforeSpacing: 160 }),
+    ...buildReferencesBlock(resume.references, style, { beforeSpacing: 160 }),
+    ...buildCustomSections(resume, style, { beforeSpacing: 160 }),
+  ];
 }
 
-// --------------------------------------------------------------------------
-// 9. Master Document Factory & Public API
-// --------------------------------------------------------------------------
+function buildCoverLetterDocument(resume, style) {
+  const recipient = stripAllHtmlTags(resume.employerFullName || resume.recipientName || 'Hiring Manager');
+  const company = stripAllHtmlTags(resume.recipientCompany || resume.employer || '');
+  const address = stripAllHtmlTags(resume.recipientAddress || '');
+  const body = resume.coverLetterContent || resume.letterBody || resume.summary || '';
+  const nodes = [
+    ...buildIdentityHeader(resume, style, { nameSize: 32 }),
+    ...buildContactBlock(resume, style, { inline: true, color: '475569' }),
+    new Paragraph({
+      spacing: { before: 200, after: 40 },
+      children: [new TextRun({ text: recipient, bold: true, size: 22, font: style.font, color: '111827' })],
+    }),
+  ];
+  if (company) {
+    nodes.push(new Paragraph({
+      spacing: { before: 0, after: 20 },
+      children: [new TextRun({ text: company, size: 20, font: style.font, color: style.primary })],
+    }));
+  }
+  if (address) {
+    nodes.push(new Paragraph({
+      spacing: { before: 0, after: 80 },
+      children: [new TextRun({ text: address, size: 20, font: style.font, color: '475569' })],
+    }));
+  }
+  nodes.push(new Paragraph({
+    spacing: { before: 80, after: 80 },
+    children: [new TextRun({ text: `Dear ${recipient},`, size: 22, font: style.font, color: '111827' })],
+  }));
+  nodes.push(...parseRichTextToParagraphs(body, style, { size: 22, spacing: { before: 60, after: 80, line: 300 } }));
+  nodes.push(new Paragraph({
+    spacing: { before: 160, after: 20 },
+    children: [new TextRun({ text: 'Sincerely,', size: 22, font: style.font, color: '111827' })],
+  }));
+  nodes.push(new Paragraph({
+    spacing: { before: 80, after: 0 },
+    children: [new TextRun({ text: fullNameOf(resume), bold: true, size: 22, font: style.font, color: style.primary })],
+  }));
+  return nodes;
+}
+
+function numberingConfig() {
+  const bulletLevel = (level) => ({
+    level,
+    format: LevelFormat.BULLET,
+    text: level === 0 ? '•' : level === 1 ? '◦' : '▪',
+    alignment: AlignmentType.LEFT,
+    style: {
+      paragraph: {
+        indent: { left: 360 + level * 240, hanging: 180 },
+      },
+    },
+  });
+  const numberLevel = (level) => ({
+    level,
+    format: LevelFormat.DECIMAL,
+    text: `%${level + 1}.`,
+    alignment: AlignmentType.LEFT,
+    style: {
+      paragraph: {
+        indent: { left: 360 + level * 240, hanging: 180 },
+      },
+    },
+  });
+  return {
+    config: [
+      { reference: BULLET_REF, levels: [0, 1, 2].map(bulletLevel) },
+      { reference: NUMBER_REF, levels: [0, 1, 2].map(numberLevel) },
+    ],
+  };
+}
 
 function resumeDocument(input = {}) {
-  const resume = input.item && typeof input.item === 'object' ? { ...input.item, ...input } : input;
+  const resume = normalizeResume(input);
   const templateName = resume.template || resume.resumeName || 'Cv1';
-  const style = getTemplateStyle(templateName, resume.colors);
-
-  const fullName = stripAllHtmlTags(`${resume.firstname || resume.firstName || ''} ${resume.lastname || resume.lastName || ''}`) || stripAllHtmlTags(resume.title) || 'Resume';
+  const style = getTemplateStyle(templateName);
+  const fullName = fullNameOf(resume);
+  const isCover = /^Cover[1-4]$/.test(String(templateName));
 
   let children;
-  switch (style.archetype) {
-    case ARCHETYPES.EXECUTIVE_BANNER:
-      children = buildExecutiveBannerDocument(resume, style);
-      break;
-    case ARCHETYPES.TECH_GRID:
-      children = buildTechGridDocument(resume, style);
-      break;
-    case ARCHETYPES.COMPACT_EURO:
-      children = buildCompactEuroDocument(resume, style);
-      break;
-    case ARCHETYPES.MINIMAL_ATS:
-      children = buildMinimalAtsDocument(resume, style);
-      break;
-    case ARCHETYPES.MODERN_SPLIT:
-    default:
-      children = buildModernSplitDocument(resume, style);
-      break;
+  if (isCover) {
+    children = buildCoverLetterDocument(resume, style);
+  } else {
+    switch (style.archetype) {
+      case ARCHETYPES.EXECUTIVE_BANNER:
+        children = buildExecutiveBannerDocument(resume, style);
+        break;
+      case ARCHETYPES.TECH_GRID:
+        children = buildTechGridDocument(resume, style);
+        break;
+      case ARCHETYPES.COMPACT_EURO:
+        children = buildCompactEuroDocument(resume, style);
+        break;
+      case ARCHETYPES.MINIMAL_ATS:
+        children = buildMinimalAtsDocument(resume, style);
+        break;
+      case ARCHETYPES.MODERN_SPLIT:
+      default:
+        children = buildModernSplitDocument(resume, style);
+        break;
+    }
   }
 
   return new Document({
     creator: 'ResumePilot AI',
     title: fullName,
     description: 'Editable professional resume document export',
+    numbering: numberingConfig(),
+    styles: {
+      default: {
+        document: {
+          run: { font: style.font || 'Calibri', size: 20 },
+        },
+      },
+    },
     sections: [
       {
         properties: {
           page: {
+            size: { width: PAGE_WIDTH, height: convertMillimetersToTwip(297) },
             margin: {
-              top: convertInchesToTwip(0.45),
-              bottom: convertInchesToTwip(0.45),
-              left: convertInchesToTwip(0.45),
-              right: convertInchesToTwip(0.45)
-            }
-          }
+              top: PAGE_MARGIN,
+              bottom: PAGE_MARGIN,
+              left: PAGE_MARGIN,
+              right: PAGE_MARGIN,
+            },
+          },
         },
-        children
-      }
-    ]
+        footers: {
+          default: new Footer({
+            children: [
+              new Paragraph({
+                border: { top: { style: BorderStyle.SINGLE, size: 6, color: 'E2E8F0', space: 8 } },
+                spacing: { before: 80 },
+                children: [
+                  new TextRun({ text: fullName, size: 16, color: '94A3B8', font: style.font }),
+                  new TextRun({ text: '    ', size: 16 }),
+                  new TextRun({ children: [PageNumber.CURRENT], size: 16, color: '94A3B8', font: style.font }),
+                ],
+              }),
+            ],
+          }),
+        },
+        children: ensureChildren(children),
+      },
+    ],
   });
 }
 
@@ -1185,6 +1353,11 @@ module.exports = {
   getTemplateStyle,
   parseRichTextToParagraphs,
   stripAllHtmlTags,
+  sanitizeColorMap,
+  extractHex,
+  resolveExportTemplate,
+  layoutFamily,
   THEMES,
-  ARCHETYPES
+  ARCHETYPES,
+  EXPORTABLE_TEMPLATE,
 };

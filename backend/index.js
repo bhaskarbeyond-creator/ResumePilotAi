@@ -13,7 +13,7 @@ const { chromium } = require('playwright');
 require('dotenv').config();
 const EmailNotifier = require('./services/emailNotifier');
 const { queueEmailInTransaction, processOutboxOnce } = require('./services/notificationOutbox');
-const { createResumeDocx } = require('./services/docxExport');
+const { createResumeDocx, resolveExportTemplate } = require('./services/docxExport');
 const { loadProviderConfiguration, generateWithProviders } = require('./services/aiRuntime');
 const { loadAiAdminSettings, saveAiAdminSettings, testAiProvider, fetchProviderModels } = require('./services/aiAdmin');
 const { createExportRenderToken, consumeExportRenderToken, discardExportRenderToken } = require('./security/exportTokens');
@@ -2901,6 +2901,10 @@ app.post('/api/export-docx', async (req, res) => {
     const { resumeName, resumeId } = req.body;
     const requestDb = req.app.get('db');
     if (!requestDb || !/^[A-Za-z0-9_-]{4,128}$/.test(String(resumeId || ''))) return res.status(400).json({ error: 'Invalid resume' });
+    const requestedTemplate = String(resumeName || req.body.template || '').trim();
+    if (requestedTemplate && !EXPORTABLE_TEMPLATE.test(requestedTemplate)) {
+        return res.status(400).json({ error: 'Invalid export request' });
+    }
     // Cover-letter documents live in the owner-scoped 'covers' collection. Both lookups
     // are owner-scoped, so ownership remains enforced by the document path.
     const docId = String(resumeId);
@@ -2915,14 +2919,23 @@ app.post('/api/export-docx', async (req, res) => {
     if (owner.membership !== 'Premium' || !['ACTIVE', 'ADMIN_GRANTED'].includes(owner.paymentStatus) || membershipEnd <= new Date()) {
         return res.status(402).json({ error: { code: 'ACTIVE_SUBSCRIPTION_REQUIRED', message: 'An active subscription is required for DOCX export', requestId: res.locals.requestId } });
     }
-    const safeName = String(resumeName || resumeSnap.data()?.title || 'Resume').replace(/[^A-Za-z0-9 _-]/g, '').trim().slice(0, 80) || 'Resume';
     try {
         const stored = resumeSnap.data() || {};
+        let resolvedTemplate;
+        try {
+            resolvedTemplate = resolveExportTemplate(stored, requestedTemplate);
+        } catch (templateError) {
+            return res.status(400).json({ error: templateError.code === 'TEMPLATE_MISMATCH' ? 'Template mismatch' : 'Invalid export request' });
+        }
+        const personName = [stored.firstname, stored.lastname].filter(Boolean).join(' ');
+        const safeName = String(personName || stored.title || 'Resume').replace(/[^A-Za-z0-9 _-]/g, '').trim().slice(0, 80) || 'Resume';
+        // Theme presets are authoritative (same source as PDF). Client-supplied
+        // colors and resumeName cannot override template identity or inject styling.
         const resumeData = {
             ...stored,
-            template: req.body.resumeName || req.body.template || stored.template || stored.resumeName || 'Cv1',
-            resumeName: req.body.resumeName || stored.resumeName || stored.template || 'Cv1',
-            colors: req.body.colors || stored.colors || null
+            template: resolvedTemplate,
+            resumeName: resolvedTemplate,
+            colors: null,
         };
         const buffer = await createResumeDocx(resumeData);
         res.setHeader('Cache-Control', 'no-store, private');
@@ -4615,4 +4628,5 @@ app.use((error, req, res, _next) => {
 
 module.exports = app;
 module.exports.publishDueBlogPosts = publishDueBlogPosts;
+
 
