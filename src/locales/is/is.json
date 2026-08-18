@@ -1366,32 +1366,32 @@
     }
   },
   "ProjectsStep": {
-  "title": "Verkefni",
-  "subtitle": "Bættu við persónulegum, akademískum eða faglegum verkefnum sem sýna hæfni þína.",
-  "defaultValues": {
-    "untitledProject": "Ónefnt Verkefni"
-  },
-  "actions": {
-    "collapse": "Loka",
-    "expand": "Opna",
-    "remove": "Fjarlægja Verkefni",
-    "addProject": "Bæta við Verkefni"
-  },
-  "fields": {
-    "title": {
-      "label": "Verkefnisnafn",
-      "placeholder": "t.d. Netverslunarvettvangur"
+    "title": "Verkefni",
+    "subtitle": "Bættu við persónulegum, akademískum eða faglegum verkefnum sem sýna hæfni þína.",
+    "defaultValues": {
+      "untitledProject": "Ónefnt Verkefni"
     },
-    "url": {
-      "label": "Verkefnis-URL",
-      "placeholder": "https://github.com/..."
+    "actions": {
+      "collapse": "Loka",
+      "expand": "Opna",
+      "remove": "Fjarlægja Verkefni",
+      "addProject": "Bæta við Verkefni"
     },
-    "description": {
-      "label": "Lýsing",
-      "placeholder": "Lýstu hvað verkefnið gerir, tækninni sem notuð var, framlagi þínu og áhrifum…"
+    "fields": {
+      "title": {
+        "label": "Verkefnisnafn",
+        "placeholder": "t.d. Netverslunarvettvangur"
+      },
+      "url": {
+        "label": "Verkefnis-URL",
+        "placeholder": "https://github.com/..."
+      },
+      "description": {
+        "label": "Lýsing",
+        "placeholder": "Lýstu hvað verkefnið gerir, tækninni sem notuð var, framlagi þínu og áhrifum…"
+      }
     }
-  }
-},
+  },
   "CertificationsStep": {
     "title": "Vottanir",
     "subtitle": "Bættu við faglegum vottunum og leyfum sem staðfesta sérfræðiþekkingu þína.",
@@ -1417,6 +1417,26 @@
         "label": "Útgáfudagur",
         "placeholder": "t.d. 2024"
       }
+    },
+    "ai": {
+      "panelTitle": "AI Vottunarráðleggingar",
+      "recommend": "Mæla með vottunum (AI)",
+      "tooltip": "Búa til AI vottunarráðleggingar sniðnar að þínum prófíl",
+      "generating": "Greinir og býr til...",
+      "tailoredSubtitle": "Viðurkenndar vottanir sniðnar fyrir {{role}}",
+      "genericSubtitle": "Helstu viðurkenndu vottanir byggðar á færni þinni og ferli",
+      "promptTitle": "Styrktu ferilskrána þína með staðfestum vottunum",
+      "promptDescRole": "Leyfðu AI að greina reynslu þína sem {{role}} og mæla með eftirsóttustu vottununum.",
+      "promptDescGeneric": "Búðu til viðurkenndar faggildingar sem henta þínu sviði til að hækka ATS einkunn.",
+      "generateNow": "Búa til AI tillögur núna",
+      "refresh": "Endurnýja tillögur",
+      "getRecommendations": "Fá tillögur",
+      "addAll": "Bæta við öllum tillögum",
+      "added": "Bætt við",
+      "addedBadge": "Bætt við",
+      "add": "+ Bæta við",
+      "mandatoryBadge": "Iðnaðarstaðall",
+      "recommendedBadge": "Mælt með"
     }
   },
   "EducationSuggestionModal": {

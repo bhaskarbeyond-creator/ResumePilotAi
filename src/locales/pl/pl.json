@@ -1366,32 +1366,32 @@
     }
   },
   "ProjectsStep": {
-  "title": "Projekty",
-  "subtitle": "Dodaj projekty osobiste, akademickie lub zawodowe, które prezentują Twoje umiejętności.",
-  "defaultValues": {
-    "untitledProject": "Projekt Bez Nazwy"
-  },
-  "actions": {
-    "collapse": "Zwiń",
-    "expand": "Rozwiń",
-    "remove": "Usuń Projekt",
-    "addProject": "Dodaj Projekt"
-  },
-  "fields": {
-    "title": {
-      "label": "Nazwa Projektu",
-      "placeholder": "np. Platforma e-commerce"
+    "title": "Projekty",
+    "subtitle": "Dodaj projekty osobiste, akademickie lub zawodowe, które prezentują Twoje umiejętności.",
+    "defaultValues": {
+      "untitledProject": "Projekt Bez Nazwy"
     },
-    "url": {
-      "label": "URL Projektu",
-      "placeholder": "https://github.com/..."
+    "actions": {
+      "collapse": "Zwiń",
+      "expand": "Rozwiń",
+      "remove": "Usuń Projekt",
+      "addProject": "Dodaj Projekt"
     },
-    "description": {
-      "label": "Opis",
-      "placeholder": "Opisz, co robi projekt, użyte technologie, Twój wkład i wpływ…"
+    "fields": {
+      "title": {
+        "label": "Nazwa Projektu",
+        "placeholder": "np. Platforma e-commerce"
+      },
+      "url": {
+        "label": "URL Projektu",
+        "placeholder": "https://github.com/..."
+      },
+      "description": {
+        "label": "Opis",
+        "placeholder": "Opisz, co robi projekt, użyte technologie, Twój wkład i wpływ…"
+      }
     }
-  }
-},
+  },
   "CertificationsStep": {
     "title": "Certyfikaty",
     "subtitle": "Dodaj certyfikaty i licencje zawodowe potwierdzające Twoją wiedzę.",
@@ -1417,6 +1417,26 @@
         "label": "Data Wydania",
         "placeholder": "np. 2024"
       }
+    },
+    "ai": {
+      "panelTitle": "Rekomendacje Certyfikatów AI",
+      "recommend": "Poleć certyfikaty (AI)",
+      "tooltip": "Generuj rekomendacje certyfikatów AI dopasowane do Twojego profilu",
+      "generating": "Analizowanie i generowanie...",
+      "tailoredSubtitle": "Uznane certyfikaty branżowe dopasowane do roli: {{role}}",
+      "genericSubtitle": "Najlepsze akredytowane certyfikaty na podstawie Twoich umiejętności i ścieżki kariery",
+      "promptTitle": "Wzmocnij swoje CV zweryfikowanymi certyfikatami",
+      "promptDescRole": "Pozwól AI przeanalizować Twoje doświadczenie jako {{role}} i polecić najbardziej cenione certyfikaty.",
+      "promptDescGeneric": "Generuj certyfikaty branżowe dopasowane do Twojej dziedziny, aby zwiększyć ocenę ATS.",
+      "generateNow": "Generuj rekomendacje AI teraz",
+      "refresh": "Odśwież rekomendacje",
+      "getRecommendations": "Pobierz rekomendacje",
+      "addAll": "Dodaj wszystkie polecane",
+      "added": "Dodano",
+      "addedBadge": "Dodano",
+      "add": "+ Dodaj",
+      "mandatoryBadge": "Standard branżowy",
+      "recommendedBadge": "Polecane"
     }
   },
   "EducationSuggestionModal": {

@@ -1366,32 +1366,32 @@
     }
   },
   "ProjectsStep": {
-  "title": "Prosjekter",
-  "subtitle": "Legg til personlige, akademiske eller profesjonelle prosjekter som viser ferdighetene dine.",
-  "defaultValues": {
-    "untitledProject": "Uten Navn Prosjekt"
-  },
-  "actions": {
-    "collapse": "Kollaps",
-    "expand": "Utvid",
-    "remove": "Fjern Prosjekt",
-    "addProject": "Legg til Prosjekt"
-  },
-  "fields": {
-    "title": {
-      "label": "Prosjektnavn",
-      "placeholder": "f.eks. E-handelsplattform"
+    "title": "Prosjekter",
+    "subtitle": "Legg til personlige, akademiske eller profesjonelle prosjekter som viser ferdighetene dine.",
+    "defaultValues": {
+      "untitledProject": "Uten Navn Prosjekt"
     },
-    "url": {
-      "label": "Prosjekt-URL",
-      "placeholder": "https://github.com/..."
+    "actions": {
+      "collapse": "Kollaps",
+      "expand": "Utvid",
+      "remove": "Fjern Prosjekt",
+      "addProject": "Legg til Prosjekt"
     },
-    "description": {
-      "label": "Beskrivelse",
-      "placeholder": "Beskriv hva prosjektet gjør, teknologier som ble brukt, ditt bidrag og resultat…"
+    "fields": {
+      "title": {
+        "label": "Prosjektnavn",
+        "placeholder": "f.eks. E-handelsplattform"
+      },
+      "url": {
+        "label": "Prosjekt-URL",
+        "placeholder": "https://github.com/..."
+      },
+      "description": {
+        "label": "Beskrivelse",
+        "placeholder": "Beskriv hva prosjektet gjør, teknologier som ble brukt, ditt bidrag og resultat…"
+      }
     }
-  }
-},
+  },
   "CertificationsStep": {
     "title": "Sertifiseringer",
     "subtitle": "Legg til profesjonelle sertifiseringer og lisenser som bekrefter ekspertisen din.",
@@ -1417,6 +1417,26 @@
         "label": "Utstedelsesdato",
         "placeholder": "f.eks. 2024"
       }
+    },
+    "ai": {
+      "panelTitle": "AI-sertifiseringsanbefalinger",
+      "recommend": "Anbefal sertifiseringer (AI)",
+      "tooltip": "Generer AI-sertifiseringsanbefalinger tilpasset din profil",
+      "generating": "Analyserer og genererer...",
+      "tailoredSubtitle": "Anerkjente bransjesertifiseringer tilpasset for {{role}}",
+      "genericSubtitle": "Topp akkrediterte bransjesertifiseringer basert på dine ferdigheter",
+      "promptTitle": "Styrk CV-en din med validerte sertifiseringer",
+      "promptDescRole": "La AI analysere din erfaring som {{role}} og anbefale de mest etterspurte sertifiseringene.",
+      "promptDescGeneric": "Generer bransjestandardsertifiseringer tilpasset ditt felt for bedre ATS-score.",
+      "generateNow": "Generer AI-anbefalinger nå",
+      "refresh": "Oppdater anbefalinger",
+      "getRecommendations": "Få anbefalinger",
+      "addAll": "Legg til alle anbefalte",
+      "added": "Lagt til",
+      "addedBadge": "Lagt til",
+      "add": "+ Legg til",
+      "mandatoryBadge": "Bransjestandard",
+      "recommendedBadge": "Anbefalt"
     }
   },
   "EducationSuggestionModal": {

@@ -1465,32 +1465,32 @@
     }
   },
   "ProjectsStep": {
-  "title": "Projects",
-  "subtitle": "Add personal, academic, or professional projects that showcase your skills.",
-  "defaultValues": {
-    "untitledProject": "Untitled Project"
-  },
-  "actions": {
-    "collapse": "Collapse",
-    "expand": "Expand",
-    "remove": "Remove project",
-    "addProject": "Add Project"
-  },
-  "fields": {
-    "title": {
-      "label": "Project Name",
-      "placeholder": "e.g. E-commerce Platform"
+    "title": "Projects",
+    "subtitle": "Add personal, academic, or professional projects that showcase your skills.",
+    "defaultValues": {
+      "untitledProject": "Untitled Project"
     },
-    "url": {
-      "label": "Project URL",
-      "placeholder": "https://github.com/..."
+    "actions": {
+      "collapse": "Collapse",
+      "expand": "Expand",
+      "remove": "Remove project",
+      "addProject": "Add Project"
     },
-    "description": {
-      "label": "Description",
-      "placeholder": "Describe what the project does, technologies used, your contributions and impact…"
+    "fields": {
+      "title": {
+        "label": "Project Name",
+        "placeholder": "e.g. E-commerce Platform"
+      },
+      "url": {
+        "label": "Project URL",
+        "placeholder": "https://github.com/..."
+      },
+      "description": {
+        "label": "Description",
+        "placeholder": "Describe what the project does, technologies used, your contributions and impact…"
+      }
     }
-  }
-},
+  },
   "CertificationsStep": {
     "title": "Certifications",
     "subtitle": "Add professional certifications and licenses that validate your expertise.",
@@ -1516,6 +1516,26 @@
         "label": "Date Issued",
         "placeholder": "e.g. 2024"
       }
+    },
+    "ai": {
+      "panelTitle": "AI Certification Recommendations",
+      "recommend": "Recommend Certifications (AI)",
+      "tooltip": "Generate AI certification recommendations tailored to your profile",
+      "generating": "Analyzing & Generating...",
+      "tailoredSubtitle": "Recognized industry credentials tailored for {{role}}",
+      "genericSubtitle": "Top accredited industry credentials based on your skills and career path",
+      "promptTitle": "Supercharge Your Resume with Validated Certifications",
+      "promptDescRole": "Let AI analyze your experience as {{role}} and recommend the highest-value certifications hiring managers look for.",
+      "promptDescGeneric": "Generate industry-standard credentials and certifications matched to your field to boost ATS ranking and employer credibility.",
+      "generateNow": "Generate AI Recommendations Now",
+      "refresh": "Refresh Recommendations",
+      "getRecommendations": "Get Recommendations",
+      "addAll": "Add All Recommended",
+      "added": "Added",
+      "addedBadge": "Added",
+      "add": "+ Add",
+      "mandatoryBadge": "Industry Standard",
+      "recommendedBadge": "Recommended"
     }
   },
   "EducationSuggestionModal": {

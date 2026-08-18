@@ -1366,32 +1366,32 @@
     }
   },
   "ProjectsStep": {
-  "title": "Projekt",
-  "subtitle": "Lägg till personliga, akademiska eller professionella projekt som visar dina färdigheter.",
-  "defaultValues": {
-    "untitledProject": "Projekt Utan Namn"
-  },
-  "actions": {
-    "collapse": "Fäll ihop",
-    "expand": "Expandera",
-    "remove": "Ta bort Projekt",
-    "addProject": "Lägg till Projekt"
-  },
-  "fields": {
-    "title": {
-      "label": "Projektnamn",
-      "placeholder": "t.ex. E-handelsplattform"
+    "title": "Projekt",
+    "subtitle": "Lägg till personliga, akademiska eller professionella projekt som visar dina färdigheter.",
+    "defaultValues": {
+      "untitledProject": "Projekt Utan Namn"
     },
-    "url": {
-      "label": "Projekt-URL",
-      "placeholder": "https://github.com/..."
+    "actions": {
+      "collapse": "Fäll ihop",
+      "expand": "Expandera",
+      "remove": "Ta bort Projekt",
+      "addProject": "Lägg till Projekt"
     },
-    "description": {
-      "label": "Beskrivning",
-      "placeholder": "Beskriv vad projektet gör, teknik som används, dina bidrag och resultat…"
+    "fields": {
+      "title": {
+        "label": "Projektnamn",
+        "placeholder": "t.ex. E-handelsplattform"
+      },
+      "url": {
+        "label": "Projekt-URL",
+        "placeholder": "https://github.com/..."
+      },
+      "description": {
+        "label": "Beskrivning",
+        "placeholder": "Beskriv vad projektet gör, teknik som används, dina bidrag och resultat…"
+      }
     }
-  }
-},
+  },
   "CertificationsStep": {
     "title": "Certifieringar",
     "subtitle": "Lägg till professionella certifieringar och licenser som styrker din expertis.",
@@ -1417,6 +1417,26 @@
         "label": "Utfärdandedatum",
         "placeholder": "t.ex. 2024"
       }
+    },
+    "ai": {
+      "panelTitle": "AI-certifieringsrekommendationer",
+      "recommend": "Rekommendera certifieringar (AI)",
+      "tooltip": "Generera AI-certifieringsrekommendationer anpassade efter din profil",
+      "generating": "Analyserar och genererar...",
+      "tailoredSubtitle": "Erkända branschcertifieringar anpassade för {{role}}",
+      "genericSubtitle": "Ledande ackrediterade certifieringar baserade på dina färdigheter och karriär",
+      "promptTitle": "Förstärk ditt CV med validerade certifieringar",
+      "promptDescRole": "Låt AI analysera din erfarenhet som {{role}} och rekommendera de mest efterfrågade certifieringarna.",
+      "promptDescGeneric": "Generera branschstandardcertifieringar anpassade till ditt område för att höja ditt ATS-betyg.",
+      "generateNow": "Generera AI-rekommendationer nu",
+      "refresh": "Uppdatera rekommendationer",
+      "getRecommendations": "Hämta rekommendationer",
+      "addAll": "Lägg till alla rekommenderade",
+      "added": "Tillagd",
+      "addedBadge": "Tillagd",
+      "add": "+ Lägg till",
+      "mandatoryBadge": "Branschstandard",
+      "recommendedBadge": "Rekommenderas"
     }
   },
   "EducationSuggestionModal": {

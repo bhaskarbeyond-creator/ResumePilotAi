@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import path from 'node:path';
 import JSZip from 'jszip';
 import { normalizeResumeData } from '../src/utils/resumeData.js';
 import { filterMeaningfulCertifications } from '../src/engine/hybrid/utils/contentSanitizer.js';
@@ -68,6 +69,26 @@ test('the Create-Resume wizard exposes Certifications between Projects and Langu
     // languages now completes step 8, not 7
     const langs = fs.readFileSync('src/components/BuildResume/steps/LanguagesStep.jsx', 'utf8');
     assert.match(langs, /completedSteps\.includes\(8\)/);
+});
+
+test('CertificationsStep integrates AI recommendations with resilience and quick-add', () => {
+    const certStep = fs.readFileSync('src/components/BuildResume/steps/CertificationsStep.jsx', 'utf8');
+    assert.match(certStep, /generateUserAiContent/);
+    assert.match(certStep, /'generate-certifications'/);
+    assert.match(certStep, /getRoleTailoredFallbackCerts/);
+    assert.match(certStep, /handleAddRecommendedCert/);
+    assert.match(certStep, /handleAddAllRecommended/);
+});
+
+test('All 16 locales contain CertificationsStep.ai translation keys', () => {
+    const locales = ['de', 'dk', 'en', 'es', 'fr', 'gk', 'hi', 'is', 'it', 'nl', 'no', 'pl', 'pt', 'ro', 'ru', 'se'];
+    for (const loc of locales) {
+        const filePath = path.join('src/locales', loc, `${loc}.json`);
+        const json = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+        assert.ok(json.CertificationsStep?.ai?.recommend, `Locale ${loc} missing CertificationsStep.ai.recommend`);
+        assert.ok(json.CertificationsStep?.ai?.panelTitle, `Locale ${loc} missing CertificationsStep.ai.panelTitle`);
+        assert.ok(json.CertificationsStep?.ai?.addAll, `Locale ${loc} missing CertificationsStep.ai.addAll`);
+    }
 });
 
 test('DOCX export renders certification name, issuer and date (PDF/DOCX parity)', async () => {

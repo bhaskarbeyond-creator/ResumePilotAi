@@ -1366,32 +1366,32 @@
     }
   },
   "ProjectsStep": {
-  "title": "Projetos",
-  "subtitle": "Adicione projetos pessoais, acadêmicos ou profissionais que demonstrem suas habilidades.",
-  "defaultValues": {
-    "untitledProject": "Projeto Sem Título"
-  },
-  "actions": {
-    "collapse": "Recolher",
-    "expand": "Expandir",
-    "remove": "Remover Projeto",
-    "addProject": "Adicionar Projeto"
-  },
-  "fields": {
-    "title": {
-      "label": "Nome do Projeto",
-      "placeholder": "ex. Plataforma de E-commerce"
+    "title": "Projetos",
+    "subtitle": "Adicione projetos pessoais, acadêmicos ou profissionais que demonstrem suas habilidades.",
+    "defaultValues": {
+      "untitledProject": "Projeto Sem Título"
     },
-    "url": {
-      "label": "URL do Projeto",
-      "placeholder": "https://github.com/..."
+    "actions": {
+      "collapse": "Recolher",
+      "expand": "Expandir",
+      "remove": "Remover Projeto",
+      "addProject": "Adicionar Projeto"
     },
-    "description": {
-      "label": "Descrição",
-      "placeholder": "Descreva o que o projeto faz, as tecnologias usadas, suas contribuições e impacto…"
+    "fields": {
+      "title": {
+        "label": "Nome do Projeto",
+        "placeholder": "ex. Plataforma de E-commerce"
+      },
+      "url": {
+        "label": "URL do Projeto",
+        "placeholder": "https://github.com/..."
+      },
+      "description": {
+        "label": "Descrição",
+        "placeholder": "Descreva o que o projeto faz, as tecnologias usadas, suas contribuições e impacto…"
+      }
     }
-  }
-},
+  },
   "CertificationsStep": {
     "title": "Certificações",
     "subtitle": "Adicione certificações e licenças profissionais que comprovem a sua experiência.",
@@ -1417,6 +1417,26 @@
         "label": "Data de Emissão",
         "placeholder": "ex. 2024"
       }
+    },
+    "ai": {
+      "panelTitle": "Recomendações de Certificações com IA",
+      "recommend": "Recomendar Certificações (IA)",
+      "tooltip": "Gerar recomendações de certificações com IA adaptadas ao seu perfil",
+      "generating": "Analisando e gerando...",
+      "tailoredSubtitle": "Certificações reconhecidas no setor adaptadas para {{role}}",
+      "genericSubtitle": "Principais credenciais credenciadas com base em suas habilidades e trajetória",
+      "promptTitle": "Impulsione seu Currículo com Certificações Validadas",
+      "promptDescRole": "Deixe a IA analisar sua experiência como {{role}} e recomendar as certificações mais valorizadas.",
+      "promptDescGeneric": "Gere credenciais padrão do setor adaptadas ao seu campo para aumentar a pontuação ATS.",
+      "generateNow": "Gerar Recomendações de IA Agora",
+      "refresh": "Atualizar Recomendações",
+      "getRecommendations": "Obter Recomendações",
+      "addAll": "Adicionar Todas as Recomendadas",
+      "added": "Adicionado",
+      "addedBadge": "Adicionado",
+      "add": "+ Adicionar",
+      "mandatoryBadge": "Padrão do Setor",
+      "recommendedBadge": "Recomendado"
     }
   },
   "EducationSuggestionModal": {

@@ -1366,32 +1366,32 @@
     }
   },
   "ProjectsStep": {
-  "title": "Projets",
-  "subtitle": "Ajoutez des projets personnels, académiques ou professionnels qui mettent en valeur vos compétences.",
-  "defaultValues": {
-    "untitledProject": "Projet sans titre"
-  },
-  "actions": {
-    "collapse": "Réduire",
-    "expand": "Développer",
-    "remove": "Supprimer le projet",
-    "addProject": "Ajouter un Projet"
-  },
-  "fields": {
-    "title": {
-      "label": "Nom du Projet",
-      "placeholder": "p. ex. Plateforme e-commerce"
+    "title": "Projets",
+    "subtitle": "Ajoutez des projets personnels, académiques ou professionnels qui mettent en valeur vos compétences.",
+    "defaultValues": {
+      "untitledProject": "Projet sans titre"
     },
-    "url": {
-      "label": "URL du Projet",
-      "placeholder": "https://github.com/..."
+    "actions": {
+      "collapse": "Réduire",
+      "expand": "Développer",
+      "remove": "Supprimer le projet",
+      "addProject": "Ajouter un Projet"
     },
-    "description": {
-      "label": "Description",
-      "placeholder": "Décrivez ce que fait le projet, les technologies utilisées, vos contributions et votre impact…"
+    "fields": {
+      "title": {
+        "label": "Nom du Projet",
+        "placeholder": "p. ex. Plateforme e-commerce"
+      },
+      "url": {
+        "label": "URL du Projet",
+        "placeholder": "https://github.com/..."
+      },
+      "description": {
+        "label": "Description",
+        "placeholder": "Décrivez ce que fait le projet, les technologies utilisées, vos contributions et votre impact…"
+      }
     }
-  }
-},
+  },
   "CertificationsStep": {
     "title": "Certifications",
     "subtitle": "Ajoutez des certifications et licences professionnelles qui attestent de votre expertise.",
@@ -1417,6 +1417,26 @@
         "label": "Date de Délivrance",
         "placeholder": "p. ex. 2024"
       }
+    },
+    "ai": {
+      "panelTitle": "Recommandations de Certifications par IA",
+      "recommend": "Recommander Certifications (IA)",
+      "tooltip": "Générer des recommandations de certifications par IA adaptées à votre profil",
+      "generating": "Analyse et génération...",
+      "tailoredSubtitle": "Certifications reconnues adaptées pour {{role}}",
+      "genericSubtitle": "Principales certifications accréditées selon vos compétences et votre parcours",
+      "promptTitle": "Boostez votre CV avec des Certifications Reconnues",
+      "promptDescRole": "Laissez l'IA analyser votre expérience en tant que {{role}} et recommander les certifications les plus recherchées.",
+      "promptDescGeneric": "Générez des certifications reconnues adaptées à votre domaine pour optimiser votre score ATS.",
+      "generateNow": "Générer les Recommandations IA",
+      "refresh": "Actualiser les Recommandations",
+      "getRecommendations": "Obtenir des Recommandations",
+      "addAll": "Ajouter Toutes les Recommandées",
+      "added": "Ajouté",
+      "addedBadge": "Ajouté",
+      "add": "+ Ajouter",
+      "mandatoryBadge": "Norme de l'Industrie",
+      "recommendedBadge": "Recommandé"
     }
   },
   "EducationSuggestionModal": {

@@ -1366,32 +1366,32 @@
     }
   },
   "ProjectsStep": {
-  "title": "Projekte",
-  "subtitle": "Fügen Sie persönliche, akademische oder berufliche Projekte hinzu, die Ihre Fähigkeiten unterstreichen.",
-  "defaultValues": {
-    "untitledProject": "Unbenanntes Projekt"
-  },
-  "actions": {
-    "collapse": "Einklappen",
-    "expand": "Ausklappen",
-    "remove": "Projekt entfernen",
-    "addProject": "Projekt hinzufügen"
-  },
-  "fields": {
-    "title": {
-      "label": "Projektname",
-      "placeholder": "z. B. E-Commerce-Plattform"
+    "title": "Projekte",
+    "subtitle": "Fügen Sie persönliche, akademische oder berufliche Projekte hinzu, die Ihre Fähigkeiten unterstreichen.",
+    "defaultValues": {
+      "untitledProject": "Unbenanntes Projekt"
     },
-    "url": {
-      "label": "Projekt-URL",
-      "placeholder": "https://github.com/..."
+    "actions": {
+      "collapse": "Einklappen",
+      "expand": "Ausklappen",
+      "remove": "Projekt entfernen",
+      "addProject": "Projekt hinzufügen"
     },
-    "description": {
-      "label": "Beschreibung",
-      "placeholder": "Beschreiben Sie, was das Projekt macht, verwendete Technologien, Ihre Beiträge und Wirkung…"
+    "fields": {
+      "title": {
+        "label": "Projektname",
+        "placeholder": "z. B. E-Commerce-Plattform"
+      },
+      "url": {
+        "label": "Projekt-URL",
+        "placeholder": "https://github.com/..."
+      },
+      "description": {
+        "label": "Beschreibung",
+        "placeholder": "Beschreiben Sie, was das Projekt macht, verwendete Technologien, Ihre Beiträge und Wirkung…"
+      }
     }
-  }
-},
+  },
   "CertificationsStep": {
     "title": "Zertifizierungen",
     "subtitle": "Fügen Sie berufliche Zertifizierungen und Lizenzen hinzu, die Ihre Fachkenntnisse belegen.",
@@ -1417,6 +1417,26 @@
         "label": "Ausstellungsdatum",
         "placeholder": "z. B. 2024"
       }
+    },
+    "ai": {
+      "panelTitle": "KI-Zertifizierungsempfehlungen",
+      "recommend": "Zertifizierungen empfehlen (KI)",
+      "tooltip": "KI-Zertifizierungsempfehlungen basierend auf Ihrem Profil generieren",
+      "generating": "Analysieren & Generieren...",
+      "tailoredSubtitle": "Anerkannte Branchenzertifikate zugeschnitten auf {{role}}",
+      "genericSubtitle": "Top-akkreditierte Branchenzertifikate basierend auf Ihren Fähigkeiten",
+      "promptTitle": "Stärken Sie Ihren Lebenslauf mit Zertifizierungen",
+      "promptDescRole": "Lassen Sie die KI Ihre Erfahrung als {{role}} analysieren und Top-Zertifizierungen vorschlagen.",
+      "promptDescGeneric": "Generieren Sie anerkannte Branchenzertifikate für Ihren Bereich zur Optimierung Ihrer Bewerbung.",
+      "generateNow": "KI-Empfehlungen jetzt generieren",
+      "refresh": "Empfehlungen aktualisieren",
+      "getRecommendations": "Empfehlungen abrufen",
+      "addAll": "Alle empfohlenen hinzufügen",
+      "added": "Hinzugefügt",
+      "addedBadge": "Hinzugefügt",
+      "add": "+ Hinzufügen",
+      "mandatoryBadge": "Branchenstandard",
+      "recommendedBadge": "Empfohlen"
     }
   },
   "EducationSuggestionModal": {
