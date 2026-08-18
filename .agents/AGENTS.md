@@ -20,3 +20,10 @@
 
 ## 5. Deployment Bundle Integrity
 - **Backend Directory Completeness**: When deploying Node.js backend files via SSH/SFTP (`deploy.py`), always upload all backend subfolders (`routes`, `services`, `security`). Omitting subfolders causes Node.js startup crashes (`MODULE_NOT_FOUND`) resulting in Apache/Nginx `HTTP 502 Bad Gateway`.
+
+## 6. Certified Production Baselines & Code Freeze Protocol
+- **Certified Baselines**:
+  - **CV Module + Print/Download**: `1cf3d5d`
+  - **Resume Builder + 51 Resume Templates**: `1ffa9f7`
+- **Freeze Status**: The CV Module, 4 CV Templates, Print/PDF Download Pipeline, Resume Builder Wizard, and all 51 Resume Templates are **FROZEN** (Certified 10/10 Enterprise Production Grade).
+- **Modification Protocol**: Do not modify these certified baselines directly. If a future task touches these areas, first submit an impact report detailing: (1) Dependencies, (2) Affected files, (3) Rationale, and (4) Regression risk assessment. All existing functionality and test suites (144/144 tests) must remain 100% passing.
