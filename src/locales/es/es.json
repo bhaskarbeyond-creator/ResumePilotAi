@@ -2828,5 +2828,32 @@
         "placeholder": "Describa el trabajo, la publicación o la contribución…"
       }
     }
+  },
+  "AtsScoreMeter": {
+    "region": "Puntuación ATS",
+    "title": "Preparación ATS",
+    "titleTargeted": "Preparación ATS",
+    "toggle": "Mostrar u ocultar el desglose detallado",
+    "gaugeLabel": "Puntuación ATS {{score}} de 100, {{status}}",
+    "noJdHint": "Preparación para analizadores ATS — no es una puntuación de Workday o Greenhouse. Pegue una oferta para medir el encaje.",
+    "blendHint": "Combina la calidad del currículum ({{quality}}/100) con el encaje a la oferta ({{match}}%). No es el resultado de un ATS del empleador.",
+    "nonEnglish": "Los consejos de verbos de acción están orientados al inglés. El contenido se sigue valorando por estructura, evidencia y relevancia.",
+    "strengths": "Fortalezas",
+    "improvements": "Próximos pasos de mayor valor",
+    "go": "Ir",
+    "breakdown": "Por qué esta puntuación",
+    "points": "Puntos",
+    "improve": "Mejorar",
+    "jdTitle": "Descripción del puesto objetivo",
+    "jdMatchPct": "{{score}}% de coincidencia",
+    "scanJd": "Opcional",
+    "jdLabel": "Pegue el puesto que busca. La comparación permanece en este dispositivo y no se envía a ningún servidor.",
+    "jdPlaceholder": "Pegue la descripción del puesto para comprobar el encaje…",
+    "applyJd": "Actualizar coincidencia",
+    "clearJd": "Borrar",
+    "matched": "Coincidencias",
+    "missing": "Faltan",
+    "emptyCoach": "Acaba de empezar. Añada contacto y un puesto: la puntuación se moverá cuando el currículum sea real.",
+    "disclaimer": "Estimación heurística de preparación. No es Workday, Greenhouse, Lever ni Taleo, y no predice entrevistas. Nada se envía a un servidor para calcularla."
   }
 }

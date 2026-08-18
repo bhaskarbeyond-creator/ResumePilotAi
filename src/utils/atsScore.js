@@ -5,9 +5,17 @@
  * so the builder can recompute on every resume change without an API call.
  *
  * Score is always an integer in [0, 100].
- * When a target job description is supplied, the displayed score blends
- * content quality (76%) with JD relevance (24%) so a stuffed keyword dump
- * cannot outrank a genuinely strong, targeted resume.
+ *
+ * Category weights still sum to 100 and measure resume quality / parseability.
+ * A target job is additional signal, not a replacement for quality:
+ *   no JD  → displayed = round(quality × 0.92)
+ *            The held 8% is target-alignment. Without a job we cannot honestly
+ *            answer “how good is this resume for the role I want?”
+ *   with JD → displayed = round(quality × 0.76 + jdMatch × 0.24)
+ *            Strong coverage of distinctive JD terms can therefore outscore
+ *            the same resume with no target. An unrelated JD pulls the score
+ *            below the no-JD readiness number. Stuffing still cannot win
+ *            because quality is crushed first.
  */
 
 export const ATS_WEIGHTS = Object.freeze({
@@ -25,6 +33,16 @@ export const ATS_QUALITY_MAX = Object.values(ATS_WEIGHTS).reduce((sum, value) =>
 export const JD_BLEND = Object.freeze({
     quality: 0.76,
     relevance: 0.24,
+});
+
+/** Held back when no target job is supplied. See file header. */
+export const NO_JD_ALIGNMENT_FACTOR = 0.92;
+
+const PUNCTUATION_SKILL_VARIANTS = Object.freeze({
+    'c#': ['c#', 'csharp', 'c sharp'],
+    'c++': ['c++', 'cplusplus', 'cpp'],
+    '.net': ['.net', 'dotnet', 'dot net'],
+    'f#': ['f#', 'fsharp'],
 });
 
 export const JD_STORAGE_KEY = 'rpai.ats.targetJd';
@@ -96,13 +114,13 @@ export function normalizeToken(value) {
 }
 
 export function compactToken(value) {
-    return normalizeToken(value).replace(/[\s./_+#-]+/g, '');
+    return normalizeToken(value).replace(/[\s./_-]+/g, '');
 }
 
 export function tokenize(text) {
     const normalized = normalizeToken(text);
     if (!normalized) return [];
-    return normalized.match(/[\p{L}\p{N}]+(?:[.#+][\p{L}\p{N}]+)*/gu) || [];
+    return normalized.match(/\.?[\p{L}\p{N}]+(?:[.#+][\p{L}\p{N}]+)*(?:#|\+\+)?/gu) || [];
 }
 
 function uniqueStrings(values) {
@@ -178,7 +196,7 @@ export function detectNonEnglish(text) {
 export function analyzeStuffing(text) {
     const tokens = tokenize(text).filter((token) => token.length >= 3 && !ENGLISH_STOPWORDS.has(token));
     if (tokens.length < 8) {
-        return { stuffed: false, uniqueRatio: tokens.length ? 1 : 0, repeatedToken: null, consecutive: false, empty: tokens.length === 0 };
+        return { stuffed: false, uniqueRatio: tokens.length ? 1 : 0, repeatedToken: null, consecutive: false, empty: tokens.length === 0, tokenCount: tokens.length };
     }
     const counts = new Map();
     let consecutive = false;
@@ -211,6 +229,7 @@ export function analyzeStuffing(text) {
         uniqueRatio,
         repeatedToken,
         consecutive,
+        tokenCount: tokens.length,
     };
 }
 
@@ -345,6 +364,11 @@ function scoreSummary(data, stuffing, language) {
     }
 
     if (stuffing.stuffed) score = Math.min(score, 3);
+    const looksPasted = /\b(responsibilities|requirements|qualifications|we are (?:looking|seeking|hiring))\b/i.test(summary);
+    if (looksPasted) {
+        score = Math.min(score, 3);
+        findings.push({ ok: false, text: 'The summary looks like a pasted job posting rather than your pitch.' });
+    }
 
     if (language.nonEnglish) {
         findings.push({ ok: true, text: 'Summary language is non-English; length and variety are scored, not English verbs.' });
@@ -492,9 +516,11 @@ function projectQuality(project, skillNames) {
     const description = stripHtml(project.description);
     const url = stripHtml(project.url || project.link);
     if (isFillerTitle(title) && description.length < 24) return 0;
+    const tokens = new Set(tokenize(description));
+    const hasBody = (description.length >= 40 && tokens.size >= 8) || extractMetrics(description).length > 0 || /^https?:\/\//i.test(url);
+    if (!hasBody) return 0;
     let pts = 0;
     if (title && !isFillerTitle(title)) pts += 2;
-    const tokens = new Set(tokenize(description));
     if (description.length >= 40 && tokens.size >= 8) pts += 2;
     if (extractMetrics(description).length) pts += 1;
     if (url && /^https?:\/\//i.test(url)) pts += 1;
@@ -576,21 +602,27 @@ function scoreIntegrity({ stuffing, skills, datedRoles, hasNarrative, empty }) {
         };
     }
     let score = 0;
-    if (!stuffing.stuffed) {
-        score += 6;
+    if (!stuffing.stuffed && hasNarrative) {
+        score += 4;
         findings.push({ ok: true, text: 'No keyword-stuffing pattern detected.' });
-    } else {
+    } else if (stuffing.stuffed) {
         findings.push({ ok: false, text: stuffing.repeatedToken
             ? `“${stuffing.repeatedToken}” is repeated so often it looks stuffed.`
             : 'Repeated or copy-pasted wording is lowering the integrity score.' });
+    } else {
+        findings.push({ ok: false, text: 'Add real sentences before integrity can credit clean writing.' });
     }
-    if (stuffing.uniqueRatio >= 0.45) {
+    const tokenCount = stuffing.tokenCount || 0;
+    if (stuffing.uniqueRatio < 0.32) {
+        findings.push({ ok: false, text: 'Too much repeated language across the resume.' });
+    } else if (tokenCount >= 40 && stuffing.uniqueRatio >= 0.45) {
         score += 4;
         findings.push({ ok: true, text: 'Overall wording is reasonably diverse.' });
-    } else if (stuffing.uniqueRatio < 0.32) {
-        findings.push({ ok: false, text: 'Too much repeated language across the resume.' });
-    } else {
+    } else if (tokenCount >= 20 && stuffing.uniqueRatio >= 0.4) {
         score += 2;
+        findings.push({ ok: true, text: 'Wording variety is acceptable for the current length.' });
+    } else {
+        findings.push({ ok: false, text: 'Add more distinct phrasing across experience and summary.' });
     }
     if (datedRoles) {
         score += 3;
@@ -640,6 +672,8 @@ export function expandKeywordVariants(term) {
     if (/[a-z]s$/i.test(normalized) && !/[./]s$/i.test(normalized) && normalized.length > 4) {
         variants.add(normalized.slice(0, -1));
     }
+    const punct = PUNCTUATION_SKILL_VARIANTS[normalized] || PUNCTUATION_SKILL_VARIANTS[compactToken(term)];
+    if (punct) punct.forEach((item) => variants.add(item));
     return [...variants].filter((item) => item && item.length >= 2);
 }
 
@@ -670,6 +704,9 @@ export function extractJdKeywords(jobDescription, { limit = 16 } = {}) {
         seen.add(key);
         phrases.push({ term: display, key, weight, category: classifyKeyword(display) });
     };
+
+    const punctuationSkills = source.match(/\.NET\b|(?:^|[^A-Za-z0-9])C#(?=[^A-Za-z0-9]|$)|(?:^|[^A-Za-z0-9])C\+\+(?=[^A-Za-z0-9]|$)|(?:^|[^A-Za-z0-9])F#(?=[^A-Za-z0-9]|$)|(?<![A-Za-z])SQL(?![A-Za-z])|Power\s+BI/gi) || [];
+    punctuationSkills.forEach((item) => remember(item, 6));
 
     const specials = source.match(/\b[A-Za-z][\w+#]*(?:\.[\w+#]+)+\b|\b[A-Za-z]+(?:\/[A-Za-z+]+)+\b|\b[A-Za-z][\w]*-[\w-]+\b|\b[A-Z]{2,5}\b/g) || [];
     specials.forEach((item) => remember(item, 5));
@@ -702,10 +739,16 @@ export function extractJdKeywords(jobDescription, { limit = 16 } = {}) {
         .forEach(([token, count]) => remember(token, count));
 
     const ranked = phrases.sort((left, right) => right.weight - left.weight || right.term.length - left.term.length);
+    const sourceCompact = compactToken(source);
     const filtered = ranked.filter((item) => {
         const words = normalizeToken(item.term).split(/\s+/);
         if (words.length < 2) {
-            return !ranked.some((other) => other !== item && other.weight >= item.weight && other.key.includes(item.key) && /\s/.test(other.term));
+            const longer = ranked.find((other) => other !== item && other.weight >= item.weight && other.key.includes(item.key) && /\s/.test(other.term));
+            if (!longer) return true;
+            // Keep "React" when the JD also uses it standalone, not only inside "React Native".
+            const phraseCount = (sourceCompact.match(new RegExp(longer.key, 'g')) || []).length;
+            const selfCount = (sourceCompact.match(new RegExp(item.key, 'g')) || []).length;
+            return selfCount > phraseCount;
         }
         return !ranked.some((other) => (
             other !== item
@@ -753,13 +796,25 @@ export function matchJobDescription(resumeText, jobDescription) {
         if (!groups[item.category]) groups[item.category] = [];
         groups[item.category].push(item.term);
     }
+    const missingTerms = missing
+        .map((item) => item.term)
+        .sort((left, right) => right.length - left.length);
     return {
         score: Math.round((matched.length / keywords.length) * 100),
         matched: matched.map((item) => item.term),
-        missing: missing.map((item) => item.term),
+        missing: missingTerms,
         groups,
         total: keywords.length,
     };
+}
+
+export function composeDisplayedScore(qualityScore, jdMatchScore) {
+    const quality = Math.max(0, Math.min(100, Number(qualityScore) || 0));
+    if (jdMatchScore == null || Number.isNaN(Number(jdMatchScore))) {
+        return Math.max(0, Math.min(100, Math.round(quality * NO_JD_ALIGNMENT_FACTOR)));
+    }
+    const fit = Math.max(0, Math.min(100, Number(jdMatchScore) || 0));
+    return Math.max(0, Math.min(100, Math.round(quality * JD_BLEND.quality + fit * JD_BLEND.relevance)));
 }
 
 function statusFor(score) {
@@ -783,7 +838,14 @@ function buildStrengths(sections, jdMatch, stuffing, language) {
     return uniqueStrings(strengths).slice(0, 3);
 }
 
-function buildImprovements(sections, jdMatch, stuffing) {
+function buildImprovements(sections, jdMatch, stuffing, qualityScore) {
+    if (!qualityScore) {
+        return [{
+            text: 'Start with your name, a professional email, and one real work story.',
+            navigateTo: 'heading',
+        }];
+    }
+
     const ranked = [...sections]
         .map((section) => ({
             section,
@@ -795,9 +857,9 @@ function buildImprovements(sections, jdMatch, stuffing) {
 
     const actions = [];
     if (jdMatch && jdMatch.missing.length) {
-        const sample = jdMatch.missing.slice(0, 3).join(', ');
+        const prioritized = [...jdMatch.missing].sort((left, right) => right.length - left.length).slice(0, 3);
         actions.push({
-            text: `Add ${Math.min(3, jdMatch.missing.length)} target-JD term${jdMatch.missing.length === 1 ? '' : 's'} you genuinely have${sample ? ` (e.g. ${sample})` : ''}.`,
+            text: `Add ${Math.min(2, prioritized.length)} target-JD term${prioritized.length === 1 ? '' : 's'} you genuinely have (e.g. ${prioritized.join(', ')}).`,
             navigateTo: 'skills',
         });
     }
@@ -856,9 +918,7 @@ export function calculateAtsScore(data = {}, options = {}) {
         ? matchJobDescription(resumeText, jobDescription)
         : { score: null, matched: [], missing: [], groups: {}, total: 0 };
 
-    const totalScore = jdMatch.score == null
-        ? qualityScore
-        : Math.max(0, Math.min(100, Math.round(qualityScore * JD_BLEND.quality + jdMatch.score * JD_BLEND.relevance)));
+    const totalScore = composeDisplayedScore(qualityScore, jdMatch.score);
 
     const status = statusFor(totalScore);
     const informational = {
@@ -873,7 +933,7 @@ export function calculateAtsScore(data = {}, options = {}) {
         sections,
         status,
         strengths: buildStrengths(sections, jdMatch, stuffing, language),
-        improvements: buildImprovements(sections, jdMatch, stuffing),
+        improvements: buildImprovements(sections, jdMatch, stuffing, qualityScore),
         jdMatch,
         stuffing,
         language,

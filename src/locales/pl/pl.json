@@ -2731,5 +2731,31 @@
         "placeholder": "Opisz pracę, publikację lub wkład…"
       }
     }
+  },
+  "AtsScoreMeter": {
+    "region": "ATS score",
+    "title": "ATS readiness",
+    "titleTargeted": "ATS readiness",
+    "toggle": "Toggle detailed breakdown",
+    "gaugeLabel": "ATS score {{score}} out of 100, {{status}}",
+    "noJdHint": "Readiness for ATS parsers — not a Workday or Greenhouse score. Paste a target job to measure role fit.",
+    "blendHint": "Combines resume quality ({{quality}}/100) with target-job match ({{match}}%). Not an employer ATS result.",
+    "nonEnglish": "Action-verb coaching is English-oriented. Your content is still scored on structure, evidence, and relevance.",
+    "strengths": "Strengths",
+    "improvements": "Highest-value next steps",
+    "go": "Go",
+    "breakdown": "Why this score",
+    "points": "Points",
+    "improve": "Improve",
+    "jdTitle": "Target job description",
+    "jdMatchPct": "{{score}}% match",
+    "scanJd": "Optional",
+    "jdLabel": "Paste the job you want. Matching stays on this device and is never sent to a server.",
+    "jdPlaceholder": "Paste the job description to check role fit…",
+    "applyJd": "Update match",
+    "clearJd": "Clear",
+    "matched": "Matched",
+    "missing": "Missing",
+    "disclaimer": "Instant heuristic score — not an employer ATS and not an AI audit. No resume data is sent anywhere to compute it."
   }
 }

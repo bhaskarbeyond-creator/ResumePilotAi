@@ -4,7 +4,10 @@ import fs from 'node:fs';
 import {
   ATS_QUALITY_MAX,
   ATS_WEIGHTS,
+  JD_BLEND,
+  NO_JD_ALIGNMENT_FACTOR,
   calculateAtsScore,
+  composeDisplayedScore,
   extractJdKeywords,
   matchJobDescription,
   expandKeywordVariants,
@@ -201,6 +204,12 @@ test('weights sum to 100 and the public formula stays explicit', () => {
     evidence: 14,
     integrity: 16,
   });
+  assert.equal(JD_BLEND.quality + JD_BLEND.relevance, 1);
+  assert.equal(NO_JD_ALIGNMENT_FACTOR, 0.92);
+  assert.equal(composeDisplayedScore(100, null), 92);
+  assert.equal(composeDisplayedScore(100, 100), 100);
+  assert.ok(composeDisplayedScore(100, 90) > composeDisplayedScore(100, null));
+  assert.ok(composeDisplayedScore(100, 0) < composeDisplayedScore(100, null));
 });
 
 test('empty resume scores 0 and never exceeds bounds', () => {
@@ -251,6 +260,8 @@ test('adversarial score order is logical', () => {
   }, { jobDescription: TARGET_JD }).totalScore;
   assert.ok(targeted > unrelated, `targeted ${targeted} > unrelated ${unrelated}`);
   assert.ok(aligned >= targeted, `aligned ${aligned} >= targeted ${targeted}`);
+  assert.ok(aligned > strong, `aligned to the JD ${aligned} should beat the same resume with no JD ${strong}`);
+  assert.ok(unrelated < strong, `unrelated JD ${unrelated} should fall below no-JD readiness ${strong}`);
   assert.ok(aligned >= 80, `fully aligned strong resume should stay high: ${aligned}`);
   assert.ok(stuffed < targeted, `stuffed ${stuffed} < targeted ${targeted}`);
   assert.ok(stuffed < strong, `stuffed ${stuffed} < strong ${strong}`);
@@ -431,4 +442,145 @@ test('detectNonEnglish recognizes CJK and French function-word poverty', () => {
   assert.equal(detectNonEnglish('ソフトウェアエンジニアとして信頼性の高いサービスを設計して運用しています。').nonEnglish, true);
   assert.equal(detectNonEnglish(frenchResume().summary).nonEnglish, true);
   assert.equal(detectNonEnglish(strongResume().summary).nonEnglish, false);
+});
+
+function compactish(value) {
+  return String(value).toLowerCase().replace(/[\s./_+#-]+/g, '');
+}
+
+test('punctuation-heavy JD terms extract and match', () => {
+  const jd = 'Need C#, C++, .NET, SQL, Power BI, React, React Native, Deep Learning and Google Cloud Platform.';
+  const keywords = extractJdKeywords(jd).map((item) => item.term.toLowerCase());
+  for (const expected of ['c#', 'c++', '.net', 'sql', 'power bi', 'react native', 'deep learning', 'google cloud platform']) {
+    assert.ok(
+      keywords.some((item) => item.replace(/\s+/g, ' ').includes(expected) || compactish(item) === compactish(expected)),
+      `missing ${expected} in ${keywords.join(', ')}`,
+    );
+  }
+  const match = matchJobDescription(
+    'Shipped csharp APIs on dotnet, used cpp for the engine, Power BI dashboards, React Native, Deep Learning ranking on Google Cloud Platform. SQL and C# daily.',
+    jd,
+  );
+  assert.ok(match.matched.some((item) => /c#/i.test(item)));
+  assert.ok(match.matched.some((item) => /c\+\+/i.test(item) || /cpp/i.test(item)));
+  assert.ok(match.matched.some((item) => /net/i.test(item)));
+  assert.ok(match.score >= 50, `score ${match.score} matched ${match.matched.join(', ')}`);
+});
+
+test('the same keyword in skills, cert, and project does not triple-count', () => {
+  const base = basicResume();
+  const once = calculateAtsScore({
+    ...base,
+    skills: [...base.skills, { name: 'AWS' }],
+  });
+  const thrice = calculateAtsScore({
+    ...base,
+    skills: [...base.skills, { name: 'AWS' }, { name: 'AWS' }, { name: 'aws' }],
+    certifications: [{ title: 'AWS', issuer: 'Amazon', date: '2023' }],
+    projects: [{ title: 'AWS', description: 'AWS AWS AWS lab notes without an outcome.' }],
+  });
+  assert.equal(
+    once.sections.find((section) => section.id === 'skills').score,
+    thrice.sections.find((section) => section.id === 'skills').score,
+  );
+  assert.equal(thrice.sections.find((section) => section.id === 'evidence').facts.projects, 0);
+  const genuine = calculateAtsScore({
+    ...base,
+    skills: [...base.skills, { name: 'AWS' }],
+    certifications: [{ title: 'AWS Solutions Architect', issuer: 'Amazon Web Services', date: '2023' }],
+    projects: [{
+      title: 'Cost Explorer',
+      url: 'https://example.com/cost',
+      description: 'Built an AWS cost explorer that cut idle spend 19% for 40 accounts.',
+    }],
+  });
+  assert.ok(genuine.totalScore > once.totalScore);
+});
+
+test('ten natural Python mentions do not lose to a thirty-repeat block', () => {
+  const natural = calculateAtsScore({
+    ...basicResume(),
+    summary: 'Backend engineer focused on Python services, testing, and careful delivery.',
+    skills: [{ name: 'Python' }, { name: 'Django' }, { name: 'PostgreSQL' }, { name: 'Linux' }],
+    employments: [{
+      jobTitle: 'Backend Engineer', employer: 'Helix', begin: '2020',
+      description: '<ul><li>Developed Python APIs that served 80k daily sessions.</li><li>Reduced Python batch runtime 22% by rewriting the hottest query.</li></ul>',
+    }],
+    projects: [{
+      title: 'Forecast CLI',
+      url: 'https://example.com/forecast',
+      description: 'Python CLI that forecasted inventory and cut stockouts 11%.',
+    }],
+  });
+  const block = calculateAtsScore({
+    ...basicResume(),
+    summary: `${'Python '.repeat(30)} We are looking for responsibilities and requirements.`,
+    skills: Array.from({ length: 12 }, () => ({ name: 'Python' })),
+    employments: [{
+      jobTitle: 'Engineer', employer: 'Block', begin: '2020',
+      description: 'Python Python Python Python Python Python Python Python Python Python',
+    }],
+    customSections: [{ title: 'Keywords', items: [{ title: 'Stack', description: 'Python '.repeat(20) }] }],
+  });
+  assert.equal(natural.stuffing.stuffed, false);
+  assert.equal(block.stuffing.stuffed, true);
+  assert.ok(natural.totalScore > block.totalScore, `natural ${natural.totalScore} > block ${block.totalScore}`);
+});
+
+test('Hindi, German and Spanish resumes are not English-verb-scolded', () => {
+  const hindi = calculateAtsScore({
+    firstname: 'Anya', lastname: 'Sharma', email: 'anya@example.com', phone: '9876543210',
+    city: 'Delhi',
+    summary: 'सॉफ्टवेयर इंजीनियर के रूप में मैं विश्वसनीय सेवाओं का डिज़ाइन और संचालन करती हूँ और टीम के साथ काम करती हूँ।',
+    employments: [{ jobTitle: 'इंजीनियर', employer: 'नवोदय', begin: '2020', description: 'मैंने एक ऐसा सिस्टम बनाया जिससे 40 दुकानों के ऑर्डर समय पर पूरे होते हैं।' }],
+    skills: [{ name: 'Java' }, { name: 'SQL' }],
+  });
+  const german = calculateAtsScore({
+    firstname: 'Jonas', lastname: 'Becker', email: 'jonas@example.de', phone: '01511234567',
+    city: 'Berlin', country: 'DE',
+    summary: 'Softwareentwickler mit Schwerpunkt auf zuverlässigen Diensten und enger Zusammenarbeit mit Fachbereichen.',
+    employments: [{ jobTitle: 'Entwickler', employer: 'Nordwind', begin: '2019', description: 'Ein Abrechnungssystem gebaut, das die Fehlerquote um 18 Prozent senkte.' }],
+    skills: [{ name: 'Java' }, { name: 'Spring Boot' }],
+  });
+  const spanish = calculateAtsScore({
+    firstname: 'Lucia', lastname: 'Ramos', email: 'lucia@example.es', phone: '612345678',
+    city: 'Madrid', country: 'ES',
+    summary: 'Ingeniera de software con experiencia diseñando servicios fiables y colaborando con equipos de producto.',
+    employments: [{ jobTitle: 'Ingeniera', employer: 'Iberia Tech', begin: '2018', description: 'Desarrollé una plataforma usada por 90 tiendas y reduje incidentes un 20%.' }],
+    skills: [{ name: 'Python' }, { name: 'SQL' }],
+  });
+  assert.equal(hindi.language.nonEnglish, true);
+  assert.equal(german.language.nonEnglish, true);
+  assert.equal(spanish.language.nonEnglish, true);
+  for (const result of [hindi, german, spanish]) {
+    const experience = result.sections.find((section) => section.id === 'experience');
+    assert.equal(experience.findings.some((item) => /action-led|strong verb/i.test(item.text)), false);
+  }
+  assert.doesNotThrow(() => matchJobDescription('अनुभव Kubernetes', 'Kubernetes और PostgreSQL'));
+});
+
+test('large resumes and long JDs stay synchronous and cheap', () => {
+  const huge = {
+    ...strongResume(),
+    skills: Array.from({ length: 100 }, (_, index) => ({ name: `Skill ${index + 1}` })),
+    employments: Array.from({ length: 20 }, (_, index) => ({
+      jobTitle: `Engineer ${index + 1}`,
+      employer: `Company ${index + 1}`,
+      begin: '2010',
+      description: `<ul><li>Led workstream ${index + 1} and reduced cycle time ${index + 3}%.</li><li>Shipped module ${index + 1} used by ${index + 8}000 customers.</li></ul>`,
+    })),
+    projects: Array.from({ length: 20 }, (_, index) => ({
+      title: `Project ${index + 1}`,
+      url: `https://example.com/p${index + 1}`,
+      description: `Delivered project ${index + 1} and saved ${index + 5}% operational time.`,
+    })),
+    certifications: Array.from({ length: 20 }, (_, index) => ({ title: `Cert ${index + 1}`, issuer: 'Org', date: '2020' })),
+    summary: `${strongResume().summary} ${'Additional context about delivery, mentoring, and reliability. '.repeat(40)}`,
+  };
+  const jd = `${TARGET_JD}\n${'Additional requirement about collaboration, ownership, and documentation. '.repeat(80)}`;
+  const start = Date.now();
+  const result = calculateAtsScore(huge, { jobDescription: jd });
+  const elapsed = Date.now() - start;
+  assert.ok(Number.isInteger(result.totalScore));
+  assert.ok(elapsed < 80, `scoring took ${elapsed}ms`);
 });

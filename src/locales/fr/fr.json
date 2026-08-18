@@ -2728,5 +2728,32 @@
         "placeholder": "Décrivez le travail, la publication ou la contribution…"
       }
     }
+  },
+  "AtsScoreMeter": {
+    "region": "Score ATS",
+    "title": "Préparation ATS",
+    "titleTargeted": "Préparation ATS",
+    "toggle": "Afficher ou masquer le détail",
+    "gaugeLabel": "Score ATS {{score}} sur 100, {{status}}",
+    "noJdHint": "Préparation aux parseurs ATS — ce n’est pas un score Workday ou Greenhouse. Collez une offre cible pour mesurer l’adéquation.",
+    "blendHint": "Combine la qualité du CV ({{quality}}/100) et l’adéquation à l’offre ({{match}}%). Ce n’est pas le résultat d’un ATS employeur.",
+    "nonEnglish": "Les conseils de verbes d’action sont orientés anglais. Le contenu reste évalué sur la structure, les preuves et la pertinence.",
+    "strengths": "Points forts",
+    "improvements": "Prochaines actions les plus utiles",
+    "go": "Aller",
+    "breakdown": "Pourquoi ce score",
+    "points": "Points",
+    "improve": "Améliorer",
+    "jdTitle": "Offre d’emploi cible",
+    "jdMatchPct": "{{score}} % de correspondance",
+    "scanJd": "Facultatif",
+    "jdLabel": "Collez le poste visé. La comparaison reste sur cet appareil et n’est envoyée à aucun serveur.",
+    "jdPlaceholder": "Collez la description de poste pour vérifier l’adéquation…",
+    "applyJd": "Mettre à jour la correspondance",
+    "clearJd": "Effacer",
+    "matched": "Trouvés",
+    "missing": "Manquants",
+    "emptyCoach": "Vous commencez. Ajoutez vos coordonnées et un poste — le score évoluera avec un vrai contenu.",
+    "disclaimer": "Estimation heuristique de préparation. Ce n’est pas Workday, Greenhouse, Lever ou Taleo, et cela ne prédit pas les entretiens. Rien n’est envoyé à un serveur pour le calcul."
   }
 }

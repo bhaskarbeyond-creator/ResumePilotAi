@@ -124,7 +124,9 @@ const AtsScoreMeter = ({ resumeData, onNavigate }) => {
                         <div className="mb-0.5 flex items-center space-x-1">
                             <MdSpeed className="h-3.5 w-3.5 flex-shrink-0 text-indigo-600" aria-hidden="true" />
                             <span className="truncate text-[11px] font-bold uppercase tracking-wider text-slate-800">
-                                {t('AtsScoreMeter.title', 'ATS Score')}
+                                {result.hasJobDescription
+                                    ? t('AtsScoreMeter.titleTargeted', 'ATS readiness')
+                                    : t('AtsScoreMeter.title', 'ATS readiness')}
                             </span>
                         </div>
                         <p className="text-[10px] font-semibold tabular-nums text-slate-500">
@@ -149,14 +151,14 @@ const AtsScoreMeter = ({ resumeData, onNavigate }) => {
 
             {!result.hasJobDescription && (
                 <p className="text-[10px] leading-snug text-slate-500">
-                    {t('AtsScoreMeter.noJdHint', 'This is ATS readiness. Paste a target job description to measure role fit.')}
+                    {t('AtsScoreMeter.noJdHint', 'Readiness for ATS parsers — not a Workday or Greenhouse score. Paste a target job to measure role fit.')}
                 </p>
             )}
             {result.hasJobDescription && (
                 <p className="text-[10px] leading-snug text-slate-500">
                     {t(
                         'AtsScoreMeter.blendHint',
-                        'Score mixes resume quality ({{quality}}/100) with target-JD match ({{match}}%).',
+                        'Combines resume quality ({{quality}}/100) with target-job match ({{match}}%). Not an employer ATS result.',
                         { quality: result.qualityScore, match: result.jdMatch.score ?? 0 },
                     )}
                 </p>
@@ -214,7 +216,12 @@ const AtsScoreMeter = ({ resumeData, onNavigate }) => {
                             <span>{t('AtsScoreMeter.breakdown', 'Why this score')}</span>
                             <span>{t('AtsScoreMeter.points', 'Points')}</span>
                         </div>
-                        {result.sections.map((section) => {
+                        {result.qualityScore < 15 && (
+                            <p className="rounded-lg bg-slate-50 px-2 py-1.5 text-[10px] leading-snug text-slate-600">
+                                {t('AtsScoreMeter.emptyCoach', 'You are just getting started. Add contact details and one role — the score will move as the resume becomes real.')}
+                            </p>
+                        )}
+                        {(result.qualityScore < 15 ? result.sections.filter((section) => ['contact', 'experience', 'summary'].includes(section.id)) : result.sections).map((section) => {
                             const percent = Math.round((section.score / section.maxScore) * 100);
                             const healthy = percent >= 70;
                             return (
@@ -337,7 +344,7 @@ const AtsScoreMeter = ({ resumeData, onNavigate }) => {
                         <span>
                             {t(
                                 'AtsScoreMeter.disclaimer',
-                                'Instant heuristic score — not an employer ATS and not an AI audit. No resume data is sent anywhere to compute it.',
+                                'Heuristic readiness estimate. It is not Workday, Greenhouse, Lever, or Taleo, and it does not predict interviews. Nothing is sent to a server to compute it.',
                             )}
                         </span>
                     </p>
