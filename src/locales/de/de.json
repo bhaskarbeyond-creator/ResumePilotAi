@@ -2733,13 +2733,13 @@
     }
   },
   "AtsScoreMeter": {
-    "region": "ATS-Wert",
+    "region": "ATS-Bereitschaft",
     "title": "ATS-Bereitschaft",
     "titleTargeted": "ATS-Bereitschaft",
     "toggle": "Detaillierte Aufschlüsselung ein- oder ausblenden",
-    "gaugeLabel": "ATS-Wert {{score}} von 100, {{status}}",
-    "noJdHint": "Bereitschaft für ATS-Parser — kein Workday- oder Greenhouse-Ergebnis. Fügen Sie eine Zielstellenanzeige ein, um die Passung zu prüfen.",
-    "blendHint": "Kombiniert Lebenslaufqualität ({{quality}}/100) mit Zielstellen-Trefferquote ({{match}}%). Kein Ergebnis eines Arbeitgeber-ATS.",
+    "gaugeLabel": "ATS-Bereitschaft {{score}} von 100, {{status}}",
+    "noJdHint": "Bereitschaft für ATS-Parser — kein Workday- oder Greenhouse-Ergebnis. Fügen Sie eine Zielstelle ein, um die Passung zu prüfen.",
+    "blendHint": "Die Stellenpassung wird getrennt angezeigt und ändert die Bereitschaft nicht.",
     "nonEnglish": "Action-Verb-Hinweise sind englischsprachig. Inhalt wird weiter nach Struktur, Belegen und Relevanz bewertet.",
     "strengths": "Stärken",
     "improvements": "Wertvollste nächste Schritte",
@@ -2747,16 +2747,27 @@
     "breakdown": "Warum dieser Wert",
     "points": "Punkte",
     "improve": "Verbessern",
-    "jdTitle": "Ziel-Stellenbeschreibung",
+    "jdTitle": "Zielstellen-Treffer",
+    "jdPanelTitle": "Ziel-Stellenbeschreibung",
     "jdMatchPct": "{{score}} % Treffer",
+    "jdNotProvided": "Nicht angegeben",
     "scanJd": "Optional",
-    "jdLabel": "Fügen Sie die gewünschte Stelle ein. Der Abgleich bleibt auf diesem Gerät und wird nicht an einen Server gesendet.",
-    "jdPlaceholder": "Stellenbeschreibung einfügen, um die Passung zu prüfen…",
+    "jdLabel": "Fügen Sie die gewünschte Stelle ein. Der Abgleich bleibt auf diesem Gerät.",
+    "jdPlaceholder": "Stellenbeschreibung einfügen…",
     "applyJd": "Abgleich aktualisieren",
     "clearJd": "Löschen",
     "matched": "Gefunden",
     "missing": "Fehlt",
-    "emptyCoach": "Sie fangen gerade an. Ergänzen Sie Kontaktdaten und eine Position — der Wert steigt mit echtem Inhalt.",
-    "disclaimer": "Heuristische Bereitschaftsschätzung. Das ist nicht Workday, Greenhouse, Lever oder Taleo und sagt keine Vorstellungsgespräche voraus. Zur Berechnung wird nichts an einen Server gesendet."
+    "emptyCoach": "Sie fangen gerade an. Ergänzen Sie Kontaktdaten und eine Position.",
+    "disclaimer": "Heuristische Schätzung. Das ist nicht Workday, Greenhouse, Lever oder Taleo.",
+    "categories": {
+      "contact": "Kontakt",
+      "summary": "Profil",
+      "experience": "Berufserfahrung",
+      "education": "Ausbildung",
+      "skills": "Kompetenzen",
+      "evidence": "Projekte & Nachweise",
+      "integrity": "Integrität"
+    }
   }
 }

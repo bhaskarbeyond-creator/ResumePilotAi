@@ -58,5 +58,6 @@ test('wizard-shaped resume updates the score after each real section', () => {
   });
   assert.ok(withJd.hasJobDescription);
   assert.ok(withJd.jdMatch.matched.length >= 3);
-  assert.notEqual(withJd.totalScore, afterRefs.totalScore);
+  assert.equal(withJd.totalScore, afterRefs.totalScore);
+  assert.notEqual(withJd.jdMatch.score, afterRefs.jdMatch.score);
 });

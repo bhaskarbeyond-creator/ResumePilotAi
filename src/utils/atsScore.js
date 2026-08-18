@@ -4,18 +4,13 @@
  * Isolated from the resume rendering pipeline. Synchronous and allocation-light
  * so the builder can recompute on every resume change without an API call.
  *
- * Score is always an integer in [0, 100].
+ * Two independent dimensions — they must not be blended:
+ *   ATS Readiness  = quality (0–100) from the category weights below
+ *   Target JD Match = distinctive-term coverage (null if no JD, else 0–100)
  *
- * Category weights still sum to 100 and measure resume quality / parseability.
- * A target job is additional signal, not a replacement for quality:
- *   no JD  → displayed = round(quality × 0.92)
- *            The held 8% is target-alignment. Without a job we cannot honestly
- *            answer “how good is this resume for the role I want?”
- *   with JD → displayed = round(quality × 0.76 + jdMatch × 0.24)
- *            Strong coverage of distinctive JD terms can therefore outscore
- *            the same resume with no target. An unrelated JD pulls the score
- *            below the no-JD readiness number. Stuffing still cannot win
- *            because quality is crushed first.
+ * A missing job description does not reduce readiness. Mixing the two into one
+ * number made a strong untargeted resume look worse than it is, and made a
+ * stuffed-but-keyword-aligned resume look closer to a real candidate.
  */
 
 export const ATS_WEIGHTS = Object.freeze({
@@ -30,13 +25,16 @@ export const ATS_WEIGHTS = Object.freeze({
 
 export const ATS_QUALITY_MAX = Object.values(ATS_WEIGHTS).reduce((sum, value) => sum + value, 0);
 
+/** @deprecated Kept only so older tests/docs can name the rejected blend. */
 export const JD_BLEND = Object.freeze({
     quality: 0.76,
     relevance: 0.24,
 });
 
-/** Held back when no target job is supplied. See file header. */
-export const NO_JD_ALIGNMENT_FACTOR = 0.92;
+/** @deprecated The 8% no-JD ceiling was rejected — it punished users without a JD. */
+export const NO_JD_ALIGNMENT_FACTOR = 1;
+
+export const SCORE_ARCHITECTURE = 'separate';
 
 const PUNCTUATION_SKILL_VARIANTS = Object.freeze({
     'c#': ['c#', 'csharp', 'c sharp'],
@@ -677,6 +675,11 @@ export function expandKeywordVariants(term) {
     return [...variants].filter((item) => item && item.length >= 2);
 }
 
+const WEAK_PHRASE_HEADS = new Set([
+    'need', 'needs', 'needed', 'looking', 'seek', 'seeking', 'hiring',
+    'required', 'must', 'want', 'wanted', 'join', 'using',
+]);
+
 const GENERIC_PHRASE_TAILS = new Set([
     'services', 'service', 'features', 'feature', 'pipelines', 'pipeline',
     'collaboration', 'delivery', 'experience', 'experiences', 'systems',
@@ -712,7 +715,11 @@ export function extractJdKeywords(jobDescription, { limit = 16 } = {}) {
     specials.forEach((item) => remember(item, 5));
 
     const properPhrases = source.match(/\b[A-Z][A-Za-z0-9+#]+(?:\s+[A-Z][A-Za-z0-9+#]+){1,2}\b/g) || [];
-    properPhrases.forEach((item) => remember(item, 4));
+    properPhrases.forEach((item) => {
+        const first = normalizeToken(item).split(/\s+/)[0];
+        if (WEAK_PHRASE_HEADS.has(first) || ENGLISH_STOPWORDS.has(first)) return;
+        remember(item, 4);
+    });
 
     const tokens = source.split(/[^A-Za-z0-9+#./-]+/).filter(Boolean);
     for (let index = 0; index < tokens.length - 1; index += 1) {
@@ -721,6 +728,7 @@ export function extractJdKeywords(jobDescription, { limit = 16 } = {}) {
         const leftKey = normalizeToken(left);
         const rightKey = normalizeToken(right);
         if (ENGLISH_STOPWORDS.has(leftKey) || ENGLISH_STOPWORDS.has(rightKey)) continue;
+        if (WEAK_PHRASE_HEADS.has(leftKey) || WEAK_PHRASE_HEADS.has(rightKey)) continue;
         if (leftKey.length < 3 || rightKey.length < 3) continue;
         if (isSpecialToken(left) || isSpecialToken(right)) continue;
         if (GENERIC_PHRASE_TAILS.has(rightKey) || GENERIC_PHRASE_TAILS.has(leftKey)) continue;
@@ -761,6 +769,39 @@ export function extractJdKeywords(jobDescription, { limit = 16 } = {}) {
     return filtered.filter((item, index, list) => list.findIndex((other) => other.key === item.key) === index).slice(0, limit);
 }
 
+function escapeRegExp(value) {
+    return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function boundedMatch(haystack, term) {
+    const variant = normalizeToken(term);
+    if (!variant) return false;
+    if (variant === 'java') {
+        return /(?<![\p{L}\p{N}])java(?!script|[\p{L}\p{N}])/u.test(haystack);
+    }
+    if (variant === 'c') {
+        return /(?<![\p{L}\p{N}+#])c(?![\p{L}\p{N}+#]|\+\+|sharp)/u.test(haystack);
+    }
+    try {
+        return new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegExp(variant)}(?![\\p{L}\\p{N}])`, 'u').test(haystack);
+    } catch {
+        return false;
+    }
+}
+
+export function keywordOccursInText(resumeText, term) {
+    const haystack = normalizeToken(resumeText);
+    return expandKeywordVariants(term).some((variant) => {
+        if (!variant || variant.length < 2) return false;
+        if (boundedMatch(haystack, variant)) return true;
+        const spaced = variant.replace(/[./_+#-]+/g, ' ').trim();
+        if (spaced && spaced !== variant && boundedMatch(haystack, spaced)) return true;
+        const compact = compactToken(variant);
+        if (compact && compact !== variant && boundedMatch(haystack.replace(/[\s./_-]+/g, ''), compact)) return true;
+        return false;
+    });
+}
+
 export function matchJobDescription(resumeText, jobDescription) {
     const keywords = extractJdKeywords(jobDescription);
     if (!keywords.length) {
@@ -772,24 +813,10 @@ export function matchJobDescription(resumeText, jobDescription) {
             total: 0,
         };
     }
-    const haystack = normalizeToken(resumeText);
-    const compactHay = compactToken(resumeText);
     const matched = [];
     const missing = [];
     for (const item of keywords) {
-        const hit = expandKeywordVariants(item.term).some((variant) => {
-            if (!variant) return false;
-            if (variant.includes(' ') || /[./#+-]/.test(variant)) {
-                return haystack.includes(variant) || compactHay.includes(compactToken(variant));
-            }
-            try {
-                const pattern = new RegExp(`(?<![\\p{L}\\p{N}])${variant.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\p{L}\\p{N}])`, 'u');
-                return pattern.test(haystack) || compactHay.includes(compactToken(variant));
-            } catch {
-                return haystack.includes(variant);
-            }
-        });
-        (hit ? matched : missing).push(item);
+        (keywordOccursInText(resumeText, item.term) ? matched : missing).push(item);
     }
     const groups = {};
     for (const item of missing) {
@@ -808,13 +835,8 @@ export function matchJobDescription(resumeText, jobDescription) {
     };
 }
 
-export function composeDisplayedScore(qualityScore, jdMatchScore) {
-    const quality = Math.max(0, Math.min(100, Number(qualityScore) || 0));
-    if (jdMatchScore == null || Number.isNaN(Number(jdMatchScore))) {
-        return Math.max(0, Math.min(100, Math.round(quality * NO_JD_ALIGNMENT_FACTOR)));
-    }
-    const fit = Math.max(0, Math.min(100, Number(jdMatchScore) || 0));
-    return Math.max(0, Math.min(100, Math.round(quality * JD_BLEND.quality + fit * JD_BLEND.relevance)));
+export function composeDisplayedScore(qualityScore) {
+    return Math.max(0, Math.min(100, Math.round(Number(qualityScore) || 0)));
 }
 
 function statusFor(score) {
@@ -918,7 +940,7 @@ export function calculateAtsScore(data = {}, options = {}) {
         ? matchJobDescription(resumeText, jobDescription)
         : { score: null, matched: [], missing: [], groups: {}, total: 0 };
 
-    const totalScore = composeDisplayedScore(qualityScore, jdMatch.score);
+    const totalScore = composeDisplayedScore(qualityScore);
 
     const status = statusFor(totalScore);
     const informational = {

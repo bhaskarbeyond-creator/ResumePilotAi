@@ -4,8 +4,6 @@ import fs from 'node:fs';
 import {
   ATS_QUALITY_MAX,
   ATS_WEIGHTS,
-  JD_BLEND,
-  NO_JD_ALIGNMENT_FACTOR,
   calculateAtsScore,
   composeDisplayedScore,
   extractJdKeywords,
@@ -204,12 +202,15 @@ test('weights sum to 100 and the public formula stays explicit', () => {
     evidence: 14,
     integrity: 16,
   });
-  assert.equal(JD_BLEND.quality + JD_BLEND.relevance, 1);
-  assert.equal(NO_JD_ALIGNMENT_FACTOR, 0.92);
-  assert.equal(composeDisplayedScore(100, null), 92);
-  assert.equal(composeDisplayedScore(100, 100), 100);
-  assert.ok(composeDisplayedScore(100, 90) > composeDisplayedScore(100, null));
-  assert.ok(composeDisplayedScore(100, 0) < composeDisplayedScore(100, null));
+  assert.equal(composeDisplayedScore(100), 100);
+  assert.equal(composeDisplayedScore(41), 41);
+  const strong = calculateAtsScore(strongResume());
+  const withJd = calculateAtsScore(strongResume(), { jobDescription: TARGET_JD });
+  assert.equal(strong.totalScore, strong.qualityScore);
+  assert.equal(withJd.totalScore, withJd.qualityScore);
+  assert.equal(strong.totalScore, withJd.totalScore);
+  assert.equal(strong.jdMatch.score, null);
+  assert.notEqual(withJd.jdMatch.score, null);
 });
 
 test('empty resume scores 0 and never exceeds bounds', () => {
@@ -232,10 +233,10 @@ test('adversarial score order is logical', () => {
   const empty = calculateAtsScore(emptyResume()).totalScore;
   const basic = calculateAtsScore(basicResume()).totalScore;
   const strong = calculateAtsScore(strongResume()).totalScore;
-  const targeted = calculateAtsScore(strongResume(), { jobDescription: TARGET_JD }).totalScore;
+  const targeted = calculateAtsScore(strongResume(), { jobDescription: TARGET_JD });
   const unrelated = calculateAtsScore(strongResume(), {
     jobDescription: 'Seeking a pediatric nurse with neonatal ICU experience, EHR charting, and BLS certification.',
-  }).totalScore;
+  });
   const stuffed = calculateAtsScore(stuffedResume(), { jobDescription: TARGET_JD }).totalScore;
   const metrics = calculateAtsScore(metricsStuffedResume()).totalScore;
   const skillsOnly = calculateAtsScore(skillsOnlyResume()).totalScore;
@@ -257,13 +258,13 @@ test('adversarial score order is logical', () => {
       ...item,
       description: `${item.description}<p>Delivered React Native and Node.js features, Spring Boot services, AWS Lambda jobs, Machine Learning ranking on Google Cloud, and CI/CD with Product Management.</p>`,
     } : item),
-  }, { jobDescription: TARGET_JD }).totalScore;
-  assert.ok(targeted > unrelated, `targeted ${targeted} > unrelated ${unrelated}`);
-  assert.ok(aligned >= targeted, `aligned ${aligned} >= targeted ${targeted}`);
-  assert.ok(aligned > strong, `aligned to the JD ${aligned} should beat the same resume with no JD ${strong}`);
-  assert.ok(unrelated < strong, `unrelated JD ${unrelated} should fall below no-JD readiness ${strong}`);
-  assert.ok(aligned >= 80, `fully aligned strong resume should stay high: ${aligned}`);
-  assert.ok(stuffed < targeted, `stuffed ${stuffed} < targeted ${targeted}`);
+  }, { jobDescription: TARGET_JD });
+  assert.equal(targeted.totalScore, strong, 'JD must not change readiness');
+  assert.equal(unrelated.totalScore, strong, 'an unrelated JD must not punish readiness');
+  assert.ok((aligned.jdMatch.score || 0) > (targeted.jdMatch.score || 0), `aligned match ${aligned.jdMatch.score} > partial ${targeted.jdMatch.score}`);
+  assert.ok((targeted.jdMatch.score || 0) > (unrelated.jdMatch.score || 0), `targeted match ${targeted.jdMatch.score} > unrelated ${unrelated.jdMatch.score}`);
+  assert.ok(aligned.totalScore >= 80, `fully aligned strong resume should stay high: ${aligned.totalScore}`);
+  assert.ok(stuffed < targeted.totalScore, `stuffed ${stuffed} < targeted ${targeted.totalScore}`);
   assert.ok(stuffed < strong, `stuffed ${stuffed} < strong ${strong}`);
   assert.ok(metrics < strong, `metrics-stuffed ${metrics} < strong ${strong}`);
   assert.ok(skillsOnly < experienceHeavy, `skills-only ${skillsOnly} < experience-heavy ${experienceHeavy}`);
@@ -428,7 +429,9 @@ test('BuildResume still mounts the meter on desktop and mobile without touching 
   const meter = fs.readFileSync('src/components/BuildResume/AtsScoreMeter.jsx', 'utf8');
   assert.match(meter, /from '\.\.\/\.\.\/utils\/atsScore'/);
   assert.match(meter, /aria-expanded/);
-  assert.match(meter, /ATS score \{\{score\}\} out of 100/);
+  assert.match(meter, /ATS readiness \{\{score\}\} out of 100/);
+  assert.match(meter, /data-testid="ats-readiness-score"/);
+  assert.match(meter, /data-testid="ats-jd-match"/);
 });
 
 test('stuffing detector flags consecutive repeats and low lexical diversity', () => {
@@ -583,4 +586,16 @@ test('large resumes and long JDs stay synchronous and cheap', () => {
   const elapsed = Date.now() - start;
   assert.ok(Number.isInteger(result.totalScore));
   assert.ok(elapsed < 80, `scoring took ${elapsed}ms`);
+});
+
+test('Java does not match JavaScript and C family terms stay distinct', () => {
+  const javaOnly = matchJobDescription('Built JavaScript front ends and Node.js APIs.', 'Need Java, Kubernetes');
+  assert.equal(javaOnly.matched.some((item) => /^java$/i.test(item)), false);
+  const realJava = matchJobDescription('Shipped Java services on Kubernetes.', 'Need Java, Kubernetes');
+  assert.ok(realJava.matched.some((item) => /^java$/i.test(item) || item.toLowerCase() === 'java'));
+  const cppResume = matchJobDescription('Used C++ and C# daily. No plain C.', 'Required: C++, C#');
+  assert.ok(cppResume.matched.some((item) => /c\+\+/i.test(item) || /cpp/i.test(item)));
+  assert.ok(cppResume.matched.some((item) => /c#/i.test(item)));
+  const cFromCpp = matchJobDescription('Used C++ and C# daily.', 'Need experience in C programming');
+  assert.equal(cFromCpp.matched.some((item) => item.trim().toLowerCase() === 'c'), false);
 });
