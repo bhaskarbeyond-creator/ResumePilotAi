@@ -1,6 +1,13 @@
 /**
  * Resume Builder — browser matrix quality gate.
  *
+ * SELECTOR NOTE: this gate used to query `.resume-pages .resume-page`, the
+ * markup of the retired ResumePageComposer. The production engine
+ * (SmartResumeComposer) emits `.smart-resume-page`, so the gate reported
+ * `no-page-elements` for all 255 combinations — it could not fail on a real
+ * defect because it never found a page to inspect. It now targets the markup
+ * the application actually renders.
+ *
  * Boots the template lab on an ephemeral Vite server and renders all 51
  * templates x (normal + senior + executive + academic + unicode) in a real
  * browser, then fails on any of:
@@ -45,7 +52,7 @@ const strip = (value) => String(value ?? '').replace(/<[^>]+>/g, ' ').replace(/\
 
 async function collectDocumentAudit(page) {
     return page.evaluate(({ PAGE_W, PAGE_H }) => {
-        const pages = [...document.querySelectorAll('.resume-pages:not(.resume-scratch) .resume-page')];
+        const pages = [...document.querySelectorAll('.smart-resume-page')];
         const pageProblems = [];
         const leafWarnings = [];
         const chromeWarnings = [];
@@ -68,8 +75,8 @@ async function collectDocumentAudit(page) {
                 if (overflowPx > tolerance) pageProblems.push(`p${index}-overflow${Math.round(overflowPx)}`);
             }
             if (index > 1 && (pageEl.innerText || '').trim().length < 8) pageProblems.push(`p${index}-empty`);
-            if (index > 1 && !pageEl.querySelector('.resume-continuation-header')) chromeWarnings.push(`p${index}-no-continuation`);
-            if (!pageEl.querySelector('.resume-page-footer')) chromeWarnings.push(`p${index}-no-footer`);
+            if (index > 1 && !pageEl.querySelector('.smart-continuation-header')) chromeWarnings.push(`p${index}-no-continuation`);
+            if (!pageEl.querySelector('.smart-page-footer')) chromeWarnings.push(`p${index}-no-footer`);
             let scanned = 0;
             for (const el of pageEl.querySelectorAll('*')) {
                 if (scanned++ > 3000) break;
@@ -89,7 +96,7 @@ async function collectDocumentAudit(page) {
 
 async function checkCoverage(page, fixtureName, entry) {
     const audit = await page.evaluate(() => {
-        const pages = [...document.querySelectorAll('.resume-pages:not(.resume-scratch) .resume-page')];
+        const pages = [...document.querySelectorAll('.smart-resume-page')];
         return (pages.map((p) => p.innerText || '').join('\n')).replace(/\s+/g, ' ').toLowerCase();
     });
     const fixture = FIXTURES[fixtureName];
@@ -116,16 +123,30 @@ async function measure(page, { base, templateId, fixtureName }) {
     const entry = { template: templateId, fixture: fixtureName, problems: [] };
     const consoleErrors = [];
     const pageErrors = [];
-    const onConsole = (m) => { if (m.type() === 'error') consoleErrors.push(m.text().slice(0, 200)); };
+    const resourceErrors = [];
+    const failedRequests = [];
+    // The engine imports its webfonts from the Google Fonts CDN. A CDN hiccup (or
+    // an offline CI runner) must not be reported as a template defect, so
+    // resource-load errors are only fatal when the failing request is one of the
+    // application's OWN resources. Everything else is still fatal.
+    const THIRD_PARTY_ASSET = /fonts\.googleapis\.com|fonts\.gstatic\.com/;
+    const onConsole = (m) => {
+        if (m.type() !== 'error') return;
+        const text = m.text().slice(0, 200);
+        if (/Failed to load resource/i.test(text)) resourceErrors.push(text);
+        else consoleErrors.push(text);
+    };
     const onError = (e) => pageErrors.push(String(e.message).slice(0, 200));
+    const onRequestFailed = (r) => failedRequests.push(r.url());
     page.on('console', onConsole);
     page.on('pageerror', onError);
+    page.on('requestfailed', onRequestFailed);
     try {
         await page.goto(`${base}/template-lab/index.html?template=${templateId}&fixture=${fixtureName}&lang=en`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
         await page.waitForFunction(() => document.documentElement.getAttribute('data-lab-state') !== 'rendering', null, { timeout: 20_000 });
         // Wait for quiescence (rebuilds may still be in flight).
         const fingerprint = () => page.evaluate(() => {
-            const pages = [...document.querySelectorAll('.resume-pages:not(.resume-scratch) .resume-page')];
+            const pages = [...document.querySelectorAll('.smart-resume-page')];
             return pages.length + ':' + pages.map((p) => Math.round(p.scrollHeight)).join(',');
         });
         let stable = false;
@@ -140,6 +161,9 @@ async function measure(page, { base, templateId, fixtureName }) {
         if (state !== 'ready') entry.problems.push(`state:${state}`);
         if (consoleErrors.length) entry.problems.push(`console:${consoleErrors[0]}`);
         if (pageErrors.length) entry.problems.push(`pageerror:${pageErrors[0]}`);
+        const ownResourceFailures = failedRequests.filter((url) => !THIRD_PARTY_ASSET.test(url));
+        if (ownResourceFailures.length) entry.problems.push(`resource:${ownResourceFailures[0].slice(0, 120)}`);
+        else if (resourceErrors.length) console.log(`  third-party asset unavailable (non-fatal): ${templateId}/${fixtureName}`);
 
         const audit = await collectDocumentAudit(page);
         if (audit.missing) {
@@ -167,6 +191,7 @@ async function measure(page, { base, templateId, fixtureName }) {
     } finally {
         page.off('console', onConsole);
         page.off('pageerror', onError);
+        page.off('requestfailed', onRequestFailed);
         await page.close().catch(() => {});
     }
     return entry;

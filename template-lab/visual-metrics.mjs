@@ -41,12 +41,18 @@ function serveShots() {
 
 const launchArgs = ['--no-sandbox', '--no-zygote', '--disable-gpu', '--disable-dev-shm-usage', '--no-first-run', '--disable-background-networking'];
 
+// BOARD SELECTOR NOTE: the metrics used to look for `#resumen` / `[class*=board]`,
+// neither of which exists in the SmartResumeComposer DOM. Every measurement was
+// therefore taken against a missing element, which is why the stored baseline
+// showed five-figure "ink ratio drift". The A4 sheet the engine paints is
+// `.smart-resume-page`; the legacy selectors are kept as fallbacks for the
+// cover-letter documents that still use the old board markup.
 async function domMetrics(page, templateId) {
   await page.goto(`${BASE}/template-lab/index.html?template=${templateId}&fixture=normal&lang=en`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
   await page.waitForFunction(() => document.documentElement.getAttribute('data-lab-state') !== 'rendering', null, { timeout: 20_000 });
   await page.waitForTimeout(250);
   return page.evaluate(() => {
-    const board = document.querySelector('#resumen') || document.querySelector('[class*="board"], [class*="Board"]');
+    const board = document.querySelector('.smart-resume-page') || document.querySelector('#resumen') || document.querySelector('[class*="board"], [class*="Board"]');
     const boardRect = board.getBoundingClientRect();
 
     // --- WCAG contrast audit ------------------------------------------------
@@ -257,7 +263,7 @@ async function main() {
       try {
         // Re-derive the board rect the same way the lab audit does.
         const boardRect = await page.evaluate(() => {
-          const board = document.querySelector('#resumen') || document.querySelector('[class*="board"], [class*="Board"]');
+          const board = document.querySelector('.smart-resume-page') || document.querySelector('#resumen') || document.querySelector('[class*="board"], [class*="Board"]');
           if (!board) return null;
           const r = board.getBoundingClientRect();
           return { left: r.left, top: r.top, width: r.width, height: r.height };

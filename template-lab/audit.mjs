@@ -84,15 +84,15 @@ async function measure(page, { templateId, fixtureName, language, screenshot, fu
     entry.error = await page.getAttribute('html', 'data-lab-error');
 
     const audit = await page.evaluate(() => {
-      const pagesHost = document.querySelector('.resume-pages');
-      const pages = [...document.querySelectorAll('.resume-pages:not(.resume-scratch) .resume-page')];
+      const pagesHost = document.querySelector('.smart-resume-document');
+      const pages = [...document.querySelectorAll('.smart-resume-page')];
       const firstPage = pages[0] || null;
       const pageRect = firstPage ? firstPage.getBoundingClientRect() : null;
       const docEl = document.documentElement;
       const outOfBounds = [];
       const clippedCandidates = [];
       const pageChecks = [];
-      const all = document.querySelectorAll('.resume-pages *');
+      const all = document.querySelectorAll('.smart-resume-document *');
       const limit = 9000;
       let scanned = 0;
       for (const el of all) {
@@ -102,7 +102,7 @@ async function measure(page, { templateId, fixtureName, language, screenshot, fu
         const rect = el.getBoundingClientRect();
         if (rect.width === 0 && rect.height === 0) continue;
         // Bound elements by their containing page.
-        const ownerPage = el.closest('.resume-page');
+        const ownerPage = el.closest('.smart-resume-page');
         const bounds = ownerPage ? ownerPage.getBoundingClientRect() : null;
         if (bounds) {
           const leftOut = rect.left < bounds.left - 1;
@@ -153,17 +153,17 @@ async function measure(page, { templateId, fixtureName, language, screenshot, fu
           height: Math.round(r.height),
           overflow: p.scrollHeight > p.clientHeight + 2 ? Math.round(p.scrollHeight - p.clientHeight) : 0,
           empty: text.length < 40 && i > 0,
-          continuation: i > 0 ? Boolean(p.querySelector('.resume-continuation-header')) : null,
-          footer: Boolean(p.querySelector('.resume-page-footer')),
+          continuation: i > 0 ? Boolean(p.querySelector('.smart-continuation-header')) : null,
+          footer: Boolean(p.querySelector('.smart-page-footer')),
         });
       }
       const headings = [];
-      for (const h of document.querySelectorAll('.resume-pages h1, .resume-pages h2, .resume-pages h3, .resume-pages h4, .resume-pages h5, .resume-pages h6')) {
+      for (const h of document.querySelectorAll('.smart-resume-document h1, .smart-resume-document h2, .smart-resume-document h3, .smart-resume-document h4, .smart-resume-document h5, .smart-resume-document h6')) {
         if (h.textContent.trim()) headings.push(`${h.tagName.toLowerCase()}:${h.textContent.trim().slice(0, 60)}`);
       }
       const text = pagesHost ? (pagesHost.innerText || '') : '';
-      const images = [...document.querySelectorAll('.resume-pages img')];
-      const links = [...document.querySelectorAll('.resume-pages a')];
+      const images = [...document.querySelectorAll('.smart-resume-document img')];
+      const links = [...document.querySelectorAll('.smart-resume-document a')];
       return {
         pageCount: pages.length,
         pageRect: pageRect ? { left: Math.round(pageRect.left), top: Math.round(pageRect.top), width: Math.round(pageRect.width), height: Math.round(pageRect.height) } : null,

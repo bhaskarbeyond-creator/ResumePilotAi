@@ -59,7 +59,7 @@ async function main() {
             await page.waitForTimeout(600);
 
             const dom = await page.evaluate(() => {
-                const pages = [...document.querySelectorAll('.resume-pages:not(.resume-scratch) .resume-page')];
+                const pages = [...document.querySelectorAll('.smart-resume-page')];
                 const fixture = null;
                 return {
                     sheetCount: pages.length,
@@ -69,7 +69,7 @@ async function main() {
             });
             // Page-1 screenshot for the human-review checklist.
             const shotPath = path.join(EVIDENCE_DIR, `${templateId}__${fixtureName}__page1.png`);
-            await page.locator('.resume-pages:not(.resume-scratch) .resume-page').first().screenshot({ path: shotPath }).catch(() => {});
+            await page.locator('.smart-resume-page').first().screenshot({ path: shotPath }).catch(() => {});
 
             const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true, margin: { top: 0, bottom: 0, left: 0, right: 0 } });
             const stats = pdfPageStats(pdfBuffer);

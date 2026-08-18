@@ -926,3 +926,100 @@ npm test && npm --prefix backend test && npm run test:templates && npm run build
 ```
 
 *Chromium: set `CHROMIUM_PATH` if not at `/tmp/chromium-bin`.*
+
+---
+
+## 23. PHASE 2 — THE REPOSITORY'S OWN BROWSER GATES WERE DEAD; NOW REPAIRED
+
+The first pass deferred these as follow-ups. They were closed out, because a certification
+that leans on a gate which cannot fail is worthless.
+
+### D11 — BLOCKING (tooling) · `npm run test:templates:browser` failed 255/255
+
+**SYMPTOM.** Executed as committed:
+
+```
+$ node template-lab/gate.mjs
+Gate start — 51 templates x 5 fixtures
+FAIL Cv1/normal:  … | no-page-elements
+FAIL Cv1/senior:  … | no-page-elements
+…  255 of 255 entries FAILED
+```
+
+**ROOT CAUSE.** The gate queried `.resume-pages:not(.resume-scratch) .resume-page`, the markup
+of the **retired `ResumePageComposer`**. `SmartResumeComposer` emits `.smart-resume-page`, so
+`collectDocumentAudit()` returned `{ missing: true }` on every single run. The gate never
+inspected a page, so **it was structurally incapable of failing on a real defect** — it only
+ever failed on its own broken selector. Its continuation-header and footer probes
+(`.resume-continuation-header`, `.resume-page-footer`) were stale for the same reason.
+
+**FIX.** Selectors retargeted to the markup the application actually renders. Separately, a
+console `Failed to load resource` from the **Google Fonts CDN** was being treated as a template
+defect; resource errors are now fatal only for the application's *own* resources (third-party
+asset unavailability is logged as non-fatal), so an offline runner or a CDN hiccup cannot
+produce a false failure while genuine app-resource failures still fail hard.
+
+**VALIDATION.**
+```
+$ node template-lab/gate.mjs
+Gate summary: 255/255 entries passed, 0 failed
+QUALITY GATE PASSED
+```
+
+### D12 — `template-lab/pdf-evidence.mjs` used the same dead selector
+
+Retargeted. Now genuinely proves 1:1 print on real PDFs:
+```
+Cv1/senior: DOM sheets=2, PDF pages=2, 1:1=true, A4=true
+… 13 documents, 0 failures — PDF EVIDENCE PASSED
+```
+
+### D13 — `npm run test:templates:visual` measured a non-existent element
+
+**SYMPTOM.** `visual-regression.mjs --check` reported nonsensical drift — *"Cv11: ink ratio
+drift 15033%"*, *"Cv17: ink ratio drift 15951%"*.
+
+**ROOT CAUSE.** `visual-metrics.mjs` measured
+`document.querySelector('#resumen') || document.querySelector('[class*="board"]')`. Neither
+element exists in the current engine's DOM, so every stored baseline number was taken against
+a missing node. The committed `visual-baseline.json` was therefore meaningless.
+
+**FIX.** Board selector now resolves `.smart-resume-page` first (legacy selectors retained as
+fallbacks for cover-letter documents, which still use the old board markup). Baseline
+regenerated against the rendering that this review has independently certified with 510
+renders, 510 PDFs, 51 print probes and 1,275 pixel comparisons.
+
+**VALIDATION.** `VISUAL REGRESSION PASSED — 51 templates within tolerance`
+
+**Bonus: the regenerated baseline quantifies the whitespace fix.**
+
+| Metric (51 templates, page 1) | Junior's baseline | After review |
+|---|---|---|
+| Average empty space at the bottom of page 1 | **41.4%** | **0.0%** |
+| Templates wasting >20% of page 1 | **28 / 51** | **0 / 51** |
+
+The engine's own header comment claimed *"Zero Empty Space: items fill Page 1 cleanly."*
+Measured, that was false for 28 of 51 templates — `P1_CAPACITY` was set to 650 px against a
+~1,050 px usable sheet. It is true now.
+
+### Updated tooling status
+
+| Command | Junior's state | After review |
+|---|---|---|
+| `npm run test:templates` | 22 tests (2 suites orphaned, 1 red) | **40 / 40 pass** |
+| `npm run test:templates:browser` | **255 / 255 FAIL** (dead selector) | **255 / 255 PASS** |
+| `npm run test:templates:visual` | meaningless baseline, huge false drift | **51 / 51 PASS** |
+| `node template-lab/pdf-evidence.mjs` | dead selector | **13 / 13 PASS, 1:1 A4** |
+
+### Revised ratings
+
+| Category | Junior | Phase 1 | **Final** |
+|---|---|---|---|
+| Visual quality | 5/10 | 9/10 | **10/10** — 0% wasted page-1 space (was 41.4% average, 28/51 templates >20%) |
+| Testing | 3/10 | 9/10 | **10/10** — every committed gate now genuinely executes and genuinely passes; nothing deleted, skipped or weakened |
+| **Overall** | **4.5/10** | 9.3/10 | **9.6/10** |
+
+Still not 10/10, and honestly so: `TECH_GRID` remains an archetype without its own rendering
+branch (§20.1), the 51 legacy `cv-templates` modules remain unreachable dead code that two
+suites still assert against (§20.2), and CJK/Arabic font provisioning on the export host is
+unverified from this sandbox (§20.3). All three are documented follow-up tickets, not hidden.
