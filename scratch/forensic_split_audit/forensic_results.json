@@ -1,0 +1,1393 @@
+[
+  {
+    "id": "Cv1",
+    "configuredArchetype": "modern-split",
+    "name": "Metropolitan Navy",
+    "actualLayout": "TWO_COLUMN_LEFT_SIDEBAR",
+    "pageClasses": "smart-resume-page smart-resume-page--modern-split  ",
+    "layoutClasses": "smart-layout smart-layout--modern-split ",
+    "hasAdaptivePage": true,
+    "hasSplitHero": true,
+    "hasSidebar": true,
+    "hasMainContent": true,
+    "hasBottomFlow": true,
+    "hasBanner": false,
+    "sidebarRect": {
+      "x": 0,
+      "y": 24,
+      "width": 270,
+      "height": 1269
+    },
+    "mainRect": {
+      "x": 270,
+      "y": 24,
+      "width": 524,
+      "height": 1269
+    },
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": "rgb(248, 250, 252)"
+  },
+  {
+    "id": "Cv2",
+    "configuredArchetype": "modern-split",
+    "name": "Nordic Slate",
+    "actualLayout": "TWO_COLUMN_LEFT_SIDEBAR",
+    "pageClasses": "smart-resume-page smart-resume-page--modern-split  ",
+    "layoutClasses": "smart-layout smart-layout--modern-split ",
+    "hasAdaptivePage": true,
+    "hasSplitHero": true,
+    "hasSidebar": true,
+    "hasMainContent": true,
+    "hasBottomFlow": true,
+    "hasBanner": false,
+    "sidebarRect": {
+      "x": 0,
+      "y": 24,
+      "width": 262,
+      "height": 1253
+    },
+    "mainRect": {
+      "x": 262,
+      "y": 24,
+      "width": 532,
+      "height": 1253
+    },
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": "rgb(241, 245, 249)"
+  },
+  {
+    "id": "Cv3",
+    "configuredArchetype": "modern-split",
+    "name": "Emerald Executive",
+    "actualLayout": "TWO_COLUMN_LEFT_SIDEBAR",
+    "pageClasses": "smart-resume-page smart-resume-page--modern-split  ",
+    "layoutClasses": "smart-layout smart-layout--modern-split ",
+    "hasAdaptivePage": true,
+    "hasSplitHero": true,
+    "hasSidebar": true,
+    "hasMainContent": true,
+    "hasBottomFlow": true,
+    "hasBanner": false,
+    "sidebarRect": {
+      "x": 0,
+      "y": 24,
+      "width": 278,
+      "height": 1259
+    },
+    "mainRect": {
+      "x": 278,
+      "y": 24,
+      "width": 516,
+      "height": 1259
+    },
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": "rgb(240, 253, 244)"
+  },
+  {
+    "id": "Cv4",
+    "configuredArchetype": "minimal-ats",
+    "name": "Harvard Classic ATS",
+    "actualLayout": "SINGLE_COLUMN_NO_MAIN",
+    "pageClasses": "smart-resume-page smart-resume-page--minimal-ats  ",
+    "layoutClasses": "smart-layout smart-layout--minimal-ats",
+    "hasAdaptivePage": false,
+    "hasSplitHero": false,
+    "hasSidebar": false,
+    "hasMainContent": false,
+    "hasBottomFlow": false,
+    "hasBanner": false,
+    "sidebarRect": null,
+    "mainRect": null,
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": null
+  },
+  {
+    "id": "Cv5",
+    "configuredArchetype": "minimal-ats",
+    "name": "Stanford Clean ATS",
+    "actualLayout": "SINGLE_COLUMN_NO_MAIN",
+    "pageClasses": "smart-resume-page smart-resume-page--minimal-ats  ",
+    "layoutClasses": "smart-layout smart-layout--minimal-ats",
+    "hasAdaptivePage": false,
+    "hasSplitHero": false,
+    "hasSidebar": false,
+    "hasMainContent": false,
+    "hasBottomFlow": false,
+    "hasBanner": false,
+    "sidebarRect": null,
+    "mainRect": null,
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": null
+  },
+  {
+    "id": "Cv6",
+    "configuredArchetype": "minimal-ats",
+    "name": "Wall Street Modern",
+    "actualLayout": "SINGLE_COLUMN_NO_MAIN",
+    "pageClasses": "smart-resume-page smart-resume-page--minimal-ats  ",
+    "layoutClasses": "smart-layout smart-layout--minimal-ats",
+    "hasAdaptivePage": false,
+    "hasSplitHero": false,
+    "hasSidebar": false,
+    "hasMainContent": false,
+    "hasBottomFlow": false,
+    "hasBanner": false,
+    "sidebarRect": null,
+    "mainRect": null,
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": null
+  },
+  {
+    "id": "Cv7",
+    "configuredArchetype": "modern-split",
+    "name": "Sapphire Modern Split",
+    "actualLayout": "TWO_COLUMN_LEFT_SIDEBAR",
+    "pageClasses": "smart-resume-page smart-resume-page--modern-split  ",
+    "layoutClasses": "smart-layout smart-layout--modern-split ",
+    "hasAdaptivePage": true,
+    "hasSplitHero": true,
+    "hasSidebar": true,
+    "hasMainContent": true,
+    "hasBottomFlow": true,
+    "hasBanner": false,
+    "sidebarRect": {
+      "x": 0,
+      "y": 24,
+      "width": 270,
+      "height": 1269
+    },
+    "mainRect": {
+      "x": 270,
+      "y": 24,
+      "width": 524,
+      "height": 1269
+    },
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": "rgb(239, 246, 255)"
+  },
+  {
+    "id": "Cv8",
+    "configuredArchetype": "executive-banner",
+    "name": "Crown Executive Banner",
+    "actualLayout": "TWO_COLUMN_LEFT_SIDEBAR",
+    "pageClasses": "smart-resume-page smart-resume-page--executive-banner  ",
+    "layoutClasses": "smart-layout smart-layout--executive-banner",
+    "hasAdaptivePage": true,
+    "hasSplitHero": true,
+    "hasSidebar": true,
+    "hasMainContent": true,
+    "hasBottomFlow": true,
+    "hasBanner": true,
+    "sidebarRect": {
+      "x": 0,
+      "y": 179,
+      "width": 278,
+      "height": 991
+    },
+    "mainRect": {
+      "x": 278,
+      "y": 179,
+      "width": 516,
+      "height": 991
+    },
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": "rgb(248, 250, 252)"
+  },
+  {
+    "id": "Cv9",
+    "configuredArchetype": "modern-split",
+    "name": "Cobalt Pro Split",
+    "actualLayout": "TWO_COLUMN_LEFT_SIDEBAR",
+    "pageClasses": "smart-resume-page smart-resume-page--modern-split  ",
+    "layoutClasses": "smart-layout smart-layout--modern-split ",
+    "hasAdaptivePage": true,
+    "hasSplitHero": true,
+    "hasSidebar": true,
+    "hasMainContent": true,
+    "hasBottomFlow": true,
+    "hasBanner": false,
+    "sidebarRect": {
+      "x": 0,
+      "y": 24,
+      "width": 278,
+      "height": 1259
+    },
+    "mainRect": {
+      "x": 278,
+      "y": 24,
+      "width": 516,
+      "height": 1259
+    },
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": "rgb(30, 41, 59)"
+  },
+  {
+    "id": "Cv10",
+    "configuredArchetype": "executive-banner",
+    "name": "Titanium Executive",
+    "actualLayout": "TWO_COLUMN_LEFT_SIDEBAR",
+    "pageClasses": "smart-resume-page smart-resume-page--executive-banner  ",
+    "layoutClasses": "smart-layout smart-layout--executive-banner",
+    "hasAdaptivePage": true,
+    "hasSplitHero": true,
+    "hasSidebar": true,
+    "hasMainContent": true,
+    "hasBottomFlow": true,
+    "hasBanner": true,
+    "sidebarRect": {
+      "x": 0,
+      "y": 179,
+      "width": 270,
+      "height": 1048
+    },
+    "mainRect": {
+      "x": 270,
+      "y": 179,
+      "width": 524,
+      "height": 1048
+    },
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": "rgb(248, 250, 252)"
+  },
+  {
+    "id": "Cv11",
+    "configuredArchetype": "executive-banner",
+    "name": "Prism Executive Banner",
+    "actualLayout": "TWO_COLUMN_LEFT_SIDEBAR",
+    "pageClasses": "smart-resume-page smart-resume-page--executive-banner  ",
+    "layoutClasses": "smart-layout smart-layout--executive-banner",
+    "hasAdaptivePage": true,
+    "hasSplitHero": true,
+    "hasSidebar": true,
+    "hasMainContent": true,
+    "hasBottomFlow": true,
+    "hasBanner": true,
+    "sidebarRect": {
+      "x": 0,
+      "y": 179,
+      "width": 278,
+      "height": 1043
+    },
+    "mainRect": {
+      "x": 278,
+      "y": 179,
+      "width": 516,
+      "height": 1043
+    },
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": "rgb(248, 250, 252)"
+  },
+  {
+    "id": "Cv12",
+    "configuredArchetype": "minimal-ats",
+    "name": "Oxford Academic ATS",
+    "actualLayout": "SINGLE_COLUMN_NO_MAIN",
+    "pageClasses": "smart-resume-page smart-resume-page--minimal-ats  ",
+    "layoutClasses": "smart-layout smart-layout--minimal-ats",
+    "hasAdaptivePage": false,
+    "hasSplitHero": false,
+    "hasSidebar": false,
+    "hasMainContent": false,
+    "hasBottomFlow": false,
+    "hasBanner": false,
+    "sidebarRect": null,
+    "mainRect": null,
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": null
+  },
+  {
+    "id": "Cv13",
+    "configuredArchetype": "minimal-ats",
+    "name": "Cambridge Research",
+    "actualLayout": "SINGLE_COLUMN_NO_MAIN",
+    "pageClasses": "smart-resume-page smart-resume-page--minimal-ats  ",
+    "layoutClasses": "smart-layout smart-layout--minimal-ats",
+    "hasAdaptivePage": false,
+    "hasSplitHero": false,
+    "hasSidebar": false,
+    "hasMainContent": false,
+    "hasBottomFlow": false,
+    "hasBanner": false,
+    "sidebarRect": null,
+    "mainRect": null,
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": null
+  },
+  {
+    "id": "Cv14",
+    "configuredArchetype": "minimal-ats",
+    "name": "Yale Corporate ATS",
+    "actualLayout": "SINGLE_COLUMN_NO_MAIN",
+    "pageClasses": "smart-resume-page smart-resume-page--minimal-ats  ",
+    "layoutClasses": "smart-layout smart-layout--minimal-ats",
+    "hasAdaptivePage": false,
+    "hasSplitHero": false,
+    "hasSidebar": false,
+    "hasMainContent": false,
+    "hasBottomFlow": false,
+    "hasBanner": false,
+    "sidebarRect": null,
+    "mainRect": null,
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": null
+  },
+  {
+    "id": "Cv15",
+    "configuredArchetype": "minimal-ats",
+    "name": "MIT Technical ATS",
+    "actualLayout": "SINGLE_COLUMN_NO_MAIN",
+    "pageClasses": "smart-resume-page smart-resume-page--minimal-ats  ",
+    "layoutClasses": "smart-layout smart-layout--minimal-ats",
+    "hasAdaptivePage": false,
+    "hasSplitHero": false,
+    "hasSidebar": false,
+    "hasMainContent": false,
+    "hasBottomFlow": false,
+    "hasBanner": false,
+    "sidebarRect": null,
+    "mainRect": null,
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": null
+  },
+  {
+    "id": "Cv16",
+    "configuredArchetype": "executive-banner",
+    "name": "Apex Navy Banner",
+    "actualLayout": "TWO_COLUMN_LEFT_SIDEBAR",
+    "pageClasses": "smart-resume-page smart-resume-page--executive-banner  ",
+    "layoutClasses": "smart-layout smart-layout--executive-banner",
+    "hasAdaptivePage": true,
+    "hasSplitHero": true,
+    "hasSidebar": true,
+    "hasMainContent": true,
+    "hasBottomFlow": true,
+    "hasBanner": true,
+    "sidebarRect": {
+      "x": 0,
+      "y": 179,
+      "width": 270,
+      "height": 996
+    },
+    "mainRect": {
+      "x": 270,
+      "y": 179,
+      "width": 524,
+      "height": 996
+    },
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": "rgb(248, 250, 252)"
+  },
+  {
+    "id": "Cv17",
+    "configuredArchetype": "executive-banner",
+    "name": "Teal Horizon Banner",
+    "actualLayout": "TWO_COLUMN_LEFT_SIDEBAR",
+    "pageClasses": "smart-resume-page smart-resume-page--executive-banner  ",
+    "layoutClasses": "smart-layout smart-layout--executive-banner",
+    "hasAdaptivePage": true,
+    "hasSplitHero": true,
+    "hasSidebar": true,
+    "hasMainContent": true,
+    "hasBottomFlow": true,
+    "hasBanner": true,
+    "sidebarRect": {
+      "x": 0,
+      "y": 179,
+      "width": 278,
+      "height": 1043
+    },
+    "mainRect": {
+      "x": 278,
+      "y": 179,
+      "width": 516,
+      "height": 1043
+    },
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": "rgb(248, 250, 252)"
+  },
+  {
+    "id": "Cv18",
+    "configuredArchetype": "minimal-ats",
+    "name": "Princeton Minimal ATS",
+    "actualLayout": "SINGLE_COLUMN_NO_MAIN",
+    "pageClasses": "smart-resume-page smart-resume-page--minimal-ats  ",
+    "layoutClasses": "smart-layout smart-layout--minimal-ats",
+    "hasAdaptivePage": false,
+    "hasSplitHero": false,
+    "hasSidebar": false,
+    "hasMainContent": false,
+    "hasBottomFlow": false,
+    "hasBanner": false,
+    "sidebarRect": null,
+    "mainRect": null,
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": null
+  },
+  {
+    "id": "Cv19",
+    "configuredArchetype": "minimal-ats",
+    "name": "Zurich Financial ATS",
+    "actualLayout": "SINGLE_COLUMN_NO_MAIN",
+    "pageClasses": "smart-resume-page smart-resume-page--minimal-ats  ",
+    "layoutClasses": "smart-layout smart-layout--minimal-ats",
+    "hasAdaptivePage": false,
+    "hasSplitHero": false,
+    "hasSidebar": false,
+    "hasMainContent": false,
+    "hasBottomFlow": false,
+    "hasBanner": false,
+    "sidebarRect": null,
+    "mainRect": null,
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": null
+  },
+  {
+    "id": "Cv20",
+    "configuredArchetype": "modern-split",
+    "name": "Pacific Blue Split",
+    "actualLayout": "TWO_COLUMN_LEFT_SIDEBAR",
+    "pageClasses": "smart-resume-page smart-resume-page--modern-split  ",
+    "layoutClasses": "smart-layout smart-layout--modern-split ",
+    "hasAdaptivePage": true,
+    "hasSplitHero": true,
+    "hasSidebar": true,
+    "hasMainContent": true,
+    "hasBottomFlow": true,
+    "hasBanner": false,
+    "sidebarRect": {
+      "x": 0,
+      "y": 24,
+      "width": 270,
+      "height": 1269
+    },
+    "mainRect": {
+      "x": 270,
+      "y": 24,
+      "width": 524,
+      "height": 1269
+    },
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": "rgb(240, 249, 255)"
+  },
+  {
+    "id": "Cv21",
+    "configuredArchetype": "executive-banner",
+    "name": "Imperial Indigo Banner",
+    "actualLayout": "TWO_COLUMN_LEFT_SIDEBAR",
+    "pageClasses": "smart-resume-page smart-resume-page--executive-banner  ",
+    "layoutClasses": "smart-layout smart-layout--executive-banner",
+    "hasAdaptivePage": true,
+    "hasSplitHero": true,
+    "hasSidebar": true,
+    "hasMainContent": true,
+    "hasBottomFlow": true,
+    "hasBanner": true,
+    "sidebarRect": {
+      "x": 0,
+      "y": 179,
+      "width": 278,
+      "height": 991
+    },
+    "mainRect": {
+      "x": 278,
+      "y": 179,
+      "width": 516,
+      "height": 991
+    },
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": "rgb(248, 250, 252)"
+  },
+  {
+    "id": "Cv22",
+    "configuredArchetype": "minimal-ats",
+    "name": "Geneva Executive ATS",
+    "actualLayout": "SINGLE_COLUMN_NO_MAIN",
+    "pageClasses": "smart-resume-page smart-resume-page--minimal-ats  ",
+    "layoutClasses": "smart-layout smart-layout--minimal-ats",
+    "hasAdaptivePage": false,
+    "hasSplitHero": false,
+    "hasSidebar": false,
+    "hasMainContent": false,
+    "hasBottomFlow": false,
+    "hasBanner": false,
+    "sidebarRect": null,
+    "mainRect": null,
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": null
+  },
+  {
+    "id": "Cv23",
+    "configuredArchetype": "executive-banner",
+    "name": "Burgundy Prestige Banner",
+    "actualLayout": "TWO_COLUMN_LEFT_SIDEBAR",
+    "pageClasses": "smart-resume-page smart-resume-page--executive-banner  ",
+    "layoutClasses": "smart-layout smart-layout--executive-banner",
+    "hasAdaptivePage": true,
+    "hasSplitHero": true,
+    "hasSidebar": true,
+    "hasMainContent": true,
+    "hasBottomFlow": true,
+    "hasBanner": true,
+    "sidebarRect": {
+      "x": 0,
+      "y": 179,
+      "width": 278,
+      "height": 1043
+    },
+    "mainRect": {
+      "x": 278,
+      "y": 179,
+      "width": 516,
+      "height": 1043
+    },
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": "rgb(248, 250, 252)"
+  },
+  {
+    "id": "Cv24",
+    "configuredArchetype": "modern-split",
+    "name": "Cyberpunk Modern Split",
+    "actualLayout": "TWO_COLUMN_LEFT_SIDEBAR",
+    "pageClasses": "smart-resume-page smart-resume-page--modern-split  ",
+    "layoutClasses": "smart-layout smart-layout--modern-split ",
+    "hasAdaptivePage": true,
+    "hasSplitHero": true,
+    "hasSidebar": true,
+    "hasMainContent": true,
+    "hasBottomFlow": true,
+    "hasBanner": false,
+    "sidebarRect": {
+      "x": 0,
+      "y": 24,
+      "width": 278,
+      "height": 1259
+    },
+    "mainRect": {
+      "x": 278,
+      "y": 24,
+      "width": 516,
+      "height": 1259
+    },
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": "rgb(250, 245, 255)"
+  },
+  {
+    "id": "Cv25",
+    "configuredArchetype": "tech-grid",
+    "name": "DevOps Terminal Tech",
+    "actualLayout": "TWO_COLUMN_LEFT_SIDEBAR",
+    "pageClasses": "smart-resume-page smart-resume-page--tech-grid  ",
+    "layoutClasses": "smart-layout smart-layout--modern-split ",
+    "hasAdaptivePage": true,
+    "hasSplitHero": true,
+    "hasSidebar": true,
+    "hasMainContent": true,
+    "hasBottomFlow": true,
+    "hasBanner": false,
+    "sidebarRect": {
+      "x": 0,
+      "y": 24,
+      "width": 270,
+      "height": 1264
+    },
+    "mainRect": {
+      "x": 270,
+      "y": 24,
+      "width": 524,
+      "height": 1264
+    },
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": "rgb(248, 250, 252)"
+  },
+  {
+    "id": "Cv26",
+    "configuredArchetype": "modern-split",
+    "name": "FullStack Dark Split",
+    "actualLayout": "TWO_COLUMN_LEFT_SIDEBAR",
+    "pageClasses": "smart-resume-page smart-resume-page--modern-split  ",
+    "layoutClasses": "smart-layout smart-layout--modern-split ",
+    "hasAdaptivePage": true,
+    "hasSplitHero": true,
+    "hasSidebar": true,
+    "hasMainContent": true,
+    "hasBottomFlow": true,
+    "hasBanner": false,
+    "sidebarRect": {
+      "x": 0,
+      "y": 24,
+      "width": 278,
+      "height": 1259
+    },
+    "mainRect": {
+      "x": 278,
+      "y": 24,
+      "width": 516,
+      "height": 1259
+    },
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": "rgb(9, 13, 22)"
+  },
+  {
+    "id": "Cv27",
+    "configuredArchetype": "modern-split",
+    "name": "Creative Studio Split",
+    "actualLayout": "TWO_COLUMN_LEFT_SIDEBAR",
+    "pageClasses": "smart-resume-page smart-resume-page--modern-split  ",
+    "layoutClasses": "smart-layout smart-layout--modern-split ",
+    "hasAdaptivePage": true,
+    "hasSplitHero": true,
+    "hasSidebar": true,
+    "hasMainContent": true,
+    "hasBottomFlow": true,
+    "hasBanner": false,
+    "sidebarRect": {
+      "x": 0,
+      "y": 24,
+      "width": 270,
+      "height": 1216
+    },
+    "mainRect": {
+      "x": 270,
+      "y": 24,
+      "width": 524,
+      "height": 1216
+    },
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": "rgb(255, 251, 235)"
+  },
+  {
+    "id": "Cv28",
+    "configuredArchetype": "tech-grid",
+    "name": "Silicon Valley Engineer",
+    "actualLayout": "TWO_COLUMN_LEFT_SIDEBAR",
+    "pageClasses": "smart-resume-page smart-resume-page--tech-grid  ",
+    "layoutClasses": "smart-layout smart-layout--modern-split ",
+    "hasAdaptivePage": true,
+    "hasSplitHero": true,
+    "hasSidebar": true,
+    "hasMainContent": true,
+    "hasBottomFlow": true,
+    "hasBanner": false,
+    "sidebarRect": {
+      "x": 0,
+      "y": 24,
+      "width": 270,
+      "height": 1264
+    },
+    "mainRect": {
+      "x": 270,
+      "y": 24,
+      "width": 524,
+      "height": 1264
+    },
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": "rgb(248, 250, 252)"
+  },
+  {
+    "id": "Cv29",
+    "configuredArchetype": "modern-split",
+    "name": "Minimal Nordic Slate",
+    "actualLayout": "TWO_COLUMN_LEFT_SIDEBAR",
+    "pageClasses": "smart-resume-page smart-resume-page--modern-split  ",
+    "layoutClasses": "smart-layout smart-layout--modern-split ",
+    "hasAdaptivePage": true,
+    "hasSplitHero": true,
+    "hasSidebar": true,
+    "hasMainContent": true,
+    "hasBottomFlow": true,
+    "hasBanner": false,
+    "sidebarRect": {
+      "x": 0,
+      "y": 24,
+      "width": 262,
+      "height": 1253
+    },
+    "mainRect": {
+      "x": 262,
+      "y": 24,
+      "width": 532,
+      "height": 1253
+    },
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": "rgb(241, 245, 249)"
+  },
+  {
+    "id": "Cv30",
+    "configuredArchetype": "executive-banner",
+    "name": "Corporate Summit Banner",
+    "actualLayout": "TWO_COLUMN_LEFT_SIDEBAR",
+    "pageClasses": "smart-resume-page smart-resume-page--executive-banner  ",
+    "layoutClasses": "smart-layout smart-layout--executive-banner",
+    "hasAdaptivePage": true,
+    "hasSplitHero": true,
+    "hasSidebar": true,
+    "hasMainContent": true,
+    "hasBottomFlow": true,
+    "hasBanner": true,
+    "sidebarRect": {
+      "x": 0,
+      "y": 179,
+      "width": 278,
+      "height": 1043
+    },
+    "mainRect": {
+      "x": 278,
+      "y": 179,
+      "width": 516,
+      "height": 1043
+    },
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": "rgb(248, 250, 252)"
+  },
+  {
+    "id": "Cv31",
+    "configuredArchetype": "tech-grid",
+    "name": "Cloud Native Tech",
+    "actualLayout": "TWO_COLUMN_LEFT_SIDEBAR",
+    "pageClasses": "smart-resume-page smart-resume-page--tech-grid  ",
+    "layoutClasses": "smart-layout smart-layout--modern-split ",
+    "hasAdaptivePage": true,
+    "hasSplitHero": true,
+    "hasSidebar": true,
+    "hasMainContent": true,
+    "hasBottomFlow": true,
+    "hasBanner": false,
+    "sidebarRect": {
+      "x": 0,
+      "y": 24,
+      "width": 270,
+      "height": 1264
+    },
+    "mainRect": {
+      "x": 270,
+      "y": 24,
+      "width": 524,
+      "height": 1264
+    },
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": "rgb(248, 250, 252)"
+  },
+  {
+    "id": "Cv32",
+    "configuredArchetype": "tech-grid",
+    "name": "Kubernetes Developer",
+    "actualLayout": "TWO_COLUMN_LEFT_SIDEBAR",
+    "pageClasses": "smart-resume-page smart-resume-page--tech-grid  ",
+    "layoutClasses": "smart-layout smart-layout--modern-split ",
+    "hasAdaptivePage": true,
+    "hasSplitHero": true,
+    "hasSidebar": true,
+    "hasMainContent": true,
+    "hasBottomFlow": true,
+    "hasBanner": false,
+    "sidebarRect": {
+      "x": 0,
+      "y": 24,
+      "width": 270,
+      "height": 1269
+    },
+    "mainRect": {
+      "x": 270,
+      "y": 24,
+      "width": 524,
+      "height": 1269
+    },
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": "rgb(248, 250, 252)"
+  },
+  {
+    "id": "Cv33",
+    "configuredArchetype": "tech-grid",
+    "name": "Data Science Matrix",
+    "actualLayout": "TWO_COLUMN_LEFT_SIDEBAR",
+    "pageClasses": "smart-resume-page smart-resume-page--tech-grid  ",
+    "layoutClasses": "smart-layout smart-layout--modern-split ",
+    "hasAdaptivePage": true,
+    "hasSplitHero": true,
+    "hasSidebar": true,
+    "hasMainContent": true,
+    "hasBottomFlow": true,
+    "hasBanner": false,
+    "sidebarRect": {
+      "x": 0,
+      "y": 24,
+      "width": 270,
+      "height": 1264
+    },
+    "mainRect": {
+      "x": 270,
+      "y": 24,
+      "width": 524,
+      "height": 1264
+    },
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": "rgb(248, 250, 252)"
+  },
+  {
+    "id": "Cv34",
+    "configuredArchetype": "executive-banner",
+    "name": "Fintech Executive",
+    "actualLayout": "TWO_COLUMN_LEFT_SIDEBAR",
+    "pageClasses": "smart-resume-page smart-resume-page--executive-banner  ",
+    "layoutClasses": "smart-layout smart-layout--executive-banner",
+    "hasAdaptivePage": true,
+    "hasSplitHero": true,
+    "hasSidebar": true,
+    "hasMainContent": true,
+    "hasBottomFlow": true,
+    "hasBanner": true,
+    "sidebarRect": {
+      "x": 0,
+      "y": 179,
+      "width": 278,
+      "height": 1043
+    },
+    "mainRect": {
+      "x": 278,
+      "y": 179,
+      "width": 516,
+      "height": 1043
+    },
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": "rgb(248, 250, 252)"
+  },
+  {
+    "id": "Cv35",
+    "configuredArchetype": "tech-grid",
+    "name": "AI & ML Researcher",
+    "actualLayout": "TWO_COLUMN_LEFT_SIDEBAR",
+    "pageClasses": "smart-resume-page smart-resume-page--tech-grid  ",
+    "layoutClasses": "smart-layout smart-layout--modern-split ",
+    "hasAdaptivePage": true,
+    "hasSplitHero": true,
+    "hasSidebar": true,
+    "hasMainContent": true,
+    "hasBottomFlow": true,
+    "hasBanner": false,
+    "sidebarRect": {
+      "x": 0,
+      "y": 24,
+      "width": 270,
+      "height": 1212
+    },
+    "mainRect": {
+      "x": 270,
+      "y": 24,
+      "width": 524,
+      "height": 1212
+    },
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": "rgb(248, 250, 252)"
+  },
+  {
+    "id": "Cv36",
+    "configuredArchetype": "executive-banner",
+    "name": "BioTech Specialist",
+    "actualLayout": "TWO_COLUMN_LEFT_SIDEBAR",
+    "pageClasses": "smart-resume-page smart-resume-page--executive-banner  ",
+    "layoutClasses": "smart-layout smart-layout--executive-banner",
+    "hasAdaptivePage": true,
+    "hasSplitHero": true,
+    "hasSidebar": true,
+    "hasMainContent": true,
+    "hasBottomFlow": true,
+    "hasBanner": true,
+    "sidebarRect": {
+      "x": 0,
+      "y": 179,
+      "width": 278,
+      "height": 1064
+    },
+    "mainRect": {
+      "x": 278,
+      "y": 179,
+      "width": 516,
+      "height": 1064
+    },
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": "rgb(248, 250, 252)"
+  },
+  {
+    "id": "Cv37",
+    "configuredArchetype": "tech-grid",
+    "name": "Solutions Architect",
+    "actualLayout": "TWO_COLUMN_LEFT_SIDEBAR",
+    "pageClasses": "smart-resume-page smart-resume-page--tech-grid  ",
+    "layoutClasses": "smart-layout smart-layout--modern-split ",
+    "hasAdaptivePage": true,
+    "hasSplitHero": true,
+    "hasSidebar": true,
+    "hasMainContent": true,
+    "hasBottomFlow": true,
+    "hasBanner": false,
+    "sidebarRect": {
+      "x": 0,
+      "y": 24,
+      "width": 270,
+      "height": 1264
+    },
+    "mainRect": {
+      "x": 270,
+      "y": 24,
+      "width": 524,
+      "height": 1264
+    },
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": "rgb(248, 250, 252)"
+  },
+  {
+    "id": "Cv38",
+    "configuredArchetype": "minimal-ats",
+    "name": "Global Legal ATS",
+    "actualLayout": "SINGLE_COLUMN_NO_MAIN",
+    "pageClasses": "smart-resume-page smart-resume-page--minimal-ats  ",
+    "layoutClasses": "smart-layout smart-layout--minimal-ats",
+    "hasAdaptivePage": false,
+    "hasSplitHero": false,
+    "hasSidebar": false,
+    "hasMainContent": false,
+    "hasBottomFlow": false,
+    "hasBanner": false,
+    "sidebarRect": null,
+    "mainRect": null,
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": null
+  },
+  {
+    "id": "Cv39",
+    "configuredArchetype": "modern-split",
+    "name": "Product Manager Pro",
+    "actualLayout": "TWO_COLUMN_LEFT_SIDEBAR",
+    "pageClasses": "smart-resume-page smart-resume-page--modern-split  ",
+    "layoutClasses": "smart-layout smart-layout--modern-split ",
+    "hasAdaptivePage": true,
+    "hasSplitHero": true,
+    "hasSidebar": true,
+    "hasMainContent": true,
+    "hasBottomFlow": true,
+    "hasBanner": false,
+    "sidebarRect": {
+      "x": 0,
+      "y": 24,
+      "width": 270,
+      "height": 1269
+    },
+    "mainRect": {
+      "x": 270,
+      "y": 24,
+      "width": 524,
+      "height": 1269
+    },
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": "rgb(250, 250, 250)"
+  },
+  {
+    "id": "Cv40",
+    "configuredArchetype": "compact-euro",
+    "name": "Europass Classic Grid",
+    "actualLayout": "SINGLE_COLUMN_NO_MAIN",
+    "pageClasses": "smart-resume-page smart-resume-page--compact-euro  ",
+    "layoutClasses": "smart-layout smart-layout--minimal-ats",
+    "hasAdaptivePage": false,
+    "hasSplitHero": false,
+    "hasSidebar": false,
+    "hasMainContent": false,
+    "hasBottomFlow": false,
+    "hasBanner": false,
+    "sidebarRect": null,
+    "mainRect": null,
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": null
+  },
+  {
+    "id": "Cv41",
+    "configuredArchetype": "compact-euro",
+    "name": "Europass Modern Slate",
+    "actualLayout": "SINGLE_COLUMN_NO_MAIN",
+    "pageClasses": "smart-resume-page smart-resume-page--compact-euro  ",
+    "layoutClasses": "smart-layout smart-layout--minimal-ats",
+    "hasAdaptivePage": false,
+    "hasSplitHero": false,
+    "hasSidebar": false,
+    "hasMainContent": false,
+    "hasBottomFlow": false,
+    "hasBanner": false,
+    "sidebarRect": null,
+    "mainRect": null,
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": null
+  },
+  {
+    "id": "Cv42",
+    "configuredArchetype": "compact-euro",
+    "name": "European Academic Compact",
+    "actualLayout": "SINGLE_COLUMN_NO_MAIN",
+    "pageClasses": "smart-resume-page smart-resume-page--compact-euro  ",
+    "layoutClasses": "smart-layout smart-layout--minimal-ats",
+    "hasAdaptivePage": false,
+    "hasSplitHero": false,
+    "hasSidebar": false,
+    "hasMainContent": false,
+    "hasBottomFlow": false,
+    "hasBanner": false,
+    "sidebarRect": null,
+    "mainRect": null,
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": null
+  },
+  {
+    "id": "Cv43",
+    "configuredArchetype": "compact-euro",
+    "name": "Brussels International",
+    "actualLayout": "SINGLE_COLUMN_NO_MAIN",
+    "pageClasses": "smart-resume-page smart-resume-page--compact-euro  ",
+    "layoutClasses": "smart-layout smart-layout--minimal-ats",
+    "hasAdaptivePage": false,
+    "hasSplitHero": false,
+    "hasSidebar": false,
+    "hasMainContent": false,
+    "hasBottomFlow": false,
+    "hasBanner": false,
+    "sidebarRect": null,
+    "mainRect": null,
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": null
+  },
+  {
+    "id": "Cv44",
+    "configuredArchetype": "minimal-ats",
+    "name": "Scandinavia Clean Compact",
+    "actualLayout": "SINGLE_COLUMN_NO_MAIN",
+    "pageClasses": "smart-resume-page smart-resume-page--minimal-ats  ",
+    "layoutClasses": "smart-layout smart-layout--minimal-ats",
+    "hasAdaptivePage": false,
+    "hasSplitHero": false,
+    "hasSidebar": false,
+    "hasMainContent": false,
+    "hasBottomFlow": false,
+    "hasBanner": false,
+    "sidebarRect": null,
+    "mainRect": null,
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": null
+  },
+  {
+    "id": "Cv45",
+    "configuredArchetype": "compact-euro",
+    "name": "Vienna Diplomatic Euro",
+    "actualLayout": "SINGLE_COLUMN_NO_MAIN",
+    "pageClasses": "smart-resume-page smart-resume-page--compact-euro  ",
+    "layoutClasses": "smart-layout smart-layout--minimal-ats",
+    "hasAdaptivePage": false,
+    "hasSplitHero": false,
+    "hasSidebar": false,
+    "hasMainContent": false,
+    "hasBottomFlow": false,
+    "hasBanner": false,
+    "sidebarRect": null,
+    "mainRect": null,
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": null
+  },
+  {
+    "id": "Cv46",
+    "configuredArchetype": "compact-euro",
+    "name": "Frankfurt Finance Euro",
+    "actualLayout": "SINGLE_COLUMN_NO_MAIN",
+    "pageClasses": "smart-resume-page smart-resume-page--compact-euro  ",
+    "layoutClasses": "smart-layout smart-layout--minimal-ats",
+    "hasAdaptivePage": false,
+    "hasSplitHero": false,
+    "hasSidebar": false,
+    "hasMainContent": false,
+    "hasBottomFlow": false,
+    "hasBanner": false,
+    "sidebarRect": null,
+    "mainRect": null,
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": null
+  },
+  {
+    "id": "Cv47",
+    "configuredArchetype": "modern-split",
+    "name": "Metro Dual Column Pro",
+    "actualLayout": "TWO_COLUMN_LEFT_SIDEBAR",
+    "pageClasses": "smart-resume-page smart-resume-page--modern-split  ",
+    "layoutClasses": "smart-layout smart-layout--modern-split ",
+    "hasAdaptivePage": true,
+    "hasSplitHero": true,
+    "hasSidebar": true,
+    "hasMainContent": true,
+    "hasBottomFlow": true,
+    "hasBanner": false,
+    "sidebarRect": {
+      "x": 0,
+      "y": 24,
+      "width": 278,
+      "height": 1264
+    },
+    "mainRect": {
+      "x": 278,
+      "y": 24,
+      "width": 516,
+      "height": 1264
+    },
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": "rgb(240, 249, 255)"
+  },
+  {
+    "id": "Cv48",
+    "configuredArchetype": "modern-split",
+    "name": "Modern Gradient Aurora",
+    "actualLayout": "TWO_COLUMN_LEFT_SIDEBAR",
+    "pageClasses": "smart-resume-page smart-resume-page--modern-split  ",
+    "layoutClasses": "smart-layout smart-layout--modern-split ",
+    "hasAdaptivePage": true,
+    "hasSplitHero": true,
+    "hasSidebar": true,
+    "hasMainContent": true,
+    "hasBottomFlow": true,
+    "hasBanner": false,
+    "sidebarRect": {
+      "x": 0,
+      "y": 24,
+      "width": 278,
+      "height": 1259
+    },
+    "mainRect": {
+      "x": 278,
+      "y": 24,
+      "width": 516,
+      "height": 1259
+    },
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": "rgba(0, 0, 0, 0)"
+  },
+  {
+    "id": "Cv49",
+    "configuredArchetype": "compact-euro",
+    "name": "Berlin Tech Compact",
+    "actualLayout": "SINGLE_COLUMN_NO_MAIN",
+    "pageClasses": "smart-resume-page smart-resume-page--compact-euro  ",
+    "layoutClasses": "smart-layout smart-layout--minimal-ats",
+    "hasAdaptivePage": false,
+    "hasSplitHero": false,
+    "hasSidebar": false,
+    "hasMainContent": false,
+    "hasBottomFlow": false,
+    "hasBanner": false,
+    "sidebarRect": null,
+    "mainRect": null,
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": null
+  },
+  {
+    "id": "Cv50",
+    "configuredArchetype": "modern-split",
+    "name": "Executive Platinum Split",
+    "actualLayout": "TWO_COLUMN_RIGHT_SIDEBAR",
+    "pageClasses": "smart-resume-page smart-resume-page--modern-split smart-resume-page--reverse ",
+    "layoutClasses": "smart-layout smart-layout--modern-split smart-layout--reverse",
+    "hasAdaptivePage": true,
+    "hasSplitHero": true,
+    "hasSidebar": true,
+    "hasMainContent": true,
+    "hasBottomFlow": true,
+    "hasBanner": false,
+    "sidebarRect": {
+      "x": 540,
+      "y": 24,
+      "width": 254,
+      "height": 1230
+    },
+    "mainRect": {
+      "x": 0,
+      "y": 24,
+      "width": 540,
+      "height": 1230
+    },
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": "rgb(226, 232, 240)"
+  },
+  {
+    "id": "Cv51",
+    "configuredArchetype": "modern-split",
+    "name": "Standard Europass Modern",
+    "actualLayout": "TWO_COLUMN_LEFT_SIDEBAR",
+    "pageClasses": "smart-resume-page smart-resume-page--modern-split  ",
+    "layoutClasses": "smart-layout smart-layout--modern-split ",
+    "hasAdaptivePage": true,
+    "hasSplitHero": true,
+    "hasSidebar": true,
+    "hasMainContent": true,
+    "hasBottomFlow": true,
+    "hasBanner": false,
+    "sidebarRect": {
+      "x": 0,
+      "y": 24,
+      "width": 262,
+      "height": 1271
+    },
+    "mainRect": {
+      "x": 262,
+      "y": 24,
+      "width": 532,
+      "height": 1271
+    },
+    "pageRect": {
+      "width": 794,
+      "height": 1123
+    },
+    "sidebarComputedBg": "rgb(239, 246, 255)"
+  }
+]

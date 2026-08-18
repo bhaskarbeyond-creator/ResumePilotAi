@@ -35,6 +35,7 @@ export default function SmartFlowRenderer({ flowItems = [], theme = {}, isContin
                 key={gIdx}
                 summary={group.items[0].content}
                 title={isContinuation ? 'Summary (Continued)' : 'Professional Summary'}
+                theme={theme}
               />
             );
 

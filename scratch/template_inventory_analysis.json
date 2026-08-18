@@ -1,0 +1,359 @@
+[
+  {
+    "id": "Cv1",
+    "name": "Metropolitan Navy",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv2",
+    "name": "Nordic Slate",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv3",
+    "name": "Emerald Executive",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv4",
+    "name": "Harvard Classic ATS",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv5",
+    "name": "Stanford Clean ATS",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv6",
+    "name": "Wall Street Modern",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv7",
+    "name": "Sapphire Modern Split",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv8",
+    "name": "Crown Executive Banner",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv9",
+    "name": "Cobalt Pro Split",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv10",
+    "name": "Titanium Executive",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv11",
+    "name": "Prism Executive Banner",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv12",
+    "name": "Oxford Academic ATS",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv13",
+    "name": "Cambridge Research",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv14",
+    "name": "Yale Corporate ATS",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv15",
+    "name": "MIT Technical ATS",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv16",
+    "name": "Apex Navy Banner",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv17",
+    "name": "Teal Horizon Banner",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv18",
+    "name": "Princeton Minimal ATS",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv19",
+    "name": "Zurich Financial ATS",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv20",
+    "name": "Pacific Blue Split",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv21",
+    "name": "Imperial Indigo Banner",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv22",
+    "name": "Geneva Executive ATS",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv23",
+    "name": "Burgundy Prestige Banner",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv24",
+    "name": "Cyberpunk Modern Split",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv25",
+    "name": "DevOps Terminal Tech",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv26",
+    "name": "FullStack Dark Split",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv27",
+    "name": "Creative Studio Split",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv28",
+    "name": "Silicon Valley Engineer",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv29",
+    "name": "Minimal Nordic Slate",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv30",
+    "name": "Corporate Summit Banner",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv31",
+    "name": "Cloud Native Tech",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv32",
+    "name": "Kubernetes Developer",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv33",
+    "name": "Data Science Matrix",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv34",
+    "name": "Fintech Executive",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv35",
+    "name": "AI & ML Researcher",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv36",
+    "name": "BioTech Specialist",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv37",
+    "name": "Solutions Architect",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv38",
+    "name": "Global Legal ATS",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv39",
+    "name": "Product Manager Pro",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv40",
+    "name": "Europass Classic Grid",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv41",
+    "name": "Europass Modern Slate",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv42",
+    "name": "European Academic Compact",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv43",
+    "name": "Brussels International",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv44",
+    "name": "Scandinavia Clean Compact",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv45",
+    "name": "Vienna Diplomatic Euro",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv46",
+    "name": "Frankfurt Finance Euro",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv47",
+    "name": "Metro Dual Column Pro",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv48",
+    "name": "Modern Gradient Aurora",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv49",
+    "name": "Berlin Tech Compact",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv50",
+    "name": "Executive Platinum Split",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  },
+  {
+    "id": "Cv51",
+    "name": "Standard Europass Official",
+    "hasComponent": false,
+    "compJsxLength": 0,
+    "compScssLength": 0
+  }
+]

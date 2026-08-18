@@ -1,0 +1,461 @@
+[
+  {
+    "template": "Cv1",
+    "name": "Metropolitan Navy",
+    "archetype": "modern-split",
+    "primary": "1E3A8A",
+    "docxBytes": 11099,
+    "pdfBytes": 170955,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv2",
+    "name": "Nordic Slate",
+    "archetype": "modern-split",
+    "primary": "0F172A",
+    "docxBytes": 11093,
+    "pdfBytes": 170936,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv3",
+    "name": "Emerald Executive",
+    "archetype": "modern-split",
+    "primary": "065F46",
+    "docxBytes": 11102,
+    "pdfBytes": 170891,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv4",
+    "name": "Harvard Classic ATS",
+    "archetype": "minimal-ats",
+    "primary": "111827",
+    "docxBytes": 10926,
+    "pdfBytes": 101185,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv5",
+    "name": "Stanford Clean ATS",
+    "archetype": "minimal-ats",
+    "primary": "1E293B",
+    "docxBytes": 10958,
+    "pdfBytes": 169795,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv6",
+    "name": "Wall Street Modern",
+    "archetype": "minimal-ats",
+    "primary": "0F172A",
+    "docxBytes": 10965,
+    "pdfBytes": 169783,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv7",
+    "name": "Sapphire Modern Split",
+    "archetype": "modern-split",
+    "primary": "1D4ED8",
+    "docxBytes": 11096,
+    "pdfBytes": 170950,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv8",
+    "name": "Crown Executive Banner",
+    "archetype": "executive-banner",
+    "primary": "1E293B",
+    "docxBytes": 11097,
+    "pdfBytes": 170987,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv9",
+    "name": "Cobalt Pro Split",
+    "archetype": "modern-split",
+    "primary": "2563EB",
+    "docxBytes": 11112,
+    "pdfBytes": 171203,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv10",
+    "name": "Titanium Executive",
+    "archetype": "executive-banner",
+    "primary": "334155",
+    "docxBytes": 11091,
+    "pdfBytes": 170986,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv11",
+    "name": "Prism Executive Banner",
+    "archetype": "executive-banner",
+    "primary": "4338CA",
+    "docxBytes": 11106,
+    "pdfBytes": 171016,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv12",
+    "name": "Oxford Academic ATS",
+    "archetype": "minimal-ats",
+    "primary": "18181B",
+    "docxBytes": 10937,
+    "pdfBytes": 101198,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv13",
+    "name": "Cambridge Research",
+    "archetype": "minimal-ats",
+    "primary": "09090B",
+    "docxBytes": 10966,
+    "pdfBytes": 169817,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv14",
+    "name": "Yale Corporate ATS",
+    "archetype": "minimal-ats",
+    "primary": "1E293B",
+    "docxBytes": 10961,
+    "pdfBytes": 169805,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv15",
+    "name": "MIT Technical ATS",
+    "archetype": "minimal-ats",
+    "primary": "0F172A",
+    "docxBytes": 10963,
+    "pdfBytes": 169820,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv16",
+    "name": "Apex Navy Banner",
+    "archetype": "executive-banner",
+    "primary": "1E3A8A",
+    "docxBytes": 11105,
+    "pdfBytes": 170932,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv17",
+    "name": "Teal Horizon Banner",
+    "archetype": "executive-banner",
+    "primary": "0F766E",
+    "docxBytes": 11104,
+    "pdfBytes": 171015,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv18",
+    "name": "Princeton Minimal ATS",
+    "archetype": "minimal-ats",
+    "primary": "27272A",
+    "docxBytes": 10937,
+    "pdfBytes": 101168,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv19",
+    "name": "Zurich Financial ATS",
+    "archetype": "minimal-ats",
+    "primary": "0F172A",
+    "docxBytes": 10968,
+    "pdfBytes": 169818,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv20",
+    "name": "Pacific Blue Split",
+    "archetype": "modern-split",
+    "primary": "0284C7",
+    "docxBytes": 11101,
+    "pdfBytes": 170959,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv21",
+    "name": "Imperial Indigo Banner",
+    "archetype": "executive-banner",
+    "primary": "3730A3",
+    "docxBytes": 11108,
+    "pdfBytes": 171015,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv22",
+    "name": "Geneva Executive ATS",
+    "archetype": "minimal-ats",
+    "primary": "111827",
+    "docxBytes": 10955,
+    "pdfBytes": 169802,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv23",
+    "name": "Burgundy Prestige Banner",
+    "archetype": "executive-banner",
+    "primary": "881337",
+    "docxBytes": 11110,
+    "pdfBytes": 171029,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv24",
+    "name": "Cyberpunk Modern Split",
+    "archetype": "modern-split",
+    "primary": "4F46E5",
+    "docxBytes": 11097,
+    "pdfBytes": 170944,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv25",
+    "name": "DevOps Terminal Tech",
+    "archetype": "tech-grid",
+    "primary": "0F172A",
+    "docxBytes": 11096,
+    "pdfBytes": 170882,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv26",
+    "name": "FullStack Dark Split",
+    "archetype": "modern-split",
+    "primary": "0284C7",
+    "docxBytes": 11106,
+    "pdfBytes": 171212,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv27",
+    "name": "Creative Studio Split",
+    "archetype": "modern-split",
+    "primary": "D97706",
+    "docxBytes": 11106,
+    "pdfBytes": 170951,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv28",
+    "name": "Silicon Valley Engineer",
+    "archetype": "tech-grid",
+    "primary": "2563EB",
+    "docxBytes": 11097,
+    "pdfBytes": 170946,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv29",
+    "name": "Minimal Nordic Slate",
+    "archetype": "modern-split",
+    "primary": "334155",
+    "docxBytes": 11085,
+    "pdfBytes": 170922,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv30",
+    "name": "Corporate Summit Banner",
+    "archetype": "executive-banner",
+    "primary": "1E293B",
+    "docxBytes": 11099,
+    "pdfBytes": 171002,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv31",
+    "name": "Cloud Native Tech",
+    "archetype": "tech-grid",
+    "primary": "0284C7",
+    "docxBytes": 11096,
+    "pdfBytes": 170954,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv32",
+    "name": "Kubernetes Developer",
+    "archetype": "tech-grid",
+    "primary": "326CE5",
+    "docxBytes": 11096,
+    "pdfBytes": 170950,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv33",
+    "name": "Data Science Matrix",
+    "archetype": "tech-grid",
+    "primary": "059669",
+    "docxBytes": 11102,
+    "pdfBytes": 170954,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv34",
+    "name": "Fintech Executive",
+    "archetype": "executive-banner",
+    "primary": "0F172A",
+    "docxBytes": 11107,
+    "pdfBytes": 171012,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv35",
+    "name": "AI & ML Researcher",
+    "archetype": "tech-grid",
+    "primary": "7C3AED",
+    "docxBytes": 11101,
+    "pdfBytes": 170947,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv36",
+    "name": "BioTech Specialist",
+    "archetype": "executive-banner",
+    "primary": "0D9488",
+    "docxBytes": 11103,
+    "pdfBytes": 171010,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv37",
+    "name": "Solutions Architect",
+    "archetype": "tech-grid",
+    "primary": "EA580C",
+    "docxBytes": 11098,
+    "pdfBytes": 170890,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv38",
+    "name": "Global Legal ATS",
+    "archetype": "minimal-ats",
+    "primary": "18181B",
+    "docxBytes": 10939,
+    "pdfBytes": 101198,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv39",
+    "name": "Product Manager Pro",
+    "archetype": "modern-split",
+    "primary": "2563EB",
+    "docxBytes": 11093,
+    "pdfBytes": 170945,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv40",
+    "name": "Europass Classic Grid",
+    "archetype": "compact-euro",
+    "primary": "003399",
+    "docxBytes": 11077,
+    "pdfBytes": 171518,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv41",
+    "name": "Europass Modern Slate",
+    "archetype": "compact-euro",
+    "primary": "1E293B",
+    "docxBytes": 11078,
+    "pdfBytes": 171501,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv42",
+    "name": "European Academic Compact",
+    "archetype": "compact-euro",
+    "primary": "1E3A8A",
+    "docxBytes": 11077,
+    "pdfBytes": 171522,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv43",
+    "name": "Brussels International",
+    "archetype": "compact-euro",
+    "primary": "0F766E",
+    "docxBytes": 11079,
+    "pdfBytes": 171423,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv44",
+    "name": "Scandinavia Clean Compact",
+    "archetype": "minimal-ats",
+    "primary": "0F172A",
+    "docxBytes": 10960,
+    "pdfBytes": 169812,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv45",
+    "name": "Vienna Diplomatic Euro",
+    "archetype": "compact-euro",
+    "primary": "881337",
+    "docxBytes": 11084,
+    "pdfBytes": 171525,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv46",
+    "name": "Frankfurt Finance Euro",
+    "archetype": "compact-euro",
+    "primary": "1E293B",
+    "docxBytes": 11074,
+    "pdfBytes": 171504,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv47",
+    "name": "Metro Dual Column Pro",
+    "archetype": "modern-split",
+    "primary": "0369A1",
+    "docxBytes": 11099,
+    "pdfBytes": 170939,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv48",
+    "name": "Modern Gradient Aurora",
+    "archetype": "modern-split",
+    "primary": "6366F1",
+    "docxBytes": 11105,
+    "pdfBytes": 171202,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv49",
+    "name": "Berlin Tech Compact",
+    "archetype": "compact-euro",
+    "primary": "18181B",
+    "docxBytes": 11078,
+    "pdfBytes": 171513,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv50",
+    "name": "Executive Platinum Split",
+    "archetype": "modern-split",
+    "primary": "0F172A",
+    "docxBytes": 11096,
+    "pdfBytes": 170947,
+    "status": "SUCCESS"
+  },
+  {
+    "template": "Cv51",
+    "name": "Standard Europass Official",
+    "archetype": "compact-euro",
+    "primary": "003399",
+    "docxBytes": 11073,
+    "pdfBytes": 124163,
+    "status": "SUCCESS"
+  }
+]

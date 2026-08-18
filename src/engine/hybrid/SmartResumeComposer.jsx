@@ -2,7 +2,7 @@
  * Smart Hybrid Resume Engine — Universal Dynamic Page Composer
  * 
  * Renders all 51 templates (Cv1 through Cv51) with deterministic adaptive pagination,
- * dynamic theme styling, and unified page boundaries.
+ * dynamic theme styling, purposeful visual differentiation, and unified page boundaries.
  */
 
 import React, { useEffect } from 'react';
@@ -33,6 +33,7 @@ export default function SmartResumeComposer({ templateId = 'Cv1', values = {}, l
 
   const isSingleCol = theme.archetype === ARCHETYPES.MINIMAL_ATS || theme.archetype === ARCHETYPES.COMPACT_EURO;
   const isBanner = theme.archetype === ARCHETYPES.EXECUTIVE_BANNER;
+  const isReverseSplit = theme.sidebarPosition === 'right';
 
   return (
     <div className="smart-resume-composer">
@@ -44,7 +45,7 @@ export default function SmartResumeComposer({ templateId = 'Cv1', values = {}, l
           return (
             <div
               key={pageIdx}
-              className={`smart-resume-page smart-resume-page--${theme.archetype} ${!isFirstPage ? 'smart-resume-page--continuation' : ''}`}
+              className={`smart-resume-page smart-resume-page--${theme.archetype} ${isReverseSplit ? 'smart-resume-page--reverse' : ''} ${!isFirstPage ? 'smart-resume-page--continuation' : ''}`}
               data-page-number={pageNumber}
               data-cv-board="true"
               id={isFirstPage ? 'resumen' : undefined}
@@ -77,7 +78,7 @@ export default function SmartResumeComposer({ templateId = 'Cv1', values = {}, l
                 {/* 1. Single-Column ATS / Europass Layout */}
                 {isSingleCol && (
                   <div className="smart-layout smart-layout--minimal-ats">
-                    {isFirstPage && <SmartHeader values={values} theme={theme} variant="minimal" />}
+                    {isFirstPage && <SmartHeader values={values} theme={theme} />}
                     <SmartFlowRenderer flowItems={pageData.flowItems} theme={theme} isContinuation={!isFirstPage} />
                   </div>
                 )}
@@ -130,13 +131,13 @@ export default function SmartResumeComposer({ templateId = 'Cv1', values = {}, l
                   </div>
                 )}
 
-                {/* 3. Modern Split Layout (Default) with Adaptive Split-to-Full-Width Flow */}
+                {/* 3. Modern Split Layout (Default or Reverse) with Adaptive Split-to-Full-Width Flow */}
                 {!isSingleCol && !isBanner && (
-                  <div className="smart-layout smart-layout--modern-split">
+                  <div className={`smart-layout smart-layout--modern-split ${isReverseSplit ? 'smart-layout--reverse' : ''}`}>
                     {isFirstPage && pageData.isAdaptiveSplit ? (
                       <div className="smart-adaptive-page">
-                        {/* Upper Split: Left Sidebar + Right Hero Flow (Summary/Jobs) */}
-                        <div className="smart-split-hero">
+                        {/* Upper Split: Sidebar + Hero Flow (Summary/Jobs) */}
+                        <div className={`smart-split-hero ${isReverseSplit ? 'smart-split-hero--reverse' : ''}`}>
                           {pageData.sidebar && (
                             <aside className="smart-sidebar">
                               <SmartHeader values={values} theme={theme} variant="sidebar" />

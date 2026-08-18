@@ -5,14 +5,17 @@ import { formatDateRange, formatRichText } from '../utils/formatText';
 export default function SmartExperience({ employments = [], theme = {}, title = 'Employment History' }) {
   if (!employments || !employments.length) return null;
 
+  const dividerClass = `smart-section-title--${theme.dividerStyle || 'solid-thin'}`;
+  const timelineClass = `smart-timeline--${theme.timelineStyle || 'modern-node'}`;
+
   return (
     <section className="smart-section smart-experience-section">
-      <h3 className="smart-section-title">
+      <h3 className={`smart-section-title ${dividerClass}`}>
         <span className="smart-section-title__text">{title}</span>
         <span className="smart-section-title__line" />
       </h3>
 
-      <div className={`smart-timeline smart-timeline--${theme.timelineStyle || 'modern-node'}`}>
+      <div className={`smart-timeline ${timelineClass}`}>
         {employments.map((job, idx) => {
           const dateRange = formatDateRange(job.begin, job.end);
           const companyLocation = [job.employer, job.city].filter(Boolean).join(' · ');

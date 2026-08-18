@@ -1,32 +1,33 @@
 /**
  * Smart Hybrid Resume Engine — Theme & Design Token Presets
  * 
- * Maps all 51 template IDs (Cv1 to Cv51) into curated, enterprise-grade
- * design configurations with balanced archetypes, harmonious color palettes,
- * modern typography, and responsive skill presentation.
+ * Maps all 51 template IDs (Cv1 to Cv51) into curated, enterprise-grade,
+ * purposefully differentiated design configurations with unique archetypes,
+ * distinct typography, harmonious color palettes, and specialized styling.
  */
 
 export const ARCHETYPES = {
-  MODERN_SPLIT: 'modern-split',       // Left sidebar (32-35%), crisp main flow (65-68%)
+  MODERN_SPLIT: 'modern-split',         // Left sidebar (32-35%), crisp main flow (65-68%)
   EXECUTIVE_BANNER: 'executive-banner', // Full-width header banner, structured 2-col below
-  MINIMAL_ATS: 'minimal-ats',         // Single column, 100% ATS-optimized, classic elegance
-  TECH_GRID: 'tech-grid',             // Tech badges, repository links, compact timeline
-  COMPACT_EURO: 'compact-euro',       // Europass / Academic timeline with date gutter
+  MINIMAL_ATS: 'minimal-ats',           // Single column, 100% ATS-optimized, classic elegance
+  TECH_GRID: 'tech-grid',               // Tech badges, repository links, compact timeline
+  COMPACT_EURO: 'compact-euro',         // Europass / Academic timeline with date gutter
 };
 
 export const SKILL_VARIANTS = {
-  PILLS: 'pills',                     // Compact multi-column pill wrap (best for 10+ skills)
-  BADGES: 'badges',                   // Outlined tech tags with subtle background
-  BARS: 'bars',                       // Horizontal proficiency meters
-  DOTS: 'dots',                       // 5-dot rating indicator
-  INLINE: 'inline',                   // Inline comma / bullet separated list
+  PILLS: 'pills',                       // Compact multi-column pill wrap (best for 10+ skills)
+  BADGES: 'badges',                     // Outlined tech tags with subtle background
+  BARS: 'bars',                         // Horizontal proficiency meters
+  DOTS: 'dots',                         // 5-dot rating indicator
+  INLINE: 'inline',                     // Inline comma / bullet separated list
 };
 
 /**
- * 51 Curated Theme Presets
+ * 51 Curated, Visually Differentiated Theme Presets
  */
 export const THEME_PRESETS = {
-  // ── Modern Split Presets (Cv1, Cv2, Cv3, Cv7, Cv9, Cv20, Cv24, Cv27, Cv47, Cv48, Cv50) ──
+  // ── Modern Split Presets (Cv1, Cv2, Cv3, Cv7, Cv9, Cv20, Cv24, Cv26, Cv27, Cv29, Cv39, Cv47, Cv48, Cv50, Cv51) ──
+
   Cv1: {
     name: 'Metropolitan Navy',
     archetype: ARCHETYPES.MODERN_SPLIT,
@@ -40,7 +41,11 @@ export const THEME_PRESETS = {
     sidebarWidth: '34%',
     badgeRadius: '6px',
     timelineStyle: 'modern-node',
+    headerStyle: 'sidebar',
+    dividerStyle: 'solid-thin',
+    density: 'standard',
   },
+
   Cv2: {
     name: 'Nordic Slate',
     archetype: ARCHETYPES.MODERN_SPLIT,
@@ -53,7 +58,11 @@ export const THEME_PRESETS = {
     sidebarWidth: '33%',
     badgeRadius: '4px',
     timelineStyle: 'subtle-line',
+    headerStyle: 'sidebar',
+    dividerStyle: 'solid-thin',
+    density: 'standard',
   },
+
   Cv3: {
     name: 'Emerald Executive',
     archetype: ARCHETYPES.MODERN_SPLIT,
@@ -66,7 +75,13 @@ export const THEME_PRESETS = {
     sidebarWidth: '35%',
     badgeRadius: '6px',
     timelineStyle: 'modern-node',
+    headerStyle: 'sidebar',
+    dividerStyle: 'left-bar',
+    density: 'standard',
   },
+
+  // ── Minimal ATS Presets (Cv4, Cv5, Cv6, Cv12, Cv13, Cv14, Cv15, Cv18, Cv19, Cv22, Cv38, Cv44) ──
+
   Cv4: {
     name: 'Harvard Classic ATS',
     archetype: ARCHETYPES.MINIMAL_ATS,
@@ -74,29 +89,38 @@ export const THEME_PRESETS = {
     secondary: '#4b5563',
     font: "'Merriweather', Georgia, serif",
     skillVariant: SKILL_VARIANTS.INLINE,
+    headerStyle: 'centered-classic',
     dividerStyle: 'solid-thin',
+    timelineStyle: 'compact-clean',
     density: 'standard',
   },
+
   Cv5: {
     name: 'Stanford Clean ATS',
     archetype: ARCHETYPES.MINIMAL_ATS,
     primary: '#1e293b',
-    secondary: '#64748b',
-    font: "'Inter', sans-serif",
+    secondary: '#0ea5e9',
+    font: "'Plus Jakarta Sans', sans-serif",
     skillVariant: SKILL_VARIANTS.PILLS,
-    dividerStyle: 'accent-left',
+    headerStyle: 'left-bold',
+    dividerStyle: 'left-bar',
+    timelineStyle: 'modern-node',
     density: 'standard',
   },
+
   Cv6: {
     name: 'Wall Street Modern',
     archetype: ARCHETYPES.MINIMAL_ATS,
     primary: '#0f172a',
     secondary: '#2563eb',
-    font: "'Plus Jakarta Sans', sans-serif",
+    font: "'Inter', sans-serif",
     skillVariant: SKILL_VARIANTS.BADGES,
+    headerStyle: 'minimal-inline',
     dividerStyle: 'double-line',
+    timelineStyle: 'compact-clean',
     density: 'compact',
   },
+
   Cv7: {
     name: 'Sapphire Modern Split',
     archetype: ARCHETYPES.MODERN_SPLIT,
@@ -104,12 +128,18 @@ export const THEME_PRESETS = {
     secondary: '#60a5fa',
     sidebarBg: '#eff6ff',
     sidebarText: '#1e3a8a',
-    font: "'Plus Jakarta Sans', sans-serif",
+    font: "'Montserrat', sans-serif",
     skillVariant: SKILL_VARIANTS.PILLS,
     sidebarWidth: '34%',
     badgeRadius: '8px',
     timelineStyle: 'modern-node',
+    headerStyle: 'sidebar',
+    dividerStyle: 'solid-thin',
+    density: 'standard',
   },
+
+  // ── Executive Banner Presets (Cv8, Cv10, Cv11, Cv16, Cv17, Cv21, Cv23, Cv30, Cv34, Cv36) ──
+
   Cv8: {
     name: 'Crown Executive Banner',
     archetype: ARCHETYPES.EXECUTIVE_BANNER,
@@ -122,7 +152,11 @@ export const THEME_PRESETS = {
     sidebarWidth: '35%',
     badgeRadius: '6px',
     timelineStyle: 'modern-node',
+    headerStyle: 'banner',
+    dividerStyle: 'solid-thin',
+    density: 'standard',
   },
+
   Cv9: {
     name: 'Cobalt Pro Split',
     archetype: ARCHETYPES.MODERN_SPLIT,
@@ -135,7 +169,11 @@ export const THEME_PRESETS = {
     sidebarWidth: '35%',
     badgeRadius: '6px',
     timelineStyle: 'accent-bullet',
+    headerStyle: 'sidebar',
+    dividerStyle: 'solid-thin',
+    density: 'standard',
   },
+
   Cv10: {
     name: 'Titanium Executive',
     archetype: ARCHETYPES.EXECUTIVE_BANNER,
@@ -148,7 +186,11 @@ export const THEME_PRESETS = {
     sidebarWidth: '34%',
     badgeRadius: '4px',
     timelineStyle: 'subtle-line',
+    headerStyle: 'banner',
+    dividerStyle: 'solid-thin',
+    density: 'standard',
   },
+
   Cv11: {
     name: 'Prism Executive Banner',
     archetype: ARCHETYPES.EXECUTIVE_BANNER,
@@ -161,17 +203,24 @@ export const THEME_PRESETS = {
     sidebarWidth: '35%',
     badgeRadius: '6px',
     timelineStyle: 'modern-node',
-  },
-  Cv12: {
-    name: 'Oxford Academic ATS',
-    archetype: ARCHETYPES.MINIMAL_ATS,
-    primary: '#18181b',
-    secondary: '#71717a',
-    font: "'Merriweather', serif",
-    skillVariant: SKILL_VARIANTS.INLINE,
+    headerStyle: 'banner',
     dividerStyle: 'solid-thin',
     density: 'standard',
   },
+
+  Cv12: {
+    name: 'Oxford Academic ATS',
+    archetype: ARCHETYPES.MINIMAL_ATS,
+    primary: '#1e1b4b',
+    secondary: '#4338ca',
+    font: "'Merriweather', serif",
+    skillVariant: SKILL_VARIANTS.INLINE,
+    headerStyle: 'centered-classic',
+    dividerStyle: 'double-line',
+    timelineStyle: 'compact-clean',
+    density: 'standard',
+  },
+
   Cv13: {
     name: 'Cambridge Research',
     archetype: ARCHETYPES.MINIMAL_ATS,
@@ -179,29 +228,38 @@ export const THEME_PRESETS = {
     secondary: '#52525b',
     font: "'Inter', sans-serif",
     skillVariant: SKILL_VARIANTS.PILLS,
+    headerStyle: 'minimal-inline',
     dividerStyle: 'solid-thin',
+    timelineStyle: 'subtle-line',
     density: 'standard',
   },
+
   Cv14: {
     name: 'Yale Corporate ATS',
     archetype: ARCHETYPES.MINIMAL_ATS,
-    primary: '#1e293b',
-    secondary: '#0284c7',
-    font: "'Plus Jakarta Sans', sans-serif",
+    primary: '#0c2340',
+    secondary: '#c59b27',
+    font: "'Cinzel', 'Plus Jakarta Sans', sans-serif",
     skillVariant: SKILL_VARIANTS.BADGES,
-    dividerStyle: 'accent-left',
+    headerStyle: 'left-bold',
+    dividerStyle: 'solid-thick',
+    timelineStyle: 'modern-node',
     density: 'standard',
   },
+
   Cv15: {
     name: 'MIT Technical ATS',
     archetype: ARCHETYPES.MINIMAL_ATS,
-    primary: '#0f172a',
-    secondary: '#059669',
+    primary: '#8b0000',
+    secondary: '#475569',
     font: "'Inter', sans-serif",
-    skillVariant: SKILL_VARIANTS.PILLS,
-    dividerStyle: 'accent-left',
+    skillVariant: SKILL_VARIANTS.BADGES,
+    headerStyle: 'accent-bracket',
+    dividerStyle: 'left-bar',
+    timelineStyle: 'code-tag',
     density: 'compact',
   },
+
   Cv16: {
     name: 'Apex Navy Banner',
     archetype: ARCHETYPES.EXECUTIVE_BANNER,
@@ -214,7 +272,11 @@ export const THEME_PRESETS = {
     sidebarWidth: '34%',
     badgeRadius: '6px',
     timelineStyle: 'modern-node',
+    headerStyle: 'banner',
+    dividerStyle: 'solid-thin',
+    density: 'standard',
   },
+
   Cv17: {
     name: 'Teal Horizon Banner',
     archetype: ARCHETYPES.EXECUTIVE_BANNER,
@@ -227,27 +289,37 @@ export const THEME_PRESETS = {
     sidebarWidth: '35%',
     badgeRadius: '6px',
     timelineStyle: 'modern-node',
+    headerStyle: 'banner',
+    dividerStyle: 'solid-thin',
+    density: 'standard',
   },
+
   Cv18: {
     name: 'Princeton Minimal ATS',
     archetype: ARCHETYPES.MINIMAL_ATS,
     primary: '#27272a',
-    secondary: '#52525b',
-    font: "'Merriweather', serif",
+    secondary: '#d97706',
+    font: "'Georgia', serif",
     skillVariant: SKILL_VARIANTS.INLINE,
+    headerStyle: 'centered-classic',
     dividerStyle: 'solid-thin',
+    timelineStyle: 'compact-clean',
     density: 'standard',
   },
+
   Cv19: {
     name: 'Zurich Financial ATS',
     archetype: ARCHETYPES.MINIMAL_ATS,
-    primary: '#0f172a',
-    secondary: '#3b82f6',
+    primary: '#004b49',
+    secondary: '#d97706',
     font: "'Plus Jakarta Sans', sans-serif",
     skillVariant: SKILL_VARIANTS.BADGES,
-    dividerStyle: 'accent-left',
+    headerStyle: 'centered-classic',
+    dividerStyle: 'double-line',
+    timelineStyle: 'compact-clean',
     density: 'compact',
   },
+
   Cv20: {
     name: 'Pacific Blue Split',
     archetype: ARCHETYPES.MODERN_SPLIT,
@@ -260,7 +332,11 @@ export const THEME_PRESETS = {
     sidebarWidth: '34%',
     badgeRadius: '6px',
     timelineStyle: 'modern-node',
+    headerStyle: 'sidebar',
+    dividerStyle: 'solid-thin',
+    density: 'standard',
   },
+
   Cv21: {
     name: 'Imperial Indigo Banner',
     archetype: ARCHETYPES.EXECUTIVE_BANNER,
@@ -273,17 +349,24 @@ export const THEME_PRESETS = {
     sidebarWidth: '35%',
     badgeRadius: '6px',
     timelineStyle: 'modern-node',
-  },
-  Cv22: {
-    name: 'Geneva Executive ATS',
-    archetype: ARCHETYPES.MINIMAL_ATS,
-    primary: '#111827',
-    secondary: '#4b5563',
-    font: "'Inter', sans-serif",
-    skillVariant: SKILL_VARIANTS.PILLS,
+    headerStyle: 'banner',
     dividerStyle: 'solid-thin',
     density: 'standard',
   },
+
+  Cv22: {
+    name: 'Geneva Executive ATS',
+    archetype: ARCHETYPES.MINIMAL_ATS,
+    primary: '#18181b',
+    secondary: '#dc2626',
+    font: "'Inter', sans-serif",
+    skillVariant: SKILL_VARIANTS.PILLS,
+    headerStyle: 'left-bold',
+    dividerStyle: 'left-bar',
+    timelineStyle: 'compact-clean',
+    density: 'standard',
+  },
+
   Cv23: {
     name: 'Burgundy Prestige Banner',
     archetype: ARCHETYPES.EXECUTIVE_BANNER,
@@ -296,7 +379,11 @@ export const THEME_PRESETS = {
     sidebarWidth: '35%',
     badgeRadius: '6px',
     timelineStyle: 'modern-node',
+    headerStyle: 'banner',
+    dividerStyle: 'solid-thin',
+    density: 'standard',
   },
+
   Cv24: {
     name: 'Cyberpunk Modern Split',
     archetype: ARCHETYPES.MODERN_SPLIT,
@@ -309,7 +396,13 @@ export const THEME_PRESETS = {
     sidebarWidth: '35%',
     badgeRadius: '8px',
     timelineStyle: 'accent-bullet',
+    headerStyle: 'sidebar',
+    dividerStyle: 'solid-thin',
+    density: 'standard',
   },
+
+  // ── Tech Grid Presets (Cv25, Cv28, Cv31, Cv32, Cv33, Cv35, Cv37) ──
+
   Cv25: {
     name: 'DevOps Terminal Tech',
     archetype: ARCHETYPES.TECH_GRID,
@@ -322,20 +415,28 @@ export const THEME_PRESETS = {
     sidebarWidth: '34%',
     badgeRadius: '4px',
     timelineStyle: 'code-tag',
+    headerStyle: 'left-bold',
+    dividerStyle: 'left-bar',
+    density: 'standard',
   },
+
   Cv26: {
     name: 'FullStack Dark Split',
     archetype: ARCHETYPES.MODERN_SPLIT,
-    primary: '#0284c7',
-    secondary: '#38bdf8',
-    sidebarBg: '#0f172a',
+    primary: '#00e5ff',
+    secondary: '#10b981',
+    sidebarBg: '#090d16',
     sidebarText: '#f8fafc',
     font: "'Plus Jakarta Sans', sans-serif",
-    skillVariant: SKILL_VARIANTS.PILLS,
+    skillVariant: SKILL_VARIANTS.BADGES,
     sidebarWidth: '35%',
     badgeRadius: '6px',
-    timelineStyle: 'modern-node',
+    timelineStyle: 'accent-bullet',
+    headerStyle: 'sidebar',
+    dividerStyle: 'solid-thin',
+    density: 'standard',
   },
+
   Cv27: {
     name: 'Creative Studio Split',
     archetype: ARCHETYPES.MODERN_SPLIT,
@@ -348,7 +449,11 @@ export const THEME_PRESETS = {
     sidebarWidth: '34%',
     badgeRadius: '6px',
     timelineStyle: 'accent-bullet',
+    headerStyle: 'sidebar',
+    dividerStyle: 'solid-thin',
+    density: 'standard',
   },
+
   Cv28: {
     name: 'Silicon Valley Engineer',
     archetype: ARCHETYPES.TECH_GRID,
@@ -361,7 +466,11 @@ export const THEME_PRESETS = {
     sidebarWidth: '34%',
     badgeRadius: '6px',
     timelineStyle: 'modern-node',
+    headerStyle: 'left-bold',
+    dividerStyle: 'solid-thin',
+    density: 'standard',
   },
+
   Cv29: {
     name: 'Minimal Nordic Slate',
     archetype: ARCHETYPES.MODERN_SPLIT,
@@ -374,30 +483,42 @@ export const THEME_PRESETS = {
     sidebarWidth: '33%',
     badgeRadius: '4px',
     timelineStyle: 'subtle-line',
+    headerStyle: 'sidebar',
+    dividerStyle: 'solid-thin',
+    density: 'standard',
   },
+
   Cv30: {
     name: 'Corporate Summit Banner',
     archetype: ARCHETYPES.EXECUTIVE_BANNER,
-    primary: '#1e293b',
+    primary: '#b45309',
     secondary: '#f59e0b',
-    headerBg: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+    headerBg: 'linear-gradient(135deg, #78350f 0%, #b45309 100%)',
     headerText: '#ffffff',
     font: "'Plus Jakarta Sans', sans-serif",
     skillVariant: SKILL_VARIANTS.PILLS,
     sidebarWidth: '35%',
     badgeRadius: '6px',
     timelineStyle: 'modern-node',
+    headerStyle: 'banner',
+    dividerStyle: 'solid-thin',
+    density: 'standard',
   },
+
   Cv31: {
     name: 'Cloud Native Tech',
     archetype: ARCHETYPES.TECH_GRID,
-    primary: '#0284c7',
+    primary: '#0891b2',
     secondary: '#0ea5e9',
     font: "'Plus Jakarta Sans', sans-serif",
     skillVariant: SKILL_VARIANTS.BADGES,
     badgeRadius: '6px',
     timelineStyle: 'code-tag',
+    headerStyle: 'left-bold',
+    dividerStyle: 'left-bar',
+    density: 'standard',
   },
+
   Cv32: {
     name: 'Kubernetes Developer',
     archetype: ARCHETYPES.TECH_GRID,
@@ -407,7 +528,11 @@ export const THEME_PRESETS = {
     skillVariant: SKILL_VARIANTS.PILLS,
     badgeRadius: '6px',
     timelineStyle: 'modern-node',
+    headerStyle: 'left-bold',
+    dividerStyle: 'solid-thin',
+    density: 'standard',
   },
+
   Cv33: {
     name: 'Data Science Matrix',
     archetype: ARCHETYPES.TECH_GRID,
@@ -417,20 +542,28 @@ export const THEME_PRESETS = {
     skillVariant: SKILL_VARIANTS.BADGES,
     badgeRadius: '6px',
     timelineStyle: 'code-tag',
+    headerStyle: 'left-bold',
+    dividerStyle: 'left-bar',
+    density: 'compact',
   },
+
   Cv34: {
     name: 'Fintech Executive',
     archetype: ARCHETYPES.EXECUTIVE_BANNER,
-    primary: '#0f172a',
-    secondary: '#38bdf8',
-    headerBg: '#0f172a',
+    primary: '#0b0f19',
+    secondary: '#00e5ff',
+    headerBg: 'linear-gradient(135deg, #0b0f19 0%, #1e293b 100%)',
     headerText: '#ffffff',
     font: "'Plus Jakarta Sans', sans-serif",
     skillVariant: SKILL_VARIANTS.PILLS,
     sidebarWidth: '35%',
     badgeRadius: '6px',
     timelineStyle: 'modern-node',
+    headerStyle: 'banner',
+    dividerStyle: 'solid-thin',
+    density: 'standard',
   },
+
   Cv35: {
     name: 'AI & ML Researcher',
     archetype: ARCHETYPES.TECH_GRID,
@@ -440,7 +573,11 @@ export const THEME_PRESETS = {
     skillVariant: SKILL_VARIANTS.BADGES,
     badgeRadius: '6px',
     timelineStyle: 'modern-node',
+    headerStyle: 'left-bold',
+    dividerStyle: 'solid-thin',
+    density: 'standard',
   },
+
   Cv36: {
     name: 'BioTech Specialist',
     archetype: ARCHETYPES.EXECUTIVE_BANNER,
@@ -453,7 +590,11 @@ export const THEME_PRESETS = {
     sidebarWidth: '35%',
     badgeRadius: '6px',
     timelineStyle: 'modern-node',
+    headerStyle: 'banner',
+    dividerStyle: 'solid-thin',
+    density: 'standard',
   },
+
   Cv37: {
     name: 'Solutions Architect',
     archetype: ARCHETYPES.TECH_GRID,
@@ -463,30 +604,43 @@ export const THEME_PRESETS = {
     skillVariant: SKILL_VARIANTS.BADGES,
     badgeRadius: '6px',
     timelineStyle: 'code-tag',
+    headerStyle: 'left-bold',
+    dividerStyle: 'left-bar',
+    density: 'standard',
   },
+
   Cv38: {
     name: 'Global Legal ATS',
     archetype: ARCHETYPES.MINIMAL_ATS,
-    primary: '#18181b',
-    secondary: '#71717a',
-    font: "'Merriweather', serif",
+    primary: '#0f172a',
+    secondary: '#0284c7',
+    font: "'Georgia', serif",
     skillVariant: SKILL_VARIANTS.INLINE,
-    dividerStyle: 'solid-thin',
+    headerStyle: 'accent-bracket',
+    dividerStyle: 'left-bar',
+    timelineStyle: 'compact-clean',
     density: 'standard',
   },
+
   Cv39: {
     name: 'Product Manager Pro',
     archetype: ARCHETYPES.MODERN_SPLIT,
-    primary: '#2563eb',
-    secondary: '#38bdf8',
-    sidebarBg: '#f8fafc',
+    primary: '#4338ca',
+    secondary: '#f59e0b',
+    sidebarBg: '#fafafa',
     sidebarText: '#1e293b',
     font: "'Plus Jakarta Sans', sans-serif",
     skillVariant: SKILL_VARIANTS.PILLS,
     sidebarWidth: '34%',
     badgeRadius: '6px',
     timelineStyle: 'modern-node',
+    headerStyle: 'sidebar',
+    dividerStyle: 'left-bar',
+    density: 'standard',
   },
+
+  // ── Compact Euro Presets (Cv40, Cv41, Cv42, Cv43, Cv45, Cv46, Cv49) ──
+
   Cv40: {
     name: 'Europass Classic Grid',
     archetype: ARCHETYPES.COMPACT_EURO,
@@ -495,7 +649,12 @@ export const THEME_PRESETS = {
     font: "'Inter', sans-serif",
     skillVariant: SKILL_VARIANTS.PILLS,
     badgeRadius: '4px',
+    timelineStyle: 'date-rail',
+    headerStyle: 'minimal-inline',
+    dividerStyle: 'solid-thin',
+    density: 'standard',
   },
+
   Cv41: {
     name: 'Europass Modern Slate',
     archetype: ARCHETYPES.COMPACT_EURO,
@@ -504,7 +663,12 @@ export const THEME_PRESETS = {
     font: "'Plus Jakarta Sans', sans-serif",
     skillVariant: SKILL_VARIANTS.BADGES,
     badgeRadius: '4px',
+    timelineStyle: 'date-rail',
+    headerStyle: 'left-bold',
+    dividerStyle: 'solid-thin',
+    density: 'standard',
   },
+
   Cv42: {
     name: 'European Academic Compact',
     archetype: ARCHETYPES.COMPACT_EURO,
@@ -513,7 +677,12 @@ export const THEME_PRESETS = {
     font: "'Inter', sans-serif",
     skillVariant: SKILL_VARIANTS.PILLS,
     badgeRadius: '4px',
+    timelineStyle: 'date-rail',
+    headerStyle: 'centered-classic',
+    dividerStyle: 'double-line',
+    density: 'standard',
   },
+
   Cv43: {
     name: 'Brussels International',
     archetype: ARCHETYPES.COMPACT_EURO,
@@ -522,17 +691,25 @@ export const THEME_PRESETS = {
     font: "'Plus Jakarta Sans', sans-serif",
     skillVariant: SKILL_VARIANTS.BADGES,
     badgeRadius: '4px',
+    timelineStyle: 'date-rail',
+    headerStyle: 'left-bold',
+    dividerStyle: 'left-bar',
+    density: 'standard',
   },
+
   Cv44: {
     name: 'Scandinavia Clean Compact',
     archetype: ARCHETYPES.MINIMAL_ATS,
-    primary: '#0f172a',
-    secondary: '#64748b',
+    primary: '#334155',
+    secondary: '#10b981',
     font: "'Inter', sans-serif",
-    skillVariant: SKILL_VARIANTS.PILLS,
+    skillVariant: SKILL_VARIANTS.DOTS,
+    headerStyle: 'minimal-inline',
     dividerStyle: 'solid-thin',
+    timelineStyle: 'compact-clean',
     density: 'compact',
   },
+
   Cv45: {
     name: 'Vienna Diplomatic Euro',
     archetype: ARCHETYPES.COMPACT_EURO,
@@ -541,16 +718,26 @@ export const THEME_PRESETS = {
     font: "'Plus Jakarta Sans', sans-serif",
     skillVariant: SKILL_VARIANTS.PILLS,
     badgeRadius: '4px',
+    timelineStyle: 'date-rail',
+    headerStyle: 'left-bold',
+    dividerStyle: 'solid-thick',
+    density: 'standard',
   },
+
   Cv46: {
     name: 'Frankfurt Finance Euro',
     archetype: ARCHETYPES.COMPACT_EURO,
-    primary: '#1e293b',
+    primary: '#1e3a8a',
     secondary: '#0284c7',
     font: "'Inter', sans-serif",
     skillVariant: SKILL_VARIANTS.BADGES,
     badgeRadius: '4px',
+    timelineStyle: 'date-rail',
+    headerStyle: 'left-bold',
+    dividerStyle: 'left-bar',
+    density: 'standard',
   },
+
   Cv47: {
     name: 'Metro Dual Column Pro',
     archetype: ARCHETYPES.MODERN_SPLIT,
@@ -563,7 +750,11 @@ export const THEME_PRESETS = {
     sidebarWidth: '35%',
     badgeRadius: '6px',
     timelineStyle: 'modern-node',
+    headerStyle: 'sidebar',
+    dividerStyle: 'solid-thin',
+    density: 'standard',
   },
+
   Cv48: {
     name: 'Modern Gradient Aurora',
     archetype: ARCHETYPES.MODERN_SPLIT,
@@ -576,7 +767,11 @@ export const THEME_PRESETS = {
     sidebarWidth: '35%',
     badgeRadius: '8px',
     timelineStyle: 'accent-bullet',
+    headerStyle: 'sidebar',
+    dividerStyle: 'solid-thin',
+    density: 'standard',
   },
+
   Cv49: {
     name: 'Berlin Tech Compact',
     archetype: ARCHETYPES.COMPACT_EURO,
@@ -585,28 +780,47 @@ export const THEME_PRESETS = {
     font: "'Inter', sans-serif",
     skillVariant: SKILL_VARIANTS.PILLS,
     badgeRadius: '4px',
+    timelineStyle: 'date-rail',
+    headerStyle: 'minimal-inline',
+    dividerStyle: 'solid-thin',
+    density: 'compact',
   },
+
+  // ── Reverse Split & Specialized Formats (Cv50, Cv51) ──
+
   Cv50: {
     name: 'Executive Platinum Split',
     archetype: ARCHETYPES.MODERN_SPLIT,
+    sidebarPosition: 'right', // Unique Right-Sidebar Split!
     primary: '#0f172a',
     secondary: '#475569',
-    sidebarBg: '#f8fafc',
+    sidebarBg: '#e2e8f0',
     sidebarText: '#1e293b',
     font: "'Plus Jakarta Sans', sans-serif",
-    skillVariant: SKILL_VARIANTS.PILLS,
-    sidebarWidth: '34%',
+    skillVariant: SKILL_VARIANTS.BADGES,
+    sidebarWidth: '32%',
     badgeRadius: '6px',
-    timelineStyle: 'modern-node',
+    timelineStyle: 'subtle-line',
+    headerStyle: 'sidebar',
+    dividerStyle: 'solid-thin',
+    density: 'standard',
   },
+
   Cv51: {
-    name: 'Standard Europass Official',
-    archetype: ARCHETYPES.COMPACT_EURO,
-    primary: '#003399',
-    secondary: '#4169e1',
-    font: "Arial, 'Inter', sans-serif",
-    skillVariant: SKILL_VARIANTS.PILLS,
-    badgeRadius: '3px',
+    name: 'Standard Europass Modern',
+    archetype: ARCHETYPES.MODERN_SPLIT,
+    primary: '#0f4c81',
+    secondary: '#f59e0b',
+    sidebarBg: '#eff6ff',
+    sidebarText: '#1e3a8a',
+    font: "'Inter', sans-serif",
+    skillVariant: SKILL_VARIANTS.DOTS,
+    sidebarWidth: '33%',
+    badgeRadius: '4px',
+    timelineStyle: 'date-rail',
+    headerStyle: 'sidebar',
+    dividerStyle: 'left-bar',
+    density: 'standard',
   },
 };
 

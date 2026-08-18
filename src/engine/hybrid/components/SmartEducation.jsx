@@ -5,14 +5,17 @@ import { formatDateRange, formatRichText } from '../utils/formatText';
 export default function SmartEducation({ educations = [], theme = {}, title = 'Education' }) {
   if (!educations || !educations.length) return null;
 
+  const dividerClass = `smart-section-title--${theme.dividerStyle || 'solid-thin'}`;
+  const timelineClass = `smart-timeline--${theme.timelineStyle || 'modern-node'}`;
+
   return (
     <section className="smart-section smart-education-section">
-      <h3 className="smart-section-title">
+      <h3 className={`smart-section-title ${dividerClass}`}>
         <span className="smart-section-title__text">{title}</span>
         <span className="smart-section-title__line" />
       </h3>
 
-      <div className={`smart-timeline smart-timeline--${theme.timelineStyle || 'modern-node'}`}>
+      <div className={`smart-timeline ${timelineClass}`}>
         {educations.map((edu, idx) => {
           const dateRange = formatDateRange(edu.started, edu.finished);
           const institution = [edu.school, edu.city].filter(Boolean).join(' · ');

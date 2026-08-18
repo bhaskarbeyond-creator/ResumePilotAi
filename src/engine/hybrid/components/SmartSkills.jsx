@@ -4,6 +4,7 @@ export default function SmartSkills({ skills = [], theme = {}, title = 'Skills' 
   if (!skills || !skills.length) return null;
 
   const variant = theme.skillVariant || 'pills';
+  const dividerClass = `smart-section-title--${theme.dividerStyle || 'solid-thin'}`;
 
   // Normalize skills into objects: { name, rating }
   const normalized = skills.map((s) => {
@@ -18,7 +19,7 @@ export default function SmartSkills({ skills = [], theme = {}, title = 'Skills' 
 
   return (
     <section className="smart-section smart-skills-section">
-      <h3 className="smart-section-title">
+      <h3 className={`smart-section-title ${dividerClass}`}>
         <span className="smart-section-title__text">{title}</span>
         <span className="smart-section-title__line" />
       </h3>

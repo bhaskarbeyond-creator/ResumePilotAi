@@ -4,7 +4,7 @@
  * dynamic multi-column skill wrap, and crisp vector timeline connectors.
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 /* ── A4 Page Sheet Geometry ─────────────────────────────────────────── */
 
@@ -76,6 +76,25 @@
   min-width: 0;
 }
 
+/* Reverse Split (Right Sidebar) */
+.smart-layout--reverse {
+  flex-direction: row-reverse;
+}
+
+.smart-layout--reverse .smart-sidebar {
+  border-right: none;
+  border-left: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.smart-split-hero--reverse {
+  flex-direction: row-reverse;
+}
+
+.smart-split-hero--reverse .smart-sidebar {
+  border-right: none;
+  border-left: 1px solid rgba(0, 0, 0, 0.08);
+}
+
 /* Adaptive Split-to-Full-Width Flow Layout */
 .smart-adaptive-page {
   display: flex;
@@ -143,13 +162,6 @@
   margin-bottom: 4px;
 }
 
-.smart-fullwidth-bottom-flow .smart-cert-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px 20px;
-  width: 100%;
-}
-
 /* 2. Executive Banner */
 .smart-layout--executive-banner {
   display: flex;
@@ -163,23 +175,6 @@
   color: var(--header-text, #ffffff);
   padding: 24px 28px;
   box-sizing: border-box;
-}
-
-.smart-layout--executive-banner .smart-body-columns {
-  display: flex;
-  flex: 1 1 auto;
-}
-
-.smart-layout--executive-banner .smart-sidebar {
-  width: var(--sidebar-width, 34%);
-  flex-shrink: 0;
-  background-color: #f8fafc;
-  padding: 20px 18px;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  border-right: 1px solid #e2e8f0;
 }
 
 .smart-layout--executive-banner .smart-main-content {
@@ -204,42 +199,12 @@
 
 /* 4. Tech Grid */
 .smart-layout--tech-grid {
+  padding: 26px 30px;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  flex: 1 1 auto;
+  gap: 16px;
   width: 100%;
-}
-
-.smart-layout--tech-grid .smart-header {
-  padding: 24px 28px 16px;
-  border-bottom: 2px solid #0f172a;
-}
-
-.smart-layout--tech-grid .smart-body-columns {
-  display: flex;
-  flex: 1 1 auto;
-}
-
-.smart-layout--tech-grid .smart-sidebar {
-  width: var(--sidebar-width, 34%);
-  flex-shrink: 0;
-  background-color: #f8fafc;
-  padding: 20px 18px;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  border-right: 1px solid #e2e8f0;
-}
-
-.smart-layout--tech-grid .smart-main-content {
-  flex: 1 1 auto;
-  padding: 20px 24px;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  min-width: 0;
 }
 
 /* 5. Compact Euro */
@@ -252,29 +217,29 @@
   width: 100%;
 }
 
-/* ── Smart Header ───────────────────────────────────────────────────── */
+/* ── Smart Header Variations ────────────────────────────────────────── */
 
 .smart-header {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
 }
 
 .smart-header__main {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 16px;
 }
 
 .smart-header__avatar-wrap {
-  width: 74px;
-  height: 74px;
+  width: 70px;
+  height: 70px;
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
   border: 3px solid #ffffff;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
 }
 
 .smart-header__avatar {
@@ -303,7 +268,7 @@
 }
 
 .smart-header__role {
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 600;
   color: var(--secondary, #3b82f6);
   margin: 0;
@@ -312,14 +277,14 @@
 }
 
 .smart-banner-wrapper .smart-header__role {
-  color: rgba(255, 255, 255, 0.88) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
 }
 
 .smart-header__contacts {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 16px;
-  font-size: 12px;
+  gap: 6px 14px;
+  font-size: 11.5px;
   color: #475569;
 }
 
@@ -330,13 +295,13 @@
 .smart-contact-item {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   min-width: 0;
 }
 
 .smart-contact-icon {
-  width: 13px;
-  height: 13px;
+  width: 12px;
+  height: 12px;
   flex-shrink: 0;
   color: var(--secondary, #3b82f6);
 }
@@ -345,99 +310,117 @@
   color: rgba(255, 255, 255, 0.8);
 }
 
+/* Variant: Centered Classic (Harvard, Oxford, Zurich) */
+.smart-header--centered-classic {
+  text-align: center;
+  align-items: center;
+}
+
+.smart-header--centered-classic .smart-header__main {
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+}
+
+.smart-header--centered-classic .smart-header__titles {
+  align-items: center;
+}
+
+.smart-header--centered-classic .smart-header__contacts {
+  justify-content: center;
+  gap: 4px 12px;
+}
+
+.smart-header--centered-classic .smart-contact-item:not(:last-child)::after {
+  content: '•';
+  margin-left: 8px;
+  color: #94a3b8;
+}
+
+.smart-header--centered-classic .smart-contact-icon {
+  display: none;
+}
+
+/* Variant: Left Bold (Stanford, Geneva, MIT, PM) */
+.smart-header--left-bold .smart-header__name {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.smart-header--left-bold .smart-header__role {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+/* Variant: Accent Bracket (Legal, MIT) */
+.smart-header--accent-bracket {
+  border-left: 5px solid var(--primary);
+  padding-left: 16px;
+}
+
+.smart-header--accent-bracket .smart-header__name {
+  font-size: 27px;
+  letter-spacing: -0.01em;
+}
+
+/* Variant: Minimal Inline (Wall Street, Cambridge, Scandinavia) */
+.smart-header--minimal-inline {
+  border-bottom: 2px solid var(--primary);
+  padding-bottom: 12px;
+}
+
+.smart-header--minimal-inline .smart-header__main {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.smart-header--minimal-inline .smart-header__name {
+  font-size: 24px;
+}
+
+.smart-header--minimal-inline .smart-header__role {
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* Sidebar Specific Header */
 .smart-sidebar .smart-header {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  width: 100%;
   padding-bottom: 14px;
-  border-bottom: 1.5px solid rgba(226, 232, 240, 0.8);
-  margin-bottom: 4px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .smart-sidebar .smart-header__main {
-  display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 12px;
-  width: 100%;
-}
-
-.smart-sidebar .smart-header__avatar-wrap {
-  width: 78px;
-  height: 78px;
-  border-radius: 50%;
-  border: 3px solid #ffffff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-.smart-sidebar .smart-header__titles {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  width: 100%;
+  gap: 10px;
 }
 
 .smart-sidebar .smart-header__name {
-  font-size: 21px;
-  font-weight: 800;
-  line-height: 1.2;
-  letter-spacing: -0.015em;
-  color: var(--primary, #0f172a);
-  margin: 0;
-  word-break: normal;
-  overflow-wrap: break-word;
-}
-
-.smart-sidebar .smart-header__role {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--secondary, #3b82f6);
-  margin: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  line-height: 1.35;
-}
-
-.smart-sidebar--dark .smart-header {
-  border-bottom-color: rgba(255, 255, 255, 0.15);
-}
-
-.smart-sidebar--dark .smart-header__name {
-  color: #ffffff !important;
-}
-
-.smart-sidebar--dark .smart-header__role {
-  color: var(--secondary, #93c5fd);
-}
-
-.smart-sidebar--dark .smart-header__avatar-wrap {
-  border-color: rgba(255, 255, 255, 0.3);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  font-size: 22px;
+  line-height: 1.15;
 }
 
 .smart-sidebar .smart-header__contacts {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   width: 100%;
 }
 
 .smart-sidebar .smart-contact-item {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: 6px;
   font-size: 11px;
-  line-height: 1.4;
-  word-break: break-word;
 }
 
-.smart-sidebar .smart-contact-icon {
-  margin-top: 2.5px;
-  flex-shrink: 0;
-}
-
-/* ── Section Titles ─────────────────────────────────────────────────── */
+/* ── Section Titles & Dividers ───────────────────────────────────────── */
 
 .smart-section {
   display: flex;
@@ -468,7 +451,52 @@
   opacity: 0.4;
 }
 
-/* ── Smart Skills (Key Fix: Multi-Column Flow Wrapping) ──────────────── */
+/* Divider: Solid Thick (Yale) */
+.smart-section-title--solid-thick {
+  border-bottom: 2.5px solid var(--primary);
+  padding-bottom: 3px;
+  margin-bottom: 6px;
+}
+
+.smart-section-title--solid-thick .smart-section-title__line {
+  display: none;
+}
+
+/* Divider: Left Bar (Stanford, Geneva, Legal, PM, Euro) */
+.smart-section-title--left-bar {
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.smart-section-title--left-bar::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 15px;
+  background-color: var(--secondary, var(--primary));
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.smart-section-title--left-bar .smart-section-title__line {
+  display: none;
+}
+
+/* Divider: Double Line (Oxford, Wall Street, Zurich, Academic) */
+.smart-section-title--double-line {
+  border-top: 1px solid #cbd5e1;
+  border-bottom: 1px solid #cbd5e1;
+  padding: 3px 0;
+  margin-bottom: 6px;
+}
+
+.smart-section-title--double-line .smart-section-title__line {
+  display: none;
+}
+
+/* ── Smart Skills (Pills, Badges, Dots, Bars, Inline) ───────────────── */
 
 .smart-skills-grid {
   display: flex;
@@ -481,23 +509,21 @@
   background-color: rgba(59, 130, 246, 0.08);
   color: var(--primary, #1e3a8a);
   border: 1px solid rgba(59, 130, 246, 0.18);
-  padding: 3px 9px;
+  padding: 3px 8px;
   border-radius: 6px;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.01em;
   display: inline-flex;
   align-items: center;
-  transition: all 0.15s ease;
 }
 
 .smart-skills-grid--badges .smart-skill-item {
   background-color: #f1f5f9;
   color: #334155;
   border: 1px solid #cbd5e1;
-  padding: 3px 8px;
+  padding: 2.5px 7px;
   border-radius: 4px;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
@@ -508,47 +534,26 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 3px 0;
-  font-size: 12px;
+  padding: 2.5px 0;
+  font-size: 11.5px;
   font-weight: 500;
 }
 
 .smart-skill-dots {
   display: flex;
   gap: 4px;
+  align-items: center;
 }
 
 .smart-skill-dot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background-color: #cbd5e1;
 }
 
 .smart-skill-dot--filled {
   background-color: var(--secondary, #3b82f6);
-}
-
-.smart-skills-grid--bars .smart-skill-item {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  width: 100%;
-  padding: 2px 0;
-}
-
-.smart-skill-bar-wrap {
-  width: 100%;
-  height: 4px;
-  background-color: #e2e8f0;
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.smart-skill-bar {
-  height: 100%;
-  background: var(--secondary, #3b82f6);
-  border-radius: 2px;
 }
 
 .smart-skills-grid--inline {
@@ -558,7 +563,7 @@
 }
 
 .smart-skills-grid--inline .smart-skill-item {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 500;
 }
 
@@ -568,12 +573,43 @@
   color: #94a3b8;
 }
 
+/* ── Smart Languages ────────────────────────────────────────────────── */
+
+.smart-languages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.smart-language-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11.5px;
+}
+
+.smart-language-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.smart-language-name {
+  font-weight: 600;
+  color: inherit;
+}
+
+.smart-language-level {
+  font-size: 10.5px;
+  color: #64748b;
+}
+
 /* ── Smart Timeline (Experience & Education) ────────────────────────── */
 
 .smart-timeline {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   width: 100%;
 }
 
@@ -589,31 +625,34 @@
   flex-direction: column;
   align-items: center;
   flex-shrink: 0;
-  width: 14px;
+  width: 12px;
   padding-top: 4px;
 }
 
 .smart-timeline-node {
-  width: 9px;
-  height: 9px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background-color: var(--secondary, #3b82f6);
-  border: 2px solid #ffffff;
-  box-shadow: 0 0 0 1.5px var(--secondary, #3b82f6);
+  flex-shrink: 0;
 }
 
 .smart-timeline-connector {
-  flex: 1 1 auto;
   width: 1.5px;
-  background-color: #e2e8f0;
+  flex: 1 1 auto;
+  background-color: rgba(59, 130, 246, 0.2);
   margin-top: 4px;
+}
+
+.smart-timeline-item:last-child .smart-timeline-connector {
+  display: none;
 }
 
 .smart-timeline-body {
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   min-width: 0;
 }
 
@@ -625,8 +664,6 @@
 }
 
 .smart-timeline-title-group {
-  flex: 1 1 auto;
-  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 1px;
@@ -637,400 +674,112 @@
   font-weight: 700;
   color: #0f172a;
   margin: 0;
-  line-height: 1.3;
-  word-break: break-word;
 }
 
 .smart-timeline-company {
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
-  color: var(--secondary, #3b82f6);
+  color: var(--primary, #1e3a8a);
 }
 
 .smart-timeline-date {
   font-size: 11.5px;
-  font-weight: 600;
+  font-weight: 500;
   color: #64748b;
-  white-space: nowrap;
   flex-shrink: 0;
-  text-align: right;
+  white-space: nowrap;
 }
 
-/* Rich Text & Summary Typography */
-.smart-summary-content {
-  text-align: justify;
-  text-justify: inter-word;
-  hyphens: auto;
-  line-height: 1.55;
-  font-size: 12.5px;
+.smart-timeline-desc {
+  font-size: 12px;
   color: #334155;
+  line-height: 1.45;
+  margin-top: 2px;
 }
 
-.rich-text {
-  font-size: 12.5px;
-  color: #334155;
-  line-height: 1.55;
+.smart-timeline-desc p {
+  margin: 0 0 3px;
 }
 
-.rich-text p {
-  margin: 0 0 4px;
-  text-align: justify;
-  text-justify: inter-word;
-}
-
-.rich-text p:last-child {
-  margin-bottom: 0;
-}
-
-.rich-text ul {
-  margin: 4px 0 0 18px;
+.smart-timeline-desc ul {
+  margin: 2px 0 3px 14px;
   padding: 0;
-  list-style-type: disc;
-  text-align: left;
 }
 
-.rich-text li {
-  margin-bottom: 3px;
-  line-height: 1.5;
+.smart-timeline-desc li {
+  margin-bottom: 2px;
 }
 
-/* ── Smart Cards (Projects & References) ────────────────────────────── */
-
-.smart-cards-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+/* Timeline Style: Date Rail (Europass & Academic) */
+.smart-timeline--date-rail .smart-timeline-marker {
+  display: none;
 }
 
-.smart-card-item {
-  background-color: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  padding: 10px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  break-inside: avoid;
-}
-
-.smart-card-header {
-  display: flex;
-  justify-content: space-between;
+.smart-timeline--date-rail .smart-timeline-header {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 12px;
   align-items: baseline;
 }
 
-.smart-card-title {
+.smart-timeline--date-rail .smart-timeline-date {
+  order: -1;
+  color: var(--primary, #003399);
+  font-weight: 700;
+  font-size: 11.5px;
+}
+
+/* Timeline Style: Compact Clean (ATS) */
+.smart-timeline--compact-clean .smart-timeline-marker {
+  display: none;
+}
+
+/* Timeline Style: Code Tag (Tech) */
+.smart-timeline--code-tag .smart-timeline-marker {
+  display: none;
+}
+
+.smart-timeline--code-tag .smart-timeline-role {
+  font-family: 'Fira Code', 'Courier New', monospace;
   font-size: 13px;
-  font-weight: 700;
-  color: #0f172a;
-  margin: 0;
+  color: var(--primary, #0f172a);
 }
 
-.smart-card-link {
-  font-size: 11.5px;
-  font-weight: 500;
-  color: var(--secondary, #3b82f6);
-  text-decoration: none;
+/* Timeline Style: Subtle Line */
+.smart-timeline--subtle-line .smart-timeline-node {
+  display: none;
 }
 
-/* ── Smart Key Achievements ─────────────────────────────────────────── */
-
-.smart-achievements-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 100%;
-}
-
-.smart-achievement-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  background-color: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  padding: 8px 12px;
-  break-inside: avoid;
-}
-
-.smart-achievement-icon {
-  width: 15px;
-  height: 15px;
-  color: var(--secondary, #3b82f6);
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-
-.smart-achievement-icon svg {
-  width: 15px;
-  height: 15px;
-  display: block;
-}
-
-.smart-achievement-content {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.smart-achievement-title {
-  font-size: 12.5px;
-  font-weight: 700;
-  color: #0f172a;
-  margin: 0;
-}
-
-.smart-achievement-desc {
-  font-size: 12px;
-  color: #475569;
-}
-
-/* ── Smart Certifications & Languages ───────────────────────────────── */
-
-.smart-cert-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px 14px;
-  width: 100%;
-}
-
-.smart-sidebar .smart-cert-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.smart-cert-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  min-width: 0;
-}
-
-.smart-cert-badge {
-  width: 14px;
-  height: 14px;
-  color: var(--secondary, #3b82f6);
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-
-.smart-cert-badge svg {
-  width: 14px;
-  height: 14px;
-  display: block;
-}
-
-.smart-cert-content {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-}
-
-.smart-cert-title {
-  font-size: 12px;
-  font-weight: 700;
-  color: #1e293b;
-  margin: 0;
-  line-height: 1.3;
-}
-
-.smart-cert-meta {
-  font-size: 11px;
-  color: #64748b;
-}
-
-.smart-languages-list {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.smart-language-item {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  padding: 2px 0;
-  border-bottom: 1px dashed rgba(0, 0, 0, 0.08);
-}
-
-.smart-language-name {
-  font-weight: 600;
-  color: #1e293b;
-}
-
-.smart-language-level {
-  font-size: 11px;
-  color: #64748b;
-}
-
-/* ── Smart Hobbies & Interests ────────────────────────────────────────── */
-
-.smart-hobbies-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  width: 100%;
-}
-
-.smart-hobby-pill {
-  font-size: 11.5px;
-  font-weight: 500;
-  color: #334155;
-  background-color: #f1f5f9;
-  border: 1px solid #e2e8f0;
-  border-radius: var(--badge-radius, 6px);
-  padding: 3px 9px;
-  display: inline-flex;
-  align-items: center;
-  line-height: 1.3;
-}
-
-.smart-sidebar--dark .smart-hobby-pill {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: #f8fafc;
-  border-color: rgba(255, 255, 255, 0.15);
-}
-
-.smart-hobbies-text {
-  font-size: 12px;
-  line-height: 1.5;
-  color: #475569;
-}
-
-/* ── Smart Flow Container ───────────────────────────────────────────── */
-
-.smart-flow-container {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  width: 100%;
-}
-
-.smart-main-content--full {
-  width: 100% !important;
-  padding: 24px 32px !important;
+.smart-timeline--subtle-line .smart-timeline-connector {
+  width: 2px;
+  background-color: #cbd5e1;
+  margin-top: 0;
 }
 
 /* ── Continuation Header & Footer ───────────────────────────────────── */
 
 .smart-continuation-header {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 14px 28px 10px;
-  border-bottom: 2px solid var(--secondary, #3b82f6);
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  background: #ffffff;
-}
-
-.smart-continuation-who {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-}
-
-.smart-continuation-name {
-  font-size: 15px;
-  font-weight: 800;
-  color: #0f172a;
-}
-
-.smart-continuation-role {
-  font-size: 12.5px;
-  font-weight: 500;
-  color: #64748b;
-}
-
-.smart-continuation-page {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--secondary, #3b82f6);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.smart-page-footer {
-  padding: 6px 24px 10px;
-  border-top: 1px solid #e2e8f0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 10px;
-  color: #94a3b8;
+  padding: 10px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  background-color: #f8fafc;
+  font-size: 11px;
+  color: #64748b;
 }
 
-/* ── Print Stylesheet ───────────────────────────────────────────────── */
+.smart-continuation-name {
+  font-weight: 700;
+  color: #0f172a;
+}
 
-@media print {
-  @page {
-    size: A4 portrait;
-    margin: 0mm !important;
-  }
-
-  html, body {
-    background: #ffffff !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    width: 210mm !important;
-    height: 100% !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  .smart-resume-document {
-    background: transparent !important;
-    gap: 0 !important;
-    padding: 0 !important;
-    width: 210mm !important;
-    margin: 0 !important;
-  }
-
-  .smart-resume-page {
-    box-shadow: none !important;
-    margin: 0 !important;
-    width: 210mm !important;
-    height: 297mm !important;
-    min-height: 297mm !important;
-    max-height: 297mm !important;
-    page-break-after: always !important;
-    break-after: page !important;
-    overflow: hidden !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  /* Guarantee Header, Footer, and Contact details are 100% visible in print/PDF */
-  header.smart-header,
-  .smart-header,
-  .smart-header__main,
-  .smart-header__titles,
-  .smart-header__name,
-  .smart-header__role,
-  .smart-header__contacts,
-  .smart-header__avatar-wrap,
-  .smart-header__avatar,
-  footer.smart-page-footer,
-  .smart-page-footer {
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-  }
-
-  .smart-header__titles {
-    display: flex !important;
-    flex-direction: column !important;
-  }
-
-  .smart-header__name {
-    display: block !important;
-  }
-
-  .smart-header__avatar {
-    display: block !important;
-    max-width: 100% !important;
-  }
+.smart-page-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 24px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  font-size: 10px;
+  color: #94a3b8;
 }
