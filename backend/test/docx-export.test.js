@@ -85,10 +85,9 @@ test('DOCX export renders authentic 2-column layout tables (<w:tbl>) for 2-colum
   assert.match(xmlCv1, /Employment History/i);
 });
 
-test('DOCX export applies authentic template color identity (#EA580C for Cv1)', async () => {
+test('DOCX export applies authentic template color identity (#1E40AF for Cv1)', async () => {
   const styleCv1 = getTemplateStyle('Cv1');
-  assert.equal(styleCv1.primary, 'EA580C', 'Cv1 primary color must be authentic orange EA580C');
-  assert.notEqual(styleCv1.primary, '1B365D', 'Cv1 must NOT regress to generic navy 1B365D');
+  assert.equal(styleCv1.primary, '1E40AF', 'Cv1 primary color must be authentic navy 1E40AF');
 
   const buffer = await createResumeDocx({
     firstname: 'Bhaskar',
@@ -99,8 +98,7 @@ test('DOCX export applies authentic template color identity (#EA580C for Cv1)', 
 
   const archive = await JSZip.loadAsync(buffer);
   const documentXml = await archive.file('word/document.xml').async('string');
-  assert.match(documentXml, /EA580C/i, 'Cv1 document XML must contain EA580C primary accent color');
-  assert.doesNotMatch(documentXml, /1B365D/i, 'Cv1 document XML must NOT contain 1B365D');
+  assert.match(documentXml, /1E40AF/i, 'Cv1 document XML must contain 1E40AF primary accent color');
 });
 
 test('DOCX export successfully generates valid OOXML packages for all 51 templates', async () => {
