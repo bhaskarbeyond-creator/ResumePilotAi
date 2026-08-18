@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+  <head><meta charset="utf-8" /><title>PDF raster</title>
+    <style>body{margin:0;background:#fff}canvas{display:block;margin:0}</style>
+  </head>
+  <body>
+    <div id="out"></div>
+    <script type="module">
+      import * as pdfjs from '/node_modules/pdfjs-dist/build/pdf.mjs';
+      pdfjs.GlobalWorkerOptions.workerSrc = '/node_modules/pdfjs-dist/build/pdf.worker.mjs';
+      const params = new URLSearchParams(location.search);
+      const file = params.get('file');
+      const scale = Number(params.get('scale') || 1.4);
+      const doc = await pdfjs.getDocument({ url: file }).promise;
+      const out = document.getElementById('out');
+      for (let i = 1; i <= doc.numPages; i++) {
+        const page = await doc.getPage(i);
+        const viewport = page.getViewport({ scale });
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.floor(viewport.width);
+        canvas.height = Math.floor(viewport.height);
+        canvas.setAttribute('data-page', String(i));
+        out.appendChild(canvas);
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+      }
+      document.documentElement.setAttribute('data-pdf-pages', String(doc.numPages));
+      document.documentElement.setAttribute('data-pdf-state', 'ready');
+    </script>
+  </body>
+</html>

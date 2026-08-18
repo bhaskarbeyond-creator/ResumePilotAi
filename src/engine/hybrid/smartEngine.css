@@ -579,6 +579,45 @@
   gap: 3px 6px;
 }
 
+/* Skill variant: proficiency BARS.
+   `SKILL_VARIANTS.BARS` was declared in the engine and `SmartSkills` already
+   emitted the `.smart-skill-bar-wrap` / `.smart-skill-bar` markup, but no rule
+   ever styled it — the variant rendered as an unstyled block. */
+.smart-skills-grid--bars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.smart-skills-grid--bars .smart-skill-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.smart-skill-bar-wrap {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  background-color: rgba(100, 116, 139, 0.22);
+  overflow: hidden;
+}
+
+.smart-skill-bar {
+  height: 100%;
+  border-radius: 999px;
+  background-color: var(--secondary, #3b82f6);
+}
+
+.smart-sidebar .smart-skill-bar-wrap {
+  background-color: rgba(148, 163, 184, 0.35);
+}
+
 .smart-skills-grid--inline .smart-skill-item {
   font-size: 10.5px;
   font-weight: 500;
@@ -996,4 +1035,214 @@
   border-top: 1px solid rgba(0, 0, 0, 0.05);
   font-size: 9px;
   color: #94a3b8;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   DENSITY SCALE  (theme.density: compact | standard | spacious)
+   ══════════════════════════════════════════════════════════════════════
+   `density` was declared on every one of the 51 presets but consumed by
+   nothing, so "compact" templates rendered pixel-identical to their
+   "standard" siblings. The scale below turns the declared token into a
+   real typographic dimension: body size, leading, section rhythm and
+   section-title scale all move together.
+   Implemented as CSS custom properties on the page root so the whole
+   layout (both columns, every archetype) inherits the same rhythm. */
+
+.smart-resume-page {
+  --density-body: 11.5px;
+  --density-line: 1.42;
+  --density-gap: 12px;
+  --density-sidebar-gap: 14px;
+  --density-section-gap: 7px;
+  --density-title: 11.5px;
+  --density-pad-y: 24px;
+  font-size: var(--density-body);
+  line-height: var(--density-line);
+}
+
+.smart-resume-page[data-density='compact'] {
+  --density-body: 10.6px;
+  --density-line: 1.32;
+  --density-gap: 8px;
+  --density-sidebar-gap: 10px;
+  --density-section-gap: 5px;
+  --density-title: 10.6px;
+  --density-pad-y: 18px;
+}
+
+.smart-resume-page[data-density='spacious'] {
+  --density-body: 12.1px;
+  --density-line: 1.55;
+  --density-gap: 17px;
+  --density-sidebar-gap: 19px;
+  --density-section-gap: 10px;
+  --density-title: 12.4px;
+  --density-pad-y: 30px;
+}
+
+.smart-resume-page .smart-layout--modern-split .smart-main-content,
+.smart-resume-page .smart-banner-body .smart-main-content,
+.smart-resume-page .smart-layout--minimal-ats,
+.smart-resume-page .smart-layout--tech-grid,
+.smart-resume-page .smart-layout--compact-euro {
+  gap: var(--density-gap);
+  padding-top: var(--density-pad-y);
+  padding-bottom: var(--density-pad-y);
+}
+
+.smart-resume-page .smart-sidebar {
+  gap: var(--density-sidebar-gap);
+  padding-top: var(--density-pad-y);
+}
+
+.smart-resume-page .smart-section {
+  gap: var(--density-section-gap);
+}
+
+.smart-resume-page .smart-section-title {
+  font-size: var(--density-title);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LONG-TOKEN GUARD
+   ══════════════════════════════════════════════════════════════════════
+   Names, role titles, URLs and continuation chrome had no wrapping rule.
+   A single unbroken token (long transliterated names, deep URLs) pushed
+   the header box past the 210 mm sheet edge, and `overflow:hidden` on the
+   sheet then cut the ink off in browser, print and PDF alike. */
+
+.smart-header__name,
+.smart-header__first,
+.smart-header__last,
+.smart-header__role,
+.smart-header__titles,
+.smart-contact-item,
+.smart-contact-item span,
+.smart-continuation-name,
+.smart-continuation-role,
+.smart-card-link {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Content labels break only when a word genuinely cannot fit, so ordinary
+   titles such as "ResumePilot" are never split mid-word. */
+.smart-timeline-role,
+.smart-timeline-company,
+.smart-timeline-desc,
+.smart-card-title,
+.smart-card-desc,
+.smart-skill-name,
+.smart-summary-text,
+.rich-text {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+/* Flex children default to `min-width:auto`, so a single unbreakable token in a
+   role/company title pushed the whole timeline row past the sheet edge. */
+.smart-timeline,
+.smart-timeline-item,
+.smart-timeline-body,
+.smart-timeline-header,
+.smart-timeline-title-group,
+.smart-flow-container,
+.smart-section,
+.smart-main-content,
+.smart-sidebar {
+  min-width: 0;
+}
+
+/* Long localised date ranges ("janvier 2018 – decembre 2019") used to sit in a
+   nowrap, non-shrinking box; in the 100 px `date-rail` column that overlapped
+   the role title. The date may now wrap, but only when it genuinely must. */
+.smart-timeline-date {
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: break-word;
+  text-align: right;
+}
+
+.smart-timeline--date-rail .smart-timeline-header {
+  grid-template-columns: 108px minmax(0, 1fr);
+}
+
+.smart-timeline--date-rail .smart-timeline-date {
+  text-align: left;
+}
+
+.smart-header__main {
+  min-width: 0;
+}
+
+.smart-continuation-header {
+  gap: 10px;
+}
+
+.smart-continuation-page {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   PRINT / PDF SHEET ALIGNMENT
+   ══════════════════════════════════════════════════════════════════════
+   The composer paints discrete 210 x 297 mm sheets, but the on-screen
+   document shell around them (24 px vertical padding, 24 px inter-sheet
+   gap, grey backdrop, drop shadow) was never neutralised for print media.
+   Chromium's `page.pdf()` renders with print media emulation, so that
+   screen chrome was carried into the paged box: sheet 1 started 24 px
+   below the top of PDF page 1 and every sheet boundary drifted further,
+   producing a sliver of the previous sheet at the top of the next PDF
+   page plus a near-blank orphan page at the end (2 sheets -> 3 PDF pages
+   for every one of the 51 templates).
+
+   Zeroing the shell and forcing an explicit page break after each sheet
+   makes 1 composed sheet == exactly 1 physical page. */
+
+@media print {
+  .smart-resume-engine-root,
+  .smart-resume-document {
+    background: #ffffff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    gap: 0 !important;
+    display: block !important;
+    width: auto !important;
+  }
+
+  .smart-resume-page {
+    width: 210mm !important;
+    height: 297mm !important;
+    min-height: 297mm !important;
+    max-height: 297mm !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    overflow: hidden !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    break-after: page;
+    page-break-after: always;
+  }
+
+  /* No trailing blank page after the final sheet. */
+  .smart-resume-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  .smart-sidebar,
+  .smart-banner-wrapper,
+  .smart-skill-item,
+  .smart-hobby-pill,
+  .smart-card-item,
+  .smart-cert-item,
+  .smart-continuation-header,
+  .smart-page-footer {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
 }

@@ -70,7 +70,7 @@ import Cv47Img from '../../../assets/resumesNew/Cv47.JPG';
 import Cv48Img from '../../../assets/resumesNew/Cv48.JPG';
 import Cv49Img from '../../../assets/resumesNew/Cv49.JPG';
 import Cv50Img from '../../../assets/resumesNew/Cv50.JPG';
-import Cv51Img from '../../../assets/resumesNew/CV51.JPG';
+import Cv51Img from '../../../assets/resumesNew/Cv51.JPG';
 
 // Import Cover Letter Thumbnail Images
 import Cover1Img from '../../../assets/coversNew/Cover1.JPG';

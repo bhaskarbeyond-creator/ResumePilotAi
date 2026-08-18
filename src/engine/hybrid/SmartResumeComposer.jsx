@@ -47,6 +47,9 @@ export default function SmartResumeComposer({ templateId = 'Cv1', language = 'en
               className={`smart-resume-page smart-resume-page--${templateId.toLowerCase()}`}
               data-page-index={pageIdx}
               data-page-number={pageNumber}
+              data-template={templateId}
+              data-archetype={theme.archetype}
+              data-density={theme.density || 'standard'}
               style={{ fontFamily: 'var(--font-family)' }}
             >
               <div className="smart-page-body">

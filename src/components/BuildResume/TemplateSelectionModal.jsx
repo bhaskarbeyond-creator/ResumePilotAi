@@ -58,7 +58,8 @@ import Cv47 from '../../assets/resumesNew/Cv47.JPG';
 import Cv48 from '../../assets/resumesNew/Cv48.JPG';
 import Cv49 from '../../assets/resumesNew/Cv49.JPG';
 import Cv50 from '../../assets/resumesNew/Cv50.JPG';
-import Cv51 from '../../assets/resumesNew/CV51.JPG';
+import Cv51 from '../../assets/resumesNew/Cv51.JPG';
+import { getTemplateMeta } from '../../utils/templateCatalog';
 
 const TemplateSelectionModal = ({ showModal, setShowModal, currentTemplate = 'Cv1', onTemplateSelect, resumeData }) => {
     const { t } = useTranslation('common');
@@ -130,8 +131,10 @@ const TemplateSelectionModal = ({ showModal, setShowModal, currentTemplate = 'Cv
                 id: 'Cv51',
                 src: Cv51,
                 category: 'professional',
-                name: 'Europass Executive Classic',
-                description: 'European standardized multi-page executive template',
+                // Authoritative name/description: Cv51 renders through the
+                // modern-split archetype, not the Europass single-column one.
+                name: getTemplateMeta('Cv51').name,
+                description: getTemplateMeta('Cv51').description,
                 popularity: 95,
             },
             {

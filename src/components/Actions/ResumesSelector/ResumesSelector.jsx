@@ -54,12 +54,22 @@ import Cv47 from "../../../assets/resumesNew/Cv47.JPG";
 import Cv48 from "../../../assets/resumesNew/Cv48.JPG";
 import Cv49 from "../../../assets/resumesNew/Cv49.JPG";
 import Cv50 from "../../../assets/resumesNew/Cv50.JPG";
-import Cv51 from "../../../assets/resumesNew/CV51.JPG";
+import Cv51 from "../../../assets/resumesNew/Cv51.JPG";
 // Cover Templates
 import Cover1 from "../../../assets/coversNew/Cover1.JPG";
 import Cover2 from "../../../assets/coversNew/Cover2.JPG";
 import Cover3 from "../../../assets/coversNew/Cover3.JPG";
 import Cover4 from "../../../assets/coversNew/Cover4.JPG";
+import { TEMPLATE_CATALOG, templateAccessibleLabel } from "../../../utils/templateCatalog";
+
+// Preview artwork keyed by id; every other card attribute comes from the
+// authoritative catalog so the picker cannot drift from the render engine.
+const RESUME_PREVIEWS = {
+  Cv1, Cv2, Cv3, Cv4, Cv5, Cv6, Cv7, Cv8, Cv9, Cv10, Cv11, Cv12, Cv13, Cv14, Cv15, Cv16, Cv17,
+  Cv18, Cv19, Cv20, Cv21, Cv22, Cv23, Cv24, Cv25, Cv26, Cv27, Cv28, Cv29, Cv30, Cv31, Cv32,
+  Cv33, Cv34, Cv35, Cv36, Cv37, Cv38, Cv39, Cv40, Cv41, Cv42, Cv43, Cv44, Cv45, Cv46, Cv47,
+  Cv48, Cv49, Cv50, Cv51,
+};
 
 const ResumesSelector = (props) => {
   const modalRef = useRef(null);
@@ -87,61 +97,15 @@ const ResumesSelector = (props) => {
     };
   }, [props.handleTemplateShow]);
 
-  // Organize templates into categories for better UX
-  const resumeTemplates = [
-    { id: "Cv1", image: Cv1, category: "Professional" },
-    { id: "Cv51", image: Cv51, category: "Professional" },
-    { id: "Cv2", image: Cv2, category: "Professional" },
-    { id: "Cv3", image: Cv3, category: "Creative" },
-    { id: "Cv4", image: Cv4, category: "Simple" },
-    { id: "Cv5", image: Cv5, category: "Modern" },
-    { id: "Cv6", image: Cv6, category: "Modern" },
-    { id: "Cv7", image: Cv7, category: "Simple" },
-    { id: "Cv8", image: Cv8, category: "Professional" },
-    { id: "Cv9", image: Cv9, category: "Creative" },
-    { id: "Cv10", image: Cv10, category: "Modern" },
-    { id: "Cv11", image: Cv11, category: "Professional" },
-    { id: "Cv12", image: Cv12, category: "Creative" },
-    { id: "Cv13", image: Cv13, category: "Simple" },
-    { id: "Cv14", image: Cv14, category: "Modern" },
-    { id: "Cv15", image: Cv15, category: "Professional" },
-    { id: "Cv16", image: Cv16, category: "Professional" },
-    { id: "Cv17", image: Cv17, category: "Professional" },
-    { id: "Cv18", image: Cv18, category: "Professional" },
-    { id: "Cv19", image: Cv19, category: "Professional" },
-    { id: "Cv20", image: Cv20, category: "Professional" },
-    { id: "Cv21", image: Cv21, category: "Professional" },
-    { id: "Cv22", image: Cv22, category: "Professional" },
-    { id: "Cv23", image: Cv23, category: "Professional" },
-    { id: "Cv24", image: Cv24, category: "Professional" },
-    { id: "Cv25", image: Cv25, category: "Professional" },
-    { id: "Cv26", image: Cv26, category: "Professional" },
-    { id: "Cv27", image: Cv27, category: "Professional" },
-    { id: "Cv28", image: Cv28, category: "Professional" },
-    { id: "Cv29", image: Cv29, category: "Professional" },
-    { id: "Cv30", image: Cv30, category: "Professional" },
-    { id: "Cv31", image: Cv31, category: "Professional" },
-    { id: "Cv32", image: Cv32, category: "Professional" },
-    { id: "Cv33", image: Cv33, category: "Professional" },
-    { id: "Cv34", image: Cv34, category: "Professional" },
-    { id: "Cv35", image: Cv35, category: "Professional" },
-    { id: "Cv36", image: Cv36, category: "Professional" },
-    { id: "Cv37", image: Cv37, category: "Professional" },
-    { id: "Cv38", image: Cv38, category: "Professional" },
-    { id: "Cv39", image: Cv39, category: "Professional" },
-    { id: "Cv40", image: Cv40, category: "Professional" },
-    { id: "Cv41", image: Cv41, category: "Professional" },
-    { id: "Cv42", image: Cv42, category: "Professional" },
-    { id: "Cv43", image: Cv43, category: "Professional" },
-    { id: "Cv44", image: Cv44, category: "Professional" },
-    { id: "Cv45", image: Cv45, category: "Professional" },
-    { id: "Cv46", image: Cv46, category: "Professional" },
-    { id: "Cv47", image: Cv47, category: "Professional" },
-    { id: "Cv48", image: Cv48, category: "Professional" },
-    { id: "Cv49", image: Cv49, category: "Professional" },
-    { id: "Cv50", image: Cv50, category: "Professional" },
-    { id: "Cv51", image: Cv51, category: "Professional" },
-  ];
+  // One card per registered template, named and categorised from the render
+  // engine's own theme presets. The previous hand-written array listed Cv51
+  // twice (52 cards, duplicate React key) and mislabelled the second copy.
+  const resumeTemplates = TEMPLATE_CATALOG.map((entry) => ({
+    id: entry.id,
+    image: RESUME_PREVIEWS[entry.id],
+    category: entry.category,
+    name: entry.name,
+  }));
 
   const coverTemplates = [
     { id: "Cover1", image: Cover1, category: "Professional" },
@@ -155,6 +119,7 @@ const ResumesSelector = (props) => {
       ? resumeTemplates.filter(
           (template) =>
             template.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (template.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
             template.category.toLowerCase().includes(searchTerm.toLowerCase())
         )
       : coverTemplates.filter(
@@ -202,16 +167,31 @@ const ResumesSelector = (props) => {
         <div className="select_resumes">
           {filteredTemplates.length > 0 ? (
             filteredTemplates.map((template) => (
-              <div
+              <button
+                type="button"
                 key={template.id}
                 onClick={() => handleResumeClick(template.id)}
                 className={`select_resume_item ${
                   selectedTemplate === template.id ? "selected" : ""
                 }`}
                 data-category={template.category}
+                aria-pressed={selectedTemplate === template.id}
+                aria-label={
+                  template.name
+                    ? templateAccessibleLabel(template.id)
+                    : `Select ${template.id} template`
+                }
               >
-                <img src={template.image} alt={template.id} />
-              </div>
+                <img
+                  src={template.image}
+                  alt={
+                    template.name
+                      ? `${template.name} template preview`
+                      : `${template.id} template preview`
+                  }
+                  loading="lazy"
+                />
+              </button>
             ))
           ) : (
             <div className="no-results">

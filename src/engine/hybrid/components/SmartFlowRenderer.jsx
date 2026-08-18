@@ -30,11 +30,13 @@ export default function SmartFlowRenderer({ flowItems = [], theme = {}, isContin
       {groups.map((group, gIdx) => {
         switch (group.type) {
           case 'summary':
+            // A long summary is partitioned into several blocks; render every
+            // block that landed on this page, not just the first.
             return (
               <SmartSummary
                 key={gIdx}
-                summary={group.items[0].content}
-                title={isContinuation ? 'Summary (Continued)' : 'Professional Summary'}
+                summary={group.items.map((item) => item.content).join('')}
+                title={group.items[0].isFirst === false || isContinuation ? 'Summary (Continued)' : 'Professional Summary'}
                 theme={theme}
               />
             );

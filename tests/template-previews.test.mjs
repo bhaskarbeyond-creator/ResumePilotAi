@@ -33,22 +33,30 @@ test('Template Previews Audit Suite', async (t) => {
     }
   });
 
-  await t.test('Cv51 and legacy CV51 alias are synchronized', () => {
-    const cv51Path = path.join(ASSETS_DIR, 'Cv51.JPG');
-    const upperPath = path.join(ASSETS_DIR, 'CV51.JPG');
-    assert.equal(fs.existsSync(cv51Path), true, 'Cv51.JPG must exist');
-    assert.equal(fs.existsSync(upperPath), true, 'CV51.JPG alias must exist');
-    const stat1 = fs.statSync(cv51Path);
-    const stat2 = fs.statSync(upperPath);
-    assert.equal(stat1.size, stat2.size, 'Cv51.JPG and CV51.JPG must match size');
+  await t.test('Cv51 uses the canonical filename with no case-variant alias', () => {
+    // The asset used to ship as `CV51.JPG` while every other template used the
+    // `CvNN.JPG` form. On a case-insensitive filesystem the two names collide,
+    // and the mixed-case import was a standing source of "missing preview"
+    // failures. The canonical name is now the only one that may exist.
+    const files = fs.readdirSync(ASSETS_DIR);
+    assert.ok(files.includes('Cv51.JPG'), 'Cv51.JPG must exist');
+    assert.equal(files.includes('CV51.JPG'), false, 'legacy CV51.JPG alias must not be reintroduced');
+    const sources = ['src/components/Actions/ResumesSelector/ResumesSelector.jsx',
+      'src/components/Actions/action-step-selection/ActionSelection.jsx',
+      'src/components/BuildResume/TemplateSelectionModal.jsx',
+      'src/components/admin/settings/TemplateManagerSettings.jsx'];
+    for (const file of sources) {
+      const source = fs.readFileSync(path.resolve(file), 'utf8');
+      assert.equal(source.includes('resumesNew/CV51.JPG'), false, `${file} still imports the legacy CV51 alias`);
+    }
   });
 
   await t.test('No unexpected or unregistered template files in resumesNew', () => {
     const files = fs.readdirSync(ASSETS_DIR);
+    assert.equal(files.length, CV_IDS.length, `expected exactly ${CV_IDS.length} preview files`);
     for (const file of files) {
       const base = file.replace(/\.jpg$/i, '');
-      const isValid = CV_IDS.includes(base) || base === 'CV51';
-      assert.equal(isValid, true, `Unexpected file in resumesNew: ${file}`);
+      assert.equal(CV_IDS.includes(base), true, `Unexpected file in resumesNew: ${file}`);
     }
   });
 });

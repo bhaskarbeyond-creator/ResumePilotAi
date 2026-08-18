@@ -11,6 +11,7 @@ import LanguagesStep from './steps/LanguagesStep';
 import SummaryStep from './steps/SummaryStep';
 
 import TemplateRenderer from '../TemplateRenderer';
+import { getTemplateMeta } from '../../utils/templateCatalog';
 
 // Modal Components
 import PreviewModal from './PreviewModal';
@@ -408,10 +409,14 @@ const BuildResume = () => {
             Cv48: t('BuildResume.templates.professional48'),
             Cv49: t('BuildResume.templates.professional49'),
             Cv50: t('BuildResume.templates.professional50'),
-            Cv51: 'Europass Executive Classic',
         };
 
-        return templateNames[templateId] || templateId;
+        // Cv51 (and any future id) resolves through the authoritative catalog
+        // instead of a hard-coded caption. The previous literal
+        // "Europass Executive Classic" contradicted the rendering archetype
+        // (modern-split) and the theme name ("Standard Europass Modern"),
+        // which is what made Cv51's classification ambiguous across reports.
+        return templateNames[templateId] || getTemplateMeta(templateId).name;
     };
 
     const handleManualSave = async () => {

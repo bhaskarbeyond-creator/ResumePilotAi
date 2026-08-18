@@ -871,36 +871,44 @@ function buildCustomSections(resume, style, options = {}) {
   return nodes;
 }
 
-function twoColumnTable(leftChildren, rightChildren, style, leftPercent) {
-  const leftPct = leftPercent || style.sidebarWidth || 34;
-  const leftWidth = Math.round(CONTENT_WIDTH * (leftPct / 100));
-  const rightWidth = CONTENT_WIDTH - leftWidth;
+function twoColumnTable(sidebarChildren, mainChildren, style, sidebarPercent) {
+  const sidebarPct = sidebarPercent || style.sidebarWidth || 34;
+  const sidebarWidth = Math.round(CONTENT_WIDTH * (sidebarPct / 100));
+  const mainWidth = CONTENT_WIDTH - sidebarWidth;
   const dark = style.sidebarBg && isDarkHex(style.sidebarBg);
+  // Cv50's whole visual identity is a RIGHT-hand sidebar. `sidebarPosition`
+  // was carried in the DOCX theme registry but never read here, so the DOCX
+  // rendered the sidebar on the left while the browser and the PDF rendered it
+  // on the right — a template-level parity break for that design.
+  const sidebarOnRight = style.sidebarPosition === 'right';
+  const sidebarCell = new TableCell({
+    width: { size: sidebarWidth, type: WidthType.DXA },
+    shading: style.sidebarBg ? { fill: style.sidebarBg } : undefined,
+    margins: sidebarOnRight
+      ? { top: 80, bottom: 80, left: 80, right: 100 }
+      : { top: 80, bottom: 80, left: 100, right: 80 },
+    borders: NO_BORDERS,
+    verticalAlign: VerticalAlign.TOP,
+    children: ensureChildren(sidebarChildren),
+  });
+  const mainCell = new TableCell({
+    width: { size: mainWidth, type: WidthType.DXA },
+    shading: dark ? { fill: 'FFFFFF' } : undefined,
+    margins: sidebarOnRight
+      ? { top: 80, bottom: 80, left: 80, right: 140 }
+      : { top: 80, bottom: 80, left: 140, right: 80 },
+    borders: NO_BORDERS,
+    verticalAlign: VerticalAlign.TOP,
+    children: ensureChildren(mainChildren),
+  });
   return new Table({
     width: { size: CONTENT_WIDTH, type: WidthType.DXA },
-    columnWidths: [leftWidth, rightWidth],
+    columnWidths: sidebarOnRight ? [mainWidth, sidebarWidth] : [sidebarWidth, mainWidth],
     layout: TableLayoutType.FIXED,
     borders: NO_BORDERS,
     rows: [
       new TableRow({
-        children: [
-          new TableCell({
-            width: { size: leftWidth, type: WidthType.DXA },
-            shading: style.sidebarBg ? { fill: style.sidebarBg } : undefined,
-            margins: { top: 80, bottom: 80, left: 100, right: 80 },
-            borders: NO_BORDERS,
-            verticalAlign: VerticalAlign.TOP,
-            children: ensureChildren(leftChildren),
-          }),
-          new TableCell({
-            width: { size: rightWidth, type: WidthType.DXA },
-            shading: dark ? { fill: 'FFFFFF' } : undefined,
-            margins: { top: 80, bottom: 80, left: 140, right: 80 },
-            borders: NO_BORDERS,
-            verticalAlign: VerticalAlign.TOP,
-            children: ensureChildren(rightChildren),
-          }),
-        ],
+        children: sidebarOnRight ? [mainCell, sidebarCell] : [sidebarCell, mainCell],
       }),
     ],
   });

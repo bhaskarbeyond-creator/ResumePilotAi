@@ -78,4 +78,96 @@ test('51 Template Differentiation & Anti-Duplication Audit', async (t) => {
       assert.equal(d.primary, p.primary.replace('#', '').toUpperCase(), `Primary color mismatch for ${id}`);
     }
   });
+
+  // The assertion above only compared archetype + primary, which let every
+  // other design token drift silently: before this was tightened the DOCX
+  // registry disagreed with the PDF presets on headerStyle for 51/51
+  // templates, timelineStyle for 31, dividerStyle for 11 and density for 1.
+  await t.test('every DOCX design token mirrors the PDF preset (no silent drift)', async () => {
+    const { THEMES: docxThemes } = await import('../backend/services/docxThemes.js');
+    const drift = [];
+    for (const id of CV_IDS) {
+      const p = THEME_PRESETS[id];
+      const d = docxThemes[id];
+      const expected = {
+        name: p.name,
+        secondary: p.secondary.replace('#', '').toUpperCase(),
+        skillVariant: p.skillVariant || 'pills',
+        headerStyle: p.headerStyle || 'standard',
+        dividerStyle: p.dividerStyle || 'solid-thin',
+        timelineStyle: p.timelineStyle || 'modern-node',
+        density: p.density || 'standard',
+        sidebarPosition: p.sidebarPosition || 'left',
+        sidebarWidth: p.sidebarWidth
+          ? Math.min(42, Math.max(28, parseFloat(p.sidebarWidth)))
+          : 34,
+      };
+      for (const [field, value] of Object.entries(expected)) {
+        if (String(d[field]) !== String(value)) {
+          drift.push(`${id}.${field}: pdf=${value} docx=${d[field]}`);
+        }
+      }
+    }
+    assert.deepEqual(drift, [], `DOCX theme registry drifted from themePresets:\n${drift.join('\n')}`);
+  });
+
+  // "Different colour" is not differentiation. Two templates that share every
+  // structural token render as pixel twins once the palette is normalised.
+  await t.test('no two templates share an identical structural fingerprint', () => {
+    const structural = ['archetype', 'sidebarPosition', 'sidebarWidth', 'font', 'skillVariant',
+      'headerStyle', 'dividerStyle', 'timelineStyle', 'density', 'badgeRadius'];
+    const seen = new Map();
+    const collisions = [];
+    for (const id of CV_IDS) {
+      const preset = THEME_PRESETS[id];
+      const fingerprint = structural.map((key) => String(preset[key])).join('|');
+      if (seen.has(fingerprint)) collisions.push(`${seen.get(fingerprint)} == ${id} (${fingerprint})`);
+      else seen.set(fingerprint, id);
+    }
+    assert.deepEqual(collisions, [], `structural twins found:\n${collisions.join('\n')}`);
+  });
+
+  // Every declared design token must be consumed by the renderer, otherwise a
+  // preset can promise differentiation the engine never delivers (this is how
+  // `density` stayed inert across all 51 templates).
+  await t.test('declared design tokens are actually consumed by the render engine', async () => {
+    const fs = await import('node:fs');
+    const read = (file) => fs.readFileSync(new URL(file, import.meta.url), 'utf8');
+    const engine = [
+      read('../src/engine/hybrid/SmartResumeComposer.jsx'),
+      read('../src/engine/hybrid/smartPartitioner.js'),
+      read('../src/engine/hybrid/components/SmartSkills.jsx'),
+      read('../src/engine/hybrid/components/SmartExperience.jsx'),
+      read('../src/engine/hybrid/components/SmartHeader.jsx'),
+    ].join('\n');
+    const css = read('../src/engine/hybrid/smartEngine.css');
+
+    for (const token of ['density', 'skillVariant', 'dividerStyle', 'timelineStyle', 'sidebarWidth', 'sidebarPosition', 'badgeRadius']) {
+      assert.ok(engine.includes(token), `theme token "${token}" is declared but never read by the engine`);
+    }
+    // Every skill variant and density level in use must have styling.
+    const variants = new Set(CV_IDS.map((id) => THEME_PRESETS[id].skillVariant || 'pills'));
+    for (const variant of variants) {
+      assert.ok(css.includes(`.smart-skills-grid--${variant}`), `skill variant "${variant}" has no CSS`);
+    }
+    const densities = new Set(CV_IDS.map((id) => THEME_PRESETS[id].density || 'standard'));
+    for (const density of densities) {
+      assert.ok(css.includes(`data-density='${density}'`) || density === 'standard',
+        `density "${density}" has no CSS scale`);
+    }
+  });
+
+  // The A4 sheets the composer paints must survive print media: without these
+  // rules Chromium's paged box carried the on-screen document padding/gap into
+  // the PDF and every template produced N+1 pages with sliver/orphan pages.
+  await t.test('print media neutralises the on-screen document shell', async () => {
+    const fs = await import('node:fs');
+    const css = fs.readFileSync(new URL('../src/engine/hybrid/smartEngine.css', import.meta.url), 'utf8');
+    const printBlock = css.slice(css.lastIndexOf('@media print'));
+    assert.match(printBlock, /\.smart-resume-document/, 'print block must neutralise the document shell');
+    assert.match(printBlock, /gap:\s*0\s*!important/, 'inter-sheet gap must be removed for print');
+    assert.match(printBlock, /padding:\s*0\s*!important/, 'document padding must be removed for print');
+    assert.match(printBlock, /page-break-after:\s*always/, 'each sheet must map to exactly one physical page');
+    assert.match(printBlock, /\.smart-resume-page:last-child/, 'the final sheet must not emit a trailing blank page');
+  });
 });
