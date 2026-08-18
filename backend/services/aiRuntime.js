@@ -148,7 +148,7 @@ Language: ${language}. SessionID: ${uniqueSeed}`;
         const activeToneDirective = toneMap[rawTone.toLowerCase()] || `Tone Directive: ${rawTone}.`;
 
         prompt = `You are an elite Fortune 500 Senior Executive Resume Writer & Senior ATS Keyword Strategist.
-Synthesize this candidate's background into a 100% natural, human-written, ATS-optimized Executive Summary (2-3 punchy sentences, 50-70 words maximum).
+Synthesize this candidate's background into a 100% natural, human-written, ATS-optimized Executive Summary (3 complete, rich sentences, 45-65 words total, 220-350 characters).
 
 CANDIDATE DETAILS:
 - Candidate Name: ${payload.name || 'Professional'}
@@ -164,20 +164,22 @@ TARGET TONE DIRECTIVE (STRICT REQUIREMENT):
 ${activeToneDirective}
 
 CRITICAL RULES FOR 100% NATURAL HUMAN VOICE & MAXIMUM ATS MATCH:
-1. PUNCHY 2-3 SENTENCE STRUCTURE:
+1. PUNCHY 3-SENTENCE STRUCTURE (MUST GENERATE ALL 3 SENTENCES):
    - Sentence 1: Start directly with candidate role title, years of experience, and their top 2-3 specific technical domains or functional specializations (e.g., "${payload.jobTitle || payload.occupation || 'Software Engineer'} with ${yearsText} of experience in [Domain 1] and [Domain 2].").
-   - Sentence 2: Concrete summary of key strengths, systems, or responsibilities derived strictly from their actual background, reflecting the requested tone.
-   - Sentence 3: Hard-skill ATS keyword cluster (languages, frameworks, methodologies, or certifications).
-2. ABSOLUTE BAN ON BUZZWORDS & STOCK FILLER:
+   - Sentence 2: Concrete summary of core execution scope, systems, workflows, or responsibilities derived strictly from their actual background (or standard industry competencies for this role if background is early/sparse).
+   - Sentence 3: Hard-skill ATS keyword cluster (languages, frameworks, methodologies, certifications, or specialized tools).
+2. MINIMUM SUBSTANCE REQUIREMENT:
+   - Must contain at least 40 words and at least 20 distinct vocabulary words. Never output a single generic sentence.
+3. ABSOLUTE BAN ON BUZZWORDS & STOCK FILLER:
    - NEVER use overused clichés: "Results-driven", "Results-oriented", "Dedicated professional", "Passionate", "Seasoned", "Motivated", "Dynamic", "I am a...", "proven track record of", "driving business growth", "spearheaded", "leveraged", "leveraging", "utilize", "fostered", "synergy", "testament".
    - Start immediately with the exact job title.
-3. STRICT BAN ON COVER LETTER FLUFF (RESUME SUMMARY, NOT a cover letter):
+4. STRICT BAN ON COVER LETTER FLUFF (RESUME SUMMARY, NOT a cover letter):
    - NEVER use cover-letter phrasing such as "I would bring strategic value" or "make a tangible impact".
-4. THIRD-PERSON IMPLICIT RESUME STYLE:
+5. THIRD-PERSON IMPLICIT RESUME STYLE:
    - Resumes NEVER use first-person pronouns ("I", "my", "we") or third-person pronouns ("He", "She").
-5. 100% FACTUAL & DOMAIN-ALIGNED:
+6. 100% FACTUAL & DOMAIN-ALIGNED:
    - Adapt tone and terminology to the specific profession (Tech, Marketing, Finance, Healthcare, Operations, etc.). Do not insert tech terms into non-tech roles.
-6. NO PLACEHOLDERS OR BRACKETS:
+7. NO PLACEHOLDERS OR BRACKETS:
    - Write 100% complete, polished sentences.
 
 Return ONLY valid JSON format:

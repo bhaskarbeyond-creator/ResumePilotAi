@@ -28,6 +28,7 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
         // Remove HTML tags for character count
         const plainText = text.replace(/<[^>]*>/g, '');
         setCharCount(plainText.length);
+        updateResumeData({ summary: text });
     };
 
     const generateAISummary = async (toneToUse = selectedTone) => {
@@ -109,9 +110,11 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
             const generatedSummary = data?.summary || data?.description || data?.text || data?.data?.summary || (typeof data === 'string' ? data : null);
 
             if (generatedSummary && typeof generatedSummary === 'string' && generatedSummary.trim().length > 0) {
-                setSummary(generatedSummary.trim());
-                setCharCount(generatedSummary.trim().length);
+                const cleanSummary = generatedSummary.trim();
+                setSummary(cleanSummary);
+                setCharCount(cleanSummary.length);
                 setError(null);
+                updateResumeData({ summary: cleanSummary });
             } else {
                 throw new Error('AI provider returned an unexpected summary format');
             }
@@ -129,22 +132,23 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
 
             setError(friendlyMessage);
 
-            // Dynamic fallback summary generation based on language & resume data
+            // Dynamic fallback summary generation based on language & resume data (ATS-optimized 3-sentence formula)
             const profession = resumeData.occupation || (resumeData.employments?.[0]?.jobTitle) || 'Professional';
             const skillsList = (resumeData.skills || []).map(s => typeof s === 'string' ? s : s.name || s.skillName).filter(Boolean).slice(0, 4).join(', ');
             const preferredLanguage = localStorage.getItem('preferredLanguage') || 'en';
 
             let fallbackSummary;
             if (preferredLanguage === 'es') {
-                fallbackSummary = `${profession} con sólida trayectoria técnica y experiencia en ${skillsList || 'desarrollo de soluciones avanzadas'}. Especializado en optimizar el rendimiento, liderar iniciativas clave y entregar valor medible en entornos colaborativos.`;
+                fallbackSummary = `${profession} con sólida trayectoria técnica y experiencia en ${skillsList || 'desarrollo de soluciones avanzadas'}. Especializado en optimizar el rendimiento de sistemas, liderar iniciativas clave y entregar valor medible en entornos colaborativos. Comprometido con la excelencia operativa y el cumplimiento de objetivos estratégicos.`;
             } else if (preferredLanguage === 'fr') {
-                fallbackSummary = `${profession} avec une solide expertise technique et une expérience avérée en ${skillsList || 'développement de solutions innovantes'}. Spécialisé dans l'optimisation des performances et la livraison de valeur mesurable.`;
+                fallbackSummary = `${profession} avec une solide expertise technique et une expérience avérée en ${skillsList || 'développement de solutions innovantes'}. Spécialisé dans l'optimisation des performances, la direction de projets clés et la livraison de valeur mesurable. Engagé dans l'excellence opérationnelle et les méthodes agiles.`;
             } else {
-                fallbackSummary = `${profession} with a strong track record architecting and delivering high-impact solutions${skillsList ? ` specializing in ${skillsList}` : ''}. Experienced in optimizing workflows, collaborating across cross-functional teams, and driving measurable technical outcomes.`;
+                fallbackSummary = `${profession} with a strong track record architecting and delivering high-impact solutions${skillsList ? ` specializing in ${skillsList}` : ''}. Experienced in optimizing production workflows, collaborating across cross-functional teams, and driving measurable outcomes. Proficient in modern industry methodologies, performance tuning, and technical problem-solving.`;
             }
 
             setSummary(fallbackSummary);
             setCharCount(fallbackSummary.length);
+            updateResumeData({ summary: fallbackSummary });
         } finally {
             if (aiRequestControllerRef.current === requestController) {
                 aiRequestControllerRef.current = null;
