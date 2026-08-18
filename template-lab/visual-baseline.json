@@ -1,54 +1,54 @@
 {
-  "generatedAt": "2026-08-18T11:01:01.328Z",
+  "generatedAt": "2026-08-18T12:04:06.853Z",
   "templates": {
     "Cv1": {
-      "whiteRatio": 0.9286886369817903,
+      "whiteRatio": 0.9286931326468453,
       "inkRatio": 0.043240430414972365,
       "bottomWhitespace": 0
     },
     "Cv2": {
-      "whiteRatio": 0.6245591438455469,
+      "whiteRatio": 0.6245636395106019,
       "inkRatio": 0.04358434879167763,
       "bottomWhitespace": 0
     },
     "Cv3": {
-      "whiteRatio": 0.6067237166562143,
+      "whiteRatio": 0.6067282123212692,
       "inkRatio": 0.0440103130556361,
       "bottomWhitespace": 0
     },
     "Cv4": {
-      "whiteRatio": 0.9247830279652844,
-      "inkRatio": 0.05246553510777233,
+      "whiteRatio": 0.9308004756413628,
+      "inkRatio": 0.04733373344752322,
       "bottomWhitespace": 0
     },
     "Cv5": {
-      "whiteRatio": 0.9148004037107219,
-      "inkRatio": 0.04610641688751621,
+      "whiteRatio": 0.91970966995075,
+      "inkRatio": 0.04281109440222266,
       "bottomWhitespace": 0
     },
     "Cv6": {
-      "whiteRatio": 0.9127391412830178,
-      "inkRatio": 0.04482964801190452,
+      "whiteRatio": 0.9139282446900576,
+      "inkRatio": 0.043580977042886396,
       "bottomWhitespace": 0
     },
     "Cv7": {
-      "whiteRatio": 0.6161387631975868,
+      "whiteRatio": 0.6161432588626417,
       "inkRatio": 0.0423199429949671,
       "bottomWhitespace": 0
     },
     "Cv8": {
-      "whiteRatio": 0.8196710072312773,
-      "inkRatio": 0.15521620777165618,
+      "whiteRatio": 0.8253299256192217,
+      "inkRatio": 0.14984950761228485,
       "bottomWhitespace": 0
     },
     "Cv9": {
-      "whiteRatio": 0.6068417278639072,
+      "whiteRatio": 0.6068462235289622,
       "inkRatio": 0.3667945683374806,
       "bottomWhitespace": 0
     },
     "Cv10": {
-      "whiteRatio": 0.829163603994848,
-      "inkRatio": 0.14728248286589657,
+      "whiteRatio": 0.8275226862497836,
+      "inkRatio": 0.14812542006370358,
       "bottomWhitespace": 0
     },
     "Cv11": {
@@ -57,23 +57,23 @@
       "bottomWhitespace": 0
     },
     "Cv12": {
-      "whiteRatio": 0.9206076790454804,
-      "inkRatio": 0.042671728785518566,
+      "whiteRatio": 0.9268431664767248,
+      "inkRatio": 0.03970121810044665,
       "bottomWhitespace": 0
     },
     "Cv13": {
-      "whiteRatio": 0.9104306172772904,
-      "inkRatio": 0.05675439957021442,
+      "whiteRatio": 0.9167414070982055,
+      "inkRatio": 0.05131127310490859,
       "bottomWhitespace": 0
     },
     "Cv14": {
-      "whiteRatio": 0.907724226914198,
-      "inkRatio": 0.05413005509437525,
+      "whiteRatio": 0.914249684741488,
+      "inkRatio": 0.049200558361599825,
       "bottomWhitespace": 0
     },
     "Cv15": {
-      "whiteRatio": 0.9205795811388868,
-      "inkRatio": 0.04986928853852673,
+      "whiteRatio": 0.9232702366742869,
+      "inkRatio": 0.04712918068752206,
       "bottomWhitespace": 0
     },
     "Cv16": {
@@ -87,17 +87,17 @@
       "bottomWhitespace": 0
     },
     "Cv18": {
-      "whiteRatio": 0.9142744108992904,
-      "inkRatio": 0.045181433802455984,
+      "whiteRatio": 0.9269454428567254,
+      "inkRatio": 0.041228620302872956,
       "bottomWhitespace": 0
     },
     "Cv19": {
-      "whiteRatio": 0.91432835887995,
-      "inkRatio": 0.04281783789980511,
+      "whiteRatio": 0.915433168567209,
+      "inkRatio": 0.04157815826089693,
       "bottomWhitespace": 0
     },
     "Cv20": {
-      "whiteRatio": 0.6145326868566984,
+      "whiteRatio": 0.6145338107729622,
       "inkRatio": 0.05375241922975771,
       "bottomWhitespace": 0
     },
@@ -107,18 +107,18 @@
       "bottomWhitespace": 0
     },
     "Cv22": {
-      "whiteRatio": 0.9106790027715775,
-      "inkRatio": 0.05231830207722204,
+      "whiteRatio": 0.9150173195496243,
+      "inkRatio": 0.04941073070291971,
       "bottomWhitespace": 0
     },
     "Cv23": {
-      "whiteRatio": 0.8180154785747843,
-      "inkRatio": 0.1578686501540889,
+      "whiteRatio": 0.8244274208594363,
+      "inkRatio": 0.15246373684175035,
       "bottomWhitespace": 0
     },
     "Cv24": {
-      "whiteRatio": 0.93431608571435,
-      "inkRatio": 0.039112285978245474,
+      "whiteRatio": 0.9339586803424798,
+      "inkRatio": 0.03905271841626711,
       "bottomWhitespace": 0
     },
     "Cv25": {
@@ -127,23 +127,23 @@
       "bottomWhitespace": 0
     },
     "Cv26": {
-      "whiteRatio": 0.6223450288059739,
-      "inkRatio": 0.3557498432136812,
+      "whiteRatio": 0.6225529533147662,
+      "inkRatio": 0.3551597871752163,
       "bottomWhitespace": 0
     },
     "Cv27": {
-      "whiteRatio": 0.6162253047498949,
+      "whiteRatio": 0.6162298004149499,
       "inkRatio": 0.04261890472112266,
       "bottomWhitespace": 0
     },
     "Cv28": {
-      "whiteRatio": 0.931280387885981,
-      "inkRatio": 0.042219914447494004,
+      "whiteRatio": 0.9314422318279599,
+      "inkRatio": 0.04217158604815307,
       "bottomWhitespace": 0
     },
     "Cv29": {
-      "whiteRatio": 0.6236622586670802,
-      "inkRatio": 0.04485662200223434,
+      "whiteRatio": 0.626935102827099,
+      "inkRatio": 0.04271556151980453,
       "bottomWhitespace": 0
     },
     "Cv30": {
@@ -152,8 +152,8 @@
       "bottomWhitespace": 0
     },
     "Cv31": {
-      "whiteRatio": 0.9290988664180564,
-      "inkRatio": 0.044918437396740195,
+      "whiteRatio": 0.9327875595956598,
+      "inkRatio": 0.04220867528485658,
       "bottomWhitespace": 0
     },
     "Cv32": {
@@ -162,8 +162,8 @@
       "bottomWhitespace": 0
     },
     "Cv33": {
-      "whiteRatio": 0.9187891825307447,
-      "inkRatio": 0.05056948837083842,
+      "whiteRatio": 0.9190769050942629,
+      "inkRatio": 0.05040764442885947,
       "bottomWhitespace": 0
     },
     "Cv34": {
@@ -172,13 +172,13 @@
       "bottomWhitespace": 0
     },
     "Cv35": {
-      "whiteRatio": 0.927881665104423,
-      "inkRatio": 0.04116118532704839,
+      "whiteRatio": 0.928043509046402,
+      "inkRatio": 0.041112856927707456,
       "bottomWhitespace": 0
     },
     "Cv36": {
-      "whiteRatio": 0.8172804373382966,
-      "inkRatio": 0.15424851586857372,
+      "whiteRatio": 0.8234383745473427,
+      "inkRatio": 0.14890766578326847,
       "bottomWhitespace": 0
     },
     "Cv37": {
@@ -187,72 +187,72 @@
       "bottomWhitespace": 0
     },
     "Cv38": {
-      "whiteRatio": 0.9275444902253003,
-      "inkRatio": 0.04415305042113142,
+      "whiteRatio": 0.9328999512220342,
+      "inkRatio": 0.04110723734638874,
       "bottomWhitespace": 0
     },
     "Cv39": {
-      "whiteRatio": 0.9292180015420131,
-      "inkRatio": 0.04393950633102031,
+      "whiteRatio": 0.9329392882912652,
+      "inkRatio": 0.041874872154525,
       "bottomWhitespace": 0
     },
     "Cv40": {
-      "whiteRatio": 0.9100732119054202,
-      "inkRatio": 0.047207854825984046,
+      "whiteRatio": 0.9163952408889728,
+      "inkRatio": 0.04394624982860277,
       "bottomWhitespace": 0
     },
     "Cv41": {
-      "whiteRatio": 0.9265565678294704,
-      "inkRatio": 0.043063975561564764,
+      "whiteRatio": 0.9357164853789733,
+      "inkRatio": 0.041308418357598686,
       "bottomWhitespace": 0
     },
     "Cv42": {
-      "whiteRatio": 0.9080580300445296,
-      "inkRatio": 0.04498587237256475,
+      "whiteRatio": 0.9153151573595161,
+      "inkRatio": 0.04172539129144722,
       "bottomWhitespace": 0
     },
     "Cv43": {
-      "whiteRatio": 0.9081378280992553,
-      "inkRatio": 0.045693939618722645,
+      "whiteRatio": 0.9239412146837412,
+      "inkRatio": 0.04176023269562325,
       "bottomWhitespace": 0
     },
     "Cv44": {
-      "whiteRatio": 0.930162091203557,
-      "inkRatio": 0.041674815059578804,
+      "whiteRatio": 0.9360896255785359,
+      "inkRatio": 0.040111447536712724,
       "bottomWhitespace": 0
     },
     "Cv45": {
-      "whiteRatio": 0.9063609164862781,
-      "inkRatio": 0.05463244566426823,
+      "whiteRatio": 0.9128942417274143,
+      "inkRatio": 0.04970294893149281,
       "bottomWhitespace": 0
     },
     "Cv46": {
-      "whiteRatio": 0.9154061945768792,
-      "inkRatio": 0.046518894156309776,
+      "whiteRatio": 0.920316584733171,
+      "inkRatio": 0.04323818258244488,
       "bottomWhitespace": 0
     },
     "Cv47": {
-      "whiteRatio": 0.5970737716157195,
-      "inkRatio": 0.04053628788440746,
+      "whiteRatio": 0.5995317764845248,
+      "inkRatio": 0.040550898795836114,
       "bottomWhitespace": 0
     },
     "Cv48": {
-      "whiteRatio": 0.9349522223196283,
-      "inkRatio": 0.039627039627039624,
+      "whiteRatio": 0.9384667084763517,
+      "inkRatio": 0.037606238184830276,
       "bottomWhitespace": 0
     },
     "Cv49": {
-      "whiteRatio": 0.9190409397738231,
-      "inkRatio": 0.04593895336421855,
+      "whiteRatio": 0.9185790101894249,
+      "inkRatio": 0.044554288527287565,
       "bottomWhitespace": 0
     },
     "Cv50": {
-      "whiteRatio": 0.6355274426634118,
+      "whiteRatio": 0.6355319383284668,
       "inkRatio": 0.04912975163698404,
       "bottomWhitespace": 0
     },
     "Cv51": {
-      "whiteRatio": 0.6259010998644557,
+      "whiteRatio": 0.6259055955295106,
       "inkRatio": 0.04543431496179809,
       "bottomWhitespace": 0
     }

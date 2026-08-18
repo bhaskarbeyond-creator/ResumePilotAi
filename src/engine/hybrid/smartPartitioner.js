@@ -348,6 +348,8 @@ export function partitionResumeContent(values = {}, theme = {}) {
   // Continuation pages carry only the slim continuation header + footer, so they
   // have more usable height than page 1.
   const PN_CAPACITY = 930;
+  // Must track --smart-section-gap in smartEngine.css (compact/standard/spacious).
+  const SECTION_GAP_PX = density === 'compact' ? 11 : density === 'spacious' ? 18 : 14;
 
   /**
    * Greedy multi-page packer.
@@ -374,9 +376,16 @@ export function partitionResumeContent(values = {}, theme = {}) {
 
   sections.forEach((section) => {
     const capacity = capacityFor(pageIndex);
-    if (currentHeight + section.estHeight <= capacity) {
+    // Charge the inter-section gap that `.smart-flow-container` paints between
+    // consecutive sections. Before the spacing work the container had no gap,
+    // so omitting it here happened to be correct; once the gap became real
+    // (11/14/18 px by density) a nine-section single-column resume gained
+    // ~120 px of unaccounted height and the tail was clipped by the sheet's
+    // `overflow:hidden`. Measured: 16/51 templates clipped up to 123 px.
+    const gapBefore = current.length ? SECTION_GAP_PX : 0;
+    if (currentHeight + gapBefore + section.estHeight <= capacity) {
       current.push(...section.items);
-      currentHeight += section.estHeight;
+      currentHeight += gapBefore + section.estHeight;
       return;
     }
     // Section does not fit in the remaining space: start a new page when the

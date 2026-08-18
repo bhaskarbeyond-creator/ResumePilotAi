@@ -309,7 +309,30 @@ function parseRichTextToBlocks(rawContent, maximum = 10_000) {
   return blocks;
 }
 
+/**
+ * Word-safe mirror of `hasMeaningfulText` in
+ * src/engine/hybrid/utils/contentSanitizer.js.
+ *
+ * backend/ is CommonJS and cannot import the ESM engine module, so the rule is
+ * duplicated here and pinned by a parity test. The character class matches the
+ * frontend exactly (it deliberately stops at U+200B so that ZWNJ/ZWJ — which
+ * ARE semantically significant in Devanagari, Telugu and emoji sequences — are
+ * never treated as blank).
+ */
+function hasMeaningfulDocxText(value) {
+  if (value === null || value === undefined) return false;
+  if (typeof value !== 'string' && typeof value !== 'number') return false;
+  const plain = stripAllHtmlTags(value).replace(/[\u00a0\u2000-\u200b\u2028\u2029]/g, ' ');
+  return plain.trim().length > 0;
+}
+
 function parseRichTextToParagraphs(rawContent, style = {}, options = {}) {
+  // Whitespace-only rich text ("<p> </p>", "<p>&nbsp;</p>", a lone zero-width
+  // space) must yield NO paragraphs. The section builders decide whether to
+  // emit a heading from whether this returns anything, so returning a blank
+  // paragraph made the DOCX print a heading for content that the browser and
+  // the PDF correctly hide — a real parity break, verified in word/document.xml.
+  if (!hasMeaningfulDocxText(rawContent)) return [];
   return parseRichTextToBlocks(rawContent, options.maximum || 10_000)
     .map((block) => paragraphFromBlock(block, style, options))
     .filter(Boolean);
@@ -1419,6 +1442,7 @@ async function createResumeDocx(input) {
 
 module.exports = {
   createResumeDocx,
+  hasMeaningfulDocxText,
   resumeDocument,
   getTemplateStyle,
   parseRichTextToParagraphs,
