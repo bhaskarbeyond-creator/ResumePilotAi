@@ -27,6 +27,7 @@ import { createResumeDraft, loadResumeDraft, saveResumeDraft, publishResume, unp
 import { EMPTY_RESUME, DEFAULT_SECTION_ORDER, normalizeResumeData, buildCanonicalResumeDocument } from '../../utils/resumeData';
 import { trackDownload, trackEvent, trackEngagement } from '../../utils/ga4';
 import { toValidatedPdfBlob, pdfFileName } from '../../utils/pdfDownload';
+import { executeDocxDownload } from '../../utils/docxDownload';
 
 // Import logo
 import logo from '../../assets/logo/logo.png';
@@ -53,6 +54,7 @@ const BuildResume = () => {
     const [isImportEnabled, setIsImportEnabled] = useState(false);
     const [currentTemplate, setCurrentTemplate] = useState('Cv1');
     const [isDownloading, setIsDownloading] = useState(false);
+    const [isDownloadingDocx, setIsDownloadingDocx] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [loadRetry, setLoadRetry] = useState(0);
     const [authChecked, setAuthChecked] = useState(false);
@@ -711,6 +713,69 @@ const BuildResume = () => {
                 : t('BuildResume.errors.downloadFailed'));
         } finally {
             setIsDownloading(false);
+        }
+    };
+
+    const handleDocxDownload = async () => {
+        if (isDownloadingDocx) return;
+
+        const access = evaluateDownloadAccess({
+            user: userData.user,
+            membership: userData.membership,
+            membershipEnds: userData.membershipEnds,
+            subscriptionsStatus: userData.subscriptionsStatus,
+            isStatusLoaded: authChecked
+        });
+
+        if (access.allowed) {
+            showToast('Download');
+            await performDocxDownload();
+            return;
+        }
+
+        if (access.reason === 'LOGIN_REQUIRED') {
+            alert(t('BuildResume.errors.loginRequired', 'Please log in to download your resume. You will be redirected to the login page.'));
+            navigate('/');
+            return;
+        }
+
+        if (access.reason === 'PREMIUM_REQUIRED') {
+            const saved = await persistLatest({ manual: true });
+            if (!saved) {
+                setSaveState({ status: 'error', message: 'Save the resume before leaving for billing.' });
+                return;
+            }
+            showToast('Success');
+            showToast('Upgrade');
+            setTimeout(() => {
+                window.location.href = '/billing/plans';
+            }, 3000);
+        }
+    };
+
+    const performDocxDownload = async () => {
+        setIsDownloadingDocx(true);
+        try {
+            const resumeId = resumeIdRef.current;
+            const userId = userIdRef.current;
+            if (!resumeId || !userId || !await persistLatest({ manual: true })) throw new Error('Resume must be saved before export');
+
+            await executeDocxDownload({
+                resumeId,
+                resumeName: currentTemplate,
+                language: i18n.language,
+                firstname: previewData?.firstname,
+                lastname: previewData?.lastname,
+                userId,
+            });
+        } catch (error) {
+            console.error('DOCX Download failed:', error);
+            trackEvent('download_failed_docx', 'Documents', currentTemplate, 0);
+            alert(error?.code === 'EXPORT_NOT_DOCX' && error.message
+                ? error.message
+                : t('BuildResume.errors.downloadFailed'));
+        } finally {
+            setIsDownloadingDocx(false);
         }
     };
 
@@ -1970,6 +2035,8 @@ const BuildResume = () => {
                 resumeData={previewData}
                 onDownload={handleDownload}
                 isDownloading={isDownloading}
+                onDownloadDocx={handleDocxDownload}
+                isDownloadingDocx={isDownloadingDocx}
                 currentTemplate={currentTemplate}
                 getTemplateName={getTemplateName}
             />

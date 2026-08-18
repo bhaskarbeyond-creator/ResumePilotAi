@@ -1,33 +1,36 @@
 import React, { useState, useEffect } from 'react';
+import download from 'downloadjs';
+import fire from '../../../services/firebase';
+import { executeDocxDownload } from '../../../utils/docxDownload';
 
 const FinalizeStep = ({ resumeData, updateResumeData }) => {
-    const [selectedTemplate, setSelectedTemplate] = useState('modern');
+    const [selectedTemplate, setSelectedTemplate] = useState('Cv1');
     const [isGenerating, setIsGenerating] = useState(false);
     const [resumeTitle, setResumeTitle] = useState(resumeData.title || 'My Resume');
 
     // Template options
     const templates = [
         {
-            id: 'modern',
-            name: 'Modern',
+            id: 'Cv1',
+            name: 'Classic Modern',
             description: 'Clean and contemporary design',
             preview: '/api/placeholder/200/280',
         },
         {
-            id: 'professional',
-            name: 'Professional',
+            id: 'Cv3',
+            name: 'Corporate Classic',
             description: 'Traditional business format',
             preview: '/api/placeholder/200/280',
         },
         {
-            id: 'creative',
-            name: 'Creative',
+            id: 'Cv4',
+            name: 'Creative Designer',
             description: 'Artistic and eye-catching',
             preview: '/api/placeholder/200/280',
         },
         {
-            id: 'minimal',
-            name: 'Minimal',
+            id: 'Cv5',
+            name: 'Technical Elite',
             description: 'Simple and elegant',
             preview: '/api/placeholder/200/280',
         },
@@ -78,7 +81,7 @@ const FinalizeStep = ({ resumeData, updateResumeData }) => {
 
         // Skills (25 points)
         total += 25;
-        const validSkills = (resumeData.skills || []).filter((skill) => skill.skillName?.trim());
+        const validSkills = (resumeData.skills || []).filter((skill) => (skill.skillName || skill.name)?.trim());
         score += Math.min(25, validSkills.length * 5);
 
         // Summary (25 points)
@@ -97,12 +100,28 @@ const FinalizeStep = ({ resumeData, updateResumeData }) => {
     const handleDownload = async (format) => {
         setIsGenerating(true);
         try {
-            // Simulate API call
-            await new Promise((resolve) => setTimeout(resolve, 2000));
-            console.log(`Downloading resume as ${format}`);
-            // Here you would typically call your API to generate and download the resume
+            if (format === 'docx') {
+                const resumeId = localStorage.getItem('currentResumeId') || resumeData.id;
+                const userId = fire.auth().currentUser?.uid;
+                const templateName = resumeData.template || selectedTemplate || 'Cv1';
+                await executeDocxDownload({
+                    resumeId,
+                    resumeName: templateName,
+                    language: resumeData.language || 'en',
+                    firstname: resumeData?.firstname,
+                    lastname: resumeData?.lastname,
+                    userId,
+                });
+            } else if (format === 'pdf') {
+                alert('Please use the top navigation download button for PDF export.');
+            } else if (format === 'txt') {
+                const textContent = `${resumeData.firstname || ''} ${resumeData.lastname || ''}\n${resumeData.email || ''}\n\nSummary:\n${resumeData.summary || ''}`;
+                const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+                download(blob, 'resume.txt', 'text/plain');
+            }
         } catch (error) {
             console.error('Download failed:', error);
+            alert(error?.message || 'Download failed');
         } finally {
             setIsGenerating(false);
         }
@@ -173,7 +192,7 @@ const FinalizeStep = ({ resumeData, updateResumeData }) => {
                         </div>
                         <div className="text-center">
                             <div className="font-medium text-gray-900">Skills</div>
-                            <div className="text-gray-600">{(resumeData.skills || []).filter((skill) => skill.skillName?.trim()).length >= 3 ? '✓' : '○'}</div>
+                            <div className="text-gray-600">{(resumeData.skills || []).filter((skill) => (skill.skillName || skill.name)?.trim()).length >= 3 ? '✓' : '○'}</div>
                         </div>
                         <div className="text-center">
                             <div className="font-medium text-gray-900">Summary</div>
@@ -292,7 +311,7 @@ const FinalizeStep = ({ resumeData, updateResumeData }) => {
                                 />
                             </svg>
                             <div className="text-left">
-                                <div className="font-medium">Word</div>
+                                <div className="font-medium">Word (DOCX)</div>
                                 <div className="text-sm text-gray-500">Easy to edit</div>
                             </div>
                         </button>
@@ -325,7 +344,7 @@ const FinalizeStep = ({ resumeData, updateResumeData }) => {
                                     fill="currentColor"
                                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
-                            <span className="text-blue-700">Generating your resume...</span>
+                            <span className="text-blue-700">Generating and downloading document...</span>
                         </div>
                     )}
 

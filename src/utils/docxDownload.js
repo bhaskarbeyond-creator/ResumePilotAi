@@ -1,9 +1,15 @@
 /**
- * Shared validation and utilities for DOCX export responses.
+ * Shared validation, utilities, and execution helper for DOCX export.
  *
  * Verifies ZIP/PK magic bytes (`0x50, 0x4b`) before saving to ensure
  * a JSON error response is never downloaded as a corrupt `.docx` file.
  */
+
+import axios from 'axios';
+import download from 'downloadjs';
+import config from '../conf/configuration';
+import { trackDownload, trackEvent, trackEngagement } from './ga4';
+import { IncrementDownloads, addOneToNumberOfDocumentsDownloaded } from '../firestore/dbOperations';
 
 const DOCX_MAGIC = [0x50, 0x4b]; // PK zip container magic bytes
 
@@ -46,4 +52,62 @@ export function docxFileName(firstname, lastname, fallback = 'resume') {
     const raw = `${firstname || ''}_${lastname || ''}`.trim().replace(/^_+|_+$/g, '');
     const safe = raw.replace(/[^\p{L}\p{M}\p{N}_-]+/gu, '_').replace(/_{2,}/g, '_').slice(0, 80);
     return `${safe || fallback}.docx`;
+}
+
+/**
+ * Authoritative client-side DOCX download helper.
+ * Persists the latest draft (if persistLatest provided), requests /api/export-docx,
+ * validates the ZIP/OOXML package, triggers browser download, and logs analytics.
+ */
+export async function executeDocxDownload({
+    resumeId,
+    resumeName = 'Cv1',
+    language = 'en',
+    firstname = '',
+    lastname = '',
+    userId = null,
+    persistLatest = null,
+}) {
+    if (!resumeId) {
+        throw new Error('Resume ID is required for DOCX export');
+    }
+    if (typeof persistLatest === 'function') {
+        const saved = await persistLatest({ manual: true });
+        if (!saved) {
+            throw new Error('Resume must be saved before export');
+        }
+    }
+
+    const response = await axios.post(
+        `${config.provider}://${config.backendUrl}/api/export-docx`,
+        {
+            language,
+            resumeId,
+            resumeName,
+        },
+        {
+            responseType: 'blob',
+        }
+    );
+
+    const docxBlob = await toValidatedDocxBlob(response.data);
+    const fileName = docxFileName(firstname, lastname);
+
+    download(docxBlob, fileName, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+
+    trackDownload(resumeName, 'resume_docx');
+    trackEvent('download_document_docx', 'Documents', resumeName, 1);
+    trackEngagement('document_downloaded_docx', {
+        template_name: resumeName,
+        document_type: 'resume_docx',
+    });
+
+    if (userId) {
+        await Promise.allSettled([
+            IncrementDownloads(),
+            addOneToNumberOfDocumentsDownloaded(userId),
+        ]);
+    }
+
+    return true;
 }
