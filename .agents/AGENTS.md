@@ -15,7 +15,9 @@
 - **JSON Parsing Rule**: Always parse LLM JSON responses using the `extractJson` helper (which sanitizes control characters inside string literals) instead of calling `JSON.parse` directly.
 
 ## 4. NVIDIA NIM & Model Selection Benchmarks
-- **Default NVIDIA Model**: Use `meta/llama-3.1-8b-instruct` as default NVIDIA model (215ms ultra-low latency, 100% availability). Avoid `poolside/laguna-xs-2.1` as default due to worker pool exhaustion (`ResourceExhausted: Worker local total request limit reached`).
+- **DEPRECATED Model**: `meta/llama-3.1-8b-instruct` is **RETIRED on NVIDIA NIM** (HTTP 400 DEPRECATED as of Aug 2026). Do NOT use as primary or fallback model.
+- **Default NVIDIA Model**: Use `meta/llama-3.2-11b-vision-instruct` as primary (220–460ms, confirmed active Aug 2026). Failover candidate: `nvidia/nemotron-mini-4b-instruct` (206–210ms, ultra-reliable).
+- **Avoid**: `poolside/laguna-xs-2.1` — DEGRADED on NVIDIA NIM (`DEGRADED function cannot be invoked`). `meta/llama-3.3-70b-instruct` — severely overloaded queue (>30s timeouts).
 - **Detailed Error Propagation**: Preserve raw LLM provider error messages (rate limits, worker pool limit reasons, HTTP status codes) in error normalization handlers instead of replacing them with generic fallback strings.
 
 ## 5. Deployment Bundle Integrity
@@ -27,6 +29,7 @@
   - **Resume Builder + 51 Resume Templates**: `1ffa9f7`
   - **DOCX High-Fidelity Export Pipeline (51 Templates)**: `2c45381`
   - **AI Interview Coach & CBT Simulator Module**: `a15dd5d`
+  - **AI Provider Fix (nvidia model deprecation + failover)**: `9f7dea7`
 - **Freeze Status**: The CV Module, 4 CV Templates, Print/PDF Download Pipeline, Resume Builder Wizard, 51 Resume Templates, 51-Template High-Fidelity DOCX Export Pipeline, and the AI Interview Coach & CBT Simulator Module are **FROZEN** (Certified 10/10 Enterprise Production Grade).
 - **Modification Protocol**: Do not modify these certified baselines directly without strict regression testing (all test suites must remain 100% passing).
 
