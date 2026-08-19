@@ -399,9 +399,10 @@ const AuthWrapper = () => {
 };
 
 const container = document.getElementById('root');
-const root = createRoot(container);
-
-root.render(<AuthWrapper />);
+if (container && !container.dataset.lab && !window.__isTemplateLab) {
+    const root = createRoot(container);
+    root.render(<AuthWrapper />);
+}
 
 // If you want your app to work offline and load faster, you can change
 // unregister() to register() below. Note this comes with some pitfalls.

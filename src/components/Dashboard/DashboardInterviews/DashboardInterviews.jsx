@@ -646,7 +646,7 @@ const DashboardInterviews = () => {
                     const token = await currentUser.getIdToken();
                     if (token) headers['Authorization'] = `Bearer ${token}`;
                 }
-            } catch (_) {}
+            } catch { /* optional */ }
 
             let signal = requestController.signal;
             try {
@@ -654,7 +654,7 @@ const DashboardInterviews = () => {
                     const timeoutSignal = AbortSignal.timeout(90_000);
                     signal = typeof AbortSignal.any === 'function' ? AbortSignal.any([requestController.signal, timeoutSignal]) : timeoutSignal;
                 }
-            } catch (_) {}
+            } catch { /* optional */ }
 
             const response = await fetch(`${config.provider}://${config.backendUrl}/api/generate-interview`, {
                 method: 'POST',
@@ -1799,12 +1799,11 @@ function PalettePanel({ questions, state, markedSet, visitedSet, progressPct, on
 }
 
 // ── ASSESSMENT REPORT VIEW (FULL-WIDTH EXECUTIVE ANALYTICS DASHBOARD) ──────────
-function ReportView({ report, meta, onBack, history, onRetake }) {
+function ReportView({ report, meta, onBack, history: _history, onRetake }) {
     const [openId, setOpenId] = useState(null);
     const [questionFilter, setQuestionFilter] = useState('all'); // 'all' | 'correct' | 'needs_work'
     const [copyState, setCopyState] = useState('idle'); // idle | copied | failed
     const copyTimerRef = useRef(null);
-    const trend = scoreTrend(history);
 
     useEffect(() => () => {
         if (copyTimerRef.current) clearTimeout(copyTimerRef.current);

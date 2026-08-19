@@ -52,7 +52,7 @@ export function formatClock(seconds) {
     return `${minutes}:${String(rest).padStart(2, '0')}`;
 }
 
-export function paletteStatus({ questionId, currentId, answers, visited, marked, markedAndAnswered }) {
+export function paletteStatus({ questionId, currentId, answers, visited, marked }) {
     if (questionId === currentId) return 'current';
     const answered = Object.prototype.hasOwnProperty.call(answers || {}, questionId);
     const isMarked = (marked || new Set()).has(questionId);

@@ -16,10 +16,10 @@ const mockUser = {
 document.documentElement.setAttribute('data-lab-state', 'rendering');
 
 const container = document.getElementById('root');
-if (!container._reactRoot) {
-    container._reactRoot = createRoot(container);
+if (!window.__interviewCoachRoot) {
+    window.__interviewCoachRoot = createRoot(container);
 }
-container._reactRoot.render(
+window.__interviewCoachRoot.render(
     <AuthContext.Provider value={mockUser}>
         <DashboardInterviews />
     </AuthContext.Provider>
