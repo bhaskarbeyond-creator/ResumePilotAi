@@ -211,7 +211,7 @@ async function runAdversarialBrowserTests() {
 
         // Answer Q1 in Tab 1
         await pageTab1.locator('label:has-text("A.")').first().click();
-        await pageTab1.waitForTimeout(200);
+        await pageTab1.waitForTimeout(700);
 
         // Open Tab 2 — it should restore or see the session
         await pageTab2.goto(`${base}/template-lab/interview-coach.html`, { waitUntil: 'domcontentloaded' });

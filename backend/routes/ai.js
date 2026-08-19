@@ -949,7 +949,7 @@ function generateFallbackSummary(name, jobTitle, experience, skills, achievement
             : 'various industry-relevant skills';
 
     // Extract first name for more natural templates
-    const firstName = name ? name.split(' ')[0] : 'professional';
+    const _firstName = name ? name.split(' ')[0] : 'professional';
 
     // Templates for different languages
     const templates = {
@@ -1860,7 +1860,7 @@ const generateDefaultResumeData = (occupation, experienceLevel, yearsOfExperienc
 
     // Generate languages
     const generateLanguages = () => {
-        const primaryLanguages = ['English', 'Spanish', 'French', 'German', 'Mandarin', 'Japanese', 'Portuguese', 'Italian'];
+        const _primaryLanguages = ['English', 'Spanish', 'French', 'German', 'Mandarin', 'Japanese', 'Portuguese', 'Italian'];
         const secondaryLanguages = ['Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Mandarin', 'Japanese', 'Arabic'];
         const levels = ['Native', 'Fluent', 'Advanced', 'Intermediate', 'Basic'];
 
@@ -2166,16 +2166,16 @@ const generateFallbackSkills = (occupation, experienceLevel = 'mid-level', targe
 };
 
 // Fallback function to check grammar when AI is not available
-function generateFallbackGrammarCheck(text, targetLanguage = 'English') {
+function generateFallbackGrammarCheck(text, _targetLanguage = 'English') {
     // Simple fallback grammar check - looks for common issues
     const corrections = [];
     
     // Basic checks for common grammar issues
     const commonErrors = [
         { pattern: /\bi\b/g, suggestion: 'I', type: 'grammar', explanation: 'Personal pronoun should be capitalized' },
-        { pattern: /\b(there|their|they\'re)\b/g, suggestion: 'check usage', type: 'grammar', explanation: 'Check if correct form of there/their/they\'re is used' },
-        { pattern: /\b(your|you\'re)\b/g, suggestion: 'check usage', type: 'grammar', explanation: 'Check if correct form of your/you\'re is used' },
-        { pattern: /\b(its|it\'s)\b/g, suggestion: 'check usage', type: 'grammar', explanation: 'Check if correct form of its/it\'s is used' },
+        { pattern: /\b(there|their|they're)\b/g, suggestion: 'check usage', type: 'grammar', explanation: 'Check if correct form of there/their/they\'re is used' },
+        { pattern: /\b(your|you're)\b/g, suggestion: 'check usage', type: 'grammar', explanation: 'Check if correct form of your/you\'re is used' },
+        { pattern: /\b(its|it's)\b/g, suggestion: 'check usage', type: 'grammar', explanation: 'Check if correct form of its/it\'s is used' },
         { pattern: /\s{2,}/g, suggestion: ' ', type: 'formatting', explanation: 'Multiple spaces should be single space' },
         { pattern: /\s+\./g, suggestion: '.', type: 'punctuation', explanation: 'No space before period' },
         { pattern: /\s+,/g, suggestion: ',', type: 'punctuation', explanation: 'No space before comma' }
