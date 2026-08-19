@@ -170,6 +170,66 @@ export function buildInterviewReport({ questions = [], answers = {}, timePerQues
     };
 }
 
+// ── AI OUTPUT VALIDATION ─────────────────────────────────────────────────────
+// The frontend never blindly trusts model-generated structures: every question
+// coming from the network or from persisted storage is normalized through here
+// before it can reach the exam renderer.
+export function normalizeQuestions(rawQuestions) {
+    if (!Array.isArray(rawQuestions)) return [];
+    const cleaned = [];
+    rawQuestions.forEach((question, index) => {
+        if (!question || typeof question !== 'object') return;
+        const text = typeof question.question === 'string' ? question.question.trim().slice(0, 1000) : '';
+        if (!text) return;
+        const options = (Array.isArray(question.options) ? question.options : [])
+            .map(option => (typeof option === 'string' ? option.trim() : String(option ?? '').trim()).slice(0, 500))
+            .filter(option => option.length > 0)
+            .slice(0, 6);
+        if (options.length < 2) return;
+        const correct = Number(question.correctAnswer);
+        if (!Number.isInteger(correct) || correct < 0 || correct >= options.length) return;
+        const id = question.id !== undefined && question.id !== null && String(question.id).length > 0
+            ? String(question.id).slice(0, 64)
+            : `q-${index + 1}`;
+        cleaned.push({
+            id,
+            question: text,
+            options,
+            correctAnswer: correct,
+            category: typeof question.category === 'string' && question.category.trim() ? question.category.trim().slice(0, 80) : '',
+            difficulty: typeof question.difficulty === 'string' && question.difficulty.trim() ? question.difficulty.trim().slice(0, 40) : '',
+            explanation: typeof question.explanation === 'string' ? question.explanation.trim().slice(0, 1200) : '',
+            estimatedTime: Number.isFinite(Number(question.estimatedTime)) ? Math.min(600, Math.max(30, Math.round(Number(question.estimatedTime)))) : null,
+        });
+    });
+    const seen = new Set();
+    return cleaned.map((question, index) => {
+        let id = question.id;
+        if (seen.has(id)) id = `${id}-${index + 1}`;
+        seen.add(id);
+        return { ...question, id };
+    });
+}
+
+export function validateInterviewPayload(data) {
+    if (!data || typeof data !== 'object') return null;
+    const questions = normalizeQuestions(data.questions);
+    if (!questions.length) return null;
+    return {
+        title: typeof data.title === 'string' ? data.title.slice(0, 160) : '',
+        company: typeof data.company === 'string' ? data.company.slice(0, 120) : '',
+        department: typeof data.department === 'string' ? data.department.slice(0, 120) : '',
+        duration: typeof data.duration === 'string' ? data.duration.slice(0, 60) : '',
+        totalQuestions: questions.length,
+        questions,
+    };
+}
+
+// ── SESSION PERSISTENCE (UID-SCOPED, SCHEMA-VERSIONED) ───────────────────────
+export const SESSION_SCHEMA_VERSION = 2;
+export const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
+export const HISTORY_LIMIT = 25;
+
 export function sessionStorageKey(userId) {
     return userId ? `interviewSession:${userId}` : 'interviewProgress';
 }
@@ -180,20 +240,57 @@ export function historyStorageKey(userId) {
 
 export function writeOwnerSession(userId, payload) {
     try {
-        localStorage.setItem(sessionStorageKey(userId), JSON.stringify({ ...payload, lastSaved: Date.now() }));
+        localStorage.setItem(sessionStorageKey(userId), JSON.stringify({
+            ...payload,
+            schemaVersion: SESSION_SCHEMA_VERSION,
+            lastSaved: Date.now(),
+        }));
     } catch { /* optional */ }
 }
 
 export function readOwnerSession(userId) {
+    let parsed = null;
     try {
         const raw = localStorage.getItem(sessionStorageKey(userId)) || (!userId ? localStorage.getItem('interviewProgress') : null);
         if (!raw) return null;
-        const parsed = JSON.parse(raw);
-        if (!parsed?.lastSaved || Date.now() - parsed.lastSaved > 24 * 60 * 60 * 1000) return null;
-        if (userId && parsed.ownerUid && parsed.ownerUid !== userId) return null;
-        return parsed;
+        parsed = JSON.parse(raw);
     } catch {
         return null;
+    }
+    if (!parsed || typeof parsed !== 'object') return null;
+    if (parsed.schemaVersion !== undefined && Number(parsed.schemaVersion) > SESSION_SCHEMA_VERSION) return null;
+    if (!parsed.lastSaved || Date.now() - parsed.lastSaved > SESSION_TTL_MS) return null;
+    if (userId && parsed.ownerUid && parsed.ownerUid !== userId) return null;
+    if (parsed.phase === 'exam') {
+        const questions = normalizeQuestions(parsed.interviewData?.questions);
+        if (!questions.length) return null;
+        parsed.interviewData = { ...(parsed.interviewData || {}), questions };
+    }
+    return parsed;
+}
+
+// Self-heals storage: removes sessions that readOwnerSession would reject
+// (corrupt JSON, expired TTL, incompatible future schema, stale non-exam data)
+// while never deleting another owner's data.
+export function purgeStaleOwnerSession(userId) {
+    try {
+        const key = sessionStorageKey(userId);
+        const raw = localStorage.getItem(key);
+        if (!raw) return false;
+        let parsed = null;
+        try { parsed = JSON.parse(raw); } catch { localStorage.removeItem(key); return true; }
+        if (!parsed || typeof parsed !== 'object') { localStorage.removeItem(key); return true; }
+        if (userId && parsed.ownerUid && parsed.ownerUid !== userId) return false;
+        const expired = !parsed.lastSaved || Date.now() - parsed.lastSaved > SESSION_TTL_MS;
+        const futureSchema = parsed.schemaVersion !== undefined && Number(parsed.schemaVersion) > SESSION_SCHEMA_VERSION;
+        const invalidExam = parsed.phase === 'exam' && !normalizeQuestions(parsed.interviewData?.questions).length;
+        if (expired || futureSchema || invalidExam || parsed.phase !== 'exam') {
+            localStorage.removeItem(key);
+            return true;
+        }
+        return false;
+    } catch {
+        return false;
     }
 }
 
@@ -204,21 +301,49 @@ export function clearOwnerSession(userId) {
     } catch { /* optional */ }
 }
 
+// ── HISTORY (UID-SCOPED, SANITIZED, STABLE ORDER) ────────────────────────────
 export function readHistory(userId) {
+    let list = [];
     try {
         const raw = localStorage.getItem(historyStorageKey(userId));
-        const list = raw ? JSON.parse(raw) : [];
-        return Array.isArray(list) ? list.filter(item => !userId || !item.ownerUid || item.ownerUid === userId) : [];
+        const parsed = raw ? JSON.parse(raw) : [];
+        list = Array.isArray(parsed) ? parsed : [];
     } catch {
         return [];
     }
+    return list
+        .filter(item => item && typeof item === 'object' && (!userId || !item.ownerUid || item.ownerUid === userId))
+        .map((item, index) => ({
+            ...item,
+            id: item.id !== undefined && item.id !== null && String(item.id).length > 0 ? String(item.id) : `iv-legacy-${index}`,
+            completedAt: item.completedAt || new Date(0).toISOString(),
+            score: Number.isFinite(Number(item.score)) ? Number(item.score) : 0,
+        }))
+        .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
 }
 
 export function appendHistory(userId, entry) {
-    const list = readHistory(userId);
-    const next = [{ ...entry, ownerUid: userId || null, id: entry.id || `iv-${Date.now()}` }, ...list].slice(0, 25);
+    if (!entry || typeof entry !== 'object') return readHistory(userId);
+    const id = entry.id !== undefined && entry.id !== null && String(entry.id).length > 0
+        ? String(entry.id)
+        : `iv-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    const next = [
+        { ...entry, id, ownerUid: userId || null },
+        ...readHistory(userId).filter(item => item.id !== id),
+    ].slice(0, HISTORY_LIMIT);
     try { localStorage.setItem(historyStorageKey(userId), JSON.stringify(next)); } catch { /* optional */ }
     return next;
+}
+
+export function removeHistoryEntry(userId, entryId) {
+    const next = readHistory(userId).filter(item => String(item.id) !== String(entryId));
+    try { localStorage.setItem(historyStorageKey(userId), JSON.stringify(next)); } catch { /* optional */ }
+    return next;
+}
+
+export function clearAllHistory(userId) {
+    try { localStorage.setItem(historyStorageKey(userId), JSON.stringify([])); } catch { /* optional */ }
+    return [];
 }
 
 export function scoreTrend(history) {
@@ -227,4 +352,199 @@ export function scoreTrend(history) {
         score: Number(item.score) || 0,
         type: item.interviewType,
     }));
+}
+
+// ── KEYBOARD SHORTCUT SAFETY ─────────────────────────────────────────────────
+const TEXT_INPUT_TYPES = new Set([
+    'text', 'search', 'email', 'url', 'password', 'number', 'tel',
+    'date', 'time', 'datetime-local', 'month', 'week',
+]);
+
+// True when a keydown originates from a control where the user is typing or
+// where the control consumes keys natively (shortcuts must not fire).
+export function isTextEntryTarget(target) {
+    if (!target || typeof target !== 'object') return false;
+    const tag = String(target.tagName || '').toUpperCase();
+    if (tag === 'TEXTAREA' || tag === 'SELECT') return true;
+    if (target.isContentEditable) return true;
+    if (tag === 'INPUT') {
+        const type = String(target.type || 'text').toLowerCase();
+        return TEXT_INPUT_TYPES.has(type);
+    }
+    return false;
+}
+
+// Radio groups, selects and text fields consume arrow keys natively; the CBT
+// layer must not hijack them while such a control is focused.
+export function consumesArrowKeys(target) {
+    if (!target || typeof target !== 'object') return false;
+    const tag = String(target.tagName || '').toUpperCase();
+    return tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' || !!target.isContentEditable;
+}
+
+export function optionIndexFromKey(key, optionCount) {
+    if (typeof key !== 'string' || key.length !== 1) return null;
+    const count = Number(optionCount) || 0;
+    if (count < 2) return null;
+    const lower = key.toLowerCase();
+    const code = lower.charCodeAt(0);
+    let index = null;
+    if (code >= 97 && code <= 122) index = code - 97;
+    else if (code >= 49 && code <= 57) index = code - 49;
+    if (index === null || index < 0 || index >= count) return null;
+    return index;
+}
+
+// ── TIMER ACCESSIBILITY ──────────────────────────────────────────────────────
+const TIMER_MILESTONES = {
+    600: '10 minutes remaining',
+    300: '5 minutes remaining',
+    60: '1 minute remaining',
+    30: '30 seconds remaining',
+    10: '10 seconds remaining',
+    0: 'Time is up. Your assessment is being submitted automatically.',
+};
+
+export function timerAnnouncement(seconds) {
+    const value = Math.max(0, Math.floor(Number(seconds) || 0));
+    return Object.prototype.hasOwnProperty.call(TIMER_MILESTONES, value) ? TIMER_MILESTONES[value] : null;
+}
+
+// ── MULTI-TAB CONFLICT RESOLUTION ────────────────────────────────────────────
+// Decides what the current tab should do when another tab writes the same
+// UID-scoped session key. Deterministic: the most recent write wins. Strict
+// inequality guarantees two tabs can never simultaneously claim (and both
+// close) the session; equal timestamps defer to the next write.
+export function resolveStorageConflict(parsed, { tabId, lastWriteAt }) {
+    if (!parsed || typeof parsed !== 'object') return 'ignore';
+    if (typeof parsed.tabId === 'string' && parsed.tabId === tabId) return 'ignore';
+    const theirWriteAt = Number(parsed.lastSaved) || 0;
+    const ourWriteAt = Number(lastWriteAt) || 0;
+    return theirWriteAt > ourWriteAt ? 'yield' : 'ignore';
+}
+
+// ── STAR MARKDOWN EXPORT ─────────────────────────────────────────────────────
+export function buildStarMarkdown({ report, meta = {} }) {
+    if (!report || typeof report !== 'object') return '';
+    const role = String(meta.role || meta.occupation || 'Target Role').trim() || 'Target Role';
+    const completed = meta.completedAt ? new Date(meta.completedAt) : new Date();
+    const dateLabel = Number.isFinite(completed.getTime()) ? completed.toLocaleDateString() : new Date().toLocaleDateString();
+    const rows = Array.isArray(report.questions) ? report.questions : [];
+    const answeredCount = rows.filter(row => row.answered).length;
+    const lines = [];
+
+    lines.push(`# Interview STAR Summary — ${role}`);
+    lines.push('');
+    lines.push(`- **Track:** ${String(meta.interviewType || 'technical')}`);
+    lines.push(`- **Mode:** ${String(meta.mode || 'assessment')}`);
+    lines.push(`- **Completed:** ${dateLabel}`);
+    if (meta.submissionReason === 'timeout') lines.push('- **Submission:** Auto-submitted when the timer expired');
+    lines.push(`- **Overall Score:** ${report.overall}% — ${report.readiness}`);
+    lines.push(`- **Completion:** ${report.completionRate}% (${answeredCount}/${rows.length} answered)`);
+    lines.push(`- **Time Used:** ${formatClock(report.timeUsed)}${report.timeLimit ? ` of ${formatClock(report.timeLimit)}` : ''}`);
+
+    const categories = Object.entries(report.categoryScores || {});
+    if (categories.length) {
+        lines.push('');
+        lines.push('## Category Breakdown');
+        lines.push('');
+        lines.push('| Category | Score |');
+        lines.push('| --- | --- |');
+        categories.forEach(([name, score]) => lines.push(`| ${name} | ${score}% |`));
+    }
+
+    lines.push('');
+    lines.push('## Demonstrated Strengths');
+    lines.push('');
+    if (report.strengths?.length) report.strengths.forEach(item => lines.push(`- ${item}`));
+    else lines.push('- None identified yet — review the model answers below.');
+
+    lines.push('');
+    lines.push('## Focus & Improvement Areas');
+    lines.push('');
+    if (report.weaknesses?.length) report.weaknesses.forEach(item => lines.push(`- **${item.area}:** ${item.detail}`));
+    else lines.push('- No major weaknesses identified.');
+
+    lines.push('');
+    lines.push('## Question-by-Question STAR Coaching');
+    lines.push('');
+    rows.forEach(row => {
+        lines.push(`### Q${row.index}. ${row.question}`);
+        lines.push('');
+        lines.push(`- **Result:** ${row.correct ? 'Correct' : row.answered ? 'Needs work' : 'Unanswered'}`);
+        lines.push(`- **Your answer:** ${row.userAnswer || '— no answer selected'}`);
+        lines.push(`- **Model answer:** ${row.idealAnswer || '—'}`);
+        lines.push(`- **What was good:** ${row.whatWasGood || '—'}`);
+        lines.push(`- **What was missing:** ${row.whatWasMissing || '—'}`);
+        lines.push(`- **STAR recommendation:** ${row.improvement || '—'}`);
+        if (row.explanation) lines.push(`- **Concept:** ${row.explanation}`);
+        lines.push('');
+    });
+
+    const plan = [...(report.plan?.immediate || []), ...(report.plan?.sevenDay || [])];
+    lines.push('## 7-Day Action Plan');
+    lines.push('');
+    plan.forEach((item, index) => lines.push(`${index + 1}. ${item}`));
+
+    if (report.missingSkills?.length) {
+        lines.push('');
+        lines.push('## Job Description Alignment');
+        lines.push('');
+        report.missingSkills.forEach(item => lines.push(`- **${item.requirement}:** ${item.gap}`));
+    }
+
+    lines.push('');
+    lines.push('_Generated by ResumePilot AI Interview Coach._');
+    return lines.join('\n');
+}
+
+// ── CLIPBOARD & DOWNLOAD HELPERS ─────────────────────────────────────────────
+export async function copyTextToClipboard(text) {
+    const value = String(text ?? '');
+    if (!value) return { ok: false, reason: 'empty' };
+    try {
+        if (typeof navigator !== 'undefined' && navigator?.clipboard?.writeText) {
+            await navigator.clipboard.writeText(value);
+            return { ok: true, method: 'async' };
+        }
+    } catch { /* fall through to the legacy path */ }
+    try {
+        if (typeof document === 'undefined' || typeof document.execCommand !== 'function') {
+            return { ok: false, reason: 'unavailable' };
+        }
+        const textarea = document.createElement('textarea');
+        textarea.value = value;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'fixed';
+        textarea.style.top = '-9999px';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        if (typeof textarea.setSelectionRange === 'function') textarea.setSelectionRange(0, value.length);
+        const copied = document.execCommand('copy');
+        textarea.remove();
+        return copied ? { ok: true, method: 'legacy' } : { ok: false, reason: 'copy-rejected' };
+    } catch {
+        return { ok: false, reason: 'unavailable' };
+    }
+}
+
+export function downloadTextFile(filename, text, mimeType = 'text/plain') {
+    try {
+        if (typeof document === 'undefined' || typeof Blob === 'undefined'
+            || typeof URL === 'undefined' || typeof URL.createObjectURL !== 'function') return false;
+        const blob = new Blob([String(text ?? '')], { type: `${mimeType};charset=utf-8` });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = String(filename || 'download.txt').replace(/[^\w.-]+/g, '-');
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        return true;
+    } catch {
+        return false;
+    }
 }

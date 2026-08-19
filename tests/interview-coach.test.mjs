@@ -198,8 +198,14 @@ test('session and history storage keys enforce user isolation and expiration bou
     removeItem: (key) => mockStorage.delete(key),
   };
 
-  // Write session for user-1
-  writeOwnerSession('user-1', { phase: 'exam', currentQuestion: 2, ownerUid: 'user-1' });
+  // Write session for user-1. Since the schema-v2 hardening, an exam session is
+  // only restorable when it carries renderable questions — mirror that contract.
+  writeOwnerSession('user-1', {
+    phase: 'exam',
+    currentQuestion: 2,
+    ownerUid: 'user-1',
+    interviewData: { questions: [{ id: 1, question: 'Q?', options: ['A', 'B'], correctAnswer: 0 }] },
+  });
   const savedUser1 = readOwnerSession('user-1');
   assert.equal(savedUser1.phase, 'exam');
   assert.equal(savedUser1.currentQuestion, 2);
