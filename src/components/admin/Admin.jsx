@@ -30,7 +30,7 @@ const AdminHeader = ({ userEmail, onLogout }) => {
     const checkHealth = useCallback(async () => {
         setHealth(current => ({ ...current, loading: true }));
         try {
-            const response = await fetch('/healthz', { cache: 'no-store' });
+            const response = await fetch('/api/healthz', { cache: 'no-store' });
             const result = await response.json();
             setHealth({ loading: false, reachable: response.ok && result.status === 'ok', firebase: Boolean(result.firebaseAdminConfigured) });
         } catch {
