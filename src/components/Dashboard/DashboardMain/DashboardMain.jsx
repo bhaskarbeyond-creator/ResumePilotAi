@@ -1,6 +1,7 @@
 import React, { Component, Suspense, lazy } from 'react';
 import './DashboardMain.scss';
 import { Link, Route, Routes } from 'react-router-dom';
+import { AuthContext } from '../../../main';
 import Toasts from '../../Toasts/Toats';
 import fire from '../../../conf/fire';
 import ProfileDisplay from '../ProfileDisplay/ProfileDisplay';
@@ -33,6 +34,7 @@ const DashboardMessages = lazy(() => import('../DashboardMessages/DashboardMessa
 const CoverLetter = lazy(() => import('../../CoverLetter/CoverLetter'));
 const Billing = lazy(() => import('../../Billing/Plans/Plans'));
 class DashboardMain extends Component {
+    static contextType = AuthContext;
     constructor(props) {
         super(props);
         this.authListener = this.authListener.bind(this);
@@ -323,7 +325,11 @@ class DashboardMain extends Component {
         };
         // ────────────────────────────────────────────────────────────────────────
 
-        return this.state.user !== null ? (
+        const resolvedUser = this.state.user || this.context?.uid || null;
+        if (!resolvedUser) {
+            return <Spinner />;
+        }
+        return (
             <div className="dashboardWrapper" style={{ overflow: 'hidden' }}>
                 {/* Floating Mobile Sidebar Toggle */}
                 <button
@@ -440,7 +446,7 @@ class DashboardMain extends Component {
                 <DashboardFavourites showFavorites={this.showFavorites} isFavoritesShowed={this.state.isFavoritesShowed} />
 
                 <ProfileDisplay
-                    user={this.state.user}
+                    user={resolvedUser}
                     profile={{
                         name: (this.state.firstname && this.state.lastname) ? `${this.state.firstname} ${this.state.lastname}`.trim() : (this.state.profile?.name || `${this.state.profile?.firstname || ''} ${this.state.profile?.lastname || ''}`.trim() || ''),
                         firstname: this.state.firstname || this.state.profile?.firstname || '',
@@ -501,8 +507,6 @@ class DashboardMain extends Component {
                     </div>
                 </div>
             </div>
-        ) : (
-            ' '
         );
     }
 }
