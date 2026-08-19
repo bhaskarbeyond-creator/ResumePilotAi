@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getPublicPortfolios } from '../../firestore/dbOperations';
+import modernMinimalPreview from '../../assets/portfolioPreview/modern-minimal.png';
+import executivePreview from '../../assets/portfolioPreview/executive.png';
+import creativeDarkPreview from '../../assets/portfolioPreview/creative-dark.png';
+import premiumTechPreview from '../../assets/portfolioPreview/premium-tech.png';
 
 const PortfolioGallery = () => {
     const [portfolios, setPortfolios] = useState([]);
@@ -49,6 +53,16 @@ const PortfolioGallery = () => {
             professional: 'bg-slate-100 text-slate-800',
         };
         return colors[theme] || colors.default;
+    };
+
+    const getPreviewImage = (portfolio) => {
+        const template = portfolio.data?.templateKey || portfolio.data?.template || portfolio.template;
+        const theme = portfolio.theme || 'default';
+        if (template === 'modernMinimal' || theme === 'minimal') return modernMinimalPreview;
+        if (template === 'executive' || theme === 'professional') return executivePreview;
+        if (template === 'creativeDark' || theme === 'creative') return creativeDarkPreview;
+        if (template === 'premiumTech' || theme === 'dark') return premiumTechPreview;
+        return modernMinimalPreview;
     };
 
     return (
@@ -105,12 +119,21 @@ const PortfolioGallery = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {filteredPortfolios.map((portfolio) => (
                                 <div key={portfolio.id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden">
-                                    {/* Preview Image Placeholder */}
-                                    <div className="h-48 bg-gradient-to-br from-blue-400 to-purple-500 relative">
-                                        <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center">
+                                    {/* Preview Image */}
+                                    <div className="h-48 relative overflow-hidden bg-slate-100">
+                                        <img
+                                            src={getPreviewImage(portfolio)}
+                                            alt={`${portfolio.title} preview`}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                e.target.style.display = 'none';
+                                                e.target.parentElement.classList.add('bg-gradient-to-br', 'from-slate-400', 'to-purple-500');
+                                            }}
+                                        />
+                                        <div className="absolute inset-0 bg-black bg-opacity-20 hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center opacity-0 hover:opacity-100">
                                             <div className="text-white text-center">
-                                                <h3 className="text-xl font-bold mb-2">{portfolio.title}</h3>
-                                                <p className="text-sm opacity-90">Portfolio Preview</p>
+                                                <h3 className="text-lg font-bold mb-1">{portfolio.title}</h3>
+                                                <p className="text-xs font-medium">View Portfolio</p>
                                             </div>
                                         </div>
                                     </div>

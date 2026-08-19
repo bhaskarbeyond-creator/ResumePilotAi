@@ -18,7 +18,7 @@ export default function PremiumTech({ canonical }) {
     }
 
     return (
-        <div className="webcv-tech min-h-screen bg-[#070b14] text-slate-100" data-webcv-template="premiumTech">
+        <div className="webcv-tech min-h-screen w-full max-w-full overflow-x-hidden bg-[#070b14] text-slate-100" data-webcv-template="premiumTech">
             <SkipLink />
             <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(79,70,229,0.18),_transparent_32%),radial-gradient(circle_at_20%_20%,_rgba(14,165,233,0.12),_transparent_28%)]" aria-hidden="true" />
             <div className="relative mx-auto grid max-w-6xl lg:grid-cols-[15rem_1fr]">
@@ -28,17 +28,17 @@ export default function PremiumTech({ canonical }) {
                     <NavLinks visibility={visibility} className="sticky top-8 mt-10 flex flex-col gap-3" linkClassName="text-sm text-slate-400 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sky-400" />
                 </aside>
 
-                <div>
-                    <header className="flex items-center justify-between px-6 py-5 lg:hidden">
-                        <p className="text-sm font-semibold">{name}</p>
-                        <NavLinks visibility={visibility} className="flex gap-3 overflow-x-auto text-xs text-slate-400" linkClassName="whitespace-nowrap hover:text-white" />
+                <div className="min-w-0">
+                    <header className="flex min-w-0 items-center justify-between gap-3 px-6 py-5 lg:hidden">
+                        <p className="truncate text-sm font-semibold">{name}</p>
+                        <NavLinks visibility={visibility} className="flex max-w-[65%] shrink-0 gap-3 overflow-x-auto text-xs text-slate-400" linkClassName="whitespace-nowrap hover:text-white" />
                     </header>
 
                     <main id="main" className="px-6 pb-20 pt-8 md:px-10">
                         <section className="grid items-center gap-8 pb-16 md:grid-cols-[1.3fr_auto]">
-                            <div>
+                            <div className="min-w-0">
                                 {data.heading.occupation ? <p className="text-xs uppercase tracking-[0.28em] text-sky-300">{data.heading.occupation}</p> : null}
-                                {name ? <h1 className="mt-4 text-5xl font-semibold tracking-tight text-white md:text-6xl">{name}</h1> : null}
+                                {name ? <h1 className="mt-4 break-words text-4xl font-semibold tracking-tight text-white sm:text-5xl md:text-6xl">{name}</h1> : null}
                                 {data.summary ? <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">{data.summary}</p> : null}
                                 {location ? <p className="mt-4 text-sm text-slate-400">{location}</p> : null}
                             </div>
@@ -80,10 +80,10 @@ export default function PremiumTech({ canonical }) {
                         </Section>
 
                         <Section id="skills" title="Technical stack" show={visibility.skills} headingClassName="text-sm font-medium text-slate-300" className="pb-16">
-                            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+                            <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                                 {data.skills.map((skill) => (
-                                    <div key={skill.id} className="rounded-2xl border border-white/10 bg-[#0d1424] px-3 py-3">
-                                        <p className="text-sm font-medium">{skill.name}</p>
+                                    <div key={skill.id} className="min-w-0 rounded-2xl border border-white/10 bg-[#0d1424] px-3 py-3">
+                                        <p className="truncate text-sm font-medium">{skill.name}</p>
                                         <div className="mt-2 h-1 rounded-full bg-white/10" aria-hidden="true">
                                             <div className="h-1 rounded-full bg-gradient-to-r from-sky-400 to-indigo-400" style={{ width: `${Math.max(12, Math.min(100, skill.rating))}%` }} />
                                         </div>
