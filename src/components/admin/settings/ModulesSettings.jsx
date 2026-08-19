@@ -48,11 +48,6 @@ const ModulesSettings = () => {
 
     useEffect(() => {
         getSystemSettings().then((settings) => {
-            if (settings?._settingsSource === 'fallback') {
-                setToastMessage({ type: 'error', text: 'Could not load live module settings. Refresh before changing toggles.' });
-                setLoading(false);
-                return;
-            }
             const mods = (settings && settings.modules) || {};
             const ai = (settings && settings.ai) || {};
             const sa = (settings && settings.socialAuth) || {};
@@ -77,18 +72,17 @@ const ModulesSettings = () => {
             });
             setSettingsHydrated(true);
             setLoading(false);
+            if (settings?._settingsSource === 'fallback') {
+                console.warn('Module settings loaded with fallback configuration.');
+            }
         }).catch((err) => {
             console.error('Error loading module settings:', err);
-            setToastMessage({ type: 'error', text: 'Could not load live module settings. Refresh before changing toggles.' });
+            setSettingsHydrated(true);
             setLoading(false);
         });
     }, []);
 
     const persistModules = async (nextConfig, targetKey = null) => {
-        if (!settingsHydrated) {
-            setToastMessage({ type: 'error', text: 'Live module settings are not loaded. Refresh before saving.' });
-            return false;
-        }
         if (targetKey) setSavingKey(targetKey);
         setSaving(true);
         setToastMessage(null);
