@@ -5,6 +5,7 @@ import {
 } from 'react-icons/fa';
 import { AuthContext } from '../../../main';
 import config from '../../../conf/configuration';
+import fire from '../../../conf/fire';
 import { getResumes } from '../../../firestore/dbOperations';
 import {
     DIFFICULTIES, DURATION_PRESETS, EXPERIENCE_LEVELS, INTERVIEW_MODES, INTERVIEW_TYPES, PALETTE_META,
@@ -107,7 +108,14 @@ function interviewReducer(state, action) {
         case 'TICK':
             return { ...state, timeRemaining: action.remaining, warnExpiry: action.remaining > 0 && action.remaining <= 60 };
         case 'PAUSE':
-            return { ...state, isPaused: action.value, questionStartTime: action.value ? null : Date.now() };
+            return {
+                ...state,
+                isPaused: action.value,
+                deadlineAt: action.value
+                    ? null
+                    : (state.timeRemaining > 0 ? Date.now() + state.timeRemaining * 1000 : null),
+                questionStartTime: action.value ? null : Date.now(),
+            };
         case 'COMPLETE':
             return { ...state, phase: 'report', report: action.report, confirmFinish: false, isPaused: false };
         case 'RESTORE':
@@ -182,9 +190,18 @@ const DashboardInterviews = () => {
         dispatch({ type: 'START_FETCH' });
         try {
             const currentLanguage = localStorage.getItem('preferredLanguage') || localStorage.getItem('language') || 'en';
+            const headers = { 'Content-Type': 'application/json' };
+            try {
+                const currentUser = fire?.auth?.()?.currentUser;
+                if (currentUser) {
+                    const token = await currentUser.getIdToken();
+                    if (token) headers['Authorization'] = `Bearer ${token}`;
+                }
+            } catch (_) {}
+
             const response = await fetch(`${config.provider}://${config.backendUrl}/api/generate-interview`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 signal: requestController.signal,
                 body: JSON.stringify({
                     occupation: state.occupation,
