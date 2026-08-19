@@ -5355,12 +5355,25 @@ export async function getSystemSettings() {
     }
 }
 
-export async function saveSystemSettings(category, data) {
-    const { response, data: result } = await fetchAdminWithReauth(`/api/admin/settings/${encodeURIComponent(category)}`, {
+export async function saveSystemSettings(category, data, { force = false } = {}) {
+    let expectedRevision = force ? -1 : Number(systemSettingsRevisions[category] || 0);
+    let { response, data: result } = await fetchAdminWithReauth(`/api/admin/settings/${encodeURIComponent(category)}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data, expectedRevision: Number(systemSettingsRevisions[category] || 0) }),
+        body: JSON.stringify({ data, expectedRevision }),
     });
-    if (!response.ok || !result.success) throw new Error(result.error?.message || result.error || 'Unable to save settings.');
+
+    if (response?.status === 409 || result?.code === 'ADMIN_SETTINGS_CONFLICT') {
+        await getSystemSettings();
+        const retryRevision = Number(systemSettingsRevisions[category] || 0);
+        const retry = await fetchAdminWithReauth(`/api/admin/settings/${encodeURIComponent(category)}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ data, expectedRevision: retryRevision }),
+        });
+        response = retry.response;
+        result = retry.data;
+    }
+
+    if (!response.ok || !result?.success) throw new Error(result?.error?.message || result?.error || 'Unable to save settings.');
     systemSettingsRevisions = { ...systemSettingsRevisions, [category]: result.revision };
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('systemSettingsUpdated', { detail: { category, revision: result.revision } }));
     return result;

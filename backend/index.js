@@ -2032,14 +2032,15 @@ app.post('/api/admin/settings/:category', async (req, res) => {
         if (Buffer.byteLength(JSON.stringify(req.body.data), 'utf8') > 100_000) throw new Error('Settings payload is too large.');
         const normalized = normalizeAdminSettingValue(req.body.data);
         let publicSettings;
-        const expectedRevision = Number(req.body.expectedRevision || 0);
-        if (!Number.isInteger(expectedRevision) || expectedRevision < 0) throw new Error('Invalid settings revision.');
+        const rawRevision = req.body?.expectedRevision;
+        const expectedRevision = rawRevision !== undefined ? Number(rawRevision) : -1;
+        if (!Number.isInteger(expectedRevision) || (expectedRevision < 0 && expectedRevision !== -1)) throw new Error('Invalid settings revision.');
         const secretRef = requestDb.collection('settings').doc('admin_configuration');
         const publicRef = requestDb.collection('data').doc('public_config');
         const revision = await requestDb.runTransaction(async transaction => {
             const snapshot = await transaction.get(secretRef);
             const currentRevision = Number(snapshot.data()?._revisions?.[category] || 0);
-            if (expectedRevision !== currentRevision) {
+            if (expectedRevision !== -1 && expectedRevision !== currentRevision) {
                 const stale = new Error('These settings changed after the panel loaded. Refresh before saving.');
                 stale.code = 'ADMIN_SETTINGS_CONFLICT';
                 throw stale;
