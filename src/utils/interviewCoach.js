@@ -97,8 +97,46 @@ export function sanitizeResumeFacts(resume) {
     return lines.join('\n').slice(0, 2500);
 }
 
+// Deterministic multi-pass cleaner to strip any leaked UI labels, form headers, or robotic preambles.
+export function cleanInterviewMetadataArtifacts(text) {
+    if (typeof text !== 'string') return '';
+    let cleaned = text.trim();
+
+    let prev = '';
+    let passes = 0;
+    while (cleaned !== prev && passes < 4) {
+        prev = cleaned;
+        passes++;
+
+        // 1. Strip raw field labels with their immediate values (e.g. "Target Role & Discipline: Senior Software Engineer.")
+        cleaned = cleaned.replace(/^(?:(?:(?:For (?:the )?)?(?:Target )?Role & Discipline|(?:For (?:the )?)?(?:Target )?Job Description|(?:For (?:the )?)?(?:Target )?Role|(?:For (?:the )?)?Discipline)\s*:\s*[^.?!:;\n]{1,80}[.?!:;\n]\s*)+/gi, '');
+
+        // 2. Strip bracketed tags and UI headers at start
+        cleaned = cleaned.replace(/^\[\s*(?:AI Tailoring|Target Job Description|Target Role & Discipline|Target Role|Job Description)\s*\]\s*[:.\-—]?\s*/gi, '');
+        cleaned = cleaned.replace(/^(?:Target Role & Discipline|Target Job Description \(Optional\s*[-—]\s*AI Tailoring\)|Target Job Description|Optional\s*[-—]\s*AI Tailoring|AI Tailoring|Target Role|Target Discipline|Candidate Profile|Setup Parameters|Job Requirements Specification)\s*[:.\-—]?\s*/gi, '');
+
+        // 3. Strip robotic contextual preambles and introductory framing clauses at start of question
+        cleaned = cleaned.replace(/^(?:(?:Based on|According to|Considering|In light of|In the context of|With respect to|As mentioned in|As stated in|Referencing)\s+(?:the\s+)?(?:target\s+)?(?:job description|role|discipline|resume|candidate profile|candidate background|provided context|setup|requirements|overview)[^:?,.]{0,150}[:?,.]\s*)+/gi, '');
+        cleaned = cleaned.replace(/^(?:For the (?:target )?role(?: and discipline)?[^:?,.]{0,150}[:?,.]\s*)+/gi, '');
+        cleaned = cleaned.replace(/^(?:Given (?:the |your )?(?:candidate(?:'s)? )?(?:background|profile|job description|role|experience|context)[^:?,.]{0,150}[:?,.]\s*)+/gi, '');
+        cleaned = cleaned.replace(/^(?:As an? (?:candidate for (?:the )?)?[^:?,.]{0,80}(?:engineer|developer|manager|specialist|analyst|architect|consultant|lead|director|professional|role|position|job)[^:?,.]{0,40}[:?,.]\s*)+/gi, '');
+
+        // 4. Strip raw UI headers and field tags anywhere remaining
+        cleaned = cleaned.replace(/\b(?:Target Role & Discipline|Target Job Description \(Optional\s*[-—]\s*AI Tailoring\)|Target Job Description|Optional\s*[-—]\s*AI Tailoring|AI Tailoring)\b\s*[:.\-—]?\s*/gi, '');
+        cleaned = cleaned.replace(/\b(?:Target Role|Target Discipline|Candidate Profile|Setup Parameters|Job Requirements Specification)\s*:/gi, '');
+        cleaned = cleaned.replace(/[^\S\r\n]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+    }
+
+    if (cleaned.length > 0) {
+        cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+    }
+    return cleaned;
+}
+
 export function sanitizeJobDescription(text) {
-    return String(text || '').replace(/\s+/g, ' ').trim().slice(0, 4000);
+    if (!text || typeof text !== 'string') return '';
+    const clean = cleanInterviewMetadataArtifacts(text);
+    return clean.replace(/\s+/g, ' ').trim().slice(0, 4000);
 }
 
 export function buildInterviewReport({ questions = [], answers = {}, timePerQuestion = {}, timeLimit = 0, timeRemaining = 0, interviewType = 'technical', jobDescription = '' }) {
@@ -179,10 +217,11 @@ export function normalizeQuestions(rawQuestions) {
     const cleaned = [];
     rawQuestions.forEach((question, index) => {
         if (!question || typeof question !== 'object') return;
-        const text = typeof question.question === 'string' ? question.question.trim().slice(0, 1000) : '';
+        const rawText = typeof question.question === 'string' ? question.question.trim().slice(0, 1000) : '';
+        const text = cleanInterviewMetadataArtifacts(rawText);
         if (!text) return;
         const options = (Array.isArray(question.options) ? question.options : [])
-            .map(option => (typeof option === 'string' ? option.trim() : String(option ?? '').trim()).slice(0, 500))
+            .map(option => cleanInterviewMetadataArtifacts((typeof option === 'string' ? option.trim() : String(option ?? '').trim()).slice(0, 500)))
             .filter(option => option.length > 0)
             .slice(0, 6);
         if (options.length < 2) return;

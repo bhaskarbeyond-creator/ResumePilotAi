@@ -431,21 +431,21 @@ router.post('/generate-summary', async (req, res) => {
     }
 });
 
-// ── Interview question generation helpers (AI-path diversity + fallback) ─────
+// ── Interview question generation helpers (Contextual Blueprint + Anti-Leakage) ─────
 const INTERVIEW_PROMPT_CONTEXT = {
-    technical: 'technical skills, frameworks, methodologies, problem-solving approaches, and systems design',
-    behavioral: 'leadership skills, communication abilities, conflict resolution, teamwork, adaptability, work ethic, and professional challenges',
-    hr: 'leadership skills, communication abilities, conflict resolution, teamwork, adaptability, work ethic, and professional challenges',
-    managerial: 'people leadership, prioritization, stakeholder management, and decision making',
-    case: 'structured case reasoning, estimation, trade-offs, and business judgment',
-    mixed: 'a balanced mix of technical knowledge, behavioral judgment, and role-specific scenarios',
+    technical: 'technical architecture, core frameworks, systems design, debugging edge cases, and engineering trade-offs',
+    behavioral: 'STAR-format scenarios, cross-functional leadership, conflict resolution, ownership, and stakeholder negotiation',
+    hr: 'organizational culture fit, career progression, collaboration dynamics, communication style, and workplace ethics',
+    managerial: 'strategic resource allocation, team performance management, hiring standards, prioritization, and executive communication',
+    case: 'structured business case reasoning, market estimation, root cause diagnosis, unit economics, and data-backed decision making',
+    mixed: 'a comprehensive balance of technical depth, real-world troubleshooting, system trade-offs, and behavioral leadership scenarios',
 };
 
 const INTERVIEW_DIFFICULTY_GUIDANCE = {
-    easy: 'Focus the set on fundamental, approachable questions while keeping a couple of stretch items.',
-    medium: 'Balance foundational and applied questions for a well-rounded interview.',
-    hard: 'Lean toward applied, systems, and senior-level questions, keeping only a few fundamentals.',
-    expert: 'Lean toward deep, advanced, architecture/strategy questions; fundamentals are minimal.',
+    easy: 'Focus the set on foundational execution and established best practices with clear criteria.',
+    medium: 'Balance practical application, debugging multi-step failures, and nuanced trade-offs.',
+    hard: 'Focus on complex systems design, incident triage, edge-case failure modes, and senior-level decision making.',
+    expert: 'Focus on enterprise-scale architecture, high-stakes ambiguity, crisis recovery, and strategic organizational trade-offs.',
 };
 
 function interviewDifficultyWeights(difficulty) {
@@ -481,14 +481,157 @@ function sanitizePromptFragment(value, max = 500) {
     }).join('').replace(/<[^>]*>/g, '').trim().slice(0, max);
 }
 
+// Deterministic multi-pass cleaner to strip any leaked UI labels, form headers, or robotic preambles.
+function cleanInterviewMetadataArtifacts(text) {
+    if (typeof text !== 'string') return '';
+    let cleaned = text.trim();
+
+    let prev = '';
+    let passes = 0;
+    while (cleaned !== prev && passes < 4) {
+        prev = cleaned;
+        passes++;
+
+        // 1. Strip raw field labels with their immediate values (e.g. "Target Role & Discipline: Senior Software Engineer.")
+        cleaned = cleaned.replace(/^(?:(?:(?:For (?:the )?)?(?:Target )?Role & Discipline|(?:For (?:the )?)?(?:Target )?Job Description|(?:For (?:the )?)?(?:Target )?Role|(?:For (?:the )?)?Discipline)\s*:\s*[^.?!:;\n]{1,80}[.?!:;\n]\s*)+/gi, '');
+
+        // 2. Strip bracketed tags and UI headers at start
+        cleaned = cleaned.replace(/^\[\s*(?:AI Tailoring|Target Job Description|Target Role & Discipline|Target Role|Job Description)\s*\]\s*[:.\-—]?\s*/gi, '');
+        cleaned = cleaned.replace(/^(?:Target Role & Discipline|Target Job Description \(Optional\s*[-—]\s*AI Tailoring\)|Target Job Description|Optional\s*[-—]\s*AI Tailoring|AI Tailoring|Target Role|Target Discipline|Candidate Profile|Setup Parameters|Job Requirements Specification)\s*[:.\-—]?\s*/gi, '');
+
+        // 3. Strip robotic contextual preambles and introductory framing clauses at start of question
+        cleaned = cleaned.replace(/^(?:(?:Based on|According to|Considering|In light of|In the context of|With respect to|As mentioned in|As stated in|Referencing)\s+(?:the\s+)?(?:target\s+)?(?:job description|role|discipline|resume|candidate profile|candidate background|provided context|setup|requirements|overview)[^:?,.]{0,150}[:?,.]\s*)+/gi, '');
+        cleaned = cleaned.replace(/^(?:For the (?:target )?role(?: and discipline)?[^:?,.]{0,150}[:?,.]\s*)+/gi, '');
+        cleaned = cleaned.replace(/^(?:Given (?:the |your )?(?:candidate(?:'s)? )?(?:background|profile|job description|role|experience|context)[^:?,.]{0,150}[:?,.]\s*)+/gi, '');
+        cleaned = cleaned.replace(/^(?:As an? (?:candidate for (?:the )?)?[^:?,.]{0,80}(?:engineer|developer|manager|specialist|analyst|architect|consultant|lead|director|professional|role|position|job)[^:?,.]{0,40}[:?,.]\s*)+/gi, '');
+
+        // 4. Strip raw UI headers and field tags anywhere remaining
+        cleaned = cleaned.replace(/\b(?:Target Role & Discipline|Target Job Description \(Optional\s*[-—]\s*AI Tailoring\)|Target Job Description|Optional\s*[-—]\s*AI Tailoring|AI Tailoring)\b\s*[:.\-—]?\s*/gi, '');
+        cleaned = cleaned.replace(/\b(?:Target Role|Target Discipline|Candidate Profile|Setup Parameters|Job Requirements Specification)\s*:/gi, '');
+        cleaned = cleaned.replace(/[^\S\r\n]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+    }
+
+    if (cleaned.length > 0) {
+        cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+    }
+    return cleaned;
+}
+
+// Banned generic question patterns
+const GENERIC_QUESTION_PATTERNS = [
+    /^(?:tell me about yourself|what are your (?:greatest )?(?:strengths|weaknesses)|why should we hire you|why do you want to work here)\b/i,
+    /^(?:what is your experience with|what tools (?:or technologies )?do you use|what is your background in)\b/i,
+    /^(?:what is [a-z0-9+#.\s]{2,30}\?|explain what [a-z0-9+#.\s]{2,30} is\b)/i,
+    /^(?:how do you handle challenges|what are your career goals|where do you see yourself in 5 years)\b/i,
+];
+
+function isGenericQuestion(text) {
+    if (typeof text !== 'string' || text.trim().length < 15) return true;
+    const clean = text.trim();
+    return GENERIC_QUESTION_PATTERNS.some(p => p.test(clean));
+}
+
+// Extract confirmed candidate evidence (Level 1)
+function extractCandidateProfile(resumeFacts) {
+    if (!resumeFacts || typeof resumeFacts !== 'string') {
+        return { name: '', occupation: '', summary: '', work: [], skills: [], projects: [], certs: [], education: [], confirmedExperience: '' };
+    }
+    const cleanFacts = cleanInterviewMetadataArtifacts(resumeFacts);
+    const lines = cleanFacts.split('\n').map(l => l.trim()).filter(Boolean);
+    let name = '';
+    let occupation = '';
+    let summary = '';
+    const work = [];
+    const skills = [];
+    const projects = [];
+    const certs = [];
+    const education = [];
+
+    for (const line of lines) {
+        if (/^Name:\s*/i.test(line)) name = line.replace(/^Name:\s*/i, '').trim();
+        else if (/^Occupation:\s*/i.test(line)) occupation = line.replace(/^Occupation:\s*/i, '').trim();
+        else if (/^Summary:\s*/i.test(line)) summary = line.replace(/^Summary:\s*/i, '').trim();
+        else if (/^Work:\s*/i.test(line)) {
+            const raw = line.replace(/^Work:\s*/i, '');
+            raw.split(';').map(w => w.trim()).filter(Boolean).forEach(w => work.push(w));
+        }
+        else if (/^Skills:\s*/i.test(line)) {
+            const raw = line.replace(/^Skills:\s*/i, '');
+            raw.split(',').map(s => s.trim()).filter(Boolean).forEach(s => skills.push(s));
+        }
+        else if (/^Projects:\s*/i.test(line)) {
+            const raw = line.replace(/^Projects:\s*/i, '');
+            raw.split(',').map(p => p.trim()).filter(Boolean).forEach(p => projects.push(p));
+        }
+        else if (/^Certifications:\s*/i.test(line)) {
+            const raw = line.replace(/^Certifications:\s*/i, '');
+            raw.split(',').map(c => c.trim()).filter(Boolean).forEach(c => certs.push(c));
+        }
+        else if (/^Education:\s*/i.test(line)) {
+            const raw = line.replace(/^Education:\s*/i, '');
+            raw.split(';').map(e => e.trim()).filter(Boolean).forEach(e => education.push(e));
+        }
+    }
+
+    const confirmedParts = [];
+    if (name) confirmedParts.push(`Name: ${name}`);
+    if (occupation) confirmedParts.push(`Current/Stated Role: ${occupation}`);
+    if (work.length) confirmedParts.push(`Confirmed Work History: ${work.slice(0, 6).join('; ')}`);
+    if (skills.length) confirmedParts.push(`Confirmed Skills/Tech: ${skills.slice(0, 16).join(', ')}`);
+    if (projects.length) confirmedParts.push(`Confirmed Projects: ${projects.slice(0, 5).join(', ')}`);
+    if (certs.length) confirmedParts.push(`Confirmed Certifications: ${certs.slice(0, 6).join(', ')}`);
+    if (summary) confirmedParts.push(`Summary: ${summary.slice(0, 300)}`);
+
+    return {
+        name,
+        occupation,
+        summary,
+        work,
+        skills,
+        projects,
+        certs,
+        education,
+        confirmedExperience: confirmedParts.join('\n'),
+    };
+}
+
+// Extract normalized JD requirements specification (Level 4)
+function extractJobRequirements(jobDescription, occupation = '') {
+    if (!jobDescription || typeof jobDescription !== 'string') {
+        return { raw: '', role: occupation, cleanRequirements: '' };
+    }
+    const cleanJd = cleanInterviewMetadataArtifacts(jobDescription).slice(0, 3500);
+    return {
+        raw: jobDescription,
+        role: occupation,
+        cleanRequirements: cleanJd,
+    };
+}
+
+// Build internal contextual interview blueprint
+function buildContextualBlueprint({ occupation, interviewType, experienceLevel, difficulty, candidateProfile, jdRequirements, questionCount }) {
+    const jdText = (jdRequirements?.cleanRequirements || '').toLowerCase();
+    const intersectingSkills = (candidateProfile?.skills || []).filter(skill => 
+        jdText.includes(skill.toLowerCase())
+    );
+
+    const distribution = interviewDifficultyDistribution(questionCount, difficulty, experienceLevel);
+
+    return {
+        intersectingSkills,
+        distribution,
+        seniority: experienceLevel || 'professional',
+    };
+}
+
 // Lowercased, punctuation-stripped, whitespace-collapsed fingerprint for comparing
 // question text so we can drop exact and near-identical repeats within/across sets.
 function questionKey(text) {
-    return String(text || '').toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, '').replace(/\s+/g, ' ').trim();
+    const cleaned = cleanInterviewMetadataArtifacts(String(text || ''));
+    return cleaned.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, '').replace(/\s+/g, ' ').trim();
 }
 
-// Deterministic, bounded de-duplication. Removes (a) duplicate question text within the
-// candidate list and (b) questions that exactly match any recently-asked question.
+// Deterministic, bounded de-duplication with metadata artifact cleaning.
 function dedupeQuestions(rawQuestions, previousQuestions = []) {
     if (!Array.isArray(rawQuestions)) return [];
     const previousKeys = new Set((Array.isArray(previousQuestions) ? previousQuestions : [])
@@ -497,12 +640,22 @@ function dedupeQuestions(rawQuestions, previousQuestions = []) {
     const out = [];
     for (const question of rawQuestions) {
         if (!question || typeof question !== 'object') continue;
-        const text = typeof question.question === 'string' ? question.question.trim() : '';
+        const rawText = typeof question.question === 'string' ? question.question.trim() : '';
+        const text = cleanInterviewMetadataArtifacts(rawText);
         if (!text) continue;
         const key = questionKey(text);
         if (!key || seen.has(key)) continue;
         seen.add(key);
-        out.push(question);
+
+        const cleanOptions = (Array.isArray(question.options) ? question.options : [])
+            .map(opt => cleanInterviewMetadataArtifacts(typeof opt === 'string' ? opt : String(opt || '')))
+            .filter(opt => opt.length > 0);
+
+        out.push({
+            ...question,
+            question: text,
+            options: cleanOptions.length >= 2 ? cleanOptions : question.options,
+        });
     }
     // Keep ordering but drop exact matches against recent history.
     return out.filter(question => !previousKeys.has(questionKey(question.question)));
@@ -514,76 +667,121 @@ function buildInterviewPrompt(input) {
         pt: 'Portuguese', ru: 'Russian', nl: 'Dutch', pl: 'Polish', se: 'Swedish',
         no: 'Norwegian', dk: 'Danish', is: 'Icelandic', gk: 'Greek', ro: 'Romanian',
     };
-    const occupation = String(input.occupation || '').trim();
+    const rawOccupation = String(input.occupation || '').trim();
+    const occupation = cleanInterviewMetadataArtifacts(rawOccupation) || 'Professional';
     const interviewType = String(input.interviewType || 'technical');
     const targetLanguage = languageNames[input.language] || 'English';
     const validQuestionCount = Math.min(Math.max(parseInt(input.questionCount) || 10, 5), 20);
     const promptContext = INTERVIEW_PROMPT_CONTEXT[interviewType] || INTERVIEW_PROMPT_CONTEXT.mixed;
+    
     const safeFacts = typeof input.resumeFacts === 'string' ? input.resumeFacts.slice(0, 2500) : '';
     const safeJd = typeof input.jobDescription === 'string' ? input.jobDescription.slice(0, 4000) : '';
-    const distribution = interviewDifficultyDistribution(validQuestionCount, input.difficulty, input.experienceLevel);
+    const candidateProfile = extractCandidateProfile(safeFacts);
+    const jdRequirements = extractJobRequirements(safeJd, occupation);
+    const blueprint = buildContextualBlueprint({
+        occupation,
+        interviewType,
+        experienceLevel: input.experienceLevel,
+        difficulty: input.difficulty,
+        candidateProfile,
+        jdRequirements,
+        questionCount: validQuestionCount,
+    });
+
     const nonce = String(input.sessionNonce || crypto.randomBytes(8).toString('hex')).slice(0, 24);
     const difficultyLabel = String(input.difficulty || 'medium').toLowerCase();
     const difficultyGuidance = INTERVIEW_DIFFICULTY_GUIDANCE[difficultyLabel] || '';
     const exclusions = (Array.isArray(input.previousQuestions) ? input.previousQuestions : [])
         .filter(q => typeof q === 'string')
-        .map(q => sanitizePromptFragment(q, 240))
+        .map(q => cleanInterviewMetadataArtifacts(sanitizePromptFragment(q, 240)))
         .filter(q => q.length > 0)
         .slice(0, 12);
 
-    const personalization = [
-        input.experienceLevel ? `Candidate experience level: ${sanitizePromptFragment(input.experienceLevel, 40)}.` : '',
-        input.difficulty ? `Target difficulty: ${sanitizePromptFragment(input.difficulty, 40)}. ${difficultyGuidance}` : '',
-        `Difficulty distribution for this run: ${distribution.easy} Easy, ${distribution.intermediate} Intermediate, ${distribution.advanced} Advanced.`,
-        safeFacts ? `Use ONLY these candidate facts (do not invent experience):\n${safeFacts}` : 'Do not invent candidate experience that was not provided.',
-        safeJd ? `Align some questions to this job description without fabricating requirements:\n${safeJd}` : '',
-        exclusions.length ? `The candidate already answered these questions/competencies in a recent attempt. Generate a FRESH set and DO NOT repeat or closely mirror them:\n- ${exclusions.join('\n- ')}` : '',
-        `Fresh-run directive: produce a distinct set of questions from any prior attempt (unique run token: ${nonce}).`,
-    ].filter(Boolean).join('\n');
+    const candidateSection = candidateProfile.confirmedExperience
+        ? `[LEVEL 1: CANDIDATE VERIFIED EVIDENCE]\nUse ONLY these candidate facts (do not invent experience):\n${candidateProfile.confirmedExperience}\n(MANDATORY: Use ONLY these verified facts for candidate background. NEVER invent claims or past projects.)`
+        : `[LEVEL 1: CANDIDATE VERIFIED EVIDENCE]\nUse ONLY these candidate facts (do not invent experience):\nStandard industry professional profile for ${occupation}. (Do not invent fictional employer names.)`;
+
+    const jdSection = jdRequirements.cleanRequirements
+        ? `[LEVEL 4: TARGET JOB REQUIREMENTS SPECIFICATION]\nAlign some questions to this job description without fabricating requirements:\n${jdRequirements.cleanRequirements}`
+        : `[LEVEL 4: TARGET JOB REQUIREMENTS SPECIFICATION]\nAlign some questions to this job description without fabricating requirements:\nStandard core competencies and production expectations for a ${occupation} position.`;
+
+    const intersectionSection = blueprint.intersectingSkills.length
+        ? `[LEVEL 2 & 3 INTERSECTION BLUEPRINT]\nConfirmed high-value intersections: ${blueprint.intersectingSkills.join(', ')}. Target these skills for deep applied scenario & trade-off questions.`
+        : `[LEVEL 2 & 3 DISCIPLINE BLUEPRINT]\nAssess applied competency across the ${interviewType} domain for ${occupation}.`;
+
+    const exclusionsSection = exclusions.length
+        ? `[PRIOR ATTEMPT EXCLUSIONS]\nThe candidate already answered these questions/competencies in a recent attempt. Generate a FRESH set and DO NOT repeat or closely mirror them:\n- ${exclusions.join('\n- ')}`
+        : '';
 
     const prompt = `
-    Generate exactly ${validQuestionCount} realistic interview questions for a ${occupation} position in ${targetLanguage}. The interview type is ${interviewType}, so focus on ${promptContext}.
-    ${personalization}
+You are an Elite Principal Interviewer and Hiring Bar Raiser conducting an authentic, high-caliber professional interview for a ${occupation} position (${interviewType} track) in ${targetLanguage}.
 
-    IMPORTANT: All text including questions, answer options, and explanations must be written in ${targetLanguage}.
+=== CONTEXT HIERARCHY (USE SILENTLY TO SHAPE QUESTIONS — NEVER REPEAT OR MENTION METADATA) ===
+${candidateSection}
 
-    For each question, include:
-    1. The question text
-    2. Four answer options (labeled as options)
-    3. The index of the correct answer (0-3)
-    4. The category/topic of the question
-    5. A difficulty level (Easy, Intermediate, Advanced)
-    6. A brief explanation of why the correct answer is right
-    7. Estimated time to answer in seconds (between 60-240 seconds)
+[LEVEL 2 & 3: TARGET ROLE & DISCIPLINE FRAMEWORK]
+- Target Role: ${occupation}
+- Target Seniority: ${input.experienceLevel || 'Professional'}
+- Focus Track: ${interviewType} (${promptContext})
+- Difficulty Profile: ${difficultyLabel} (${difficultyGuidance})
+- Difficulty distribution for this run: ${blueprint.distribution.easy} Easy, ${blueprint.distribution.intermediate} Intermediate, ${blueprint.distribution.advanced} Advanced.
+${intersectionSection}
 
-    Format the response as a JSON object with this structure:
-    {
-        "title": "Interview for ${occupation} - ${interviewType} Assessment",
-        "company": "Professional Evaluation Services",
-        "department": "${interviewType === 'technical' ? 'Technical Department' : 'Human Resources'}",
-        "duration": "${Math.round(validQuestionCount * 3)} minutes",
-        "totalQuestions": ${validQuestionCount},
-        "passingScore": 70,
-        "categories": ["list", "of", "categories"],
-        "questions": [
-            {
-                "id": 1,
-                "question": "Question text?",
-                "options": ["Option A", "Option B", "Option C", "Option D"],
-                "correctAnswer": 0,
-                "category": "Category name",
-                "difficulty": "Easy/Intermediate/Advanced",
-                "weight": 1,
-                "explanation": "Explanation of the correct answer",
-                "estimatedTime": 120
-            }
-        ]
-    }
+${jdSection}
+${exclusionsSection ? '\n' + exclusionsSection : ''}
 
-    Ensure the questions are realistic and appropriately challenging for a professional interview. Make sure the correct answers are accurate and the explanations are helpful. Do NOT repeat identical or near-identical questions within the set.
-    Only return the JSON without any explanation or additional text.
-    `;
-    return { prompt, validQuestionCount, targetLanguage, distribution, sessionNonce: nonce };
+=== CRITICAL INTERVIEW DESIGN DIRECTIVES (NON-NEGOTIABLE) ===
+1. 100% CONTEXTUAL ANCHORS:
+   - Connect the candidate's actual background and target requirements into authentic, practical scenarios.
+   - Questions should test applied decision-making, debugging unexpected edge cases, architecture trade-offs, performance optimization, incident triage, or behavioral STAR situations.
+2. ABSOLUTE BAN ON METADATA LEAKAGE:
+   - NEVER include or repeat setup labels such as "Target Role & Discipline", "Target Job Description", "AI Tailoring", "Candidate Profile", or form labels anywhere in the question, options, or explanation.
+   - NEVER start questions with robotic preamble phrases such as "Based on the job description...", "As a [role]...", "According to the target role...", "Given your resume...", "In the context of the job description...".
+   - Ask the question directly and naturally, exactly as an experienced human hiring manager would in a real interview room.
+3. ZERO HALLUCINATION:
+   - Never assert that the candidate worked with a specific platform, tool, or employer unless it is explicitly listed in [LEVEL 1: CANDIDATE VERIFIED EVIDENCE].
+   - If assessing a requirement from Level 4 not present in Level 1, frame the question as an applied scenario, transition strategy, or architecture evaluation (e.g. "How would you approach optimizing X when Y occurs?").
+4. ZERO GENERIC FLUFF:
+   - STRICTLY BAN weak, shallow questions: "Tell me about yourself", "What are your strengths?", "What is [tool]?", "What is your experience with [tool]?".
+   - Every question must test critical thinking, reasoning, metrics, or problem-solving.
+5. DIVERSE ASSESSMENT ANGLES:
+   - Distribute the ${validQuestionCount} questions across distinct categories (e.g. Applied Implementation, Deep Troubleshooting, Architecture & Systems Design, Incident Response & Reliability, Metric Optimization, Stakeholder Leadership).
+6. CALIBRATED DIFFICULTY DISTRIBUTION:
+   - Generate exactly: ${blueprint.distribution.easy} Easy, ${blueprint.distribution.intermediate} Intermediate, ${blueprint.distribution.advanced} Advanced questions.
+   - Easy: Foundational execution following established industry best practices.
+   - Intermediate: Nuanced trade-offs, debugging multi-step failures, multi-metric optimization.
+   - Advanced: Complex systems design, high-stakes ambiguity, scale bottlenecks, crisis recovery, strategic trade-offs.
+
+IMPORTANT: All text including questions, answer options, and explanations must be written in ${targetLanguage}.
+
+Format the response as a JSON object with this exact structure:
+{
+    "title": "${occupation} - ${interviewType.charAt(0).toUpperCase() + interviewType.slice(1)} Assessment",
+    "company": "Professional Evaluation Services",
+    "department": "${interviewType === 'technical' ? 'Technical Department' : interviewType === 'case' ? 'Case Analysis' : 'Human Resources'}",
+    "duration": "${Math.round(validQuestionCount * 3)} minutes",
+    "totalQuestions": ${validQuestionCount},
+    "passingScore": 70,
+    "categories": ["list", "of", "categories"],
+    "questions": [
+        {
+            "id": 1,
+            "question": "Clear, contextual scenario question text without any leaked metadata or robotic preambles?",
+            "options": ["Option A", "Option B", "Option C", "Option D"],
+            "correctAnswer": 0,
+            "category": "Category name",
+            "difficulty": "Easy/Intermediate/Advanced",
+            "weight": 1,
+            "explanation": "Detailed explanation of why the correct answer is optimal and why alternatives are flawed.",
+            "estimatedTime": 120
+        }
+    ]
+}
+
+Fresh-run directive: produce a distinct set of questions from any prior attempt (unique run token: ${nonce}). Only return valid JSON without any markdown wrapper or surrounding commentary.
+`;
+
+    return { prompt, validQuestionCount, targetLanguage, distribution: blueprint.distribution, sessionNonce: nonce, blueprint };
 }
 
 // Generate interview questions based on occupation and interview type
@@ -604,7 +802,7 @@ router.post('/generate-interview', async (req, res) => {
         // prior-attempt repetition can be avoided without shipping unlimited history.
         const priorQuestions = (Array.isArray(previousQuestions) ? previousQuestions : [])
             .filter(q => typeof q === 'string')
-            .map(q => sanitizePromptFragment(q, 240))
+            .map(q => cleanInterviewMetadataArtifacts(sanitizePromptFragment(q, 240)))
             .filter(q => q.length > 0)
             .slice(0, 12);
 
@@ -632,8 +830,7 @@ router.post('/generate-interview', async (req, res) => {
 
             if (!jsonData || typeof jsonData !== 'object') throw new Error('Invalid interview response');
 
-            // De-duplicate identical/near-identical question text (within-set and vs. recent
-            // attempts), then bound to the requested count.
+            // De-duplicate and strip any leaked metadata artifacts from questions and options
             const questions = dedupeQuestions(jsonData.questions, priorQuestions).slice(0, built.validQuestionCount);
             if (!questions.length) throw new Error('No usable questions after de-duplication');
 
@@ -662,7 +859,7 @@ router.post('/generate-interview', async (req, res) => {
         const { occupation, interviewType, questionCount = 10, language = 'en', difficulty, experienceLevel, previousQuestions } = req.body;
         const priorQuestions = (Array.isArray(previousQuestions) ? previousQuestions : [])
             .filter(q => typeof q === 'string')
-            .map(q => sanitizePromptFragment(q, 240))
+            .map(q => cleanInterviewMetadataArtifacts(sanitizePromptFragment(q, 240)))
             .filter(q => q.length > 0)
             .slice(0, 12);
         const fallbackData = generateDefaultInterview({
@@ -1047,36 +1244,36 @@ const FBQ = (question, options, correctAnswer, category, diff, explanation, esti
 });
 
 const FALLBACK_TECHNICAL = (occ) => [
-    FBQ(`What tools or technologies are you most proficient with as a ${occ}?`,
-        ['Deep expertise in a few industry-standard tools', 'Broad familiarity with many tools at a basic level', 'I avoid most tools', 'I only use self-built tools'], 0, 'Technical Skills', 0,
-        'Professionals typically combine deep expertise in core tools with working awareness of alternatives.'),
-    FBQ(`How do you keep your skills current in the ${occ} field?`,
-        ['Rely on employer-provided training only', 'Follow industry blogs, communities, and conferences', 'Learn only when a project demands it', 'I do not actively update'], 1, 'Professional Development', 0,
-        'Proactive, multi-channel learning is the strongest signal of sustained professional growth.'),
-    FBQ(`How do you approach debugging a complex issue as a ${occ}?`,
-        ['Ask a colleague immediately', 'Reuse the last fix that worked', 'Reproduce, isolate the cause, form a hypothesis, and verify the fix', 'Rely on intuition'], 2, 'Problem Solving', 1,
-        'A structured reproduce-isolate-verify loop is the most reliable debugging method.'),
-    FBQ(`Which success measures matter most for a ${occ} role?`,
-        ['Hours worked', 'Outcome metrics tied to business goals', 'Personal recognition', 'Number of tasks completed'], 1, 'Performance Measurement', 1,
-        'Outcome-oriented metrics aligned to business objectives best reflect real contribution.'),
-    FBQ(`How do you decide when to adopt a new methodology or tool in your ${occ} work?`,
-        ['Resist change', 'Research, pilot on a small scope, measure, then scale if it works', 'Adopt anything trending', 'Adopt it everywhere immediately'], 1, 'Methodologies', 2,
-        'Evidence-based, incremental adoption reduces risk while keeping the team current.'),
-    FBQ(`How do you handle a production incident in your ${occ} role?`,
-        ['Panic and escalate broadly', 'Triage impact, mitigate, then conduct a blameless post-mortem', 'Hide it until fixed', 'Blame the last change'], 1, 'Reliability', 2,
-        'A calm triage-to-mitigation-to-learn loop is the professional standard for incidents.'),
-    FBQ(`How would you estimate the effort for a new ${occ} task?`,
-        ['Guess based on gut feel', 'Break it down, size sub-parts, account for risk and uncertainty', 'Always double the first number', 'Refuse to estimate'], 1, 'Estimation', 1,
-        'Decomposition plus risk accounting yields the most defensible estimates.'),
-    FBQ(`How do you review work produced by a peer as a ${occ}?`,
-        ['Reject anything with differences', 'Approve everything to avoid friction', 'Focus on correctness, maintainability, and clear feedback', 'Rewrite it yourself'], 2, 'Collaboration', 1,
-        'Constructive, correctness- and maintainability-focused review improves shared quality.'),
-    FBQ(`What is the most reliable way to keep stakeholders aligned during a ${occ} project?`,
-        ['Share everything asynchronously', 'Provide regular concise updates and flag risks early', 'Only update at the end', 'Rely on memory'], 1, 'Communication', 1,
-        'Regular, concise, risk-forward communication prevents late surprises.'),
-    FBQ(`How do you prioritize competing requirements as a ${occ}?`,
-        ['Do everything at once', 'Rank by business impact and urgency, then communicate trade-offs', 'Do the easiest first', 'Do the loudest request first'], 1, 'Prioritization', 2,
-        'Impact- and urgency-based ranking with transparent trade-offs is the professional approach.'),
+    FBQ(`When evaluating whether to adopt a specialized framework versus standard built-in capabilities for a ${occ} project, which trade-off is most critical?`,
+        ['Long-term maintainability and team capability versus upfront convenience', 'Whether the tool is trending on developer forums', 'Choosing the tool that has zero learning curve regardless of performance', 'Avoiding all third-party dependencies unconditionally'], 0, 'Technical Architecture', 1,
+        'Evaluating long-term maintainability, ecosystem health, and team ergonomics ensures sustainable architecture.'),
+    FBQ(`You are tasked with introducing a modern architectural pattern to your ${occ} workflow. How do you mitigate migration risks for active production systems?`,
+        ['Implement an end-to-end rewrite in a single deployment', 'Use an incremental rollout with feature flags, baseline benchmarks, and automated rollback triggers', 'Deploy directly to production during off-peak hours without testing', 'Delay the migration indefinitely to avoid risk'], 1, 'Systems Migration', 2,
+        'Phased rollouts with automated verification and fallback boundaries prevent production outages during migrations.'),
+    FBQ(`How do you approach diagnosing an intermittent production failure as a ${occ}?`,
+        ['Restart the service repeatedly until the issue disappears', 'Immediately apply the last fix used on an unrelated bug', 'Isolate telemetry, reproduce failure conditions with synthetic loads, and verify root causes before deploying fixes', 'Assume external network instability without investigation'], 2, 'Problem Solving', 1,
+        'Evidence-driven diagnosis using telemetry correlation and reproducible synthetic loads prevents recurring defects.'),
+    FBQ(`Which performance telemetry metric is most actionable when optimizing throughput in a ${occ} pipeline?`,
+        ['Total lines of configuration written', 'P95/P99 latency distribution and resource saturation bottlenecks', 'Personal estimates of system velocity', 'Gross number of tasks processed without tracking error rates'], 1, 'Performance Engineering', 2,
+        'P95/P99 latency profiles and resource saturation metrics identify true user-impacting bottlenecks.'),
+    FBQ(`How do you decide when to refactor legacy components in your ${occ} codebase or infrastructure?`,
+        ['Refactor only when completely blocked, without documentation', 'Assess defect frequency, maintenance overhead, and test coverage before planning bounded incremental refactors', 'Rewrite everything immediately whenever a new tool is released', 'Never refactor working systems regardless of maintenance costs'], 1, 'Code Quality', 1,
+        'Data-backed refactoring targeting high-churn, defect-prone modules maximizes ROI while protecting stability.'),
+    FBQ(`During a major production incident in your ${occ} domain, what is your immediate priority?`,
+        ['Assign blame and investigate historical commits', 'Triage blast radius, mitigate customer impact via failover, and communicate transparent status updates', 'Silence monitoring alerts to reduce noise', 'Attempt unreviewed speculative patches in production'], 1, 'Incident Response', 2,
+        'Rapid blast-radius containment, failover mitigation, and clear stakeholder updates are the gold standard of incident response.'),
+    FBQ(`How would you estimate the technical effort and risk for a complex ${occ} initiative with significant ambiguity?`,
+        ['Provide a single optimistic deadline based on best-case assumptions', 'Decompose into verifiable milestones, identify integration unknowns, and provide confidence ranges with explicit assumptions', 'Refuse to estimate until all external dependencies are 100% complete', 'Double the first estimate arbitrarily without breakdown'], 1, 'Technical Planning', 1,
+        'Decomposition into measurable milestones with confidence intervals and explicit risk assumptions creates defensible plans.'),
+    FBQ(`When conducting a peer review for a critical ${occ} deliverable, what should you prioritize?`,
+        ['Enforcing personal stylistic preferences over team conventions', 'Approving quickly without deep analysis to unblock velocity', 'Validating system correctness, edge-case failure handling, security posture, and maintainability', 'Rejecting any implementation that differs from your initial mental model'], 2, 'Peer Review', 1,
+        'Rigorous review focuses on correctness, security boundaries, failure recovery, and adherence to shared standards.'),
+    FBQ(`What is the most effective approach to maintain system reliability when upstream APIs or dependencies experience latency spikes?`,
+        ['Retry failed requests infinitely in a tight loop', 'Implement bounded timeouts, exponential backoff with jitter, and circuit breaker fallbacks', 'Fail silently and return empty responses without logging', 'Block incoming requests until upstream services recover completely'], 1, 'Reliability Engineering', 2,
+        'Circuit breakers combined with jittered exponential backoff protect upstream dependencies from cascading failure storms.'),
+    FBQ(`How do you prioritize competing technical debt versus feature delivery as a ${occ}?`,
+        ['Ignore technical debt entirely to maximize immediate feature output', 'Quantify reliability/velocity impact of debt, present business trade-offs, and allocate dedicated capacity alongside roadmap items', 'Halt all product feature development until the system has zero technical debt', 'Fix technical debt secretly without stakeholder visibility'], 1, 'Technical Strategy', 2,
+        'Quantifying the operational cost of technical debt aligns engineering health with sustainable business velocity.'),
 ];
 
 const FALLBACK_BEHAVIORAL = (occ) => [
@@ -1149,36 +1346,27 @@ const FALLBACK_CASE = (occ) => [
 ];
 
 const FALLBACK_GENERIC = (occ) => [
-    FBQ(`What does a typical day look like for a ${occ}?`,
-        ['I improvise everything', 'I plan priorities, execute on focused work, and review progress', 'I react to emails all day', 'I only attend meetings'], 1, 'Work Approach', 0,
-        'Purposeful planning and focused execution reflect strong professional habits.'),
-    FBQ(`How do you stay organized across multiple ${occ} responsibilities?`,
-        ['Keep everything in my head', 'Use a lightweight system to track commitments and deadlines', 'Write nothing down', 'Rely on others to remind me'], 1, 'Organization', 0,
-        'A lightweight tracking system reduces missed commitments.'),
-    FBQ(`How do you ensure the quality of your ${occ} output?`,
-        ['Deliver and move on', 'Self-review against requirements and have it reviewed when appropriate', 'Rely on someone else to check', 'Ignore quality'], 2, 'Quality', 1,
-        'Self-review against requirements protects quality before delivery.'),
-    FBQ(`How do you handle an unclear task assignment as a ${occ}?`,
-        ['Guess and proceed', 'Ask clarifying questions about goals and constraints, then proceed', 'Do nothing', 'Do the minimum'], 1, 'Communication', 0,
-        'Clarifying goals and constraints up front avoids rework.'),
-    FBQ(`How do you document your ${occ} work so others can benefit?`,
-        ['Keep it in my head', 'Write concise, useful notes and share them with the team', 'Over-document everything', 'Document nothing'], 1, 'Knowledge Sharing', 0,
-        'Concise shared documentation multiplies team effectiveness.'),
-    FBQ(`How do you take ownership of an outcome as a ${occ}?`,
-        ['Blame circumstances', 'Own the result, communicate status, and drive it to completion', 'Do it only if rewarded', 'Pass it to someone else'], 2, 'Ownership', 1,
-        'Ownership means owning the outcome and driving it through.'),
-    FBQ(`How do you approach learning a new domain or technology relevant to a ${occ}?`,
-        ['Avoid it', 'Learn the fundamentals, build a small practice, and apply it on real work', 'Only read about it', 'Skip it'], 1, 'Learning', 0,
-        'Learn-by-doing on real work is the most effective way to internalize new skills.'),
-    FBQ(`How do you respond when a ${occ} project changes direction suddenly?`,
-        ['Stop and wait', 'Reassess scope, update priorities, and communicate the new plan', 'Quietly continue the old plan', 'Complain about it'], 2, 'Adaptability', 1,
-        'Rapidly reassessing and communicating keeps the team aligned through change.'),
-    FBQ(`How do you make sure a decision you make as a ${occ} can be revisited?`,
-        ['Decide and forget', 'Record the rationale and criteria so it can be evaluated later', 'Decide in secret', 'Decide based on a whim'], 1, 'Decision Hygiene', 1,
-        'Recording rationale enables learning and healthy revisiting of decisions.'),
-    FBQ(`How do you balance thoroughness with speed as a ${occ}?`,
-        ['Always go slow', 'Right-size the effort to the risk and impact of the task', 'Always rush', 'Only care about speed'], 1, 'Judgment', 1,
-        'Right-sizing effort to risk and impact balances speed with quality.'),
+    FBQ(`When managing multiple high-priority deliverables under tight deadlines as a ${occ}, what is the most effective approach to maintain delivery quality?`,
+        ['Attempt to complete all tasks simultaneously without triaging', 'Prioritize tasks by business impact and operational risk, establish clear stakeholder expectations, and maintain strict verification standards', 'Bypass all quality checks to meet deadlines faster', 'Work in isolation without providing progress visibility'], 1, 'Delivery Management', 1,
+        'Risk-based prioritization with transparent stakeholder alignment protects product quality under schedule pressure.'),
+    FBQ(`How do you structure an ongoing technical review process to prevent knowledge silos in your ${occ} team?`,
+        ['Keep all architecture context in private notes', 'Establish regular collaborative design reviews, standardized documentation, and pair-programming on complex modules', 'Rely on a single senior contributor to approve everything without explanation', 'Discourage questions during code and design reviews'], 1, 'Knowledge Sharing', 1,
+        'Shared design reviews and transparent documentation distribute domain knowledge and elevate collective team capability.'),
+    FBQ(`How do you ensure requirements and acceptance criteria are testable and unambiguous for a ${occ} initiative?`,
+        ['Begin implementation immediately based on high-level verbal requests', 'Define concrete input/output contracts, measurable success thresholds, edge-case failure expectations, and automated verification tests', 'Assume downstream consumers will clarify requirements post-release', 'Avoid writing acceptance criteria to maintain flexibility'], 1, 'Quality Assurance', 1,
+        'Measurable success thresholds, contract definitions, and automated verification tests eliminate ambiguity before implementation.'),
+    FBQ(`When receiving ambiguous or conflicting feedback from multiple stakeholders on a ${occ} deliverable, how do you proceed?`,
+        ['Implement whichever request was submitted most recently', 'Schedule a focused alignment discussion, present data-backed trade-offs against business objectives, and agree on unified success criteria', 'Ignore the feedback and ship the original draft', 'Escalate immediately to executive leadership without synthesizing the issues'], 1, 'Stakeholder Alignment', 2,
+        'Synthesizing trade-offs against core business goals facilitates productive consensus among conflicting stakeholders.'),
+    FBQ(`How do you measure and demonstrate the business impact of an operational optimization you delivered as a ${occ}?`,
+        ['Rely entirely on subjective team feedback', 'Establish pre-change baseline metrics, track post-release performance/cost/latency deltas, and publish an evidence-backed impact summary', 'Assume any positive business trend was caused by the optimization without validation', 'Avoid measuring performance to prevent scrutiny'], 1, 'Impact Measurement', 2,
+        'Rigorous before-and-after baseline comparisons provide verifiable evidence of business and engineering impact.'),
+    FBQ(`How do you take end-to-end ownership when an unexpected edge case causes a customer-facing degradation in your ${occ} scope?`,
+        ['Attribute the failure to third-party infrastructure without remediation', 'Acknowledge the gap, drive immediate mitigation, conduct a blameless root-cause analysis, and implement preventative regression tests', 'Wait for customer support to report additional incidents before acting', 'Quietly deploy an unmonitored fix without documentation'], 1, 'Ownership & Accountability', 2,
+        'True ownership combines rapid mitigation with transparent root-cause analysis and automated regression prevention.'),
+    FBQ(`How do you balance thoroughness with execution speed when shipping high-velocity ${occ} deliverables?`,
+        ['Always maximize speed by eliminating all testing and code review', 'Calibrate verification depth and review rigor to the blast radius, reversibility, and criticality of the change', 'Treat all changes with identical exhaustive bureaucracy regardless of scope', 'Never ship until theoretical perfection is reached'], 1, 'Engineering Judgment', 1,
+        'Calibrating review and testing depth to change reversibility and blast radius balances speed with safety.'),
 ];
 
 const generateDefaultInterview = ({ occupation = 'Professional', interviewType = 'technical', questionCount = 10, language = 'en', difficulty = 'medium', experienceLevel = '', previousQuestions = [] } = {}) => {
@@ -2373,9 +2561,15 @@ router.post('/parse-resume', async (req, res) => {
 // Test endpoint to check AI configuration
 module.exports = router;
 // Exported for unit testing of the interview generation pipeline (prompt builder,
-// de-duplication, difficulty distribution, and the grounded fallback).
+// de-duplication, difficulty distribution, grounded fallback, metadata cleaners, and blueprinting).
 module.exports.buildInterviewPrompt = buildInterviewPrompt;
 module.exports.generateDefaultInterview = generateDefaultInterview;
 module.exports.dedupeQuestions = dedupeQuestions;
 module.exports.questionKey = questionKey;
 module.exports.interviewDifficultyDistribution = interviewDifficultyDistribution;
+module.exports.cleanInterviewMetadataArtifacts = cleanInterviewMetadataArtifacts;
+module.exports.isGenericQuestion = isGenericQuestion;
+module.exports.extractCandidateProfile = extractCandidateProfile;
+module.exports.extractJobRequirements = extractJobRequirements;
+module.exports.buildContextualBlueprint = buildContextualBlueprint;
+
