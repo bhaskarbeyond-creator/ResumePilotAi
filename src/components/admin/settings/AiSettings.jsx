@@ -221,7 +221,6 @@ const AiSettings = () => {
             // Smart auto‑enable when a key is pasted
             if (name === 'nvidiaApiKey' && value.trim() !== '') {
                 next.enableNvidia = true;
-                next.provider = 'nvidia';
             } else if (name === 'geminiApiKey' && value.trim() !== '') {
                 next.enableGemini = true;
             } else if (name === 'openaiApiKey' && value.trim() !== '') {
@@ -319,12 +318,14 @@ const AiSettings = () => {
             const masked = result.maskedKeys || {};
             setAiConfig(current => ({
                 ...current, ...(result.settings || {}),
-                geminiApiKey: result.settings?.geminiApiKey || masked.gemini || current.geminiApiKey,
-                nvidiaApiKey: result.settings?.nvidiaApiKey || masked.nvidia || current.nvidiaApiKey,
-                openaiApiKey: result.settings?.openaiApiKey || masked.openai || current.openaiApiKey,
-                groqApiKey: result.settings?.groqApiKey || masked.groq || current.groqApiKey,
-                openrouterApiKey: result.settings?.openrouterApiKey || masked.openrouter || current.openrouterApiKey,
-                deepseekApiKey: result.settings?.deepseekApiKey || masked.deepseek || current.deepseekApiKey,
+                // Never retain a newly entered secret in React state after save.
+                // The server returns only a display mask and remains the source of truth.
+                geminiApiKey: masked.gemini || '',
+                nvidiaApiKey: masked.nvidia || '',
+                openaiApiKey: masked.openai || '',
+                groqApiKey: masked.groq || '',
+                openrouterApiKey: masked.openrouter || '',
+                deepseekApiKey: masked.deepseek || '',
             }));
             setPendingOperation(null);
             setReauthPassword('');

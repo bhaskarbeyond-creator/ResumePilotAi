@@ -5,6 +5,7 @@ const {
   buildResumeParsingPrompt,
   executeContentOperation,
   executeResumeParsing,
+  generateWithProviders,
   loadProviderConfiguration,
   parseAiResponse,
   providerOrder,
@@ -213,4 +214,33 @@ test('provider requests honor cancellation and bounded timeout controls', async 
   });
   controller.abort();
   await assert.rejects(promise, error => error.name === 'AbortError');
+});
+
+test('provider resolution accepts OpenRouter legacy casing and enables only credentialed providers', async () => {
+  const configuration = await loadProviderConfiguration(fakeDb({
+    secrets: { openrouter: { apiKey: 'openrouter-test-key-12345' }, nvidia: { apiKey: 'nvidia-test-key-12345' } },
+    publicAi: { provider: 'openRouter', enableOpenRouter: true },
+  }), {});
+  assert.equal(configuration.primary, 'openrouter');
+  assert.deepEqual(providerOrder(configuration), ['openrouter', 'nvidia']);
+  assert.equal(configuration.providers.gemini.enabled, false);
+});
+
+test('provider timeout moves directly to the next provider instead of retrying a second model', async () => {
+  const configuration = {
+    primary: 'nvidia', enableFallback: true, temperature: .7, maxTokens: 100,
+    providers: {
+      nvidia: { key: 'nvidia-test-key-12345', model: 'poolside/laguna-xs-2.1', enabled: true },
+      gemini: { key: 'gemini-test-key-12345', model: 'gemini-2.0-flash', enabled: true },
+    },
+  };
+  const calls = [];
+  const fetchImpl = async (url) => {
+    calls.push(url);
+    if (url.includes('nvidia')) throw Object.assign(new Error('timed out'), { code: 'AI_PROVIDER_TIMEOUT', status: 504 });
+    return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: '{"summary":"from gemini"}' }] } }] }), { status: 200 });
+  };
+  const result = await generateWithProviders({ prompt: 'test', configuration, operation: 'generate-summary', fetchImpl });
+  assert.equal(result.provider, 'gemini');
+  assert.equal(calls.filter(url => url.includes('nvidia')).length, 1);
 });

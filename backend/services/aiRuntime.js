@@ -25,6 +25,19 @@ const ENABLE_FIELDS = Object.freeze({
     nvidia: 'enableNvidia', gemini: 'enableGemini', openai: 'enableOpenai', groq: 'enableGroq',
     openrouter: 'enableOpenrouter', deepseek: 'enableDeepseek',
 });
+// Firestore has historically contained both camel-case and legacy spellings. Keep
+// the runtime authoritative while accepting those migrations explicitly.
+const PROVIDER_FIELD_ALIASES = Object.freeze({
+    openrouter: { enable: ['enableOpenrouter', 'enableOpenRouter'], key: ['openrouterApiKey', 'openRouterApiKey'] },
+});
+
+function providerSetting(ai, provider, field) {
+    const aliases = PROVIDER_FIELD_ALIASES[provider]?.[field] || [];
+    for (const key of [ENABLE_FIELDS[provider], ...aliases]) {
+        if (Object.prototype.hasOwnProperty.call(ai || {}, key)) return ai[key];
+    }
+    return undefined;
+}
 const MODEL_PATTERN = /^[A-Za-z0-9._:/-]{1,150}$/;
 const AUTOCOMPLETE_TYPES = new Set([
     'jobTitle', 'occupation', 'employer', 'company', 'school', 'degree', 'skill', 'city',
@@ -460,20 +473,29 @@ async function loadProviderConfiguration(db, environment = process.env) {
         // Read-only server migration compatibility. Legacy secrets are never returned to clients.
         if (legacyResult.status === 'fulfilled' && legacyResult.value.exists) legacyAi = legacyResult.value.data()?.ai || {};
     }
+    // Public settings are the operator's explicit controls; legacy settings only
+    // fill fields that are absent. Never let a partial public document turn a
+    // credentialed provider off merely because its sibling flags were omitted.
     const effectiveAi = { ...legacyAi, ...publicAi };
     const legacySecretFields = { gemini: 'geminiApiKey', nvidia: 'nvidiaApiKey', openai: 'openaiApiKey', groq: 'groqApiKey', openrouter: 'openrouterApiKey', deepseek: 'deepseekApiKey' };
     const providers = {};
     for (const provider of PROVIDERS) {
-        const key = String(environment[ENV_KEYS[provider]] || secrets[provider]?.apiKey || legacyAi[legacySecretFields[provider]] || '').trim();
+        const aliasKey = PROVIDER_FIELD_ALIASES[provider]?.key || [];
+        const legacyKey = legacyAi[legacySecretFields[provider]] || legacyAi[aliasKey[0]] || legacyAi[aliasKey[1]] || '';
+        const key = String(environment[ENV_KEYS[provider]] || secrets[provider]?.apiKey || legacyKey).trim();
         const configuredModel = environment[ENV_MODELS[provider]] || secrets[provider]?.model || effectiveAi[MODEL_FIELDS[provider]];
+        const enabledSetting = providerSetting(publicAi, provider, 'enable') ?? providerSetting(legacyAi, provider, 'enable');
         providers[provider] = {
             key,
             model: safeModel(configuredModel, PROVIDER_DEFAULTS[provider].model),
-            enabled: effectiveAi[ENABLE_FIELDS[provider]] !== false && Boolean(key),
+            // A provider participates only when it has a credential and is not
+            // explicitly disabled. Missing toggles mean enabled-by-credential.
+            enabled: enabledSetting !== false && Boolean(key),
         };
     }
+    const configuredPrimary = String(effectiveAi.provider || '').trim().toLowerCase();
     const configuration = {
-        primary: PROVIDERS.includes(effectiveAi.provider) ? effectiveAi.provider : 'gemini',
+        primary: PROVIDERS.includes(configuredPrimary) ? configuredPrimary : 'gemini',
         enableFallback: effectiveAi.enableFallback !== false,
         temperature: clampNumber(effectiveAi.temperature, 0, 1, 0.7),
         maxTokens: Math.floor(clampNumber(effectiveAi.maxTokens, 256, 4096, 2048)),
@@ -571,7 +593,10 @@ async function requestProvider(provider, providerConfig, prompt, generation, { f
             const body = await response.json().catch(() => ({}));
             if (!response.ok) {
                 const errMsg = extractProviderErrorMessage(body, response.status, provider);
-                const isRetryable = response.status === 503 || response.status === 404 || response.status === 400 || /ResourceExhausted|Worker local total request limit|Not found for account|invalid_model|model_not_found|function.*not found/i.test(errMsg);
+                // Model fallback is for deterministic model/configuration errors only.
+                // A timeout/outage must return to generateWithProviders immediately so
+                // another configured provider can serve the request.
+                const isRetryable = response.status === 404 || response.status === 400 || /invalid_model|model_not_found|function.*not found/i.test(errMsg);
                 if (isRetryable && !isLastCandidate) {
                     console.warn(`[AI Model Failover] ${provider} model ${currentModel} error (${errMsg}); retrying with ${candidateModels[candidateModels.length - 1]}`);
                     lastError = Object.assign(new Error(errMsg), { status: response.status });
@@ -585,10 +610,9 @@ async function requestProvider(provider, providerConfig, prompt, generation, { f
         } catch (err) {
             lastError = err;
             if (signal?.aborted) throw err;
-            if (!isLastCandidate) {
-                console.warn(`[AI Model Failover] ${provider} model ${currentModel} timed out or failed (${err.message}); retrying with fallback model...`);
-                continue;
-            }
+            // Do not consume the provider failover budget retrying a second model
+            // after a transport timeout or provider outage.
+            if (!isLastCandidate && (Number(err.status) === 400 || Number(err.status) === 404)) continue;
             throw err;
         }
     }
