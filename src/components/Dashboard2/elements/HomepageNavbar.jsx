@@ -41,7 +41,14 @@ const HomepageNavbar = ({ authBtnHandler, user, logout }) => {
     const [enableJobScraperModule, setEnableJobScraperModule] = useState(true);
 
     useEffect(() => {
-        const loadModules = () => {
+        const loadModules = (event) => {
+            if (event?.detail?.modules) {
+                const m = event.detail.modules;
+                if (m.enableJobScraperModule !== undefined) {
+                    setEnableJobScraperModule(m.enableJobScraperModule === true);
+                }
+                return;
+            }
             getSystemSettings().then((settings) => {
                 const m = settings?.modules || {};
                 if (m.enableJobScraperModule !== undefined) {

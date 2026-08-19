@@ -55,8 +55,8 @@ const ModulesSettings = () => {
             setModulesConfig({
                 enableGoogleAuthModule: mods.enableGoogleAuthModule !== undefined ? mods.enableGoogleAuthModule : true,
                 enableFacebookAuthModule: mods.enableFacebookAuthModule !== undefined ? mods.enableFacebookAuthModule : true,
-                enableLinkedinAuthModule: mods.enableLinkedinAuthModule !== false && mods.enableLinkedinLogin !== false && sa.enableLinkedinLogin !== false,
-                enableGithubAuthModule: mods.enableGithubAuthModule !== false && mods.enableGithubLogin !== false && sa.enableGithubLogin !== false,
+                enableLinkedinAuthModule: mods.enableLinkedinAuthModule !== undefined ? mods.enableLinkedinAuthModule : (mods.enableLinkedinLogin !== undefined ? mods.enableLinkedinLogin : (sa.enableLinkedinLogin !== undefined ? sa.enableLinkedinLogin : true)),
+                enableGithubAuthModule: mods.enableGithubAuthModule !== undefined ? mods.enableGithubAuthModule : (mods.enableGithubLogin !== undefined ? mods.enableGithubLogin : (sa.enableGithubLogin !== undefined ? sa.enableGithubLogin : true)),
                 enableImportModule: mods.enableImportModule !== undefined
                     ? mods.enableImportModule
                     : (ai.enableImportModule !== undefined ? ai.enableImportModule : false),
@@ -97,7 +97,13 @@ const ModulesSettings = () => {
             // Save module settings under category 'modules'
             await saveSystemSettings('modules', updatedModules);
 
-            // Best-effort sync to auth and socialAuth namespaces without blocking modules
+            // Keep 'ai', 'auth', and 'socialAuth' in sync
+            try {
+                await saveSystemSettings('ai', { enableImportModule: nextConfig.enableImportModule });
+            } catch (aiErr) {
+                console.warn('AI sync notice:', aiErr);
+            }
+
             try {
                 await saveSystemSettings('auth', { enableEmailVerification: nextConfig.enableEmailVerification });
             } catch (authErr) {

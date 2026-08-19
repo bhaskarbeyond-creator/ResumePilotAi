@@ -103,7 +103,16 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
 
     // Check system modules settings
     useEffect(() => {
-        const loadModules = () => {
+        const loadModules = (event) => {
+            if (event?.detail?.modules) {
+                const m = event.detail.modules;
+                setModulesConfig({
+                    enablePortfolioModule: m.enablePortfolioModule !== undefined ? m.enablePortfolioModule : true,
+                    enableJobScraperModule: m.enableJobScraperModule !== undefined ? m.enableJobScraperModule : true,
+                    enableCoverLetterModule: m.enableCoverLetterModule !== undefined ? m.enableCoverLetterModule : true,
+                });
+                return;
+            }
             getSystemSettings().then((settings) => {
                 const m = settings?.modules || {};
                 setModulesConfig({

@@ -298,6 +298,38 @@ class DashboardHomepage extends Component {
       this.setState({ enableImportModule: false });
     });
 
+    this.handleSystemSettingsUpdated = (e) => {
+      if (e?.detail?.modules) {
+        const m = e.detail.modules;
+        const enabled = m.enableImportModule !== undefined
+          ? m.enableImportModule === true
+          : false;
+        const coverEnabled = m.enableCoverLetterModule !== undefined
+          ? m.enableCoverLetterModule === true
+          : true;
+        this.setState((prev) => ({
+          enableImportModule: enabled,
+          enableCoverLetterModule: coverEnabled,
+          activeTab: !coverEnabled && prev.activeTab === 'cover-letters' ? 'all' : prev.activeTab,
+        }));
+        return;
+      }
+      getSystemSettings().then((settings) => {
+        const enabled = settings?.modules?.enableImportModule !== undefined
+          ? settings.modules.enableImportModule === true
+          : settings?.ai?.enableImportModule === true;
+        const coverEnabled = settings?.modules?.enableCoverLetterModule !== undefined
+          ? settings.modules.enableCoverLetterModule === true
+          : true;
+        this.setState((prev) => ({
+          enableImportModule: enabled,
+          enableCoverLetterModule: coverEnabled,
+          activeTab: !coverEnabled && prev.activeTab === 'cover-letters' ? 'all' : prev.activeTab,
+        }));
+      }).catch(() => {});
+    };
+    window.addEventListener('systemSettingsUpdated', this.handleSystemSettingsUpdated);
+
     // Reset pagination state to ensure we start from page 1
     this.setState(
       {
@@ -323,6 +355,9 @@ class DashboardHomepage extends Component {
 
   componentWillUnmount() {
     this.unsubscribeAuth?.();
+    if (this.handleSystemSettingsUpdated) {
+      window.removeEventListener('systemSettingsUpdated', this.handleSystemSettingsUpdated);
+    }
   }
 
   setPageNumber(pageNumber) {

@@ -60,6 +60,7 @@ const BuildResume = () => {
     const [showImportModal, setShowImportModal] = useState(false);
     const [isImportEnabled, setIsImportEnabled] = useState(false);
     const [isAtsEnabled, setIsAtsEnabled] = useState(null);
+    const [isPublicSharingEnabled, setIsPublicSharingEnabled] = useState(true);
     const [currentTemplate, setCurrentTemplate] = useState('Cv1');
     const [isDownloading, setIsDownloading] = useState(false);
     const [isDownloadingDocx, setIsDownloadingDocx] = useState(false);
@@ -129,6 +130,11 @@ const BuildResume = () => {
 
             const atsVisible = resolveAtsScoreVisibility(settings, { allowMissingDefault });
             if (atsVisible !== null) setIsAtsEnabled(atsVisible);
+
+            const sharingEnabled = settings?.modules?.enablePublicSharingModule !== undefined
+                ? settings.modules.enablePublicSharingModule === true
+                : true;
+            setIsPublicSharingEnabled(sharingEnabled);
         };
 
         getSystemSettings().then((settings) => {
@@ -1891,19 +1897,23 @@ const BuildResume = () => {
                                 )}
 
                                 {/* Share for Mentor Review & Comments */}
-                                <button
-                                    onClick={handlePublishForReview}
-                                    disabled={publicationState.status === 'saving'}
-                                    className="hidden xl:flex items-center px-3 py-2 border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-60 transition-all text-xs rounded-xl shadow-2xs font-medium">
-                                    <svg className="w-3.5 h-3.5 mr-1 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                                    </svg>
-                                    {publicationState.status === 'saving' ? 'Updating…' : publicationState.isPublished ? 'Copy Link' : 'Share Review'}
-                                </button>
-                                {publicationState.isPublished && (
-                                    <button type="button" onClick={handleStopSharing} disabled={publicationState.status === 'saving'} className="hidden xl:flex items-center px-2 py-2 text-red-600 hover:text-red-700 text-xs font-semibold disabled:opacity-60 transition-all">
-                                        Stop Sharing
-                                    </button>
+                                {isPublicSharingEnabled && (
+                                    <>
+                                        <button
+                                            onClick={handlePublishForReview}
+                                            disabled={publicationState.status === 'saving'}
+                                            className="hidden xl:flex items-center px-3 py-2 border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-60 transition-all text-xs rounded-xl shadow-2xs font-medium">
+                                            <svg className="w-3.5 h-3.5 mr-1 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                                            </svg>
+                                            {publicationState.status === 'saving' ? 'Updating…' : publicationState.isPublished ? 'Copy Link' : 'Share Review'}
+                                        </button>
+                                        {publicationState.isPublished && (
+                                            <button type="button" onClick={handleStopSharing} disabled={publicationState.status === 'saving'} className="hidden xl:flex items-center px-2 py-2 text-red-600 hover:text-red-700 text-xs font-semibold disabled:opacity-60 transition-all">
+                                                Stop Sharing
+                                            </button>
+                                        )}
+                                    </>
                                 )}
 
                                 {/* Mobile Menu and Preview buttons - Only on mobile */}

@@ -5069,6 +5069,7 @@ export async function getPublicPortfolios(limit = 10, theme = null) {
 
 // System Settings DB Operations
 let systemSettingsRevisions = {};
+let inMemorySettingsCache = {};
 function redactClientSecrets(settings = {}) {
     const copy = typeof structuredClone === 'function' ? structuredClone(settings) : JSON.parse(JSON.stringify(settings || {}));
     const secretFields = [
@@ -5089,8 +5090,8 @@ function redactClientSecrets(settings = {}) {
 
 export async function getSystemSettings() {
     // Admin configuration is never recovered from cross-account browser storage.
-    // Browser-readable state comes only from curated public_config plus static defaults.
-    const localCache = {};
+    // Browser-readable state comes only from curated public_config plus static defaults and session cache.
+    const localCache = { ...inMemorySettingsCache };
 
     // Default initial settings derived from environment variables and static configuration
     const envDefaults = {
@@ -5373,7 +5374,19 @@ export async function saveSystemSettings(category, data, { force = false } = {})
 
     if (!response.ok || !result?.success) throw new Error(result?.error?.message || result?.error || 'Unable to save settings.');
     systemSettingsRevisions = { ...systemSettingsRevisions, [category]: result.revision };
-    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('systemSettingsUpdated', { detail: { category, revision: result.revision } }));
+    if (result.settings) {
+        inMemorySettingsCache = { ...inMemorySettingsCache, [category]: result.settings };
+    }
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('systemSettingsUpdated', {
+            detail: {
+                category,
+                revision: result.revision,
+                modules: category === 'modules' ? result.settings : inMemorySettingsCache.modules,
+                settings: result.settings,
+            }
+        }));
+    }
     return result;
 }
 
