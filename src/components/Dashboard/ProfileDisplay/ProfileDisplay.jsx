@@ -50,7 +50,7 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
     const [openGroups, setOpenGroups] = useState({
         career: true,
         jobIntel: true,
-        billing: false,
+        billing: true, // Always expanded by default
     });
 
     const toggleNavGroup = (groupKey) => {
