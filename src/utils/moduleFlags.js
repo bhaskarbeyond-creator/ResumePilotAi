@@ -29,10 +29,13 @@ export function isFallbackSettings(settings) {
  * caller can keep the last known remote value instead of defaulting ON.
  */
 export function resolveAtsScoreVisibility(settings, { allowMissingDefault = true } = {}) {
-    if (isFallbackSettings(settings)) return false;
     const value = settings?.modules?.enableAtsScoreModule;
-    if (value === undefined && allowMissingDefault !== true) return null;
-    return resolveEnabledFlag(value, true);
+    if (value !== undefined) {
+        return resolveEnabledFlag(value, true);
+    }
+    if (isFallbackSettings(settings)) return false;
+    if (allowMissingDefault !== true) return null;
+    return true;
 }
 
 export function mergeSettingsCategory(defaults = {}, ...layers) {
