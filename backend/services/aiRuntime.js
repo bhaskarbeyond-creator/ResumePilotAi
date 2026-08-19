@@ -2,7 +2,7 @@ const crypto = require('crypto');
 
 const PROVIDERS = Object.freeze(['nvidia', 'gemini', 'openai', 'groq', 'openrouter', 'deepseek']);
 const PROVIDER_DEFAULTS = Object.freeze({
-    nvidia: { model: 'meta/llama-3.1-8b-instruct', url: 'https://integrate.api.nvidia.com/v1/chat/completions' },
+    nvidia: { model: 'meta/llama-3.2-11b-vision-instruct', url: 'https://integrate.api.nvidia.com/v1/chat/completions' },
     gemini: { model: 'gemini-2.0-flash' },
     openai: { model: 'gpt-4o-mini', url: 'https://api.openai.com/v1/chat/completions' },
     groq: { model: 'llama-3.3-70b-versatile', url: 'https://api.groq.com/openai/v1/chat/completions' },
@@ -543,8 +543,8 @@ async function requestProvider(provider, providerConfig, prompt, generation, { f
     }
     const defaults = PROVIDER_DEFAULTS[provider];
     const candidateModels = [providerConfig.model];
-    if (provider === 'nvidia' && providerConfig.model !== 'meta/llama-3.1-8b-instruct') {
-        candidateModels.push('meta/llama-3.1-8b-instruct');
+    if (provider === 'nvidia' && providerConfig.model !== 'nvidia/nemotron-mini-4b-instruct') {
+        candidateModels.push('nvidia/nemotron-mini-4b-instruct');
     }
 
     let lastError = null;
