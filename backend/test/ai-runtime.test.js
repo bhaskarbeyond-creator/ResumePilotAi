@@ -214,3 +214,72 @@ test('provider requests honor cancellation and bounded timeout controls', async 
   controller.abort();
   await assert.rejects(promise, error => error.name === 'AbortError');
 });
+
+test('getContentOperationFallback returns deterministic role-aware fallbacks for generate-content operations', () => {
+  const { getContentOperationFallback } = require('../services/aiRuntime');
+
+  // Certifications fallback
+  const certsFallback = getContentOperationFallback('generate-certifications', { jobTitle: 'Cybersecurity Analyst' });
+  assert.ok(Array.isArray(certsFallback.certifications));
+  assert.ok(certsFallback.certifications.length >= 4);
+  assert.equal(certsFallback._source, 'fallback');
+  assert.ok(certsFallback.certifications.some(c => c.title.includes('CISSP') || c.title.includes('Security+')));
+
+  // Bullet enhancement fallback (returns original bullet unchanged)
+  const bulletFallback = getContentOperationFallback('enhance-single-bullet', { bullet: 'Wrote unit tests' });
+  assert.equal(bulletFallback.enhancedBullet, 'Wrote unit tests');
+  assert.equal(bulletFallback._source, 'fallback');
+
+  // Autocomplete fallback (returns empty array)
+  const autoFallback = getContentOperationFallback('autocomplete', { query: 're' });
+  assert.deepEqual(autoFallback.suggestions, []);
+  assert.equal(autoFallback._source, 'fallback');
+
+  // Skills fallback
+  const skillsFallback = getContentOperationFallback('generate-skills', { occupation: 'Frontend Developer' });
+  assert.ok(Array.isArray(skillsFallback.skills));
+  assert.equal(skillsFallback._source, 'fallback');
+  assert.ok(skillsFallback.skills.some(s => s.name === 'React' || s.name === 'JavaScript'));
+});
+
+test('executeContentOperation gracefully falls back on provider failure without throwing 502', async () => {
+  const failingFetch = async () => new Response('{"error":"All providers down"}', { status: 503 });
+
+  // Certifications operation returns fallback on provider failure
+  const certResult = await executeContentOperation({
+    operation: 'generate-certifications',
+    payload: { jobTitle: 'DevOps Engineer' },
+    db: fakeDb({ secrets: { gemini: { apiKey: 'test-key' } }, publicAi: { provider: 'gemini' } }),
+    environment: {},
+    fetchImpl: failingFetch,
+    requestId: 'test-fallback-cert',
+  });
+  assert.equal(certResult.provider, 'fallback');
+  assert.ok(Array.isArray(certResult.data.certifications));
+  assert.ok(certResult.data.certifications.some(c => c.title.includes('AWS') || c.title.includes('Kubernetes')));
+
+  // Enhance single bullet returns original bullet on provider failure
+  const bulletResult = await executeContentOperation({
+    operation: 'enhance-single-bullet',
+    payload: { bullet: 'Managed a team of 5' },
+    db: fakeDb({ secrets: { gemini: { apiKey: 'test-key' } }, publicAi: { provider: 'gemini' } }),
+    environment: {},
+    fetchImpl: failingFetch,
+    requestId: 'test-fallback-bullet',
+  });
+  assert.equal(bulletResult.provider, 'fallback');
+  assert.equal(bulletResult.data.enhancedBullet, 'Managed a team of 5');
+
+  // Invalid payload still throws a 400 error (validation error is preserved)
+  await assert.rejects(
+    () => executeContentOperation({
+      operation: 'enhance-single-bullet',
+      payload: {}, // Missing required bullet field
+      db: fakeDb({ secrets: { gemini: { apiKey: 'test-key' } }, publicAi: { provider: 'gemini' } }),
+      environment: {},
+      fetchImpl: failingFetch,
+    }),
+    error => error.status === 400
+  );
+});
+

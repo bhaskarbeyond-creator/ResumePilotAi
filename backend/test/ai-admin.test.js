@@ -27,7 +27,7 @@ const admin = { firestore: { FieldValue: { serverTimestamp: () => 'SERVER_TIME' 
 const baseInput = {
   provider: 'nvidia', enableGemini: true, enableNvidia: true, enableOpenai: true,
   enableGroq: true, enableOpenrouter: true, enableDeepseek: true,
-  model: 'gemini-2.0-flash', nvidiaModel: 'meta/llama-3.1-8b-instruct', openaiModel: 'gpt-4o-mini',
+  model: 'gemini-2.0-flash', nvidiaModel: 'meta/llama-3.2-11b-vision-instruct', openaiModel: 'gpt-4o-mini',
   groqModel: 'llama-3.3-70b-versatile', openrouterModel: 'meta-llama/llama-3.3-70b-instruct:free', deepseekModel: 'deepseek-chat',
   temperature: 0.4, maxTokens: 3000, enableFallback: true,
 };
@@ -58,7 +58,7 @@ test('authorized AI settings save is revisioned, audited, split, and never retur
 test('AI settings load reports configured booleans without returning provider keys', async () => {
   const db = fakeDb({
     'data/public_config': { ai: baseInput, aiRevision: 4 },
-    'settings/ai_providers': { nvidia: { apiKey: 'server-secret', model: 'meta/llama-3.1-8b-instruct' }, _revision: 4 },
+    'settings/ai_providers': { nvidia: { apiKey: 'server-secret', model: 'meta/llama-3.2-11b-vision-instruct' }, _revision: 4 },
     'data/system_settings': { ai: { geminiApiKey: 'legacy-secret' } },
   });
   const result = await loadAiAdminSettings(db, { OPENAI_API_KEY: 'environment-openai-secret', OPENAI_MODEL: 'gpt-4.1-mini' });

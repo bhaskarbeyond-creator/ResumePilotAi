@@ -253,7 +253,7 @@ test('Fallback Cascade: Step-by-step failover through all providers with determi
     temperature: 0.7,
     maxTokens: 2048,
     providers: {
-      nvidia: { key: 'nv-key-1', model: 'meta/llama-3.1-8b-instruct', enabled: true },
+      nvidia: { key: 'nv-key-1', model: 'meta/llama-3.2-11b-vision-instruct', enabled: true },
       gemini: { key: 'gem-key-2', model: 'gemini-2.0-flash', enabled: true },
       openai: { key: 'oa-key-3', model: 'gpt-4o-mini', enabled: true },
       groq: { key: 'gr-key-4', model: 'llama-3.3-70b-versatile', enabled: true },

@@ -24,7 +24,7 @@ export function resolveDynamicModel(provider, aiConfig = {}) {
         ollama: aiConfig.ollamaModel,
     }[provider];
     const defaults = {
-        nvidia: 'meta/llama-3.1-8b-instruct', gemini: 'gemini-2.0-flash',
+        nvidia: 'meta/llama-3.2-11b-vision-instruct', gemini: 'gemini-2.0-flash',
         openai: 'gpt-4o-mini', groq: 'llama-3.3-70b-versatile',
         openrouter: 'meta-llama/llama-3.3-70b-instruct:free',
         deepseek: 'deepseek-chat', ollama: 'llama3'

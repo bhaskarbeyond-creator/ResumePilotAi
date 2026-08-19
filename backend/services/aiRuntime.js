@@ -543,8 +543,8 @@ async function requestProvider(provider, providerConfig, prompt, generation, { f
     }
     const defaults = PROVIDER_DEFAULTS[provider];
     const candidateModels = [providerConfig.model];
-    if (provider === 'nvidia' && providerConfig.model !== 'nvidia/nemotron-mini-4b-instruct') {
-        candidateModels.push('nvidia/nemotron-mini-4b-instruct');
+    if (provider === 'nvidia' && providerConfig.model !== defaults.model) {
+        candidateModels.push(defaults.model);
     }
 
     let lastError = null;
@@ -615,12 +615,135 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
     throw error;
 }
 
+/**
+ * Returns deterministic, role-aware fallback data for /generate-content operations when
+ * the AI provider is unavailable. Only called on provider failure — invalid requests still throw.
+ * Response shapes exactly match what parseAiResponse() would return for each operation.
+ */
+function getContentOperationFallback(operation, payload = {}) {
+    const role = payload.jobTitle || payload.occupation || 'Professional';
+
+    if (operation === 'generate-certifications') {
+        const r = (role || '').toLowerCase();
+        let certs;
+        if (r.includes('sec') || r.includes('cyber') || r.includes('infosec')) {
+            certs = [
+                { title: 'Certified Information Systems Security Professional (CISSP)', issuer: '(ISC)²', category: 'mandatory' },
+                { title: 'CompTIA Security+', issuer: 'CompTIA', category: 'mandatory' },
+                { title: 'Certified Ethical Hacker (CEH)', issuer: 'EC-Council', category: 'mandatory' },
+                { title: 'Certified Information Security Manager (CISM)', issuer: 'ISACA', category: 'recommended' },
+                { title: 'AWS Certified Security - Specialty', issuer: 'Amazon Web Services', category: 'recommended' },
+                { title: 'Systems Security Certified Practitioner (SSCP)', issuer: '(ISC)²', category: 'recommended' },
+            ];
+        } else if (r.includes('data') || r.includes('machine learning') || r.includes(' ml') || r.includes('analytics') || r.includes('scientist')) {
+            certs = [
+                { title: 'AWS Certified Machine Learning - Specialty', issuer: 'Amazon Web Services', category: 'mandatory' },
+                { title: 'Google Professional Data Engineer', issuer: 'Google Cloud', category: 'mandatory' },
+                { title: 'Databricks Certified Data Engineer Associate', issuer: 'Databricks', category: 'mandatory' },
+                { title: 'Microsoft Certified: Azure AI Engineer Associate', issuer: 'Microsoft', category: 'recommended' },
+                { title: 'TensorFlow Developer Certificate', issuer: 'Google', category: 'recommended' },
+                { title: 'Certified Analytics Professional (CAP)', issuer: 'INFORMS', category: 'recommended' },
+            ];
+        } else if (r.includes('cloud') || r.includes('devops') || r.includes('sre') || r.includes('platform')) {
+            certs = [
+                { title: 'AWS Certified Solutions Architect - Associate', issuer: 'Amazon Web Services', category: 'mandatory' },
+                { title: 'Certified Kubernetes Administrator (CKA)', issuer: 'CNCF', category: 'mandatory' },
+                { title: 'Google Professional Cloud Architect', issuer: 'Google Cloud', category: 'mandatory' },
+                { title: 'HashiCorp Certified: Terraform Associate', issuer: 'HashiCorp', category: 'recommended' },
+                { title: 'Microsoft Certified: Azure Solutions Architect Expert', issuer: 'Microsoft', category: 'recommended' },
+                { title: 'Certified Kubernetes Application Developer (CKAD)', issuer: 'CNCF', category: 'recommended' },
+            ];
+        } else if (r.includes('manage') || r.includes('lead') || r.includes('scrum') || r.includes('product') || r.includes('director') || r.includes('agile')) {
+            certs = [
+                { title: 'Project Management Professional (PMP)', issuer: 'PMI', category: 'mandatory' },
+                { title: 'Certified ScrumMaster (CSM)', issuer: 'Scrum Alliance', category: 'mandatory' },
+                { title: 'PMI Agile Certified Practitioner (PMI-ACP)', issuer: 'PMI', category: 'mandatory' },
+                { title: 'PRINCE2 Practitioner', issuer: 'AXELOS', category: 'recommended' },
+                { title: 'Certified Information Systems Auditor (CISA)', issuer: 'ISACA', category: 'recommended' },
+                { title: 'Six Sigma Green Belt', issuer: 'ASQ', category: 'recommended' },
+            ];
+        } else {
+            certs = [
+                { title: 'AWS Certified Solutions Architect - Associate', issuer: 'Amazon Web Services', category: 'mandatory' },
+                { title: 'Project Management Professional (PMP)', issuer: 'PMI', category: 'mandatory' },
+                { title: 'Certified ScrumMaster (CSM)', issuer: 'Scrum Alliance', category: 'mandatory' },
+                { title: 'Google Professional Cloud Architect', issuer: 'Google Cloud', category: 'recommended' },
+                { title: 'Microsoft Certified: Azure Fundamentals (AZ-900)', issuer: 'Microsoft', category: 'recommended' },
+                { title: 'CompTIA Security+', issuer: 'CompTIA', category: 'recommended' },
+            ];
+        }
+        return { certifications: certs, _source: 'fallback' };
+    }
+
+    if (operation === 'enhance-single-bullet') {
+        // Return the original bullet unchanged rather than fabricating an enhancement.
+        const original = compact(payload.bullet || payload.text || '', 2000);
+        return { enhancedBullet: original, _source: 'fallback' };
+    }
+
+    if (operation === 'autocomplete') {
+        // Return empty — the UI already handles empty suggestions gracefully (no dropdown shown).
+        return { suggestions: [], _source: 'fallback' };
+    }
+
+    if (operation === 'generate-skills') {
+        // Inline role-aware skill fallback mirroring the standalone /generate-skills route behavior.
+        const r = (role || '').toLowerCase();
+        let technical, soft;
+        if (r.includes('software') || r.includes('developer') || r.includes('engineer') || r.includes('fullstack') || r.includes('full-stack') || r.includes('full stack')) {
+            technical = ['JavaScript', 'Python', 'React', 'Node.js', 'SQL', 'Git', 'Docker', 'AWS', 'TypeScript', 'MongoDB'];
+            soft = ['Problem Solving', 'Team Collaboration', 'Code Review', 'Agile Methodology'];
+        } else if (r.includes('frontend') || r.includes('front-end') || r.includes('front end') || r.includes('ui')) {
+            technical = ['HTML5', 'CSS3', 'JavaScript', 'React', 'Vue.js', 'Webpack', 'Sass', 'TypeScript', 'Responsive Design', 'Jest'];
+            soft = ['User Experience Focus', 'Cross-browser Compatibility', 'Design Collaboration', 'Performance Optimization'];
+        } else if (r.includes('backend') || r.includes('back-end') || r.includes('back end') || r.includes('api')) {
+            technical = ['Node.js', 'Python', 'Java', 'SQL', 'PostgreSQL', 'Redis', 'Docker', 'REST APIs', 'GraphQL', 'AWS'];
+            soft = ['System Design', 'Code Review', 'Performance Optimization', 'Documentation'];
+        } else if (r.includes('data') || r.includes('analyst') || r.includes('analytics') || r.includes('scientist')) {
+            technical = ['Python', 'SQL', 'Pandas', 'NumPy', 'Tableau', 'Power BI', 'Machine Learning', 'Statistical Analysis', 'R', 'Excel'];
+            soft = ['Data Storytelling', 'Critical Thinking', 'Research Skills', 'Business Acumen'];
+        } else if (r.includes('design') || r.includes('ux') || r.includes('ui designer')) {
+            technical = ['Figma', 'Adobe XD', 'Sketch', 'Prototyping', 'User Research', 'Wireframing', 'CSS', 'HTML', 'InVision', 'Design Systems'];
+            soft = ['User Empathy', 'Design Thinking', 'Presentation Skills', 'Cross-functional Collaboration'];
+        } else if (r.includes('market') || r.includes('seo') || r.includes('content') || r.includes('social media')) {
+            technical = ['Google Analytics', 'SEO', 'Content Marketing', 'Social Media Marketing', 'Email Marketing', 'HubSpot', 'Salesforce', 'PPC', 'Copywriting', 'A/B Testing'];
+            soft = ['Creativity', 'Communication', 'Strategic Planning', 'Brand Management'];
+        } else if (r.includes('manage') || r.includes('lead') || r.includes('director') || r.includes('head') || r.includes('vp') || r.includes('chief')) {
+            technical = ['Strategic Planning', 'Budget Management', 'OKR Framework', 'Stakeholder Management', 'Risk Management', 'Agile', 'JIRA', 'Confluence', 'Tableau', 'Excel'];
+            soft = ['Leadership', 'Decision Making', 'Team Building', 'Executive Communication'];
+        } else {
+            technical = ['Microsoft Office', 'Project Management', 'Data Analysis', 'Communication', 'Problem Solving', 'Research', 'Time Management', 'Teamwork', 'Presentation Skills', 'Documentation'];
+            soft = ['Adaptability', 'Critical Thinking', 'Attention to Detail', 'Customer Focus'];
+        }
+        const allSkills = [...technical.map((name, i) => ({ name, category: i < 6 ? 'mandatory' : 'recommended' })),
+                          ...soft.map((name) => ({ name, category: 'recommended' }))];
+        return { skills: allSkills.slice(0, 12), _source: 'fallback' };
+    }
+
+    // For other operations (generate-summary, generate-work-description, generate-education-description),
+    // do NOT provide a content fallback — they have dedicated routes with their own rich fallbacks.
+    // Let the error propagate for these so the dedicated routes' fallbacks handle it.
+    return null;
+}
+
 async function executeContentOperation({ operation, payload, db, environment, fetchImpl, signal, requestId }) {
+    // validate() throws on bad operation name or missing required fields → these remain 400 errors.
     const { prompt } = buildLegacyPrompt(operation, payload, { sessionId: requestId });
     const configuration = await loadProviderConfiguration(db, environment);
-    const generated = await generateWithProviders({ prompt, configuration, operation, fetchImpl, signal });
-    return { data: parseAiResponse(operation, generated.raw), provider: generated.provider, model: generated.model };
+    try {
+        const generated = await generateWithProviders({ prompt, configuration, operation, fetchImpl, signal });
+        return { data: parseAiResponse(operation, generated.raw), provider: generated.provider, model: generated.model };
+    } catch (providerError) {
+        // Only swallow provider/network failures. Validation errors (status 400) are re-thrown
+        // so that the route correctly returns HTTP 400 instead of a fallback.
+        if (providerError.status === 400) throw providerError;
+        const fallback = getContentOperationFallback(operation, payload);
+        if (fallback === null) throw providerError; // No fallback defined — let route handle it
+        console.warn('[generate-content] Provider failed; returning operation fallback', { operation, code: providerError.code || providerError.message });
+        return { data: fallback, provider: 'fallback', model: 'fallback' };
+    }
 }
+
 
 function buildResumeParsingPrompt(rawText) {
     const text = compact(rawText, 40000);
@@ -670,6 +793,7 @@ module.exports = {
     executeResumeParsing,
     extractJson,
     generateWithProviders,
+    getContentOperationFallback,
     loadProviderConfiguration,
     parseAiResponse,
     providerOrder,

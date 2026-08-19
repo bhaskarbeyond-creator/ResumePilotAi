@@ -3033,7 +3033,7 @@ app.post('/api/generate-ai-cover-letter', async (req, res) => {
         const randomPick = (arr) => arr[Math.floor(Math.random() * arr.length)];
         const generated = `Dear ${recipient},\n\n${randomPick(hookTemplates)}\n\n${randomPick(bodyTemplates)}\n\n${randomPick(closeTemplates)}\n\nSincerely,\n${candidate}`;
 
-        return res.json({ success: true, coverLetter: generated, provider: 'Dynamic AI Synthesis Engine' });
+        return res.json({ success: true, coverLetter: generated, provider: 'fallback' });
     } catch (error) {
         console.error('[Cover letter generation]', { code: error.code || 'COVER_LETTER_ERROR', requestId: res.locals.requestId });
         return res.status(500).json({ success: false, error: { code: 'COVER_LETTER_GENERATION_FAILED', message: 'Cover letter generation is temporarily unavailable', requestId: res.locals.requestId } });

@@ -124,7 +124,7 @@ function createMockApp(db) {
 test('Acceptance Gate 1: 50 Concurrent AI requests execute safely with sub-second throughput and bounded memory', async () => {
   const db = createMockFirestore();
   await db.collection('settings').doc('ai_providers').set({
-    nvidia: { apiKey: 'nvapi-test', model: 'meta/llama-3.1-8b-instruct' },
+    nvidia: { apiKey: 'nvapi-test', model: 'meta/llama-3.2-11b-vision-instruct' },
     _revision: 1
   });
   await db.collection('data').doc('public_config').set({
@@ -182,7 +182,7 @@ test('Acceptance Gate 1: 50 Concurrent AI requests execute safely with sub-secon
 test('Acceptance Gate 2: Concurrent Admin settings update + User AI generation race test', async () => {
   const db = createMockFirestore();
   await db.collection('settings').doc('ai_providers').set({
-    nvidia: { apiKey: 'nvapi-old', model: 'meta/llama-3.1-8b-instruct' },
+    nvidia: { apiKey: 'nvapi-old', model: 'meta/llama-3.2-11b-vision-instruct' },
     gemini: { apiKey: 'gemini-key', model: 'gemini-2.0-flash' },
     _revision: 1
   });
@@ -264,7 +264,7 @@ test('Acceptance Gate 3: Exhaustive 12-Failure-Mode Recovery, Telemetry & Retry-
   for (const scenario of failureScenarios) {
     const db = createMockFirestore();
     await db.collection('settings').doc('ai_providers').set({
-      nvidia: { apiKey: 'nvapi-failing', model: 'meta/llama-3.1-8b-instruct' },
+      nvidia: { apiKey: 'nvapi-failing', model: 'meta/llama-3.2-11b-vision-instruct' },
       gemini: { apiKey: 'gemini-backup', model: 'gemini-2.0-flash' },
       _revision: 1
     });
@@ -312,7 +312,7 @@ test('Acceptance Gate 3: Exhaustive 12-Failure-Mode Recovery, Telemetry & Retry-
 test('Acceptance Gate 4: Database-Level Multi-Tenant Data Isolation & Vault Boundary Enforcement', async () => {
   const db = createMockFirestore();
   await db.collection('settings').doc('ai_providers').set({
-    nvidia: { apiKey: 'fixture-nvidia-vault-key', model: 'meta/llama-3.1-8b-instruct' },
+    nvidia: { apiKey: 'fixture-nvidia-vault-key', model: 'meta/llama-3.2-11b-vision-instruct' },
     openai: { apiKey: 'fixture-openai-vault-key', model: 'gpt-4o-mini' },
     _revision: 5
   });
@@ -369,7 +369,7 @@ test('Acceptance Gate 4: Database-Level Multi-Tenant Data Isolation & Vault Boun
       .send({ jobTitle: 'Staff Engineer' });
     assert.equal(userGen.status, 200);
     assert.equal(userGen.headers['x-ai-provider'], 'nvidia');
-    assert.equal(userGen.headers['x-ai-model'], 'meta/llama-3.1-8b-instruct');
+    assert.equal(userGen.headers['x-ai-model'], 'meta/llama-3.2-11b-vision-instruct');
     assert.equal(userGen.headers['authorization'], undefined);
   } finally {
     global.fetch = originalFetch;
@@ -379,12 +379,12 @@ test('Acceptance Gate 4: Database-Level Multi-Tenant Data Isolation & Vault Boun
 test('Acceptance Gate 5: Behavioral Cache Invalidation & Dynamic Model Switch Verification', async () => {
   const db = createMockFirestore();
   await db.collection('settings').doc('ai_providers').set({
-    nvidia: { apiKey: 'nvapi-test', model: 'meta/llama-3.1-8b-instruct' },
+    nvidia: { apiKey: 'nvapi-test', model: 'meta/llama-3.2-11b-vision-instruct' },
     openai: { apiKey: 'sk-test', model: 'gpt-4o-mini' },
     _revision: 1
   });
   await db.collection('data').doc('public_config').set({
-    ai: { provider: 'nvidia', nvidiaModel: 'meta/llama-3.1-8b-instruct', enableNvidia: true, enableOpenai: true, enableFallback: true, maxTokens: 2048 },
+    ai: { provider: 'nvidia', nvidiaModel: 'meta/llama-3.2-11b-vision-instruct', enableNvidia: true, enableOpenai: true, enableFallback: true, maxTokens: 2048 },
     aiRevision: 1
   });
 
@@ -404,7 +404,7 @@ test('Acceptance Gate 5: Behavioral Cache Invalidation & Dynamic Model Switch Ve
   // Step 1: Initial AI generation reads cached config (model = llama-3.1-8b)
   let config1 = await loadProviderConfiguration(db, {}, trackingFetch);
   await generateWithProviders({ prompt: 'p', configuration: config1, operation: 'generate-summary', fetchImpl: trackingFetch });
-  assert.equal(calledModel, 'meta/llama-3.1-8b-instruct');
+  assert.equal(calledModel, 'meta/llama-3.2-11b-vision-instruct');
 
   // Step 2: Admin updates model in Firestore to custom model 'meta/llama-3.3-70b-instruct'
   await saveAiAdminSettings({

@@ -7,8 +7,7 @@ import {
     FaSave, FaSignOutAlt, FaTimes, FaTrashAlt, FaTrophy, FaUserTie,
 } from 'react-icons/fa';
 import { AuthContext } from '../../../main';
-import config from '../../../conf/configuration';
-import fire from '../../../conf/fire';
+import { generateUserAiContent } from '../../../services/aiService';
 import { getResumes } from '../../../firestore/dbOperations';
 import {
     DIFFICULTIES, DURATION_PRESETS, EXPERIENCE_LEVELS, INTERVIEW_MODES, INTERVIEW_TYPES, PALETTE_META,
@@ -639,28 +638,12 @@ const DashboardInterviews = () => {
         dispatch({ type: 'START_FETCH' });
         try {
             const currentLanguage = localStorage.getItem('preferredLanguage') || localStorage.getItem('language') || 'en';
-            const headers = { 'Content-Type': 'application/json' };
-            try {
-                const currentUser = fire?.auth?.()?.currentUser;
-                if (currentUser) {
-                    const token = await currentUser.getIdToken();
-                    if (token) headers['Authorization'] = `Bearer ${token}`;
-                }
-            } catch { /* optional */ }
-
-            let signal = requestController.signal;
-            try {
-                if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
-                    const timeoutSignal = AbortSignal.timeout(90_000);
-                    signal = typeof AbortSignal.any === 'function' ? AbortSignal.any([requestController.signal, timeoutSignal]) : timeoutSignal;
-                }
-            } catch { /* optional */ }
-
-            const response = await fetch(`${config.provider}://${config.backendUrl}/api/generate-interview`, {
-                method: 'POST',
-                headers,
-                signal,
-                body: JSON.stringify({
+            // Use generateUserAiContent from aiService for consistent auth handling.
+            // aiService.getAuthHeaders() waits up to 1.2 s for onAuthStateChanged, eliminating
+            // the cold-load race where fire.auth().currentUser is briefly null on mount.
+            const data = await generateUserAiContent(
+                'generate-interview',
+                {
                     occupation: state.occupation,
                     interviewType: state.interviewType,
                     questionCount: state.questionCount,
@@ -675,10 +658,9 @@ const DashboardInterviews = () => {
                         interviewType: state.interviewType,
                         limit: 8,
                     }),
-                }),
-            });
-            if (!response.ok) throw Object.assign(new Error(`API error: ${response.status}`), { status: response.status });
-            const data = await response.json();
+                },
+                { signal: requestController.signal, timeoutMs: 90_000 }
+            );
             // Never trust the model structure: validate before rendering.
             const validated = validateInterviewPayload(data);
             if (!validated) throw Object.assign(new Error('Invalid AI output'), { code: 'INVALID_AI_OUTPUT' });

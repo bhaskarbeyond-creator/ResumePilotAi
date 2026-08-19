@@ -274,10 +274,12 @@ test('recentInterviewQuestions returns a bounded, role/type-filtered list for ge
 test('existing generate-interview backend and frontend integration remains preserved with bearer auth', () => {
   const frontend = fs.readFileSync('src/components/Dashboard/DashboardInterviews/DashboardInterviews.jsx', 'utf8');
   const backend = fs.readFileSync('backend/routes/ai.js', 'utf8');
+  const aiService = fs.readFileSync('src/services/aiService.js', 'utf8');
 
   // Frontend contract
-  assert.match(frontend, /\/api\/generate-interview/);
-  assert.match(frontend, /Authorization.*Bearer/);
+  assert.match(frontend, /generateUserAiContent\(\s*['"]generate-interview['"]/);
+  assert.match(aiService, /generate-interview/);
+  assert.match(aiService, /Authorization.*Bearer/);
   assert.match(frontend, /occupation: state\.occupation/);
   assert.match(frontend, /interviewType: state\.interviewType/);
   assert.match(frontend, /questionCount: state\.questionCount/);

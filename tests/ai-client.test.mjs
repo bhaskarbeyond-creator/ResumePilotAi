@@ -55,6 +55,13 @@ test('AI client preserves structured server errors for retry UX', async () => {
   }
 });
 
+test('AI client routes generate-interview to direct backend endpoint', () => {
+  assert.deepEqual(buildAiRequest('generate-interview', { occupation: 'Frontend Developer', questionCount: 5 }), {
+    url: '/api/generate-interview',
+    body: { occupation: 'Frontend Developer', questionCount: 5 },
+  });
+});
+
 test('AI client supports user cancellation without converting it into generated content', async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = (_url, options) => new Promise((_resolve, reject) => {
@@ -70,3 +77,4 @@ test('AI client supports user cancellation without converting it into generated 
     globalThis.fetch = originalFetch;
   }
 });
+
