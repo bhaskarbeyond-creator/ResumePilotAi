@@ -2,8 +2,8 @@ import React, { useCallback, useContext, useEffect, useMemo, useReducer, useRef,
 import {
     FaArrowLeft, FaArrowRight, FaAward, FaBrain, FaBriefcase, FaBullseye,
     FaCalendarAlt, FaCheck, FaCheckCircle, FaChevronDown, FaChevronRight,
-    FaClock, FaExclamationTriangle, FaFileAlt, FaFlag, FaGraduationCap,
-    FaLaptopCode, FaLightbulb, FaMagic, FaPlay, FaRedo, FaSave, FaTimes,
+    FaClock, FaExclamationTriangle, FaFileAlt, FaFilter, FaFlag, FaGraduationCap,
+    FaLaptopCode, FaLightbulb, FaMagic, FaPlay, FaPrint, FaRedo, FaSave, FaTimes,
     FaTrophy, FaUndo, FaUserTie,
 } from 'react-icons/fa';
 import { AuthContext } from '../../../main';
@@ -317,7 +317,7 @@ const DashboardInterviews = () => {
         const progressPct = Math.round((answeredCount / questions.length) * 100);
 
         return (
-            <div className="min-h-[calc(100vh-2rem)] bg-slate-50 text-slate-900 flex flex-col font-sans">
+            <div className="min-h-[calc(100vh-2rem)] w-full bg-slate-50 text-slate-900 flex flex-col font-sans">
                 {/* ── Light Modern CBT Header Bar ── */}
                 <header className="bg-white/95 backdrop-blur-md border-b border-slate-200/90 px-4 sm:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-40 shadow-xs">
                     <div className="flex items-center gap-3.5">
@@ -387,8 +387,8 @@ const DashboardInterviews = () => {
                     </div>
                 )}
 
-                {/* ── Main Two-Column Exam Grid ── */}
-                <div className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 grid lg:grid-cols-[1fr_340px] gap-6 items-start">
+                {/* ── Main Two-Column Exam Grid (Full Width) ── */}
+                <div className="flex-1 w-full p-4 sm:p-6 lg:p-8 grid lg:grid-cols-[1fr_360px] gap-6 items-start">
                     {/* Left: Question Workspace Card */}
                     <main className={`bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-sm flex flex-col justify-between min-h-[520px] transition-opacity duration-200 ${state.isPaused ? 'pointer-events-none opacity-50' : ''}`}>
                         <div>
@@ -588,16 +588,16 @@ const DashboardInterviews = () => {
     const trend = scoreTrend(history);
 
     return (
-        <div className="min-h-screen bg-slate-50 text-slate-900 p-4 sm:p-6 lg:p-8 font-sans">
-            <div className="max-w-6xl mx-auto space-y-8">
+        <div className="min-h-screen w-full bg-slate-50 text-slate-900 p-4 sm:p-6 lg:p-8 font-sans">
+            <div className="w-full space-y-8">
 
                 {/* ── 1. Light Modern Hero Header Banner ── */}
-                <header className="relative bg-gradient-to-r from-indigo-50 via-purple-50/50 to-blue-50 rounded-3xl p-6 sm:p-10 border border-indigo-100 shadow-xs overflow-hidden">
+                <header className="relative w-full bg-gradient-to-r from-indigo-50 via-purple-50/50 to-blue-50 rounded-3xl p-6 sm:p-10 border border-indigo-100 shadow-xs overflow-hidden">
                     <div className="absolute -right-16 -top-16 w-80 h-80 bg-indigo-200/30 rounded-full blur-3xl pointer-events-none"></div>
                     <div className="absolute -left-16 -bottom-16 w-80 h-80 bg-purple-200/30 rounded-full blur-3xl pointer-events-none"></div>
 
                     <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                        <div className="max-w-2xl">
+                        <div className="max-w-3xl">
                             <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-indigo-100 text-indigo-700 border border-indigo-200 mb-3 shadow-xs">
                                 <FaMagic className="w-3 h-3 text-amber-500 animate-pulse" />
                                 <span>AI-Powered CBT Exam Suite</span>
@@ -612,11 +612,11 @@ const DashboardInterviews = () => {
 
                         {/* Quick Stats Widget */}
                         <div className="grid grid-cols-2 gap-3 shrink-0">
-                            <div className="bg-white/90 backdrop-blur-xs border border-slate-200/80 rounded-2xl p-4 text-center shadow-xs">
+                            <div className="bg-white/90 backdrop-blur-xs border border-slate-200/80 rounded-2xl p-4 text-center shadow-xs min-w-[120px]">
                                 <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Total Drills</p>
                                 <p className="text-xl sm:text-2xl font-black text-slate-900">{history.length}</p>
                             </div>
-                            <div className="bg-white/90 backdrop-blur-xs border border-slate-200/80 rounded-2xl p-4 text-center shadow-xs">
+                            <div className="bg-white/90 backdrop-blur-xs border border-slate-200/80 rounded-2xl p-4 text-center shadow-xs min-w-[120px]">
                                 <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Avg Score</p>
                                 <p className="text-xl sm:text-2xl font-black text-emerald-600">
                                     {history.length ? `${Math.round(history.reduce((a, b) => a + (Number(b.score) || 0), 0) / history.length)}%` : '—'}
@@ -627,7 +627,7 @@ const DashboardInterviews = () => {
                 </header>
 
                 {/* ── 2. Interactive Setup Configuration Card ── */}
-                <section className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-10 shadow-sm space-y-8">
+                <section className="w-full bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-10 shadow-sm space-y-8">
 
                     {/* Step 1: Mode Selection */}
                     <div>
@@ -962,8 +962,8 @@ const DashboardInterviews = () => {
                     </div>
                 </section>
 
-                {/* ── 3. Previous Assessments History ── */}
-                <section className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-sm space-y-4">
+                {/* ── 3. Previous Assessments History (Full Width) ── */}
+                <section className="w-full bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-sm space-y-4">
                     <div className="flex items-center justify-between">
                         <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
                             <FaAward className="w-4 h-4 text-amber-500" />
@@ -982,7 +982,7 @@ const DashboardInterviews = () => {
                             <p className="text-xs text-slate-500">No previous sessions yet. Start your first AI mock interview above!</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
                             {history.map(item => (
                                 <div
                                     key={item.id}
@@ -1096,237 +1096,412 @@ function PalettePanel({ questions, state, markedSet, visitedSet, progressPct, on
     );
 }
 
-// ── ASSESSMENT REPORT VIEW (LIGHT MODERN) ──────────────────────────────────────
+// ── ASSESSMENT REPORT VIEW (FULL-WIDTH EXECUTIVE ANALYTICS DASHBOARD) ──────────
 function ReportView({ report, meta, onBack, history, onRetake }) {
     const [openId, setOpenId] = useState(null);
+    const [questionFilter, setQuestionFilter] = useState('all'); // 'all' | 'correct' | 'needs_work'
     const trend = scoreTrend(history);
 
     const scoreColor = report.overall >= 80 ? 'text-emerald-600' : report.overall >= 60 ? 'text-indigo-600' : 'text-amber-600';
+    const scoreBg = report.overall >= 80 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : report.overall >= 60 ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-amber-50 text-amber-700 border-amber-200';
     const scoreBadge = report.overall >= 80
         ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
         : report.overall >= 60
             ? 'bg-indigo-100 text-indigo-800 border-indigo-200'
             : 'bg-amber-100 text-amber-800 border-amber-200';
 
-    return (
-        <div className="min-h-screen bg-slate-50 text-slate-900 p-4 sm:p-6 lg:p-8 font-sans">
-            <div className="max-w-5xl mx-auto space-y-6">
+    const questionsList = report.questions || [];
+    const correctQuestions = questionsList.filter(q => q.correct);
+    const needsWorkQuestions = questionsList.filter(q => !q.correct);
 
-                {/* ── Top Header Navigation ── */}
-                <div className="flex items-center justify-between">
-                    <button
-                        type="button"
-                        onClick={onBack}
-                        className="px-4 py-2 rounded-xl text-xs font-bold bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 transition-all flex items-center gap-2 cursor-pointer shadow-xs">
-                        <FaArrowLeft className="w-3 h-3" />
-                        <span>Back</span>
-                    </button>
+    const displayedQuestions = useMemo(() => {
+        if (questionFilter === 'correct') return correctQuestions;
+        if (questionFilter === 'needs_work') return needsWorkQuestions;
+        return questionsList;
+    }, [questionsList, questionFilter, correctQuestions, needsWorkQuestions]);
+
+    return (
+        <div className="min-h-[calc(100vh-2rem)] w-full bg-slate-50 text-slate-900 p-3 sm:p-5 lg:p-8 font-sans">
+            <div className="w-full space-y-6">
+
+                {/* ── Top Header Navigation (Full Width) ── */}
+                <div className="w-full flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                         <button
                             type="button"
+                            onClick={onBack}
+                            className="px-4 py-2 rounded-xl text-xs font-bold bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 transition-all flex items-center gap-2 cursor-pointer shadow-xs">
+                            <FaArrowLeft className="w-3.5 h-3.5" />
+                            <span>Back to Interviews</span>
+                        </button>
+                        <span className="hidden sm:inline-block px-3 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200/60">
+                            ID: {meta?.id?.slice(0, 8) || 'current-drill'}
+                        </span>
+                    </div>
+
+                    <div className="flex items-center gap-2.5">
+                        <button
+                            type="button"
+                            onClick={() => window.print()}
+                            className="px-3.5 py-2 rounded-xl text-xs font-bold bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs">
+                            <FaPrint className="w-3.5 h-3.5 text-slate-500" />
+                            <span className="hidden sm:inline">Print / Save PDF</span>
+                        </button>
+                        <button
+                            type="button"
                             onClick={onRetake}
-                            className="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition-all flex items-center gap-2 cursor-pointer shadow-md shadow-indigo-600/20">
-                            <FaRedo className="w-3 h-3" />
+                            className="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white transition-all flex items-center gap-2 cursor-pointer shadow-md shadow-indigo-600/20">
+                            <FaRedo className="w-3.5 h-3.5" />
                             <span>Retake Interview</span>
                         </button>
                     </div>
                 </div>
 
-                {/* ── Celebratory Analytics Banner (Light Modern) ── */}
-                <header className="bg-gradient-to-r from-indigo-50 via-purple-50/60 to-blue-50 rounded-3xl p-6 sm:p-8 border border-indigo-100 shadow-xs relative overflow-hidden">
-                    <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                {/* ── Celebratory Analytics Banner (Full Width) ── */}
+                <header className="w-full bg-gradient-to-r from-indigo-50 via-purple-50/70 to-blue-50 rounded-3xl p-6 sm:p-8 lg:p-10 border border-indigo-100 shadow-xs relative overflow-hidden">
+                    <div className="absolute -right-20 -top-20 w-96 h-96 bg-indigo-200/25 rounded-full blur-3xl pointer-events-none"></div>
+                    <div className="absolute -left-20 -bottom-20 w-96 h-96 bg-purple-200/25 rounded-full blur-3xl pointer-events-none"></div>
+
+                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div>
-                            <span className={`px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider border mb-2 inline-block ${scoreBadge}`}>
-                                {report.readiness}
-                            </span>
-                            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Assessment report</h1>
-                            <p className="text-xs sm:text-sm text-slate-600 mt-1">
-                                {meta.role} · <span className="capitalize">{meta.interviewType}</span> Track · <span className="capitalize">{meta.mode}</span> Mode
+                            <div className="flex flex-wrap items-center gap-2.5 mb-2.5">
+                                <span className={`px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider border inline-flex items-center gap-1.5 ${scoreBadge}`}>
+                                    <span className="w-2 h-2 rounded-full bg-current"></span>
+                                    {report.readiness}
+                                </span>
+                                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/80 border border-indigo-200 text-indigo-800">
+                                    <span className="capitalize">{meta.interviewType}</span> Track
+                                </span>
+                                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/80 border border-purple-200 text-purple-800">
+                                    <span className="capitalize">{meta.mode}</span> Mode
+                                </span>
+                            </div>
+
+                            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight mb-1">
+                                Assessment report
+                            </h1>
+                            <p className="text-sm sm:text-base text-slate-600 font-medium">
+                                Target Role: <strong className="text-slate-900 font-bold">{meta.role || 'Software Engineer'}</strong> · Completed {new Date().toLocaleDateString()}
                             </p>
                         </div>
-                        <div className="text-left sm:text-right">
-                            <span className={`text-4xl sm:text-5xl font-black ${scoreColor}`}>
-                                {report.overall}%
-                            </span>
-                            <p className="text-xs text-slate-500 font-medium">Final Percentage</p>
+
+                        {/* Overall Score Dial */}
+                        <div className="flex items-center gap-5 shrink-0 bg-white/90 backdrop-blur-xs border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-xs">
+                            <div className="text-right">
+                                <span className={`text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight ${scoreColor}`}>
+                                    {report.overall}%
+                                </span>
+                                <p className="text-xs uppercase tracking-wider font-extrabold text-slate-500 mt-0.5">Final Percentage</p>
+                            </div>
+                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-black text-2xl border ${scoreBg}`}>
+                                <FaTrophy className="w-7 h-7" />
+                            </div>
                         </div>
                     </div>
                 </header>
 
-                {/* ── 4 Primary Metric Cards ── */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-                    <div className="bg-white border border-slate-200/90 rounded-2xl p-4 text-center shadow-xs">
-                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Overall</p>
-                        <p className={`text-2xl font-black ${scoreColor}`}>{report.overall}%</p>
+                {/* ── 4 Primary Metric Cards (Full Width 4-Column Grid) ── */}
+                <div className="w-full grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs flex items-center gap-3.5">
+                        <div className="w-11 h-11 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
+                            <FaTrophy className="w-5 h-5" />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Overall Score</p>
+                            <p className={`text-xl sm:text-2xl font-black ${scoreColor}`}>{report.overall}%</p>
+                            <p className="text-[11px] text-slate-500 truncate">Weighted accuracy</p>
+                        </div>
                     </div>
-                    <div className="bg-white border border-slate-200/90 rounded-2xl p-4 text-center shadow-xs">
-                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Readiness</p>
-                        <p className="text-sm sm:text-base font-bold text-slate-900 truncate">{report.readiness}</p>
+
+                    <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs flex items-center gap-3.5">
+                        <div className="w-11 h-11 rounded-xl bg-purple-50 border border-purple-100 text-purple-600 flex items-center justify-center shrink-0">
+                            <FaAward className="w-5 h-5" />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Readiness Tier</p>
+                            <p className="text-base sm:text-lg font-bold text-slate-900 truncate">{report.readiness}</p>
+                            <p className="text-[11px] text-slate-500 truncate">Hiring likelihood</p>
+                        </div>
                     </div>
-                    <div className="bg-white border border-slate-200/90 rounded-2xl p-4 text-center shadow-xs">
-                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Completion</p>
-                        <p className="text-2xl font-black text-indigo-600">{report.completionRate}%</p>
+
+                    <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs flex items-center gap-3.5">
+                        <div className="w-11 h-11 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                            <FaCheckCircle className="w-5 h-5" />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Completion</p>
+                            <p className="text-xl sm:text-2xl font-black text-emerald-600">{report.completionRate}%</p>
+                            <p className="text-[11px] text-slate-500 truncate">{questionsList.filter(q => q.answered).length}/{questionsList.length} answered</p>
+                        </div>
                     </div>
-                    <div className="bg-white border border-slate-200/90 rounded-2xl p-4 text-center shadow-xs">
-                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Time Used</p>
-                        <p className="text-2xl font-black text-emerald-600">{formatClock(report.timeUsed)}</p>
+
+                    <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs flex items-center gap-3.5">
+                        <div className="w-11 h-11 rounded-xl bg-amber-50 border border-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+                            <FaClock className="w-5 h-5" />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Time Used</p>
+                            <p className="text-xl sm:text-2xl font-black text-slate-900">{formatClock(report.timeUsed)}</p>
+                            <p className="text-[11px] text-slate-500 truncate">{((report.timeUsed / 60) / Math.max(1, questionsList.length)).toFixed(1)} min / question</p>
+                        </div>
                     </div>
                 </div>
 
-                {/* ── Category Scores ── */}
-                <section className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-xs space-y-4">
-                    <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                        <FaBrain className="w-4 h-4 text-indigo-600" />
-                        <span>Category Mastery Breakdown</span>
-                    </h2>
-                    <div className="space-y-3">
-                        {Object.entries(report.categoryScores || {}).map(([name, score]) => (
-                            <div key={name} className="space-y-1">
-                                <div className="flex justify-between text-xs font-semibold">
-                                    <span className="text-slate-700">{name}</span>
-                                    <span className={score >= 80 ? 'text-emerald-600 font-bold' : score >= 60 ? 'text-indigo-600 font-bold' : 'text-amber-600 font-bold'}>
-                                        {score}%
-                                    </span>
+                {/* ── Main Multi-Column Executive Analytics Dashboard ── */}
+                <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+                    {/* ── Left Column (7 cols): Question STAR Feedback & 7-Day Action Plan ── */}
+                    <div className="lg:col-span-7 space-y-6">
+
+                        {/* 1. Question-Level STAR Analysis */}
+                        <section className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-xs space-y-5">
+                            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                                <div>
+                                    <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                                        <FaAward className="w-4 h-4 text-amber-500" />
+                                        <span>Question-Level STAR Analysis</span>
+                                    </h2>
+                                    <p className="text-xs text-slate-500 mt-0.5">Click any question to view detailed STAR coaching &amp; model answers.</p>
                                 </div>
-                                <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/80">
-                                    <div
-                                        className={`h-full rounded-full transition-all duration-500 ${
-                                            score >= 80 ? 'bg-gradient-to-r from-emerald-500 to-teal-500' : score >= 60 ? 'bg-gradient-to-r from-indigo-500 to-purple-500' : 'bg-gradient-to-r from-amber-500 to-orange-500'
-                                        }`}
-                                        style={{ width: `${score}%` }}
-                                    />
+
+                                {/* Filter Tabs */}
+                                <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200/80">
+                                    <button
+                                        type="button"
+                                        onClick={() => setQuestionFilter('all')}
+                                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                            questionFilter === 'all' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                                        }`}>
+                                        All ({questionsList.length})
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setQuestionFilter('correct')}
+                                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                            questionFilter === 'correct' ? 'bg-white text-emerald-700 shadow-2xs' : 'text-slate-600 hover:text-emerald-700'
+                                        }`}>
+                                        Correct ({correctQuestions.length})
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setQuestionFilter('needs_work')}
+                                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                            questionFilter === 'needs_work' ? 'bg-white text-amber-700 shadow-2xs' : 'text-slate-600 hover:text-amber-700'
+                                        }`}>
+                                        Needs Work ({needsWorkQuestions.length})
+                                    </button>
                                 </div>
                             </div>
-                        ))}
-                    </div>
-                </section>
 
-                {/* ── Strengths & Weaknesses ── */}
-                <div className="grid sm:grid-cols-2 gap-4">
-                    {/* Strengths */}
-                    <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-xs space-y-3">
-                        <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                            <FaCheckCircle className="w-4 h-4 text-emerald-600" />
-                            <span>Demonstrated Strengths</span>
-                        </h2>
-                        {report.strengths?.length ? (
-                            <ul className="space-y-2 text-xs text-slate-700">
-                                {report.strengths.map(item => (
-                                    <li key={item} className="flex items-center gap-2">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
-                                        <span>{item}</span>
+                            {/* Accordion Questions List */}
+                            <div className="space-y-3">
+                                {displayedQuestions.map(row => (
+                                    <details
+                                        key={row.id}
+                                        open={openId === row.id}
+                                        onToggle={event => setOpenId(event.target.open ? row.id : null)}
+                                        className="group rounded-2xl border border-slate-200 bg-white overflow-hidden transition-all shadow-2xs hover:border-slate-300">
+                                        <summary className="cursor-pointer p-4 list-none flex items-center justify-between gap-3 hover:bg-slate-50 transition-colors select-none">
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <span className={`px-2.5 py-1 rounded-lg text-xs font-extrabold shrink-0 border ${
+                                                    row.correct
+                                                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                                        : row.answered
+                                                            ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                                            : 'bg-rose-50 text-rose-800 border-rose-200'
+                                                }`}>
+                                                    Q{row.index}: {row.correct ? 'Correct' : row.answered ? 'Needs work' : 'Unanswered'}
+                                                </span>
+                                                <span className="text-xs sm:text-sm font-semibold text-slate-800 truncate">{row.question}</span>
+                                            </div>
+                                            <div className="text-slate-400 shrink-0">
+                                                <FaChevronDown className="w-3.5 h-3.5 transition-transform group-open:rotate-180" />
+                                            </div>
+                                        </summary>
+
+                                        <div className="p-5 pt-3 border-t border-slate-100 bg-slate-50/60 text-xs text-slate-700 space-y-3">
+                                            <div className="grid sm:grid-cols-2 gap-3">
+                                                <div className="p-3 rounded-xl bg-white border border-slate-200">
+                                                    <p className="font-bold text-slate-500 uppercase text-[10px] mb-1">Your Submitted Answer</p>
+                                                    <p className="font-semibold text-slate-900">{row.userAnswer || '— No answer selected'}</p>
+                                                </div>
+                                                <div className="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200">
+                                                    <p className="font-bold text-emerald-800 uppercase text-[10px] mb-1">Ideal structure: (Model Answer)</p>
+                                                    <p className="font-semibold text-emerald-950">{row.idealAnswer}</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2 pt-1">
+                                                <div className="p-3 rounded-xl bg-white border border-slate-200">
+                                                    <p className="font-bold text-indigo-700 mb-0.5">✓ What was good:</p>
+                                                    <p className="text-slate-700">{row.whatWasGood}</p>
+                                                </div>
+                                                <div className="p-3 rounded-xl bg-white border border-slate-200">
+                                                    <p className="font-bold text-amber-700 mb-0.5">⚠ What was missing / Gap:</p>
+                                                    <p className="text-slate-700">{row.whatWasMissing}</p>
+                                                </div>
+                                                <div className="p-3 rounded-xl bg-purple-50/60 border border-purple-200">
+                                                    <p className="font-bold text-purple-900 mb-0.5">★ STAR Method Recommendation:</p>
+                                                    <p className="text-purple-950 font-medium">{row.improvement}</p>
+                                                </div>
+                                                {row.explanation && (
+                                                    <div className="p-3 rounded-xl bg-white border border-slate-200 text-slate-600">
+                                                        <strong className="text-slate-800">Concept Explanation:</strong> {row.explanation}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </details>
+                                ))}
+                            </div>
+                        </section>
+
+                        {/* 2. Personalized 7-Day Roadmap */}
+                        <section className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-xs space-y-4">
+                            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                                <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                                    <FaCalendarAlt className="w-4 h-4 text-indigo-600" />
+                                    <span>Personalized 7-Day Improvement Plan</span>
+                                </h2>
+                                <span className="text-xs font-bold text-indigo-600">Step-by-step Milestones</span>
+                            </div>
+
+                            <ul className="space-y-3 text-xs sm:text-sm text-slate-700">
+                                {[...report.plan.immediate, ...report.plan.sevenDay].map((item, idx) => (
+                                    <li key={idx} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-start gap-3.5">
+                                        <span className="w-7 h-7 rounded-xl bg-indigo-100 border border-indigo-200 text-indigo-700 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                                            {idx + 1}
+                                        </span>
+                                        <div className="flex-1">
+                                            <p className="font-semibold text-slate-900 leading-relaxed">{item}</p>
+                                        </div>
                                     </li>
                                 ))}
                             </ul>
-                        ) : (
-                            <p className="text-xs text-slate-500">Complete more questions correctly to unlock strengths.</p>
-                        )}
+                        </section>
+
                     </div>
 
-                    {/* Weaknesses */}
-                    <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-xs space-y-3">
-                        <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                            <FaLightbulb className="w-4 h-4 text-amber-500" />
-                            <span>Focus &amp; Improvement Areas</span>
-                        </h2>
-                        {report.weaknesses?.length ? (
-                            <ul className="space-y-2 text-xs text-slate-700">
-                                {report.weaknesses.map((item, index) => (
-                                    <li key={index} className="flex items-start gap-2">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1 shrink-0"></span>
-                                        <span><strong>{item.area}:</strong> {item.detail}</span>
-                                    </li>
+                    {/* ── Right Column (5 cols): Mastery Breakdown, Strengths & Focus Areas ── */}
+                    <div className="lg:col-span-5 space-y-6">
+
+                        {/* 1. Category Mastery Breakdown */}
+                        <section className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-7 shadow-xs space-y-4">
+                            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                                <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                    <FaBrain className="w-4 h-4 text-indigo-600" />
+                                    <span>Category Mastery Breakdown</span>
+                                </h2>
+                                <span className="text-xs font-semibold text-slate-500">{Object.keys(report.categoryScores || {}).length} Tracks</span>
+                            </div>
+
+                            <div className="space-y-3.5">
+                                {Object.entries(report.categoryScores || {}).map(([name, score]) => (
+                                    <div key={name} className="space-y-1.5">
+                                        <div className="flex justify-between text-xs font-semibold">
+                                            <span className="text-slate-800">{name}</span>
+                                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold ${
+                                                score >= 80
+                                                    ? 'bg-emerald-100 text-emerald-800'
+                                                    : score >= 60
+                                                        ? 'bg-indigo-100 text-indigo-800'
+                                                        : 'bg-amber-100 text-amber-800'
+                                            }`}>
+                                                {score}%
+                                            </span>
+                                        </div>
+                                        <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/80">
+                                            <div
+                                                className={`h-full rounded-full transition-all duration-500 ${
+                                                    score >= 80
+                                                        ? 'bg-gradient-to-r from-emerald-500 to-teal-500'
+                                                        : score >= 60
+                                                            ? 'bg-gradient-to-r from-indigo-500 to-purple-500'
+                                                            : 'bg-gradient-to-r from-amber-500 to-orange-500'
+                                                }`}
+                                                style={{ width: `${score}%` }}
+                                            />
+                                        </div>
+                                    </div>
                                 ))}
-                            </ul>
-                        ) : (
-                            <p className="text-xs text-slate-500">No major weakness areas identified! Great work.</p>
+                            </div>
+                        </section>
+
+                        {/* 2. Demonstrated Strengths */}
+                        <section className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-7 shadow-xs space-y-3">
+                            <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                <FaCheckCircle className="w-4 h-4 text-emerald-600" />
+                                <span>Demonstrated Strengths</span>
+                            </h2>
+                            {report.strengths?.length ? (
+                                <ul className="space-y-2 text-xs text-slate-700">
+                                    {report.strengths.map((item, idx) => (
+                                        <li key={idx} className="flex items-start gap-2.5 p-2.5 rounded-xl bg-emerald-50/50 border border-emerald-100">
+                                            <FaCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                                            <span className="font-semibold text-emerald-950">{item}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className="text-xs text-slate-500">Answer more questions accurately to unlock strengths.</p>
+                            )}
+                        </section>
+
+                        {/* 3. Focus & Improvement Areas */}
+                        <section className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-7 shadow-xs space-y-3">
+                            <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                <FaLightbulb className="w-4 h-4 text-amber-500" />
+                                <span>Focus &amp; Improvement Areas</span>
+                            </h2>
+                            {report.weaknesses?.length ? (
+                                <ul className="space-y-2 text-xs text-slate-700">
+                                    {report.weaknesses.map((item, index) => (
+                                        <li key={index} className="flex items-start gap-2.5 p-2.5 rounded-xl bg-amber-50/60 border border-amber-200">
+                                            <FaExclamationTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                                            <span className="text-amber-950 leading-relaxed">
+                                                <strong>{item.area}:</strong> {item.detail}
+                                            </span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className="text-xs text-slate-500">No major weakness areas identified! Stellar work.</p>
+                            )}
+                        </section>
+
+                        {/* 4. JD Alignment Matrix (When present) */}
+                        {!!report.missingSkills?.length && (
+                            <section className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-7 shadow-xs space-y-3">
+                                <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                    <FaBullseye className="w-4 h-4 text-indigo-600" />
+                                    <span>Job Description (JD) Alignment Matrix</span>
+                                </h2>
+                                <div className="space-y-2">
+                                    {report.missingSkills.map((item, idx) => (
+                                        <div key={idx} className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+                                            <p className="font-bold text-indigo-900">{item.requirement}</p>
+                                            <p className="text-slate-600 mt-1">{item.gap}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
                         )}
+
+                        {/* 5. Quick Rehearsal CTA Card */}
+                        <div className="p-6 rounded-3xl bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 text-center space-y-3">
+                            <p className="font-bold text-sm text-slate-900">Ready for another drill?</p>
+                            <p className="text-xs text-slate-600">Retaking tests builds confidence and improves memory recall for technical questions.</p>
+                            <button
+                                type="button"
+                                onClick={onRetake}
+                                className="w-full py-3 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-600/20 transition-all cursor-pointer flex items-center justify-center gap-2">
+                                <FaRedo className="w-3 h-3" />
+                                <span>Start Next Simulation</span>
+                            </button>
+                        </div>
+
                     </div>
                 </div>
-
-                {/* ── JD Alignment ── */}
-                {!!report.missingSkills?.length && (
-                    <section className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-xs space-y-3">
-                        <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                            <FaBullseye className="w-4 h-4 text-indigo-600" />
-                            <span>Job Description (JD) Alignment Matrix</span>
-                        </h2>
-                        <div className="grid sm:grid-cols-2 gap-2.5">
-                            {report.missingSkills.map(item => (
-                                <div key={item.requirement} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
-                                    <p className="font-bold text-indigo-900">{item.requirement}</p>
-                                    <p className="text-slate-600 mt-1">{item.gap}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </section>
-                )}
-
-                {/* ── Detailed Question Breakdown ── */}
-                <section className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-xs space-y-4">
-                    <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                        <FaAward className="w-4 h-4 text-amber-500" />
-                        <span>Question-Level STAR Analysis</span>
-                    </h2>
-                    <div className="space-y-2.5">
-                        {report.questions.map(row => (
-                            <details
-                                key={row.id}
-                                open={openId === row.id}
-                                onToggle={event => setOpenId(event.target.open ? row.id : null)}
-                                className="group rounded-2xl border border-slate-200 bg-white overflow-hidden transition-all shadow-2xs">
-                                <summary className="cursor-pointer p-4 list-none flex items-center justify-between gap-3 hover:bg-slate-50 transition-colors select-none">
-                                    <div className="flex items-center gap-3 min-w-0">
-                                        <span className={`px-2.5 py-0.5 rounded-lg text-xs font-bold shrink-0 ${
-                                            row.correct
-                                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                                                : row.answered
-                                                    ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                                                    : 'bg-rose-100 text-rose-800 border border-rose-200'
-                                        }`}>
-                                            Q{row.index}: {row.correct ? 'Correct' : row.answered ? 'Needs work' : 'Unanswered'}
-                                        </span>
-                                        <span className="text-xs sm:text-sm font-semibold text-slate-800 truncate">{row.question}</span>
-                                    </div>
-                                    <div className="text-slate-400 shrink-0">
-                                        <FaChevronDown className="w-3.5 h-3.5 transition-transform group-open:rotate-180" />
-                                    </div>
-                                </summary>
-
-                                <div className="p-4 pt-2 border-t border-slate-100 bg-slate-50/70 text-xs text-slate-700 space-y-2">
-                                    <p><strong className="text-slate-900">Your answer:</strong> {row.userAnswer || '—'}</p>
-                                    <p><strong className="text-emerald-700">Ideal structure:</strong> {row.idealAnswer}</p>
-                                    <p><strong className="text-indigo-700">Good:</strong> {row.whatWasGood}</p>
-                                    <p><strong className="text-amber-700">Missing:</strong> {row.whatWasMissing}</p>
-                                    <p><strong className="text-purple-700">STAR Improvement:</strong> {row.improvement}</p>
-                                    {row.explanation && (
-                                        <div className="mt-2 p-3 rounded-xl bg-white border border-slate-200 text-slate-600">
-                                            <strong className="text-slate-800">Explanation:</strong> {row.explanation}
-                                        </div>
-                                    )}
-                                </div>
-                            </details>
-                        ))}
-                    </div>
-                </section>
-
-                {/* ── 7-Day Action Plan ── */}
-                <section className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-xs space-y-3">
-                    <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                        <FaCalendarAlt className="w-4 h-4 text-indigo-600" />
-                        <span>Personalized 7-Day Improvement Plan</span>
-                    </h2>
-                    <ul className="space-y-2.5 text-xs sm:text-sm text-slate-700">
-                        {[...report.plan.immediate, ...report.plan.sevenDay].map((item, idx) => (
-                            <li key={idx} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-3">
-                                <span className="w-6 h-6 rounded-lg bg-indigo-100 border border-indigo-200 text-indigo-700 font-bold text-xs flex items-center justify-center shrink-0">
-                                    {idx + 1}
-                                </span>
-                                <span>{item}</span>
-                            </li>
-                        ))}
-                    </ul>
-                </section>
 
             </div>
         </div>
