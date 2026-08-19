@@ -60,6 +60,48 @@ export function resolvePortfolioVisibility(settings, { allowMissingDefault = tru
     return false;
 }
 
+export function isMessagesModuleEnabled(settings) {
+    return resolveMessagesVisibility(settings);
+}
+
+export function resolveMessagesVisibility(settings, { allowMissingDefault = true } = {}) {
+    if (isFallbackSettings(settings)) return false;
+    const value = settings?.modules?.enableMessagesModule;
+    if (value !== undefined) {
+        return resolveEnabledFlag(value, false);
+    }
+    if (allowMissingDefault !== true) return null;
+    return false;
+}
+
+export function isJobTrackerModuleEnabled(settings) {
+    return resolveJobTrackerVisibility(settings);
+}
+
+export function resolveJobTrackerVisibility(settings, { allowMissingDefault = true } = {}) {
+    if (isFallbackSettings(settings)) return false;
+    const value = settings?.modules?.enableJobTrackerModule;
+    if (value !== undefined) {
+        return resolveEnabledFlag(value, false);
+    }
+    if (allowMissingDefault !== true) return null;
+    return false;
+}
+
+export function isAppliedJobsModuleEnabled(settings) {
+    return resolveAppliedJobsVisibility(settings);
+}
+
+export function resolveAppliedJobsVisibility(settings, { allowMissingDefault = true } = {}) {
+    if (isFallbackSettings(settings)) return false;
+    const value = settings?.modules?.enableAppliedJobsModule;
+    if (value !== undefined) {
+        return resolveEnabledFlag(value, false);
+    }
+    if (allowMissingDefault !== true) return null;
+    return false;
+}
+
 /**
  * Tag a Firestore listener snapshot with its provenance. Cached snapshots are
  * useful for many kinds of content, but a default-ON feature flag must not be

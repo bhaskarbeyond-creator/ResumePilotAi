@@ -18,7 +18,9 @@ import {
     FaLinkedin,
     FaGithub,
     FaEnvelope,
-    FaShieldAlt
+    FaShieldAlt,
+    FaComments,
+    FaClipboardList
 } from 'react-icons/fa';
 import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
 import { buildModuleSettingsPatch } from '../../../utils/moduleFlags';
@@ -33,6 +35,9 @@ const ModulesSettings = () => {
         enableEmailVerification: false, // Default OFF — preserves current behavior
         enableJobScraperModule: true,
         enablePortfolioModule: false, // Default OFF
+        enableMessagesModule: false, // Default OFF
+        enableJobTrackerModule: false, // Default OFF
+        enableAppliedJobsModule: false, // Default OFF
         enableCoverLetterModule: true,
         enableAiSuggestionsModule: true,
         enableAtsScoreModule: true,
@@ -64,6 +69,9 @@ const ModulesSettings = () => {
                 enableEmailVerification: mods.enableEmailVerification !== undefined ? mods.enableEmailVerification : false,
                 enableJobScraperModule: mods.enableJobScraperModule !== undefined ? mods.enableJobScraperModule : true,
                 enablePortfolioModule: mods.enablePortfolioModule !== undefined ? mods.enablePortfolioModule : false,
+                enableMessagesModule: mods.enableMessagesModule !== undefined ? mods.enableMessagesModule : false,
+                enableJobTrackerModule: mods.enableJobTrackerModule !== undefined ? mods.enableJobTrackerModule : false,
+                enableAppliedJobsModule: mods.enableAppliedJobsModule !== undefined ? mods.enableAppliedJobsModule : false,
                 enableCoverLetterModule: mods.enableCoverLetterModule !== undefined ? mods.enableCoverLetterModule : true,
                 enableAiSuggestionsModule: mods.enableAiSuggestionsModule !== undefined ? mods.enableAiSuggestionsModule : true,
                 enableAtsScoreModule: mods.enableAtsScoreModule !== undefined ? mods.enableAtsScoreModule : true,
@@ -272,6 +280,33 @@ const ModulesSettings = () => {
             icon: FaGlobe,
             badgeColor: modulesConfig.enablePortfolioModule ? 'indigo' : 'slate',
             statusText: modulesConfig.enablePortfolioModule ? 'ENABLED' : 'DISABLED',
+        },
+        {
+            key: 'enableMessagesModule',
+            title: 'Messages & Chat Module',
+            subtitle: 'Real-Time In-App Messaging',
+            description: 'Allows job seekers, recruiters, and employers to communicate via real-time direct messaging with unread badges.',
+            icon: FaComments,
+            badgeColor: modulesConfig.enableMessagesModule ? 'blue' : 'slate',
+            statusText: modulesConfig.enableMessagesModule ? 'ENABLED' : 'DISABLED',
+        },
+        {
+            key: 'enableJobTrackerModule',
+            title: 'Job Tracker Module',
+            subtitle: 'Application Pipeline & Kanban',
+            description: 'Allows candidates to manage job applications, interview stages, and deadlines on an organized board.',
+            icon: FaClipboardList,
+            badgeColor: modulesConfig.enableJobTrackerModule ? 'emerald' : 'slate',
+            statusText: modulesConfig.enableJobTrackerModule ? 'ENABLED' : 'DISABLED',
+        },
+        {
+            key: 'enableAppliedJobsModule',
+            title: 'My Applications Module',
+            subtitle: 'Job Submissions & Tracking',
+            description: 'Allows candidates to view, manage, and track all submitted job applications across employer postings.',
+            icon: FaBriefcase,
+            badgeColor: modulesConfig.enableAppliedJobsModule ? 'purple' : 'slate',
+            statusText: modulesConfig.enableAppliedJobsModule ? 'ENABLED' : 'DISABLED',
         },
         {
             key: 'enableCoverLetterModule',

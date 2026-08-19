@@ -267,3 +267,40 @@ test('Portfolios & Web CV module toggle is off by default and controllable via a
   assert.match(dbOps, /enablePortfolioModule:\s*false/);
 });
 
+test('Messages & Chat module toggle is off by default and controllable via admin Addon Modules', () => {
+  const modules = fs.readFileSync('src/components/admin/settings/ModulesSettings.jsx', 'utf8');
+  assert.match(modules, /enableMessagesModule:\s*false/);
+  assert.match(modules, /Messages & Chat Module/);
+  const profile = fs.readFileSync('src/components/Dashboard/ProfileDisplay/ProfileDisplay.jsx', 'utf8');
+  assert.match(profile, /enableMessagesModule:\s*false/);
+  assert.match(profile, /modulesConfig\.enableMessagesModule &&/);
+  assert.match(profile, /to=\"\/dashboard\/messages\"/);
+  const dbOps = fs.readFileSync('src/firestore/dbOperations.js', 'utf8');
+  assert.match(dbOps, /enableMessagesModule:\s*false/);
+});
+
+test('Job Tracker module toggle is off by default and controllable via admin Addon Modules', () => {
+  const modules = fs.readFileSync('src/components/admin/settings/ModulesSettings.jsx', 'utf8');
+  assert.match(modules, /enableJobTrackerModule:\s*false/);
+  assert.match(modules, /Job Tracker Module/);
+  const profile = fs.readFileSync('src/components/Dashboard/ProfileDisplay/ProfileDisplay.jsx', 'utf8');
+  assert.match(profile, /enableJobTrackerModule:\s*false/);
+  assert.match(profile, /modulesConfig\.enableJobTrackerModule &&/);
+  assert.match(profile, /to=\"\/dashboard\/job-tracker\"/);
+  const dbOps = fs.readFileSync('src/firestore/dbOperations.js', 'utf8');
+  assert.match(dbOps, /enableJobTrackerModule:\s*false/);
+});
+
+test('My Applications module toggle is off by default and controllable via admin Addon Modules', () => {
+  const modules = fs.readFileSync('src/components/admin/settings/ModulesSettings.jsx', 'utf8');
+  assert.match(modules, /enableAppliedJobsModule:\s*false/);
+  assert.match(modules, /My Applications Module/);
+  const profile = fs.readFileSync('src/components/Dashboard/ProfileDisplay/ProfileDisplay.jsx', 'utf8');
+  assert.match(profile, /enableAppliedJobsModule:\s*false/);
+  assert.match(profile, /modulesConfig\.enableAppliedJobsModule &&/);
+  assert.match(profile, /to=\"\/dashboard\/applied-jobs\"/);
+  const dbOps = fs.readFileSync('src/firestore/dbOperations.js', 'utf8');
+  assert.match(dbOps, /enableAppliedJobsModule:\s*false/);
+});
+
+
