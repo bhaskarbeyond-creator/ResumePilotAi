@@ -32,7 +32,7 @@ const ModulesSettings = () => {
         enableImportModule: false, // Default OFF as requested
         enableEmailVerification: false, // Default OFF — preserves current behavior
         enableJobScraperModule: true,
-        enablePortfolioModule: true,
+        enablePortfolioModule: false, // Default OFF
         enableCoverLetterModule: true,
         enableAiSuggestionsModule: true,
         enableAtsScoreModule: true,
@@ -63,7 +63,7 @@ const ModulesSettings = () => {
                     : (ai.enableImportModule !== undefined ? ai.enableImportModule : false),
                 enableEmailVerification: mods.enableEmailVerification !== undefined ? mods.enableEmailVerification : false,
                 enableJobScraperModule: mods.enableJobScraperModule !== undefined ? mods.enableJobScraperModule : true,
-                enablePortfolioModule: mods.enablePortfolioModule !== undefined ? mods.enablePortfolioModule : true,
+                enablePortfolioModule: mods.enablePortfolioModule !== undefined ? mods.enablePortfolioModule : false,
                 enableCoverLetterModule: mods.enableCoverLetterModule !== undefined ? mods.enableCoverLetterModule : true,
                 enableAiSuggestionsModule: mods.enableAiSuggestionsModule !== undefined ? mods.enableAiSuggestionsModule : true,
                 enableAtsScoreModule: mods.enableAtsScoreModule !== undefined ? mods.enableAtsScoreModule : true,
@@ -266,9 +266,9 @@ const ModulesSettings = () => {
         },
         {
             key: 'enablePortfolioModule',
-            title: 'Online Portfolio Builder Module',
-            subtitle: 'Personal Websites',
-            description: 'Allows users to build, customize, and host responsive personal portfolio websites with custom themes.',
+            title: 'Portfolios & Web CV Module',
+            subtitle: 'Personal Portfolio & Web CV',
+            description: 'Allows users to create, customize, and publish professional Web CVs and personal portfolio websites with four distinct templates.',
             icon: FaGlobe,
             badgeColor: modulesConfig.enablePortfolioModule ? 'indigo' : 'slate',
             statusText: modulesConfig.enablePortfolioModule ? 'ENABLED' : 'DISABLED',

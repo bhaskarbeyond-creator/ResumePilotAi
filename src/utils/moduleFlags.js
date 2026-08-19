@@ -14,6 +14,10 @@ export function isAtsScoreModuleEnabled(settings) {
     return resolveAtsScoreVisibility(settings);
 }
 
+export function isPortfolioModuleEnabled(settings) {
+    return resolvePortfolioVisibility(settings);
+}
+
 /**
  * Distinguish a successful Firestore/public_config read from the static
  * default-ON fallback. Missing `_settingsSource` means the caller already
@@ -39,6 +43,21 @@ export function resolveAtsScoreVisibility(settings, { allowMissingDefault = true
     }
     if (allowMissingDefault !== true) return null;
     return true;
+}
+
+/**
+ * Resolve Portfolio visibility for a settings payload.
+ * Portfolios & Web CV is OFF by default.
+ */
+export function resolvePortfolioVisibility(settings, { allowMissingDefault = true } = {}) {
+    if (isFallbackSettings(settings)) return false;
+
+    const value = settings?.modules?.enablePortfolioModule;
+    if (value !== undefined) {
+        return resolveEnabledFlag(value, false);
+    }
+    if (allowMissingDefault !== true) return null;
+    return false;
 }
 
 /**

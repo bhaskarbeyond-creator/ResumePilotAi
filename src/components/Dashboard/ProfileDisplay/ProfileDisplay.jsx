@@ -21,7 +21,7 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
     const [isEmployer, setIsEmployer] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
     const [modulesConfig, setModulesConfig] = useState({
-        enablePortfolioModule: true,
+        enablePortfolioModule: false,
         enableJobScraperModule: true,
         enableCoverLetterModule: true,
     });
@@ -107,7 +107,7 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
             if (event?.detail?.modules) {
                 const m = event.detail.modules;
                 setModulesConfig({
-                    enablePortfolioModule: m.enablePortfolioModule !== undefined ? m.enablePortfolioModule : true,
+                    enablePortfolioModule: m.enablePortfolioModule !== undefined ? m.enablePortfolioModule : false,
                     enableJobScraperModule: m.enableJobScraperModule !== undefined ? m.enableJobScraperModule : true,
                     enableCoverLetterModule: m.enableCoverLetterModule !== undefined ? m.enableCoverLetterModule : true,
                 });
@@ -116,7 +116,7 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
             getSystemSettings().then((settings) => {
                 const m = settings?.modules || {};
                 setModulesConfig({
-                    enablePortfolioModule: m.enablePortfolioModule !== undefined ? m.enablePortfolioModule : true,
+                    enablePortfolioModule: m.enablePortfolioModule !== undefined ? m.enablePortfolioModule : false,
                     enableJobScraperModule: m.enableJobScraperModule !== undefined ? m.enableJobScraperModule : true,
                     enableCoverLetterModule: m.enableCoverLetterModule !== undefined ? m.enableCoverLetterModule : true,
                 });

@@ -5305,7 +5305,7 @@ export async function getSystemSettings() {
             enableImportModule: false,
             enableCouponsModule: true,
             enableJobScraperModule: true,
-            enablePortfolioModule: true,
+            enablePortfolioModule: false,
             enableCoverLetterModule: true,
             enableAiSuggestionsModule: true,
             enableAtsScoreModule: true,

@@ -254,3 +254,16 @@ test('Cover Letter module nav is hidden when enableCoverLetterModule is off', ()
   assert.match(homepage, /enableCoverLetterModule/);
   assert.match(homepage, /this\.state\.enableCoverLetterModule &&/);
 });
+
+test('Portfolios & Web CV module toggle is off by default and controllable via admin Addon Modules', () => {
+  const modules = fs.readFileSync('src/components/admin/settings/ModulesSettings.jsx', 'utf8');
+  assert.match(modules, /enablePortfolioModule:\s*false/);
+  assert.match(modules, /Portfolios & Web CV Module/);
+  const profile = fs.readFileSync('src/components/Dashboard/ProfileDisplay/ProfileDisplay.jsx', 'utf8');
+  assert.match(profile, /enablePortfolioModule:\s*false/);
+  assert.match(profile, /modulesConfig\.enablePortfolioModule &&/);
+  assert.match(profile, /to=\"\/dashboard\/portfolios\"/);
+  const dbOps = fs.readFileSync('src/firestore/dbOperations.js', 'utf8');
+  assert.match(dbOps, /enablePortfolioModule:\s*false/);
+});
+
