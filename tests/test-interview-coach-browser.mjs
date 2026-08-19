@@ -146,6 +146,8 @@ async function runInterviewCoachBrowserAudit() {
         assert.ok(await startBtn.isVisible(), 'Start interview button is visible');
         assert.ok(await startBtn.isEnabled(), 'Start button is enabled after entering occupation');
 
+        await page.screenshot({ path: 'C:/Users/mbhas/.gemini/antigravity-ide/brain/cd913c75-1d1a-4d2b-9fc5-f1b5d7bd0262/01_modern_interview_setup.png' });
+
         console.log('Step 3: Simulating Question Fetch & Starting CBT Exam...');
         await startBtn.click();
         await page.waitForTimeout(600);
@@ -169,6 +171,8 @@ async function runInterviewCoachBrowserAudit() {
         const optionA = page.locator('label:has-text("A.")').first();
         await optionA.click();
         console.log('Answered Question 1 (Option A)');
+
+        await page.screenshot({ path: 'C:/Users/mbhas/.gemini/antigravity-ide/brain/cd913c75-1d1a-4d2b-9fc5-f1b5d7bd0262/02_modern_cbt_exam.png' });
 
         // Click "Save & Next"
         const nextBtn = page.locator('button:has-text("Save & Next")');
@@ -244,6 +248,8 @@ async function runInterviewCoachBrowserAudit() {
         const overallScore = await page.locator('text=Overall').locator('..').textContent();
         console.log(`Report metric card: ${overallScore}`);
         assert.ok(overallScore.includes('%'), 'Overall score formatted with percentage');
+
+        await page.screenshot({ path: 'C:/Users/mbhas/.gemini/antigravity-ide/brain/cd913c75-1d1a-4d2b-9fc5-f1b5d7bd0262/03_modern_assessment_report.png' });
 
         // Check question analysis accordion
         const questionAnalysis = page.locator('summary:has-text("Q1:")');
