@@ -18,139 +18,380 @@ export default function CreativeDark({ canonical }) {
     }
 
     return (
-        <div className="webcv-creative min-h-screen bg-[#161310] text-[#f4ead8]" data-webcv-template="creativeDark">
+        <div className="webcv-creative min-h-screen bg-[#141210] text-[#F5EBE0] selection:bg-[#E07A5F] selection:text-[#141210]" data-webcv-template="creativeDark">
             <SkipLink />
-            <div className="mx-auto grid max-w-6xl lg:grid-cols-[7rem_1fr]">
-                <aside className="hidden border-r border-[#2c261f] px-4 py-10 lg:block">
-                    <p className="sticky top-10 origin-top-left translate-y-64 -rotate-90 text-xs uppercase tracking-[0.5em] text-[#d4764e]">{name || 'Portfolio'}</p>
-                </aside>
-                <div>
-                    <header className="flex items-start justify-between gap-6 px-6 py-8 md:px-10">
-                        <NavLinks visibility={visibility} className="flex flex-wrap gap-4 text-xs uppercase tracking-[0.22em] text-[#c8b79a]" linkClassName="hover:text-[#f4ead8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d4764e]" />
-                        <Portrait src={data.heading.photo} name={name} className="h-20 w-20 rounded-full object-cover grayscale" />
-                    </header>
+            
+            {/* Top Creative Nav Header */}
+            <header className="sticky top-0 z-30 border-b border-[#2C2620] bg-[#141210]/90 backdrop-blur-md">
+                <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-5">
+                    <a href="#main" className="group flex items-center gap-3 text-sm font-bold tracking-tight text-[#F5EBE0]">
+                        <span className="h-2 w-2 rounded-full bg-[#E07A5F]" />
+                        <span className="font-editorial-serif text-lg tracking-normal">{name || 'Creative Folio'}</span>
+                    </a>
+                    <NavLinks 
+                        visibility={visibility} 
+                        className="hidden md:flex items-center gap-6 text-xs uppercase tracking-[0.25em] text-[#A89F91]" 
+                        linkClassName="hover:text-[#E07A5F] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#E07A5F]" 
+                    />
+                    {data.heading.email && (
+                        <SafeLink 
+                            href={data.heading.email} 
+                            kind="email" 
+                            className="inline-flex items-center gap-2 rounded-full border border-[#E07A5F]/40 bg-[#E07A5F]/10 px-4 py-1.5 text-xs font-semibold text-[#E07A5F] hover:bg-[#E07A5F] hover:text-[#141210] transition-all"
+                        >
+                            <span>Collaborate</span>
+                            <span>↗</span>
+                        </SafeLink>
+                    )}
+                </div>
+            </header>
 
-                    <main id="main" className="px-6 pb-20 md:px-10">
-                        <section className="max-w-4xl pb-16 pt-6">
-                            {data.heading.occupation ? <p className="text-sm uppercase tracking-[0.35em] text-[#d4764e]">{data.heading.occupation}</p> : null}
-                            {name ? <h1 className="mt-4 font-serif text-6xl leading-[0.95] md:text-8xl">{name}</h1> : null}
-                            {location ? <p className="mt-6 text-sm text-[#c8b79a]">{location}</p> : null}
-                        </section>
+            <main id="main" className="mx-auto max-w-6xl px-6 py-12 md:py-20">
+                {/* Hero Section */}
+                <section className="pb-20 border-b border-[#2C2620]">
+                    <div className="grid gap-12 lg:grid-cols-[1.4fr_0.8fr] lg:items-center">
+                        <div className="space-y-6">
+                            {data.heading.occupation && (
+                                <div className="inline-flex items-center gap-2 rounded-md bg-[#231F1C] border border-[#3D352E] px-3.5 py-1 text-xs font-semibold uppercase tracking-[0.28em] text-[#E07A5F]">
+                                    <span>✦ {data.heading.occupation}</span>
+                                </div>
+                            )}
 
-                        <Section id="about" title="01 / Story" show={visibility.about} headingClassName="text-xs uppercase tracking-[0.3em] text-[#d4764e]" className="max-w-3xl pb-16">
-                            <p className="mt-6 text-2xl leading-10 text-[#f4ead8]">{data.summary}</p>
-                        </Section>
+                            <div>
+                                {name && (
+                                    <h1 className="font-editorial-serif text-5xl sm:text-7xl md:text-8xl font-normal leading-[0.92] tracking-tight text-[#F5EBE0]">
+                                        {name}
+                                    </h1>
+                                )}
+                                {data.extras.tagline && data.extras.tagline !== data.heading.occupation && (
+                                    <p className="mt-6 text-xl sm:text-2xl font-light text-[#D5C7B5] leading-relaxed max-w-2xl">
+                                        {data.extras.tagline}
+                                    </p>
+                                )}
+                            </div>
 
-                        <Section id="projects" title="02 / Work" show={visibility.projects} headingClassName="text-xs uppercase tracking-[0.3em] text-[#d4764e]" className="pb-16">
-                            <div className="mt-8 space-y-8">
-                                {data.projects.filter((project) => project.title || project.description).map((project, index) => (
-                                    <article key={project.id} className={`grid gap-6 border border-[#2c261f] bg-[#1c1814] p-6 md:grid-cols-[1.1fr_0.9fr] ${index % 2 ? 'md:translate-x-8' : ''}`}>
-                                        <div>
-                                            <p className="text-xs uppercase tracking-[0.24em] text-[#d4764e]">{String(index + 1).padStart(2, '0')}</p>
-                                            <h3 className="mt-3 font-serif text-3xl">{project.title}</h3>
-                                            {project.description ? <p className="mt-4 text-sm leading-7 text-[#c8b79a]">{project.description}</p> : null}
-                                            {project.technologyList.length ? <p className="mt-4 text-xs uppercase tracking-[0.16em] text-[#8d7d66]">{project.technologyList.join(' / ')}</p> : null}
-                                            <SafeLink href={project.link} className="mt-5 inline-flex text-sm text-[#d4764e] underline underline-offset-4">Open case</SafeLink>
+                            {location && (
+                                <p className="text-sm font-medium text-[#A89F91] tracking-wide">
+                                    📍 Based in {location}
+                                </p>
+                            )}
+
+                            {/* Creative Contact Action Strip */}
+                            <div className="pt-4 flex flex-wrap items-center gap-3">
+                                {data.heading.email && (
+                                    <SafeLink href={data.heading.email} kind="email" className="inline-flex items-center gap-2 rounded-xl bg-[#231F1C] border border-[#3D352E] px-4 py-2 text-xs font-medium text-[#F5EBE0] hover:border-[#E07A5F] hover:text-[#E07A5F] transition-all">
+                                        <span>✉️ {data.heading.email}</span>
+                                    </SafeLink>
+                                )}
+                                {data.heading.linkedin && (
+                                    <SafeLink href={data.heading.linkedin} className="inline-flex items-center gap-1.5 rounded-xl bg-[#231F1C] border border-[#3D352E] px-4 py-2 text-xs font-medium text-[#F5EBE0] hover:border-[#E07A5F] hover:text-[#E07A5F] transition-all">
+                                        <span>LinkedIn ↗</span>
+                                    </SafeLink>
+                                )}
+                                {data.heading.github && (
+                                    <SafeLink href={data.heading.github} className="inline-flex items-center gap-1.5 rounded-xl bg-[#231F1C] border border-[#3D352E] px-4 py-2 text-xs font-medium text-[#F5EBE0] hover:border-[#E07A5F] hover:text-[#E07A5F] transition-all">
+                                        <span>GitHub ↗</span>
+                                    </SafeLink>
+                                )}
+                                {data.heading.website && (
+                                    <SafeLink href={data.heading.website} className="inline-flex items-center gap-1.5 rounded-xl bg-[#231F1C] border border-[#3D352E] px-4 py-2 text-xs font-medium text-[#F5EBE0] hover:border-[#E07A5F] hover:text-[#E07A5F] transition-all">
+                                        <span>Website ↗</span>
+                                    </SafeLink>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Portrait Frame */}
+                        <div className="flex justify-center lg:justify-end">
+                            {data.heading.photo ? (
+                                <div className="relative group">
+                                    <div className="absolute -inset-2 rounded-3xl bg-gradient-to-tr from-[#E07A5F]/30 to-[#F4A261]/10 opacity-70 blur-xl transition duration-500 group-hover:opacity-100" />
+                                    <Portrait 
+                                        src={data.heading.photo} 
+                                        name={name} 
+                                        className="relative h-64 w-64 sm:h-80 sm:w-80 rounded-2xl object-cover border-2 border-[#3D352E] shadow-2xl transition duration-500 group-hover:scale-[1.02]" 
+                                    />
+                                </div>
+                            ) : (
+                                <div className="flex h-60 w-60 sm:h-72 sm:w-72 flex-col items-center justify-center rounded-2xl border border-[#3D352E] bg-[#1E1A16] p-6 text-center">
+                                    <span className="font-editorial-serif text-5xl font-normal text-[#E07A5F] mb-3">
+                                        {(name || 'CR').charAt(0)}
+                                    </span>
+                                    <p className="font-editorial-serif text-lg text-[#F5EBE0]">{name || 'Creative Work'}</p>
+                                    <p className="text-xs text-[#A89F91] mt-1">{data.heading.occupation || 'Portfolio'}</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </section>
+
+                {/* 01 / STORY */}
+                <Section 
+                    id="about" 
+                    title="01 / Story & Philosophy" 
+                    show={visibility.about} 
+                    className="py-16 border-b border-[#2C2620]" 
+                    headingClassName="text-xs font-bold uppercase tracking-[0.3em] text-[#E07A5F]"
+                >
+                    <div className="mt-8 rounded-2xl border border-[#2C2620] bg-[#1A1714] p-8 sm:p-10 shadow-lg">
+                        <p className="font-editorial-serif text-xl sm:text-2xl leading-relaxed text-[#F5EBE0] font-normal">
+                            “{data.summary}”
+                        </p>
+                    </div>
+                </Section>
+
+                {/* 02 / SELECTED WORKS */}
+                <Section 
+                    id="projects" 
+                    title="02 / Selected Works & Projects" 
+                    show={visibility.projects} 
+                    className="py-16 border-b border-[#2C2620]" 
+                    headingClassName="text-xs font-bold uppercase tracking-[0.3em] text-[#E07A5F]"
+                >
+                    <div className="mt-10 space-y-10">
+                        {data.projects.filter((project) => project.title || project.description).map((project, idx) => (
+                            <article 
+                                key={project.id} 
+                                className="group grid gap-8 rounded-2xl border border-[#2C2620] bg-[#1A1714] p-7 sm:p-9 transition-all duration-300 hover:border-[#E07A5F]/60 hover:shadow-[0_20px_50px_rgba(0,0,0,0.3)] md:grid-cols-[1.2fr_0.8fr] md:items-center"
+                            >
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <span className="font-editorial-serif text-base font-bold text-[#E07A5F]">
+                                            WORK {String(idx + 1).padStart(2, '0')}
+                                        </span>
+                                        <span className="h-px flex-1 bg-[#2C2620]" />
+                                    </div>
+
+                                    <h3 className="font-editorial-serif text-2xl sm:text-3xl font-normal text-[#F5EBE0] group-hover:text-[#E07A5F] transition-colors">
+                                        {project.title}
+                                    </h3>
+
+                                    {project.description && (
+                                        <p className="text-sm sm:text-base leading-relaxed text-[#C5B8A5]">
+                                            {project.description}
+                                        </p>
+                                    )}
+
+                                    {project.technologyList.length > 0 && (
+                                        <div className="flex flex-wrap gap-2 pt-2">
+                                            {project.technologyList.map((tech, tIdx) => (
+                                                <span key={tIdx} className="rounded-md bg-[#241F1B] border border-[#3D352E] px-2.5 py-1 text-xs font-medium text-[#D5C7B5]">
+                                                    {tech}
+                                                </span>
+                                            ))}
                                         </div>
-                                        {project.image ? <img src={project.image} alt="" className="h-48 w-full object-cover" /> : <div className="min-h-40 bg-[radial-gradient(circle_at_top,_#d4764e33,_transparent_55%)]" aria-hidden="true" />}
-                                    </article>
+                                    )}
+
+                                    {project.link && (
+                                        <div className="pt-2">
+                                            <SafeLink 
+                                                href={project.link} 
+                                                className="inline-flex items-center gap-2 text-sm font-semibold text-[#E07A5F] hover:text-[#F4A261] underline underline-offset-4"
+                                            >
+                                                <span>View Project Case</span>
+                                                <span className="transition-transform group-hover:translate-x-1">→</span>
+                                            </SafeLink>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Project Visual Canvas */}
+                                <div className="relative overflow-hidden rounded-xl border border-[#3D352E] bg-gradient-to-br from-[#231F1C] to-[#161310] p-6 min-h-[160px] flex flex-col justify-center items-center text-center">
+                                    <div className="h-12 w-12 rounded-xl bg-[#E07A5F]/10 border border-[#E07A5F]/30 flex items-center justify-center text-xl text-[#E07A5F] mb-2">
+                                        ✦
+                                    </div>
+                                    <p className="font-editorial-serif text-base text-[#F5EBE0]">{project.title}</p>
+                                    <p className="text-xs text-[#A89F91] mt-0.5">Interactive Case Study</p>
+                                </div>
+                            </article>
+                        ))}
+                    </div>
+                </Section>
+
+                {/* 03 / CHRONICLE & PATH */}
+                <Section 
+                    id="experience" 
+                    title="03 / Chronicle & Experience" 
+                    show={visibility.experience} 
+                    className="py-16 border-b border-[#2C2620]" 
+                    headingClassName="text-xs font-bold uppercase tracking-[0.3em] text-[#E07A5F]"
+                >
+                    <div className="mt-10 space-y-8">
+                        {data.experiences.filter((item) => item.jobTitle || item.employer || item.description).map((item) => (
+                            <article key={item.id} className="rounded-2xl border border-[#2C2620] bg-[#1A1714] p-7 sm:p-8 transition-all hover:border-[#3D352E]">
+                                <div className="flex flex-wrap items-baseline justify-between gap-2 mb-2">
+                                    <div>
+                                        <h3 className="font-editorial-serif text-xl sm:text-2xl font-normal text-[#F5EBE0]">
+                                            {item.jobTitle}
+                                        </h3>
+                                        {item.employer && (
+                                            <p className="text-sm font-semibold text-[#E07A5F] mt-0.5">{item.employer}</p>
+                                        )}
+                                    </div>
+                                    <span className="text-xs font-medium uppercase tracking-wider text-[#A89F91]">
+                                        {formatRange(item.begin, item.end)}
+                                    </span>
+                                </div>
+
+                                {item.description && (
+                                    <p className="mt-4 text-sm leading-relaxed text-[#C5B8A5] whitespace-pre-line">
+                                        {item.description}
+                                    </p>
+                                )}
+                            </article>
+                        ))}
+                    </div>
+                </Section>
+
+                {/* 04 / CRAFT & STUDY */}
+                <div className="py-16 border-b border-[#2C2620] grid gap-10 md:grid-cols-2">
+                    {/* Craft & Toolkit */}
+                    <Section 
+                        id="skills" 
+                        title="04 / Craft & Disciplines" 
+                        show={visibility.skills} 
+                        headingClassName="text-xs font-bold uppercase tracking-[0.3em] text-[#E07A5F]"
+                    >
+                        <div className="mt-6 rounded-2xl border border-[#2C2620] bg-[#1A1714] p-6 sm:p-7">
+                            <div className="flex flex-wrap gap-2">
+                                {data.skills.map((skill, idx) => (
+                                    <span 
+                                        key={idx} 
+                                        className="rounded-lg border border-[#3D352E] bg-[#231F1C] px-3.5 py-1.5 text-xs sm:text-sm font-medium text-[#F5EBE0] hover:border-[#E07A5F] hover:text-[#E07A5F] transition-all"
+                                    >
+                                        {skill.name}
+                                    </span>
                                 ))}
                             </div>
-                        </Section>
+                        </div>
+                    </Section>
 
-                        <Section id="experience" title="03 / Path" show={visibility.experience} headingClassName="text-xs uppercase tracking-[0.3em] text-[#d4764e]" className="pb-16">
-                            <div className="mt-8 columns-1 gap-8 md:columns-2">
-                                {data.experiences.filter((item) => item.jobTitle || item.employer || item.description).map((item) => (
-                                    <article key={item.id} className="mb-8 break-inside-avoid">
-                                        <p className="text-xs text-[#8d7d66]">{formatRange(item.begin, item.end)}</p>
-                                        <h3 className="mt-1 font-serif text-2xl">{item.jobTitle}</h3>
-                                        {item.employer ? <p className="text-sm text-[#d4764e]">{item.employer}</p> : null}
-                                        {item.description ? <p className="mt-3 text-sm leading-7 text-[#c8b79a]">{item.description}</p> : null}
-                                    </article>
-                                ))}
-                            </div>
-                        </Section>
+                    {/* Academic Study */}
+                    <Section 
+                        id="education" 
+                        title="05 / Academic Background" 
+                        show={visibility.education} 
+                        headingClassName="text-xs font-bold uppercase tracking-[0.3em] text-[#E07A5F]"
+                    >
+                        <div className="mt-6 rounded-2xl border border-[#2C2620] bg-[#1A1714] p-6 sm:p-7 space-y-4">
+                            {data.education.filter((item) => item.school || item.degree).map((item) => (
+                                <div key={item.id} className="border-b border-[#2C2620] pb-3 last:border-0 last:pb-0">
+                                    <h3 className="font-editorial-serif text-lg font-normal text-[#F5EBE0]">{item.degree || item.school}</h3>
+                                    <p className="text-xs text-[#E07A5F] mt-0.5">{[item.school, formatRange(item.started, item.finished)].filter(Boolean).join(' · ')}</p>
+                                    {item.description && <p className="mt-2 text-xs leading-relaxed text-[#A89F91]">{item.description}</p>}
+                                </div>
+                            ))}
+                        </div>
+                    </Section>
+                </div>
 
-                        <div className="grid gap-10 pb-16 md:grid-cols-2">
-                            <Section id="skills" title="04 / Craft" show={visibility.skills} headingClassName="text-xs uppercase tracking-[0.3em] text-[#d4764e]">
-                                <div className="mt-5 flex flex-wrap gap-2">
-                                    {data.skills.map((skill) => (
-                                        <span key={skill.id} className="rounded-full border border-[#3a3229] px-3 py-1 text-sm">{skill.name}</span>
+                {/* Secondary Cards Grid */}
+                {(visibility.certifications || visibility.achievements || visibility.languages || visibility.hobbies) && (
+                    <div className="py-16 border-b border-[#2C2620] grid gap-8 md:grid-cols-2">
+                        {visibility.certifications && (
+                            <div className="rounded-2xl border border-[#2C2620] bg-[#1A1714] p-6 sm:p-7 space-y-4">
+                                <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#E07A5F]">Certifications</p>
+                                <div className="space-y-3 divide-y divide-[#2C2620]">
+                                    {data.certifications.filter((c) => c.title).map((item, idx) => (
+                                        <div key={item.id || idx} className={idx > 0 ? 'pt-3' : ''}>
+                                            <p className="text-sm font-semibold text-[#F5EBE0]">{item.title}</p>
+                                            <p className="text-xs text-[#A89F91] mt-0.5">{[item.issuer, item.date].filter(Boolean).join(' · ')}</p>
+                                        </div>
                                     ))}
                                 </div>
-                            </Section>
-                            <Section id="education" title="05 / Study" show={visibility.education} headingClassName="text-xs uppercase tracking-[0.3em] text-[#d4764e]">
-                                <ul className="mt-5 space-y-4">
-                                    {data.education.filter((item) => item.school || item.degree).map((item) => (
-                                        <li key={item.id}>
-                                            <h3 className="font-serif text-xl">{item.degree || item.school}</h3>
-                                            <p className="text-sm text-[#c8b79a]">{[item.school, formatRange(item.started, item.finished)].filter(Boolean).join(' · ')}</p>
-                                            {item.description ? <p className="mt-1 text-sm">{item.description}</p> : null}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </Section>
-                        </div>
-
-                        <div className="grid gap-10 pb-16 md:grid-cols-3">
-                            <Section id="certifications" title="Certifications" show={visibility.certifications} headingClassName="text-xs uppercase tracking-[0.3em] text-[#d4764e]">
-                                <ul className="mt-4 space-y-3 text-sm">
-                                    {data.certifications.filter((item) => item.title).map((item) => (
-                                        <li key={item.id}>
-                                            <p>{item.title}</p>
-                                            <p className="text-[#8d7d66]">{[item.issuer, item.date].filter(Boolean).join(' · ')}</p>
-                                            {item.description ? <p className="mt-1">{item.description}</p> : null}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </Section>
-                            <Section id="achievements" title="Signals" show={visibility.achievements} headingClassName="text-xs uppercase tracking-[0.3em] text-[#d4764e]">
-                                <ul className="mt-4 space-y-3 text-sm">
-                                    {data.achievements.filter((item) => item.title || item.description).map((item) => (
-                                        <li key={item.id}>
-                                            <p>{item.title}</p>
-                                            {item.description ? <p className="text-[#c8b79a]">{item.description}</p> : null}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </Section>
-                            <Section id="languages" title="Voice" show={visibility.languages || visibility.hobbies} headingClassName="text-xs uppercase tracking-[0.3em] text-[#d4764e]">
-                                {visibility.languages ? <p className="mt-4 text-sm">{data.languages.map((item) => [item.name, item.level].filter(Boolean).join(' — ')).join(' · ')}</p> : null}
-                                {visibility.hobbies ? <p className="mt-3 text-sm text-[#c8b79a]">{data.hobbies.join(' · ')}</p> : null}
-                            </Section>
-                        </div>
-
-                        <Section id="references" title="Notes from others" show={visibility.references} headingClassName="text-xs uppercase tracking-[0.3em] text-[#d4764e]" className="pb-16">
-                            <div className="mt-6 grid gap-6 md:grid-cols-2">
-                                {data.references.filter((item) => item.name || item.reference).map((item) => (
-                                    <blockquote key={item.id} className="bg-[#1c1814] p-5">
-                                        {item.reference ? <p className="font-serif text-xl leading-8">“{item.reference}”</p> : null}
-                                        {item.name ? <footer className="mt-3 text-xs uppercase tracking-[0.2em] text-[#d4764e]">{item.name}</footer> : null}
-                                    </blockquote>
-                                ))}
                             </div>
-                        </Section>
+                        )}
 
-                        {data.customSections.filter((section) => section.title || section.items.length).map((section, index) => (
-                            <Section key={section.id} id={section.id} title={section.title || `More ${index + 1}`} show headingClassName="text-xs uppercase tracking-[0.3em] text-[#d4764e]" className="pb-12">
-                                <ul className="mt-5 space-y-3">
-                                    {section.items.map((item) => (
-                                        <li key={item.id}>
-                                            {item.title ? <h3 className="font-serif text-xl">{item.title}</h3> : null}
-                                            {item.description ? <p className="text-sm text-[#c8b79a]">{item.description}</p> : null}
-                                        </li>
+                        {visibility.achievements && (
+                            <div className="rounded-2xl border border-[#2C2620] bg-[#1A1714] p-6 sm:p-7 space-y-4">
+                                <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#E07A5F]">Honors & Recognition</p>
+                                <div className="space-y-3 divide-y divide-[#2C2620]">
+                                    {data.achievements.filter((a) => a.title || a.description).map((item, idx) => (
+                                        <div key={item.id || idx} className={idx > 0 ? 'pt-3' : ''}>
+                                            <p className="text-sm font-semibold text-[#F5EBE0]">🏆 {item.title}</p>
+                                            {item.description && <p className="text-xs text-[#A89F91] mt-1">{item.description}</p>}
+                                        </div>
                                     ))}
-                                </ul>
-                            </Section>
-                        ))}
-                    </main>
+                                </div>
+                            </div>
+                        )}
 
-                    <footer id="contact" className="border-t border-[#2c261f] px-6 py-10 md:px-10">
-                        <p className="text-xs uppercase tracking-[0.3em] text-[#d4764e]">Contact</p>
-                        <ContactList heading={data.heading} className="mt-4 flex flex-wrap gap-5 text-sm" linkClassName="text-[#f4ead8] underline decoration-[#d4764e] underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d4764e]" />
-                    </footer>
+                        {visibility.languages && (
+                            <div className="rounded-2xl border border-[#2C2620] bg-[#1A1714] p-6 sm:p-7 space-y-3">
+                                <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#E07A5F]">Languages</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {data.languages.map((l, idx) => (
+                                        <span key={idx} className="rounded-lg bg-[#231F1C] border border-[#3D352E] px-3 py-1.5 text-xs text-[#F5EBE0]">
+                                            {l.name} {l.level && `(${l.level})`}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {visibility.hobbies && (
+                            <div className="rounded-2xl border border-[#2C2620] bg-[#1A1714] p-6 sm:p-7 space-y-3">
+                                <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#E07A5F]">Interests</p>
+                                <p className="text-sm text-[#C5B8A5]">{data.hobbies.join(' · ')}</p>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* References / Collaborator Notes */}
+                <Section 
+                    id="references" 
+                    title="Notes From Collaborators" 
+                    show={visibility.references} 
+                    className="py-16 border-b border-[#2C2620]" 
+                    headingClassName="text-xs font-bold uppercase tracking-[0.3em] text-[#E07A5F]"
+                >
+                    <div className="mt-8 grid gap-6 sm:grid-cols-2">
+                        {data.references.filter((r) => r.name || r.reference).map((item) => (
+                            <blockquote key={item.id} className="rounded-2xl border border-[#2C2620] bg-[#1A1714] p-7">
+                                {item.reference && <p className="font-editorial-serif text-lg leading-relaxed text-[#F5EBE0] italic">“{item.reference}”</p>}
+                                {item.name && <footer className="mt-4 text-xs font-bold uppercase tracking-[0.2em] text-[#E07A5F]">— {item.name}</footer>}
+                            </blockquote>
+                        ))}
+                    </div>
+                </Section>
+
+                {/* Custom Sections */}
+                {data.customSections.filter((s) => s.title || s.items.length).map((section, idx) => (
+                    <Section 
+                        key={section.id || idx} 
+                        id={section.id} 
+                        title={section.title || `0${idx + 6} / Additional Information`} 
+                        show 
+                        className="py-16" 
+                        headingClassName="text-xs font-bold uppercase tracking-[0.3em] text-[#E07A5F]"
+                    >
+                        <div className="mt-8 rounded-2xl border border-[#2C2620] bg-[#1A1714] p-7 sm:p-8 space-y-4">
+                            {section.items.map((item) => (
+                                <div key={item.id} className="border-b border-[#2C2620] pb-3 last:border-0 last:pb-0">
+                                    {item.title && <h3 className="font-editorial-serif text-lg text-[#F5EBE0]">{item.title}</h3>}
+                                    {item.description && <p className="text-sm text-[#C5B8A5] mt-1">{item.description}</p>}
+                                </div>
+                            ))}
+                        </div>
+                    </Section>
+                ))}
+            </main>
+
+            {/* Creative Footer */}
+            <footer id="contact" className="border-t border-[#2C2620] bg-[#0E0D0B] py-16">
+                <div className="mx-auto max-w-6xl px-6 flex flex-col md:flex-row md:items-center md:justify-between gap-8">
+                    <div>
+                        <h2 className="font-editorial-serif text-3xl sm:text-4xl text-[#F5EBE0]">Let's create together</h2>
+                        <p className="text-sm text-[#A89F91] mt-1.5">Open to creative direction, design systems, and advisory.</p>
+                    </div>
+                    <ContactList 
+                        heading={data.heading} 
+                        className="flex flex-wrap gap-4 text-xs uppercase tracking-wider text-[#E07A5F]" 
+                        linkClassName="hover:text-white underline underline-offset-4" 
+                    />
                 </div>
-            </div>
+            </footer>
         </div>
     );
 }
