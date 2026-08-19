@@ -298,6 +298,9 @@ const AuthWrapper = () => {
                             <Route path="/" element={<Welcome key={user?.uid || 'guest'} />} />
                             <Route path="/login" element={<Welcome key={user?.uid || 'guest'} />} />
                             <Route path="/coverletter" element={<CoverLetter key={user?.uid || 'guest'} />} />
+                            <Route path="/coverletter/*" element={<CoverLetter key={user?.uid || 'guest'} />} />
+                            <Route path="/cover-letter" element={<CoverLetter key={user?.uid || 'guest'} />} />
+                            <Route path="/cover-letter/*" element={<CoverLetter key={user?.uid || 'guest'} />} />
                             <Route path="/dashboard/*" element={<RequireAuthenticated user={user}><Dashboard key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
                             <Route path="/contact" element={<Contact user={user} />} />
                             <Route path="/build-resume/*" element={<BuildResume key={user?.uid || 'guest'} />} />
