@@ -29,6 +29,7 @@ import HomepageFooter from '../Dashboard2/elements/HomepageFooter';
 import TemplateSelector from './TemplateSelector';
 import { SecurityUtils, loadTemplate } from './templateUtils';
 import Toasts from '../Toasts/Toats';
+import WebCvStudio from './WebCvStudio';
 
 // Define the component categories with enhanced template selection and descriptions
 const config = {
@@ -223,6 +224,7 @@ const PortfolioBuilder = () => {
     const user = useContext(AuthContext);
     const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
+    const wantsLegacyBuilder = searchParams.get('legacy') === '1';
     const [portfolioData, setPortfolioData] = useState(initialData);
     const [currentPortfolioId, setCurrentPortfolioId] = useState(null);
     const [currentPortfolioRevision, setCurrentPortfolioRevision] = useState(null);
@@ -1134,6 +1136,10 @@ const PortfolioBuilder = () => {
                 </div>
             </div>
         );
+    }
+
+    if (!wantsLegacyBuilder) {
+        return <WebCvStudio />;
     }
 
     return (

@@ -78,6 +78,30 @@ test('portfolio persistence uses revisions for drafts and publishing', async () 
   assert.match(source, /PORTFOLIO_TOO_LARGE/);
 });
 
+test('published webcv canonical data is preserved and sanitized independently of puck content', () => {
+  const published = normalizePublishedPortfolio({
+    title: 'Priya Raman',
+    theme: 'dark',
+    data: {
+      renderer: 'webcv',
+      templateKey: 'premiumTech',
+      canonical: {
+        heading: { fullName: 'Priya <script>alert(1)</script> Raman', email: 'priya.raman@example.com', website: 'javascript:alert(1)' },
+        summary: '<b>Safe</b> summary',
+        experiences: [{ jobTitle: 'Principal Software Engineer', employer: 'Northwind Labs' }],
+      },
+      content: [],
+      root: { props: { title: 'Priya' } },
+    },
+  }, {});
+  assert.equal(published.data.renderer, 'webcv');
+  assert.equal(published.data.templateKey, 'premiumTech');
+  assert.equal(published.data.canonical.heading.fullName.includes('<script>'), false);
+  assert.equal(published.data.canonical.heading.website, '#');
+  assert.equal(published.data.canonical.summary, 'Safe summary');
+  assert.equal(published.data.canonical.experiences[0].employer, 'Northwind Labs');
+});
+
 test('malformed portfolio data fails closed and oversized collections are capped', () => {
   assert.equal(normalizePublishedPortfolio(null, {}), null);
   assert.equal(normalizePublishedPortfolio({ data: null }, {}), null);

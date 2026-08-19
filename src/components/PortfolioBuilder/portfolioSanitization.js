@@ -97,6 +97,11 @@ export function normalizePublishedPortfolio(portfolio, componentConfig) {
     });
 
     const root = portfolio.data.root && typeof portfolio.data.root === 'object' ? portfolio.data.root : { props: {} };
+    const templateKey = typeof portfolio.data.templateKey === 'string' ? sanitizePortfolioText(portfolio.data.templateKey) : '';
+    const renderer = portfolio.data.renderer === 'webcv' || (portfolio.data.canonical && typeof portfolio.data.canonical === 'object') ? 'webcv' : 'puck';
+    const canonical = portfolio.data.canonical && typeof portfolio.data.canonical === 'object'
+        ? sanitizeValue(portfolio.data.canonical, 'canonical')
+        : null;
     return {
         ...portfolio,
         title: sanitizePortfolioText(portfolio.title || 'Portfolio'),
@@ -105,6 +110,9 @@ export function normalizePublishedPortfolio(portfolio, componentConfig) {
         data: {
             ...portfolio.data,
             content: safeContent,
+            renderer,
+            templateKey,
+            canonical,
             root: {
                 ...root,
                 props: sanitizeValue(root.props || { title: portfolio.title || 'Portfolio' }, 'props'),

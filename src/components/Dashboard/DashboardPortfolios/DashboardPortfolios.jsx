@@ -10,6 +10,10 @@ import darkCyberPreview from '../../../assets/portfolioPreview/Dark Cyber Portfo
 import terminalPreview from '../../../assets/portfolioPreview/Terminal Portfolio.JPG';
 import artistPreview from '../../../assets/portfolioPreview/Artist Portfolio.JPG';
 import cyberSecurityPreview from '../../../assets/portfolioPreview/Cyber Security Portfolio.JPG';
+import modernMinimalPreview from '../../../assets/portfolioPreview/modern-minimal.png';
+import executivePreview from '../../../assets/portfolioPreview/executive.png';
+import creativeDarkPreview from '../../../assets/portfolioPreview/creative-dark.png';
+import premiumTechPreview from '../../../assets/portfolioPreview/premium-tech.png';
 
 const DashboardPortfolios = ({ t, showToast }) => {
     const [portfolios, setPortfolios] = useState([]);
@@ -99,9 +103,14 @@ const DashboardPortfolios = ({ t, showToast }) => {
 
     const getPreviewImage = (portfolio) => {
         // First check if portfolio has a specific template that matches our previews
-        const template = portfolio.data?.template || portfolio.template;
+        const template = portfolio.data?.templateKey || portfolio.data?.template || portfolio.template;
         const theme = portfolio.theme || 'default';
         const title = portfolio.title?.toLowerCase() || '';
+
+        if (template === 'modernMinimal' || theme === 'minimal') return modernMinimalPreview;
+        if (template === 'executive' || theme === 'professional') return executivePreview;
+        if (template === 'creativeDark' || theme === 'creative') return creativeDarkPreview;
+        if (template === 'premiumTech') return premiumTechPreview;
 
         // Match based on template, theme, or title keywords
         if (template === 'darkCyber' || theme === 'dark-cyber' || title.includes('cyber') || title.includes('dark')) {
@@ -299,7 +308,7 @@ const DashboardPortfolios = ({ t, showToast }) => {
                             <p className="text-sm text-slate-600 mt-0.5">{t('DashboardPortfolios.subtitle')}</p>
                         </div>
                     </div>
-                    <Link to="/portfolio/builder" className="inline-flex items-center px-4 py-2 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 transition-colors text-sm shadow-sm">
+                    <Link to="/portfolio/builder?create=1" className="inline-flex items-center px-4 py-2 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 transition-colors text-sm shadow-sm">
                         <FiPlus className="w-4 h-4 mr-2" />
                         {t('DashboardPortfolios.createPortfolio')}
                     </Link>

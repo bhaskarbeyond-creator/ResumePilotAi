@@ -1,0 +1,24 @@
+[data-webcv-root] h1,
+[data-webcv-root] h2,
+[data-webcv-root] h3,
+[data-webcv-root] h4,
+[data-webcv-root] p {
+    margin: 0;
+    font-size: inherit;
+    font-weight: inherit;
+}
+
+[data-webcv-root] a {
+    color: inherit;
+}
+
+[data-webcv-root] a:hover {
+    color: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    [data-webcv-root] * {
+        transition: none !important;
+        animation: none !important;
+    }
+}

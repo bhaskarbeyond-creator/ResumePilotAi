@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom';
 import { Render } from '@puckeditor/core';
 import { getPortfolioBySlug, incrementPortfolioViews } from '../../firestore/dbOperations';
 import { normalizePublishedPortfolio } from '../PortfolioBuilder/portfolioSanitization';
+import WebCvRenderer from '../PortfolioTemplates/WebCvRenderer';
+import { displayNameFromCanonical, normalizePortfolioData } from '../../utils/portfolioData';
 import {
     NavbarCategory,
     HeroCategory,
@@ -117,8 +119,9 @@ const PublicPortfolio = () => {
             touched.push({ element, created, previous });
         };
 
-        const title = portfolio.metadata?.seoTitle || portfolio.title || 'Portfolio';
-        const description = portfolio.metadata?.seoDescription || portfolio.metadata?.description || '';
+        const person = portfolio.data?.canonical ? normalizePortfolioData(portfolio.data.canonical) : null;
+        const title = portfolio.metadata?.seoTitle || person?.extras?.seoTitle || displayNameFromCanonical(person || {}) || portfolio.title || 'Portfolio';
+        const description = portfolio.metadata?.seoDescription || person?.extras?.seoDescription || person?.summary || portfolio.metadata?.description || '';
         const canonical = `${window.location.origin}/portfolio/${encodeURIComponent(slug)}`;
         document.title = title;
         setMeta('meta[name="description"]', { name: 'description', content: description });
@@ -134,7 +137,16 @@ const PublicPortfolio = () => {
         const structuredData = document.createElement('script');
         structuredData.type = 'application/ld+json';
         structuredData.dataset.portfolioStructuredData = 'true';
-        structuredData.textContent = JSON.stringify({ '@context': 'https://schema.org', '@type': 'ProfilePage', name: title, description, url: canonical }).replace(/</g, '\\u003c');
+        const personNode = person ? {
+            '@type': 'Person',
+            name: displayNameFromCanonical(person),
+            jobTitle: person.heading.occupation || undefined,
+            email: person.heading.email || undefined,
+            telephone: person.heading.phone || undefined,
+            url: person.heading.website || canonical,
+            sameAs: [person.heading.linkedin, person.heading.github].filter(Boolean),
+        } : undefined;
+        structuredData.textContent = JSON.stringify({ '@context': 'https://schema.org', '@type': 'ProfilePage', name: title, description, url: canonical, mainEntity: personNode }).replace(/</g, '\\u003c');
         document.head.appendChild(structuredData);
 
         return () => {
@@ -154,12 +166,14 @@ const PublicPortfolio = () => {
         const themes = {
             default: 'bg-white text-gray-900',
             dark: 'bg-gray-900 text-white',
-            minimal: 'bg-gray-50 text-gray-800',
-            creative: 'bg-gradient-to-br from-purple-50 to-blue-50 text-gray-900',
-            professional: 'bg-slate-50 text-slate-900',
+            minimal: 'bg-[#fbfbfa] text-neutral-900',
+            creative: 'bg-[#161310] text-[#f4ead8]',
+            professional: 'bg-[#f4efe6] text-[#1c2430]',
         };
         return themes[theme] || themes.default;
     };
+
+    const isWebCv = Boolean(portfolio?.data?.canonical && (portfolio.data.renderer === 'webcv' || portfolio.data.templateKey));
 
     if (loading) {
         return (
@@ -194,7 +208,9 @@ const PublicPortfolio = () => {
     return (
         <main className={`min-h-screen overflow-x-hidden ${getThemeClasses(portfolio.theme)}`}>
             <div className="portfolio-content">
-                {portfolio.data?.content?.length > 0 ? (
+                {isWebCv ? (
+                    <WebCvRenderer canonical={portfolio.data.canonical} templateKey={portfolio.data.templateKey} />
+                ) : portfolio.data?.content?.length > 0 ? (
                     <Render config={config} data={portfolio.data} />
                 ) : (
                     <div className="flex items-center justify-center min-h-screen px-4">
