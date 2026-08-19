@@ -433,15 +433,16 @@ router.post('/generate-summary', async (req, res) => {
 // Generate interview questions based on occupation and interview type
 router.post('/generate-interview', async (req, res) => {
     try {
-        const { occupation, interviewType, questionCount = 10, language = 'en' } = req.body;
+        const { occupation, interviewType, questionCount = 10, language = 'en', experienceLevel, difficulty, jobDescription, resumeFacts } = req.body;
+        const allowedInterviewTypes = ['technical', 'behavioral', 'mixed', 'hr', 'managerial', 'case'];
 
         if (typeof occupation !== 'string' || !occupation.trim() || occupation.length > 160
-            || !['technical', 'behavioral'].includes(interviewType)) {
+            || !allowedInterviewTypes.includes(interviewType)) {
             return res.status(400).json({ error: { code: 'INVALID_AI_INPUT', message: 'Valid occupation and interview type are required', requestId: res.locals.requestId } });
         }
 
         // Validate question count
-        const validQuestionCount = Math.min(Math.max(parseInt(questionCount) || 10, 5), 15);
+        const validQuestionCount = Math.min(Math.max(parseInt(questionCount) || 10, 5), 20);
 
         // Language mapping for proper language names in prompt
         const languageNames = {
@@ -468,12 +469,28 @@ router.post('/generate-interview', async (req, res) => {
         let promptContext = '';
         if (interviewType === 'technical') {
             promptContext = `technical skills, frameworks, methodologies, problem-solving approaches, and systems design`;
-        } else if (interviewType === 'behavioral') {
+        } else if (interviewType === 'behavioral' || interviewType === 'hr') {
             promptContext = `leadership skills, communication abilities, conflict resolution, teamwork, adaptability, work ethic, and professional challenges`;
+        } else if (interviewType === 'managerial') {
+            promptContext = `people leadership, prioritization, stakeholder management, and decision making`;
+        } else if (interviewType === 'case') {
+            promptContext = `structured case reasoning, estimation, trade-offs, and business judgment`;
+        } else {
+            promptContext = `a balanced mix of technical knowledge, behavioral judgment, and role-specific scenarios`;
         }
+
+        const safeFacts = typeof resumeFacts === 'string' ? resumeFacts.slice(0, 2500) : '';
+        const safeJd = typeof jobDescription === 'string' ? jobDescription.slice(0, 4000) : '';
+        const personalization = [
+            experienceLevel ? `Candidate experience level: ${String(experienceLevel).slice(0, 40)}.` : '',
+            difficulty ? `Target difficulty: ${String(difficulty).slice(0, 40)}.` : '',
+            safeFacts ? `Use ONLY these candidate facts (do not invent experience):\n${safeFacts}` : 'Do not invent candidate experience that was not provided.',
+            safeJd ? `Align some questions to this job description without fabricating requirements:\n${safeJd}` : '',
+        ].filter(Boolean).join('\n');
 
         const prompt = `
         Generate exactly ${validQuestionCount} realistic interview questions for a ${occupation} position in ${targetLanguage}. The interview type is ${interviewType}, so focus on ${promptContext}.
+        ${personalization}
         
         IMPORTANT: All text including questions, answer options, and explanations must be written in ${targetLanguage}.
         
