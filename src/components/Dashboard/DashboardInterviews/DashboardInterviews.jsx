@@ -14,10 +14,10 @@ import {
     DIFFICULTIES, DURATION_PRESETS, EXPERIENCE_LEVELS, INTERVIEW_MODES, INTERVIEW_TYPES, PALETTE_META,
     appendHistory, buildInterviewReport, buildStarMarkdown, clearAllHistory, clearOwnerSession,
     consumesArrowKeys, copyTextToClipboard, downloadTextFile, formatClock, isTextEntryTarget,
-    optionIndexFromKey, paletteStatus, readHistory, readOwnerSession, remainingFromDeadline,
-    removeHistoryEntry, resolveDurationSeconds, resolveStorageConflict, sanitizeJobDescription,
-    sanitizeResumeFacts, scoreTrend, purgeStaleOwnerSession, timerAnnouncement, validateInterviewPayload,
-    writeOwnerSession,
+    optionIndexFromKey, paletteStatus, readHistory, readOwnerSession, recentInterviewQuestions,
+    remainingFromDeadline, removeHistoryEntry, resolveDurationSeconds, resolveStorageConflict,
+    sanitizeJobDescription, sanitizeResumeFacts, scoreTrend, purgeStaleOwnerSession,
+    timerAnnouncement, validateInterviewPayload, writeOwnerSession,
 } from '../../../utils/interviewCoach';
 
 const POPULAR_ROLES = [
@@ -669,6 +669,12 @@ const DashboardInterviews = () => {
                     difficulty: state.difficulty,
                     jobDescription: sanitizeJobDescription(state.jobDescription),
                     resumeFacts: state.resumeFacts,
+                    // Bounded recent-history so generation avoids repeating earlier questions.
+                    previousQuestions: recentInterviewQuestions(history, {
+                        role: state.occupation,
+                        interviewType: state.interviewType,
+                        limit: 8,
+                    }),
                 }),
             });
             if (!response.ok) throw Object.assign(new Error(`API error: ${response.status}`), { status: response.status });
@@ -684,7 +690,7 @@ const DashboardInterviews = () => {
         } finally {
             if (requestControllerRef.current === requestController) requestControllerRef.current = null;
         }
-    }, [state.occupation, state.interviewType, state.questionCount, state.experienceLevel, state.difficulty, state.jobDescription, state.resumeFacts]);
+    }, [state.occupation, state.interviewType, state.questionCount, state.experienceLevel, state.difficulty, state.jobDescription, state.resumeFacts, history]);
 
     const cancelGeneration = useCallback(() => {
         requestControllerRef.current?.abort();

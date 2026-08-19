@@ -16,6 +16,7 @@ import {
   paletteStatus,
   readHistory,
   readOwnerSession,
+  recentInterviewQuestions,
   remainingFromDeadline,
   resolveDurationSeconds,
   sanitizeJobDescription,
@@ -253,6 +254,21 @@ test('interview modes, difficulties, and types catalogs are well-formed and non-
 
   assert.equal(EXPERIENCE_LEVELS.length, 6);
   assert.equal(DIFFICULTIES.length, 4);
+});
+
+test('recentInterviewQuestions returns a bounded, role/type-filtered list for generation de-duplication', () => {
+    const history = [
+        { role: 'Senior React Developer', interviewType: 'technical', completedAt: '2026-08-19T10:00:00Z', interviewData: { questions: [{ question: 'React hooks?' }, { question: 'Memoization?' }] } },
+        { role: 'Senior React Developer', interviewType: 'behavioral', completedAt: '2026-08-19T09:00:00Z', interviewData: { questions: [{ question: 'Tell me about conflict?' }] } },
+        { role: 'Python Backend Engineer', interviewType: 'technical', completedAt: '2026-08-19T08:00:00Z', interviewData: { questions: [{ question: 'FastAPI?' }] } },
+        { role: 'Senior React Developer', interviewType: 'technical', completedAt: '2026-08-19T07:00:00Z', interviewData: { questions: [{ question: 'TypeScript generics?' }] } },
+    ];
+    const questions = recentInterviewQuestions(history, { role: 'Senior React Developer', interviewType: 'technical', limit: 8 });
+    assert.deepEqual(questions, ['React hooks?', 'Memoization?', 'TypeScript generics?'], 'newest first, same role + type only');
+    assert.equal(recentInterviewQuestions(history, { role: 'Senior React Developer', interviewType: 'technical', limit: 1 }).length, 1, 'honors the limit');
+    assert.equal(recentInterviewQuestions(history, { role: 'Senior React Developer', interviewType: 'managerial' }).length, 0);
+    assert.equal(recentInterviewQuestions(null, {}).length, 0);
+    assert.equal(recentInterviewQuestions([], { role: 'X' }).length, 0);
 });
 
 test('existing generate-interview backend and frontend integration remains preserved with bearer auth', () => {

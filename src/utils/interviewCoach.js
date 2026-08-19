@@ -354,6 +354,31 @@ export function scoreTrend(history) {
     }));
 }
 
+// Bounded, privacy-preserving list of the most recent question texts for the same
+// role + interview type, used so generation can avoid repeating them. Kept small on
+// purpose — we never ship unlimited history into the prompt.
+export function recentInterviewQuestions(history, { role, interviewType, limit = 8 } = {}) {
+    if (!Array.isArray(history)) return [];
+    const normalizedRole = String(role || '').trim().toLowerCase();
+    const normalizedType = String(interviewType || '').toLowerCase();
+    const out = [];
+    const recent = (history || [])
+        .filter(item => item && typeof item === 'object')
+        .filter(item => !normalizedRole || String(item.role || '').trim().toLowerCase() === normalizedRole)
+        .filter(item => !normalizedType || String(item.interviewType || '').trim().toLowerCase() === normalizedType)
+        .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
+    for (const item of recent) {
+        const questions = (item.interviewData?.questions || item.questions || [])
+            .map(q => (q && typeof q.question === 'string' ? q.question.trim() : ''))
+            .filter(Boolean);
+        for (const q of questions) {
+            out.push(q);
+            if (out.length >= limit) return out;
+        }
+    }
+    return out;
+}
+
 // ── KEYBOARD SHORTCUT SAFETY ─────────────────────────────────────────────────
 const TEXT_INPUT_TYPES = new Set([
     'text', 'search', 'email', 'url', 'password', 'number', 'tel',

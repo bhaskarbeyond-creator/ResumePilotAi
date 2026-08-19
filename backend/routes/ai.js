@@ -1,4 +1,5 @@
 const express = require('express');
+const crypto = require('crypto');
 const EmailNotifier = require('../services/emailNotifier');
 const { executeContentOperation, executeResumeParsing, extractJson, loadProviderConfiguration, generateWithProviders, parseAiResponse } = require('../services/aiRuntime');
 const router = express.Router();
@@ -430,10 +431,168 @@ router.post('/generate-summary', async (req, res) => {
     }
 });
 
+// ── Interview question generation helpers (AI-path diversity + fallback) ─────
+const INTERVIEW_PROMPT_CONTEXT = {
+    technical: 'technical skills, frameworks, methodologies, problem-solving approaches, and systems design',
+    behavioral: 'leadership skills, communication abilities, conflict resolution, teamwork, adaptability, work ethic, and professional challenges',
+    hr: 'leadership skills, communication abilities, conflict resolution, teamwork, adaptability, work ethic, and professional challenges',
+    managerial: 'people leadership, prioritization, stakeholder management, and decision making',
+    case: 'structured case reasoning, estimation, trade-offs, and business judgment',
+    mixed: 'a balanced mix of technical knowledge, behavioral judgment, and role-specific scenarios',
+};
+
+const INTERVIEW_DIFFICULTY_GUIDANCE = {
+    easy: 'Focus the set on fundamental, approachable questions while keeping a couple of stretch items.',
+    medium: 'Balance foundational and applied questions for a well-rounded interview.',
+    hard: 'Lean toward applied, systems, and senior-level questions, keeping only a few fundamentals.',
+    expert: 'Lean toward deep, advanced, architecture/strategy questions; fundamentals are minimal.',
+};
+
+function interviewDifficultyWeights(difficulty) {
+    const d = String(difficulty || 'medium').toLowerCase();
+    if (d === 'easy') return { easy: 0.6, intermediate: 0.3, advanced: 0.1 };
+    if (d === 'hard') return { easy: 0.15, intermediate: 0.4, advanced: 0.45 };
+    if (d === 'expert') return { easy: 0.05, intermediate: 0.3, advanced: 0.65 };
+    return { easy: 0.35, intermediate: 0.45, advanced: 0.2 };
+}
+
+// Compute an exact Easy/Intermediate/Advanced split (sums to questionCount) from the
+// requested difficulty and seniority so the difficulty control actually shapes the set.
+function interviewDifficultyDistribution(questionCount, difficulty, experienceLevel) {
+    const count = Math.min(Math.max(parseInt(questionCount) || 10, 5), 20);
+    const weights = interviewDifficultyWeights(difficulty);
+    let easy = Math.round(count * weights.easy);
+    let intermediate = Math.round(count * weights.intermediate);
+    let advanced = count - easy - intermediate;
+    const senior = ['senior', 'lead', 'executive', 'staff', 'principal', 'expert'].some(term =>
+        String(experienceLevel || '').toLowerCase().includes(term));
+    if (senior && advanced < count && easy > 0) { advanced += 1; easy -= 1; }
+    if (advanced < 0) { intermediate += advanced; advanced = 0; }
+    if (easy < 0) { intermediate += easy; easy = 0; }
+    if (intermediate < 0) { easy += intermediate; intermediate = 0; }
+    return { easy, intermediate, advanced };
+}
+
+function sanitizePromptFragment(value, max = 500) {
+    return Array.from(String(value ?? ''), ch => {
+        const code = ch.charCodeAt(0);
+        if (code === 9 || code === 10 || code === 13) return ' ';
+        return code <= 31 || code === 127 ? '' : ch;
+    }).join('').replace(/<[^>]*>/g, '').trim().slice(0, max);
+}
+
+// Lowercased, punctuation-stripped, whitespace-collapsed fingerprint for comparing
+// question text so we can drop exact and near-identical repeats within/across sets.
+function questionKey(text) {
+    return String(text || '').toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, '').replace(/\s+/g, ' ').trim();
+}
+
+// Deterministic, bounded de-duplication. Removes (a) duplicate question text within the
+// candidate list and (b) questions that exactly match any recently-asked question.
+function dedupeQuestions(rawQuestions, previousQuestions = []) {
+    if (!Array.isArray(rawQuestions)) return [];
+    const previousKeys = new Set((Array.isArray(previousQuestions) ? previousQuestions : [])
+        .filter(q => typeof q === 'string').map(q => questionKey(q)));
+    const seen = new Set();
+    const out = [];
+    for (const question of rawQuestions) {
+        if (!question || typeof question !== 'object') continue;
+        const text = typeof question.question === 'string' ? question.question.trim() : '';
+        if (!text) continue;
+        const key = questionKey(text);
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        out.push(question);
+    }
+    // Keep ordering but drop exact matches against recent history.
+    return out.filter(question => !previousKeys.has(questionKey(question.question)));
+}
+
+function buildInterviewPrompt(input) {
+    const languageNames = {
+        en: 'English', es: 'Spanish', fr: 'French', de: 'German', it: 'Italian',
+        pt: 'Portuguese', ru: 'Russian', nl: 'Dutch', pl: 'Polish', se: 'Swedish',
+        no: 'Norwegian', dk: 'Danish', is: 'Icelandic', gk: 'Greek', ro: 'Romanian',
+    };
+    const occupation = String(input.occupation || '').trim();
+    const interviewType = String(input.interviewType || 'technical');
+    const targetLanguage = languageNames[input.language] || 'English';
+    const validQuestionCount = Math.min(Math.max(parseInt(input.questionCount) || 10, 5), 20);
+    const promptContext = INTERVIEW_PROMPT_CONTEXT[interviewType] || INTERVIEW_PROMPT_CONTEXT.mixed;
+    const safeFacts = typeof input.resumeFacts === 'string' ? input.resumeFacts.slice(0, 2500) : '';
+    const safeJd = typeof input.jobDescription === 'string' ? input.jobDescription.slice(0, 4000) : '';
+    const distribution = interviewDifficultyDistribution(validQuestionCount, input.difficulty, input.experienceLevel);
+    const nonce = String(input.sessionNonce || crypto.randomBytes(8).toString('hex')).slice(0, 24);
+    const difficultyLabel = String(input.difficulty || 'medium').toLowerCase();
+    const difficultyGuidance = INTERVIEW_DIFFICULTY_GUIDANCE[difficultyLabel] || '';
+    const exclusions = (Array.isArray(input.previousQuestions) ? input.previousQuestions : [])
+        .filter(q => typeof q === 'string')
+        .map(q => sanitizePromptFragment(q, 240))
+        .filter(q => q.length > 0)
+        .slice(0, 12);
+
+    const personalization = [
+        input.experienceLevel ? `Candidate experience level: ${sanitizePromptFragment(input.experienceLevel, 40)}.` : '',
+        input.difficulty ? `Target difficulty: ${sanitizePromptFragment(input.difficulty, 40)}. ${difficultyGuidance}` : '',
+        `Difficulty distribution for this run: ${distribution.easy} Easy, ${distribution.intermediate} Intermediate, ${distribution.advanced} Advanced.`,
+        safeFacts ? `Use ONLY these candidate facts (do not invent experience):\n${safeFacts}` : 'Do not invent candidate experience that was not provided.',
+        safeJd ? `Align some questions to this job description without fabricating requirements:\n${safeJd}` : '',
+        exclusions.length ? `The candidate already answered these questions/competencies in a recent attempt. Generate a FRESH set and DO NOT repeat or closely mirror them:\n- ${exclusions.join('\n- ')}` : '',
+        `Fresh-run directive: produce a distinct set of questions from any prior attempt (unique run token: ${nonce}).`,
+    ].filter(Boolean).join('\n');
+
+    const prompt = `
+    Generate exactly ${validQuestionCount} realistic interview questions for a ${occupation} position in ${targetLanguage}. The interview type is ${interviewType}, so focus on ${promptContext}.
+    ${personalization}
+
+    IMPORTANT: All text including questions, answer options, and explanations must be written in ${targetLanguage}.
+
+    For each question, include:
+    1. The question text
+    2. Four answer options (labeled as options)
+    3. The index of the correct answer (0-3)
+    4. The category/topic of the question
+    5. A difficulty level (Easy, Intermediate, Advanced)
+    6. A brief explanation of why the correct answer is right
+    7. Estimated time to answer in seconds (between 60-240 seconds)
+
+    Format the response as a JSON object with this structure:
+    {
+        "title": "Interview for ${occupation} - ${interviewType} Assessment",
+        "company": "Professional Evaluation Services",
+        "department": "${interviewType === 'technical' ? 'Technical Department' : 'Human Resources'}",
+        "duration": "${Math.round(validQuestionCount * 3)} minutes",
+        "totalQuestions": ${validQuestionCount},
+        "passingScore": 70,
+        "categories": ["list", "of", "categories"],
+        "questions": [
+            {
+                "id": 1,
+                "question": "Question text?",
+                "options": ["Option A", "Option B", "Option C", "Option D"],
+                "correctAnswer": 0,
+                "category": "Category name",
+                "difficulty": "Easy/Intermediate/Advanced",
+                "weight": 1,
+                "explanation": "Explanation of the correct answer",
+                "estimatedTime": 120
+            }
+        ]
+    }
+
+    Ensure the questions are realistic and appropriately challenging for a professional interview. Make sure the correct answers are accurate and the explanations are helpful. Do NOT repeat identical or near-identical questions within the set.
+    Only return the JSON without any explanation or additional text.
+    `;
+    return { prompt, validQuestionCount, targetLanguage, distribution, sessionNonce: nonce };
+}
+
 // Generate interview questions based on occupation and interview type
 router.post('/generate-interview', async (req, res) => {
+    const markSource = (source) => {
+        if (res?.setHeader && !res.headersSent) res.setHeader('X-AI-Source', source);
+    };
     try {
-        const { occupation, interviewType, questionCount = 10, language = 'en', experienceLevel, difficulty, jobDescription, resumeFacts } = req.body;
+        const { occupation, interviewType, questionCount = 10, language = 'en', experienceLevel, difficulty, jobDescription, resumeFacts, previousQuestions } = req.body;
         const allowedInterviewTypes = ['technical', 'behavioral', 'mixed', 'hr', 'managerial', 'case'];
 
         if (typeof occupation !== 'string' || !occupation.trim() || occupation.length > 160
@@ -441,99 +600,27 @@ router.post('/generate-interview', async (req, res) => {
             return res.status(400).json({ error: { code: 'INVALID_AI_INPUT', message: 'Valid occupation and interview type are required', requestId: res.locals.requestId } });
         }
 
-        // Validate question count
-        const validQuestionCount = Math.min(Math.max(parseInt(questionCount) || 10, 5), 20);
+        // Bounded, privacy-preserving history: only the last few question texts are accepted so
+        // prior-attempt repetition can be avoided without shipping unlimited history.
+        const priorQuestions = (Array.isArray(previousQuestions) ? previousQuestions : [])
+            .filter(q => typeof q === 'string')
+            .map(q => sanitizePromptFragment(q, 240))
+            .filter(q => q.length > 0)
+            .slice(0, 12);
 
-        // Language mapping for proper language names in prompt
-        const languageNames = {
-            en: 'English',
-            es: 'Spanish',
-            fr: 'French',
-            de: 'German',
-            it: 'Italian',
-            pt: 'Portuguese',
-            ru: 'Russian',
-            nl: 'Dutch',
-            pl: 'Polish',
-            se: 'Swedish',
-            no: 'Norwegian',
-            dk: 'Danish',
-            is: 'Icelandic',
-            gk: 'Greek',
-            ro: 'Romanian',
-        };
-
-        const targetLanguage = languageNames[language] || 'English';
-
-        // Customize prompt based on interview type
-        let promptContext = '';
-        if (interviewType === 'technical') {
-            promptContext = `technical skills, frameworks, methodologies, problem-solving approaches, and systems design`;
-        } else if (interviewType === 'behavioral' || interviewType === 'hr') {
-            promptContext = `leadership skills, communication abilities, conflict resolution, teamwork, adaptability, work ethic, and professional challenges`;
-        } else if (interviewType === 'managerial') {
-            promptContext = `people leadership, prioritization, stakeholder management, and decision making`;
-        } else if (interviewType === 'case') {
-            promptContext = `structured case reasoning, estimation, trade-offs, and business judgment`;
-        } else {
-            promptContext = `a balanced mix of technical knowledge, behavioral judgment, and role-specific scenarios`;
-        }
-
-        const safeFacts = typeof resumeFacts === 'string' ? resumeFacts.slice(0, 2500) : '';
-        const safeJd = typeof jobDescription === 'string' ? jobDescription.slice(0, 4000) : '';
-        const personalization = [
-            experienceLevel ? `Candidate experience level: ${String(experienceLevel).slice(0, 40)}.` : '',
-            difficulty ? `Target difficulty: ${String(difficulty).slice(0, 40)}.` : '',
-            safeFacts ? `Use ONLY these candidate facts (do not invent experience):\n${safeFacts}` : 'Do not invent candidate experience that was not provided.',
-            safeJd ? `Align some questions to this job description without fabricating requirements:\n${safeJd}` : '',
-        ].filter(Boolean).join('\n');
-
-        const prompt = `
-        Generate exactly ${validQuestionCount} realistic interview questions for a ${occupation} position in ${targetLanguage}. The interview type is ${interviewType}, so focus on ${promptContext}.
-        ${personalization}
-        
-        IMPORTANT: All text including questions, answer options, and explanations must be written in ${targetLanguage}.
-        
-        For each question, include:
-        1. The question text
-        2. Four answer options (labeled as options)
-        3. The index of the correct answer (0-3)
-        4. The category/topic of the question
-        5. A difficulty level (Easy, Intermediate, Advanced)
-        6. A brief explanation of why the correct answer is right
-        7. Estimated time to answer in seconds (between 60-240 seconds)
-        
-        Ensure the difficulty distribution is balanced: ${Math.floor(validQuestionCount * 0.3)} Easy questions, ${Math.floor(validQuestionCount * 0.5)} Intermediate questions, and ${Math.ceil(
-            validQuestionCount * 0.2
-        )} Advanced questions.
-        
-        Format the response as a JSON object with this structure:
-        {
-            "title": "Interview for ${occupation} - ${interviewType} Assessment",
-            "company": "Professional Evaluation Services",
-            "department": "${interviewType === 'technical' ? 'Technical Department' : 'Human Resources'}",
-            "duration": "${Math.round(validQuestionCount * 3)} minutes",
-            "totalQuestions": ${validQuestionCount},
-            "passingScore": 70,
-            "categories": ["list", "of", "categories"],
-            "questions": [
-                {
-                    "id": 1,
-                    "question": "Question text?",
-                    "options": ["Option A", "Option B", "Option C", "Option D"],
-                    "correctAnswer": 0,
-                    "category": "Category name",
-                    "difficulty": "Easy/Intermediate/Advanced",
-                    "weight": 1,
-                    "explanation": "Explanation of the correct answer",
-                    "estimatedTime": 120
-                }
-            ]
-        }
-        
-        Ensure the questions are realistic and appropriately challenging for a professional interview. Make sure the correct answers are accurate and the explanations are helpful.
-        Only return the JSON without any explanation or additional text.
-        `;
+        const built = buildInterviewPrompt({
+            occupation,
+            interviewType,
+            questionCount,
+            language,
+            experienceLevel,
+            difficulty,
+            jobDescription,
+            resumeFacts,
+            previousQuestions: priorQuestions,
+            sessionNonce: crypto.randomBytes(8).toString('hex'),
+        });
+        const prompt = built.prompt;
 
         const responseText = await generateConfiguredText(req, res, prompt, 'generate-interview', { maxTokens: 4096 });
 
@@ -543,42 +630,51 @@ router.post('/generate-interview', async (req, res) => {
             const jsonStr = jsonMatch ? jsonMatch[0] : responseText;
             const jsonData = extractJson(jsonStr) || extractJson(responseText);
 
-            // Ensure we have the correct number of questions
-            if (jsonData.questions && jsonData.questions.length !== validQuestionCount) {
-                jsonData.questions = jsonData.questions.slice(0, validQuestionCount);
-                jsonData.totalQuestions = validQuestionCount;
-            }
+            if (!jsonData || typeof jsonData !== 'object') throw new Error('Invalid interview response');
 
+            // De-duplicate identical/near-identical question text (within-set and vs. recent
+            // attempts), then bound to the requested count.
+            const questions = dedupeQuestions(jsonData.questions, priorQuestions).slice(0, built.validQuestionCount);
+            if (!questions.length) throw new Error('No usable questions after de-duplication');
+
+            jsonData.questions = questions;
+            jsonData.totalQuestions = questions.length;
+            markSource('ai');
             res.json(jsonData);
         } catch (parseError) {
             console.error('Error parsing AI response:', parseError);
-            // Fall back to generating default interview questions
-            const fallbackData = generateDefaultInterview(occupation, interviewType, validQuestionCount, targetLanguage);
+            // Fall back to generating default interview questions (role/difficulty/count-aware).
+            const fallbackData = generateDefaultInterview({
+                occupation,
+                interviewType,
+                questionCount: built.validQuestionCount,
+                language,
+                difficulty,
+                experienceLevel,
+                previousQuestions: priorQuestions,
+            });
+            markSource('fallback');
             res.json(fallbackData);
         }
     } catch (error) {
         console.error('Error generating interview questions:', error);
         // Use fallback if AI generation fails
-        const { occupation, interviewType, questionCount = 10, language = 'en' } = req.body;
-        const languageNames = {
-            en: 'English',
-            es: 'Spanish',
-            fr: 'French',
-            de: 'German',
-            it: 'Italian',
-            pt: 'Portuguese',
-            ru: 'Russian',
-            nl: 'Dutch',
-            pl: 'Polish',
-            se: 'Swedish',
-            no: 'Norwegian',
-            dk: 'Danish',
-            is: 'Icelandic',
-            gk: 'Greek',
-            ro: 'Romanian',
-        };
-        const targetLanguage = languageNames[language] || 'English';
-        const fallbackData = generateDefaultInterview(occupation, interviewType, questionCount, targetLanguage);
+        const { occupation, interviewType, questionCount = 10, language = 'en', difficulty, experienceLevel, previousQuestions } = req.body;
+        const priorQuestions = (Array.isArray(previousQuestions) ? previousQuestions : [])
+            .filter(q => typeof q === 'string')
+            .map(q => sanitizePromptFragment(q, 240))
+            .filter(q => q.length > 0)
+            .slice(0, 12);
+        const fallbackData = generateDefaultInterview({
+            occupation,
+            interviewType,
+            questionCount,
+            language,
+            difficulty,
+            experienceLevel,
+            previousQuestions: priorQuestions,
+        });
+        markSource('fallback');
         res.json(fallbackData);
     }
 });
@@ -921,185 +1017,280 @@ function generateFallbackSummary(name, jobTitle, experience, skills, achievement
     return languageTemplates[type][randomIndex];
 }
 
-// Fallback function to generate interview questions when API fails
-const generateDefaultInterview = (occupation, interviewType, questionCount = 10, targetLanguage = 'English') => {
-    // Format occupation for use in questions
-    const formattedOccupation = occupation.charAt(0).toUpperCase() + occupation.slice(1);
+// Fallback function to generate interview questions when API fails. Deterministic per input
+// (seeded by role/type/difficulty/count), role- and difficulty-aware, honors the requested
+// question count, never fabricates candidate experience, and never repeats a question that was
+// already asked recently. This is a reliability net — it is never the diversity source.
+function seededRand(seedStr) {
+    let h = 2166136261;
+    for (let i = 0; i < seedStr.length; i++) { h ^= seedStr.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return () => {
+        h += 0x6D2B79F5;
+        let t = h;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+}
+function seededShuffle(arr, rand) {
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(rand() * (i + 1));
+        const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+    }
+    return arr;
+}
+// diff tiers: 0=Easy, 1=Intermediate, 2=Advanced
+const FBQ = (question, options, correctAnswer, category, diff, explanation, estimatedTime) => ({
+    question, options, correctAnswer, category, diff,
+    explanation: explanation || 'The selected option reflects the best-practice approach for a professional in this role.',
+    estimatedTime: estimatedTime || 90,
+});
 
-    // Default technical questions for any occupation
-    const technicalQuestions = [
-        {
-            id: 1,
-            question: `What tools or technologies are you most proficient with as a ${occupation}?`,
-            options: [
-                'I focus mainly on industry-standard tools with deep expertise in a few key technologies',
-                'I prefer to learn many different tools at a basic level',
-                'I only use tools when absolutely necessary',
-                'I prefer to build my own custom tools rather than use existing ones',
-            ],
-            correctAnswer: 0,
-            category: 'Technical Skills',
-            difficulty: 'Easy',
-            explanation: 'Successful professionals typically develop deep expertise with industry-standard tools while maintaining awareness of alternatives.',
-            estimatedTime: 90,
-        },
-        {
-            id: 2,
-            question: `How do you stay updated with the latest developments in the ${occupation} field?`,
-            options: [
-                'I wait for my employer to provide training',
-                'I follow industry blogs, attend conferences, and participate in professional communities',
-                'I learn only when required for a specific project',
-                'I focus on what I already know well',
-            ],
-            correctAnswer: 1,
-            category: 'Professional Development',
-            difficulty: 'Easy',
-            explanation: 'Proactive learning through multiple channels demonstrates commitment to professional growth and staying current in the field.',
-            estimatedTime: 80,
-        },
-        {
-            id: 3,
-            question: `How do you approach problem-solving in your role as a ${occupation}?`,
-            options: [
-                'I immediately ask others for help',
-                "I apply only solutions I've used before",
-                'I use a systematic approach: define the problem, analyze causes, consider alternatives, implement and evaluate',
-                'I rely primarily on intuition',
-            ],
-            correctAnswer: 2,
-            category: 'Problem Solving',
-            difficulty: 'Intermediate',
-            explanation: 'A structured approach to problem-solving is most effective for addressing complex challenges in a professional environment.',
-            estimatedTime: 100,
-        },
-        {
-            id: 4,
-            question: `What metrics or KPIs do you consider most important for measuring success as a ${occupation}?`,
-            options: ['Hours worked', 'Personal recognition', 'Outcome-based metrics aligned with business objectives', 'Number of tasks completed'],
-            correctAnswer: 2,
-            category: 'Performance Measurement',
-            difficulty: 'Intermediate',
-            explanation: 'Effective professionals focus on outcome-based metrics that demonstrate actual value to the organization rather than activity metrics.',
-            estimatedTime: 110,
-        },
-        {
-            id: 5,
-            question: `What approach do you take when implementing new methodologies or processes in your work?`,
-            options: [
-                'I resist change and stick with what I know',
-                'I research, test on a small scale, measure results, and then implement more broadly if effective',
-                'I immediately implement across all projects',
-                'I follow whatever approach is trending regardless of its applicability',
-            ],
-            correctAnswer: 1,
-            category: 'Methodologies',
-            difficulty: 'Advanced',
-            explanation: 'A measured, evidence-based approach to implementing new methods demonstrates critical thinking and risk management.',
-            estimatedTime: 120,
-        },
+const FALLBACK_TECHNICAL = (occ) => [
+    FBQ(`What tools or technologies are you most proficient with as a ${occ}?`,
+        ['Deep expertise in a few industry-standard tools', 'Broad familiarity with many tools at a basic level', 'I avoid most tools', 'I only use self-built tools'], 0, 'Technical Skills', 0,
+        'Professionals typically combine deep expertise in core tools with working awareness of alternatives.'),
+    FBQ(`How do you keep your skills current in the ${occ} field?`,
+        ['Rely on employer-provided training only', 'Follow industry blogs, communities, and conferences', 'Learn only when a project demands it', 'I do not actively update'], 1, 'Professional Development', 0,
+        'Proactive, multi-channel learning is the strongest signal of sustained professional growth.'),
+    FBQ(`How do you approach debugging a complex issue as a ${occ}?`,
+        ['Ask a colleague immediately', 'Reuse the last fix that worked', 'Reproduce, isolate the cause, form a hypothesis, and verify the fix', 'Rely on intuition'], 2, 'Problem Solving', 1,
+        'A structured reproduce-isolate-verify loop is the most reliable debugging method.'),
+    FBQ(`Which success measures matter most for a ${occ} role?`,
+        ['Hours worked', 'Outcome metrics tied to business goals', 'Personal recognition', 'Number of tasks completed'], 1, 'Performance Measurement', 1,
+        'Outcome-oriented metrics aligned to business objectives best reflect real contribution.'),
+    FBQ(`How do you decide when to adopt a new methodology or tool in your ${occ} work?`,
+        ['Resist change', 'Research, pilot on a small scope, measure, then scale if it works', 'Adopt anything trending', 'Adopt it everywhere immediately'], 1, 'Methodologies', 2,
+        'Evidence-based, incremental adoption reduces risk while keeping the team current.'),
+    FBQ(`How do you handle a production incident in your ${occ} role?`,
+        ['Panic and escalate broadly', 'Triage impact, mitigate, then conduct a blameless post-mortem', 'Hide it until fixed', 'Blame the last change'], 1, 'Reliability', 2,
+        'A calm triage-to-mitigation-to-learn loop is the professional standard for incidents.'),
+    FBQ(`How would you estimate the effort for a new ${occ} task?`,
+        ['Guess based on gut feel', 'Break it down, size sub-parts, account for risk and uncertainty', 'Always double the first number', 'Refuse to estimate'], 1, 'Estimation', 1,
+        'Decomposition plus risk accounting yields the most defensible estimates.'),
+    FBQ(`How do you review work produced by a peer as a ${occ}?`,
+        ['Reject anything with differences', 'Approve everything to avoid friction', 'Focus on correctness, maintainability, and clear feedback', 'Rewrite it yourself'], 2, 'Collaboration', 1,
+        'Constructive, correctness- and maintainability-focused review improves shared quality.'),
+    FBQ(`What is the most reliable way to keep stakeholders aligned during a ${occ} project?`,
+        ['Share everything asynchronously', 'Provide regular concise updates and flag risks early', 'Only update at the end', 'Rely on memory'], 1, 'Communication', 1,
+        'Regular, concise, risk-forward communication prevents late surprises.'),
+    FBQ(`How do you prioritize competing requirements as a ${occ}?`,
+        ['Do everything at once', 'Rank by business impact and urgency, then communicate trade-offs', 'Do the easiest first', 'Do the loudest request first'], 1, 'Prioritization', 2,
+        'Impact- and urgency-based ranking with transparent trade-offs is the professional approach.'),
+];
+
+const FALLBACK_BEHAVIORAL = (occ) => [
+    FBQ(`How do you handle a conflict within your team as a ${occ}?`,
+        ['Avoid the person', 'Listen to all sides, facilitate discussion, and find common ground', 'Always side with seniority', 'Escalate immediately'], 1, 'Conflict Resolution', 1,
+        'Active listening and collaborative problem-solving resolve conflicts constructively.'),
+    FBQ(`Describe how you prioritize when you face multiple deadlines as a ${occ}.`,
+        ['Work on whatever feels urgent', 'Rank by urgency and importance and communicate a plan', 'Work longer hours on everything', 'Do the easiest first'], 2, 'Time Management', 1,
+        'Urgency/importance ranking with stakeholder communication is effective prioritization.'),
+    FBQ(`How do you respond to constructive feedback on your ${occ} work?`,
+        ['Take it personally', 'Listen, reflect, and act on the feedback', 'Ignore it', 'Agree to everything'], 1, 'Adaptability', 0,
+        'A growth mindset treats feedback as an input for improvement.'),
+    FBQ(`Tell me how you adapt when a major requirement changes mid-project as a ${occ}.`,
+        ['Resist the change', 'Understand the reason, replan, and communicate the impact', 'Quietly keep the old plan', 'Blame the requester'], 2, 'Change Management', 1,
+        'Understanding the why, replanning, and communicating impact is how professionals adapt.'),
+    FBQ(`How do you collaborate with people from other functions as a ${occ}?`,
+        ['Avoid cross-functional work', 'Insist others follow your process', 'Learn their context, align goals, and agree on communication', 'Let management coordinate'], 2, 'Collaboration', 1,
+        'Empathy plus shared goals and clear channels make cross-functional work succeed.'),
+    FBQ(`How do you handle missing information when you need to proceed as a ${occ}?`,
+        ['Block until everything is known', 'State assumptions, proceed, and validate them early', 'Make things up', 'Wait passively'], 1, 'Judgment', 1,
+        'Explicit assumptions validated early keep momentum without guessing.'),
+    FBQ(`How do you deliver good news and bad news to stakeholders as a ${occ}?`,
+        ['Only share good news', 'Be transparent, focus on impact and next steps', 'Let them find out', 'Delay all updates'], 1, 'Communication', 0,
+        'Transparency about impact with clear next steps builds trust.'),
+    FBQ(`What do you do when you realize you were wrong about a technical decision as a ${occ}?`,
+        ['Defend the original choice', 'Acknowledge it, assess impact, and propose a correction', 'Hide the mistake', 'Wait for someone else to notice'], 2, 'Ownership', 1,
+        'Owning mistakes and proposing corrections is a core professional behavior.'),
+];
+
+const FALLBACK_MANAGERIAL = (occ) => [
+    FBQ(`How do you delegate work effectively when leading a ${occ} team?`,
+        ['Do everything yourself', 'Assign by skill and growth goals, set clear outcomes, and stay available', 'Delegate everything without guidance', 'Assign by who asks first'], 1, 'Delegation', 1,
+        'Skill-matched delegation with clear outcomes and support maximizes team output and growth.'),
+    FBQ(`How do you handle an underperforming team member as a ${occ} manager?`,
+        ['Avoid the conversation', 'Understand root cause, set expectations, and create a support plan', 'Put them on a plan immediately', 'Ignore it'], 2, 'Performance Management', 2,
+        'Diagnose, set expectations, and support before escalating is the fair, effective approach.'),
+    FBQ(`How do you decide what your ${occ} team should work on next?`,
+        ['Follow the loudest voice', 'Align priorities with business goals and capacity, then communicate', 'Do the easiest work', 'Always chase the newest idea'], 1, 'Prioritization', 1,
+        'Priorities should map to business impact and be weighed against team capacity.'),
+    FBQ(`How do you build trust with the people you manage as a ${occ}?`,
+        ['Be distant and formal', 'Be consistent, transparent, and follow through on commitments', 'Be a friend first', 'Only meet at annual reviews'], 1, 'Leadership', 1,
+        'Consistency, transparency, and follow-through are the foundations of trust.'),
+    FBQ(`How do you handle a situation where two senior stakeholders disagree on scope as a ${occ}?`,
+        ['Pick a side', 'Facilitate a discussion around goals, data, and trade-offs', 'Escalate and disengage', 'Make the call secretly'], 2, 'Stakeholder Management', 2,
+        'Facilitating around shared goals and trade-offs aligns stakeholders without taking sides.'),
+    FBQ(`How do you grow the skills of your ${occ} team?`,
+        ['Assume people self-improve', 'Create stretch opportunities, coaching, and regular feedback', 'Send everyone to training once', 'Only fix what breaks'], 1, 'Development', 1,
+        'Structured growth through stretch work and coaching is how teams develop.'),
+];
+
+const FALLBACK_CASE = (occ) => [
+    FBQ(`How would you structure an analysis to size a new ${occ} initiative?`,
+        ['Pick a number quickly', 'Clarify scope, identify drivers, build a model, and sanity-check the result', 'Use the last project size', 'Ask for the answer'], 2, 'Case Reasoning', 2,
+        'Structured frameworks (scope, drivers, model, sanity check) produce defensible estimates.'),
+    FBQ(`How do you evaluate two competing approaches for a ${occ} decision?`,
+        ['Go with your favorite', 'Define criteria, weight them, and compare trade-offs against data', 'Ask a friend', 'Do both completely'], 1, 'Decision Making', 1,
+        'Criteria-weighted comparison keeps decisions objective and explainable.'),
+    FBQ(`What do you do when the data you need for a ${occ} decision is incomplete?`,
+        ['Refuse to decide', 'State assumptions, use best estimates, and flag the risk', 'Make up data', 'Decide randomly'], 1, 'Judgment', 1,
+        'Explicit assumptions plus risk flagging lets decisions proceed without fabrication.'),
+    FBQ(`How would you break down a large, ambiguous ${occ} problem?`,
+        ['Tackle it as one big step', 'Decompose into sub-problems, prioritize, and solve iteratively', 'Wait for clarity', 'Do the easiest part only'], 2, 'Problem Structuring', 2,
+        'Decomposition and iterative solving make ambiguous problems tractable.'),
+    FBQ(`How do you present the trade-offs of a ${occ} recommendation to leadership?`,
+        ['Only show the upside', 'Present options, costs, benefits, and risks with a clear recommendation', 'Overwhelm with detail', 'Let them decide blindly'], 1, 'Communication', 1,
+        'Clear options-with-trade-offs and a recommendation let leaders decide well.'),
+    FBQ(`How would you measure whether a new ${occ} change actually worked?`,
+        ['By how it feels', 'Define a baseline and a success metric, then compare before/after', 'Ignore measurement', 'By one anecdote'], 1, 'Measurement', 1,
+        'Baseline-and-metric comparison is how outcomes are objectively evaluated.'),
+];
+
+const FALLBACK_GENERIC = (occ) => [
+    FBQ(`What does a typical day look like for a ${occ}?`,
+        ['I improvise everything', 'I plan priorities, execute on focused work, and review progress', 'I react to emails all day', 'I only attend meetings'], 1, 'Work Approach', 0,
+        'Purposeful planning and focused execution reflect strong professional habits.'),
+    FBQ(`How do you stay organized across multiple ${occ} responsibilities?`,
+        ['Keep everything in my head', 'Use a lightweight system to track commitments and deadlines', 'Write nothing down', 'Rely on others to remind me'], 1, 'Organization', 0,
+        'A lightweight tracking system reduces missed commitments.'),
+    FBQ(`How do you ensure the quality of your ${occ} output?`,
+        ['Deliver and move on', 'Self-review against requirements and have it reviewed when appropriate', 'Rely on someone else to check', 'Ignore quality'], 2, 'Quality', 1,
+        'Self-review against requirements protects quality before delivery.'),
+    FBQ(`How do you handle an unclear task assignment as a ${occ}?`,
+        ['Guess and proceed', 'Ask clarifying questions about goals and constraints, then proceed', 'Do nothing', 'Do the minimum'], 1, 'Communication', 0,
+        'Clarifying goals and constraints up front avoids rework.'),
+    FBQ(`How do you document your ${occ} work so others can benefit?`,
+        ['Keep it in my head', 'Write concise, useful notes and share them with the team', 'Over-document everything', 'Document nothing'], 1, 'Knowledge Sharing', 0,
+        'Concise shared documentation multiplies team effectiveness.'),
+    FBQ(`How do you take ownership of an outcome as a ${occ}?`,
+        ['Blame circumstances', 'Own the result, communicate status, and drive it to completion', 'Do it only if rewarded', 'Pass it to someone else'], 2, 'Ownership', 1,
+        'Ownership means owning the outcome and driving it through.'),
+    FBQ(`How do you approach learning a new domain or technology relevant to a ${occ}?`,
+        ['Avoid it', 'Learn the fundamentals, build a small practice, and apply it on real work', 'Only read about it', 'Skip it'], 1, 'Learning', 0,
+        'Learn-by-doing on real work is the most effective way to internalize new skills.'),
+    FBQ(`How do you respond when a ${occ} project changes direction suddenly?`,
+        ['Stop and wait', 'Reassess scope, update priorities, and communicate the new plan', 'Quietly continue the old plan', 'Complain about it'], 2, 'Adaptability', 1,
+        'Rapidly reassessing and communicating keeps the team aligned through change.'),
+    FBQ(`How do you make sure a decision you make as a ${occ} can be revisited?`,
+        ['Decide and forget', 'Record the rationale and criteria so it can be evaluated later', 'Decide in secret', 'Decide based on a whim'], 1, 'Decision Hygiene', 1,
+        'Recording rationale enables learning and healthy revisiting of decisions.'),
+    FBQ(`How do you balance thoroughness with speed as a ${occ}?`,
+        ['Always go slow', 'Right-size the effort to the risk and impact of the task', 'Always rush', 'Only care about speed'], 1, 'Judgment', 1,
+        'Right-sizing effort to risk and impact balances speed with quality.'),
+];
+
+const generateDefaultInterview = ({ occupation = 'Professional', interviewType = 'technical', questionCount = 10, language = 'en', difficulty = 'medium', experienceLevel = '', previousQuestions = [] } = {}) => {
+    const requestedCount = Math.min(Math.max(parseInt(questionCount) || 10, 5), 20);
+    const type = ['technical', 'behavioral', 'hr', 'managerial', 'case', 'mixed'].includes(interviewType) ? interviewType : 'technical';
+    const formattedOccupation = String(occupation || 'Professional').trim() || 'Professional';
+    const occ = formattedOccupation;
+
+    const pools = {
+        technical: FALLBACK_TECHNICAL(occ),
+        behavioral: FALLBACK_BEHAVIORAL(occ),
+        hr: FALLBACK_MANAGERIAL(occ),
+        managerial: FALLBACK_MANAGERIAL(occ),
+        case: FALLBACK_CASE(occ),
+        generic: FALLBACK_GENERIC(occ),
+    };
+
+    let basePool;
+    if (type === 'mixed') basePool = [...pools.technical, ...pools.behavioral, ...pools.managerial];
+    else if (type === 'hr') basePool = [...pools.behavioral, ...pools.managerial];
+    else if (type === 'technical' || type === 'behavioral' || type === 'managerial' || type === 'case') basePool = pools[type];
+    else basePool = pools.technical;
+
+    const distribution = interviewDifficultyDistribution(requestedCount, difficulty, experienceLevel);
+    const previousKeys = new Set((Array.isArray(previousQuestions) ? previousQuestions : [])
+        .filter(q => typeof q === 'string').map(q => questionKey(q)));
+    const rand = seededRand(`${occ}|${type}|${difficulty}|${requestedCount}|${language}`);
+
+    // Bucket by base difficulty tier, seeded-shuffled within each tier.
+    const tierBuckets = { 0: [], 1: [], 2: [] };
+    for (const q of [...basePool, ...pools.generic]) {
+        if (tierBuckets[q.diff]) tierBuckets[q.diff].push(q);
+    }
+    for (const tier of [0, 1, 2]) seededShuffle(tierBuckets[tier], rand);
+
+    const usedKeys = new Set();
+    const pickFrom = (tier) => {
+        const bucket = tierBuckets[tier] || [];
+        for (let i = 0; i < bucket.length; i++) {
+            const q = bucket[i];
+            const key = questionKey(q.question);
+            if (usedKeys.has(key) || previousKeys.has(key)) continue;
+            usedKeys.add(key);
+            return q;
+        }
+        return null;
+    };
+
+    const selected = [];
+    // Fulfill difficulty quotas (Advanced, Intermediate, Easy), borrowing from other tiers if needed.
+    const want = [
+        { tier: 2, count: distribution.advanced },
+        { tier: 1, count: distribution.intermediate },
+        { tier: 0, count: distribution.easy },
     ];
+    for (const { tier, count } of want) {
+        for (let i = 0; i < count; i++) {
+            const q = pickFrom(tier) || pickFrom(2) || pickFrom(1) || pickFrom(0);
+            if (q) selected.push(q);
+            else break;
+        }
+    }
+    // Fill any remaining shortfall from the whole pool (dedup + recent-history exclusion).
+    if (selected.length < requestedCount) {
+        const remaining = seededShuffle([...basePool, ...pools.generic]
+            .filter(q => !usedKeys.has(questionKey(q.question))), rand);
+        for (const q of remaining) {
+            if (selected.length >= requestedCount) break;
+            const key = questionKey(q.question);
+            if (usedKeys.has(key) || previousKeys.has(key)) continue;
+            usedKeys.add(key);
+            selected.push(q);
+        }
+    }
 
-    // Default behavioral questions for any occupation
-    const behavioralQuestions = [
-        {
-            id: 1,
-            question: 'How do you handle conflicts within your team?',
-            options: [
-                'Avoid confrontation and hope it resolves itself',
-                'Listen to all parties, facilitate discussion, and find common ground',
-                'Always side with the senior team member',
-                'Escalate immediately to management',
-            ],
-            correctAnswer: 1,
-            category: 'Conflict Resolution',
-            difficulty: 'Intermediate',
-            explanation: 'Effective conflict resolution involves active listening, understanding all perspectives, and collaborative problem-solving.',
-            estimatedTime: 120,
-        },
-        {
-            id: 2,
-            question: 'Describe how you prioritize tasks when facing multiple deadlines.',
-            options: [
-                'I work on whatever task I feel like at the moment',
-                'I focus on the most urgent task regardless of importance',
-                'I evaluate both urgency and importance, communicate with stakeholders, and adjust plans as needed',
-                'I simply work longer hours to complete everything',
-            ],
-            correctAnswer: 2,
-            category: 'Time Management',
-            difficulty: 'Intermediate',
-            explanation: 'Strategic prioritization based on both urgency and importance, while maintaining communication, demonstrates effective time management.',
-            estimatedTime: 100,
-        },
-        {
-            id: 3,
-            question: 'How do you respond to feedback about your work?',
-            options: [
-                'I take it personally and become defensive',
-                'I listen actively, thank the person, reflect on the feedback, and determine appropriate actions for improvement',
-                "I ignore feedback that doesn't align with my self-perception",
-                'I agree with all feedback regardless of its validity',
-            ],
-            correctAnswer: 1,
-            category: 'Adaptability',
-            difficulty: 'Easy',
-            explanation: 'A growth mindset involves being open to feedback and using it constructively for professional development.',
-            estimatedTime: 90,
-        },
-        {
-            id: 4,
-            question: 'Describe a situation where you had to adapt to a significant change at work.',
-            options: [
-                "I've never had to adapt to changes",
-                'I resist change until forced to comply',
-                'I understand the reason for change, identify opportunities, develop new skills, and help others adapt',
-                'I switch jobs whenever significant changes occur',
-            ],
-            correctAnswer: 2,
-            category: 'Change Management',
-            difficulty: 'Intermediate',
-            explanation: 'Adaptability involves understanding the context of change, finding opportunities, and supporting the transition process.',
-            estimatedTime: 130,
-        },
-        {
-            id: 5,
-            question: 'How do you approach collaboration with colleagues from different departments?',
-            options: [
-                'I avoid cross-department collaboration whenever possible',
-                "I insist they adapt to my department's methods and terminology",
-                'I build relationships, learn about their perspectives, establish common goals, and create clear communication channels',
-                'I let management handle all cross-department coordination',
-            ],
-            correctAnswer: 2,
-            category: 'Collaboration',
-            difficulty: 'Intermediate',
-            explanation: 'Effective cross-functional collaboration involves relationship building, empathy, and establishing shared objectives and communication methods.',
-            estimatedTime: 110,
-        },
-    ];
+    const labelFor = (baseDiff) => {
+        const d = String(difficulty || 'medium').toLowerCase();
+        const senior = ['senior', 'lead', 'executive', 'staff', 'principal', 'expert'].some(t =>
+            String(experienceLevel || '').toLowerCase().includes(t));
+        const eff = senior ? 'hard' : d;
+        if (eff === 'easy') return baseDiff === 2 ? 'Intermediate' : 'Easy';
+        if (eff === 'hard') return baseDiff === 0 ? 'Intermediate' : 'Advanced';
+        if (eff === 'expert') return 'Advanced';
+        return baseDiff === 0 ? 'Easy' : baseDiff === 1 ? 'Intermediate' : 'Advanced';
+    };
 
-    // Select appropriate questions based on interview type
-    const questions = interviewType === 'technical' ? technicalQuestions : behavioralQuestions;
+    const questions = selected.slice(0, requestedCount).map((q, i) => ({
+        id: i + 1,
+        question: q.question,
+        options: q.options,
+        correctAnswer: q.correctAnswer,
+        category: q.category,
+        difficulty: labelFor(q.diff),
+        weight: 1,
+        explanation: q.explanation,
+        estimatedTime: q.estimatedTime,
+    }));
 
-    // Fill remaining questions from the other category to have 10 questions total
-    const remainingQuestions =
-        interviewType === 'technical' ? behavioralQuestions.slice(0, 5).map((q, i) => ({ ...q, id: i + 6 })) : technicalQuestions.slice(0, 5).map((q, i) => ({ ...q, id: i + 6 }));
-
-    const allQuestions = [...questions, ...remainingQuestions];
-
-    // Create appropriate categories based on questions
-    const categories = [...new Set(allQuestions.map((q) => q.category))];
+    const categories = [...new Set(questions.map(q => q.category))];
+    const dept = type === 'technical' ? 'Technical Department' : type === 'case' ? 'Case Analysis' : 'Human Resources';
+    const title = `${formattedOccupation} Position - ${type.charAt(0).toUpperCase() + type.slice(1)} Assessment`;
 
     return {
-        title: `${formattedOccupation} Position - ${interviewType === 'technical' ? 'Technical' : 'Behavioral'} Assessment`,
+        title,
         company: 'Professional Evaluation Services',
-        department: interviewType === 'technical' ? 'Technical Department' : 'Human Resources',
-        duration: '30 minutes',
-        totalQuestions: allQuestions.length,
+        department: dept,
+        duration: `${Math.max(5, Math.round((questions.length * 3) / 5) * 5)} minutes`,
+        totalQuestions: questions.length,
         passingScore: 70,
         categories,
-        questions: allQuestions,
+        questions,
+        _source: 'fallback',
     };
 };
 
@@ -2181,3 +2372,10 @@ router.post('/parse-resume', async (req, res) => {
 
 // Test endpoint to check AI configuration
 module.exports = router;
+// Exported for unit testing of the interview generation pipeline (prompt builder,
+// de-duplication, difficulty distribution, and the grounded fallback).
+module.exports.buildInterviewPrompt = buildInterviewPrompt;
+module.exports.generateDefaultInterview = generateDefaultInterview;
+module.exports.dedupeQuestions = dedupeQuestions;
+module.exports.questionKey = questionKey;
+module.exports.interviewDifficultyDistribution = interviewDifficultyDistribution;
