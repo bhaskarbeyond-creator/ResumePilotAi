@@ -597,6 +597,8 @@ async function requestProvider(provider, providerConfig, prompt, generation, { f
 
 async function generateWithProviders({ prompt, configuration, operation, fetchImpl, signal, timeoutMs }) {
     const order = providerOrder(configuration);
+    const providerSummary = PROVIDERS.map(p => `${p}:${configuration.providers[p]?.enabled ? 'ON' : 'OFF'}`).join(' ');
+    console.log(`[RCA][generateWithProviders] operation=${operation || 'unknown'} order=${order.join(',')} providers=[${providerSummary}]`);
     if (!order.length) throw Object.assign(new Error('No AI provider is configured'), { code: 'AI_PROVIDER_UNAVAILABLE', status: 503 });
     const failures = [];
     for (const provider of order) {

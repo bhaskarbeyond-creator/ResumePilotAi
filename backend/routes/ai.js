@@ -623,6 +623,9 @@ router.post('/generate-interview', async (req, res) => {
         const prompt = built.prompt;
 
         const responseText = await generateConfiguredText(req, res, prompt, 'generate-interview', { maxTokens: 4096 });
+        const aiProvider = res.getHeader('X-AI-Provider') || 'unknown';
+        const aiModel = res.getHeader('X-AI-Model') || 'unknown';
+        console.log(`[RCA][generate-interview] provider=${aiProvider} model=${aiModel} responseLen=${(responseText || '').length}`);
 
         try {
             // Extract the JSON from the response
@@ -630,19 +633,22 @@ router.post('/generate-interview', async (req, res) => {
             const jsonStr = jsonMatch ? jsonMatch[0] : responseText;
             const jsonData = extractJson(jsonStr) || extractJson(responseText);
 
-            if (!jsonData || typeof jsonData !== 'object') throw new Error('Invalid interview response');
+            if (!jsonData || typeof jsonData !== 'object') throw new Error('Invalid interview response: JSON extract returned null or non-object');
 
             // De-duplicate identical/near-identical question text (within-set and vs. recent
             // attempts), then bound to the requested count.
             const questions = dedupeQuestions(jsonData.questions, priorQuestions).slice(0, built.validQuestionCount);
-            if (!questions.length) throw new Error('No usable questions after de-duplication');
+            if (!questions.length) throw new Error('No usable questions after de-duplication: questions array empty or all duped');
 
             jsonData.questions = questions;
             jsonData.totalQuestions = questions.length;
             markSource('ai');
+            console.log(`[RCA][generate-interview] SUCCESS source=ai questions=${questions.length}`);
             res.json(jsonData);
         } catch (parseError) {
-            console.error('Error parsing AI response:', parseError);
+            const reason = parseError?.message || 'parse_error_unknown';
+            console.error(`[RCA][generate-interview] FALLBACK fallback_reason=parse_or_validate provider=${aiProvider} model=${aiModel} detail=${reason}`);
+            console.error('[RCA][generate-interview] Raw AI responseText (first 500 chars):', String(responseText || '').slice(0, 500));
             // Fall back to generating default interview questions (role/difficulty/count-aware).
             const fallbackData = generateDefaultInterview({
                 occupation,
@@ -653,11 +659,15 @@ router.post('/generate-interview', async (req, res) => {
                 experienceLevel,
                 previousQuestions: priorQuestions,
             });
-            markSource('fallback');
+            markSource('fallback:parse_error');
             res.json(fallbackData);
         }
     } catch (error) {
-        console.error('Error generating interview questions:', error);
+        const providerFailCode = error?.code || 'UNKNOWN';
+        const providerFailStatus = error?.status || 0;
+        const providerFailMsg = error?.message || 'unknown_error';
+        const failures = error?.failures ? JSON.stringify(error.failures.map(f => ({ p: f.provider, s: f.status, c: f.code }))) : 'n/a';
+        console.error(`[RCA][generate-interview] FALLBACK fallback_reason=provider_failure code=${providerFailCode} status=${providerFailStatus} msg=${providerFailMsg} failures=${failures}`);
         // Use fallback if AI generation fails
         const { occupation, interviewType, questionCount = 10, language = 'en', difficulty, experienceLevel, previousQuestions } = req.body;
         const priorQuestions = (Array.isArray(previousQuestions) ? previousQuestions : [])
@@ -674,7 +684,7 @@ router.post('/generate-interview', async (req, res) => {
             experienceLevel,
             previousQuestions: priorQuestions,
         });
-        markSource('fallback');
+        markSource('fallback:provider_failure');
         res.json(fallbackData);
     }
 });
