@@ -11,6 +11,7 @@ import * as serviceWorker from './serviceWorker';
 import Spinner from './components/Spinner/Spinner';
 import PublicResume from './components/PublicResume/PublicResume';
 import fire from './conf/fire'; // Import fire
+import { settingsFromSnapshot } from './utils/moduleFlags';
 import GA4Provider from './components/GA4Provider';
 import PrivacyConsentBanner from './components/PrivacyConsentBanner';
 import i18n, { SUPPORTED_LANGUAGES } from './i18n';
@@ -206,6 +207,35 @@ const AuthWrapper = () => {
 
         // Cleanup auth subscription on unmount
         return () => unsubscribe();
+    }, []);
+
+    // One server-confirmed public-config listener feeds every module consumer in
+    // this browser context. Firestore supplies cross-tab updates; cached snapshots
+    // are ignored so a stale default-ON value cannot overwrite a confirmed OFF.
+    useEffect(() => {
+        let unsubscribe = () => {};
+        try {
+            unsubscribe = fire.firestore().collection('data').doc('public_config').onSnapshot(
+                { includeMetadataChanges: true },
+                (snapshot) => {
+                    if (!snapshot.exists) return;
+                    const settings = settingsFromSnapshot(snapshot);
+                    if (settings._settingsSource !== 'remote' || !settings.modules) return;
+                    window.dispatchEvent(new CustomEvent('systemSettingsUpdated', {
+                        detail: {
+                            category: 'modules',
+                            revision: settings._settingsRevisions?.modules,
+                            modules: settings.modules,
+                            source: 'firestore-server',
+                        }
+                    }));
+                },
+                () => { /* consumers keep their last server-confirmed state */ }
+            );
+        } catch {
+            unsubscribe = () => {};
+        }
+        return () => { if (typeof unsubscribe === 'function') unsubscribe(); };
     }, []);
 
     useEffect(() => {

@@ -4,7 +4,7 @@ import logo from '../../assets/logo/logo.png';
 import { withTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { saveCoverLetter, getUserCoverLetters, deleteCoverLetter, getProfileOfUser, createTrackedJob, getSystemSettings } from '../../firestore/dbOperations';
-import { resolveAtsScoreVisibility } from '../../utils/moduleFlags';
+import { resolveAtsScoreVisibility, settingsFromSnapshot } from '../../utils/moduleFlags';
 import { generateUserAiContent } from '../../services/aiService';
 import fire from '../../conf/fire';
 import TemplateRenderer from '../TemplateRenderer';
@@ -181,8 +181,11 @@ class CoverLetter extends Component {
 
         try {
             this.unsubscribePublicConfig = fire.firestore().collection('data').doc('public_config').onSnapshot(
+                { includeMetadataChanges: true },
                 (snapshot) => {
-                    if (snapshot.exists) this.applyAtsVisibility(snapshot.data() || {});
+                    if (!snapshot.exists) return;
+                    const settings = settingsFromSnapshot(snapshot);
+                    if (settings._settingsSource === 'remote') this.applyAtsVisibility(settings);
                 },
                 () => { /* keep the last known ATS flag if the listener drops */ }
             );

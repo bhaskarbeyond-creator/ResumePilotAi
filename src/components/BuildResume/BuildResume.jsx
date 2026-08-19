@@ -29,7 +29,7 @@ import axios from 'axios';
 import download from 'downloadjs';
 import config from '../../conf/configuration';
 import { getJsonById, IncrementDownloads, addOneToNumberOfDocumentsDownloaded, getProfileOfUser, getSystemSettings } from '../../firestore/dbOperations';
-import { resolveAtsScoreVisibility } from '../../utils/moduleFlags';
+import { resolveAtsScoreVisibility, settingsFromSnapshot } from '../../utils/moduleFlags';
 import { createResumeDraft, loadResumeDraft, saveResumeDraft, publishResume, unpublishResume, getResumePublication, writeResumeRecovery, readResumeRecovery, clearResumeRecovery } from '../../services/resumePersistence';
 import { EMPTY_RESUME, DEFAULT_SECTION_ORDER, normalizeResumeData, buildCanonicalResumeDocument } from '../../utils/resumeData';
 import { trackDownload, trackEvent, trackEngagement } from '../../utils/ga4';
@@ -160,8 +160,11 @@ const BuildResume = () => {
         let unsubscribePublicConfig = () => {};
         try {
             unsubscribePublicConfig = fire.firestore().collection('data').doc('public_config').onSnapshot(
+                { includeMetadataChanges: true },
                 (snapshot) => {
-                    if (snapshot.exists) syncSettings(snapshot.data() || {});
+                    if (!snapshot.exists) return;
+                    const settings = settingsFromSnapshot(snapshot);
+                    if (settings._settingsSource === 'remote') syncSettings(settings);
                 },
                 () => { /* keep the last known ATS flag if the listener drops */ }
             );

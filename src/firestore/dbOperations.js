@@ -5323,18 +5323,28 @@ export async function getSystemSettings() {
         }
         return fallbackMerged;
     };
+    // A server-confirmed save response is safe to reuse for this session. Static
+    // defaults are not authoritative and must remain distinguishable so default-ON
+    // feature flags can fail closed during a Firestore/network failure.
+    const fallbackSource = localCache.modules ? 'cache' : 'fallback';
 
     try {
         const result = await safeDbOperation(async () => {
             const db = fire.firestore();
             const docRef = db.collection('data').doc('public_config');
-            const snapshot = await docRef.get();
+            // Force an authoritative read. The default Firestore get() path may
+            // resolve from its browser cache when the network is unavailable.
+            const snapshot = await docRef.get({ source: 'server' });
 
             let remoteData = {};
             if (snapshot && snapshot.exists) {
                 remoteData = redactClientSecrets(snapshot.data() || {});
-                systemSettingsRevisions = { ...(remoteData._settingsRevisions || {}) };
+                systemSettingsRevisions = { ...systemSettingsRevisions, ...(remoteData._settingsRevisions || {}) };
                 delete remoteData._settingsRevisions;
+                // Cache server-confirmed reads as well as save responses. A later
+                // network interruption can then retain the last proven values
+                // instead of rebuilding default-ON settings from static defaults.
+                inMemorySettingsCache = { ...inMemorySettingsCache, ...remoteData };
             }
 
             const allKeys = new Set([
@@ -5350,9 +5360,9 @@ export async function getSystemSettings() {
             return { ...merged, _settingsSource: 'remote' };
         }, false);
 
-        return result || { ...getFallback(), _settingsSource: 'fallback' };
+        return result || { ...getFallback(), _settingsSource: fallbackSource };
     } catch (err) {
-        return { ...getFallback(), _settingsSource: 'fallback' };
+        return { ...getFallback(), _settingsSource: fallbackSource };
     }
 }
 
@@ -5363,10 +5373,18 @@ export async function saveSystemSettings(category, data, { force = false } = {})
         body: JSON.stringify({ data, expectedRevision }),
     });
 
-    if (response?.status === 409 || result?.code === 'ADMIN_SETTINGS_CONFLICT') {
+    if (!force && (response?.status === 409 || result?.code === 'ADMIN_SETTINGS_CONFLICT')) {
+        // Rebase the same partial patch on the authoritative server revision. Never
+        // bypass a conflict with -1: a stale full-category payload could otherwise
+        // resurrect an unrelated module flag changed by another admin/tab.
+        const refreshed = await getSystemSettings();
+        if (refreshed?._settingsSource !== 'remote' || systemSettingsRevisions[category] === undefined) {
+            throw new Error('Settings changed and the latest server revision could not be loaded. Refresh and try again.');
+        }
+        expectedRevision = Number(systemSettingsRevisions[category]);
         const retry = await fetchAdminWithReauth(`/api/admin/settings/${encodeURIComponent(category)}`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ data, expectedRevision: -1 }),
+            body: JSON.stringify({ data, expectedRevision }),
         });
         response = retry.response;
         result = retry.data;

@@ -21,6 +21,7 @@ import {
     FaShieldAlt
 } from 'react-icons/fa';
 import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
+import { buildModuleSettingsPatch } from '../../../utils/moduleFlags';
 
 const ModulesSettings = () => {
     const [modulesConfig, setModulesConfig] = useState({
@@ -70,66 +71,75 @@ const ModulesSettings = () => {
                 enableCouponsModule: mods.enableCouponsModule !== undefined ? mods.enableCouponsModule : true,
                 enableSalesTaxModule: mods.enableSalesTaxModule !== undefined ? mods.enableSalesTaxModule : true,
             });
-            setSettingsHydrated(true);
+            const isAuthoritative = settings?._settingsSource === 'remote' || settings?._settingsSource === 'cache';
+            setSettingsHydrated(isAuthoritative);
             setLoading(false);
-            if (settings?._settingsSource === 'fallback') {
+            if (!isAuthoritative) {
+                setToastMessage({ type: 'error', text: 'Live module settings could not be verified. Refresh before changing toggles.' });
                 console.warn('Module settings loaded with fallback configuration.');
             }
         }).catch((err) => {
             console.error('Error loading module settings:', err);
-            setSettingsHydrated(true);
+            setSettingsHydrated(false);
+            setToastMessage({ type: 'error', text: 'Live module settings could not be loaded. Refresh before changing toggles.' });
             setLoading(false);
         });
     }, []);
 
     const persistModules = async (nextConfig, targetKey = null) => {
+        if (!settingsHydrated) {
+            setToastMessage({ type: 'error', text: 'Live module settings are not verified. Refresh before saving.' });
+            return false;
+        }
         if (targetKey) setSavingKey(targetKey);
         setSaving(true);
         setToastMessage(null);
 
         try {
-            const updatedModules = {
-                ...nextConfig,
-                enableLinkedinLogin: nextConfig.enableLinkedinAuthModule,
-                enableGithubLogin: nextConfig.enableGithubAuthModule,
-            };
+            // A toggle submits only the changed key. This prevents a stale tab from
+            // overwriting sibling module flags that another administrator changed.
+            const modulePatch = buildModuleSettingsPatch(nextConfig, targetKey);
+            const moduleSave = await saveSystemSettings('modules', modulePatch);
+            const persistedModules = moduleSave.settings || modulePatch;
 
-            // Save module settings under category 'modules'
-            await saveSystemSettings('modules', updatedModules);
-
-            // Keep 'ai', 'auth', and 'socialAuth' in sync
-            try {
-                await saveSystemSettings('ai', { enableImportModule: nextConfig.enableImportModule });
-            } catch (aiErr) {
-                console.warn('AI sync notice:', aiErr);
+            // Synchronize only the legacy namespace related to the changed setting.
+            if (!targetKey || targetKey === 'enableEmailVerification') {
+                try {
+                    await saveSystemSettings('auth', { enableEmailVerification: nextConfig.enableEmailVerification });
+                } catch (authErr) {
+                    console.warn('Auth sync notice:', authErr);
+                }
             }
 
-            try {
-                await saveSystemSettings('auth', { enableEmailVerification: nextConfig.enableEmailVerification });
-            } catch (authErr) {
-                console.warn('Auth sync notice:', authErr);
-            }
-
-            try {
-                const currentSettings = (await getSystemSettings()) || {};
-                await saveSystemSettings('socialAuth', {
-                    ...(currentSettings.socialAuth || {}),
-                    enableLinkedinLogin: nextConfig.enableLinkedinAuthModule,
-                    enableGithubLogin: nextConfig.enableGithubAuthModule,
-                });
-            } catch (socialErr) {
-                console.warn('Social auth sync notice:', socialErr);
-            }
-
-            // Dispatch global event so all open tabs / components update state in real-time
-            window.dispatchEvent(new CustomEvent('systemSettingsUpdated', {
-                detail: {
-                    modules: updatedModules,
-                    socialAuth: {
+            if (!targetKey || ['enableLinkedinAuthModule', 'enableGithubAuthModule'].includes(targetKey)) {
+                try {
+                    await saveSystemSettings('socialAuth', {
                         enableLinkedinLogin: nextConfig.enableLinkedinAuthModule,
                         enableGithubLogin: nextConfig.enableGithubAuthModule,
-                    },
-                    ai: { enableImportModule: nextConfig.enableImportModule }
+                    });
+                } catch (socialErr) {
+                    console.warn('Social auth sync notice:', socialErr);
+                }
+            }
+
+            // The backend returns the atomically merged category. Use that response,
+            // not the optimistic/stale form snapshot, for UI and consumer events.
+            setModulesConfig((current) => ({
+                ...current,
+                ...persistedModules,
+                enableLinkedinAuthModule: persistedModules.enableLinkedinAuthModule !== undefined
+                    ? persistedModules.enableLinkedinAuthModule
+                    : (persistedModules.enableLinkedinLogin !== undefined ? persistedModules.enableLinkedinLogin : current.enableLinkedinAuthModule),
+                enableGithubAuthModule: persistedModules.enableGithubAuthModule !== undefined
+                    ? persistedModules.enableGithubAuthModule
+                    : (persistedModules.enableGithubLogin !== undefined ? persistedModules.enableGithubLogin : current.enableGithubAuthModule),
+            }));
+            window.dispatchEvent(new CustomEvent('systemSettingsUpdated', {
+                detail: {
+                    category: 'modules',
+                    revision: moduleSave.revision,
+                    modules: persistedModules,
+                    source: 'admin-save-confirmed',
                 }
             }));
 
@@ -362,7 +372,7 @@ const ModulesSettings = () => {
                                     {/* Toggle Switch */}
                                     <button
                                         type="button"
-                                        disabled={saving}
+                                        disabled={saving || !settingsHydrated}
                                         onClick={() => toggleModule(mod.key)}
                                         className="flex items-center space-x-2 focus:outline-none shrink-0 disabled:opacity-60"
                                         title={isEnabled ? 'Click to Disable' : 'Click to Enable'}
@@ -420,7 +430,7 @@ const ModulesSettings = () => {
             <div className="flex justify-end pt-2">
                 <button
                     type="submit"
-                    disabled={saving}
+                    disabled={saving || !settingsHydrated}
                     className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-6 rounded-lg text-sm transition-all duration-200 shadow-md hover:shadow-lg flex items-center space-x-2 disabled:opacity-50"
                 >
                     {saving ? (

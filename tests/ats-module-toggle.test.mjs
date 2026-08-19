@@ -3,12 +3,14 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import {
+  buildModuleSettingsPatch,
   evaluateAtsVisibilityMatrix,
   isAtsScoreModuleEnabled,
   isFallbackSettings,
   mergeSettingsCategory,
   resolveAtsScoreVisibility,
   resolveEnabledFlag,
+  settingsFromSnapshot,
 } from '../src/utils/moduleFlags.js';
 
 const require = createRequire(import.meta.url);
@@ -36,10 +38,37 @@ test('fallback settings never enable ATS and partial patches keep the last known
   assert.equal(isFallbackSettings({ _settingsSource: 'remote' }), false);
   assert.equal(isFallbackSettings({ modules: { enableAtsScoreModule: false } }), false);
   assert.equal(resolveAtsScoreVisibility({ _settingsSource: 'fallback' }), false);
+  // This is the real getSystemSettings fallback shape: static defaults contain
+  // true, but they are not a remotely confirmed ON and must fail closed.
+  assert.equal(resolveAtsScoreVisibility({
+    _settingsSource: 'fallback',
+    modules: { enableAtsScoreModule: true },
+  }), false);
+  assert.equal(resolveAtsScoreVisibility({
+    _settingsSource: 'cache',
+    modules: { enableAtsScoreModule: true },
+  }), true);
   assert.equal(resolveAtsScoreVisibility({ modules: { enableAtsScoreModule: false } }), false);
   assert.equal(resolveAtsScoreVisibility({ modules: { enableAtsScoreModule: true } }), true);
   assert.equal(resolveAtsScoreVisibility({ modules: {} }), true);
   assert.equal(resolveAtsScoreVisibility({ modules: { enableCouponsModule: false } }, { allowMissingDefault: false }), null);
+});
+
+test('Firestore listener provenance rejects cache-first ON and accepts server-confirmed ON', () => {
+  const cached = settingsFromSnapshot({
+    exists: true,
+    data: () => ({ modules: { enableAtsScoreModule: true } }),
+    metadata: { fromCache: true },
+  });
+  const remote = settingsFromSnapshot({
+    exists: true,
+    data: () => ({ modules: { enableAtsScoreModule: true } }),
+    metadata: { fromCache: false },
+  });
+  assert.equal(cached._settingsSource, 'fallback');
+  assert.equal(resolveAtsScoreVisibility(cached), false);
+  assert.equal(remote._settingsSource, 'remote');
+  assert.equal(resolveAtsScoreVisibility(remote), true);
 });
 
 test('ATS module is enabled only when the stored flag is explicitly true', () => {
@@ -49,6 +78,7 @@ test('ATS module is enabled only when the stored flag is explicitly true', () =>
   assert.equal(isAtsScoreModuleEnabled({ modules: { enableAtsScoreModule: true } }), true);
   assert.equal(isAtsScoreModuleEnabled({ modules: { enableAtsScoreModule: false } }), false);
   assert.equal(isAtsScoreModuleEnabled({ modules: { enableAtsScoreModule: null } }), false);
+  assert.equal(isAtsScoreModuleEnabled({ _settingsSource: 'fallback', modules: { enableAtsScoreModule: true } }), false);
   assert.equal(isAtsScoreModuleEnabled({ userSettings: { enableAtsScoreModule: true } }), true);
   assert.equal(isAtsScoreModuleEnabled({ features: { atsScoreEnabled: true } }), true);
 });
@@ -89,6 +119,25 @@ test('partial admin modules writes must not resurrect ATS after OFF', () => {
   assert.equal(afterCouponSave.enableCouponsModule, false);
 });
 
+test('auto-save patches only the touched module so stale siblings cannot overwrite ATS OFF', () => {
+  const staleTab = {
+    enableAtsScoreModule: true,
+    enableCoverLetterModule: true,
+    enableJobScraperModule: false,
+  };
+  const patch = buildModuleSettingsPatch(staleTab, 'enableJobScraperModule');
+  assert.deepEqual(patch, { enableJobScraperModule: false });
+
+  const currentServer = {
+    enableAtsScoreModule: false,
+    enableCoverLetterModule: true,
+    enableJobScraperModule: true,
+  };
+  const merged = mergeAdminSettingCategory(currentServer, patch);
+  assert.equal(merged.enableAtsScoreModule, false);
+  assert.equal(merged.enableJobScraperModule, false);
+});
+
 test('four-state matrix: ATS and Optimization share enableAtsScoreModule', () => {
   for (const row of FOUR_STATES) {
     const result = evaluateAtsVisibilityMatrix(row.ats);
@@ -107,6 +156,8 @@ test('BuildResume gates both ATS meter mounts and fail-closes on load errors', (
   assert.match(build, /setIsAtsEnabled\(false\)/);
   assert.match(build, /public_config/);
   assert.match(build, /onSnapshot/);
+  assert.match(build, /includeMetadataChanges: true/);
+  assert.match(build, /settingsFromSnapshot/);
   assert.equal((build.match(/<AtsScoreMeter /g) || []).length, 2);
   assert.match(build, /\{isAtsEnabled === true && \(/);
   assert.doesNotMatch(build, /setIsAtsEnabled\(true\)/);
@@ -121,9 +172,12 @@ test('Modules Manager auto-saves the same flag users consume and reverts a faile
   assert.match(modules, /saveSystemSettings\('modules'/);
   assert.match(modules, /systemSettingsUpdated/);
   assert.match(modules, /setModulesConfig\(previousConfig\)/);
-  assert.match(modules, /disabled=\{saving\}/);
+  assert.match(modules, /disabled=\{saving \|\| !settingsHydrated\}/);
+  assert.match(modules, /buildModuleSettingsPatch/);
+  assert.match(modules, /moduleSave\.settings/);
+  assert.doesNotMatch(modules, /saveSystemSettings\('ai'/);
   assert.match(modules, /settingsHydrated/);
-  assert.match(modules, /_settingsSource === 'fallback'/);
+  assert.match(modules, /_settingsSource === 'remote'/);
 });
 
 test('getSystemSettings no longer times out into default-ON modules', () => {
@@ -131,7 +185,9 @@ test('getSystemSettings no longer times out into default-ON modules', () => {
   assert.match(operations, /mergeSettingsCategory/);
   assert.match(operations, /enableAtsScoreModule: true/);
   assert.match(operations, /_settingsSource: 'remote'/);
-  assert.match(operations, /_settingsSource: 'fallback'/);
+  assert.match(operations, /fallbackSource = localCache\.modules \? 'cache' : 'fallback'/);
+  assert.match(operations, /docRef\.get\(\{ source: 'server' \}\)/);
+  assert.doesNotMatch(operations, /body: JSON\.stringify\(\{ data, expectedRevision: -1 \}\)/);
   assert.doesNotMatch(operations, /setTimeout\(\(\) => resolve\(null\), 1200\)/);
   assert.doesNotMatch(operations, /enableAtsScoreModule:\s*settings/);
   assert.doesNotMatch(operations, /Promise\.race/);
@@ -172,10 +228,21 @@ test('Cover Letter ATS UI is fail-closed on the same enableAtsScoreModule flag',
   assert.match(cover, /isAtsEnabled === true/);
   assert.match(cover, /public_config/);
   assert.match(cover, /onSnapshot/);
+  assert.match(cover, /includeMetadataChanges: true/);
+  assert.match(cover, /settingsFromSnapshot/);
   assert.match(cover, /allowMissingDefault: false/);
   assert.match(cover, /handleCopyFormattedText = async/);
   assert.doesNotMatch(cover, /score: 95/);
   assert.match(cover, /Target Job Description \(Optional\)/);
+});
+
+test('the app shell relays server-confirmed Firestore module updates to every consumer', () => {
+  const main = fs.readFileSync('src/main.jsx', 'utf8');
+  assert.match(main, /includeMetadataChanges: true/);
+  assert.match(main, /settingsFromSnapshot/);
+  assert.match(main, /settings\._settingsSource !== 'remote'/);
+  assert.match(main, /source: 'firestore-server'/);
+  assert.match(main, /new CustomEvent\('systemSettingsUpdated'/);
 });
 
 test('Cover Letter module nav is hidden when enableCoverLetterModule is off', () => {

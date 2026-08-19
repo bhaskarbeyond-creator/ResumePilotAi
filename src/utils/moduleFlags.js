@@ -11,7 +11,7 @@ export function resolveEnabledFlag(value, defaultEnabled = true) {
 }
 
 export function isAtsScoreModuleEnabled(settings) {
-    return resolveEnabledFlag(settings?.modules?.enableAtsScoreModule, true);
+    return resolveAtsScoreVisibility(settings);
 }
 
 /**
@@ -29,13 +29,47 @@ export function isFallbackSettings(settings) {
  * caller can keep the last known remote value instead of defaulting ON.
  */
 export function resolveAtsScoreVisibility(settings, { allowMissingDefault = true } = {}) {
+    // A fallback payload contains static default-ON values. It is not proof of the
+    // remotely persisted flag, so it must fail closed before inspecting those values.
+    if (isFallbackSettings(settings)) return false;
+
     const value = settings?.modules?.enableAtsScoreModule;
     if (value !== undefined) {
         return resolveEnabledFlag(value, true);
     }
-    if (isFallbackSettings(settings)) return false;
     if (allowMissingDefault !== true) return null;
     return true;
+}
+
+/**
+ * Tag a Firestore listener snapshot with its provenance. Cached snapshots are
+ * useful for many kinds of content, but a default-ON feature flag must not be
+ * enabled until Firestore confirms the snapshot came from the server.
+ */
+export function settingsFromSnapshot(snapshot) {
+    const data = snapshot?.exists ? (snapshot.data?.() || {}) : {};
+    return {
+        ...data,
+        _settingsSource: snapshot?.metadata?.fromCache === true ? 'fallback' : 'remote',
+    };
+}
+
+/**
+ * Auto-save only the flag the administrator actually changed. Sending an
+ * entire hydrated category from a stale tab can overwrite a newer sibling
+ * flag even when the backend correctly performs an atomic merge.
+ */
+export function buildModuleSettingsPatch(nextConfig = {}, targetKey = null) {
+    const source = nextConfig && typeof nextConfig === 'object' ? nextConfig : {};
+    const patch = targetKey ? { [targetKey]: source[targetKey] } : { ...source };
+
+    if (!targetKey || targetKey === 'enableLinkedinAuthModule') {
+        patch.enableLinkedinLogin = source.enableLinkedinAuthModule;
+    }
+    if (!targetKey || targetKey === 'enableGithubAuthModule') {
+        patch.enableGithubLogin = source.enableGithubAuthModule;
+    }
+    return patch;
 }
 
 export function mergeSettingsCategory(defaults = {}, ...layers) {
