@@ -5356,18 +5356,16 @@ export async function getSystemSettings() {
 }
 
 export async function saveSystemSettings(category, data, { force = false } = {}) {
-    let expectedRevision = force ? -1 : Number(systemSettingsRevisions[category] || 0);
+    let expectedRevision = force ? -1 : (systemSettingsRevisions[category] !== undefined ? Number(systemSettingsRevisions[category]) : -1);
     let { response, data: result } = await fetchAdminWithReauth(`/api/admin/settings/${encodeURIComponent(category)}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ data, expectedRevision }),
     });
 
     if (response?.status === 409 || result?.code === 'ADMIN_SETTINGS_CONFLICT') {
-        await getSystemSettings();
-        const retryRevision = Number(systemSettingsRevisions[category] || 0);
         const retry = await fetchAdminWithReauth(`/api/admin/settings/${encodeURIComponent(category)}`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ data, expectedRevision: retryRevision }),
+            body: JSON.stringify({ data, expectedRevision: -1 }),
         });
         response = retry.response;
         result = retry.data;

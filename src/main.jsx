@@ -20,7 +20,20 @@ import axios from 'axios';
 // Attach Firebase ID tokens at the browser-to-API trust boundary. The backend never
 // accepts identity, role, or entitlement from request bodies.
 async function getApiAuthorization() {
-    const user = fire.auth().currentUser;
+    let user = fire.auth().currentUser;
+    if (!user) {
+        try {
+            user = await new Promise((resolve) => {
+                const unsubscribe = fire.auth().onAuthStateChanged((u) => {
+                    unsubscribe();
+                    resolve(u);
+                });
+                setTimeout(() => resolve(fire.auth().currentUser), 1500);
+            });
+        } catch {
+            user = fire.auth().currentUser;
+        }
+    }
     return user ? `Bearer ${await user.getIdToken()}` : null;
 }
 

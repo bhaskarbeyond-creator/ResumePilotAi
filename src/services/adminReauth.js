@@ -26,9 +26,16 @@ export async function fetchAdminWithReauth(url, options = {}, { retry = true } =
     return { response, data };
   };
   let result = await execute();
-  if (retry && apiErrorCode(result.response, result.data) === 'RECENT_AUTH_REQUIRED') {
+  const code = apiErrorCode(result.response, result.data);
+  if (retry && code === 'RECENT_AUTH_REQUIRED') {
     await requestAdminReauthentication();
     result = await execute();
+  } else if (retry && (code === 'AUTH_REQUIRED' || code === 'INVALID_AUTH_TOKEN')) {
+    const user = typeof window !== 'undefined' && window.fire?.auth ? window.fire.auth().currentUser : null;
+    if (user) {
+      await user.getIdToken?.(true).catch(() => null);
+      result = await execute();
+    }
   }
   return result;
 }

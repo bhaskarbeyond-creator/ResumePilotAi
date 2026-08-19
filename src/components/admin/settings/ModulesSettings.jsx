@@ -141,7 +141,7 @@ const ModulesSettings = () => {
     };
 
     const toggleModule = async (moduleKey) => {
-        const previousConfig = modulesConfig;
+        const previousConfig = { ...modulesConfig };
         const nextValue = !modulesConfig[moduleKey];
         const nextConfig = {
             ...modulesConfig,
