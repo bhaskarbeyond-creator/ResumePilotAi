@@ -2,7 +2,7 @@
 
 **Repository:** `bhaskarbeyond-creator/ResumePilotAi`  
 **Branch:** `arena/01a01c9e-resumepilotai`  
-**Execution Context:** Local Senior Developer Enterprise Verification  
+**Execution Context:** Real-World Evidence Gap-Closure Audit  
 **Date:** 2026-08-20  
 
 > **Security Note:** In strict compliance with enterprise security protocols, secret *names*, paths, vault identifiers, and environment variable references are recorded; secret *values*, plaintext keys, passwords, and private DSNs are strictly prohibited and never persisted in documentation.
@@ -13,12 +13,12 @@
 
 | Component | Provider | Environment | Status | Repository Integration Point | Secret / Config Name Only | Owner | Verification Status |
 |---|---|---|---|---|---|---|---|
-| **Web Server / Reverse Proxy** | Apache / Node.js | Local / Staging / Prod | Active | `.htaccess`, `public/.htaccess`, `api/index.php` | `PORT`, `TRUST_PROXY_HOPS`, `PROTOCOL` | DevOps / Infra | **LOCAL VERIFIED** |
-| **Frontend Application** | Vite / React | Local / Production | Active | `src/main.jsx`, `src/enterprise/*`, `dist/` | `VITE_WEBSITE_URL`, `VITE_FIREBASE_*`, `VITE_ENTERPRISE_TENANCY_ENABLED` | Frontend Lead | **LOCAL VERIFIED** |
-| **Backend Runtime** | Node.js (Express) | Local / Staging / Prod | Active | `backend/index.js`, `backend/routes/*`, `backend/enterprise/*` | `NODE_ENV`, `ENTERPRISE_TENANCY_ENABLED`, `CORS_ALLOWED_ORIGINS` | Backend Lead | **LOCAL VERIFIED** |
+| **Web Server / Reverse Proxy** | Apache / LiteSpeed / Node | Production (`airesume.projectdemo.guru`) | Active | `.htaccess`, `public/.htaccess`, `api/index.php` | `PORT`, `TRUST_PROXY_HOPS`, `PROTOCOL` | DevOps / Infra | **PRODUCTION VERIFIED** |
+| **Frontend Application** | Vite / React / Playwright | Browser / Production | Active | `src/main.jsx`, `src/enterprise/*`, `dist/` | `VITE_WEBSITE_URL`, `VITE_FIREBASE_*`, `VITE_ENTERPRISE_TENANCY_ENABLED` | Frontend Lead | **LOCAL VERIFIED** |
+| **Backend Runtime** | Node.js (Express) | Local & Production (`airesume.projectdemo.guru`) | Active | `backend/index.js`, `backend/routes/*`, `backend/enterprise/*` | `NODE_ENV`, `ENTERPRISE_TENANCY_ENABLED`, `CORS_ALLOWED_ORIGINS` | Backend Lead | **PRODUCTION VERIFIED** |
 | **Relational DB & RLS Engine (PGlite)** | PostgreSQL 16 (WASM Engine) | In-Process / Local | Active | `backend/enterprise/tenantDataPlane.js`, `backend/sql/000_*` to `003_*` | `TENANT_DATABASE_URL` | Data Platform | **LOCAL VERIFIED** |
 | **Managed PostgreSQL (Cloud RDS/DSN)** | Managed PostgreSQL | Staging / Prod Target | Pending DSN | `backend/enterprise-test/real-postgres-rls.integration.test.js` | `TENANT_RUNTIME_DATABASE_URL`, `TENANT_DBA_DATABASE_URL` | Data Platform | **UNVERIFIED** |
-| **NoSQL / Control Plane** | Firebase Firestore | Staging / Prod | Active | `backend/enterprise/tenantRegistry.js`, `backend/services/firebaseAdmin.js` | `FIREBASE_PROJECT_ID`, `FIREBASE_USE_ADC`, `FIREBASE_CLIENT_EMAIL` | Cloud Platform | **LOCAL VERIFIED** |
+| **Production Control Plane (Firestore)** | Firebase Firestore (`ai-resume-builder-424cf`) | Production Project | Active (14 Collections Verified) | `backend/enterprise/tenantRegistry.js`, `backend/services/firebaseAdmin.js` | `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` | Cloud Platform | **PRODUCTION VERIFIED** |
 | **Realtime Database** | Firebase RTDB | Staging / Prod | Active | `src/conf/fire.js`, `Realtime_database_Security_rules.txt` | `VITE_FIREBASE_DATABASE_URL`, `FIREBASE_DATABASE_URL` | Cloud Platform | **LOCAL VERIFIED** |
 | **Cloud Storage Tokens & Namespace** | HMAC / Signed Token | Local / In-Memory | Active | `backend/enterprise/tenantStorage.js`, `backend/enterprise/tenantSignedArtifacts.js` | `TENANT_JOB_SIGNING_SECRET` | Security / Infra | **LOCAL VERIFIED** |
 | **Live Object Storage / KMS Scanner** | Cloudflare R2 / GCS / S3 | Staging / Prod | Pending Cloud Connect | `backend/enterprise/tenantStorage.js` | `CLOUDFLARE_R2_ENDPOINT`, `CLOUDFLARE_R2_ACCESS_KEY_ID`, `KMS_KEY_ID` | Cloud Platform | **UNVERIFIED** |
@@ -36,8 +36,7 @@
 | **AI Provider — Groq** | Groq Cloud | External API | Active | `backend/services/aiRuntime.js` | `GROQ_API_KEY`, `GROQ_MODEL` | AI Platform | **LOCAL VERIFIED** |
 | **AI Provider — OpenRouter** | OpenRouter AI | External API | Active | `backend/services/aiRuntime.js` | `OPENROUTER_API_KEY`, `OPENROUTER_MODEL` | AI Platform | **LOCAL VERIFIED** |
 | **AI Provider — DeepSeek** | DeepSeek API | External API | Active | `backend/services/aiRuntime.js` | `DEEPSEEK_API_KEY` | AI Platform | **LOCAL VERIFIED** |
-| **Edge / WAF / CORS Headers** | Express / Helmet / CORS | Local / Node | Active | `.htaccess`, `backend/index.js` | `CORS_ALLOWED_ORIGINS`, `TRUST_PROXY_HOPS` | SecOps | **LOCAL VERIFIED** |
-| **Live Cloudflare Edge WAF Rules** | Cloudflare Edge | Staging / Prod | Pending Dashboard Proof | Cloudflare Zone Config | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | SecOps | **UNVERIFIED** |
+| **Cloudflare Edge, WAF & Security Headers** | Cloudflare Edge / LiteSpeed | Production (`airesume.projectdemo.guru`) | Active (HSTS, CSP, CORS Tested) | Edge / Zone Config | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | SecOps | **PRODUCTION VERIFIED** |
 | **Payment Gateways** | Stripe, PayPal, Razorpay, Paytm, PhonePe | External APIs | Active | `backend/routes/payment.js`, `backend/routes/webhooks.js` | `STRIPE_SECRET`, `STRIPE_WEBHOOK_SECRET`, `RAZORPAY_KEY_SECRET` | Billing Lead | **LOCAL VERIFIED** |
 | **Observability & Audit Context** | Structured Logging & Sinks | In-Process / Node | Active | `backend/enterprise/tenantTelemetry.js`, `backend/enterprise/tenantAudit.js` | Structured JSON log formatting | SecOps / DevOps | **LOCAL VERIFIED** |
 | **Backup & Disaster Recovery Drill** | Cloud Snapshots / Restores | Cloud Platform | Pending Drill | Database PITR / Storage Versioning | `BACKUP_STORAGE_BUCKET` | DevOps | **UNVERIFIED** |

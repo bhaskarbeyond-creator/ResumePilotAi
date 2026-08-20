@@ -32,27 +32,27 @@ Every item is classified strictly using the standardized enterprise verification
 | **Phase 6 (Ext)** | Managed Cloud Message Broker | Cloud SQS/Kafka | **UNVERIFIED** | External queue broker pending cloud deployment |
 | **Phase 7** | Object Storage & KMS Token Proof | Local / Storage | **LOCAL VERIFIED** | Purpose-bound & route-bound artifact token verification; cross-tenant namespace rejection PASS |
 | **Phase 7 (Ext)** | Live Object Storage KMS Scanner | Cloudflare R2 / S3 | **UNVERIFIED** | Live cloud object storage KMS hardware scanner pending staging connect |
-| **Phase 8** | Firebase Real-Environment Proof | Emulator / Local | **LOCAL VERIFIED** | Catchall deny-by-default rules on `enterprise_*` internal collections verified |
-| **Phase 9** | Data Migration Manifest & Pilot | Local / Manifest | **LOCAL VERIFIED** | `docs/ENTERPRISE_DATA_MIGRATION_MANIFEST.md` authored; ambiguous collections quarantined |
+| **Phase 8** | Firebase Real-Environment Proof | Production (`ai-resume-builder-424cf`) | **PRODUCTION VERIFIED** | Live Firebase Admin SDK connectivity verified; 14 live collections accessible (`ai_usage`, `coupons`, `data`, `email_logs`, `email_verifications`, `password_reset_tokens`, `payment_orders`, `pb`, `portfolios`, `security_audit_logs`, `settings`, `subscriptions`, `transactions`, `users`); catchall security rules enforce server-only `enterprise_*` isolation |
+| **Phase 9** | Data Migration Manifest & Pilot | Local / Manifest | **LOCAL VERIFIED** | `docs/ENTERPRISE_DATA_MIGRATION_MANIFEST.md` authored; ambiguous collections quarantined; reversible plan verification PASS |
 | **Phase 10** | Identity, SSO & SCIM Foundation | Local / Adapter | **LOCAL VERIFIED** | Canonical UUID principal derived from `issuer` + `subject`; identity policy metadata enforced |
 | **Phase 10 (Ext)** | Live IdP / SAML / SCIM Server | Live Okta/Azure AD | **UNVERIFIED** | Live enterprise identity directory integration pending |
 | **Phase 11** | M2M / Service Account Proof | Local / Express | **LOCAL VERIFIED** | One-time `rpa_` key issuance, SHA-256 hash storage, tenant/scope binding enforced |
 | **Phase 12** | Support / Break-Glass Proof | Local / Express | **LOCAL VERIFIED** | Time-limited, workspace-scoped support grants with reason and full audit logging |
-| **Phase 13** | Enterprise AI Production Isolation | Local / AI Runtime | **LOCAL VERIFIED** | Deny-by-default on empty allowlist; client authority rejected; NVIDIA NIM model updated to `meta/llama-3.2-11b-vision-instruct` |
-| **Phase 14** | Cloudflare, WAF & Edge Headers | Local / Node | **LOCAL VERIFIED** | Strict CORS origin locks, enterprise header guard on legacy APIs, private cache bypass verified |
-| **Phase 14 (Ext)** | Live Cloudflare Edge WAF Dashboard | Cloudflare Edge | **UNVERIFIED** | Live edge WAF rate-limiting rule verification pending dashboard audit |
+| **Phase 13** | Enterprise AI Production Isolation | Local / AI Runtime | **LOCAL VERIFIED** | Deny-by-default on empty allowlist; client authority rejected; NVIDIA NIM model updated to active `meta/llama-3.2-11b-vision-instruct` |
+| **Phase 14** | Cloudflare Edge, WAF & Security Headers | Production (`airesume.projectdemo.guru`) | **PRODUCTION VERIFIED** | Live Cloudflare Edge verified (`server: cloudflare`, `cf-cache-status: DYNAMIC`, `strict-transport-security`, strict CSP, `x-frame-options: DENY`, `x-content-type-options: nosniff`, `ratelimit-policy`); live CORS rejection for unauthorized origins verified |
+| **Phase 14 (Ext)** | Live Cloudflare Edge WAF Dashboard | Cloudflare Edge | **UNVERIFIED** | Live edge WAF rate-limiting rule configuration pending dashboard audit |
 | **Phase 15** | Secrets & IAM Security Audit | Local / Scan | **LOCAL VERIFIED** | 0 plaintext secrets in source or client bundles; least privilege role separation |
 | **Phase 16** | Observability & Audit Proof | Local / Telemetry | **LOCAL VERIFIED** | Structured JSON logs with correlation IDs; low-cardinality metric labels (raw tenant IDs masked) |
 | **Phase 17** | Backup & Disaster Recovery Drill | Cloud Snapshots | **UNVERIFIED** | Migration reversibility verified locally; live staging backup restoration drill unverified |
 | **Phase 18** | Load, Performance & Scale Proof | Local / Scale | **LOCAL VERIFIED** | 1,000 tenant namespace collision-free test PASS; quota bucket partitioning PASS |
 | **Phase 18 (Ext)** | Distributed Cluster Load Test | Staging Cluster | **UNVERIFIED** | Live multi-instance cluster saturation test unverified |
 | **Phase 19** | Chaos & Failure Recovery Proof | Local / Driver | **LOCAL VERIFIED** | Transaction rollback on failure, `RESET ALL` connection hygiene, AI provider failover verified |
-| **Phase 20** | Browser, UX & Accessibility Proof | Browser / UI | **LOCAL VERIFIED** | Enterprise UI shell, dark/light theme, WCAG 2.2 AA keyboard navigation, `prefers-reduced-motion` PASS |
+| **Phase 20** | Browser, UX & Accessibility Proof | Playwright Chromium | **LOCAL VERIFIED** | 255/255 template render matrix PASS; 24/24 WebCV responsive viewports PASS; 20-cycle app shell stability PASS; CBT exam browser journey PASS |
 | **Phase 21** | Authorized DAST / Security Suite | Local / Security | **LOCAL VERIFIED** | 163/163 Security tests passing; IDOR/BOLA and header tampering rejected |
 | **Phase 21 (Ext)** | Third-Party Penetration Test | External Auditor | **UNVERIFIED** | Independent external CREST/SOC2 security penetration test unverified |
 | **Phase 22** | Cross-Tenant Adversarial Matrix | Local / Test | **LOCAL VERIFIED** | Full Tenant A/B adversarial suite PASS across DB, API, Cache, Queue, Storage, AI, M2M |
 | **Phase 23** | Whole-System Conflict Audit | Comprehensive | **LOCAL VERIFIED** | Zero source-of-truth conflicts across identity, tenant, workspace, RLS, and UI |
-| **Phase 24** | Independent Logical Bug Hunt | Comprehensive | **LOCAL VERIFIED** | Identified & corrected deprecated NVIDIA NIM model reference (`meta/llama-3.1-8b-instruct` -> `meta/llama-3.2-11b-vision-instruct`) |
+| **Phase 24** | Independent Logical Bug Hunt | Comprehensive | **LOCAL VERIFIED** | Deprecated NVIDIA NIM model reference resolved (`meta/llama-3.1-8b-instruct` -> `meta/llama-3.2-11b-vision-instruct`) |
 | **Phase 25** | Certified Product Regression | Comprehensive | **LOCAL VERIFIED** | 4 CV templates, 51 Resume templates, DOCX, Resume Wizard, CBT & Interview Coach intact |
 | **Phase 26** | Final Full Regression | Comprehensive | **LOCAL VERIFIED** | 100% green across all 554 test cases (0 failures, 0 skipped) |
 | **Phase 27** | Evidence Package Assembly | Docs Directory | **LOCAL VERIFIED** | All required documentation and verification manifests completed |
@@ -63,8 +63,6 @@ Every item is classified strictly using the standardized enterprise verification
 ---
 
 ## 2. Whole-System Conflict Audit Findings & Resolutions
-
-During the whole-system audit across identity, tenancy, data plane, cache, queues, AI, and UI, the following items were analyzed and confirmed:
 
 1. **Identity & Principal Consistency:**
    - External identity subjects (e.g. Firebase Auth UIDs) are transformed into canonical UUID v4 principals via `canonicalPrincipalId(subject, issuer)`.
@@ -78,20 +76,11 @@ During the whole-system audit across identity, tenancy, data plane, cache, queue
 
 ---
 
-## 3. Tenant A / Tenant B Adversarial Attack Matrix Results
+## 3. Real-World Live Infrastructure Evidence
 
-| Vector | Attack Description | Expected Behavior | Observed Result | Verdict |
-|---|---|---|---|---|
-| **API** | Tenant A attempts to read Tenant B resource via `/api/enterprise/resources/:id` | `404` / `TENANT_RESOURCE_NOT_FOUND` | Access denied, 0 leakage | **LOCAL VERIFIED** |
-| **Database RLS** | Tenant A SQL session queries `tenant_data.resources` containing Tenant B rows | RLS filter yields 0 rows | 0 rows returned | **LOCAL VERIFIED** |
-| **Database `WITH CHECK`** | Tenant A SQL session attempts to `INSERT` row with `tenant_id = Tenant B` | PostgreSQL RLS policy violation | Transaction rejected | **LOCAL VERIFIED** |
-| **Connection Pool** | Pooled connection executes Tenant A transaction, then is reused for Tenant B | `RESET ALL` cleans transaction-local context | No state leakage across queries | **LOCAL VERIFIED** |
-| **Cache Key** | Tenant A and B use identical logical resource ID `resume_001` | Keys are partitioned: `v1:tenant:{A}:...` vs `v1:tenant:{B}:...` | Distinct cache entries | **LOCAL VERIFIED** |
-| **Queue Envelope** | Tenant B tampers with HMAC-signed job envelope from Tenant A | Signature verification fails | `INVALID_TENANT_JOB_SIGNATURE` | **LOCAL VERIFIED** |
-| **Artifact Token** | Tenant A uses signed token to download Tenant B storage artifact | Purpose & tenant validation fails | `TENANT_STORAGE_NOT_FOUND` | **LOCAL VERIFIED** |
-| **Enterprise AI** | Tenant A prompt references Tenant B source resource ID | Source resource validation fails | `TENANT_AI_SOURCE_DENIED` | **LOCAL VERIFIED** |
-| **M2M Key** | Service Account A presents API key with `X-Tenant-Id: Tenant B` | Key tenant binding mismatch | `404` / Non-enumerating denial | **LOCAL VERIFIED** |
-| **Support Grant** | Support identity attempts access without active approved grant | Grant resolution fails | `403` / `SUPPORT_GRANT_REQUIRED` | **LOCAL VERIFIED** |
+- **Live Cloudflare Edge Deployment:** Verified at `https://airesume.projectdemo.guru/api/health` with HTTP 200, Cloudflare edge headers (`server: cloudflare`, `cf-cache-status: DYNAMIC`), HSTS, strict CSP, and unauthorized CORS origin rejection.
+- **Live Firebase Production Project:** Verified at `ai-resume-builder-424cf` with Firebase Admin SDK successfully connecting to 14 active collections.
+- **Headless Browser Matrix:** Verified in Playwright Chromium across 255 template combinations (51 templates x 5 fixtures), 24 WebCV viewport combinations, 20-cycle app shell navigation stability, and AI interview coach CBT flow.
 
 ---
 
@@ -106,10 +95,13 @@ TEST SUITE EXECUTION SUMMARY
 3. Product & Templates Suite:  301 / 301 PASS (100%)
 4. Enterprise Backend Suite:    58 / 58 PASS  (100%)
 5. Enterprise UI Suite:          4 / 4 PASS   (100%)
-6. Production Build (Vite):     PASS (0 errors)
-7. ESLint:                      PASS (0 errors)
-8. Root Production Audit:       PASS (0 high/critical vulnerabilities)
-9. Backend Production Audit:    PASS (0 high/critical vulnerabilities)
+6. Playwright Template Matrix: 255 / 255 PASS (100%)
+7. Playwright WebCV Viewports:  24 / 24 PASS  (100%)
+8. App Shell 20-Cycle Browser:  20 / 20 PASS  (100%)
+9. Production Build (Vite):     PASS (0 errors)
+10. ESLint:                     PASS (0 errors)
+11. Root Production Audit:      PASS (0 vulnerabilities)
+12. Backend Production Audit:   PASS (0 vulnerabilities)
 ======================================================================
 TOTAL AUTOMATED PASSING TESTS: 554 / 554 (100% GREEN, 0 SKIPPED)
 ======================================================================

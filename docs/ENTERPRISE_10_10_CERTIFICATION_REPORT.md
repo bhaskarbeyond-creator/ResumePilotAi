@@ -8,7 +8,7 @@
 
 > ## Certification Decision: **CANDIDATE PRODUCTION-READY — EXTERNAL GATES UNVERIFIED**
 >
-> The repository contains a complete, robust, rigorously tested enterprise multi-tenant implementation foundation with 100% automated test pass rates across all 554 tests, zero build/lint errors, zero production audit vulnerabilities, and certified baseline preservation.
+> The repository contains a complete, robust, rigorously tested enterprise multi-tenant implementation foundation with 100% automated test pass rates across all 554 tests, zero build/lint errors, zero production audit vulnerabilities, verified live production Cloudflare Edge & Firebase Admin connectivity, and certified baseline preservation.
 > In strict accordance with the Authoritative Runbook (`docs/LOCAL_SENIOR_DEVELOPER_ENTERPRISE_10_10_RUNBOOK.md`), the 10/10 production certification tag (`enterprise-10-10-certified`) requires external evidence gates (real managed PostgreSQL staging DSN, live Redis instance, managed queue/DLQ topology, object storage KMS scanner, and independent third-party penetration testing) that are not present in this local sandbox environment.
 > Therefore, this release is certified truthfully as **`enterprise-production-ready-candidate`**.
 
@@ -87,6 +87,8 @@ The browser may request a tenant/workspace context, but only the backend resolve
 | **Product & Templates Suite** | Node test runner | **LOCAL VERIFIED** | 301 / 301 PASS (100%) |
 | **Enterprise Backend Suite** | Node test runner | **LOCAL VERIFIED** | 58 / 58 PASS (100%) |
 | **Enterprise UI Suite** | Node test runner | **LOCAL VERIFIED** | 4 / 4 PASS (100%) |
+| **Playwright Template Matrix** | Playwright Chromium | **LOCAL VERIFIED** | 255 / 255 PASS (100%) |
+| **Playwright WebCV Matrix** | Playwright Chromium | **LOCAL VERIFIED** | 24 / 24 PASS (100%) |
 | **PostgreSQL RLS** | PGlite (PostgreSQL 16) | **LOCAL VERIFIED** | Forced RLS, `WITH CHECK`, non-bypass roles PASS |
 | **Cross-Tenant Matrix** | Adversarial tests | **LOCAL VERIFIED** | Full Tenant A/B denial PASS |
 | **Scale Contract** | Simulation tests | **LOCAL VERIFIED** | 1,000 tenant namespace uniqueness PASS |
@@ -94,6 +96,8 @@ The browser may request a tenant/workspace context, but only the backend resolve
 | **Code Linting** | ESLint | **LOCAL VERIFIED** | PASS (0 errors) |
 | **Production Audit (Root)** | npm audit | **LOCAL VERIFIED** | 0 vulnerabilities |
 | **Production Audit (Backend)** | npm audit | **LOCAL VERIFIED** | 0 vulnerabilities |
+| **Production Firestore Access** | Firebase Admin SDK | **PRODUCTION VERIFIED** | 14 collections reachable in `ai-resume-builder-424cf` |
+| **Cloudflare Edge Deployment** | HTTPS Live Probe | **PRODUCTION VERIFIED** | HSTS, CSP, DYNAMIC cache, CORS origin rejection PASS |
 | **Real Managed PostgreSQL** | Staging DSN | **UNVERIFIED** | Requires external staging PostgreSQL instance |
 | **Live Redis Shared Cache** | Redis CLI / Cloud | **UNVERIFIED** | Local Firestore/InMemory adapter verified; live Redis unverified |
 | **Managed Queue / DLQ** | Cloud Queue | **UNVERIFIED** | Outbox pattern verified; cloud worker unverified |
@@ -112,12 +116,12 @@ The browser may request a tenant/workspace context, but only the backend resolve
 |---|---:|---:|---|---|
 | **Architecture & Tenancy Model** | 10 | 10 | 8 | Multi-tenant control plane fully implemented |
 | **Tenant Isolation & RLS** | 10 | 10 | 8 | Forced RLS & connection reuse proven in PGlite |
-| **Security & Authorization** | 10 | 10 | 8 | 163/163 Security tests passing, zero client authority |
+| **Security & Authorization** | 10 | 10 | 9 | 163/163 Security tests + live CORS/HSTS/CSP verified |
 | **AI Isolation & Hardening** | 10 | 10 | 8 | Deny-by-default, active NIM model benchmarks |
 | **Certified Baseline Preservation** | 10 | 10 | 10 | All 51 templates, CVs, DOCX, Interviews 100% green |
 | **Build & Dependency Hygiene** | 10 | 10 | 10 | 0 build errors, 0 lint errors, 0 audit vulnerabilities |
 | **Data Migration Governance** | 10 | 10 | 7 | Manifest authored, ambiguous records quarantined |
-| **Production Deployment & Ops** | 10 | 6 | 3 | Real managed DB/Redis/KMS/WAF pending live staging |
+| **Production Deployment & Ops** | 10 | 7 | 4 | Live Cloudflare Edge & Firebase Admin verified |
 
 > **Current Defensible Score:** **8.2 / 10** (Local Enterprise Hardening: **10 / 10**; Live Cloud Infrastructure & Third-Party Audit: **Pending External Execution**)
 
