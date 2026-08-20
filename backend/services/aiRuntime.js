@@ -181,9 +181,11 @@ CRITICAL RULES FOR 100% NATURAL HUMAN VOICE & MAXIMUM ATS MATCH:
    - Adapt tone and terminology to the specific profession (Tech, Marketing, Finance, Healthcare, Operations, etc.). Do not insert tech terms into non-tech roles.
 7. NO PLACEHOLDERS OR BRACKETS:
    - Write 100% complete, polished sentences.
+8. SPELLING AND GRAMMATICAL PRECISION:
+   - Ensure 100% correct spelling (e.g. write "streamlined", never "strecmlined") and flawless grammar.
 
 Return ONLY valid JSON format:
-{ "summary": "Full professional executive summary text here." }
+{ "summary": "Full 3-sentence summary here..." }
 Language: ${language}. SessionID: ${uniqueSeed}`;
     } else if (endpointName === 'generate-skills') {
         const workHistText = payload.workHistory || '';
@@ -233,7 +235,9 @@ ${existingCerts ? `- Existing Certifications Already Added: ${existingCerts}` : 
 RULES:
 1. Categorize 3 certifications as "mandatory" (core industry standard credentials) and 3 as "recommended" (advanced specialized credentials).
 2. Provide official certification title and issuing body for each.
-3. Return ONLY valid JSON format:
+3. Do NOT repeat any certifications listed under Existing Certifications Already Added.
+4. Ensure all certification titles and issuing bodies are accurately spelled and formatted without typos.
+5. Return ONLY valid JSON format:
 { "certifications": [
     { "title": "AWS Certified Solutions Architect", "issuer": "Amazon Web Services", "category": "mandatory" },
     { "title": "Project Management Professional (PMP)", "issuer": "PMI", "category": "mandatory" },

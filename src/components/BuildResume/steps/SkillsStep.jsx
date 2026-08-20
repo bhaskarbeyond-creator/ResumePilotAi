@@ -87,11 +87,15 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
         try {
             const currentLanguage = localStorage.getItem('i18nextLng') || 'en';
             const experienceLevel = resumeData.experienceLevel || 'mid-level';
+            const existingSkillsList = skills
+                .map((s) => (s.skillName || s.name || '').trim())
+                .filter(Boolean);
 
             const data = await generateUserAiContent('generate-skills', {
                 occupation: targetOccupation,
                 jobTitle: targetOccupation,
                 experienceLevel: experienceLevel,
+                existingSkills: existingSkillsList,
                 language: currentLanguage,
             }, { signal: requestController.signal });
 
@@ -182,6 +186,14 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
         return 'from-green-400 to-green-500';
     };
 
+    // Compute unadded skill pills so already-added skills are never recommended again
+    const existingSkillNames = new Set(
+        skills.map((s) => (s.skillName || s.name || '').trim().toLowerCase()).filter(Boolean)
+    );
+    const availableSkills = popularSkills.filter(
+        (suggestedSkill) => !existingSkillNames.has(suggestedSkill.trim().toLowerCase())
+    );
+
     return (
         <div className="px-4 py-6 max-w-6xl mx-auto w-full min-h-full">
             <div className="mb-4">
@@ -248,69 +260,77 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
 
                                 {/* Expand/Collapse Button */}
                                 <button
-                                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded-lg"
-                                    title={expandedCards.has(skill.id) ? t('SkillsStep.actions.collapse') : t('SkillsStep.actions.expand')}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        toggleCardExpansion(skill.id);
-                                    }}>
-                                    <MdKeyboardArrowDown className={`w-5 h-5 ${expandedCards.has(skill.id) ? 'rotate-180' : ''}`} />
+                                    type="button"
+                                    className="p-2 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-colors">
+                                    <MdKeyboardArrowDown
+                                        className={`w-5 h-5 transition-transform duration-200 ${
+                                            expandedCards.has(skill.id) ? 'transform rotate-180 text-blue-600' : ''
+                                        }`}
+                                    />
                                 </button>
 
+                                {/* Delete Button */}
                                 <button
                                     type="button"
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         removeSkill(skill.id);
                                     }}
-                                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg sm:opacity-100"
-                                    title={t('SkillsStep.actions.remove')}>
-                                    <MdDelete className="w-4 h-4" />
+                                    className="p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
+                                    title={t('SkillsStep.actions.deleteSkill')}>
+                                    <MdDelete className="w-5 h-5" />
                                 </button>
                             </div>
                         </div>
 
                         {/* Content */}
                         {expandedCards.has(skill.id) && (
-                            <div className="p-4 sm:p-6 space-y-5 bg-gradient-to-br from-white to-slate-50 rounded-b-xl">
-                                {/* Skill Name */}
-                                <AutocompleteInputField
-                                    label={t('SkillsStep.fields.skillName.label')}
-                                    name={`skillName-${skill.id}`}
-                                    placeholder={t('SkillsStep.fields.skillName.placeholder')}
-                                    value={skill.skillName}
-                                    onChange={(e) => updateSkill(skill.id, 'skillName', e.target.value)}
-                                    required={true}
-                                    suggestionType="skill"
-                                />
+                            <div className="p-4 sm:p-6 bg-white rounded-b-xl border-t border-blue-50">
+                                <div className="grid grid-cols-1 gap-6">
+                                    {/* Skill Name Field */}
+                                    <AutocompleteInputField
+                                        label={t('SkillsStep.fields.skillName.label')}
+                                        name={`skillName_${skill.id}`}
+                                        value={skill.skillName}
+                                        onChange={(e) => updateSkill(skill.id, 'skillName', e.target.value)}
+                                        placeholder={t('SkillsStep.fields.skillName.placeholder')}
+                                        required
+                                        suggestionType="skill"
+                                        onSelect={(value) => updateSkill(skill.id, 'skillName', value)}
+                                    />
 
-                                {/* Proficiency Level */}
-                                <div>
-                                    <div className="flex items-center justify-between mb-3">
-                                        <label className="block text-sm font-semibold text-slate-800 tracking-wide">{t('SkillsStep.fields.proficiencyLevel.label')}</label>
-                                        <span className="text-sm font-semibold text-white px-3 py-1.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow-sm">
-                                            {getSkillLevelText(skill.rating)}
-                                        </span>
-                                    </div>
-
-                                    <div className="relative mb-3">
-                                        <div className="w-full bg-gray-200 rounded-full h-3 shadow-inner">
-                                            <div className={`h-3 rounded-full bg-gradient-to-r ${getSkillColor(skill.rating)} shadow-sm`} style={{ width: `${skill.rating}%` }}></div>
+                                    {/* Skill Level Slider */}
+                                    <div>
+                                        <div className="flex justify-between items-center mb-2">
+                                            <label className="block text-sm font-semibold text-gray-700">
+                                                {t('SkillsStep.fields.skillLevel.label')}
+                                            </label>
+                                            <span className="text-sm font-medium text-blue-600">
+                                                {getSkillLevelText(skill.rating)} ({skill.rating}%)
+                                            </span>
                                         </div>
-                                        <input
-                                            type="range"
-                                            min="0"
-                                            max="100"
-                                            value={skill.rating}
-                                            onChange={(e) => updateSkill(skill.id, 'rating', parseInt(e.target.value))}
-                                            className="absolute inset-0 w-full h-3 opacity-0 cursor-pointer"
-                                        />
-                                    </div>
 
-                                    <div className="flex justify-between text-sm font-medium text-gray-500">
-                                        <span>{t('SkillsStep.skillLevels.beginner')}</span>
-                                        <span className="text-gray-600">{skill.rating}%</span>
-                                        <span>{t('SkillsStep.skillLevels.expert')}</span>
+                                        <div className="relative mb-2">
+                                            <div className="w-full bg-gray-200 rounded-full h-3">
+                                                <div
+                                                    className={`h-3 rounded-full bg-gradient-to-r ${getSkillColor(skill.rating)} transition-all duration-200`}
+                                                    style={{ width: `${skill.rating}%` }}></div>
+                                            </div>
+                                            <input
+                                                type="range"
+                                                min="0"
+                                                max="100"
+                                                value={skill.rating}
+                                                onChange={(e) => updateSkill(skill.id, 'rating', parseInt(e.target.value))}
+                                                className="absolute inset-0 w-full h-3 opacity-0 cursor-pointer"
+                                            />
+                                        </div>
+
+                                        <div className="flex justify-between text-sm font-medium text-gray-500">
+                                            <span>{t('SkillsStep.skillLevels.beginner')}</span>
+                                            <span className="text-gray-600">{skill.rating}%</span>
+                                            <span>{t('SkillsStep.skillLevels.expert')}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -321,7 +341,7 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
                 {/* Add New Skill Button */}
                 <button
                     onClick={addSkill}
-                    className="w-full p-6 border-2 border-dashed border-blue-300 rounded-xl text-blue-600 hover:border-blue-500 hover:text-blue-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 flex items-center justify-center font-semibold text-base shadow-sm hover:shadow-md">
+                    className="w-full p-6 border-2 border-dashed border-blue-300 rounded-xl text-blue-600 hover:border-blue-500 hover:text-blue-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 flex items-center justify-center font-semibold text-base shadow-sm hover:shadow-md cursor-pointer">
                     <MdAdd className="w-6 h-6 mr-3" />
                     {t('SkillsStep.actions.addSkill')}
                 </button>
@@ -371,19 +391,32 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
                                 <button
                                     onClick={generateAISkills}
                                     disabled={isGeneratingSkills}
-                                    className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-medium rounded-lg hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all">
+                                    className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-medium rounded-lg hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all cursor-pointer">
                                     <MdLightbulb className="w-5 h-5 mr-2" />
                                     Generate Skills Now
                                 </button>
                             )}
                         </div>
+                    ) : availableSkills.length === 0 && !isGeneratingSkills ? (
+                        <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-xl text-xs font-semibold flex items-center justify-between">
+                            <span className="flex items-center gap-2">
+                                <MdCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                                All suggested skills from this batch have been added!
+                            </span>
+                            <button
+                                type="button"
+                                onClick={generateAISkills}
+                                className="text-xs font-bold text-indigo-600 hover:text-indigo-800 underline cursor-pointer ml-2 shrink-0">
+                                Get More Skills
+                            </button>
+                        </div>
                     ) : (
                         <div className="flex flex-wrap gap-2">
-                            {popularSkills.slice(0, 12).map((suggestedSkill) => (
+                            {availableSkills.slice(0, 15).map((suggestedSkill) => (
                                 <button
                                     key={suggestedSkill}
                                     onClick={() => {
-                                        if (!skills.some((skill) => skill.skillName.toLowerCase() === suggestedSkill.toLowerCase())) {
+                                        if (!existingSkillNames.has(suggestedSkill.trim().toLowerCase())) {
                                             const newSkill = { ...createNewSkill(), skillName: suggestedSkill };
                                             setSkills((prevSkills) => [...prevSkills, newSkill]);
                                             setExpandedCards((prev) => {
@@ -393,7 +426,7 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
                                             });
                                         }
                                     }}
-                                    className="px-3 py-2 text-sm font-medium bg-white text-gray-700 rounded-lg border border-gray-200 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 shadow-sm hover:shadow-md transition-all">
+                                    className="px-3 py-2 text-sm font-medium bg-white text-gray-700 rounded-lg border border-gray-200 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 shadow-xs hover:shadow-sm transition-all cursor-pointer">
                                     + {suggestedSkill}
                                 </button>
                             ))}

@@ -1622,15 +1622,18 @@ const BuildResume = () => {
             <div className="hidden md:flex flex-col w-56 lg:w-64 bg-white border-r border-slate-200 shadow-sm min-h-screen flex-shrink-0 relative z-20">
                 {/* Header */}
                 <div className="px-4 py-3.5 border-b border-slate-100 flex-shrink-0 flex flex-col gap-2.5">
-                    {/* Top Row: Logo & Exit to Dashboard */}
+                    {/* Top Row: Steps Title & Exit to Dashboard */}
                     <div className="flex items-center justify-between gap-2">
-                        <button type="button" onClick={handleExitBuilder} aria-label="Save and exit to dashboard" className="hover:opacity-85 transition-opacity">
-                            <img src={logo} alt="ResumePilot Logo" className="h-7 w-auto object-contain" />
-                        </button>
+                        <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-xs font-bold text-slate-900 tracking-tight flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-indigo-600" />
+                                Resume Steps
+                            </span>
+                        </div>
                         <button
                             type="button"
                             onClick={handleExitBuilder}
-                            className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-indigo-600 bg-slate-100 hover:bg-indigo-50 px-2.5 py-1.5 rounded-lg border border-slate-200/80 transition-all shadow-2xs">
+                            className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-indigo-600 bg-slate-100 hover:bg-indigo-50 px-2.5 py-1.5 rounded-lg border border-slate-200/80 transition-all shadow-2xs cursor-pointer">
                             <svg className="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                             </svg>

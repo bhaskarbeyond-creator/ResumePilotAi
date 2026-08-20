@@ -4,6 +4,7 @@ import { MdLightbulb } from 'react-icons/md';
 import SectionCard from './components/SectionCard';
 import RichTextEditor from './components/RichTextEditor';
 import { generateUserAiContent } from '../../../services/aiService';
+import { calculateYearsOfExperience } from '../../../utils/resumeData';
 
 const SummaryStep = ({ resumeData, updateResumeData }) => {
     const { t, i18n } = useTranslation('common');
@@ -50,38 +51,44 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
             const name = `${resumeData.firstname || ''} ${resumeData.lastname || ''}`.trim() || 'Professional';
             const jobTitle = resumeData.occupation || 'Professional';
 
-            // Calculate experience based on employment history
-            let experience = 'entry-level experience';
-            if (resumeData.employments && resumeData.employments.length > 0) {
-                const totalYears = resumeData.employments.length * 2; // Rough estimation
-                if (totalYears >= 10) {
-                    experience = `${totalYears}+ years of experience`;
-                } else if (totalYears >= 5) {
-                    experience = `${totalYears} years of experience`;
-                } else if (totalYears >= 2) {
-                    experience = `${totalYears} years of experience`;
-                } else {
-                    experience = 'entry-level experience';
-                }
-            }
+            // Calculate precise experience based on employment history date intervals
+            const yearsExp = calculateYearsOfExperience(resumeData.employments || []);
 
             // Extract skills (handling both string arrays and object arrays)
             const skills = Array.isArray(resumeData.skills) && resumeData.skills.length > 0
                 ? resumeData.skills
                       .map((skill) => (typeof skill === 'string' ? skill : skill.skillName || skill.name || ''))
                       .filter(Boolean)
-                      .slice(0, 8)
+                      .slice(0, 10)
                       .join(', ')
                 : '';
 
-            // Extract work history text
+            // Extract work history text with actual dates and details
             const workHistory = (resumeData.employments || [])
-                .map((emp) => `${emp.jobTitle || emp.position || ''} at ${emp.employer || emp.company || ''}: ${emp.description || ''}`)
+                .map((emp) => `${emp.jobTitle || emp.position || 'Role'} at ${emp.employer || emp.company || 'Company'} (${emp.begin || emp.startDate || ''} - ${emp.current ? 'Present' : (emp.end || emp.endDate || '')})${emp.description ? ': ' + emp.description : ''}`)
                 .filter((line) => line.trim().length > 3)
-                .join('\n');
+                .join('; ');
+
+            // Extract education details
+            const education = (resumeData.educations || [])
+                .map((edu) => `${edu.degree || 'Degree'} from ${edu.school || 'Institution'} (${edu.started || edu.startDate || ''} - ${edu.finished || edu.endDate || ''})`)
+                .filter((line) => line.trim().length > 3)
+                .join('; ');
+
+            // Extract certifications
+            const certifications = (resumeData.certifications || [])
+                .map((c) => (typeof c === 'string' ? c : `${c?.title || c?.name || ''}${c?.issuer ? ' (' + c.issuer + ')' : ''}`))
+                .filter(Boolean)
+                .join(', ');
+
+            // Extract projects
+            const projects = (resumeData.projects || [])
+                .map((p) => `${p?.title || p?.name || 'Project'}${p?.description ? ': ' + p.description : ''}`)
+                .filter(Boolean)
+                .join('; ');
 
             // Extract a key achievement from work history
-            let achievement = 'delivering high-quality results';
+            let achievement = 'delivering high-impact solutions';
             if (resumeData.employments && resumeData.employments.length > 0) {
                 const latestJob = resumeData.employments[0];
                 if (latestJob.description && latestJob.description.trim()) {
@@ -98,9 +105,13 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
             const data = await generateUserAiContent('generate-summary', {
                 name: name,
                 jobTitle: jobTitle,
-                experience: experience,
-                skills: skills || 'various professional skills',
+                occupation: jobTitle,
+                experience: yearsExp,
+                skills: skills || 'industry-standard competencies',
                 workHistory: workHistory,
+                education: education,
+                certifications: certifications,
+                projects: projects,
                 achievement: achievement,
                 summaryType: toneToUse,
                 tone: toneToUse,

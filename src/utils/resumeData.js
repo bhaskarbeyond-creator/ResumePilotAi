@@ -173,3 +173,93 @@ export function readResumeRecoveryEnvelope(value, { userId, resumeId, maxAgeMs =
         return { ...envelope, data: normalizeResumeData(envelope.data) };
     } catch { return null; }
 }
+
+/**
+ * Dynamic Experience Calculator: Merges overlapping work history date intervals into exact total experience span
+ */
+export function calculateYearsOfExperience(experiences) {
+    if (!experiences || !Array.isArray(experiences) || experiences.length === 0) return '3+ years';
+
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth() + 1;
+
+    const monthMap = {
+        jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6,
+        jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12,
+    };
+
+    const intervals = [];
+
+    experiences.forEach((exp) => {
+        if (!exp) return;
+        const startStr = String(exp.startDate || exp.begin || exp.startYear || exp.start || exp.started || '').trim();
+        const endStr = String(exp.endDate || exp.end || exp.endYear || exp.finished || (exp.current ? 'Present' : '') || '').trim();
+
+        const startYearMatch = startStr.match(/\b(19\d\d|20\d\d)\b/);
+        const endYearMatch = endStr.match(/\b(19\d\d|20\d\d)\b/);
+        if (!startYearMatch) return;
+
+        const startYear = parseInt(startYearMatch[1], 10);
+        let endYear = endYearMatch ? parseInt(endYearMatch[1], 10) : currentYear;
+        if (exp.current || endStr.toLowerCase().includes('present') || !endStr) {
+            endYear = currentYear;
+        }
+
+        let startMonth = 1;
+        let endMonth = 12;
+
+        const startLower = startStr.toLowerCase();
+        for (const [key, val] of Object.entries(monthMap)) {
+            if (startLower.includes(key)) {
+                startMonth = val;
+                break;
+            }
+        }
+
+        const endLower = endStr.toLowerCase();
+        if (exp.current || endLower.includes('present') || !endStr) {
+            endMonth = currentMonth;
+        } else {
+            for (const [key, val] of Object.entries(monthMap)) {
+                if (endLower.includes(key)) {
+                    endMonth = val;
+                    break;
+                }
+            }
+        }
+
+        const startTotalMonths = startYear * 12 + startMonth;
+        const endTotalMonths = endYear * 12 + endMonth;
+
+        if (endTotalMonths >= startTotalMonths) {
+            intervals.push([startTotalMonths, endTotalMonths]);
+        }
+    });
+
+    if (intervals.length === 0) return '3+ years';
+
+    // Sort by start month
+    intervals.sort((a, b) => a[0] - b[0]);
+
+    // Merge overlapping intervals
+    const merged = [intervals[0]];
+    for (let i = 1; i < intervals.length; i++) {
+        const last = merged[merged.length - 1];
+        const curr = intervals[i];
+        if (curr[0] <= last[1]) {
+            last[1] = Math.max(last[1], curr[1]);
+        } else {
+            merged.push(curr);
+        }
+    }
+
+    // Sum non-overlapping months
+    let totalMonths = 0;
+    merged.forEach(([start, end]) => {
+        totalMonths += Math.max(1, end - start + 1);
+    });
+
+    const years = Math.max(1, Math.round(totalMonths / 12));
+    return `${years}+ years`;
+}
+

@@ -610,10 +610,21 @@ const CertificationsStep = ({ resumeData, updateResumeData }) => {
                                 <button
                                     type="button"
                                     onClick={handleAddAllRecommended}
-                                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-xs flex items-center gap-1"
+                                    disabled={aiRecommendations.every((rec) => isCertAlreadyAdded(rec.title))}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs flex items-center gap-1 ${
+                                        aiRecommendations.every((rec) => isCertAlreadyAdded(rec.title))
+                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default'
+                                            : 'bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer'
+                                    }`}
                                 >
-                                    <MdAdd className="w-3.5 h-3.5" />
-                                    {t('CertificationsStep.ai.addAll', 'Add All Recommended')}
+                                    {aiRecommendations.every((rec) => isCertAlreadyAdded(rec.title)) ? (
+                                        <MdCheck className="w-3.5 h-3.5" />
+                                    ) : (
+                                        <MdAdd className="w-3.5 h-3.5" />
+                                    )}
+                                    {aiRecommendations.every((rec) => isCertAlreadyAdded(rec.title))
+                                        ? 'All Added ✓'
+                                        : t('CertificationsStep.ai.addAll', 'Add All Recommended')}
                                 </button>
                             )}
                             <button
