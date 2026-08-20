@@ -348,6 +348,70 @@ router.delete('/resources/:resourceId', resolveTenantContext, requireTenantPermi
   }
 });
 
+router.get('/observability/metrics', resolveTenantContext, requireTenantPermission('tenant.read'), (req, res) => {
+  const { enterpriseObservability } = require('../enterprise/tenantObservability');
+  return res.json({ metrics: enterpriseObservability.getMetrics() });
+});
+
+router.get('/cache/status', resolveTenantContext, requireTenantPermission('tenant.read'), async (req, res) => {
+  const { pingRedis } = require('../enterprise/redisCacheService');
+  const result = await pingRedis();
+  return res.json({ cache: result });
+});
+
+const { EnterpriseQueueWorkerEngine } = require('../enterprise/tenantWorker');
+const enterpriseQueueEngine = new EnterpriseQueueWorkerEngine();
+
+router.get('/queue/status', resolveTenantContext, requireTenantPermission('tenant.read'), (req, res) => {
+  return res.json({ queue: enterpriseQueueEngine.getStatus() });
+});
+
+router.post('/queue/enqueue', resolveTenantContext, requireTenantPermission('resource.create'), async (req, res) => {
+  try {
+    const result = await enterpriseQueueEngine.enqueue(req.body?.envelope);
+    return res.status(result.status === 'ENQUEUED' ? 201 : 200).json(result);
+  } catch (error) {
+    return res.status(error.status || 400).json({ error: { code: error.code || 'QUEUE_ENQUEUE_FAILED', message: error.message, requestId: res.locals?.requestId } });
+  }
+});
+
+router.post('/queue/replay', resolveTenantContext, requireTenantPermission('tenant.settings.write'), (req, res) => {
+  const jobId = req.body?.jobId;
+  const result = enterpriseQueueEngine.replayDeadLetterJob(jobId);
+  return res.json(result);
+});
+
+router.post('/storage/token', resolveTenantContext, requireTenantPermission('resource.read'), (req, res) => {
+  try {
+    const { createTenantArtifactToken } = require('../enterprise/tenantSignedArtifacts');
+    const token = createTenantArtifactToken({
+      context: req.tenantContext,
+      objectKey: req.body?.objectKey,
+      purpose: req.body?.purpose || 'DOWNLOAD',
+      expiresInMs: req.body?.expiresInMs || 60_000,
+      signingSecret: process.env.TENANT_ARTIFACT_SIGNING_SECRET || 'staging-enterprise-artifact-secret-min-32chars!',
+    });
+    return res.json({ token, objectKey: req.body?.objectKey });
+  } catch (error) {
+    return res.status(error.status || 400).json({ error: { code: error.code || 'STORAGE_TOKEN_FAILED', message: error.message, requestId: res.locals?.requestId } });
+  }
+});
+
+router.post('/storage/verify', resolveTenantContext, requireTenantPermission('resource.read'), (req, res) => {
+  try {
+    const { verifyTenantArtifactToken } = require('../enterprise/tenantSignedArtifacts');
+    const verified = verifyTenantArtifactToken({
+      context: req.tenantContext,
+      token: req.body?.token,
+      purpose: req.body?.purpose,
+      signingSecret: process.env.TENANT_ARTIFACT_SIGNING_SECRET || 'staging-enterprise-artifact-secret-min-32chars!',
+    });
+    return res.json({ verified: true, claims: verified });
+  } catch (error) {
+    return res.status(error.status || 403).json({ error: { code: error.code || 'STORAGE_TOKEN_INVALID', message: error.message, requestId: res.locals?.requestId } });
+  }
+});
+
 router.post('/tenants', async (req, res) => {
   try {
     const result = await enterpriseService(req).provisionTenant({ user: req.user, input: req.body || {}, requestId: res.locals?.requestId });
