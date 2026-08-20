@@ -3,7 +3,7 @@
 **Date:** 2026-08-20
 **Branch:** `arena/01a01c9e-resumepilotai`
 **Pre-enterprise restore point:** `enterprise-pre-migration-restore` → `10196c029758e000f7c602b874c5976a1ffba890`
-**Final local foundation restore point:** `enterprise-tenant-foundation-hardened` and `enterprise-tenant-foundation-verified` → `3970bdd633002f2097f2df06de80eee1a77f330d`
+**Final local foundation restore point:** `enterprise-tenant-foundation-final-verified` → `8422cc35aac912fc55beca6cc0630666dd772d4b`
 
 > ## Certification decision: **NOT ELIGIBLE FOR “10/10 ENTERPRISE READY” YET**
 >
@@ -197,7 +197,7 @@ No known local Critical or High code-level cross-tenant bypass remains in the fe
 
 ## 10. Certification conclusion
 
-**Do not create or use the label `enterprise-10-10-certified` yet.** The verified local restore tags are `enterprise-tenant-foundation-hardened` and `enterprise-tenant-foundation-verified`; both were rebuilt in detached checkouts with enterprise, certified baseline and build verification.
+**Do not create or use the label `enterprise-10-10-certified` yet.** The verified local restore tag is `enterprise-tenant-foundation-final-verified`; it was rebuilt in a detached checkout with enterprise, certified baseline and build verification.
 
 ```text
 Implemented locally:       YES
