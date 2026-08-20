@@ -2,7 +2,7 @@ import { chromium } from 'playwright';
 import path from 'node:path';
 
 const LIVE_BASE = 'https://airesume.projectdemo.guru';
-const ARTIFACT_DIR = 'C:/Users/mbhas/.gemini/antigravity-ide/brain/e973f01a-4e97-4355-bb6f-2d1340c18015';
+const ARTIFACT_DIR = 'C:/Users/mbhas/.gemini/antigravity-ide/brain/0025b43c-9285-4eb7-a052-c08c4ee81c3f';
 
 async function runLiveEnterpriseUxTest() {
   console.log('\n======================================================');
