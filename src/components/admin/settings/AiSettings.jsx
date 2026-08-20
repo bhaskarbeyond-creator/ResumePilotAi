@@ -12,12 +12,10 @@ import { SiNvidia } from 'react-icons/si';
 const SUPPORTED_AI_PROVIDERS = ['gemini', 'nvidia', 'openai', 'groq', 'openrouter', 'deepseek'];
 const PROVIDER_KEY_FIELDS = { gemini: 'geminiApiKey', nvidia: 'nvidiaApiKey', openai: 'openaiApiKey', groq: 'groqApiKey', openrouter: 'openrouterApiKey', deepseek: 'deepseekApiKey' };
 const RECOMMENDED_NVIDIA_MODELS = [
-    { id: 'meta/llama-3.1-8b-instruct', name: '⚡ Meta Llama 3.1 8B Instruct (Ultra Fast ~380ms - Default & Recommended)', badge: 'FAST' },
-    { id: 'poolside/laguna-xs-2.1', name: '⚡ Poolside Laguna XS 2.1 (Fast - Queue Dependent)', badge: 'LAGUNA' },
-    { id: 'nvidia/nemotron-mini-4b-instruct', name: '⚡ NVIDIA Nemotron Mini 4B Instruct (Fast ~740ms)', badge: 'FAST' },
+    { id: 'meta/llama-3.2-11b-vision-instruct', name: '⚡ Meta Llama 3.2 11B Vision Instruct (~220-460ms - Default & Recommended)', badge: 'FAST' },
+    { id: 'nvidia/nemotron-mini-4b-instruct', name: '⚡ NVIDIA Nemotron Mini 4B Instruct (Ultra-Reliable ~206ms)', badge: 'FAST' },
     { id: 'openai/gpt-oss-20b', name: '⚡ OpenAI GPT OSS 20B (Fast ~620ms)', badge: 'FAST' },
     { id: 'openai/gpt-oss-120b', name: '🧠 OpenAI GPT OSS 120B (Heavy 120B Reasoning - Slow 8-15s)', badge: '120B' },
-    { id: 'meta/llama-3.3-70b-instruct', name: '🧠 Meta Llama 3.3 70B Instruct (70B Model - Queue Dependent)', badge: '70B' },
     { id: 'nvidia/llama-3.1-nemotron-70b-instruct', name: '🧠 NVIDIA Nemotron 70B Instruct (70B Model)', badge: '70B' },
     { id: 'mistralai/mistral-large-2-instruct', name: '🧠 Mistral Large 2 Instruct (123B Model)', badge: '123B' },
 ];
@@ -30,7 +28,7 @@ const AiSettings = () => {
         model: 'gemini-2.0-flash',
         enableNvidia: false,
         nvidiaApiKey: '',
-        nvidiaModel: 'meta/llama-3.1-8b-instruct',
+        nvidiaModel: 'meta/llama-3.2-11b-vision-instruct',
         nvidiaBaseUrl: 'https://integrate.api.nvidia.com/v1',
         enableOpenai: false,
         openaiApiKey: '',
@@ -119,7 +117,7 @@ const AiSettings = () => {
                 model: ai.model || 'gemini-2.0-flash',
                 enableNvidia: ai.enableNvidia !== undefined ? ai.enableNvidia : hasNvidiaKey,
                 nvidiaApiKey: ai.nvidiaApiKey || masked.nvidia || '',
-                nvidiaModel: ai.nvidiaModel || 'meta/llama-3.1-8b-instruct',
+                nvidiaModel: ai.nvidiaModel || 'meta/llama-3.2-11b-vision-instruct',
                 nvidiaBaseUrl: ai.nvidiaBaseUrl || 'https://integrate.api.nvidia.com/v1',
                 enableOpenai: ai.enableOpenai !== undefined ? ai.enableOpenai : hasOpenaiKey,
                 openaiApiKey: ai.openaiApiKey || masked.openai || '',
@@ -661,7 +659,7 @@ const AiSettings = () => {
                                     name="nvidiaModel"
                                     value={aiConfig.nvidiaModel}
                                     onChange={handleChange}
-                                    placeholder="e.g. meta/llama-3.1-8b-instruct or custom model ID"
+                                    placeholder="e.g. meta/llama-3.2-11b-vision-instruct or custom model ID"
                                     className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-2 focus:ring-emerald-500 focus:outline-none font-mono bg-slate-50"
                                 />
                             </div>
