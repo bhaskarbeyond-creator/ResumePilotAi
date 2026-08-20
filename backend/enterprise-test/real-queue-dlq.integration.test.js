@@ -23,7 +23,7 @@ test('Queue & Worker: HMAC-SHA256 signed envelope rejects tampered or expired pa
     roles: ['MEMBER'],
     permissions: ['resume.read'],
     policyVersion: 1,
-    dataPlane: { id: 'shared-primary', type: 'SHARED_POSTGRES', region: 'default', routingVersion: 1, storageProfile: 'shared', cacheProfile: 'shared', queueProfile: 'shared', aiProfile: 'platform-default', securityProfile: 'standard' },
+    dataPlane: { id: 'firestore-primary', type: 'FIRESTORE', region: 'default', routingVersion: 1, storageProfile: 'shared', cacheProfile: 'shared', queueProfile: 'shared', aiProfile: 'platform-default', securityProfile: 'standard' },
   });
 
   const envelope = createTenantJobEnvelope({

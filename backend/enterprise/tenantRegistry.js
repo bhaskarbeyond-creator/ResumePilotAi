@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const {
   DATA_PLANE_TYPES,
   ISOLATION_TIERS,
+  LEGACY_DATA_PLANE_TYPES,
   MEMBERSHIP_STATES,
   TENANT_LIFECYCLE_STATES,
   TENANT_ROLES,
@@ -46,10 +47,18 @@ function normalizeTier(value) {
 }
 
 function normalizeDataPlane(input = {}) {
-  const type = String(input.type || DEFAULT_DATA_PLANE.type).toUpperCase();
+  const rawType = String(input.type || DEFAULT_DATA_PLANE.type).toUpperCase();
+  // Earlier development iterations stored PostgreSQL routing metadata; those
+  // values are translated to the active Firestore plane on read.
+  const type = LEGACY_DATA_PLANE_TYPES.includes(rawType) ? DEFAULT_DATA_PLANE.type : rawType;
   if (!DATA_PLANE_TYPES.includes(type)) throw Object.assign(new Error('Unsupported data plane'), { code: 'INVALID_TENANT_DATA_PLANE', status: 400 });
+  // A legacy plane id refers to the removed PostgreSQL topology; route it to
+  // the active Firestore plane so stored metadata never implies a dead store.
+  const planeId = LEGACY_DATA_PLANE_TYPES.includes(rawType)
+    ? DEFAULT_DATA_PLANE.id
+    : compact(input.id || DEFAULT_DATA_PLANE.id, 120);
   return {
-    id: compact(input.id || DEFAULT_DATA_PLANE.id, 120),
+    id: planeId,
     type,
     region: compact(input.region || DEFAULT_DATA_PLANE.region, 80),
     routingVersion: Math.max(1, Number(input.routingVersion || DEFAULT_DATA_PLANE.routingVersion)),

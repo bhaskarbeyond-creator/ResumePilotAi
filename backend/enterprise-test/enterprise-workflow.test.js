@@ -76,7 +76,7 @@ test('complete console workflow: every module performs a real, verified state ch
   const ownerHeaders = { Authorization: bearer('owner'), 'X-Tenant-Id': tenantId, 'X-Workspace-Id': workspaceId };
 
   // Overview inputs: memberships, audit, metrics, cache, queue all reachable.
-  for (const path of ['/api/enterprise/memberships', '/api/enterprise/audit', '/api/enterprise/observability/metrics', '/api/enterprise/cache/status', '/api/enterprise/queue/status']) {
+  for (const path of ['/api/enterprise/memberships', '/api/enterprise/audit', '/api/enterprise/observability/metrics', '/api/enterprise/data-plane/status', '/api/enterprise/queue/status']) {
     const response = await request(app).get(path).set(ownerHeaders);
     assert.equal(response.status, 200, `${path} must be reachable`);
   }

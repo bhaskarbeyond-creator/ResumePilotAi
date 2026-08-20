@@ -19,7 +19,6 @@ const { loadAiAdminSettings, saveAiAdminSettings, testAiProvider, fetchProviderM
 const { mergeAdminSettingCategory } = require('./services/adminSettingsMerge');
 const { createExportRenderToken, consumeExportRenderToken, discardExportRenderToken } = require('./security/exportTokens');
 const { createTenantService } = require('./enterprise/tenantService');
-const redisCacheService = require('./enterprise/redisCacheService');
 const { enterpriseRouter } = require('./routes/enterprise');
 const { enterpriseM2mRouter } = require('./routes/enterpriseM2m');
 const { enterpriseFeatureEnabled } = require('./enterprise/featureFlags');
@@ -131,7 +130,7 @@ if (enterpriseFeatureEnabled()) {
         enterpriseTenancy: 'ENABLED',
         dataProvider: `Enterprise Data Provider: ${String(runtime.dataProvider || 'unknown')}`,
         dataPlaneConfigured: runtime.dataPlaneConfigured === true,
-        redis: redisCacheService.redisConfigured() ? 'Redis: configured (optional accelerator)' : 'Redis: not configured (optional)',
+        cache: 'Cache: none (Firestore is the durable store; no external cache exists in this architecture)',
         queue: 'Queue: Firestore Durable Outbox',
         encryption: `Encryption Provider: ${String(runtime.encryption?.provider === 'server-key' ? 'ServerKey' : runtime.encryption?.provider || 'none')}`,
         encryptionSecurityLevel: runtime.encryption?.securityLevel || null,
@@ -3122,7 +3121,6 @@ app.get('/readyz', (req, res) => {
                 encryption: enterpriseRuntime.encryption?.provider || 'none',
                 quotaStore: enterpriseRuntime.quotaStore,
                 queue: 'firestore-durable-outbox',
-                redis: redisCacheService.redisConfigured() ? 'configured' : 'not-configured',
             } : 'UNAVAILABLE',
             aiProviders: 'NOT_CHECKED', paymentProviders: 'NOT_CHECKED', smtp: 'NOT_CHECKED',
             cmsScheduler: process.env.CMS_SCHEDULER_ENABLED === 'true' ? 'CONFIGURED' : 'DISABLED',
@@ -3147,7 +3145,6 @@ app.get('/api/readyz', (req, res) => {
                 encryption: enterpriseRuntime.encryption?.provider || 'none',
                 quotaStore: enterpriseRuntime.quotaStore,
                 queue: 'firestore-durable-outbox',
-                redis: redisCacheService.redisConfigured() ? 'configured' : 'not-configured',
             } : 'UNAVAILABLE',
             aiProviders: 'NOT_CHECKED', paymentProviders: 'NOT_CHECKED', smtp: 'NOT_CHECKED',
             cmsScheduler: process.env.CMS_SCHEDULER_ENABLED === 'true' ? 'CONFIGURED' : 'DISABLED',

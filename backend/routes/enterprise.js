@@ -41,6 +41,27 @@ router.use((req, res, next) => {
   return next();
 });
 
+// Real request telemetry: latencies and error classes are computed from actual
+// served responses, never synthesized. Tenant identifiers come from the
+// server-resolved context only.
+router.use((req, res, next) => {
+  const startedAt = process.hrtime.bigint();
+  res.on('finish', () => {
+    const { enterpriseObservability } = require('../enterprise/tenantObservability');
+    enterpriseObservability.recordRequest({
+      requestId: res.locals?.requestId,
+      correlationId: res.locals?.requestId,
+      tenantId: req.tenantContext?.tenantId || null,
+      workspaceId: req.tenantContext?.workspaceId || null,
+      method: req.method,
+      path: req.path,
+      status: res.statusCode,
+      durationMs: Number(process.hrtime.bigint() - startedAt) / 1e6,
+    });
+  });
+  return next();
+});
+
 function enterpriseService(req) {
   const service = req.app.get('tenantService');
   if (!service) {
@@ -422,17 +443,40 @@ router.delete('/resources/:resourceId', resolveTenantContext, requireTenantPermi
   }
 });
 
-router.get('/observability/metrics', resolveTenantContext, requireTenantPermission('tenant.read'), (req, res) => {
+router.get('/observability/metrics', resolveTenantContext, requireTenantPermission('tenant.read'), async (req, res) => {
   const { enterpriseObservability } = require('../enterprise/tenantObservability');
-  return res.json({ metrics: enterpriseObservability.getMetrics() });
+  const metrics = enterpriseObservability.getMetrics();
+  const payload = { metrics };
+  // Durable outbox posture is included best-effort; if the queue runtime is
+  // unavailable the metrics endpoint says so instead of inventing numbers.
+  try {
+    const { getOutboxStatus } = require('../enterprise/enterpriseOutbox');
+    const db = req.app.get('db');
+    const admin = req.app.get('firebaseAdmin');
+    const signingSecret = runtimeSecret('TENANT_JOB_SIGNING_SECRET', '');
+    if (db && admin?.firestore?.FieldValue) {
+      payload.queue = await getOutboxStatus({ db, admin, signingSecret });
+    }
+  } catch { /* metrics remain truthful without queue state */ }
+  return res.json(payload);
 });
 
-router.get('/cache/status', resolveTenantContext, requireTenantPermission('tenant.read'), async (req, res) => {
-  const { pingRedis } = require('../enterprise/redisCacheService');
-  const result = await pingRedis();
-  // Truthful reporting: Redis is an optional accelerator. "unavailable" never
-  // implies degraded correctness — durable Firestore stores carry correctness.
-  return res.json({ cache: { ...result, optional: true, correctnessBackstore: 'firestore' } });
+router.get('/data-plane/status', resolveTenantContext, requireTenantPermission('tenant.read'), (req, res) => {
+  // Truthful infrastructure status: Firestore is the canonical data plane.
+  // There is no Redis/PostgreSQL layer in this architecture to report on.
+  const service = enterpriseService(req);
+  const runtime = service.describeRuntime ? service.describeRuntime() : null;
+  return res.json({
+    dataPlane: {
+      provider: runtime?.dataProvider || 'unknown',
+      configured: runtime?.dataPlaneConfigured === true,
+      durable: true,
+      encryption: runtime?.encryption?.provider || 'none',
+      encryptionSecurityLevel: runtime?.encryption?.securityLevel || null,
+      quotaStore: runtime?.quotaStore || 'unavailable',
+      queue: 'firestore-durable-outbox',
+    },
+  });
 });
 
 // Durable enterprise job queue (Firestore-backed outbox). The signing secret

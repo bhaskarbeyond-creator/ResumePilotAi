@@ -24,7 +24,7 @@ test('enterprise configuration separates browser UX flag from server-only data-p
   const frontend = read('src/enterprise/EnterpriseContext.jsx');
   assert.match(env, /^ENTERPRISE_TENANCY_ENABLED=false$/m);
   assert.match(env, /^VITE_ENTERPRISE_TENANCY_ENABLED=false$/m);
-  assert.match(env, /^TENANT_DATABASE_URL=$/m);
+  assert.doesNotMatch(env, /^TENANT_DATABASE_URL=/m);
   assert.doesNotMatch(env, /^VITE_TENANT_DATABASE_URL=/m);
   assert.match(frontend, /\/api\/enterprise\/status/);
   assert.match(frontend, /serverDisabled/);
@@ -33,12 +33,12 @@ test('enterprise configuration separates browser UX flag from server-only data-p
 test('tenant identity conventions distinguish external subject from canonical data-plane principal', () => {
   const context = read('backend/enterprise/tenantContext.js');
   const service = read('backend/enterprise/tenantService.js');
-  const dataPlane = read('backend/enterprise/tenantDataPlane.js');
+  const repository = read('backend/enterprise/firestoreEnterpriseRepository.js');
   const registry = read('backend/enterprise/tenantRegistry.js');
   assert.match(context, /function canonicalPrincipalId/);
   assert.match(service, /subjectId: principalId/);
   assert.match(service, /principalId: resolved\.membership\.canonicalPrincipalId/);
-  assert.match(dataPlane, /assertUuid\(context\.principalId, 'Canonical principal identifier'\)/);
+  assert.match(repository, /assertContext\(context\)/);
   assert.match(registry, /TENANT_IDENTITY_MISMATCH/);
 });
 

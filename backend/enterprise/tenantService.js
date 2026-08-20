@@ -29,7 +29,8 @@ function isSupportEligible(user) {
 }
 
 class TenantService {
-  constructor({ registry, db = null, admin = null, repository = null, serviceAccountStore = null, supportGrantStore = null, quotaGuard = null, encryptionProvider = null, dataProviderName = 'firestore' }) {
+  constructor({ registry, db = null, admin = null, repository = null, serviceAccountStore = null, supportGrantStore = null, quotaGuard = null, encryptionProvider = null, dataProviderName = 'firestore', constructionError = null }) {
+    this.constructionError = constructionError;
     this.registry = registry;
     this.db = db;
     this.admin = admin;
@@ -48,6 +49,7 @@ class TenantService {
     return {
       dataProvider: this.repository ? this.repository.providerName || this.dataProviderName : this.dataProviderName,
       dataPlaneConfigured: Boolean(this.repository),
+      error: this.constructionError ? String(this.constructionError).slice(0, 200) : null,
       encryption: this.encryptionProvider ? this.encryptionProvider.describe() : { provider: 'none', configured: false, securityLevel: 'ENCRYPTION_UNAVAILABLE_FAIL_CLOSED' },
       quotaStore: this.quotaGuard ? 'firestore-atomic' : 'unavailable',
     };
@@ -438,7 +440,7 @@ class TenantService {
 
   async listWorkspaces({ context }) {
     // Registry membership records are keyed by the verified external identity
-    // subject; PostgreSQL resource rows use the canonical UUID principal.
+    // subject; data-plane documents use the canonical UUID principal.
     return this.registry.listAccessibleWorkspaces({ tenantId: context.tenantId, principalId: context.subjectId, roles: context.roles });
   }
 
@@ -552,15 +554,6 @@ class TenantService {
     return true;
   }
 
-  async withTenantDataPlane(context, callback) {
-    // Retained for compatibility with the optional PostgreSQL adapter surface;
-    // canonical services call repository methods directly.
-    if (!this.repository) {
-      throw Object.assign(new Error('Enterprise data plane is not configured'), { code: 'ENTERPRISE_DATA_PLANE_UNAVAILABLE', status: 503 });
-    }
-    return callback(this.repository);
-  }
-
   async createResource({ context, input }) {
     this.assertRepository();
     return this.repository.createResource(context, input);
@@ -649,9 +642,8 @@ function createTenantService({ db, admin, registry = null, repository = null, se
         ? new FirestoreTenantRegistry({ db: null, admin })
         : new InMemoryTenantRegistry()
   );
-  // Enterprise data plane: Firestore is canonical and needs no external
-  // database. The PostgreSQL adapter is opt-in via ENTERPRISE_DATA_PROVIDER=
-  // postgres + TENANT_DATABASE_URL and is never constructed implicitly.
+  // Enterprise data plane: Firestore is the only provider and needs no
+  // external database, cache, queue, or KMS service.
   let encryptionProvider = null;
   try {
     encryptionProvider = createEncryptionProvider(environment);
@@ -662,6 +654,7 @@ function createTenantService({ db, admin, registry = null, repository = null, se
       describe: () => ({ provider: error.code === 'ENTERPRISE_ENCRYPTION_PROVIDER_UNAVAILABLE' ? 'unavailable' : 'server-key', configured: false, error: error.message, securityLevel: 'ENCRYPTION_UNAVAILABLE_FAIL_CLOSED' }),
     });
   }
+  let constructionError = null;
   let resolvedRepository = repository;
   if (!resolvedRepository && db) {
     try {
@@ -677,9 +670,7 @@ function createTenantService({ db, admin, registry = null, repository = null, se
       // configuration error; the runtime description surfaces the cause.
       console.error('[Enterprise data plane] Repository construction failed:', error.message);
       resolvedRepository = null;
-      encryptionProvider = Object.freeze({
-        describe: () => ({ provider: 'unavailable', configured: false, error: error.message, securityLevel: 'DATA_PLANE_UNAVAILABLE_FAIL_CLOSED' }),
-      });
+      constructionError = error.message;
     }
   }
   return new TenantService({
@@ -692,6 +683,7 @@ function createTenantService({ db, admin, registry = null, repository = null, se
     quotaGuard: quotaGuard || (db && admin ? new TenantQuotaGuard({ store: new FirestoreAtomicCounterStore({ db, admin }) }) : null),
     encryptionProvider: encryptionProvider && typeof encryptionProvider.encryptValue === 'function' ? encryptionProvider : null,
     dataProviderName: String(environment.ENTERPRISE_DATA_PROVIDER || 'firestore').toLowerCase(),
+    constructionError,
   });
 }
 

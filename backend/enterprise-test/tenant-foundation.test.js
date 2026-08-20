@@ -14,8 +14,6 @@ const { globalCacheKey, tenantCacheKey, tenantCachePrefix, tenantRateLimitKey } 
 const { createTenantJobEnvelope, validateTenantJobEnvelope } = require('../enterprise/tenantJobs');
 const { assertStorageContext, tenantObjectKey } = require('../enterprise/tenantStorage');
 const { classifyLegacyResource, createMigrationLedgerRecord } = require('../enterprise/firebaseBridge');
-const { TenantDataPlaneRouter, withTenantTransaction } = require('../enterprise/tenantDataPlane');
-const { getTenantResource, listTenantResources } = require('../enterprise/tenantRepository');
 const { queueEmailInTransaction } = require('../services/notificationOutbox');
 const { InMemoryAtomicCounterStore, TenantQuotaGuard } = require('../enterprise/tenantQuota');
 const { applyTenantAiPolicy, assertNoClientAuthority, buildTenantAiOperation } = require('../enterprise/tenantAi');
@@ -24,7 +22,6 @@ const { buildPersonalResumeMigrationPlan, reconcileAggregate, reconcileCollectio
 const { createTenantArtifactToken, verifyTenantArtifactToken } = require('../enterprise/tenantSignedArtifacts');
 const { buildTenantTelemetry, tenantMetricLabels } = require('../enterprise/tenantTelemetry');
 const { assertSameInfrastructureRoute, resolveTenantInfrastructure } = require('../enterprise/tenantRouting');
-const { applyMigrations, migrationNames, splitSqlStatements } = require('../enterprise/sqlMigrations');
 const { legacyDocumentPath, tenantMigrationTarget } = require('../enterprise/certifiedModuleBridge');
 
 const PRINCIPAL_A = 'firebase-user-a';
@@ -251,21 +248,30 @@ test('tenant AI policy rejects client-controlled authority and prevents cross-te
   assert.throws(() => applyTenantAiPolicy({ primary: 'gemini', providers: { gemini: { enabled: true } } }, a, { allowedProviders: [] }), error => error.code === 'TENANT_AI_PROVIDER_UNAVAILABLE');
 });
 
-test('tenant repository relies on RLS for tenant rows and enforces workspace scope in application policy', async () => {
-  const registry = new InMemoryTenantRegistry();
-  const context = { ...(await contextFor(registry, PRINCIPAL_A)), workspaceScope: 'WORKSPACE' };
-  const calls = [];
-  const tx = {
-    async query(text, values) {
-      calls.push({ text, values });
-      return { rows: [{ id: '11111111-1111-4111-8111-111111111111', tenant_id: context.tenantId, workspace_id: context.workspaceId, resource_type: 'NOTE', owner_principal_id: context.principalId, classification: 'PRIVATE', revision: 1, payload: {} }] };
-    }
-  };
-  const resource = await getTenantResource(tx, context, '11111111-1111-4111-8111-111111111111');
-  assert.equal(resource.tenantId, context.tenantId);
-  assert.doesNotMatch(calls[0].text, /tenant_id\s*=/i, 'RLS must remain an independent enforcement layer');
-  await listTenantResources(tx, context, { resourceType: 'NOTE', limit: 10 });
-  assert.equal(calls[1].values.includes(context.workspaceId), true);
+test('tenant repository enforces tenant partitioning and workspace scope in queries', async () => {
+  const { MemoryFirestore, createMemoryAdmin } = require('../test/helpers/memoryFirestore');
+  const { FirestoreEnterpriseRepository } = require('../enterprise/firestoreEnterpriseRepository');
+  const { ServerKeyEncryptionProvider } = require('../enterprise/encryptionProvider');
+  const db = new MemoryFirestore();
+  const admin = createMemoryAdmin({ db });
+  const repository = new FirestoreEnterpriseRepository({
+    db,
+    admin,
+    encryptionProvider: new ServerKeyEncryptionProvider({ keys: new Map([['v1', require('node:crypto').randomBytes(32)]]) }),
+  });
+  const context = { ...(await contextFor(new InMemoryTenantRegistry(), PRINCIPAL_A)), workspaceScope: 'WORKSPACE' };
+  const otherWorkspaceContext = { ...context, workspaceId: '99999999-9999-4999-8999-999999999999', workspaceScope: 'WORKSPACE' };
+  await repository.createResource(context, { id: '11111111-1111-4111-8111-111111111111', resourceType: 'NOTE', payload: { a: 1 } });
+  // A different workspace of the same tenant cannot list or read it.
+  assert.equal((await repository.listResources(otherWorkspaceContext, {})).length, 0, 'listing applies the workspace predicate');
+  await assert.rejects(
+    () => repository.getResource(otherWorkspaceContext, '11111111-1111-4111-8111-111111111111'),
+    error => error.code === 'WORKSPACE_RESOURCE_NOT_FOUND' && error.status === 404,
+    'cross-workspace reads must fail closed'
+  );
+  const own = await repository.getResource(context, '11111111-1111-4111-8111-111111111111');
+  assert.equal(own.tenantId, context.tenantId);
+  assert.ok(db.documents.has(`tenants/${context.tenantId}/resources/11111111-1111-4111-8111-111111111111`), 'writes land in the tenant partition');
 });
 
 test('tenant jobs are signed, context complete, tamper resistant, and expire', async () => {
@@ -351,106 +357,6 @@ test('Firebase adapter creates reversible personal-resume migration plans and ch
   assert.equal(reconciliation.matches, false);
 });
 
-test('tenant transaction uses BEGIN, transaction-local settings, commit/reset and one checked-out client', async () => {
-  const queries = [];
-  let released = 0;
-  const client = {
-    async query(text, values) { queries.push({ text, values }); return { rows: [] }; },
-    release() { released += 1; },
-  };
-  const pool = { async connect() { return client; } };
-  const registry = new InMemoryTenantRegistry();
-  const context = await contextFor(registry, PRINCIPAL_A);
-  await withTenantTransaction(pool, context, async tx => {
-    assert.equal(tx.context.tenantId, context.tenantId);
-    await tx.query('SELECT 1');
-  });
-  assert.equal(queries[0].text, 'BEGIN');
-  assert.equal(queries.filter(entry => entry.text.includes('set_config')).length, 6);
-  assert.equal(queries.some(entry => entry.text === 'SELECT 1'), true);
-  assert.equal(queries.some(entry => entry.text === 'COMMIT'), true);
-  assert.equal(queries.at(-1).text, 'RESET ALL');
-  assert.equal(released, 1);
-});
-
-test('tenant transaction rolls back and resets a pooled client after failure', async () => {
-  const queries = [];
-  const client = { async query(text, values) { queries.push({ text, values }); return { rows: [] }; }, release() {} };
-  const pool = { async connect() { return client; } };
-  const registry = new InMemoryTenantRegistry();
-  const context = await contextFor(registry, PRINCIPAL_A);
-  await assert.rejects(() => withTenantTransaction(pool, context, async () => { throw new Error('boom'); }), /boom/);
-  assert.equal(queries.some(entry => entry.text === 'ROLLBACK'), true);
-  assert.equal(queries.at(-1).text, 'RESET ALL');
-});
-
-test('data-plane router selects dedicated pools only through a server-derived tenant route', async () => {
-  const registry = new InMemoryTenantRegistry();
-  const context = await contextFor(registry, PRINCIPAL_A);
-  const queries = [];
-  const pool = { async connect() { return { async query(text, values) { queries.push({ text, values }); return { rows: [] }; }, release() {} }; } };
-  const dedicatedContext = { ...context, dataPlane: { ...context.dataPlane, type: 'DEDICATED_POSTGRES', id: 'dedicated-a' } };
-  const router = new TenantDataPlaneRouter({
-    sharedPool: null,
-    dedicatedPoolResolver: async (plane, suppliedContext) => {
-      assert.equal(plane.id, 'dedicated-a');
-      assert.equal(suppliedContext.tenantId, context.tenantId);
-      return pool;
-    },
-  });
-  await router.withContext(dedicatedContext, tx => tx.query('SELECT 1'));
-  assert.equal(queries.some(entry => entry.text === 'BEGIN'), true);
-  assert.equal(queries.some(entry => entry.text === 'COMMIT'), true);
-});
-
-test('enterprise migration parser preserves dollar-quoted RLS functions and applies reviewed migration statements', async () => {
-  const parsed = splitSqlStatements("CREATE FUNCTION x() RETURNS text AS $$ SELECT 'a;b'; $$ LANGUAGE sql; SELECT 1;");
-  assert.equal(parsed.length, 2);
-  assert.match(parsed[0], /a;b/);
-  const { PGlite } = await import('@electric-sql/pglite');
-  const db = new PGlite();
-  try {
-    await applyMigrations(db, migrationNames);
-    const tables = await db.query("SELECT table_name FROM information_schema.tables WHERE table_schema IN ('platform', 'tenant_data') ORDER BY table_name");
-    assert.equal(tables.rows.some(row => row.table_name === 'tenants'), true);
-    assert.equal(tables.rows.some(row => row.table_name === 'resources'), true);
-  } finally {
-    await db.close();
-  }
-});
-
-test('full tenant_data migration enforces RLS for runtime role across tenant and workspace boundaries', async () => {
-  const { PGlite } = await import('@electric-sql/pglite');
-  const db = new PGlite();
-  const tenantA = '11111111-1111-4111-8111-111111111111';
-  const tenantB = '22222222-2222-4222-8222-222222222222';
-  const workspaceA1 = '33333333-3333-4333-8333-333333333333';
-  const workspaceA2 = '44444444-4444-4444-8444-444444444444';
-  const principal = '55555555-5555-4555-8555-555555555555';
-  try {
-    await applyMigrations(db, migrationNames);
-    await db.query('CREATE ROLE tenant_runtime_rsl LOGIN NOBYPASSRLS');
-    await db.query('GRANT USAGE ON SCHEMA tenant_data TO tenant_runtime_rsl');
-    await db.query('GRANT SELECT, INSERT ON tenant_data.resources TO tenant_runtime_rsl');
-    await db.query(`INSERT INTO tenant_data.resources (id, tenant_id, workspace_id, resource_type, owner_principal_id, payload) VALUES ('66666666-6666-4666-8666-666666666666', '${tenantA}', '${workspaceA1}', 'NOTE', '${principal}', '{}'::jsonb), ('77777777-7777-4777-8777-777777777777', '${tenantA}', '${workspaceA2}', 'NOTE', '${principal}', '{}'::jsonb), ('88888888-8888-4888-8888-888888888888', '${tenantB}', '${workspaceA1}', 'NOTE', '${principal}', '{}'::jsonb)`);
-    await db.query('SET ROLE tenant_runtime_rsl');
-    assert.deepEqual((await db.query('SELECT id FROM tenant_data.resources ORDER BY id')).rows, []);
-    await db.query('BEGIN');
-    await db.query("SELECT set_config('app.tenant_id', $1, true)", [tenantA]);
-    await db.query("SELECT set_config('app.workspace_id', $1, true)", [workspaceA1]);
-    await db.query("SELECT set_config('app.workspace_scope', 'WORKSPACE', true)");
-    assert.deepEqual((await db.query('SELECT id FROM tenant_data.resources ORDER BY id')).rows, [{ id: '66666666-6666-4666-8666-666666666666' }]);
-    await db.query('COMMIT');
-    await db.query('BEGIN');
-    await db.query("SELECT set_config('app.tenant_id', $1, true)", [tenantA]);
-    await db.query("SELECT set_config('app.workspace_scope', 'TENANT', true)");
-    assert.deepEqual((await db.query('SELECT id FROM tenant_data.resources ORDER BY id')).rows, [{ id: '66666666-6666-4666-8666-666666666666' }, { id: '77777777-7777-4777-8777-777777777777' }]);
-    await db.query('COMMIT');
-  } finally {
-    await db.close();
-  }
-});
-
 test('database, job, artifact, cache, queue and AI profiles derive from one canonical infrastructure route', async () => {
   const registry = new InMemoryTenantRegistry();
   const context = await contextFor(registry, PRINCIPAL_A);
@@ -464,52 +370,4 @@ test('database, job, artifact, cache, queue and AI profiles derive from one cano
   assert.throws(() => assertSameInfrastructureRoute(context, { ...route, dataPlaneId: 'wrong-plane' }), error => error.code === 'TENANT_ROUTE_MISMATCH');
 });
 
-test('RLS migration has FORCE RLS and policies scoped through transaction-local app.tenant_id', () => {
-  const sql = fs.readFileSync(path.join(__dirname, '..', 'sql', '002_enterprise_tenant_data_plane_rls.sql'), 'utf8');
-  assert.match(sql, /ENABLE ROW LEVEL SECURITY/g);
-  assert.match(sql, /FORCE ROW LEVEL SECURITY/g);
-  assert.match(sql, /current_setting\('app\.tenant_id', true\)/);
-  assert.match(sql, /WITH CHECK \(\s*tenant_id = tenant_data\.current_tenant_id\(\)/);
-  assert.match(sql, /tenant_data\.resources/);
-});
 
-test('PGlite proves forced RLS denies missing context and isolates tenant/workspace rows on one reused connection', async () => {
-  const { PGlite } = await import('@electric-sql/pglite');
-  const db = new PGlite();
-  try {
-    await db.query('CREATE ROLE tenant_runtime LOGIN NOBYPASSRLS');
-    await db.query('CREATE TABLE tenant_rows(id integer, tenant_id text, workspace_id text, payload text)');
-    await db.query('ALTER TABLE tenant_rows ENABLE ROW LEVEL SECURITY');
-    await db.query('ALTER TABLE tenant_rows FORCE ROW LEVEL SECURITY');
-    await db.query("CREATE POLICY tenant_rows_policy ON tenant_rows USING (tenant_id = NULLIF(current_setting('app.tenant_id', true), '') AND (workspace_id IS NULL OR NULLIF(current_setting('app.workspace_scope', true), '') = 'TENANT' OR workspace_id = NULLIF(current_setting('app.workspace_id', true), ''))) WITH CHECK (tenant_id = NULLIF(current_setting('app.tenant_id', true), '') AND (workspace_id IS NULL OR NULLIF(current_setting('app.workspace_scope', true), '') = 'TENANT' OR workspace_id = NULLIF(current_setting('app.workspace_id', true), '')))");
-    await db.query("INSERT INTO tenant_rows VALUES (1, 'tenant-a', 'workspace-a1', 'A1'), (2, 'tenant-a', 'workspace-a2', 'A2'), (3, 'tenant-b', 'workspace-b1', 'B1')");
-    await db.query('GRANT SELECT, INSERT ON tenant_rows TO tenant_runtime');
-    await db.query('SET ROLE tenant_runtime');
-
-    const noContext = await db.query('SELECT payload FROM tenant_rows ORDER BY id');
-    assert.deepEqual(noContext.rows, []);
-
-    await db.query('BEGIN');
-    await db.query("SELECT set_config('app.tenant_id', 'tenant-a', true)");
-    await db.query("SELECT set_config('app.workspace_id', 'workspace-a1', true)");
-    await db.query("SELECT set_config('app.workspace_scope', 'WORKSPACE', true)");
-    const workspaceRows = await db.query('SELECT payload FROM tenant_rows ORDER BY id');
-    assert.deepEqual(workspaceRows.rows, [{ payload: 'A1' }]);
-    await assert.rejects(() => db.query("INSERT INTO tenant_rows VALUES (4, 'tenant-a', 'workspace-a2', 'forbidden')"));
-    await db.query('COMMIT');
-
-    // Same in-process database connection after commit: SET LOCAL context has expired.
-    const resetRows = await db.query('SELECT payload FROM tenant_rows ORDER BY id');
-    assert.deepEqual(resetRows.rows, []);
-
-    await db.query('BEGIN');
-    await db.query("SELECT set_config('app.tenant_id', 'tenant-a', true)");
-    await db.query("SELECT set_config('app.workspace_id', 'workspace-a1', true)");
-    await db.query("SELECT set_config('app.workspace_scope', 'TENANT', true)");
-    const tenantRows = await db.query('SELECT payload FROM tenant_rows ORDER BY id');
-    assert.deepEqual(tenantRows.rows, [{ payload: 'A1' }, { payload: 'A2' }]);
-    await db.query('COMMIT');
-  } finally {
-    await db.close();
-  }
-});

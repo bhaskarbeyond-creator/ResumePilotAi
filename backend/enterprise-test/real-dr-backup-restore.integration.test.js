@@ -3,61 +3,95 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
+const { MemoryFirestore, createMemoryAdmin } = require('../test/helpers/memoryFirestore');
+const { FirestoreTenantRegistry } = require('../enterprise/tenantRegistry');
+const { FirestoreEnterpriseRepository } = require('../enterprise/firestoreEnterpriseRepository');
+const { ServerKeyEncryptionProvider } = require('../enterprise/encryptionProvider');
+const { freezeContext } = require('../enterprise/tenantContext');
+const backup = require('../enterprise/enterpriseBackup');
 
-test('Disaster Recovery & Backup: Full enterprise snapshot produces deterministic checksums and full state restore', async () => {
-  const { PGlite } = await import('@electric-sql/pglite');
-  const db = new PGlite();
+/**
+ * Disaster recovery on the canonical Firestore data plane. The previous
+ * PostgreSQL-snapshot drill was removed together with the PostgreSQL adapter;
+ * this drill exercises the real backup module end to end: snapshot → simulated
+ * catastrophic loss → verified restore → reconciliation.
+ */
 
-  // 1. Setup schema & test table
-  await db.query('CREATE SCHEMA tenant_data');
-  await db.query('CREATE TABLE tenant_data.resumes (id text PRIMARY KEY, tenant_id text NOT NULL, title text NOT NULL, content jsonb NOT NULL, checksum text NOT NULL)');
+function setup() {
+  const db = new MemoryFirestore();
+  const admin = createMemoryAdmin({ db });
+  const repository = new FirestoreEnterpriseRepository({
+    db,
+    admin,
+    encryptionProvider: new ServerKeyEncryptionProvider({ keys: new Map([['v1', crypto.randomBytes(32)]]) }),
+  });
+  const registry = new FirestoreTenantRegistry({ db, admin });
+  return { db, admin, repository, registry };
+}
 
-  // 2. Populate seed records across 3 tenants
-  const seedRecords = [
-    { id: 'res-1', tenant_id: crypto.randomUUID(), title: 'Alice Resume', content: { skills: ['Node.js', 'PostgreSQL'] } },
-    { id: 'res-2', tenant_id: crypto.randomUUID(), title: 'Bob Resume', content: { skills: ['React', 'TypeScript'] } },
-    { id: 'res-3', tenant_id: crypto.randomUUID(), title: 'Charlie Resume', content: { skills: ['Kubernetes', 'AWS'] } },
-  ];
+test('Disaster Recovery: full tenant snapshot, catastrophic loss, and verified restore', async () => {
+  const { db, admin, repository, registry } = setup();
+  const { tenantId, workspaceId } = await registry.provisionTenant({ ownerPrincipalId: 'dr-owner', displayName: 'DR Industries', slug: 'dr-industries' });
+  const context = freezeContext({
+    tenantId, workspaceId, principalId: crypto.randomUUID(),
+    tenant: { id: tenantId, lifecycleState: 'ACTIVE', isolationTier: 'STANDARD', dataPlane: { id: 'firestore-primary', type: 'FIRESTORE', routingVersion: 1 } },
+    membership: { status: 'ACTIVE', roles: ['TENANT_OWNER'] }, roles: ['TENANT_OWNER'],
+  });
 
-  for (const rec of seedRecords) {
-    const rawContent = JSON.stringify(rec.content);
-    const checksum = crypto.createHash('sha256').update(rawContent).digest('hex');
-    await db.query(
-      'INSERT INTO tenant_data.resumes (id, tenant_id, title, content, checksum) VALUES ($1, $2, $3, $4, $5)',
-      [rec.id, rec.tenant_id, rec.title, rawContent, checksum]
-    );
+  // Seed tenant state across every partitioned collection.
+  const first = await repository.createResource(context, { resourceType: 'RESUME', payload: { title: 'Principal CV', revision: 1 } });
+  const second = await repository.createResource(context, { resourceType: 'COVER', payload: { title: 'Principal Cover' } });
+  await repository.recordAiUsage(context, { provider: 'openai', model: 'gpt-4o-mini', operation: 'generate-summary', inputTokens: 800, outputTokens: 400, idempotencyKey: 'dr-1' });
+
+  // 1. Snapshot with deterministic checksums.
+  const snapshot = await backup.exportTenantSnapshot({ db, admin, tenantId });
+  assert.ok(backup.verifySnapshot(snapshot).ok, 'snapshot must verify before disaster');
+  const resourceCount = snapshot.manifest.find(entry => entry.collection === 'tenants/{tenantId}/resources').count;
+  assert.equal(resourceCount, 2);
+
+  // 2. Simulated catastrophic loss: drop every document of this tenant.
+  for (const path of [...db.documents.keys()]) {
+    if (path.startsWith(`tenants/${tenantId}/`)) db.documents.delete(path);
   }
+  db.documents.delete(`enterprise_tenants/${tenantId}`);
+  assert.equal(await repository.getResource(context, first.id), null, 'tenant data must be gone after disaster');
+  assert.equal(await registry.getTenant(tenantId).then(() => true, () => false), false, 'tenant record must be gone');
 
-  // 3. Create backup snapshot
-  const exportResult = await db.query('SELECT * FROM tenant_data.resumes ORDER BY id ASC');
-  assert.equal(exportResult.rows.length, 3);
-  const snapshotJson = JSON.stringify(exportResult.rows);
-  const snapshotChecksum = crypto.createHash('sha256').update(snapshotJson).digest('hex');
+  // 3. Restore (apply) — idempotent, checksum-verified.
+  const restored = await backup.restoreTenantSnapshot({ db, admin, snapshot, mode: 'apply' });
+  assert.equal(restored.restored, snapshot.documents.length);
+  assert.deepEqual(restored.refused, []);
 
-  // 4. Simulate catastrophic data loss (e.g. accidental DROP / truncation)
-  await db.query('TRUNCATE TABLE tenant_data.resumes');
-  const emptyCheck = await db.query('SELECT count(*) AS total FROM tenant_data.resumes');
-  assert.equal(Number(emptyCheck.rows[0].total), 0, 'Database table must be empty after simulated disaster');
+  // 4. Post-restore reconciliation.
+  const verification = await backup.verifyTenantRestored({ db, admin, snapshot });
+  assert.equal(verification.ok, true, `restored state must reconcile: ${JSON.stringify(verification)}`);
+  const recoveredFirst = await repository.getResource(context, first.id);
+  assert.equal(recoveredFirst.payload.title, 'Principal CV', 'resource content must round-trip');
+  const recoveredSecond = await repository.getResource(context, second.id);
+  assert.equal(recoveredSecond.payload.title, 'Principal Cover');
+  const usage = await repository.getAiUsageSummary(context, {});
+  assert.equal(usage.requests, 1, 'usage ledger must survive restore');
+  const tenant = await registry.getTenant(tenantId);
+  assert.equal(tenant.displayName, 'DR Industries', 'tenant record must be restored');
+});
 
-  // 5. Execute Disaster Recovery Restore procedure
-  const restoredRows = JSON.parse(snapshotJson);
-  const restoredChecksum = crypto.createHash('sha256').update(JSON.stringify(restoredRows)).digest('hex');
-  assert.equal(restoredChecksum, snapshotChecksum, 'Restore manifest checksum must match pre-disaster snapshot 100%');
+test('Disaster Recovery: partial-failure recovery — re-running restore is idempotent', async () => {
+  const { db, admin, repository, registry } = setup();
+  const { tenantId, workspaceId } = await registry.provisionTenant({ ownerPrincipalId: 'dr-partial', displayName: 'Partial Co', slug: 'partial-co' });
+  const context = freezeContext({
+    tenantId, workspaceId, principalId: crypto.randomUUID(),
+    tenant: { id: tenantId, lifecycleState: 'ACTIVE', isolationTier: 'STANDARD', dataPlane: { id: 'firestore-primary', type: 'FIRESTORE', routingVersion: 1 } },
+    membership: { status: 'ACTIVE', roles: ['TENANT_OWNER'] }, roles: ['TENANT_OWNER'],
+  });
+  await repository.createResource(context, { resourceType: 'RESUME', payload: { title: 'Survives' } });
+  const snapshot = await backup.exportTenantSnapshot({ db, admin, tenantId });
 
-  for (const row of restoredRows) {
-    await db.query(
-      'INSERT INTO tenant_data.resumes (id, tenant_id, title, content, checksum) VALUES ($1, $2, $3, $4, $5)',
-      [row.id, row.tenant_id, row.title, typeof row.content === 'string' ? row.content : JSON.stringify(row.content), row.checksum]
-    );
-  }
-
-  // 6. Verify full post-restore integrity
-  const finalCheck = await db.query('SELECT * FROM tenant_data.resumes ORDER BY id ASC');
-  assert.equal(finalCheck.rows.length, 3);
-  for (let i = 0; i < finalCheck.rows.length; i++) {
-    assert.equal(finalCheck.rows[i].id, seedRecords[i].id);
-    assert.equal(finalCheck.rows[i].title, seedRecords[i].title);
-    const content = typeof finalCheck.rows[i].content === 'string' ? JSON.parse(finalCheck.rows[i].content) : finalCheck.rows[i].content;
-    assert.deepEqual(content, seedRecords[i].content);
-  }
+  // First restore completes, then a second restore runs (operator re-ran the
+  // job after a partial failure) — state must remain identical.
+  await backup.restoreTenantSnapshot({ db, admin, snapshot, mode: 'apply' });
+  await backup.restoreTenantSnapshot({ db, admin, snapshot, mode: 'apply' });
+  const verification = await backup.verifyTenantRestored({ db, admin, snapshot });
+  assert.equal(verification.ok, true);
+  const fresh = await backup.exportTenantSnapshot({ db, admin, tenantId });
+  assert.equal(fresh.documentCount, snapshot.documentCount, 're-running restore must not duplicate documents');
 });

@@ -1,5 +1,15 @@
 'use strict';
 
+/**
+ * In-process enterprise observability.
+ *
+ * Metrics are computed from REAL request telemetry recorded by the enterprise
+ * router middleware (latencies, status classes) plus the durable outbox state
+ * exposed through /api/enterprise/queue/status. There is no Redis, PostgreSQL,
+ * or external metrics service in this architecture, and no counter is reported
+ * that is not actually incremented.
+ */
+
 class EnterpriseObservability {
   constructor() {
     this.latencies = [];
@@ -7,15 +17,14 @@ class EnterpriseObservability {
       clientErrors: 0,
       serverErrors: 0,
       authErrors: 0,
-      dbErrors: 0,
-      redisErrors: 0,
-      queueErrors: 0,
       aiErrors: 0,
+      quotaErrors: 0,
     };
   }
 
   recordRequest({ requestId, correlationId, tenantId, workspaceId, method, path, status, durationMs, error = null }) {
-    this.latencies.push(durationMs);
+    if (!Number.isFinite(Number(durationMs))) return;
+    this.latencies.push(Number(durationMs));
     if (this.latencies.length > 5000) {
       this.latencies.shift();
     }
@@ -23,23 +32,24 @@ class EnterpriseObservability {
     if (status >= 400 && status < 500) {
       this.errorCounts.clientErrors++;
       if (status === 401 || status === 403) this.errorCounts.authErrors++;
+      if (status === 429) this.errorCounts.quotaErrors++;
     } else if (status >= 500) {
       this.errorCounts.serverErrors++;
       if (path && path.includes('/ai/')) this.errorCounts.aiErrors++;
     }
 
-    // Structured JSON log line
+    // Structured JSON log line (no secrets; identifiers are truncated).
     const logObject = {
       timestamp: new Date().toISOString(),
       level: status >= 500 ? 'ERROR' : (status >= 400 ? 'WARN' : 'INFO'),
       requestId: requestId || 'anonymous',
       correlationId: correlationId || 'anonymous',
       tenantId: tenantId ? `tenant:${tenantId.slice(0, 8)}...` : 'public',
-      workspaceId: workspaceId ? `workspace:${workspaceId.slice(0, 8)}...` : null,
+      workspaceId: workspaceId ? `workspace:${workspaceId.slice(0, 8)}` : null,
       method,
       path,
       status,
-      durationMs,
+      durationMs: Math.round(Number(durationMs)),
       error: error ? error.message || String(error) : undefined,
     };
 
@@ -61,8 +71,8 @@ class EnterpriseObservability {
 
     const sorted = [...this.latencies].sort((a, b) => a - b);
     const p50 = sorted[Math.floor(sorted.length * 0.50)];
-    const p95 = sorted[Math.floor(sorted.length * 0.95)];
-    const p99 = sorted[Math.floor(sorted.length * 0.99)];
+    const p95 = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))];
+    const p99 = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.99))];
 
     return {
       sampleCount: sorted.length,

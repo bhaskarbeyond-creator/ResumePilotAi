@@ -3,10 +3,11 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
-const { PGlite } = require('@electric-sql/pglite');
 const { InMemoryTenantRegistry } = require('../enterprise/tenantRegistry');
 const { freezeContext, canonicalPrincipalId } = require('../enterprise/tenantContext');
-const { withTenantTransaction } = require('../enterprise/tenantDataPlane');
+const { MemoryFirestore, createMemoryAdmin } = require('../test/helpers/memoryFirestore');
+const { FirestoreEnterpriseRepository } = require('../enterprise/firestoreEnterpriseRepository');
+const { ServerKeyEncryptionProvider } = require('../enterprise/encryptionProvider');
 const { tenantCacheKey } = require('../enterprise/tenantCache');
 const { tenantObjectKey } = require('../enterprise/tenantStorage');
 const { createTenantArtifactToken, verifyTenantArtifactToken } = require('../enterprise/tenantSignedArtifacts');
@@ -15,68 +16,14 @@ const { createTenantJobEnvelope, validateTenantJobEnvelope } = require('../enter
 const { buildPersonalResumeMigrationPlan, reconcileAggregate } = require('../enterprise/firebaseMigrationAdapter');
 
 test('Enterprise End-to-End Pilot & Controlled Tenant Isolation Suite', async (t) => {
-  // 1. Setup in-process PostgreSQL 16 engine with full forced RLS
-  const db = new PGlite();
-  await db.query('CREATE SCHEMA IF NOT EXISTS tenant_data');
-  await db.query('CREATE TABLE IF NOT EXISTS tenant_data.resources (id text PRIMARY KEY, tenant_id text NOT NULL, workspace_id text, resource_type text NOT NULL, owner_principal_id text NOT NULL, payload jsonb NOT NULL, created_at timestamptz DEFAULT now(), updated_at timestamptz DEFAULT now())');
-  await db.query('ALTER TABLE tenant_data.resources ENABLE ROW LEVEL SECURITY');
-  await db.query('ALTER TABLE tenant_data.resources FORCE ROW LEVEL SECURITY');
-
-  await db.query(`
-    CREATE OR REPLACE FUNCTION tenant_data.current_tenant_id() RETURNS text LANGUAGE sql STABLE AS $$
-      SELECT NULLIF(current_setting('app.tenant_id', true), '')::text;
-    $$;
-  `);
-
-  await db.query(`
-    CREATE OR REPLACE FUNCTION tenant_data.current_workspace_id() RETURNS text LANGUAGE sql STABLE AS $$
-      SELECT NULLIF(current_setting('app.workspace_id', true), '')::text;
-    $$;
-  `);
-
-  await db.query(`
-    CREATE OR REPLACE FUNCTION tenant_data.current_workspace_scope() RETURNS text LANGUAGE sql STABLE AS $$
-      SELECT COALESCE(NULLIF(current_setting('app.workspace_scope', true), ''), 'WORKSPACE')::text;
-    $$;
-  `);
-
-  await db.query('DROP POLICY IF EXISTS resources_tenant_isolation ON tenant_data.resources');
-  await db.query(`
-    CREATE POLICY resources_tenant_isolation ON tenant_data.resources
-      USING (
-        tenant_id = tenant_data.current_tenant_id()
-        AND (
-          workspace_id IS NULL
-          OR tenant_data.current_workspace_scope() = 'TENANT'
-          OR workspace_id = tenant_data.current_workspace_id()
-        )
-      )
-      WITH CHECK (
-        tenant_id = tenant_data.current_tenant_id()
-        AND (
-          workspace_id IS NULL
-          OR tenant_data.current_workspace_scope() = 'TENANT'
-          OR workspace_id = tenant_data.current_workspace_id()
-        )
-      )
-  `);
-
-  await db.query('CREATE ROLE resumepilot_tenant_runtime LOGIN NOBYPASSRLS');
-  await db.query('GRANT USAGE ON SCHEMA tenant_data TO resumepilot_tenant_runtime');
-  await db.query('GRANT SELECT, INSERT, UPDATE, DELETE ON tenant_data.resources TO resumepilot_tenant_runtime');
-  await db.query('SET ROLE resumepilot_tenant_runtime');
-
-  const pool = {
-    async connect() {
-      return {
-        query: (text, params) => db.query(text, params),
-        release: () => {},
-      };
-    },
-  };
-
-  t.after(async () => {
-    await db.close();
+  // 1. Canonical Firestore enterprise data plane (the PostgreSQL/RLS engine was
+  //    removed with the adapter; isolation is enforced by the repository itself).
+  const firestoreDb = new MemoryFirestore();
+  const firestoreAdmin = createMemoryAdmin({ db: firestoreDb });
+  const repository = new FirestoreEnterpriseRepository({
+    db: firestoreDb,
+    admin: firestoreAdmin,
+    encryptionProvider: new ServerKeyEncryptionProvider({ keys: new Map([['v1', crypto.randomBytes(32)]]) }),
   });
 
   // 2. Setup Controlled Multi-Tenant Organization Topology
@@ -110,7 +57,7 @@ test('Enterprise End-to-End Pilot & Controlled Tenant Isolation Suite', async (t
     permissions: ['resource.read', 'resource.create', 'resource.update', 'admin.all'],
     tenant: { id: tenantA_Id, lifecycleState: 'ACTIVE', isolationTier: 'STANDARD' },
     membership: { status: 'ACTIVE', roles: ['TENANT_ADMIN'] },
-    dataPlane: { type: 'SHARED_POSTGRES', routingVersion: 1 },
+    dataPlane: { type: 'FIRESTORE', routingVersion: 1 },
   });
 
   const contextA1_Member = freezeContext({
@@ -124,7 +71,7 @@ test('Enterprise End-to-End Pilot & Controlled Tenant Isolation Suite', async (t
     permissions: ['resource.read', 'resource.create'],
     tenant: { id: tenantA_Id, lifecycleState: 'ACTIVE', isolationTier: 'STANDARD' },
     membership: { status: 'ACTIVE', roles: ['MEMBER'] },
-    dataPlane: { type: 'SHARED_POSTGRES', routingVersion: 1 },
+    dataPlane: { type: 'FIRESTORE', routingVersion: 1 },
   });
 
   const contextB1_Admin = freezeContext({
@@ -138,52 +85,34 @@ test('Enterprise End-to-End Pilot & Controlled Tenant Isolation Suite', async (t
     permissions: ['resource.read', 'resource.create', 'admin.all'],
     tenant: { id: tenantB_Id, lifecycleState: 'ACTIVE', isolationTier: 'STANDARD' },
     membership: { status: 'ACTIVE', roles: ['TENANT_ADMIN'] },
-    dataPlane: { type: 'SHARED_POSTGRES', routingVersion: 1 },
+    dataPlane: { type: 'FIRESTORE', routingVersion: 1 },
   });
 
   const resA1 = crypto.randomUUID();
   const resB1 = crypto.randomUUID();
 
-  // Test Step 1: Real PostgreSQL RLS - Tenant A insert and query
-  await t.test('Real PostgreSQL RLS: Tenant A1 Admin creates resource and Member queries it', async () => {
-    await withTenantTransaction(pool, contextA1_Admin, async (client) => {
-      await client.query(
-        `INSERT INTO tenant_data.resources (id, tenant_id, workspace_id, resource_type, owner_principal_id, payload)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [resA1, tenantA_Id, workspaceA1_Id, 'RESUME', principalA_Admin, JSON.stringify({ title: 'Acme Master Resume' })]
-      );
-    });
-
-    await withTenantTransaction(pool, contextA1_Member, async (client) => {
-      const { rows } = await client.query('SELECT id, payload FROM tenant_data.resources WHERE id = $1', [resA1]);
-      assert.equal(rows.length, 1);
-      assert.equal(rows[0].payload.title, 'Acme Master Resume');
-    });
+  // Test Step 1: Tenant A admin creates a resource; a workspace member reads it
+  await t.test('Firestore data plane: Tenant A1 Admin creates resource and Member queries it', async () => {
+    await repository.createResource(contextA1_Admin, { id: resA1, resourceType: 'RESUME', payload: { title: 'Acme Master Resume' } });
+    const read = await repository.getResource(contextA1_Member, resA1);
+    assert.equal(read.payload.title, 'Acme Master Resume');
+    assert.equal(read.tenantId, tenantA_Id);
   });
 
-  // Test Step 2: Tenant B isolation in PostgreSQL RLS
-  await t.test('Real PostgreSQL RLS: Tenant B cannot read Tenant A rows and cannot write to Tenant A', async () => {
-    await withTenantTransaction(pool, contextB1_Admin, async (client) => {
-      // 1. Tenant B reads -> 0 rows for A1
-      const { rows } = await client.query('SELECT id FROM tenant_data.resources WHERE id = $1', [resA1]);
-      assert.equal(rows.length, 0, 'Tenant B must see 0 rows for Tenant A resource');
+  // Test Step 2: Tenant B isolation through the repository boundary
+  await t.test('Firestore data plane: Tenant B cannot read Tenant A documents and writes only to its own partition', async () => {
+    // Tenant B sees nothing of tenant A.
+    assert.equal(await repository.getResource(contextB1_Admin, resA1), null, 'Tenant B must not read Tenant A resources');
 
-      // 2. Tenant B inserts its own resource
-      await client.query(
-        `INSERT INTO tenant_data.resources (id, tenant_id, workspace_id, resource_type, owner_principal_id, payload)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [resB1, tenantB_Id, workspaceB1_Id, 'RESUME', principalB_Admin, JSON.stringify({ title: 'Beta Resume' })]
-      );
+    // Tenant B writes its own resource (into its own partition by construction).
+    const beta = await repository.createResource(contextB1_Admin, { id: resB1, resourceType: 'RESUME', payload: { title: 'Beta Resume' } });
+    assert.equal(beta.tenantId, tenantB_Id);
+    assert.ok(firestoreDb.documents.has(`tenants/${tenantB_Id}/resources/${resB1}`), 'the write must land in tenant B partition');
+    assert.ok(!firestoreDb.documents.has(`tenants/${tenantA_Id}/resources/${resB1}`), 'no document may appear in tenant A partition');
 
-      // 3. Tenant B attempts to spoof tenant_id = Tenant A -> WITH CHECK constraint fails
-      await assert.rejects(async () => {
-        await client.query(
-          `INSERT INTO tenant_data.resources (id, tenant_id, workspace_id, resource_type, owner_principal_id, payload)
-           VALUES ($1, $2, $3, $4, $5, $6)`,
-          [crypto.randomUUID(), tenantA_Id, workspaceA1_Id, 'RESUME', principalB_Admin, JSON.stringify({ title: 'Spoofed' })]
-        );
-      }, /policy|check|violat/i);
-    });
+    // Spoofing tenant identity is structurally impossible: writes always go to
+    // the verified context partition regardless of any client-supplied id.
+    assert.equal(await repository.getResource(contextA1_Admin, resB1), null, 'Tenant A must not observe Tenant B resources');
   });
 
   // Test Step 3: Cache Isolation with Identical Logical IDs

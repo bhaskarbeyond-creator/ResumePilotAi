@@ -180,8 +180,8 @@ test('repository factory: provider selection is explicit and interface-complete'
 
   assert.throws(
     () => createEnterpriseRepository({ environment: { ENTERPRISE_DATA_PROVIDER: 'postgres' }, db, admin }),
-    error => error.code === 'ENTERPRISE_DATA_PROVIDER_UNAVAILABLE',
-    'postgres without TENANT_DATABASE_URL must fail closed'
+    error => error.code === 'ENTERPRISE_DATA_PROVIDER_INVALID' && /Firestore is the only enterprise data plane/.test(error.message),
+    'removed providers must fail closed with an explicit removal error'
   );
   assert.throws(
     () => createEnterpriseRepository({ environment: { ENTERPRISE_DATA_PROVIDER: 'db2' }, db, admin }),

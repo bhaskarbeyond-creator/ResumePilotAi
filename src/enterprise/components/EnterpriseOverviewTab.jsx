@@ -32,8 +32,8 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
     () => request('/api/enterprise/observability/metrics'),
     [request],
   );
-  const [cache] = useAsyncResource(
-    () => request('/api/enterprise/cache/status'),
+  const [dataPlane] = useAsyncResource(
+    () => request('/api/enterprise/data-plane/status'),
     [request],
   );
   const [queue] = useAsyncResource(
@@ -51,9 +51,8 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
     ? (metricsData.errors.serverErrors || 0) + (metricsData.errors.clientErrors || 0)
     : 0;
 
-  const cacheState = cache?.data?.cache || null;
-  const cacheOk = cacheState?.ok === true;
-  const cacheOptionalOff = cacheState && cacheState.ok !== true && cacheState.optional === true;
+  const planeState = dataPlane?.data?.dataPlane || null;
+  const planeOk = planeState?.configured === true && planeState?.durable === true;
   const queueState = queue?.data?.queue || null;
   const queueOk = queueState?.healthy === true;
   const queueDlq = queueState?.deadLetterCount || 0;
@@ -183,19 +182,17 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
               <span className="enterprise-pill enterprise-pill-success">Online</span>
             </li>
             <li className="enterprise-health-item">
-              <div className={`enterprise-health-status ${cache.loading ? 'checking' : (cacheOk ? 'online' : (cacheOptionalOff ? 'online' : 'offline'))}`} />
+              <div className={`enterprise-health-status ${dataPlane.loading ? 'checking' : (planeOk ? 'online' : 'offline')}`} />
               <div className="enterprise-health-copy">
-                <strong>Optional Redis Accelerator</strong>
+                <strong>Firestore Data Plane</strong>
                 <small>
-                  {cache.loading ? 'Checking…' : cacheOk
-                    ? `Cache reachable (${Math.round(cacheState.latencyMs || 0)} ms)`
-                    : cacheOptionalOff
-                      ? 'Not configured — optional. Quotas, limits, and jobs use durable Firestore.'
-                      : 'Configured but unreachable — correctness is unaffected.'}
+                  {dataPlane.loading ? 'Checking…' : planeState
+                    ? `Canonical durable store · encryption: ${planeState.encryption === 'server-key' ? 'ServerKey AES-256-GCM' : planeState.encryption || 'none'} · quotas: ${planeState.quotaStore || 'unavailable'}`
+                    : 'Data-plane status unavailable'}
                 </small>
               </div>
-              <span className={`enterprise-pill ${cache.loading ? '' : (cacheOk ? 'enterprise-pill-success' : (cacheOptionalOff ? '' : 'enterprise-pill-warning'))}`}>
-                {cache.loading ? 'Checking' : cacheOk ? 'Operational' : cacheOptionalOff ? 'Optional · Off' : 'Degraded (optional)'}
+              <span className={`enterprise-pill ${dataPlane.loading ? '' : (planeOk ? 'enterprise-pill-success' : 'enterprise-pill-warning')}`}>
+                {dataPlane.loading ? 'Checking' : planeOk ? 'Operational' : 'Unavailable'}
               </span>
             </li>
             <li className="enterprise-health-item">

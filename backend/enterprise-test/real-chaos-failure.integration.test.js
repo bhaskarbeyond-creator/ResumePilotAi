@@ -6,9 +6,7 @@ const crypto = require('node:crypto');
 const { freezeContext } = require('../enterprise/tenantContext');
 const { createTenantJobEnvelope } = require('../enterprise/tenantJobs');
 const outbox = require('../enterprise/enterpriseOutbox');
-const { checkTenantRateLimit } = require('../enterprise/redisCacheService');
 const { createTenantArtifactToken, verifyTenantArtifactToken } = require('../enterprise/tenantSignedArtifacts');
-const { withTenantTransaction } = require('../enterprise/tenantDataPlane');
 const { MemoryFirestore, createMemoryAdmin } = require('../test/helpers/memoryFirestore');
 const { FirestoreAtomicCounterStore, TenantQuotaGuard } = require('../enterprise/tenantQuota');
 
@@ -29,47 +27,18 @@ function enterpriseContext({ tenantId = crypto.randomUUID(), workspaceId = crypt
   });
 }
 
-test('Chaos & Failure: optional PostgreSQL adapter fails closed when unavailable', async () => {
-  const badPool = null;
-  const context = { tenantId: crypto.randomUUID(), principalId: crypto.randomUUID() };
-
-  await assert.rejects(
-    async () => {
-      await withTenantTransaction(badPool, context, async () => {});
-    },
-    (err) => {
-      assert.equal(err.code, 'TENANT_DATA_PLANE_UNAVAILABLE');
-      assert.equal(err.status, 503);
-      return true;
-    }
-  );
-});
-
-test('Chaos & Failure: Redis absent leaves the advisory limiter honest while the durable Firestore quota guard still enforces', async () => {
-  delete process.env.TENANT_REDIS_URL;
-  delete process.env.REDIS_URL;
-
-  const advisory = await checkTenantRateLimit({
-    tenantId: crypto.randomUUID(),
-    principalId: crypto.randomUUID(),
-    operation: 'resume-export',
-  });
-  assert.equal(advisory.allowed, true);
-  assert.equal(advisory.source, 'not-configured');
-  assert.equal(advisory.authoritative, false, 'advisory signal must never be treated as a security control');
-
-  // The durable quota guard (Firestore transactions) enforces limits with no
-  // Redis anywhere in the process: correctness never depended on the cache.
-  const db = new MemoryFirestore();
+test('Chaos & Failure: data-store outage fails closed — the quota guard errors instead of allowing unbounded use', async () => {
+  const { MemoryFirestore, createMemoryAdmin } = require('../test/helpers/memoryFirestore');
+  const { FirestoreAtomicCounterStore, TenantQuotaGuard } = require('../enterprise/tenantQuota');
+  const db = new MemoryFirestore({ failWrites: true });
   const admin = createMemoryAdmin({ db });
   const guard = new TenantQuotaGuard({ store: new FirestoreAtomicCounterStore({ db, admin }) });
-  const context = enterpriseContext();
-  const consume = () => guard.consume({ context, metric: 'chaos-minute', limit: 2, windowMs: 60_000, principalScoped: true });
-  const first = await consume();
-  const second = await consume();
-  assert.equal(first.used, 1);
-  assert.equal(second.used, 2);
-  await assert.rejects(consume, err => err.code === 'TENANT_QUOTA_EXCEEDED' && err.status === 429);
+  const context = enterpriseContext({ subjectId: 'usr_store_outage' });
+  await assert.rejects(
+    () => guard.consume({ context, metric: 'ai-minute', limit: 10, windowMs: 60_000 }),
+    error => error.code === 14 || /simulated Firestore outage/i.test(error.message),
+    'quota consumption during a store outage must fail closed, never silently allow'
+  );
 });
 
 test('Chaos & Failure: worker crash mid-execution is recovered after lease expiry by another worker', async () => {
