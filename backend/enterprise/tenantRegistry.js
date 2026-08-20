@@ -609,9 +609,10 @@ class FirestoreTenantRegistry {
 
   async updateTeam({ tenantId, teamId, name, leadPrincipalId = undefined }) {
     this.assertAvailable();
-    const cleanName = compact(name, 100);
-    if (cleanName.length < 2) throw Object.assign(new Error('Team name is invalid'), { code: 'INVALID_TEAM', status: 400 });
+    // An omitted name keeps the current name (partial update contract).
     const team = await this.getTeam(teamId, tenantId);
+    const cleanName = compact(name === undefined || name === null ? team.name : name, 100);
+    if (cleanName.length < 2) throw Object.assign(new Error('Team name is invalid'), { code: 'INVALID_TEAM', status: 400 });
     // leadPrincipalId: undefined keeps the current lead, null/'' clears it, and
     // a principal value must be an active member of the team's workspace.
     let lead = Object.hasOwn(team, 'leadPrincipalId') ? team.leadPrincipalId : null;
@@ -1173,9 +1174,10 @@ class InMemoryTenantRegistry {
   }
 
   async updateTeam({ tenantId, teamId, name, leadPrincipalId = undefined }) {
-    const cleanName = compact(name, 100);
-    if (cleanName.length < 2) throw Object.assign(new Error('Team name is invalid'), { code: 'INVALID_TEAM', status: 400 });
+    // An omitted name keeps the current name (partial update contract).
     const team = await this.getTeam(teamId, tenantId);
+    const cleanName = compact(name === undefined || name === null ? team.name : name, 100);
+    if (cleanName.length < 2) throw Object.assign(new Error('Team name is invalid'), { code: 'INVALID_TEAM', status: 400 });
     let lead = Object.hasOwn(team, 'leadPrincipalId') ? team.leadPrincipalId : null;
     if (leadPrincipalId !== undefined) {
       lead = leadPrincipalId === null || leadPrincipalId === '' ? null : assertPrincipalId(leadPrincipalId);

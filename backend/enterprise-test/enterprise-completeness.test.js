@@ -126,6 +126,14 @@ test('team lead: assignment, validation, and audit trail', async () => {
     .send({ name: 'Led Pod', leadPrincipalId: '' });
   assert.equal(cleared.status, 200);
   assert.equal(cleared.body.team.leadPrincipalId, null);
+
+  // A lead-only patch keeps the current name (partial update contract).
+  const leadOnly = await request(app).patch(`/api/enterprise/teams/${teamId}`)
+    .set('Authorization', bearer('owner')).set('X-Tenant-Id', tenantId)
+    .send({ leadPrincipalId: tokens.member.uid });
+  assert.equal(leadOnly.status, 200);
+  assert.equal(leadOnly.body.team.name, 'Led Pod');
+  assert.equal(leadOnly.body.team.leadPrincipalId, tokens.member.uid);
 });
 
 // ─── Service accounts: key rotation ──────────────────────────────────────────
