@@ -333,6 +333,244 @@ function KeyboardHelpDialog({ onClose }) {
     );
 }
 
+// ── AI GENERATION PROCESSING POPUP (Engaging, Multi-Stage Progress Modal) ─────
+const GENERATION_STAGES = [
+    {
+        title: 'Synthesizing Candidate Profile & Evidence',
+        desc: 'Parsing verified career achievements, technical skills & past roles without hallucination.',
+        icon: FaUserTie,
+    },
+    {
+        title: 'Mapping Target Role Competencies',
+        desc: 'Aligning industry frameworks, core competencies & domain responsibilities.',
+        icon: FaBullseye,
+    },
+    {
+        title: 'Formulating Practical Scenario Challenges',
+        desc: 'Designing real-world problem solving, troubleshooting & architecture questions.',
+        icon: FaLaptopCode,
+    },
+    {
+        title: 'Calibrating Question Difficulty & Depth',
+        desc: 'Calibrating Bloom taxonomy and scenario complexity for senior-level rigor.',
+        icon: FaAward,
+    },
+    {
+        title: 'Assembling CBT Shell & Rubrics',
+        desc: 'Verifying answer distractors, scoring criteria & STAR-method evaluation hints.',
+        icon: FaMagic,
+    },
+];
+
+const PRO_TIPS = [
+    'Use the STAR method (Situation, Task, Action, Result) to structure behavioral and scenario answers.',
+    'Focus on measurable business impact, cost savings, and latency improvements in your decisions.',
+    'During the CBT exam, you can use keyboard shortcuts (A-D, 1-4, Arrow keys) for rapid navigation.',
+    'Mark complex questions for review to reconsider them before your final exam submission.',
+    'Clear explanations and trade-off evaluations earn the highest readiness and mastery ratings.',
+];
+
+function AiGenerationProcessingModal({ state, onCancel }) {
+    const [seconds, setSeconds] = useState(0);
+    const [tipIndex, setTipIndex] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setSeconds(prev => prev + 1);
+        }, 1000);
+        return () => clearInterval(interval);
+    }, []);
+
+    useEffect(() => {
+        const tipInterval = setInterval(() => {
+            setTipIndex(prev => (prev + 1) % PRO_TIPS.length);
+        }, 4500);
+        return () => clearInterval(tipInterval);
+    }, []);
+
+    // Escape key closes/cancels generation
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                event.stopPropagation();
+                onCancel();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onCancel]);
+
+    // Calculate stage based on elapsed time
+    const stageIndex = useMemo(() => {
+        if (seconds < 3) return 0;
+        if (seconds < 7) return 1;
+        if (seconds < 12) return 2;
+        if (seconds < 18) return 3;
+        return 4;
+    }, [seconds]);
+
+    // Smooth asymptotic progress calculation (approaches 95%)
+    const progressPct = useMemo(() => {
+        if (seconds <= 0) return 8;
+        if (seconds < 5) return Math.min(25, 8 + seconds * 4);
+        if (seconds < 12) return Math.min(55, 25 + (seconds - 5) * 4.5);
+        if (seconds < 20) return Math.min(80, 55 + (seconds - 12) * 3);
+        return Math.min(94, 80 + (seconds - 20) * 0.8);
+    }, [seconds]);
+
+    const activeStage = GENERATION_STAGES[stageIndex] || GENERATION_STAGES[0];
+
+    return (
+        <div
+            className="fixed inset-0 z-[70] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 transition-all duration-300 motion-reduce:backdrop-blur-none"
+            role="dialog"
+            aria-modal="true"
+            aria-busy="true"
+            aria-labelledby="ai-proc-title"
+            aria-describedby="ai-proc-desc">
+            
+            <div className="relative bg-slate-900 border border-indigo-500/40 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl shadow-indigo-950/60 text-white overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                {/* Ambient glow backgrounds */}
+                <div className="absolute -top-24 -left-24 w-60 h-60 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+                <div className="absolute -bottom-24 -right-24 w-60 h-60 bg-purple-600/20 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+
+                {/* Header Icon + Titles */}
+                <div className="flex items-start gap-4 mb-6 relative">
+                    <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 p-0.5 shadow-lg shadow-indigo-500/30 flex items-center justify-center shrink-0">
+                        <div className="w-full h-full bg-slate-900/90 rounded-[14px] flex items-center justify-center relative overflow-hidden">
+                            <FaBrain className="w-7 h-7 text-indigo-400 animate-pulse motion-reduce:animate-none" aria-hidden="true" />
+                            <span className="absolute inset-0 rounded-full bg-indigo-500/20 animate-ping motion-reduce:animate-none" aria-hidden="true" />
+                        </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-indigo-500/20 border border-indigo-400/30 text-indigo-300">
+                                AI Assessment Architect
+                            </span>
+                            <span className="text-[11px] text-slate-400 font-mono flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping motion-reduce:animate-none" />
+                                {seconds}s
+                            </span>
+                        </div>
+                        <h2 id="ai-proc-title" className="text-lg sm:text-xl font-black text-white tracking-tight truncate">
+                            Generating Contextual Interview
+                        </h2>
+                        <p id="ai-proc-desc" className="text-xs text-slate-400 truncate">
+                            Tailoring {state.questionCount} {state.difficulty} questions for <span className="text-indigo-300 font-semibold">{state.occupation || 'Candidate'}</span>
+                        </p>
+                    </div>
+                </div>
+
+                {/* Context Pills */}
+                <div className="flex flex-wrap items-center gap-2 mb-6">
+                    <span className="px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-slate-800 border border-slate-700 text-slate-300 flex items-center gap-1.5">
+                        <FaBriefcase className="w-3 h-3 text-indigo-400" />
+                        {state.occupation}
+                    </span>
+                    <span className="px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-slate-800 border border-slate-700 text-slate-300 flex items-center gap-1.5">
+                        <FaAward className="w-3 h-3 text-amber-400" />
+                        {state.difficulty} difficulty
+                    </span>
+                    {state.resumeLabel && (
+                        <span className="px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-emerald-950/60 border border-emerald-700/50 text-emerald-300 flex items-center gap-1.5">
+                            <FaCheck className="w-2.5 h-2.5" />
+                            Resume Linked
+                        </span>
+                    )}
+                    {state.jobDescription && (
+                        <span className="px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-purple-950/60 border border-purple-700/50 text-purple-300 flex items-center gap-1.5">
+                            <FaBullseye className="w-2.5 h-2.5" />
+                            JD Tailored
+                        </span>
+                    )}
+                </div>
+
+                {/* Progress Bar */}
+                <div className="mb-6">
+                    <div className="flex items-center justify-between text-xs mb-2">
+                        <span className="font-semibold text-indigo-300 flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
+                            {activeStage.title}
+                        </span>
+                        <span className="font-mono font-bold text-slate-400">{Math.round(progressPct)}%</span>
+                    </div>
+                    <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden border border-slate-700/60 p-0.5">
+                        <div
+                            className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-400 rounded-full transition-all duration-700 ease-out shadow-xs shadow-indigo-500/50"
+                            style={{ width: `${progressPct}%` }}
+                        />
+                    </div>
+                </div>
+
+                {/* Stage Steps List */}
+                <div className="space-y-2.5 mb-6">
+                    {GENERATION_STAGES.map((stage, idx) => {
+                        const isDone = idx < stageIndex;
+                        const isCurrent = idx === stageIndex;
+                        const Icon = stage.icon;
+
+                        return (
+                            <div
+                                key={stage.title}
+                                className={`flex items-start gap-3 p-2.5 rounded-2xl border transition-all duration-300 ${
+                                    isCurrent
+                                        ? 'bg-indigo-950/40 border-indigo-500/40 text-white shadow-xs'
+                                        : isDone
+                                            ? 'bg-slate-800/30 border-slate-800 text-slate-400'
+                                            : 'bg-slate-900/40 border-transparent text-slate-600 opacity-60'
+                                }`}>
+                                <div className={`w-6 h-6 rounded-xl flex items-center justify-center shrink-0 mt-0.5 text-xs transition-colors ${
+                                    isDone
+                                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                        : isCurrent
+                                            ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/40 animate-pulse'
+                                            : 'bg-slate-800 text-slate-600 border border-slate-700/50'
+                                }`}>
+                                    {isDone ? <FaCheck className="w-3 h-3" /> : (idx + 1)}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className={`text-xs font-bold leading-tight ${isCurrent ? 'text-indigo-200' : isDone ? 'text-slate-300' : 'text-slate-500'}`}>
+                                        {stage.title}
+                                    </p>
+                                    {isCurrent && (
+                                        <p className="text-[11px] text-slate-400 leading-snug mt-0.5 animate-in fade-in duration-300">
+                                            {stage.desc}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* Pro-Tip Box */}
+                <div className="p-3.5 rounded-2xl bg-slate-800/60 border border-slate-700/70 text-slate-300 text-xs flex items-start gap-2.5 mb-6 leading-relaxed">
+                    <FaLightbulb className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" aria-hidden="true" />
+                    <div className="flex-1 min-w-0">
+                        <span className="font-bold text-amber-300 mr-1.5">Interview Tip:</span>
+                        <span className="text-slate-300">{PRO_TIPS[tipIndex]}</span>
+                    </div>
+                </div>
+
+                {/* Footer / Cancel */}
+                <div className="flex items-center justify-between gap-3 pt-2 border-t border-slate-800">
+                    <span className="text-[11px] text-slate-500 flex items-center gap-1.5">
+                        <FaClock className="w-3 h-3 text-slate-400" />
+                        Usually ready in 15–30 seconds
+                    </span>
+                    <button
+                        type="button"
+                        onClick={onCancel}
+                        className="px-4 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-all cursor-pointer shadow-xs">
+                        Cancel Generation
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ── SR STATUS + TOAST ────────────────────────────────────────────────────────
 function SrStatus({ message }) {
     return <div className="sr-only" role="status" aria-live="polite">{message}</div>;
@@ -1702,6 +1940,14 @@ const DashboardInterviews = () => {
                             </button>
                         </div>
                     </ModalDialog>
+                )}
+
+                {/* AI Processing & Questionnaire Generation Modal */}
+                {state.isLoading && (
+                    <AiGenerationProcessingModal
+                        state={state}
+                        onCancel={cancelGeneration}
+                    />
                 )}
 
             </div>
