@@ -1,9 +1,9 @@
 # Enterprise Production Freeze Certification
 
 ## 1. Release Identification & Authority
-- **Authoritative Production Commit SHA**: `1dddbc7a178b51447787f4ae9d5c880dbb0f3793`
+- **Authoritative Production Commit SHA**: `09aa47f63f1da3a35f84e35bc995a95f46f9b846`
 - **Parent Baseline SHA**: `3aeb682f505b353d9193c036f20e94ed7f30d6c3`
-- **Release Branch**: `arena/01a0200e-resumepilotai`
+- **Release Branch**: `arena/01a020ed-resumepilotai`
 - **Production Domain**: `https://airesume.projectdemo.guru`
 - **Canonical Firestore Project**: `ai-resume-builder-424cf`
 - **Immutable Release Tag**: `enterprise-production-frozen`

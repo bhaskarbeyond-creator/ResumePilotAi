@@ -121,15 +121,15 @@ async function runQueueDlqAudit() {
 
     // Attempt 1: Claim and Fail
     const claim2_1 = await claimNextOutboxJob({ db, admin, workerId: worker1, now: Date.now() });
-    const fail1 = await failOutboxJob({ db, admin, job: claim2_1, workerId: worker1, error: new Error('Upstream provider timeout'), now: Date.now(), backoffBaseMs: 50 });
+    const fail1 = await failOutboxJob({ db, admin, job: claim2_1, workerId: worker1, error: new Error('Upstream provider timeout'), now: Date.now(), backoffBaseMs: 50, backoffJitter: false });
     console.log(`  Attempt 1 Failed: Status ${fail1.status}, Next Run Delay: ${fail1.backoffMs}ms`);
 
     // Fast-forward time past backoff and Claim Attempt 2
-    const claim2_2 = await claimNextOutboxJob({ db, admin, workerId: worker1, now: Date.now() + 500 });
+    const claim2_2 = await claimNextOutboxJob({ db, admin, workerId: worker1, now: Date.now() + 5000 });
     console.log(`  Attempt 2 Claimed: ${claim2_2?.jobId}, Attempt Count: ${claim2_2?.attemptCount}`);
 
     // Attempt 2: Final Fail (Terminal -> DEAD_LETTER)
-    const fail2 = await failOutboxJob({ db, admin, job: claim2_2, workerId: worker1, error: new Error('Fatal schema unrecoverable'), now: Date.now() + 500 });
+    const fail2 = await failOutboxJob({ db, admin, job: claim2_2, workerId: worker1, error: new Error('Fatal schema unrecoverable'), now: Date.now() + 5000, backoffBaseMs: 50, backoffJitter: false });
     console.log(`  Attempt 2 Failed: Status ${fail2.status} (Max attempts reached)`);
 
     const verifyDoc2 = await db.collection('enterprise_outbox').doc(enqResult2.jobId).get();

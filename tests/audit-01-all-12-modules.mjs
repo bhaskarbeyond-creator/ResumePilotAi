@@ -6,6 +6,7 @@ const require = createRequire(import.meta.url);
 const admin = require('../backend/services/firebaseAdmin');
 const dotenv = require('../backend/node_modules/dotenv');
 
+dotenv.config({ path: path.resolve('.env') });
 dotenv.config({ path: path.resolve('backend/.env') });
 
 // Fail closed: the Firebase web API key must come from the environment and is

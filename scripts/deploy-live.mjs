@@ -62,6 +62,9 @@ function fetchUrl(path, options = {}) {
 }
 
 async function verifyLive() {
+  console.log('Waiting 2.5s for Node.js backend to finish startup...');
+  await new Promise(r => setTimeout(r, 2500));
+
   const health = await fetchUrl('/api/health');
   console.log('[1] /api/health Status:', health.status, 'Body:', health.body);
 

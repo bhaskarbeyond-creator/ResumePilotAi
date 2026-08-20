@@ -173,6 +173,7 @@ async function claimNextOutboxJob({ db, admin, workerId, now = Date.now(), lease
 
 async function completeOutboxJob({ db, admin, job, workerId, result = null, now = Date.now() }) {
   assertDb(db);
+  if (!job || !job.ref) return { status: 'INVALID_JOB' };
   await db.runTransaction(async transaction => {
     const snapshot = await transaction.get(job.ref);
     const value = snapshot.data() || {};
@@ -192,6 +193,7 @@ async function completeOutboxJob({ db, admin, job, workerId, result = null, now 
 
 async function failOutboxJob({ db, admin, job, workerId, error, now = Date.now(), backoffBaseMs = DEFAULT_BASE_BACKOFF_MS, backoffJitter = true }) {
   assertDb(db);
+  if (!job || !job.ref) return { status: 'INVALID_JOB' };
   let outcome = null;
   await db.runTransaction(async transaction => {
     const snapshot = await transaction.get(job.ref);
