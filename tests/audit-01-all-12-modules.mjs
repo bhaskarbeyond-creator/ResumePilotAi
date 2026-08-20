@@ -8,7 +8,13 @@ const dotenv = require('../backend/node_modules/dotenv');
 
 dotenv.config({ path: path.resolve('backend/.env') });
 
-const webApiKey = process.env.VITE_FIREBASE_KEY || 'AIzaSyDigXT7n4Pyf-8WHQtvjHa0wGvJ86nmrwc';
+// Fail closed: the Firebase web API key must come from the environment and is
+// never hardcoded in tracked sources (security-static credential scan).
+const webApiKey = process.env.VITE_FIREBASE_KEY;
+if (!webApiKey) {
+  console.error('VITE_FIREBASE_KEY is required (backend/.env or environment) to run this live audit.');
+  process.exit(2);
+}
 
 if (!admin.apps.length) {
   admin.initializeApp({
@@ -280,7 +286,7 @@ async function run12ModulesAudit() {
       results['9. Usage & Quotas'] = { status: 'PASS', quotaPolicy };
       console.log('  ✓ Usage & Quotas policy active and verified:', quotaPolicy);
     } else {
-      results['9. Usage & Quotas'] = { status: 'FAIL', status: cfgRes.status };
+      results['9. Usage & Quotas'] = { status: 'FAIL', httpStatus: cfgRes.status };
     }
 
     // -------------------------------------------------------------
@@ -294,7 +300,7 @@ async function run12ModulesAudit() {
       results['10. Audit Logs'] = { status: 'PASS', totalEvents: events.length, sampleAction: events[0].action };
       console.log(`  ✓ Audit Logs verified (${events.length} real events recorded)`);
     } else {
-      results['10. Audit Logs'] = { status: 'FAIL', status: auditRes.status, count: events.length };
+      results['10. Audit Logs'] = { status: 'FAIL', httpStatus: auditRes.status, count: events.length };
     }
 
     // -------------------------------------------------------------

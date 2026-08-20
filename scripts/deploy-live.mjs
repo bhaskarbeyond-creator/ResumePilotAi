@@ -2,16 +2,30 @@ import { execSync } from 'node:child_process';
 import https from 'node:https';
 import fs from 'node:fs';
 
-const COMMIT_SHA = 'a258059';
+// Derive the deploy SHA from the checked-out commit so backend/COMMIT_SHA is
+// never stale. Never hardcode a SHA here.
+const COMMIT_SHA = execSync('git rev-parse HEAD').toString().trim();
+if (!/^[0-9a-f]{40}$/.test(COMMIT_SHA)) {
+  console.error('Could not resolve the current git commit SHA; refusing to deploy.');
+  process.exit(1);
+}
 fs.writeFileSync('backend/COMMIT_SHA', COMMIT_SHA + '\n');
+
+// Fail before touching production if the frontend build is missing or
+// incomplete — a deploy without dist/index.html leaves every SPA route
+// returning HTTP 500.
+if (!fs.existsSync('dist/index.html')) {
+  console.error('dist/index.html is missing. Run `npm run build` before deploying.');
+  process.exit(1);
+}
 
 console.log('=== Step 1: Remote Pre-Deployment Backup ===');
 execSync('ssh airesume "mkdir -p backups && tar -czf backups/pre-deploy-$(date +%s).tar.gz backend/index.js backend/routes backend/enterprise 2>/dev/null || true"', { stdio: 'inherit' });
 console.log('Remote backup complete.');
 
 console.log('\n=== Step 2: Deploying Backend Files ===');
-execSync('tar -czf backend-bundle.tar.gz -C backend COMMIT_SHA index.js package.json routes services security enterprise sql', { stdio: 'inherit' });
-execSync('ssh airesume "mkdir -p backend/enterprise backend/sql"', { stdio: 'inherit' });
+execSync('tar -czf backend-bundle.tar.gz -C backend COMMIT_SHA index.js package.json routes services security enterprise', { stdio: 'inherit' });
+execSync('ssh airesume "mkdir -p backend/enterprise"', { stdio: 'inherit' });
 execSync('scp backend-bundle.tar.gz airesume:backend-bundle.tar.gz', { stdio: 'inherit' });
 execSync('ssh airesume "tar -xzf backend-bundle.tar.gz -C backend && rm backend-bundle.tar.gz"', { stdio: 'inherit' });
 fs.unlinkSync('backend-bundle.tar.gz');
@@ -60,6 +74,11 @@ async function verifyLive() {
 
   const enterprisePage = await fetchUrl('/enterprise');
   console.log('[4] /enterprise page Status:', enterprisePage.status, 'HTML bytes:', enterprisePage.body.length);
+
+  if (health.status !== 200 || root.status !== 200 || enterprisePage.status !== 200) {
+    console.error('DEPLOYMENT VERIFICATION FAILED: expected HTTP 200 from /api/health, /, and /enterprise.');
+    process.exitCode = 1;
+  }
 }
 
-verifyLive().catch(console.error);
+verifyLive().catch(error => { console.error(error); process.exitCode = 1; });
