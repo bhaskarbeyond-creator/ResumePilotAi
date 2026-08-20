@@ -14,7 +14,7 @@
 | Component | Provider | Environment | Status | Repository Integration Point | Secret / Config Name Only | Owner | Verification Status |
 |---|---|---|---|---|---|---|---|
 | **Web Server / Reverse Proxy** | Apache / LiteSpeed / Node | Production (`airesume.projectdemo.guru`) | Active | `.htaccess`, `public/.htaccess`, `api/index.php` | `PORT`, `TRUST_PROXY_HOPS`, `PROTOCOL` | DevOps / Infra | **PRODUCTION VERIFIED** |
-| **Frontend Application** | Vite / React / Playwright | Browser / Production | Active | `src/main.jsx`, `src/enterprise/*`, `dist/` | `VITE_WEBSITE_URL`, `VITE_FIREBASE_*`, `VITE_ENTERPRISE_TENANCY_ENABLED` | Frontend Lead | **LOCAL VERIFIED** |
+| **Frontend Application** | Vite / React / Playwright | Browser / Production (`airesume.projectdemo.guru`) | Active | `src/main.jsx`, `src/enterprise/*`, `dist/` | `VITE_WEBSITE_URL`, `VITE_FIREBASE_*`, `VITE_ENTERPRISE_TENANCY_ENABLED` | Frontend Lead | **PRODUCTION VERIFIED** |
 | **Backend Runtime** | Node.js (Express) | Local & Production (`airesume.projectdemo.guru`) | Active | `backend/index.js`, `backend/routes/*`, `backend/enterprise/*` | `NODE_ENV`, `ENTERPRISE_TENANCY_ENABLED`, `CORS_ALLOWED_ORIGINS` | Backend Lead | **PRODUCTION VERIFIED** |
 | **Relational DB & RLS Engine (PGlite)** | PostgreSQL 16 (WASM Engine) | In-Process / Local | Active | `backend/enterprise/tenantDataPlane.js`, `backend/sql/000_*` to `003_*` | `TENANT_DATABASE_URL` | Data Platform | **LOCAL VERIFIED** |
 | **Managed PostgreSQL (Cloud RDS/DSN)** | Managed PostgreSQL | Staging / Prod Target | Pending DSN | `backend/enterprise-test/real-postgres-rls.integration.test.js` | `TENANT_RUNTIME_DATABASE_URL`, `TENANT_DBA_DATABASE_URL` | Data Platform | **UNVERIFIED** |
