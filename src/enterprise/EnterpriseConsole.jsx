@@ -1,9 +1,8 @@
-import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  FiActivity, FiBarChart2, FiBell, FiCommand, FiCreditCard, FiDatabase,
-  FiFileText, FiHelpCircle, FiLock, FiSearch, FiSettings, FiShield,
-  FiSliders, FiUsers, FiX, FiZap, FiMenu, FiCheck, FiFolder, FiKey
+  FiActivity, FiBarChart2, FiCommand, FiFileText, FiHelpCircle, FiLock,
+  FiSearch, FiSettings, FiShield, FiSliders, FiUsers, FiZap, FiMenu
 } from 'react-icons/fi';
 import { AuthContext } from '../main';
 import { EnterpriseTenantProvider, useEnterpriseTenant } from './EnterpriseContext';
@@ -28,7 +27,7 @@ const NAVIGATION = [
   { id: 'teams', label: 'Teams', icon: FiUsers, permission: 'workspace.read' },
   { id: 'workspaces', label: 'Workspaces', icon: FiSliders, permission: 'workspace.read' },
   { id: 'access', label: 'Roles & permissions', icon: FiShield, permission: 'tenant.roles.manage' },
-  { id: 'ai', label: 'AI workspace', icon: FiZap, permission: 'ai.use' },
+  { id: 'ai', label: 'AI workspace', icon: FiZap, permission: 'tenant.ai.manage' },
   { id: 'security', label: 'Security & M2M', icon: FiLock, permission: 'tenant.security.read' },
   { id: 'usage', label: 'Usage & Quotas', icon: FiBarChart2, permission: 'tenant.usage.read' },
   { id: 'audit', label: 'Audit logs', icon: FiFileText, permission: 'tenant.audit.read' },
@@ -38,6 +37,11 @@ const NAVIGATION = [
 
 function canSee(item, permissions = []) {
   return !item.permission || permissions.includes('*') || permissions.includes(item.permission);
+}
+
+function normalizeTab(candidate, navigation) {
+  if (navigation.some(item => item.id === candidate)) return candidate;
+  return navigation[0]?.id || 'overview';
 }
 
 function TenantSwitcher() {
@@ -150,10 +154,49 @@ function WorkspaceBadge() {
 
 function CommandPalette({ open, onClose, navigation, onSelect }) {
   const [query, setQuery] = useState('');
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef(null);
-  useEffect(() => { if (open) { setQuery(''); setTimeout(() => inputRef.current?.focus(), 0); } }, [open]);
+  const matches = useMemo(() => navigation.filter(item => item.label.toLowerCase().includes(query.toLowerCase())), [navigation, query]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    setQuery('');
+    setSelectedIndex(0);
+    const frame = window.requestAnimationFrame(() => inputRef.current?.focus());
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        setSelectedIndex(index => (matches.length ? (index + 1) % matches.length : 0));
+        return;
+      }
+      if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        setSelectedIndex(index => (matches.length ? (index - 1 + matches.length) % matches.length : 0));
+        return;
+      }
+      if (event.key === 'Enter' && matches[selectedIndex]) {
+        event.preventDefault();
+        onSelect(matches[selectedIndex].id);
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [matches, onClose, onSelect, open, selectedIndex]);
+
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [query]);
+
   if (!open) return null;
-  const matches = navigation.filter(item => item.label.toLowerCase().includes(query.toLowerCase()));
   return (
     <div className="enterprise-command-backdrop" role="presentation" onMouseDown={onClose}>
       <section className="enterprise-command" role="dialog" aria-modal="true" aria-label="Command palette" onMouseDown={event => event.stopPropagation()}>
@@ -163,8 +206,15 @@ function CommandPalette({ open, onClose, navigation, onSelect }) {
           <input ref={inputRef} value={query} onChange={event => setQuery(event.target.value)} placeholder="Search pages, settings, and tools…" />
         </label>
         <div className="enterprise-command-results">
-          {matches.map(item => (
-            <button key={item.id} type="button" onClick={() => { onSelect(item.id); onClose(); }}>
+          {matches.map((item, index) => (
+            <button
+              key={item.id}
+              type="button"
+              className={index === selectedIndex ? 'selected' : ''}
+              aria-selected={index === selectedIndex}
+              onMouseEnter={() => setSelectedIndex(index)}
+              onClick={() => { onSelect(item.id); onClose(); }}
+            >
               <item.icon aria-hidden="true" /> {item.label}
             </button>
           ))}
@@ -178,10 +228,44 @@ function CommandPalette({ open, onClose, navigation, onSelect }) {
 
 function EnterpriseConsoleInner() {
   const user = useContext(AuthContext);
-  const { tenant, workspace, workspaces, selectWorkspace, enabled, loading } = useEnterpriseTenant();
-  const [activeTab, setActiveTab] = useState('overview');
+  const { tenant, workspace, workspaces, selectWorkspace, enabled, loading, context } = useEnterpriseTenant();
+  const permissions = useMemo(
+    () => (loading ? ['*'] : (Array.isArray(context?.permissions) ? context.permissions : [])),
+    [context?.permissions, loading],
+  );
+  const location = useLocation();
+  const navigate = useNavigate();
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const visibleNav = useMemo(() => {
+    return NAVIGATION.filter(item => canSee(item, permissions));
+  }, [permissions]);
+
+  const requestedTab = useMemo(() => {
+    const search = new URLSearchParams(location.search);
+    return search.get('tab') || new URLSearchParams(location.hash.replace(/^#/, '')).get('tab') || 'overview';
+  }, [location.hash, location.search]);
+
+  const activeTab = useMemo(() => normalizeTab(requestedTab, visibleNav), [requestedTab, visibleNav]);
+
+  const selectTab = useCallback((tabId) => {
+    const nextTab = normalizeTab(tabId, visibleNav);
+    const search = new URLSearchParams(location.search);
+    search.set('tab', nextTab);
+    navigate({ pathname: location.pathname, search: `?${search.toString()}` }, { replace: nextTab === activeTab });
+    setMobileMenuOpen(false);
+  }, [activeTab, location.pathname, location.search, navigate, visibleNav]);
+
+  useEffect(() => {
+    if (loading || !visibleNav.length) return undefined;
+    if (requestedTab !== activeTab) {
+      const search = new URLSearchParams(location.search);
+      search.set('tab', activeTab);
+      navigate({ pathname: location.pathname, search: `?${search.toString()}` }, { replace: true });
+    }
+    return undefined;
+  }, [activeTab, loading, location.pathname, location.search, navigate, requestedTab, visibleNav]);
 
   useEffect(() => {
     function onKeyDown(event) {
@@ -189,14 +273,11 @@ function EnterpriseConsoleInner() {
         event.preventDefault();
         setCommandPaletteOpen(val => !val);
       }
+      if (event.key === 'Escape') setMobileMenuOpen(false);
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
-
-  const visibleNav = useMemo(() => {
-    return NAVIGATION.filter(item => canSee(item, tenant?.permissions || ['*']));
-  }, [tenant?.permissions]);
 
   if (!enabled && !loading) {
     return (
@@ -259,10 +340,7 @@ function EnterpriseConsoleInner() {
                   key={item.id}
                   type="button"
                   className={`enterprise-nav-item ${active ? 'active' : ''}`}
-                  onClick={() => {
-                    setActiveTab(item.id);
-                    setMobileMenuOpen(false);
-                  }}
+                  onClick={() => selectTab(item.id)}
                 >
                   <Icon className="enterprise-nav-icon" aria-hidden="true" />
                   <span>{item.label}</span>
@@ -279,9 +357,9 @@ function EnterpriseConsoleInner() {
               tenant={tenant}
               workspace={workspace}
               workspaces={workspaces}
-              onNavigate={(tab) => setActiveTab(tab)}
-              onOpenInviteModal={() => setActiveTab('members')}
-              onOpenCreateWorkspaceModal={() => setActiveTab('workspaces')}
+              onNavigate={selectTab}
+              onOpenInviteModal={() => selectTab('members')}
+              onOpenCreateWorkspaceModal={() => selectTab('workspaces')}
             />
           )}
 
@@ -351,7 +429,7 @@ function EnterpriseConsoleInner() {
         open={commandPaletteOpen}
         onClose={() => setCommandPaletteOpen(false)}
         navigation={visibleNav}
-        onSelect={(tab) => setActiveTab(tab)}
+        onSelect={selectTab}
       />
     </div>
   );

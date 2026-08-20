@@ -146,7 +146,9 @@ test('support access is explicit, time-limited, workspace-bound and cannot becom
   const grant = await request(app)
     .post('/api/enterprise/support-grants')
     .set('Authorization', bearer('admin'))
-    .send({ tenantId: provisioned.body.tenant.id, workspaceId: provisioned.body.workspace.id, supportSubjectId: tokens.support.uid, reason: 'Investigate tenant audit event with approved ticket INC-1001', expiresInMinutes: 15, scopes: ['tenant.audit.read'] });
+    .set('X-Tenant-Id', provisioned.body.tenant.id)
+    .set('X-Workspace-Id', provisioned.body.workspace.id)
+    .send({ supportSubjectId: tokens.support.uid, reason: 'Investigate tenant audit event with approved ticket INC-1001', expiresInMinutes: 15, scopes: ['tenant.audit.read'] });
   assert.equal(grant.status, 201);
   const allowed = await request(app)
     .get('/api/enterprise/support/context')
@@ -159,7 +161,9 @@ test('support access is explicit, time-limited, workspace-bound and cannot becom
   assert.equal(allowed.body.context.permissions.includes('tenant.audit.read'), true);
   const revoked = await request(app)
     .post(`/api/enterprise/support-grants/${grant.body.grant.id}/revoke`)
-    .set('Authorization', bearer('admin'));
+    .set('Authorization', bearer('admin'))
+    .set('X-Tenant-Id', provisioned.body.tenant.id)
+    .set('X-Workspace-Id', provisioned.body.workspace.id);
   assert.equal(revoked.status, 204);
   const afterRevoke = await request(app)
     .get('/api/enterprise/support/context')

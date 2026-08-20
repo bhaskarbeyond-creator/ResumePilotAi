@@ -1,13 +1,12 @@
 'use strict';
 
-const crypto = require('crypto');
 const { validateTenantJobEnvelope } = require('./tenantJobs');
 
 const MAX_ATTEMPTS = 3;
 const BASE_BACKOFF_MS = 200;
 
 class EnterpriseQueueWorkerEngine {
-  constructor({ signingSecret = process.env.TENANT_JOB_SIGNING_SECRET || 'staging-enterprise-secret-key-min-32chars!' } = {}) {
+  constructor({ signingSecret = process.env.TENANT_JOB_SIGNING_SECRET || (String(process.env.NODE_ENV || '').toLowerCase() === 'production' ? '' : 'staging-enterprise-secret-key-min-32chars!') } = {}) {
     this.signingSecret = signingSecret;
     this.jobQueue = [];
     this.deadLetterQueue = [];
@@ -137,8 +136,11 @@ class EnterpriseQueueWorkerEngine {
   }
 
   getStatus() {
+    const healthy = Buffer.byteLength(String(this.signingSecret || '')) >= 32;
     return {
-      status: 'online',
+      status: healthy ? 'online' : 'misconfigured',
+      healthy,
+      durable: false,
       activeQueued: this.jobQueue.length,
       deadLetterCount: this.deadLetterQueue.length,
       metrics: { ...this.metrics },

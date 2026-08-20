@@ -5,7 +5,7 @@ import {
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 
 export default function EnterpriseTeamsTab() {
-  const { request, workspaceId } = useTenantApi();
+  const { request, workspaceId, hasPermission } = useTenantApi();
   const [teamsState, refreshTeams] = useAsyncResource(() => request('/api/enterprise/teams'), [request]);
   const { loading, error, data } = teamsState;
   const [showModal, setShowModal] = useState(false);
@@ -15,6 +15,7 @@ export default function EnterpriseTeamsTab() {
   const [notification, setNotification] = useState(null);
 
   const teams = useMemo(() => (Array.isArray(data?.teams) ? data.teams : []), [data]);
+  const canManageTeams = hasPermission('workspace.manage');
 
   const handleCreateTeam = async (e) => {
     e.preventDefault();
@@ -59,16 +60,18 @@ export default function EnterpriseTeamsTab() {
               Organize members into functional units scoped to specific workspaces and collaboration groups
             </p>
           </div>
-          <button
-            type="button"
-            className="enterprise-button enterprise-button-primary"
-            onClick={() => setShowModal(true)}
-          >
-            <FiPlus aria-hidden="true" /> Create Team
-          </button>
+          {canManageTeams && (
+            <button
+              type="button"
+              className="enterprise-button enterprise-button-primary"
+              onClick={() => setShowModal(true)}
+            >
+              <FiPlus aria-hidden="true" /> Create Team
+            </button>
+          )}
         </div>
 
-        <DataState loading={loading} error={error}>
+        <DataState loading={loading} error={error} onRetry={refreshTeams}>
           {teams.length === 0 ? (
             <p className="enterprise-empty">No teams exist in this workspace yet. Create a team to group members.</p>
           ) : (

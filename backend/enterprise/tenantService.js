@@ -88,15 +88,18 @@ class TenantService {
     }));
   }
 
-  async createSupportGrant({ user, input, requestId }) {
-    if (!isPlatformTenantProvisioner(user)) {
+  async createSupportGrant({ user, context = null, input, requestId }) {
+    const tenantScopedRequest = Boolean(context?.tenantId);
+    if (!tenantScopedRequest && !isPlatformTenantProvisioner(user)) {
       throw Object.assign(new Error('Platform support-grant permission is required'), { code: 'FORBIDDEN', status: 403 });
     }
     if (!this.supportGrantStore) {
       throw Object.assign(new Error('Support access store is unavailable'), { code: 'SUPPORT_ACCESS_UNAVAILABLE', status: 503 });
     }
-    const tenantId = assertUuid(input?.tenantId, 'Tenant identifier');
-    const workspaceId = assertUuid(input?.workspaceId, 'Workspace identifier');
+    const tenantId = tenantScopedRequest ? context.tenantId : assertUuid(input?.tenantId, 'Tenant identifier');
+    const workspaceId = tenantScopedRequest
+      ? (context.workspaceScope === 'TENANT' && input?.workspaceId ? assertUuid(input.workspaceId, 'Workspace identifier') : assertUuid(context.workspaceId, 'Workspace identifier'))
+      : assertUuid(input?.workspaceId, 'Workspace identifier');
     const supportSubjectId = String(input?.supportSubjectId || '');
     if (this.admin?.auth) {
       try {
@@ -113,6 +116,9 @@ class TenantService {
       this.registry.getTenant(tenantId),
       this.registry.getWorkspace(workspaceId, tenantId),
     ]);
+    if (tenantScopedRequest && context.workspaceScope !== 'TENANT' && workspace.id !== context.workspaceId) {
+      throw Object.assign(new Error('Support grant workspace is not permitted'), { code: 'WORKSPACE_FORBIDDEN', status: 403 });
+    }
     if (tenant.lifecycleState !== 'ACTIVE') {
       throw Object.assign(new Error('Tenant is not active'), { code: 'TENANT_INACTIVE', status: 403 });
     }
@@ -136,18 +142,24 @@ class TenantService {
     return grant;
   }
 
-  async revokeSupportGrant({ user, grantId, requestId }) {
-    if (!isPlatformTenantProvisioner(user)) {
+  async revokeSupportGrant({ user, context = null, grantId, requestId }) {
+    const tenantScopedRequest = Boolean(context?.tenantId);
+    if (!tenantScopedRequest && !isPlatformTenantProvisioner(user)) {
       throw Object.assign(new Error('Platform support-grant permission is required'), { code: 'FORBIDDEN', status: 403 });
     }
     if (!this.supportGrantStore) {
       throw Object.assign(new Error('Support access store is unavailable'), { code: 'SUPPORT_ACCESS_UNAVAILABLE', status: 503 });
     }
-    const revoked = await this.supportGrantStore.revoke(grantId);
+    const revoked = await this.supportGrantStore.revoke(grantId, tenantScopedRequest ? {
+      tenantId: context.tenantId,
+      workspaceId: context.workspaceScope === 'TENANT' ? null : context.workspaceId,
+    } : {});
     if (!revoked) throw Object.assign(new Error('Support grant was not found'), { code: 'SUPPORT_GRANT_NOT_FOUND', status: 404 });
     if (this.db && this.admin?.firestore?.FieldValue) {
       await this.db.collection('security_audit_logs').doc().set({
         action: 'SUPPORT_GRANT_REVOKED', actorUid: user.uid, supportGrantId: String(grantId), requestId: requestId || null,
+        tenantId: context?.tenantId || null,
+        workspaceId: context?.workspaceId || null,
         createdAt: this.admin.firestore.FieldValue.serverTimestamp(),
       });
     }

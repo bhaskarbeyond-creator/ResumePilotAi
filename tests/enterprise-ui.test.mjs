@@ -46,8 +46,10 @@ test('enterprise shell makes tenant/workspace context, role-aware navigation and
   for (const fragment of [
     'TenantSwitcher', 'WorkspaceBadge', 'Roles & permissions',
     'AI workspace', 'Usage & Quotas', 'Audit logs',
-    'CommandPalette'
+    'CommandPalette', 'useLocation', 'useNavigate', 'normalizeTab'
   ]) assert.match(view, new RegExp(fragment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(view, /context\?\.permissions/);
+  assert.match(view, /search\.set\('tab'/);
   assert.match(view, /role="dialog"/);
   assert.match(view, /aria-modal="true"/);
   assert.match(view, /aria-label="Enterprise Navigation"/);

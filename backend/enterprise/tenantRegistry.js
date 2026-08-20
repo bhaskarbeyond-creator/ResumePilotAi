@@ -69,7 +69,7 @@ function defaultTenantConfiguration(tenantId) {
   return {
     tenantId,
     revision: 1,
-    aiPolicy: { version: 1, allowedProviders: [] },
+    aiPolicy: { version: 1, allowedProviders: [], primaryModel: '' },
     quotaPolicy: { aiRequestsPerMinute: 12, aiRequestsPerDay: 100, renderConcurrency: 2 },
     retentionPolicy: { aiMemoryEnabled: false, retentionDays: 30 },
     securityPolicy: { requireMfaForAdmins: false, supportAccessRequiresApproval: true },
@@ -91,10 +91,13 @@ function normalizeTenantConfiguration(tenantId, input = {}, existing = defaultTe
   const ssoMode = ['NONE', 'OIDC', 'SAML'].includes(String(identityPolicy.ssoMode || '').toUpperCase())
     ? String(identityPolicy.ssoMode).toUpperCase()
     : String(existing.identityPolicy?.ssoMode || 'NONE').toUpperCase();
+  const primaryModel = /^[A-Za-z0-9._/-]{2,120}$/.test(String(aiPolicy.primaryModel || '').trim())
+    ? String(aiPolicy.primaryModel || '').trim()
+    : String(existing.aiPolicy?.primaryModel || '');
   return {
     tenantId,
     revision: Number(existing.revision || 0) + 1,
-    aiPolicy: { version: Number(existing.aiPolicy?.version || 0) + 1, allowedProviders },
+    aiPolicy: { version: Number(existing.aiPolicy?.version || 0) + 1, allowedProviders, primaryModel },
     quotaPolicy: {
       aiRequestsPerMinute: bounded(quotaPolicy.aiRequestsPerMinute, existing.quotaPolicy?.aiRequestsPerMinute || 12, 1, 10_000),
       aiRequestsPerDay: bounded(quotaPolicy.aiRequestsPerDay, existing.quotaPolicy?.aiRequestsPerDay || 100, 1, 10_000_000),

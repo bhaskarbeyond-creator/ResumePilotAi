@@ -7,7 +7,7 @@ import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 const ROLE_OPTIONS = ['MEMBER', 'VIEWER', 'WORKSPACE_MANAGER', 'TENANT_ADMIN', 'TENANT_OWNER'];
 
 export default function EnterpriseUsersTab({ currentPrincipalId }) {
-  const { request } = useTenantApi();
+  const { request, hasPermission } = useTenantApi();
   const [membersState, refreshMembers] = useAsyncResource(() => request('/api/enterprise/memberships'), [request]);
   const { loading, error, data } = membersState;
   const [searchQuery, setSearchQuery] = useState('');
@@ -25,6 +25,7 @@ export default function EnterpriseUsersTab({ currentPrincipalId }) {
     if (!query) return true;
     return `${member.principalId} ${(member.roles || []).join(' ')} ${member.status}`.toLowerCase().includes(query);
   });
+  const canManageMembers = hasPermission('tenant.members.manage');
 
   const notify = (message) => {
     setNotification(message);
@@ -118,13 +119,15 @@ export default function EnterpriseUsersTab({ currentPrincipalId }) {
               Server-verified enterprise memberships, roles, and workspace access
             </p>
           </div>
-          <button
-            type="button"
-            className="enterprise-button enterprise-button-primary"
-            onClick={() => setShowInviteModal(true)}
-          >
-            <FiUserPlus aria-hidden="true" /> Grant Enterprise Access
-          </button>
+          {canManageMembers && (
+            <button
+              type="button"
+              className="enterprise-button enterprise-button-primary"
+              onClick={() => setShowInviteModal(true)}
+            >
+              <FiUserPlus aria-hidden="true" /> Grant Enterprise Access
+            </button>
+          )}
         </div>
 
         <div className="enterprise-filter-bar">
@@ -140,7 +143,7 @@ export default function EnterpriseUsersTab({ currentPrincipalId }) {
           </div>
         </div>
 
-        <DataState loading={loading} error={error}>
+        <DataState loading={loading} error={error} onRetry={refreshMembers}>
           {filtered.length === 0 ? (
             <p className="enterprise-empty">No enterprise members match this view. Grant access to begin.</p>
           ) : (
@@ -170,7 +173,7 @@ export default function EnterpriseUsersTab({ currentPrincipalId }) {
                         <select
                           className="enterprise-select"
                           value={(member.roles && member.roles[0]) || 'MEMBER'}
-                          disabled={member.principalId === currentPrincipalId && (member.roles || []).includes('TENANT_OWNER')}
+                          disabled={!canManageMembers || (member.principalId === currentPrincipalId && (member.roles || []).includes('TENANT_OWNER'))}
                           onChange={(e) => handleRoleChange(member.principalId, e.target.value)}
                           aria-label={`Role for ${member.principalId}`}
                         >
@@ -184,7 +187,7 @@ export default function EnterpriseUsersTab({ currentPrincipalId }) {
                       </td>
                       <td className="text-right">
                         <div className="enterprise-table-actions">
-                          {member.principalId !== currentPrincipalId && (
+                          {canManageMembers && member.principalId !== currentPrincipalId && (
                             <button
                               type="button"
                               className="enterprise-button-icon"
@@ -194,7 +197,7 @@ export default function EnterpriseUsersTab({ currentPrincipalId }) {
                               <FiShield />
                             </button>
                           )}
-                          {member.principalId !== currentPrincipalId && (
+                          {canManageMembers && member.principalId !== currentPrincipalId && (
                             <button
                               type="button"
                               className="enterprise-button-icon text-danger"

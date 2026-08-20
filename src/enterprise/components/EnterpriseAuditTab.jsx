@@ -6,7 +6,7 @@ import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 
 export default function EnterpriseAuditTab() {
   const { request } = useTenantApi();
-  const [auditState] = useAsyncResource(() => request('/api/enterprise/audit'), [request]);
+  const [auditState, refreshAudit] = useAsyncResource(() => request('/api/enterprise/audit'), [request]);
   const { loading, error, data } = auditState;
   const [searchQuery, setSearchQuery] = useState('');
   const [outcomeFilter, setOutcomeFilter] = useState('ALL');
@@ -76,7 +76,7 @@ export default function EnterpriseAuditTab() {
           </div>
         </div>
 
-        <DataState loading={loading} error={error}>
+        <DataState loading={loading} error={error} onRetry={refreshAudit}>
           {filtered.length === 0 ? (
             <p className="enterprise-empty">No audit events match this view for the active tenant.</p>
           ) : (

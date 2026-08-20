@@ -79,7 +79,9 @@ test('service account create, list, and revoke lifecycle is tenant scoped', asyn
     .set('Authorization', bearer('alice'))
     .set('X-Tenant-Id', tenantHeader);
   assert.equal(list.status, 200);
-  assert.ok(list.body.serviceAccounts.some(account => account.id === accountId));
+  const listed = list.body.serviceAccounts.find(account => account.id === accountId);
+  assert.ok(listed);
+  assert.deepEqual(listed.scopes, ['resource.read', 'ai.use']);
 
   const revoked = await request(app)
     .post(`/api/enterprise/service-accounts/${accountId}/revoke`)
@@ -102,7 +104,6 @@ test('service account create, list, and revoke lifecycle is tenant scoped', asyn
 
 test('service account and workspace operations cannot cross tenant boundaries', async () => {
   const alice = await resolveTenant('alice');
-  const bob = await request(app).get('/api/enterprise/context').set('Authorization', bearer('admin'));
   // A different principal using Alice's tenant header has no membership.
   const denied = await request(app)
     .get('/api/enterprise/service-accounts')
@@ -111,26 +112,31 @@ test('service account and workspace operations cannot cross tenant boundaries', 
   assert.equal(denied.status, 404);
 });
 
-test('support grants can be listed for the active tenant and revoked', async () => {
-  const { tenantId, workspaceId, tenantHeader } = await resolveTenant('alice');
-  // Platform admin creates a support grant scoped to Alice's tenant.
+test('support grants can be created, listed, and revoked by a tenant owner within the active tenant', async () => {
+  const { workspaceId, tenantHeader } = await resolveTenant('alice');
   const created = await request(app)
     .post('/api/enterprise/support-grants')
-    .set('Authorization', bearer('admin'))
-    .send({ tenantId, workspaceId, supportSubjectId: tokens.admin.uid, reason: 'Diagnose ATS integration mapping for this tenant', expiresInMinutes: 30, scopes: ['tenant.audit.read'] });
+    .set('Authorization', bearer('alice'))
+    .set('X-Tenant-Id', tenantHeader)
+    .set('X-Workspace-Id', workspaceId)
+    .send({ supportSubjectId: tokens.admin.uid, reason: 'Diagnose ATS integration mapping for this tenant', expiresInMinutes: 30, scopes: ['tenant.audit.read'] });
   assert.equal(created.status, 201);
   const grantId = created.body.grant.id;
+  assert.equal(created.body.grant.workspaceId, workspaceId);
 
   const list = await request(app)
     .get('/api/enterprise/support-grants')
     .set('Authorization', bearer('alice'))
-    .set('X-Tenant-Id', tenantHeader);
+    .set('X-Tenant-Id', tenantHeader)
+    .set('X-Workspace-Id', workspaceId);
   assert.equal(list.status, 200);
   assert.ok(list.body.grants.some(grant => grant.id === grantId));
 
   const revoked = await request(app)
     .post(`/api/enterprise/support-grants/${grantId}/revoke`)
-    .set('Authorization', bearer('admin'));
+    .set('Authorization', bearer('alice'))
+    .set('X-Tenant-Id', tenantHeader)
+    .set('X-Workspace-Id', workspaceId);
   assert.equal(revoked.status, 204);
 });
 

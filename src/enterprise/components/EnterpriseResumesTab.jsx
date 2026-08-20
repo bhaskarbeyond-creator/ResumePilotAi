@@ -11,7 +11,7 @@ function resourceTitle(resource) {
 }
 
 export default function EnterpriseResumesTab() {
-  const { request } = useTenantApi();
+  const { request, hasPermission } = useTenantApi();
   const [resumesState, refreshResumes] = useAsyncResource(
     () => request('/api/enterprise/resources?resourceType=resume'),
     [request],
@@ -23,6 +23,8 @@ export default function EnterpriseResumesTab() {
   const [notification, setNotification] = useState(null);
 
   const resources = useMemo(() => (Array.isArray(data?.resources) ? data.resources : []), [data]);
+  const canCreate = hasPermission('resource.create');
+  const canUpdate = hasPermission('resource.update');
   const filtered = resources.filter(resource =>
     `${resourceTitle(resource)} ${resource.ownerPrincipalId || ''}`.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -86,12 +88,14 @@ export default function EnterpriseResumesTab() {
               Workspace-scoped resumes and executive CVs backed by the RLS data plane
             </p>
           </div>
-          <Link
-            to="/build-resume"
-            className="enterprise-button enterprise-button-primary"
-          >
-            <FiPlus aria-hidden="true" /> Create Enterprise Resume
-          </Link>
+          {canCreate && (
+            <Link
+              to="/build-resume"
+              className="enterprise-button enterprise-button-primary"
+            >
+              <FiPlus aria-hidden="true" /> Create Enterprise Resume
+            </Link>
+          )}
         </div>
 
         <div className="enterprise-filter-bar">
@@ -107,7 +111,7 @@ export default function EnterpriseResumesTab() {
           </div>
         </div>
 
-        <DataState loading={loading} error={error}>
+        <DataState loading={loading} error={error} onRetry={refreshResumes}>
           {filtered.length === 0 ? (
             <p className="enterprise-empty">
               {searchQuery ? 'No documents match this search.' : 'No enterprise documents yet. Create a resume to begin.'}
@@ -143,31 +147,37 @@ export default function EnterpriseResumesTab() {
                       <td><small>v{resource.revision || 1}</small></td>
                       <td className="text-right">
                         <div className="enterprise-table-actions">
-                          <Link
-                            to={`/build-resume?id=${resource.id}`}
-                            className="enterprise-button-icon"
-                            title="Edit in Smart Composer"
-                          >
-                            <FiEdit3 />
-                          </Link>
-                          <button
-                            type="button"
-                            className="enterprise-button-icon"
-                            title="Duplicate Document"
-                            onClick={() => handleDuplicate(resource)}
-                            disabled={busy}
-                          >
-                            <FiCopy />
-                          </button>
-                          <button
-                            type="button"
-                            className="enterprise-button-icon text-danger"
-                            title="Delete Document"
-                            onClick={() => handleDelete(resource)}
-                            disabled={busy}
-                          >
-                            <FiTrash2 />
-                          </button>
+                          {canUpdate && (
+                            <Link
+                              to={`/build-resume?id=${resource.id}`}
+                              className="enterprise-button-icon"
+                              title="Edit in Smart Composer"
+                            >
+                              <FiEdit3 />
+                            </Link>
+                          )}
+                          {canCreate && (
+                            <button
+                              type="button"
+                              className="enterprise-button-icon"
+                              title="Duplicate Document"
+                              onClick={() => handleDuplicate(resource)}
+                              disabled={busy}
+                            >
+                              <FiCopy />
+                            </button>
+                          )}
+                          {canUpdate && (
+                            <button
+                              type="button"
+                              className="enterprise-button-icon text-danger"
+                              title="Delete Document"
+                              onClick={() => handleDelete(resource)}
+                              disabled={busy}
+                            >
+                              <FiTrash2 />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

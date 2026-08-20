@@ -58,9 +58,11 @@ class InMemorySupportGrantStore {
     return activeGrant(grant, { supportSubjectId, tenantId, workspaceId, now }) ? grant : null;
   }
 
-  async revoke(grantId) {
+  async revoke(grantId, { tenantId = null, workspaceId = null } = {}) {
     const grant = this.grants.get(String(grantId || ''));
     if (!grant) return false;
+    if (tenantId && grant.tenantId !== assertUuid(tenantId, 'Tenant identifier')) return false;
+    if (workspaceId && grant.workspaceId !== assertUuid(workspaceId, 'Workspace identifier')) return false;
     this.grants.set(grant.id, { ...grant, status: 'REVOKED', revokedAt: new Date().toISOString() });
     return true;
   }
@@ -105,11 +107,14 @@ class FirestoreSupportGrantStore {
     return activeGrant(grant, { supportSubjectId, tenantId, workspaceId, now }) ? grant : null;
   }
 
-  async revoke(grantId) {
+  async revoke(grantId, { tenantId = null, workspaceId = null } = {}) {
     this.assertAvailable();
     const reference = this.db.collection('enterprise_support_grants').doc(String(grantId || ''));
     const snapshot = await reference.get();
     if (!snapshot.exists) return false;
+    const grant = snapshot.data() || {};
+    if (tenantId && grant.tenantId !== assertUuid(tenantId, 'Tenant identifier')) return false;
+    if (workspaceId && grant.workspaceId !== assertUuid(workspaceId, 'Workspace identifier')) return false;
     await reference.update({ status: 'REVOKED', revokedAt: this.admin.firestore.FieldValue.serverTimestamp(), updatedAt: this.admin.firestore.FieldValue.serverTimestamp() });
     return true;
   }

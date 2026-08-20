@@ -17,8 +17,8 @@ function formatDuration(ms) {
 
 export default function EnterpriseUsageTab() {
   const { request } = useTenantApi();
-  const [metrics] = useAsyncResource(() => request('/api/enterprise/observability/metrics'), [request]);
-  const [audit] = useAsyncResource(() => request('/api/enterprise/audit'), [request]);
+  const [metrics, refreshMetrics] = useAsyncResource(() => request('/api/enterprise/observability/metrics'), [request]);
+  const [audit, refreshAudit] = useAsyncResource(() => request('/api/enterprise/audit'), [request]);
   const { loading, error, data } = metrics;
   const auditEvents = useMemo(() => (Array.isArray(audit?.data?.events) ? audit.data.events : []), [audit]);
 
@@ -43,7 +43,7 @@ export default function EnterpriseUsageTab() {
           </span>
         </div>
 
-        <DataState loading={loading} error={error}>
+        <DataState loading={loading} error={error} onRetry={() => { refreshMetrics(); refreshAudit(); }}>
           <div className="enterprise-usage-bars-grid">
             <div className="enterprise-usage-card">
               <div className="enterprise-usage-header">

@@ -108,14 +108,14 @@ async function checkTenantRateLimit({ tenantId, principalId, operation, window =
 
 async function pingRedis() {
   const client = await getClient();
-  if (!client) return { status: 'unavailable', error: 'NO_REDIS_CONFIGURED' };
+  if (!client) return { ok: false, status: 'unavailable', error: 'NO_REDIS_CONFIGURED' };
   const start = Date.now();
   try {
     const pong = await client.ping();
     const latencyMs = Date.now() - start;
-    return { status: pong === 'PONG' ? 'healthy' : 'degraded', pong, latencyMs };
+    return { ok: pong === 'PONG', status: pong === 'PONG' ? 'healthy' : 'degraded', pong, latencyMs };
   } catch (err) {
-    return { status: 'unhealthy', error: err.message };
+    return { ok: false, status: 'unhealthy', error: err.message };
   }
 }
 

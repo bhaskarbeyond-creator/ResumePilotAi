@@ -42,6 +42,7 @@ export default function EnterpriseAiTab() {
       const result = await request('/api/enterprise/configuration');
       const config = result.configuration;
       setConfiguration(config);
+      setPrimaryModel(String(config?.aiPolicy?.primaryModel || MODEL_OPTIONS[0]));
       setRequestsPerMinute(Number(config?.quotaPolicy?.aiRequestsPerMinute ?? 12));
       setRequestsPerDay(Number(config?.quotaPolicy?.aiRequestsPerDay ?? 100));
     } catch (err) {
@@ -76,7 +77,7 @@ export default function EnterpriseAiTab() {
         body: {
           expectedRevision: configuration.revision,
           configuration: {
-            aiPolicy: { allowedProviders: [...allowed] },
+            aiPolicy: { allowedProviders: [...allowed], primaryModel },
             quotaPolicy: {
               aiRequestsPerMinute: requestsPerMinute,
               aiRequestsPerDay: requestsPerDay,
@@ -166,7 +167,13 @@ export default function EnterpriseAiTab() {
           <div className="enterprise-card" role="alert">
             <div className="enterprise-error-row">
               <span className="enterprise-error-icon" aria-hidden="true">⚠</span>
-              <div><strong>AI policy unavailable</strong><p className="text-muted">{configError}</p></div>
+              <div>
+                <strong>AI policy unavailable</strong>
+                <p className="text-muted">{configError}</p>
+                <button type="button" className="enterprise-button enterprise-button-secondary enterprise-button-sm" onClick={loadConfiguration} style={{ marginTop: '0.75rem' }}>
+                  Retry
+                </button>
+              </div>
             </div>
           </div>
         ) : configuration ? (

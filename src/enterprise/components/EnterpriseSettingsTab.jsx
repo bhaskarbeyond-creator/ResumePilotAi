@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { FiSave, FiAlertTriangle } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 
@@ -9,6 +9,11 @@ export default function EnterpriseSettingsTab({ tenant }) {
   const configuration = useMemo(() => data?.configuration || null, [data]);
   const retentionDays = String(configuration?.retentionPolicy?.retentionDays ?? '');
   const [retentionInput, setRetentionInput] = useState(retentionDays);
+
+  useEffect(() => {
+    setRetentionInput(retentionDays);
+  }, [retentionDays]);
+
   const [busy, setBusy] = useState(false);
   const [notification, setNotification] = useState(null);
   const [actionError, setActionError] = useState(null);
@@ -65,7 +70,7 @@ export default function EnterpriseSettingsTab({ tenant }) {
         </div>
       )}
 
-      <DataState loading={loading} error={error}>
+      <DataState loading={loading} error={error} onRetry={refreshConfig}>
         <div className="enterprise-card">
           <h2 className="enterprise-tab-title">Organization Settings</h2>
           <p className="enterprise-tab-subtitle">Configure organization profile and governance policies</p>
@@ -92,10 +97,10 @@ export default function EnterpriseSettingsTab({ tenant }) {
                 onChange={(e) => setRetentionInput(e.target.value)}
                 className="enterprise-select"
               >
+                <option value="30">30 Days (Operational Minimum)</option>
                 <option value="90">90 Days (Standard Compliance)</option>
                 <option value="365">1 Year (SOC2 / ISO27001 Default)</option>
                 <option value="2555">7 Years (Financial / Regulatory Strict)</option>
-                <option value="0">Indefinite (No automatic pruning)</option>
               </select>
             </div>
             <div className="enterprise-form-actions" style={{ marginTop: '1.5rem' }}>

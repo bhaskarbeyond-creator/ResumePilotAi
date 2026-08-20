@@ -105,7 +105,7 @@ export default function EnterpriseSupportTab() {
           </div>
         </div>
 
-        <DataState loading={loading} error={error}>
+        <DataState loading={loading} error={error} onRetry={refreshGrants}>
           {grants.length === 0 ? (
             <p className="enterprise-empty" style={{ marginTop: '1.5rem' }}>
               No active support grants. Sovereign customer isolation active.

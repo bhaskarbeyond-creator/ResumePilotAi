@@ -8,13 +8,14 @@ export default function EnterpriseWorkspacesTab({
   activeWorkspace,
   onSelectWorkspace,
 }) {
-  const { request } = useTenantApi();
+  const { request, hasPermission } = useTenantApi();
   const { reload } = useEnterpriseTenant();
   const [showModal, setShowModal] = useState(false);
   const [workspaceName, setWorkspaceName] = useState('');
   const [busy, setBusy] = useState(false);
   const [notification, setNotification] = useState(null);
   const [error, setError] = useState(null);
+  const canManageWorkspaces = hasPermission('workspace.manage');
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -60,13 +61,15 @@ export default function EnterpriseWorkspacesTab({
               Logical sub-divisions for separate business units, departments, or geographical offices within this tenant
             </p>
           </div>
-          <button
-            type="button"
-            className="enterprise-button enterprise-button-primary"
-            onClick={() => setShowModal(true)}
-          >
-            <FiPlus aria-hidden="true" /> New Workspace
-          </button>
+          {canManageWorkspaces && (
+            <button
+              type="button"
+              className="enterprise-button enterprise-button-primary"
+              onClick={() => setShowModal(true)}
+            >
+              <FiPlus aria-hidden="true" /> New Workspace
+            </button>
+          )}
         </div>
 
         <div className="enterprise-workspaces-list">

@@ -23,15 +23,20 @@ class InMemoryServiceAccountStore {
   async create({ tenantId, workspaceId, displayName, scopes, now = new Date() }) {
     tenantId = assertUuid(tenantId, 'Tenant identifier');
     workspaceId = assertUuid(workspaceId, 'Workspace identifier');
+    const id = crypto.randomUUID();
+    const material = createApiKeyMaterial({ tenantId, workspaceId, serviceAccountId: id, scopes, now });
     const account = {
-      id: crypto.randomUUID(),
+      id,
       tenantId,
       workspaceId,
       displayName: normalizeName(displayName),
       status: 'ACTIVE',
       createdAt: new Date(now).toISOString(),
+      scopes: [...material.record.scopes],
+      apiKeyId: material.record.id,
+      apiKeyPrefix: material.record.prefix,
+      expiresAt: material.record.expiresAt,
     };
-    const material = createApiKeyMaterial({ tenantId, workspaceId, serviceAccountId: account.id, scopes, now });
     this.accounts.set(account.id, account);
     this.keys.set(material.record.secretHash, material.record);
     return { account, material };
@@ -83,15 +88,20 @@ class FirestoreServiceAccountStore {
     this.assertAvailable();
     tenantId = assertUuid(tenantId, 'Tenant identifier');
     workspaceId = assertUuid(workspaceId, 'Workspace identifier');
+    const id = crypto.randomUUID();
+    const material = createApiKeyMaterial({ tenantId, workspaceId, serviceAccountId: id, scopes, now });
     const account = {
-      id: crypto.randomUUID(),
+      id,
       tenantId,
       workspaceId,
       displayName: normalizeName(displayName),
       status: 'ACTIVE',
       createdAt: new Date(now).toISOString(),
+      scopes: [...material.record.scopes],
+      apiKeyId: material.record.id,
+      apiKeyPrefix: material.record.prefix,
+      expiresAt: material.record.expiresAt,
     };
-    const material = createApiKeyMaterial({ tenantId, workspaceId, serviceAccountId: account.id, scopes, now });
     const accountRef = this.db.collection('enterprise_service_accounts').doc(account.id);
     const keyRef = this.db.collection('enterprise_api_keys').doc(material.record.secretHash);
     await this.db.runTransaction(async transaction => {

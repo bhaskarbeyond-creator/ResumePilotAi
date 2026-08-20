@@ -9,6 +9,12 @@ const { enterpriseFeatureEnabled } = require('../enterprise/featureFlags');
 
 const router = express.Router();
 
+function runtimeSecret(envName, developmentFallback) {
+  const value = String(process.env[envName] || '');
+  if (value) return value;
+  return String(process.env.NODE_ENV || '').toLowerCase() === 'production' ? '' : developmentFallback;
+}
+
 // This authenticated status endpoint lets an explicitly enabled frontend explain a
 // server-side rollout mismatch without probing tenant data or creating control-plane state.
 router.get('/status', (req, res) => {
@@ -80,9 +86,9 @@ async function resolveTenantContext(req, res, next) {
   }
 }
 
-router.post('/support-grants', async (req, res) => {
+router.post('/support-grants', resolveTenantContext, requireTenantPermission('tenant.settings.write'), async (req, res) => {
   try {
-    const grant = await enterpriseService(req).createSupportGrant({ user: req.user, input: req.body || {}, requestId: res.locals?.requestId });
+    const grant = await enterpriseService(req).createSupportGrant({ user: req.user, context: req.tenantContext, input: req.body || {}, requestId: res.locals?.requestId });
     return res.status(201).json({
       grant: { id: grant.id, tenantId: grant.tenantId, workspaceId: grant.workspaceId, supportSubjectId: grant.supportSubjectId, scopes: grant.scopes, expiresAt: grant.expiresAt, reason: grant.reason },
     });
@@ -91,9 +97,9 @@ router.post('/support-grants', async (req, res) => {
   }
 });
 
-router.post('/support-grants/:grantId/revoke', async (req, res) => {
+router.post('/support-grants/:grantId/revoke', resolveTenantContext, requireTenantPermission('tenant.settings.write'), async (req, res) => {
   try {
-    await enterpriseService(req).revokeSupportGrant({ user: req.user, grantId: req.params.grantId, requestId: res.locals?.requestId });
+    await enterpriseService(req).revokeSupportGrant({ user: req.user, context: req.tenantContext, grantId: req.params.grantId, requestId: res.locals?.requestId });
     return res.status(204).end();
   } catch (error) {
     return res.status(error.status || 503).json({ error: { code: error.code || 'SUPPORT_GRANT_REVOKE_FAILED', message: error.status === 404 ? 'Support grant was not found' : 'Support grant could not be revoked', requestId: res.locals?.requestId } });
@@ -136,6 +142,11 @@ router.get('/tenants', async (req, res) => {
   } catch (error) {
     return res.status(error.status || 503).json({ error: { code: error.code || 'TENANT_CONTROL_PLANE_UNAVAILABLE', message: 'Tenant list is unavailable', requestId: res.locals?.requestId } });
   }
+});
+
+router.get('/roles-matrix', resolveTenantContext, requireTenantPermission('tenant.read'), (req, res) => {
+  const { TENANT_ROLES } = require('../enterprise/constants');
+  return res.json({ roles: TENANT_ROLES });
 });
 
 const respondWithContext = (req, res) => {
@@ -237,7 +248,7 @@ router.post('/service-accounts', resolveTenantContext, requireTenantPermission('
 router.get('/service-accounts', resolveTenantContext, requireTenantPermission('tenant.security.read'), async (req, res) => {
   try {
     const accounts = await enterpriseService(req).listServiceAccounts({ context: req.tenantContext });
-    return res.json({ serviceAccounts: accounts.map(account => ({ id: account.id, tenantId: account.tenantId, workspaceId: account.workspaceId, displayName: account.displayName, status: account.status, createdAt: account.createdAt || null })) });
+    return res.json({ serviceAccounts: accounts.map(account => ({ id: account.id, tenantId: account.tenantId, workspaceId: account.workspaceId, displayName: account.displayName, status: account.status, createdAt: account.createdAt || null, scopes: Array.isArray(account.scopes) ? account.scopes : [], apiKeyId: account.apiKeyId || null, apiKeyPrefix: account.apiKeyPrefix || null, expiresAt: account.expiresAt || null })) });
   } catch (error) {
     return res.status(error.status || 503).json({ error: { code: error.code || 'SERVICE_ACCOUNT_LIST_FAILED', message: 'Service accounts are unavailable', requestId: res.locals?.requestId } });
   }
@@ -414,7 +425,9 @@ router.get('/cache/status', resolveTenantContext, requireTenantPermission('tenan
 });
 
 const { EnterpriseQueueWorkerEngine } = require('../enterprise/tenantWorker');
-const enterpriseQueueEngine = new EnterpriseQueueWorkerEngine();
+const enterpriseQueueEngine = new EnterpriseQueueWorkerEngine({
+  signingSecret: runtimeSecret('TENANT_JOB_SIGNING_SECRET', 'staging-enterprise-secret-key-min-32chars!'),
+});
 
 router.get('/queue/status', resolveTenantContext, requireTenantPermission('tenant.read'), (req, res) => {
   return res.json({ queue: enterpriseQueueEngine.getStatus() });
@@ -443,7 +456,7 @@ router.post('/storage/token', resolveTenantContext, requireTenantPermission('res
       objectKey: req.body?.objectKey,
       purpose: req.body?.purpose || 'DOWNLOAD',
       expiresInMs: req.body?.expiresInMs || 60_000,
-      signingSecret: process.env.TENANT_ARTIFACT_SIGNING_SECRET || 'staging-enterprise-artifact-secret-min-32chars!',
+      signingSecret: runtimeSecret('TENANT_ARTIFACT_SIGNING_SECRET', 'staging-enterprise-artifact-secret-min-32chars!'),
     });
     return res.json({ token, objectKey: req.body?.objectKey });
   } catch (error) {
@@ -458,7 +471,7 @@ router.post('/storage/verify', resolveTenantContext, requireTenantPermission('re
       context: req.tenantContext,
       token: req.body?.token,
       purpose: req.body?.purpose,
-      signingSecret: process.env.TENANT_ARTIFACT_SIGNING_SECRET || 'staging-enterprise-artifact-secret-min-32chars!',
+      signingSecret: runtimeSecret('TENANT_ARTIFACT_SIGNING_SECRET', 'staging-enterprise-artifact-secret-min-32chars!'),
     });
     return res.json({ verified: true, claims: verified });
   } catch (error) {

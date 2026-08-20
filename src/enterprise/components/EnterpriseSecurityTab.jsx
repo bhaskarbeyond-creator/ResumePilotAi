@@ -7,7 +7,7 @@ import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 const SCOPE_OPTIONS = ['resource.read', 'resource.create', 'resource.update', 'ai.use'];
 
 export default function EnterpriseSecurityTab() {
-  const { request } = useTenantApi();
+  const { request, hasPermission } = useTenantApi();
   const [accountsState, refreshAccounts] = useAsyncResource(
     () => request('/api/enterprise/service-accounts'),
     [request],
@@ -23,6 +23,7 @@ export default function EnterpriseSecurityTab() {
   const [notification, setNotification] = useState(null);
 
   const serviceAccounts = useMemo(() => (Array.isArray(data?.serviceAccounts) ? data.serviceAccounts : []), [data]);
+  const canManageServiceAccounts = hasPermission('tenant.security.manage');
 
   const notify = (message) => {
     setNotification(message);
@@ -67,11 +68,14 @@ export default function EnterpriseSecurityTab() {
     }
   };
 
-  const handleCopy = () => {
-    if (generatedKey?.plaintext) {
-      navigator.clipboard.writeText(generatedKey.plaintext);
+  const handleCopy = async () => {
+    if (!generatedKey?.plaintext) return;
+    try {
+      await navigator.clipboard.writeText(generatedKey.plaintext);
       setCopied(true);
       setTimeout(() => setCopied(false), 3000);
+    } catch {
+      setActionError('Clipboard access is unavailable. Copy the secret manually before closing this panel.');
     }
   };
 
@@ -140,16 +144,18 @@ export default function EnterpriseSecurityTab() {
             <h3 className="enterprise-card-title">Service Accounts & M2M API Keys</h3>
             <p className="enterprise-card-subtitle">Credential lifecycle managed through the enterprise API</p>
           </div>
-          <button
-            type="button"
-            className="enterprise-button enterprise-button-primary"
-            onClick={() => setShowCreateModal(true)}
-          >
-            <FiPlus aria-hidden="true" /> Create Service Account
-          </button>
+          {canManageServiceAccounts && (
+            <button
+              type="button"
+              className="enterprise-button enterprise-button-primary"
+              onClick={() => setShowCreateModal(true)}
+            >
+              <FiPlus aria-hidden="true" /> Create Service Account
+            </button>
+          )}
         </div>
 
-        <DataState loading={loading} error={error}>
+        <DataState loading={loading} error={error} onRetry={refreshAccounts}>
           {serviceAccounts.length === 0 ? (
             <p className="enterprise-empty">No active service accounts. Create one to enable machine-to-machine access.</p>
           ) : (
@@ -172,14 +178,16 @@ export default function EnterpriseSecurityTab() {
                       <td>{Array.isArray(account.scopes) ? account.scopes.map(s => <span key={s} className="enterprise-pill enterprise-pill-secondary">{s}</span>) : <small>—</small>}</td>
                       <td><span className="enterprise-pill enterprise-pill-success">{account.status}</span></td>
                       <td className="text-right">
-                        <button
-                          type="button"
-                          className="enterprise-button-icon text-danger"
-                          title="Revoke API key"
-                          onClick={() => handleRevoke(account.id)}
-                        >
-                          <FiTrash2 />
-                        </button>
+                        {canManageServiceAccounts && (
+                          <button
+                            type="button"
+                            className="enterprise-button-icon text-danger"
+                            title="Revoke API key"
+                            onClick={() => handleRevoke(account.id)}
+                          >
+                            <FiTrash2 />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -232,7 +240,7 @@ export default function EnterpriseSecurityTab() {
               </div>
               <div className="enterprise-modal-footer">
                 <button type="button" className="enterprise-button enterprise-button-secondary" onClick={() => setShowCreateModal(false)} disabled={busy}>Cancel</button>
-                <button type="submit" className="enterprise-button enterprise-button-primary" disabled={busy}>
+                <button type="submit" className="enterprise-button enterprise-button-primary" disabled={busy || saScopes.length === 0}>
                   {busy ? 'Creating…' : 'Create & Reveal Key'}
                 </button>
               </div>

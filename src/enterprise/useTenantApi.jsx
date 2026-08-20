@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useEnterpriseTenant } from './EnterpriseContext';
 import { enterpriseFetch } from './enterpriseApi';
 
@@ -8,9 +8,11 @@ import { enterpriseFetch } from './enterpriseApi';
  * and the backend re-verifies membership on every request.
  */
 export function useTenantApi() {
-  const { tenant, workspace } = useEnterpriseTenant();
+  const { tenant, workspace, context } = useEnterpriseTenant();
   const tenantId = tenant?.id || '';
   const workspaceId = workspace?.id || '';
+  const permissions = useMemo(() => (Array.isArray(context?.permissions) ? context.permissions : []), [context?.permissions]);
+  const roles = useMemo(() => (Array.isArray(context?.roles) ? context.roles : []), [context?.roles]);
 
   const request = useCallback((path, options = {}) => {
     const opts = { ...options };
@@ -19,7 +21,9 @@ export function useTenantApi() {
     return enterpriseFetch(path, opts);
   }, [tenantId, workspaceId]);
 
-  return { request, tenant, workspace, tenantId, workspaceId };
+  const hasPermission = useCallback((permission) => permissions.includes('*') || permissions.includes(permission), [permissions]);
+
+  return { request, tenant, workspace, context, tenantId, workspaceId, permissions, roles, hasPermission };
 }
 
 /** Simple promise-state hook so every tab shares the same loading/error/data contract. */
@@ -48,7 +52,7 @@ export function useAsyncResource(loader, deps = []) {
 }
 
 /** Uniform truthful data-plane state rendering. */
-export function DataState({ loading, error, children }) {
+export function DataState({ loading, error, onRetry = null, children }) {
   if (loading) {
     return (
       <div className="enterprise-card" role="status" aria-live="polite">
@@ -67,6 +71,11 @@ export function DataState({ loading, error, children }) {
           <div>
             <strong>Data unavailable</strong>
             <p className="text-muted">{error?.message || 'The enterprise service did not respond as expected.'}</p>
+            {typeof onRetry === 'function' && (
+              <button type="button" className="enterprise-button enterprise-button-secondary enterprise-button-sm" onClick={onRetry} style={{ marginTop: '0.75rem' }}>
+                Retry
+              </button>
+            )}
           </div>
         </div>
       </div>

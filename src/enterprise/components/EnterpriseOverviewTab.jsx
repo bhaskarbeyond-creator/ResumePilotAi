@@ -3,7 +3,7 @@ import {
   FiUsers, FiSliders, FiZap, FiDatabase, FiShield, FiTrendingUp,
   FiPlus, FiUserPlus, FiFileText, FiCheckCircle
 } from 'react-icons/fi';
-import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
+import { useTenantApi, useAsyncResource } from '../useTenantApi';
 
 function formatNumber(value) {
   const number = Number(value || 0);
@@ -17,8 +17,8 @@ function formatDuration(ms) {
   return `${Math.round(value)} ms`;
 }
 
-export default function EnterpriseOverviewTab({ onNavigate }) {
-  const { request, tenant, workspace, workspaceId } = useTenantApi();
+export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
+  const { request, tenant, workspace, workspaceId, context } = useTenantApi();
 
   const [members] = useAsyncResource(
     () => request('/api/enterprise/memberships'),
@@ -66,7 +66,7 @@ export default function EnterpriseOverviewTab({ onNavigate }) {
               {tenant?.displayName || 'Enterprise Workspace'}
             </h2>
             <p className="enterprise-tab-subtitle">
-              Active Workspace: <strong>{workspace?.name || 'Default'}</strong> · Region: <strong>Global (Edge CDN)</strong> · Forced RLS: <strong>Enabled</strong>
+              Active Workspace: <strong>{workspace?.name || 'Default'}</strong> · Region: <strong>{context?.dataPlane?.region || 'default'}</strong> · Routing Version: <strong>{context?.dataPlane?.routingVersion || 1}</strong>
             </p>
           </div>
           <div className="enterprise-actions-row">
@@ -105,7 +105,7 @@ export default function EnterpriseOverviewTab({ onNavigate }) {
             <span>Workspaces</span>
             <FiSliders className="enterprise-metric-icon" aria-hidden="true" />
           </div>
-          <div className="enterprise-metric-value">{tenant?.id ? 'Scoped' : '—'}</div>
+          <div className="enterprise-metric-value">{tenant?.id ? formatNumber(workspaces.length) : '—'}</div>
           <div className="enterprise-metric-footer">
             {workspaceId ? `Active: ${workspace?.name || 'Default'}` : 'No active workspace'}
           </div>
@@ -191,8 +191,8 @@ export default function EnterpriseOverviewTab({ onNavigate }) {
             <li className="enterprise-health-item">
               <div className={`enterprise-health-status ${queue.loading ? 'checking' : (queueOk ? 'online' : 'offline')}`} />
               <div className="enterprise-health-copy">
-                <strong>Signed Job Queue & DLQ</strong>
-                <small>{queue.loading ? 'Checking…' : (queueOk ? 'Worker healthy' : 'Queue unavailable')}</small>
+                <strong>Signed Queue Engine</strong>
+                <small>{queue.loading ? 'Checking…' : (queue?.data?.queue?.durable === false ? 'Local engine only; pair with the Firestore notification outbox for durable jobs.' : 'Queue status reported by the backend')}</small>
               </div>
               <span className={`enterprise-pill ${queue.loading ? '' : (queueOk ? 'enterprise-pill-success' : 'enterprise-pill-warning')}`}>
                 {queue.loading ? 'Checking' : (queueOk ? 'Operational' : 'Unavailable')}
@@ -201,8 +201,8 @@ export default function EnterpriseOverviewTab({ onNavigate }) {
             <li className="enterprise-health-item">
               <div className="enterprise-health-status online" />
               <div className="enterprise-health-copy">
-                <strong>Cloudflare Edge WAF & HSTS</strong>
-                <small>TLS 1.3 · CSP · DDoS & API abuse protection</small>
+                <strong>Server-side Tenant Authorization</strong>
+                <small>Tenant and workspace context are resolved server-side on each request.</small>
               </div>
               <span className="enterprise-pill enterprise-pill-success">Enforced</span>
             </li>
