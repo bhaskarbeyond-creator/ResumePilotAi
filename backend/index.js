@@ -18,6 +18,10 @@ const { loadProviderConfiguration, generateWithProviders } = require('./services
 const { loadAiAdminSettings, saveAiAdminSettings, testAiProvider, fetchProviderModels } = require('./services/aiAdmin');
 const { mergeAdminSettingCategory } = require('./services/adminSettingsMerge');
 const { createExportRenderToken, consumeExportRenderToken, discardExportRenderToken } = require('./security/exportTokens');
+const { createTenantService } = require('./enterprise/tenantService');
+const { enterpriseRouter } = require('./routes/enterprise');
+const { enterpriseM2mRouter } = require('./routes/enterpriseM2m');
+const { enterpriseFeatureEnabled } = require('./enterprise/featureFlags');
 const app = express();
 const cors = require('cors');
 const cryptoRandom = require('crypto');
@@ -113,6 +117,9 @@ try {
 }
 // Make Firestore accessible to routes via req.app.get('db')
 app.set('db', db);
+// The enterprise control plane is intentionally server-only. It is dormant until
+// enterprise routes are enabled and does not alter certified UID-scoped paths.
+app.set('tenantService', createTenantService({ db, admin }));
 
 // Auto-initialize system fonts for Playwright PDF rendering on Linux servers
 const initSystemFonts = () => {
@@ -186,7 +193,7 @@ app.use(cors({
         return callback(null, false);
     },
     methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Authorization', 'Content-Type', 'Idempotency-Key', 'X-Request-Id'],
+    allowedHeaders: ['Authorization', 'Content-Type', 'Idempotency-Key', 'X-Request-Id', 'X-Tenant-Id', 'X-Workspace-Id', 'X-API-Key', 'X-Support-Grant-Id'],
     maxAge: 600,
     credentials: false
 }));
@@ -221,6 +228,7 @@ app.use('/api/auth', authLimiter);
 // public protocol endpoints. Route handlers must still enforce their own role/ownership policy.
 const publicApiPaths = new Set([
     '/healthz', '/readyz', '/health',
+    '/enterprise/m2m/context',
     '/stripe-webhook', '/public-export', '/export-render-data', '/contact', '/auth/custom-password-reset',
     '/auth/verify-email-token', '/auth/set-user-password', '/auth/linkedin', '/auth/linkedin/callback',
     '/auth/github', '/auth/github/callback', '/auth/oauth/exchange'
@@ -232,6 +240,17 @@ app.use('/api', (req, res, next) => {
 app.use('/api', (req, res, next) => {
     if (publicApiPaths.has(req.path)) return next();
     return enforceApiPolicy(req, res, next);
+});
+
+// During enterprise rollout, reject tenant/workspace headers on legacy routes rather
+// than silently ignoring them. A client must use a tenant-aware /api/enterprise path
+// or the certified UID-scoped legacy behavior, never an ambiguous hybrid request.
+app.use('/api', (req, res, next) => {
+    const asksForTenantContext = Boolean(req.get('x-tenant-id') || req.get('x-workspace-id'));
+    if (enterpriseFeatureEnabled() && asksForTenantContext && !req.path.startsWith('/enterprise/')) {
+        return res.status(400).json({ error: { code: 'TENANT_CONTEXT_UNSUPPORTED_FOR_LEGACY_ROUTE', message: 'Use a tenant-aware enterprise API route for tenant-scoped operations', requestId: res.locals.requestId } });
+    }
+    return next();
 });
 
 // Cost and abuse boundaries are account-based in addition to the global IP limiter.
@@ -1728,6 +1747,13 @@ app.use('/api', aiRoutes);
 app.use('/api', emailRoutes);
 app.use('/api/email', emailRoutes);
 
+// Enterprise tenancy APIs are feature-gated at the client, server-authorized, and
+// deliberately isolated from existing certified UID-scoped module routes. The M2M
+// context route is explicitly exempted from Firebase bearer auth above and performs
+// its own hashed API-key verification; every other enterprise route remains bearer-authenticated.
+app.use('/api/enterprise/m2m', enterpriseM2mRouter);
+app.use('/api/enterprise', enterpriseRouter);
+
 // AI provider configuration is split: secrets remain in a server-only document while
 // browser-readable settings contain models/toggles only.
 app.get('/api/admin/ai-settings', async (req, res) => {
@@ -3127,7 +3153,16 @@ if (require.main === module) {
             workerRunning = true;
             try {
                 const emailRoute = require('./routes/email');
-                await processOutboxOnce({ db, admin, workerId, dispatch: event => emailRoute.dispatchNotification(db, { to: event.recipient, templateType: event.templateType, vars: event.vars }) });
+                const tenantService = app.get('tenantService');
+                await processOutboxOnce({
+                    db,
+                    admin,
+                    workerId,
+                    // Tenant-bound outbox events are reauthorized at execution time;
+                    // legacy events retain their certified UID-era delivery behavior.
+                    authorize: event => tenantService?.authorizeOutboxEvent(event),
+                    dispatch: event => emailRoute.dispatchNotification(db, { to: event.recipient, templateType: event.templateType, vars: event.vars })
+                });
             } catch (error) { console.error('[Notification outbox]', error.message); }
             finally { workerRunning = false; }
         };

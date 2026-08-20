@@ -103,6 +103,9 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
     ).replace(/\s+/g, ' ').trim();
 
     const userMembershipTier = isAdmin ? 'Admin Tier' : (profile?.membership || 'Basic');
+    // Enterprise tenancy is opt-in and dark by default, preserving the certified
+    // personal dashboard until the server-side data-plane gates are approved.
+    const enterpriseEnabled = import.meta.env?.VITE_ENTERPRISE_TENANCY_ENABLED === 'true';
 
     // Check system modules settings
     useEffect(() => {
@@ -504,6 +507,19 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
                                 {!sidebarCollapsed && <span className="flex-1">Overview &amp; Resumes</span>}
                             </div>
                         </Link>
+                        {enterpriseEnabled && (
+                            <Link to="/enterprise" onClick={closeMobileSidebar}>
+                                <div
+                                    className={`flex items-center text-xs transition-all duration-150 rounded-xl mt-1 ${
+                                        location.pathname.startsWith('/enterprise')
+                                            ? 'bg-violet-50 text-violet-700 font-bold border-l-3 border-violet-600 shadow-2xs pl-2.5'
+                                            : 'text-violet-700 hover:bg-violet-50 hover:text-violet-800 font-semibold'
+                                    } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'px-2.5 py-2'}`}>
+                                    <FiShield className={`text-base min-w-[18px] ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
+                                    {!sidebarCollapsed && <span className="flex-1">Enterprise Workspace</span>}
+                                </div>
+                            </Link>
+                        )}
                     </div>
 
                     {/* ── 2. CAREER SUITE (Dropdown) ── */}
