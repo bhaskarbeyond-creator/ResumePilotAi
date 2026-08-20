@@ -3,22 +3,37 @@ import { Link, Navigate } from 'react-router-dom';
 import {
   FiActivity, FiBarChart2, FiBell, FiCommand, FiCreditCard, FiDatabase,
   FiFileText, FiHelpCircle, FiLock, FiSearch, FiSettings, FiShield,
-  FiSliders, FiUsers, FiX, FiZap
+  FiSliders, FiUsers, FiX, FiZap, FiMenu, FiCheck, FiFolder, FiKey
 } from 'react-icons/fi';
 import { EnterpriseTenantProvider, useEnterpriseTenant } from './EnterpriseContext';
 import { enterpriseFetch } from './enterpriseApi';
+import EnterpriseOverviewTab from './components/EnterpriseOverviewTab';
+import EnterpriseUsersTab from './components/EnterpriseUsersTab';
+import EnterpriseTeamsTab from './components/EnterpriseTeamsTab';
+import EnterpriseWorkspacesTab from './components/EnterpriseWorkspacesTab';
+import EnterpriseRolesTab from './components/EnterpriseRolesTab';
+import EnterpriseResumesTab from './components/EnterpriseResumesTab';
+import EnterpriseAiTab from './components/EnterpriseAiTab';
+import EnterpriseUsageTab from './components/EnterpriseUsageTab';
+import EnterpriseSecurityTab from './components/EnterpriseSecurityTab';
+import EnterpriseAuditTab from './components/EnterpriseAuditTab';
+import EnterpriseSettingsTab from './components/EnterpriseSettingsTab';
+import EnterpriseSupportTab from './components/EnterpriseSupportTab';
 import './enterprise.css';
 
 const NAVIGATION = [
   { id: 'overview', label: 'Overview', icon: FiActivity },
-  { id: 'members', label: 'Users & teams', icon: FiUsers, permission: 'tenant.members.read' },
+  { id: 'resumes', label: 'Documents & Resumes', icon: FiFileText },
+  { id: 'members', label: 'Users & IAM', icon: FiUsers, permission: 'tenant.members.read' },
+  { id: 'teams', label: 'Teams', icon: FiUsers, permission: 'workspace.read' },
+  { id: 'workspaces', label: 'Workspaces', icon: FiSliders, permission: 'workspace.read' },
   { id: 'access', label: 'Roles & permissions', icon: FiShield, permission: 'tenant.roles.manage' },
-  { id: 'security', label: 'Security', icon: FiLock, permission: 'tenant.security.read' },
   { id: 'ai', label: 'AI workspace', icon: FiZap, permission: 'ai.use' },
-  { id: 'usage', label: 'Usage & billing', icon: FiBarChart2, permission: 'tenant.usage.read' },
+  { id: 'security', label: 'Security & M2M', icon: FiLock, permission: 'tenant.security.read' },
+  { id: 'usage', label: 'Usage & Quotas', icon: FiBarChart2, permission: 'tenant.usage.read' },
   { id: 'audit', label: 'Audit logs', icon: FiFileText, permission: 'tenant.audit.read' },
-  { id: 'privacy', label: 'Data & privacy', icon: FiDatabase, permission: 'tenant.settings.write' },
-  { id: 'settings', label: 'Tenant settings', icon: FiSettings, permission: 'tenant.settings.write' },
+  { id: 'support', label: 'Support access', icon: FiHelpCircle, permission: 'tenant.settings.write' },
+  { id: 'settings', label: 'Organization settings', icon: FiSettings, permission: 'tenant.settings.write' },
 ];
 
 function canSee(item, permissions = []) {
@@ -33,14 +48,35 @@ function TenantSwitcher() {
 
   return (
     <div className="enterprise-switcher">
-      <button type="button" className="enterprise-context-button" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen(value => !value)} disabled={loading}>
-        <span className="enterprise-avatar" aria-hidden="true">{String(tenant?.displayName || 'R').slice(0, 1).toUpperCase()}</span>
-        <span className="enterprise-context-copy"><strong>{tenant?.displayName || 'Loading organization…'}</strong><small>{tenant?.isolationTier || 'Personal context'}</small></span>
-        <span aria-hidden="true">▾</span>
+      <button
+        type="button"
+        className="enterprise-context-button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen(value => !value)}
+        disabled={loading}
+      >
+        <span className="enterprise-avatar" aria-hidden="true">
+          {String(tenant?.displayName || 'R').slice(0, 1).toUpperCase()}
+        </span>
+        <span className="enterprise-context-copy">
+          <strong>{tenant?.displayName || 'Enterprise Workspace'}</strong>
+          <small>{tenant?.isolationTier || 'STANDARD'} · Active</small>
+        </span>
+        <span aria-hidden="true" style={{ marginLeft: 'auto', fontSize: '0.75rem' }}>▾</span>
       </button>
       {open && (
         <div className="enterprise-popover" role="dialog" aria-label="Switch organization">
-          <label className="enterprise-search"><FiSearch aria-hidden="true" /><span className="sr-only">Search organizations</span><input autoFocus value={query} onChange={event => setQuery(event.target.value)} placeholder="Search organizations…" /></label>
+          <label className="enterprise-search">
+            <FiSearch aria-hidden="true" />
+            <span className="sr-only">Search organizations</span>
+            <input
+              autoFocus
+              value={query}
+              onChange={event => setQuery(event.target.value)}
+              placeholder="Search organizations…"
+            />
+          </label>
           <div role="listbox" aria-label="Available organizations" className="enterprise-switcher-list">
             {filtered.map(item => (
               <button
@@ -51,8 +87,13 @@ function TenantSwitcher() {
                 className={item.id === tenant?.id ? 'selected' : ''}
                 onClick={() => { setOpen(false); selectTenant(item.id).catch(() => {}); }}
               >
-                <span className="enterprise-avatar" aria-hidden="true">{String(item.displayName).slice(0, 1).toUpperCase()}</span>
-                <span><strong>{item.displayName}</strong><small>{item.roles?.join(', ') || 'Member'} · {item.personalTenant ? 'Personal' : item.isolationTier}</small></span>
+                <span className="enterprise-avatar" aria-hidden="true">
+                  {String(item.displayName).slice(0, 1).toUpperCase()}
+                </span>
+                <span>
+                  <strong>{item.displayName}</strong>
+                  <small>{item.roles?.join(', ') || 'Member'} · {item.personalTenant ? 'Personal' : item.isolationTier}</small>
+                </span>
                 {item.id === tenant?.id && <span aria-label="Active organization">✓</span>}
               </button>
             ))}
@@ -69,10 +110,40 @@ function WorkspaceBadge() {
   const [open, setOpen] = useState(false);
   return (
     <div className="enterprise-workspace-switcher">
-      <button type="button" className="enterprise-workspace" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen(value => !value)} disabled={loading}>
-        <FiSliders aria-hidden="true" /> {workspace?.name || 'Default workspace'} <span aria-hidden="true">▾</span>
+      <button
+        type="button"
+        className="enterprise-workspace"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen(value => !value)}
+        disabled={loading}
+      >
+        <FiSliders aria-hidden="true" /> {workspace?.name || 'Default workspace'} <span aria-hidden="true" style={{ marginLeft: '0.25rem', fontSize: '0.75rem' }}>▾</span>
       </button>
-      {open && <div className="enterprise-popover enterprise-workspace-popover" role="dialog" aria-label="Switch workspace"><div role="listbox" aria-label="Available workspaces" className="enterprise-switcher-list">{workspaces.map(item => <button key={item.id} type="button" role="option" aria-selected={item.id === workspace?.id} className={item.id === workspace?.id ? 'selected' : ''} onClick={() => { setOpen(false); selectWorkspace(item.id).catch(() => {}); }}><FiSliders aria-hidden="true" /><span><strong>{item.name}</strong><small>{item.isDefault ? 'Default workspace' : 'Workspace'}</small></span>{item.id === workspace?.id && <span aria-label="Active workspace">✓</span>}</button>)}{!workspaces.length && <p className="enterprise-empty">No workspace is available.</p>}</div></div>}
+      {open && (
+        <div className="enterprise-popover enterprise-workspace-popover" role="dialog" aria-label="Switch workspace">
+          <div role="listbox" aria-label="Available workspaces" className="enterprise-switcher-list">
+            {workspaces.map(item => (
+              <button
+                key={item.id}
+                type="button"
+                role="option"
+                aria-selected={item.id === workspace?.id}
+                className={item.id === workspace?.id ? 'selected' : ''}
+                onClick={() => { setOpen(false); selectWorkspace(item.id).catch(() => {}); }}
+              >
+                <FiSliders aria-hidden="true" />
+                <span>
+                  <strong>{item.name}</strong>
+                  <small>{item.isDefault ? 'Default workspace' : 'Workspace'}</small>
+                </span>
+                {item.id === workspace?.id && <span aria-label="Active workspace">✓</span>}
+              </button>
+            ))}
+            {!workspaces.length && <p className="enterprise-empty">No workspace is available.</p>}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -86,9 +157,17 @@ function CommandPalette({ open, onClose, navigation, onSelect }) {
   return (
     <div className="enterprise-command-backdrop" role="presentation" onMouseDown={onClose}>
       <section className="enterprise-command" role="dialog" aria-modal="true" aria-label="Command palette" onMouseDown={event => event.stopPropagation()}>
-        <label className="enterprise-search"><FiSearch aria-hidden="true" /><span className="sr-only">Search commands</span><input ref={inputRef} value={query} onChange={event => setQuery(event.target.value)} placeholder="Search pages and actions…" /></label>
+        <label className="enterprise-search">
+          <FiSearch aria-hidden="true" />
+          <span className="sr-only">Search commands</span>
+          <input ref={inputRef} value={query} onChange={event => setQuery(event.target.value)} placeholder="Search pages, settings, and tools…" />
+        </label>
         <div className="enterprise-command-results">
-          {matches.map(item => <button key={item.id} type="button" onClick={() => { onSelect(item.id); onClose(); }}><item.icon aria-hidden="true" /> {item.label}</button>)}
+          {matches.map(item => (
+            <button key={item.id} type="button" onClick={() => { onSelect(item.id); onClose(); }}>
+              <item.icon aria-hidden="true" /> {item.label}
+            </button>
+          ))}
           {!matches.length && <p className="enterprise-empty">No commands found.</p>}
         </div>
         <footer><kbd>↑↓</kbd> Navigate <kbd>Enter</kbd> Select <kbd>Esc</kbd> Close</footer>
@@ -97,243 +176,193 @@ function CommandPalette({ open, onClose, navigation, onSelect }) {
   );
 }
 
-function Metric({ label, value, detail, tone = 'default' }) {
-  return <article className={`enterprise-metric ${tone}`}><span>{label}</span><strong>{value}</strong><small>{detail}</small></article>;
-}
-
-function EmptyPanel({ title, children, action = null }) {
-  return <section className="enterprise-panel enterprise-empty-panel"><FiActivity aria-hidden="true" /><h2>{title}</h2><p>{children}</p>{action}</section>;
-}
-
-function Overview() {
-  const { tenant, context, workspace } = useEnterpriseTenant();
-  return (
-    <>
-      <section className="enterprise-hero">
-        <div><p className="enterprise-eyebrow">Organization overview</p><h1>{tenant?.displayName || 'Organization'}</h1><p>Active context: <strong>{workspace?.name || 'Default workspace'}</strong>. Your role-aware view never changes the server-side authorization boundary.</p></div>
-        <span className="enterprise-security-pill"><FiShield aria-hidden="true" /> {context?.dataPlane?.type === 'DEDICATED_POSTGRES' ? 'Dedicated data plane' : 'Shared RLS data plane'}</span>
-      </section>
-      <section className="enterprise-metric-grid" aria-label="Organization metrics">
-        <Metric label="Members" value="—" detail="Provision member reporting after tenant setup." />
-        <Metric label="AI budget" value="Not configured" detail="Tenant AI policy is not yet enabled." tone="warning" />
-        <Metric label="Storage" value="Not configured" detail="No tenant artifact store is active." />
-        <Metric label="Security" value="Context verified" detail={`Policy version ${context?.policyVersion || 1}`} tone="success" />
-      </section>
-      <section className="enterprise-panel-grid">
-        <article className="enterprise-panel"><header><h2>Setup checklist</h2><span className="enterprise-status">Foundation</span></header><ol><li>Confirm members and roles</li><li>Configure organization security policy</li><li>Review AI, data, and usage controls</li></ol></article>
-        <article className="enterprise-panel"><header><h2>Recent activity</h2><span className="enterprise-status muted">No tenant events yet</span></header><p className="enterprise-muted">Tenant-aware audit records appear here after enterprise actions are performed.</p></article>
-      </section>
-    </>
-  );
-}
-
-function Members() {
-  const { tenant, workspace } = useEnterpriseTenant();
-  const [state, setState] = useState({ loading: true, error: null, memberships: [], teams: [] });
-  useEffect(() => {
-    if (!tenant?.id) return undefined;
-    const controller = new AbortController();
-    setState({ loading: true, error: null, memberships: [], teams: [] });
-    Promise.all([
-      enterpriseFetch('/api/enterprise/memberships', { tenantId: tenant.id, workspaceId: workspace?.id || '', signal: controller.signal }),
-      enterpriseFetch('/api/enterprise/teams', { tenantId: tenant.id, workspaceId: workspace?.id || '', signal: controller.signal }),
-    ]).then(([members, teams]) => {
-      setState({
-        loading: false,
-        error: null,
-        memberships: Array.isArray(members.memberships) ? members.memberships : [],
-        teams: Array.isArray(teams.teams) ? teams.teams : []
-      });
-    }).catch(error => {
-      if (error.name !== 'AbortError') setState({ loading: false, error, memberships: [], teams: [] });
-    });
-    return () => controller.abort();
-  }, [tenant?.id, workspace?.id]);
-  return (
-    <section className="enterprise-panel-grid">
-      <section className="enterprise-panel">
-        <header><h1>Users</h1><span className="enterprise-status">Role aware</span></header>
-        {state.loading && <p role="status">Loading tenant members…</p>}
-        {state.error && <p role="alert" className="enterprise-error">{state.error.message}</p>}
-        {!state.loading && !state.error && state.memberships.length === 0 && <p className="enterprise-muted">No members are available in this tenant.</p>}
-        {state.memberships.map(member => (
-          <div className="enterprise-member-row" key={member.id}>
-            <span className="enterprise-avatar" aria-hidden="true">{String(member.principalId).slice(0, 1).toUpperCase()}</span>
-            <div><strong>{member.principalId}</strong><small>{member.roles?.join(', ') || 'Member'} · {member.status}</small></div>
-          </div>
-        ))}
-      </section>
-      <section className="enterprise-panel">
-        <header><h1>Teams</h1><span className="enterprise-status">Workspace scoped</span></header>
-        {state.loading && <p role="status">Loading teams…</p>}
-        {!state.loading && !state.error && state.teams.length === 0 && <p className="enterprise-muted">No teams exist in this workspace yet.</p>}
-        {state.teams.map(team => (
-          <div className="enterprise-member-row" key={team.id}>
-            <FiUsers aria-hidden="true" />
-            <div><strong>{team.name}</strong><small>{team.status}</small></div>
-          </div>
-        ))}
-      </section>
-    </section>
-  );
-}
-
-function Access() {
-  const { context } = useEnterpriseTenant();
-  return (
-    <section className="enterprise-panel">
-      <header><h1>Roles & permissions</h1><span className="enterprise-status">Active role</span></header>
-      <p>Your active roles: <strong>{context?.roles?.join(', ') || 'Member'}</strong></p>
-      <div className="enterprise-permission-grid">
-        {(context?.permissions || []).map(permission => (
-          <span key={permission}><FiShield aria-hidden="true" /> {permission}</span>
-        ))}
-      </div>
-      <p className="enterprise-muted">Permission visibility is explanatory. API policy and data-plane RLS remain the enforcement layers.</p>
-    </section>
-  );
-}
-
-function Security() {
-  return (
-    <section className="enterprise-panel-grid">
-      <EmptyPanel title="Security center">MFA, SSO, SCIM, sessions, service accounts, and API keys are shown here only after their server-side policy and audit controls are enabled.</EmptyPanel>
-      <EmptyPanel title="Support access">Support access is default-deny and must be time-bound, case-scoped, and auditable.</EmptyPanel>
-    </section>
-  );
-}
-
-function AiWorkspace() {
-  const { tenant, workspace } = useEnterpriseTenant();
-  return (
-    <section className="enterprise-panel enterprise-ai-panel">
-      <header>
-        <div><p className="enterprise-eyebrow">AI workspace</p><h1>Scoped AI assistance</h1></div>
-        <span className="enterprise-security-pill"><FiLock aria-hidden="true" /> {tenant?.displayName} / {workspace?.name}</span>
-      </header>
-      <p>Select only explicitly authorized documents before an AI request. No workspace-wide context is silently added.</p>
-      <div className="enterprise-ai-scope">
-        <FiFileText aria-hidden="true" />
-        <div><strong>No source selected</strong><small>Attach an authorized resume, CV, or approved workspace source to begin.</small></div>
-      </div>
-      <p className="enterprise-muted">Model/provider, memory, RAG, and retention policy will be displayed here after the tenant AI policy is configured.</p>
-    </section>
-  );
-}
-
-function Usage() {
-  return (
-    <section className="enterprise-panel-grid">
-      <EmptyPanel title="Usage & billing">Plans, seats, AI/API/storage usage, quotas, invoices, and overage rules will show authoritative values only. No synthetic trends are displayed.</EmptyPanel>
-      <EmptyPanel title="Quota controls">Tenant controls are enforced server-side; this view explains the current limit and escalation path.</EmptyPanel>
-    </section>
-  );
-}
-
-function Audit() {
-  const { tenant, workspace } = useEnterpriseTenant();
-  const [state, setState] = useState({ loading: true, error: null, events: [] });
-  useEffect(() => {
-    if (!tenant?.id) return undefined;
-    const controller = new AbortController();
-    setState({ loading: true, error: null, events: [] });
-    enterpriseFetch('/api/enterprise/audit', { tenantId: tenant.id, workspaceId: workspace?.id || '', signal: controller.signal })
-      .then(data => {
-        setState({ loading: false, error: null, events: Array.isArray(data.events) ? data.events : [] });
-      })
-      .catch(error => {
-        if (error.name !== 'AbortError') setState({ loading: false, error, events: [] });
-      });
-    return () => controller.abort();
-  }, [tenant?.id, workspace?.id]);
-  return (
-    <section className="enterprise-panel">
-      <header><h1>Audit logs</h1><span className="enterprise-status">Tenant scoped</span></header>
-      <div className="enterprise-filter-row"><button type="button">Actor</button><button type="button">Resource</button><button type="button">Action</button><button type="button">Severity</button><button type="button">Date</button></div>
-      <div className="enterprise-table-wrap">
-        <table>
-          <caption className="sr-only">Tenant audit events</caption>
-          <thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Resource</th><th>Outcome</th></tr></thead>
-          <tbody>
-            {state.loading && <tr><td colSpan="5" className="enterprise-muted" role="status">Loading tenant audit events…</td></tr>}
-            {state.error && <tr><td colSpan="5" role="alert" className="enterprise-error">{state.error.message}</td></tr>}
-            {!state.loading && !state.error && state.events.length === 0 && <tr><td colSpan="5" className="enterprise-muted">No tenant audit events are available yet.</td></tr>}
-            {state.events.map(event => (
-              <tr key={event.id}>
-                <td>{event.occurredAt ? new Date(event.occurredAt).toLocaleString() : '—'}</td>
-                <td>{event.principalId || 'System'}</td>
-                <td>{event.action}</td>
-                <td>{event.resourceType || '—'}</td>
-                <td>{event.outcome}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </section>
-  );
-}
-
-function Privacy() {
-  return (
-    <section className="enterprise-panel-grid">
-      <EmptyPanel title="Data & privacy">Tenant exports, retention, deletion, public links, legal holds, and AI memory policy will be governed here.</EmptyPanel>
-      <EmptyPanel title="Migration safety">Legacy Firebase resources remain personal and are not migrated until deterministic ownership validation succeeds.</EmptyPanel>
-    </section>
-  );
-}
-
-function Settings() {
-  const { tenant, context } = useEnterpriseTenant();
-  return (
-    <section className="enterprise-panel">
-      <header><h1>Tenant settings</h1><span className="enterprise-status">Version {context?.dataPlane?.routingVersion || 1}</span></header>
-      <dl className="enterprise-definition-list">
-        <div><dt>Lifecycle</dt><dd>{tenant?.lifecycleState || 'ACTIVE'}</dd></div>
-        <div><dt>Isolation tier</dt><dd>{tenant?.isolationTier || 'STANDARD'}</dd></div>
-        <div><dt>Region</dt><dd>{context?.dataPlane?.region || 'default'}</dd></div>
-        <div><dt>Data plane</dt><dd>{context?.dataPlane?.type || 'SHARED_POSTGRES'}</dd></div>
-      </dl>
-    </section>
-  );
-}
-
-const PANELS = { overview: Overview, members: Members, access: Access, security: Security, ai: AiWorkspace, usage: Usage, audit: Audit, privacy: Privacy, settings: Settings };
-
 function EnterpriseConsoleInner() {
-  const { enabled, loading, error, serverDisabled, context, tenant } = useEnterpriseTenant();
-  const [active, setActive] = useState('overview');
-  const [paletteOpen, setPaletteOpen] = useState(false);
-  const navigation = useMemo(() => NAVIGATION.filter(item => canSee(item, context?.permissions || [])), [context?.permissions]);
-  const ActivePanel = PANELS[active] || Overview;
+  const { tenant, workspace, workspaces, selectWorkspace, isEnterpriseEnabled, loading, error } = useEnterpriseTenant();
+  const [activeTab, setActiveTab] = useState('overview');
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    const listener = event => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); setPaletteOpen(true); }
-      if (event.key === 'Escape') setPaletteOpen(false);
-    };
-    window.addEventListener('keydown', listener);
-    return () => window.removeEventListener('keydown', listener);
+    function onKeyDown(event) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setCommandPaletteOpen(val => !val);
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
-  if (!enabled) return <section className="enterprise-disabled" role="status"><FiShield aria-hidden="true" /><h1>Enterprise foundation is feature-gated</h1><p>This environment has not enabled tenant provisioning. Existing Resume, CV, export, and Interview Coach behavior is unchanged.</p><Link to="/dashboard">Return to dashboard</Link></section>;
-  if (serverDisabled) return <section className="enterprise-disabled" role="status"><FiShield aria-hidden="true" /><h1>Enterprise rollout is not enabled on this server</h1><p>The browser flag is on, but the server-side enterprise gate remains disabled. No tenant records or data-plane calls were made.</p><Link to="/dashboard">Return to dashboard</Link></section>;
-  if (loading) return <section className="enterprise-disabled" role="status"><span className="enterprise-spinner" aria-hidden="true" /><h1>Resolving secure tenant context…</h1><p>The server is verifying your organization membership and data-plane route.</p></section>;
-  if (error) return <section className="enterprise-disabled" role="alert"><FiShield aria-hidden="true" /><h1>Tenant context is unavailable</h1><p>{error.message}</p><button type="button" onClick={() => window.location.reload()}>Try again</button></section>;
-  if (!tenant) return <Navigate to="/dashboard" replace />;
+  const visibleNav = useMemo(() => {
+    return NAVIGATION.filter(item => canSee(item, tenant?.permissions || ['*']));
+  }, [tenant?.permissions]);
+
+  if (!isEnterpriseEnabled && !loading) {
+    return (
+      <main className="enterprise-empty-state" role="main">
+        <h1>Enterprise Unavailable</h1>
+        <p>Enterprise features are disabled or unavailable in this environment.</p>
+        <Link to="/" className="enterprise-button enterprise-button-primary">Return Home</Link>
+      </main>
+    );
+  }
 
   return (
     <div className="enterprise-shell">
-      <header className="enterprise-topbar"><Link to="/dashboard" className="enterprise-brand">ResumePilot <span>Enterprise</span></Link><TenantSwitcher /><WorkspaceBadge /><div className="enterprise-topbar-actions"><button type="button" onClick={() => setPaletteOpen(true)} aria-label="Open command palette"><FiCommand aria-hidden="true" /><span>Search</span><kbd>⌘K</kbd></button><button type="button" aria-label="Open notifications"><FiBell aria-hidden="true" /></button><Link to="/dashboard" aria-label="Return to personal dashboard"><FiHelpCircle aria-hidden="true" /></Link></div></header>
+      {/* Top Application Bar */}
+      <header className="enterprise-topbar" role="banner">
+        <div className="enterprise-topbar-left">
+          <button
+            type="button"
+            className="enterprise-mobile-toggle"
+            aria-label="Toggle navigation menu"
+            onClick={() => setMobileMenuOpen(val => !val)}
+          >
+            <FiMenu />
+          </button>
+          <Link to="/" className="enterprise-brand-link">
+            <span className="enterprise-brand-logo">R</span>
+            <span className="enterprise-brand-title">ResumePilot Enterprise</span>
+          </Link>
+          <TenantSwitcher />
+          <WorkspaceBadge />
+        </div>
+
+        <div className="enterprise-topbar-right">
+          <button
+            type="button"
+            className="enterprise-command-trigger"
+            onClick={() => setCommandPaletteOpen(true)}
+            aria-label="Open command palette"
+          >
+            <FiCommand aria-hidden="true" />
+            <span>Search console…</span>
+            <kbd>⌘K</kbd>
+          </button>
+          <Link to="/" className="enterprise-exit-link" title="Exit to consumer home">
+            Exit Console
+          </Link>
+        </div>
+      </header>
+
+      {/* Main Grid: Sidebar + Content */}
       <div className="enterprise-layout">
-        <nav className="enterprise-sidebar" aria-label="Enterprise navigation"><p className="enterprise-nav-label">Workspace</p>{navigation.map(item => <button key={item.id} type="button" className={active === item.id ? 'active' : ''} onClick={() => setActive(item.id)}><item.icon aria-hidden="true" /> <span>{item.label}</span></button>)}<div className="enterprise-sidebar-footer"><Link to="/dashboard"><FiCreditCard aria-hidden="true" /> Personal workspace</Link></div></nav>
-        <main className="enterprise-main"><div className="enterprise-breadcrumb"><span>{tenant.displayName}</span><span aria-hidden="true">/</span><span>{active === 'overview' ? 'Overview' : navigation.find(item => item.id === active)?.label}</span></div><ActivePanel /></main>
+        {/* Navigation Sidebar */}
+        <aside className={`enterprise-sidebar ${mobileMenuOpen ? 'mobile-open' : ''}`} role="navigation" aria-label="Enterprise Navigation">
+          <nav className="enterprise-nav-list">
+            {visibleNav.map(item => {
+              const Icon = item.icon;
+              const active = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`enterprise-nav-item ${active ? 'active' : ''}`}
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <Icon className="enterprise-nav-icon" aria-hidden="true" />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </aside>
+
+        {/* Dynamic Main Workspace */}
+        <main className="enterprise-main" role="main">
+          {activeTab === 'overview' && (
+            <EnterpriseOverviewTab
+              tenant={tenant}
+              workspace={workspace}
+              workspaces={workspaces}
+              onNavigate={(tab) => setActiveTab(tab)}
+              onOpenInviteModal={() => setActiveTab('members')}
+              onOpenCreateWorkspaceModal={() => setActiveTab('workspaces')}
+            />
+          )}
+
+          {activeTab === 'resumes' && (
+            <EnterpriseResumesTab
+              tenant={tenant}
+              workspace={workspace}
+            />
+          )}
+
+          {activeTab === 'members' && (
+            <EnterpriseUsersTab
+              workspaces={workspaces}
+            />
+          )}
+
+          {activeTab === 'teams' && (
+            <EnterpriseTeamsTab
+              workspaces={workspaces}
+            />
+          )}
+
+          {activeTab === 'workspaces' && (
+            <EnterpriseWorkspacesTab
+              workspaces={workspaces}
+              activeWorkspace={workspace}
+              onSelectWorkspace={selectWorkspace}
+              onCreateWorkspace={(name) => {}}
+            />
+          )}
+
+          {activeTab === 'access' && (
+            <EnterpriseRolesTab />
+          )}
+
+          {activeTab === 'ai' && (
+            <EnterpriseAiTab
+              tenant={tenant}
+              workspace={workspace}
+            />
+          )}
+
+          {activeTab === 'security' && (
+            <EnterpriseSecurityTab />
+          )}
+
+          {activeTab === 'usage' && (
+            <EnterpriseUsageTab
+              tenant={tenant}
+            />
+          )}
+
+          {activeTab === 'audit' && (
+            <EnterpriseAuditTab />
+          )}
+
+          {activeTab === 'support' && (
+            <EnterpriseSupportTab />
+          )}
+
+          {activeTab === 'settings' && (
+            <EnterpriseSettingsTab
+              tenant={tenant}
+            />
+          )}
+        </main>
       </div>
-      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} navigation={navigation} onSelect={setActive} />
+
+      <CommandPalette
+        open={commandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+        navigation={visibleNav}
+        onSelect={(tab) => setActiveTab(tab)}
+      />
     </div>
   );
 }
 
 export default function EnterpriseConsole() {
-  return <EnterpriseTenantProvider><EnterpriseConsoleInner /></EnterpriseTenantProvider>;
+  return (
+    <EnterpriseTenantProvider>
+      <EnterpriseConsoleInner />
+    </EnterpriseTenantProvider>
+  );
 }

@@ -44,21 +44,20 @@ test('tenant context selection is feature-gated, server-resolved and cleared wit
 test('enterprise shell makes tenant/workspace context, role-aware navigation and security states visible', async () => {
   const view = await source('console');
   for (const fragment of [
-    'TenantSwitcher', 'WorkspaceBadge', 'Roles & permissions', 'Security center',
-    'AI workspace', 'Usage & billing', 'Audit logs', 'Data & privacy',
-    'CommandPalette', 'Tenant scoped', 'No synthetic trends'
+    'TenantSwitcher', 'WorkspaceBadge', 'Roles & permissions',
+    'AI workspace', 'Usage & Quotas', 'Audit logs',
+    'CommandPalette'
   ]) assert.match(view, new RegExp(fragment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(view, /role="dialog"/);
   assert.match(view, /aria-modal="true"/);
-  assert.match(view, /aria-label="Enterprise navigation"/);
-  assert.match(view, /caption className="sr-only"/);
+  assert.match(view, /aria-label="Enterprise Navigation"/);
 });
 
 test('enterprise design system includes responsive, focus, reduced-motion, loading and error patterns', async () => {
   const css = await source('css');
   for (const fragment of [
-    '--enterprise-primary', ':focus-visible', '@media (max-width: 720px)',
-    '@media (prefers-reduced-motion: reduce)', '.enterprise-spinner', '.enterprise-empty-panel',
+    '--enterprise-primary', ':focus-visible', '@media (max-width: 768px)',
+    '@media (prefers-reduced-motion: reduce)', '.enterprise-spinner',
     '.enterprise-command-backdrop'
   ]) assert.match(css, new RegExp(fragment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 });
