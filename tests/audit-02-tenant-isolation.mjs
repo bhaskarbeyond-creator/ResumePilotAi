@@ -107,11 +107,11 @@ async function runTenantIsolationAudit() {
     await admin.auth().createUser({ uid: supportUid, email: supportEmail, emailVerified: true, displayName: 'Support Auditor' });
     await admin.auth().setCustomUserClaims(supportUid, { role: 'SUPPORT' });
 
-    const customTokenA = await admin.auth().createCustomToken(testUidA, { email: testEmailA, email_verified: true });
+    const customTokenA = await admin.auth().createCustomToken(testUidA, { email: testEmailA, email_verified: true, sign_in_second_factor: 'phone' });
     idTokenA = await exchangeCustomTokenForIdToken(customTokenA);
     const authHeadersA = { Authorization: `Bearer ${idTokenA}`, 'Content-Type': 'application/json' };
 
-    const customTokenB = await admin.auth().createCustomToken(testUidB, { email: testEmailB, email_verified: true });
+    const customTokenB = await admin.auth().createCustomToken(testUidB, { email: testEmailB, email_verified: true, sign_in_second_factor: 'phone' });
     idTokenB = await exchangeCustomTokenForIdToken(customTokenB);
     const authHeadersB = { Authorization: `Bearer ${idTokenB}`, 'Content-Type': 'application/json' };
 

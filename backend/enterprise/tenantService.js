@@ -115,7 +115,7 @@ class TenantService {
     }
     const isAdmin = roles.some(role => ['TENANT_OWNER', 'TENANT_ADMIN'].includes(String(role).toUpperCase()));
     if (securityPolicy.requireMfaForAdmins === true && isAdmin) {
-      const secondFactor = claims.firebase?.sign_in_second_factor || null;
+      const secondFactor = claims.firebase?.sign_in_second_factor || claims.sign_in_second_factor || null;
       if (!secondFactor) {
         throw Object.assign(
           new Error('This tenant requires multi-factor authentication for administrator access.'),

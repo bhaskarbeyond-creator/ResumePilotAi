@@ -107,7 +107,7 @@ async function run12ModulesAudit() {
     await admin.auth().createUser({ uid: supportUid, email: supportEmail, emailVerified: true, displayName: 'Audit Support Engineer' });
     await admin.auth().setCustomUserClaims(supportUid, { role: 'SUPPORT' });
 
-    const customToken = await admin.auth().createCustomToken(testUid, { email: testEmail, email_verified: true });
+    const customToken = await admin.auth().createCustomToken(testUid, { email: testEmail, email_verified: true, sign_in_second_factor: 'phone' });
     idToken = await exchangeCustomTokenForIdToken(customToken);
     const authHeaders = { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' };
 
