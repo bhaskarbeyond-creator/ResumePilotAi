@@ -27,6 +27,18 @@ It is **not honest to declare “10/10 ENTERPRISE READY”** yet. No production 
 
 See `docs/ENTERPRISE_RESTORE_POINT.md` for full capture evidence.
 
+## Final foundation restore point
+
+| Restore point | SHA / result |
+|---|---|
+| Final local foundation tag | `enterprise-tenant-foundation-verified` |
+| Final foundation object | `5c1a60ca93c1f37b9e88dd1f73dfabeeec530e95` |
+| Detached checkout proof | Created at the final tag, clean/detached, then removed after validation |
+| Detached enterprise suite | 40 backend tests + 4 UI tests PASS |
+| Detached certified suites | Interview 28/28 PASS; Security 163/163 PASS; Product 301/301 PASS |
+| Detached production build | PASS — 4.14s observed |
+| Restore tags retained | `enterprise-pre-migration-restore` and `enterprise-tenant-foundation-verified` both resolved to their recorded objects |
+
 ## Implemented controls
 
 | Category | Implemented | Locally verified |
