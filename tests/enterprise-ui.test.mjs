@@ -63,3 +63,71 @@ test('enterprise design system includes responsive, focus, reduced-motion, loadi
     '.enterprise-command-backdrop'
   ]) assert.match(css, new RegExp(fragment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 });
+
+test('workspace administration exposes rename, archive/restore and workspace member management against real endpoints', async () => {
+  const view = await fs.readFile('src/enterprise/components/EnterpriseWorkspacesTab.jsx', 'utf8');
+  assert.match(view, /method: 'PATCH'/);
+  assert.match(view, /\/archive/);
+  assert.match(view, /\/restore/);
+  assert.match(view, /includeArchived=1/);
+  assert.match(view, /\/members/);
+  assert.match(view, /hasPermission\('tenant\.workspaces\.manage'\)/);
+  assert.match(view, /WorkspaceMembersDrawer/);
+  // No fake data: every mutation goes through the tenant-scoped request helper.
+  assert.doesNotMatch(view, /const\s+FAKE|mockMembers|sampleWorkspaces/);
+});
+
+test('team administration exposes rename, archive and team member management against real endpoints', async () => {
+  const view = await fs.readFile('src/enterprise/components/EnterpriseTeamsTab.jsx', 'utf8');
+  assert.match(view, /\/api\/enterprise\/teams/);
+  assert.match(view, /method: 'PATCH'/);
+  assert.match(view, /\/archive/);
+  assert.match(view, /TeamMembersDrawer/);
+  assert.match(view, /teams\/\$\{encodeURIComponent\(team\.id\)\}\/members/);
+  assert.doesNotMatch(view, /mockTeams|sampleTeams/);
+});
+
+test('audit view sends filters to the server and can export CSV and JSON', async () => {
+  const view = await fs.readFile('src/enterprise/components/EnterpriseAuditTab.jsx', 'utf8');
+  assert.match(view, /\/api\/enterprise\/audit\?\$\{query\}/);
+  assert.match(view, /params\.set\('outcome'/);
+  assert.match(view, /params\.set\('action'/);
+  assert.match(view, /params\.set\('since'/);
+  assert.match(view, /params\.set\('until'/);
+  assert.match(view, /handleExportCsv/);
+  assert.match(view, /handleExportJson/);
+});
+
+test('users view offers status filtering, workspace assignment and membership details', async () => {
+  const view = await fs.readFile('src/enterprise/components/EnterpriseUsersTab.jsx', 'utf8');
+  assert.match(view, /STATUS_FILTERS/);
+  assert.match(view, /handleWorkspaceAssign/);
+  assert.match(view, /body: \{ workspaceId \}/);
+  assert.match(view, /detailMember/);
+});
+
+test('overview recommendations are derived from live state only', async () => {
+  const view = await fs.readFile('src/enterprise/components/EnterpriseOverviewTab.jsx', 'utf8');
+  assert.match(view, /Recommended Actions/);
+  assert.match(view, /deadLetterCount/);
+  assert.match(view, /suspendedCount/);
+  // Recommendations must reference loaded state, not literals pretending to be data.
+  assert.doesNotMatch(view, /recommendations\s*=\s*\[\s*\{/);
+});
+
+test('console renders explicit MFA, re-auth, and suspended-tenant failure states', async () => {
+  const view = await source('console');
+  assert.match(view, /TENANT_MFA_REQUIRED/);
+  assert.match(view, /TENANT_SESSION_REAUTH_REQUIRED/);
+  assert.match(view, /TENANT_INACTIVE/);
+  assert.match(view, /Retry/);
+});
+
+test('settings expose governed security and identity policies against the revisioned configuration API', async () => {
+  const view = await fs.readFile('src/enterprise/components/EnterpriseSettingsTab.jsx', 'utf8');
+  assert.match(view, /requireMfaForAdmins/);
+  assert.match(view, /supportAccessRequiresApproval/);
+  assert.match(view, /ssoMode/);
+  assert.match(view, /sessionMaxMinutes/);
+  assert.match(view, /expectedRevision: configuration\.revision/);
+});

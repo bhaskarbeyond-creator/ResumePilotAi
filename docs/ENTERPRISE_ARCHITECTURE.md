@@ -60,6 +60,7 @@ Control plane (top-level collections, all tenant-tagged, Admin-SDK only):
 | `enterprise_memberships/{tenantId}_{principalHash}` | tenant membership + roles |
 | `enterprise_workspace_memberships/{workspaceId}_{principalHash}` | workspace access |
 | `enterprise_teams/{teamId}` | teams per tenant/workspace |
+| `enterprise_team_members/{teamId}_{principalHash}` | team membership (ACTIVE/REMOVED) |
 | `enterprise_service_accounts/{id}` | M2M accounts (hashed keys only) |
 | `enterprise_api_keys/{secretHash}` | key hash → account mapping |
 | `enterprise_support_grants/{id}` | time-boxed support access grants |

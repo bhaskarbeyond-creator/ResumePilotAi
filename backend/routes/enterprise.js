@@ -2,7 +2,7 @@
 
 const express = require('express');
 const { normalizeRequestedTenantId, normalizeRequestedWorkspaceId } = require('../enterprise/tenantContext');
-const { requireTenantPermission } = require('../enterprise/tenantPolicy');
+const { hasTenantPermission, requireAnyTenantPermission, requireTenantPermission } = require('../enterprise/tenantPolicy');
 const { applyTenantAiPolicy, assertNoClientAuthority, buildTenantAiOperation } = require('../enterprise/tenantAi');
 const { buildLegacyPrompt, generateWithProviders, loadProviderConfiguration, parseAiResponse } = require('../services/aiRuntime');
 const { enterpriseFeatureEnabled } = require('../enterprise/featureFlags');
@@ -196,19 +196,80 @@ router.post('/context', resolveTenantContext, respondWithContext);
 
 router.get('/workspaces', resolveTenantContext, requireTenantPermission('workspace.read'), async (req, res) => {
   try {
+    // includeArchived is honoured only for workspace administrators so archived
+    // workspaces can be inspected and restored; everyone else sees active ones.
+    const wantsArchived = ['1', 'true'].includes(String(req.query?.includeArchived || '').toLowerCase());
+    if (wantsArchived && hasTenantPermission(req.tenantContext, 'tenant.workspaces.manage')) {
+      const workspaces = await enterpriseService(req).listAllWorkspaces({ context: req.tenantContext, includeArchived: true });
+      return res.json({ workspaces: workspaces.map(workspace => ({ id: workspace.id, name: workspace.name, active: workspace.id === req.workspace?.id, isDefault: workspace.isDefault === true, lifecycleState: String(workspace.lifecycleState || 'ACTIVE').toUpperCase() })) });
+    }
     const workspaces = await enterpriseService(req).listWorkspaces({ context: req.tenantContext });
-    return res.json({ workspaces: workspaces.map(workspace => ({ id: workspace.id, name: workspace.name, active: workspace.id === req.workspace?.id, isDefault: workspace.isDefault === true })) });
+    return res.json({ workspaces: workspaces.map(workspace => ({ id: workspace.id, name: workspace.name, active: workspace.id === req.workspace?.id, isDefault: workspace.isDefault === true, lifecycleState: 'ACTIVE' })) });
   } catch (error) {
     return res.status(error.status || 503).json({ error: { code: error.code || 'WORKSPACE_UNAVAILABLE', message: 'Workspaces are unavailable', requestId: res.locals?.requestId } });
   }
 });
 
-router.post('/workspaces', resolveTenantContext, requireTenantPermission('workspace.manage'), async (req, res) => {
+router.post('/workspaces', resolveTenantContext, requireAnyTenantPermission('workspace.manage', 'tenant.workspaces.manage'), async (req, res) => {
   try {
     const workspace = await enterpriseService(req).createWorkspace({ context: req.tenantContext, input: req.body || {} });
     return res.status(201).json({ workspace: { id: workspace.id, tenantId: workspace.tenantId, name: workspace.name, isDefault: workspace.isDefault === true } });
   } catch (error) {
     return res.status(error.status || 503).json({ error: { code: error.code || 'WORKSPACE_CREATE_FAILED', message: error.status === 400 ? error.message : 'Workspace could not be created', requestId: res.locals?.requestId } });
+  }
+});
+
+router.patch('/workspaces/:workspaceId', resolveTenantContext, requireAnyTenantPermission('workspace.manage', 'tenant.workspaces.manage'), async (req, res) => {
+  try {
+    const workspace = await enterpriseService(req).updateWorkspace({ context: req.tenantContext, workspaceId: req.params.workspaceId, input: req.body || {} });
+    return res.json({ workspace: { id: workspace.id, tenantId: workspace.tenantId, name: workspace.name, isDefault: workspace.isDefault === true, lifecycleState: String(workspace.lifecycleState || 'ACTIVE').toUpperCase() } });
+  } catch (error) {
+    return res.status(error.status || 503).json({ error: { code: error.code || 'WORKSPACE_UPDATE_FAILED', message: [400, 403, 404].includes(error.status) ? error.message : 'Workspace could not be updated', requestId: res.locals?.requestId } });
+  }
+});
+
+router.post('/workspaces/:workspaceId/archive', resolveTenantContext, requireTenantPermission('tenant.workspaces.manage'), async (req, res) => {
+  try {
+    const workspace = await enterpriseService(req).setWorkspaceLifecycle({ context: req.tenantContext, workspaceId: req.params.workspaceId, nextState: 'ARCHIVED' });
+    return res.json({ workspace: { id: workspace.id, name: workspace.name, lifecycleState: String(workspace.lifecycleState).toUpperCase() } });
+  } catch (error) {
+    return res.status(error.status || 503).json({ error: { code: error.code || 'WORKSPACE_LIFECYCLE_FAILED', message: [400, 404, 409].includes(error.status) ? error.message : 'Workspace could not be archived', requestId: res.locals?.requestId } });
+  }
+});
+
+router.post('/workspaces/:workspaceId/restore', resolveTenantContext, requireTenantPermission('tenant.workspaces.manage'), async (req, res) => {
+  try {
+    const workspace = await enterpriseService(req).setWorkspaceLifecycle({ context: req.tenantContext, workspaceId: req.params.workspaceId, nextState: 'ACTIVE' });
+    return res.json({ workspace: { id: workspace.id, name: workspace.name, lifecycleState: String(workspace.lifecycleState).toUpperCase() } });
+  } catch (error) {
+    return res.status(error.status || 503).json({ error: { code: error.code || 'WORKSPACE_LIFECYCLE_FAILED', message: [400, 404, 409].includes(error.status) ? error.message : 'Workspace could not be restored', requestId: res.locals?.requestId } });
+  }
+});
+
+router.get('/workspaces/:workspaceId/members', resolveTenantContext, requireAnyTenantPermission('workspace.members.manage', 'tenant.members.read'), async (req, res) => {
+  try {
+    const members = await enterpriseService(req).listWorkspaceMembers({ context: req.tenantContext, workspaceId: req.params.workspaceId });
+    return res.json({ members: members.map(member => ({ id: member.id, workspaceId: member.workspaceId, principalId: member.principalId, status: member.status, createdAt: member.createdAt || null })) });
+  } catch (error) {
+    return res.status(error.status || 503).json({ error: { code: error.code || 'WORKSPACE_MEMBERS_UNAVAILABLE', message: [403, 404].includes(error.status) ? error.message : 'Workspace members are unavailable', requestId: res.locals?.requestId } });
+  }
+});
+
+router.post('/workspaces/:workspaceId/members', resolveTenantContext, requireAnyTenantPermission('workspace.members.manage', 'tenant.members.manage'), async (req, res) => {
+  try {
+    const member = await enterpriseService(req).addWorkspaceMember({ context: req.tenantContext, workspaceId: req.params.workspaceId, principalId: req.body?.principalId });
+    return res.status(201).json({ member: { id: member.id, workspaceId: member.workspaceId, principalId: member.principalId, status: member.status } });
+  } catch (error) {
+    return res.status(error.status || 503).json({ error: { code: error.code || 'WORKSPACE_MEMBER_ADD_FAILED', message: [400, 403, 404, 409].includes(error.status) ? error.message : 'Workspace member could not be added', requestId: res.locals?.requestId } });
+  }
+});
+
+router.delete('/workspaces/:workspaceId/members/:principalId', resolveTenantContext, requireAnyTenantPermission('workspace.members.manage', 'tenant.members.manage'), async (req, res) => {
+  try {
+    await enterpriseService(req).removeWorkspaceMember({ context: req.tenantContext, workspaceId: req.params.workspaceId, principalId: req.params.principalId });
+    return res.status(204).end();
+  } catch (error) {
+    return res.status(error.status || 503).json({ error: { code: error.code || 'WORKSPACE_MEMBER_REMOVE_FAILED', message: [400, 403, 404, 409].includes(error.status) ? error.message : 'Workspace member could not be removed', requestId: res.locals?.requestId } });
   }
 });
 
@@ -304,7 +365,19 @@ router.post('/lifecycle/suspend', resolveTenantContext, requireTenantPermission(
 
 router.get('/audit', resolveTenantContext, requireTenantPermission('tenant.audit.read'), async (req, res) => {
   try {
-    const events = await enterpriseService(req).listAuditEvents({ context: req.tenantContext, limit: req.query?.limit });
+    const events = await enterpriseService(req).listAuditEvents({
+      context: req.tenantContext,
+      limit: req.query?.limit,
+      filters: {
+        action: req.query?.action || null,
+        actor: req.query?.actor || null,
+        outcome: req.query?.outcome || null,
+        severity: req.query?.severity || null,
+        category: req.query?.category || null,
+        since: req.query?.since || null,
+        until: req.query?.until || null,
+      },
+    });
     return res.json({ events });
   } catch (error) {
     return res.status(error.status || 503).json({ error: { code: error.code || 'TENANT_AUDIT_UNAVAILABLE', message: 'Tenant audit events are unavailable', requestId: res.locals?.requestId } });
@@ -320,12 +393,57 @@ router.get('/teams', resolveTenantContext, requireTenantPermission('workspace.re
   }
 });
 
-router.post('/teams', resolveTenantContext, requireTenantPermission('workspace.manage'), async (req, res) => {
+router.post('/teams', resolveTenantContext, requireAnyTenantPermission('workspace.manage', 'tenant.workspaces.manage'), async (req, res) => {
   try {
     const team = await enterpriseService(req).createTeam({ context: req.tenantContext, input: req.body || {} });
     return res.status(201).json({ team });
   } catch (error) {
     return res.status(error.status || 503).json({ error: { code: error.code || 'TENANT_TEAM_CREATE_FAILED', message: error.status === 400 ? error.message : 'Team could not be created', requestId: res.locals?.requestId } });
+  }
+});
+
+router.patch('/teams/:teamId', resolveTenantContext, requireAnyTenantPermission('workspace.manage', 'tenant.workspaces.manage'), async (req, res) => {
+  try {
+    const team = await enterpriseService(req).updateTeam({ context: req.tenantContext, teamId: req.params.teamId, input: req.body || {} });
+    return res.json({ team });
+  } catch (error) {
+    return res.status(error.status || 503).json({ error: { code: error.code || 'TENANT_TEAM_UPDATE_FAILED', message: [400, 403, 404].includes(error.status) ? error.message : 'Team could not be updated', requestId: res.locals?.requestId } });
+  }
+});
+
+router.post('/teams/:teamId/archive', resolveTenantContext, requireAnyTenantPermission('workspace.manage', 'tenant.workspaces.manage'), async (req, res) => {
+  try {
+    const team = await enterpriseService(req).archiveTeam({ context: req.tenantContext, teamId: req.params.teamId });
+    return res.json({ team });
+  } catch (error) {
+    return res.status(error.status || 503).json({ error: { code: error.code || 'TENANT_TEAM_ARCHIVE_FAILED', message: [400, 403, 404].includes(error.status) ? error.message : 'Team could not be archived', requestId: res.locals?.requestId } });
+  }
+});
+
+router.get('/teams/:teamId/members', resolveTenantContext, requireTenantPermission('workspace.read'), async (req, res) => {
+  try {
+    const members = await enterpriseService(req).listTeamMembers({ context: req.tenantContext, teamId: req.params.teamId });
+    return res.json({ members: members.map(member => ({ id: member.id, teamId: member.teamId, workspaceId: member.workspaceId, principalId: member.principalId, status: member.status })) });
+  } catch (error) {
+    return res.status(error.status || 503).json({ error: { code: error.code || 'TEAM_MEMBERS_UNAVAILABLE', message: [403, 404].includes(error.status) ? error.message : 'Team members are unavailable', requestId: res.locals?.requestId } });
+  }
+});
+
+router.post('/teams/:teamId/members', resolveTenantContext, requireAnyTenantPermission('workspace.members.manage', 'tenant.members.manage'), async (req, res) => {
+  try {
+    const member = await enterpriseService(req).addTeamMember({ context: req.tenantContext, teamId: req.params.teamId, principalId: req.body?.principalId });
+    return res.status(201).json({ member: { id: member.id, teamId: member.teamId, workspaceId: member.workspaceId, principalId: member.principalId, status: member.status } });
+  } catch (error) {
+    return res.status(error.status || 503).json({ error: { code: error.code || 'TEAM_MEMBER_ADD_FAILED', message: [400, 403, 404, 409].includes(error.status) ? error.message : 'Team member could not be added', requestId: res.locals?.requestId } });
+  }
+});
+
+router.delete('/teams/:teamId/members/:principalId', resolveTenantContext, requireAnyTenantPermission('workspace.members.manage', 'tenant.members.manage'), async (req, res) => {
+  try {
+    await enterpriseService(req).removeTeamMember({ context: req.tenantContext, teamId: req.params.teamId, principalId: req.params.principalId });
+    return res.status(204).end();
+  } catch (error) {
+    return res.status(error.status || 503).json({ error: { code: error.code || 'TEAM_MEMBER_REMOVE_FAILED', message: [400, 403, 404, 409].includes(error.status) ? error.message : 'Team member could not be removed', requestId: res.locals?.requestId } });
   }
 });
 

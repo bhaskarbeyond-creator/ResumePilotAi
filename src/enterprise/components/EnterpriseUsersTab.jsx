@@ -1,19 +1,25 @@
 import React, { useMemo, useState } from 'react';
 import {
-  FiUsers, FiUserPlus, FiSearch, FiShield, FiCheck, FiX, FiTrash2, FiEdit2
+  FiUsers, FiUserPlus, FiSearch, FiShield, FiCheck, FiX, FiTrash2, FiEdit2, FiEye
 } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
+import { useEnterpriseTenant } from '../EnterpriseContext';
 
 const ROLE_OPTIONS = ['MEMBER', 'VIEWER', 'WORKSPACE_MANAGER', 'TENANT_ADMIN', 'TENANT_OWNER'];
+const STATUS_FILTERS = ['ALL', 'ACTIVE', 'SUSPENDED', 'INVITED'];
 
 export default function EnterpriseUsersTab({ currentPrincipalId }) {
   const { request, hasPermission } = useTenantApi();
+  const { workspaces } = useEnterpriseTenant();
   const [membersState, refreshMembers] = useAsyncResource(() => request('/api/enterprise/memberships'), [request]);
   const { loading, error, data } = membersState;
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [detailMember, setDetailMember] = useState(null);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [invitePrincipalId, setInvitePrincipalId] = useState('');
   const [inviteRole, setInviteRole] = useState('MEMBER');
+  const [inviteWorkspaceId, setInviteWorkspaceId] = useState('');
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState(null);
   const [notification, setNotification] = useState(null);
@@ -21,6 +27,7 @@ export default function EnterpriseUsersTab({ currentPrincipalId }) {
   const members = useMemo(() => (Array.isArray(data?.memberships) ? data.memberships : []), [data]);
 
   const filtered = members.filter(member => {
+    if (statusFilter !== 'ALL' && String(member.status || '').toUpperCase() !== statusFilter) return false;
     const query = searchQuery.trim().toLowerCase();
     if (!query) return true;
     return `${member.principalId} ${(member.roles || []).join(' ')} ${member.status}`.toLowerCase().includes(query);
@@ -40,17 +47,38 @@ export default function EnterpriseUsersTab({ currentPrincipalId }) {
     try {
       await request('/api/enterprise/memberships', {
         method: 'POST',
-        body: { principalId: invitePrincipalId.trim(), roles: [inviteRole] },
+        body: {
+          principalId: invitePrincipalId.trim(),
+          roles: [inviteRole],
+          ...(inviteWorkspaceId ? { workspaceId: inviteWorkspaceId } : {}),
+        },
       });
       setShowInviteModal(false);
       setInvitePrincipalId('');
       setInviteRole('MEMBER');
+      setInviteWorkspaceId('');
       notify(`Enterprise access granted to ${invitePrincipalId.trim()}.`);
       refreshMembers();
     } catch (err) {
       setActionError(err?.message || 'Membership could not be granted.');
     } finally {
       setBusy(false);
+    }
+  };
+
+  const handleWorkspaceAssign = async (member, workspaceId) => {
+    if (!workspaceId || workspaceId === member.workspaceId) return;
+    setActionError(null);
+    try {
+      await request(`/api/enterprise/memberships/${encodeURIComponent(member.principalId)}`, {
+        method: 'PATCH',
+        body: { workspaceId },
+      });
+      notify(`Moved ${member.principalId} to the selected workspace.`);
+      setDetailMember(null);
+      refreshMembers();
+    } catch (err) {
+      setActionError(err?.message || 'Workspace assignment could not be updated.');
     }
   };
 
@@ -141,6 +169,18 @@ export default function EnterpriseUsersTab({ currentPrincipalId }) {
               className="enterprise-input"
             />
           </div>
+          <div className="enterprise-select-group">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="enterprise-select"
+              aria-label="Filter members by status"
+            >
+              {STATUS_FILTERS.map(status => (
+                <option key={status} value={status}>{status === 'ALL' ? 'All statuses' : status}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <DataState loading={loading} error={error} onRetry={refreshMembers}>
@@ -187,6 +227,14 @@ export default function EnterpriseUsersTab({ currentPrincipalId }) {
                       </td>
                       <td className="text-right">
                         <div className="enterprise-table-actions">
+                          <button
+                            type="button"
+                            className="enterprise-button-icon"
+                            title={`View membership details for ${member.principalId}`}
+                            onClick={() => setDetailMember(member)}
+                          >
+                            <FiEye />
+                          </button>
                           {canManageMembers && member.principalId !== currentPrincipalId && (
                             <button
                               type="button"
@@ -257,6 +305,21 @@ export default function EnterpriseUsersTab({ currentPrincipalId }) {
                     {ROLE_OPTIONS.filter(role => role !== 'TENANT_OWNER').map(role => <option key={role} value={role}>{role}</option>)}
                   </select>
                 </div>
+                <div className="enterprise-form-group">
+                  <label htmlFor="member-workspace">Primary Workspace</label>
+                  <select
+                    id="member-workspace"
+                    value={inviteWorkspaceId}
+                    onChange={(e) => setInviteWorkspaceId(e.target.value)}
+                    className="enterprise-select"
+                  >
+                    <option value="">Current active workspace</option>
+                    {(workspaces || []).map(ws => (
+                      <option key={ws.id} value={ws.id}>{ws.name}{ws.isDefault ? ' (Default)' : ''}</option>
+                    ))}
+                  </select>
+                  <small className="text-muted">The workspace this member lands in when they open the enterprise console.</small>
+                </div>
               </div>
               <div className="enterprise-modal-footer">
                 <button type="button" className="enterprise-button enterprise-button-secondary" onClick={() => setShowInviteModal(false)} disabled={busy}>Cancel</button>
@@ -265,6 +328,75 @@ export default function EnterpriseUsersTab({ currentPrincipalId }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {detailMember && (
+        <div className="enterprise-modal-backdrop" role="presentation" onClick={() => setDetailMember(null)}>
+          <div className="enterprise-modal" role="dialog" aria-modal="true" aria-label={`Membership details for ${detailMember.principalId}`} onClick={(e) => e.stopPropagation()}>
+            <div className="enterprise-modal-header">
+              <h3>Membership Details</h3>
+              <button type="button" className="enterprise-button-icon" onClick={() => setDetailMember(null)} aria-label="Close membership details">
+                <FiX />
+              </button>
+            </div>
+            <div className="enterprise-modal-body">
+              <div className="enterprise-form-group">
+                <label>Principal</label>
+                <input type="text" value={detailMember.principalId} disabled className="enterprise-input enterprise-input-disabled" />
+              </div>
+              <div className="enterprise-form-group">
+                <label>Membership Record</label>
+                <input type="text" value={detailMember.id} disabled className="enterprise-input enterprise-input-disabled" />
+              </div>
+              <div className="enterprise-form-group">
+                <label>Roles</label>
+                <div className="enterprise-inline-actions" style={{ flexWrap: 'wrap', gap: '0.35rem' }}>
+                  {(detailMember.roles || []).map(role => (
+                    <span key={role} className="enterprise-pill enterprise-pill-secondary">{role}</span>
+                  ))}
+                </div>
+              </div>
+              <div className="enterprise-form-group">
+                <label>Status</label>
+                <span className={`enterprise-pill enterprise-pill-${detailMember.status === 'ACTIVE' ? 'success' : 'warning'}`}>{detailMember.status}</span>
+              </div>
+              {detailMember.createdAt && (
+                <div className="enterprise-form-group">
+                  <label>Member Since</label>
+                  <input
+                    type="text"
+                    value={(() => { try { return new Date(detailMember.createdAt._seconds ? detailMember.createdAt._seconds * 1000 : detailMember.createdAt).toISOString(); } catch { return String(detailMember.createdAt); } })()}
+                    disabled
+                    className="enterprise-input enterprise-input-disabled"
+                  />
+                </div>
+              )}
+              <div className="enterprise-form-group">
+                <label htmlFor="detail-workspace">Primary Workspace</label>
+                <select
+                  id="detail-workspace"
+                  className="enterprise-select"
+                  value={detailMember.workspaceId || ''}
+                  disabled={!canManageMembers}
+                  onChange={(e) => handleWorkspaceAssign(detailMember, e.target.value)}
+                >
+                  {!(workspaces || []).some(ws => ws.id === detailMember.workspaceId) && (
+                    <option value={detailMember.workspaceId || ''}>{detailMember.workspaceId ? `Workspace ${String(detailMember.workspaceId).slice(0, 8)}…` : 'None'}</option>
+                  )}
+                  {(workspaces || []).map(ws => (
+                    <option key={ws.id} value={ws.id}>{ws.name}{ws.isDefault ? ' (Default)' : ''}</option>
+                  ))}
+                </select>
+                {canManageMembers
+                  ? <small className="text-muted">Changing this reassigns the member&apos;s default landing workspace. The change is applied immediately and audited.</small>
+                  : <small className="text-muted">Only tenant member managers can reassign workspaces.</small>}
+              </div>
+            </div>
+            <div className="enterprise-modal-footer">
+              <button type="button" className="enterprise-button enterprise-button-secondary" onClick={() => setDetailMember(null)}>Close</button>
+            </div>
           </div>
         </div>
       )}

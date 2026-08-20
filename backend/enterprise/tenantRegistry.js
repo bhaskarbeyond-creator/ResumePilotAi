@@ -176,6 +176,24 @@ function hasTenantWideWorkspaceAccess(roles = []) {
   return roles.some(role => ['TENANT_OWNER', 'TENANT_ADMIN'].includes(String(role).toUpperCase()));
 }
 
+const WORKSPACE_LIFECYCLE_STATES = Object.freeze(['ACTIVE', 'ARCHIVED']);
+
+function assertWorkspaceTransition(current, next) {
+  const from = String(current || '').toUpperCase();
+  const to = String(next || '').toUpperCase();
+  if (!WORKSPACE_LIFECYCLE_STATES.includes(to)) {
+    throw Object.assign(new Error('Unsupported workspace lifecycle state'), { code: 'INVALID_WORKSPACE_LIFECYCLE', status: 400 });
+  }
+  if (from === to) {
+    throw Object.assign(new Error(`Workspace is already ${to.toLowerCase()}`), { code: 'WORKSPACE_LIFECYCLE_NOOP', status: 409 });
+  }
+  return to;
+}
+
+function teamMemberDocumentId(teamId, principalId) {
+  return `${assertUuid(teamId, 'Team identifier')}_${stablePrincipalHash(principalId)}`;
+}
+
 function identityMapDocumentId(principalId) {
   return stablePrincipalHash(principalId);
 }
@@ -354,13 +372,120 @@ class FirestoreTenantRegistry {
     return snapshot.exists && snapshot.data()?.tenantId === tenantId && String(snapshot.data()?.status || '').toUpperCase() === 'ACTIVE';
   }
 
-  async listWorkspaces(tenantId) {
+  async listWorkspaces(tenantId, { includeArchived = false } = {}) {
     this.assertAvailable();
     tenantId = assertUuid(tenantId, 'Tenant identifier');
     const snapshot = await this.db.collection('enterprise_workspaces').where('tenantId', '==', tenantId).get();
     return snapshot.docs.map(document => ({ ...document.data(), id: document.id }))
-      .filter(workspace => String(workspace.lifecycleState || '').toUpperCase() === 'ACTIVE')
+      .filter(workspace => {
+        const state = String(workspace.lifecycleState || '').toUpperCase();
+        return includeArchived ? WORKSPACE_LIFECYCLE_STATES.includes(state) : state === 'ACTIVE';
+      })
       .sort((left, right) => Number(right.isDefault === true) - Number(left.isDefault === true) || String(left.name).localeCompare(String(right.name)));
+  }
+
+  async getWorkspaceAnyState(workspaceId, tenantId) {
+    this.assertAvailable();
+    workspaceId = assertUuid(workspaceId, 'Workspace identifier');
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    const snapshot = await this.db.collection('enterprise_workspaces').doc(workspaceId).get();
+    if (!snapshot.exists || snapshot.data()?.tenantId !== tenantId) {
+      throw Object.assign(new Error('Workspace was not found'), { code: 'WORKSPACE_NOT_FOUND', status: 404 });
+    }
+    return { ...snapshot.data(), id: workspaceId };
+  }
+
+  async updateWorkspace({ tenantId, workspaceId, name }) {
+    this.assertAvailable();
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    workspaceId = assertUuid(workspaceId, 'Workspace identifier');
+    const cleanName = compact(name, 120);
+    if (cleanName.length < 2) throw Object.assign(new Error('Workspace name is invalid'), { code: 'INVALID_WORKSPACE', status: 400 });
+    const reference = this.db.collection('enterprise_workspaces').doc(workspaceId);
+    let workspace;
+    await this.db.runTransaction(async transaction => {
+      const snapshot = await transaction.get(reference);
+      if (!snapshot.exists || snapshot.data()?.tenantId !== tenantId) {
+        throw Object.assign(new Error('Workspace was not found'), { code: 'WORKSPACE_NOT_FOUND', status: 404 });
+      }
+      workspace = { ...snapshot.data(), id: workspaceId, name: cleanName, updatedAt: this.timestamp() };
+      transaction.set(reference, workspace, { merge: true });
+    });
+    return workspace;
+  }
+
+  async setWorkspaceLifecycleState({ tenantId, workspaceId, nextState }) {
+    this.assertAvailable();
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    workspaceId = assertUuid(workspaceId, 'Workspace identifier');
+    const reference = this.db.collection('enterprise_workspaces').doc(workspaceId);
+    let workspace;
+    await this.db.runTransaction(async transaction => {
+      const snapshot = await transaction.get(reference);
+      if (!snapshot.exists || snapshot.data()?.tenantId !== tenantId) {
+        throw Object.assign(new Error('Workspace was not found'), { code: 'WORKSPACE_NOT_FOUND', status: 404 });
+      }
+      const current = snapshot.data() || {};
+      const lifecycleState = assertWorkspaceTransition(current.lifecycleState, nextState);
+      if (lifecycleState === 'ARCHIVED' && current.isDefault === true) {
+        throw Object.assign(new Error('The default workspace cannot be archived'), { code: 'WORKSPACE_DEFAULT_PROTECTED', status: 409 });
+      }
+      workspace = { ...current, id: workspaceId, lifecycleState, updatedAt: this.timestamp() };
+      transaction.set(reference, workspace, { merge: true });
+    });
+    return workspace;
+  }
+
+  async listWorkspaceMembers({ tenantId, workspaceId }) {
+    this.assertAvailable();
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    workspaceId = assertUuid(workspaceId, 'Workspace identifier');
+    await this.getWorkspaceAnyState(workspaceId, tenantId);
+    const snapshot = await this.db.collection('enterprise_workspace_memberships').where('workspaceId', '==', workspaceId).get();
+    return snapshot.docs.map(document => ({ ...document.data(), id: document.id }))
+      .filter(member => member.tenantId === tenantId && String(member.status || '').toUpperCase() === 'ACTIVE')
+      .sort((left, right) => String(left.principalId).localeCompare(String(right.principalId)));
+  }
+
+  async addWorkspaceMember({ tenantId, workspaceId, principalId }) {
+    this.assertAvailable();
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    principalId = assertPrincipalId(principalId);
+    workspaceId = assertUuid(workspaceId, 'Workspace identifier');
+    await this.getWorkspace(workspaceId, tenantId);
+    const membership = await this.getMembership(tenantId, principalId);
+    if (membership.status !== 'ACTIVE') {
+      throw Object.assign(new Error('Only an active tenant member can join a workspace'), { code: 'TENANT_MEMBERSHIP_INACTIVE', status: 409 });
+    }
+    const reference = this.db.collection('enterprise_workspace_memberships').doc(workspaceMembershipDocumentId(workspaceId, principalId));
+    const now = this.timestamp();
+    await this.db.runTransaction(async transaction => {
+      const snapshot = await transaction.get(reference);
+      const current = snapshot.exists ? snapshot.data() || {} : {};
+      transaction.set(reference, {
+        id: reference.id, tenantId, workspaceId, principalId, status: 'ACTIVE',
+        createdAt: current.createdAt || now, updatedAt: now,
+      }, { merge: false });
+    });
+    return { id: reference.id, tenantId, workspaceId, principalId, status: 'ACTIVE' };
+  }
+
+  async removeWorkspaceMember({ tenantId, workspaceId, principalId }) {
+    this.assertAvailable();
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    principalId = assertPrincipalId(principalId);
+    workspaceId = assertUuid(workspaceId, 'Workspace identifier');
+    const membership = await this.getMembership(tenantId, principalId);
+    if (membership.workspaceId === workspaceId) {
+      throw Object.assign(new Error('Reassign the member to another workspace before removing this workspace access'), { code: 'WORKSPACE_PRIMARY_MEMBERSHIP', status: 409 });
+    }
+    const reference = this.db.collection('enterprise_workspace_memberships').doc(workspaceMembershipDocumentId(workspaceId, principalId));
+    const snapshot = await reference.get();
+    if (!snapshot.exists || snapshot.data()?.tenantId !== tenantId || String(snapshot.data()?.status || '').toUpperCase() !== 'ACTIVE') {
+      throw Object.assign(new Error('Workspace membership was not found'), { code: 'WORKSPACE_MEMBERSHIP_NOT_FOUND', status: 404 });
+    }
+    await reference.set({ ...snapshot.data(), status: 'REMOVED', updatedAt: this.timestamp() }, { merge: false });
+    return true;
   }
 
   async listAccessibleWorkspaces({ tenantId, principalId, roles = [] }) {
@@ -393,6 +518,77 @@ class FirestoreTenantRegistry {
     const now = this.timestamp();
     await this.db.collection('enterprise_teams').doc(id).create({ id, tenantId, workspaceId, name: cleanName, status: 'ACTIVE', createdAt: now, updatedAt: now });
     return { id, tenantId, workspaceId, name: cleanName, status: 'ACTIVE' };
+  }
+
+  async getTeam(teamId, tenantId) {
+    this.assertAvailable();
+    teamId = assertUuid(teamId, 'Team identifier');
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    const snapshot = await this.db.collection('enterprise_teams').doc(teamId).get();
+    if (!snapshot.exists || snapshot.data()?.tenantId !== tenantId || snapshot.data()?.status !== 'ACTIVE') {
+      throw Object.assign(new Error('Team was not found'), { code: 'TEAM_NOT_FOUND', status: 404 });
+    }
+    return { ...snapshot.data(), id: teamId };
+  }
+
+  async updateTeam({ tenantId, teamId, name }) {
+    this.assertAvailable();
+    const cleanName = compact(name, 100);
+    if (cleanName.length < 2) throw Object.assign(new Error('Team name is invalid'), { code: 'INVALID_TEAM', status: 400 });
+    const team = await this.getTeam(teamId, tenantId);
+    const updated = { ...team, name: cleanName, updatedAt: this.timestamp() };
+    await this.db.collection('enterprise_teams').doc(team.id).set(updated, { merge: true });
+    return updated;
+  }
+
+  async archiveTeam({ tenantId, teamId }) {
+    this.assertAvailable();
+    const team = await this.getTeam(teamId, tenantId);
+    await this.db.collection('enterprise_teams').doc(team.id).set({ ...team, status: 'ARCHIVED', updatedAt: this.timestamp() }, { merge: true });
+    return { ...team, status: 'ARCHIVED' };
+  }
+
+  async listTeamMembers({ tenantId, teamId }) {
+    this.assertAvailable();
+    const team = await this.getTeam(teamId, tenantId);
+    const snapshot = await this.db.collection('enterprise_team_members').where('teamId', '==', team.id).get();
+    return snapshot.docs.map(document => ({ ...document.data(), id: document.id }))
+      .filter(member => member.tenantId === tenantId && String(member.status || '').toUpperCase() === 'ACTIVE')
+      .sort((left, right) => String(left.principalId).localeCompare(String(right.principalId)));
+  }
+
+  async addTeamMember({ tenantId, teamId, principalId }) {
+    this.assertAvailable();
+    principalId = assertPrincipalId(principalId);
+    const team = await this.getTeam(teamId, tenantId);
+    const membership = await this.getMembership(tenantId, principalId);
+    if (membership.status !== 'ACTIVE') {
+      throw Object.assign(new Error('Only an active tenant member can join a team'), { code: 'TENANT_MEMBERSHIP_INACTIVE', status: 409 });
+    }
+    const reference = this.db.collection('enterprise_team_members').doc(teamMemberDocumentId(team.id, principalId));
+    const now = this.timestamp();
+    await this.db.runTransaction(async transaction => {
+      const snapshot = await transaction.get(reference);
+      const current = snapshot.exists ? snapshot.data() || {} : {};
+      transaction.set(reference, {
+        id: reference.id, tenantId, teamId: team.id, workspaceId: team.workspaceId, principalId,
+        status: 'ACTIVE', createdAt: current.createdAt || now, updatedAt: now,
+      }, { merge: false });
+    });
+    return { id: reference.id, tenantId, teamId: team.id, workspaceId: team.workspaceId, principalId, status: 'ACTIVE' };
+  }
+
+  async removeTeamMember({ tenantId, teamId, principalId }) {
+    this.assertAvailable();
+    principalId = assertPrincipalId(principalId);
+    const team = await this.getTeam(teamId, tenantId);
+    const reference = this.db.collection('enterprise_team_members').doc(teamMemberDocumentId(team.id, principalId));
+    const snapshot = await reference.get();
+    if (!snapshot.exists || snapshot.data()?.tenantId !== tenantId || String(snapshot.data()?.status || '').toUpperCase() !== 'ACTIVE') {
+      throw Object.assign(new Error('Team membership was not found'), { code: 'TEAM_MEMBERSHIP_NOT_FOUND', status: 404 });
+    }
+    await reference.set({ ...snapshot.data(), status: 'REMOVED', updatedAt: this.timestamp() }, { merge: false });
+    return true;
   }
 
   async createWorkspace({ tenantId, name, isDefault = false }) {
@@ -593,6 +789,7 @@ class InMemoryTenantRegistry {
     this.workspaces = new Map();
     this.workspaceMemberships = new Map();
     this.teams = new Map();
+    this.teamMembers = new Map();
     this.personal = new Map();
     this.configurations = new Map();
   }
@@ -666,12 +863,86 @@ class InMemoryTenantRegistry {
     return Boolean(membership && membership.tenantId === tenantId && membership.status === 'ACTIVE');
   }
 
-  async listWorkspaces(tenantId) {
+  async listWorkspaces(tenantId, { includeArchived = false } = {}) {
     tenantId = assertUuid(tenantId, 'Tenant identifier');
     return [...this.workspaces.values()]
-      .filter(workspace => workspace.tenantId === tenantId && workspace.lifecycleState === 'ACTIVE')
+      .filter(workspace => workspace.tenantId === tenantId && (includeArchived
+        ? WORKSPACE_LIFECYCLE_STATES.includes(String(workspace.lifecycleState || '').toUpperCase())
+        : workspace.lifecycleState === 'ACTIVE'))
       .sort((left, right) => Number(right.isDefault === true) - Number(left.isDefault === true) || String(left.name).localeCompare(String(right.name)))
       .map(workspace => ({ ...workspace }));
+  }
+
+  async getWorkspaceAnyState(workspaceId, tenantId) {
+    const workspace = this.workspaces.get(assertUuid(workspaceId, 'Workspace identifier'));
+    if (!workspace || workspace.tenantId !== tenantId) throw Object.assign(new Error('Workspace was not found'), { code: 'WORKSPACE_NOT_FOUND', status: 404 });
+    return { ...workspace };
+  }
+
+  async updateWorkspace({ tenantId, workspaceId, name }) {
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    const cleanName = compact(name, 120);
+    if (cleanName.length < 2) throw Object.assign(new Error('Workspace name is invalid'), { code: 'INVALID_WORKSPACE', status: 400 });
+    const workspace = this.workspaces.get(assertUuid(workspaceId, 'Workspace identifier'));
+    if (!workspace || workspace.tenantId !== tenantId) throw Object.assign(new Error('Workspace was not found'), { code: 'WORKSPACE_NOT_FOUND', status: 404 });
+    workspace.name = cleanName;
+    this.workspaces.set(workspace.id, workspace);
+    return { ...workspace };
+  }
+
+  async setWorkspaceLifecycleState({ tenantId, workspaceId, nextState }) {
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    const workspace = this.workspaces.get(assertUuid(workspaceId, 'Workspace identifier'));
+    if (!workspace || workspace.tenantId !== tenantId) throw Object.assign(new Error('Workspace was not found'), { code: 'WORKSPACE_NOT_FOUND', status: 404 });
+    const lifecycleState = assertWorkspaceTransition(workspace.lifecycleState, nextState);
+    if (lifecycleState === 'ARCHIVED' && workspace.isDefault === true) {
+      throw Object.assign(new Error('The default workspace cannot be archived'), { code: 'WORKSPACE_DEFAULT_PROTECTED', status: 409 });
+    }
+    workspace.lifecycleState = lifecycleState;
+    this.workspaces.set(workspace.id, workspace);
+    return { ...workspace };
+  }
+
+  async listWorkspaceMembers({ tenantId, workspaceId }) {
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    workspaceId = assertUuid(workspaceId, 'Workspace identifier');
+    await this.getWorkspaceAnyState(workspaceId, tenantId);
+    return [...this.workspaceMemberships.values()]
+      .filter(member => member.tenantId === tenantId && member.workspaceId === workspaceId && member.status === 'ACTIVE')
+      .sort((left, right) => String(left.principalId).localeCompare(String(right.principalId)))
+      .map(member => ({ ...member }));
+  }
+
+  async addWorkspaceMember({ tenantId, workspaceId, principalId }) {
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    principalId = assertPrincipalId(principalId);
+    workspaceId = assertUuid(workspaceId, 'Workspace identifier');
+    await this.getWorkspace(workspaceId, tenantId);
+    const membership = await this.getMembership(tenantId, principalId);
+    if (membership.status !== 'ACTIVE') {
+      throw Object.assign(new Error('Only an active tenant member can join a workspace'), { code: 'TENANT_MEMBERSHIP_INACTIVE', status: 409 });
+    }
+    const id = workspaceMembershipDocumentId(workspaceId, principalId);
+    const record = { id, tenantId, workspaceId, principalId, status: 'ACTIVE' };
+    this.workspaceMemberships.set(id, record);
+    return { ...record };
+  }
+
+  async removeWorkspaceMember({ tenantId, workspaceId, principalId }) {
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    principalId = assertPrincipalId(principalId);
+    workspaceId = assertUuid(workspaceId, 'Workspace identifier');
+    const membership = await this.getMembership(tenantId, principalId);
+    if (membership.workspaceId === workspaceId) {
+      throw Object.assign(new Error('Reassign the member to another workspace before removing this workspace access'), { code: 'WORKSPACE_PRIMARY_MEMBERSHIP', status: 409 });
+    }
+    const id = workspaceMembershipDocumentId(workspaceId, principalId);
+    const current = this.workspaceMemberships.get(id);
+    if (!current || current.tenantId !== tenantId || current.status !== 'ACTIVE') {
+      throw Object.assign(new Error('Workspace membership was not found'), { code: 'WORKSPACE_MEMBERSHIP_NOT_FOUND', status: 404 });
+    }
+    this.workspaceMemberships.set(id, { ...current, status: 'REMOVED' });
+    return true;
   }
 
   async listAccessibleWorkspaces({ tenantId, principalId, roles = [] }) {
@@ -701,6 +972,63 @@ class InMemoryTenantRegistry {
     const team = { id: crypto.randomUUID(), tenantId, workspaceId, name: cleanName, status: 'ACTIVE' };
     this.teams.set(team.id, team);
     return { ...team };
+  }
+
+  async getTeam(teamId, tenantId) {
+    const team = this.teams.get(assertUuid(teamId, 'Team identifier'));
+    if (!team || team.tenantId !== tenantId || team.status !== 'ACTIVE') {
+      throw Object.assign(new Error('Team was not found'), { code: 'TEAM_NOT_FOUND', status: 404 });
+    }
+    return { ...team };
+  }
+
+  async updateTeam({ tenantId, teamId, name }) {
+    const cleanName = compact(name, 100);
+    if (cleanName.length < 2) throw Object.assign(new Error('Team name is invalid'), { code: 'INVALID_TEAM', status: 400 });
+    const team = await this.getTeam(teamId, tenantId);
+    const updated = { ...team, name: cleanName };
+    this.teams.set(team.id, updated);
+    return { ...updated };
+  }
+
+  async archiveTeam({ tenantId, teamId }) {
+    const team = await this.getTeam(teamId, tenantId);
+    const archived = { ...team, status: 'ARCHIVED' };
+    this.teams.set(team.id, archived);
+    return { ...archived };
+  }
+
+  async listTeamMembers({ tenantId, teamId }) {
+    const team = await this.getTeam(teamId, tenantId);
+    return [...this.teamMembers.values()]
+      .filter(member => member.tenantId === tenantId && member.teamId === team.id && member.status === 'ACTIVE')
+      .sort((left, right) => String(left.principalId).localeCompare(String(right.principalId)))
+      .map(member => ({ ...member }));
+  }
+
+  async addTeamMember({ tenantId, teamId, principalId }) {
+    principalId = assertPrincipalId(principalId);
+    const team = await this.getTeam(teamId, tenantId);
+    const membership = await this.getMembership(tenantId, principalId);
+    if (membership.status !== 'ACTIVE') {
+      throw Object.assign(new Error('Only an active tenant member can join a team'), { code: 'TENANT_MEMBERSHIP_INACTIVE', status: 409 });
+    }
+    const id = teamMemberDocumentId(team.id, principalId);
+    const record = { id, tenantId, teamId: team.id, workspaceId: team.workspaceId, principalId, status: 'ACTIVE' };
+    this.teamMembers.set(id, record);
+    return { ...record };
+  }
+
+  async removeTeamMember({ tenantId, teamId, principalId }) {
+    principalId = assertPrincipalId(principalId);
+    const team = await this.getTeam(teamId, tenantId);
+    const id = teamMemberDocumentId(team.id, principalId);
+    const current = this.teamMembers.get(id);
+    if (!current || current.tenantId !== tenantId || current.status !== 'ACTIVE') {
+      throw Object.assign(new Error('Team membership was not found'), { code: 'TEAM_MEMBERSHIP_NOT_FOUND', status: 404 });
+    }
+    this.teamMembers.set(id, { ...current, status: 'REMOVED' });
+    return true;
   }
 
   async createWorkspace({ tenantId, name, isDefault = false }) {

@@ -69,6 +69,7 @@ class TenantService {
       profile: profileFromUser(user),
     });
     const configuration = await this.registry.getTenantConfiguration(resolved.tenant.id);
+    this.enforceTenantSecurityPolicies({ user, configuration, roles: resolved.membership.roles });
     const tenant = { ...resolved.tenant, configuration, aiPolicy: configuration.aiPolicy };
     const permissions = [...permissionsForRoles(resolved.membership.roles)];
     const workspaceScope = resolved.membership.roles.some(role => ['TENANT_OWNER', 'TENANT_ADMIN'].includes(String(role).toUpperCase()))
@@ -90,6 +91,38 @@ class TenantService {
       dataPlane: tenant.dataPlane,
     });
     return { context, tenant, membership: resolved.membership, workspace: resolved.workspace };
+  }
+
+  // Tenant-configured security and identity policies are enforced at every
+  // context resolution, not just stored. Session age uses the verified Firebase
+  // auth_time claim; MFA uses the verified sign_in_second_factor claim. When a
+  // claim is absent from the verified token the corresponding check cannot be
+  // evaluated and is skipped — it never trusts client-supplied values.
+  enforceTenantSecurityPolicies({ user, configuration, roles = [] }) {
+    const identityPolicy = configuration?.identityPolicy || {};
+    const securityPolicy = configuration?.securityPolicy || {};
+    const claims = user?.claims && typeof user.claims === 'object' ? user.claims : user || {};
+    const maxMinutes = Number(identityPolicy.sessionMaxMinutes || 0);
+    const authTime = Number(claims.auth_time || 0);
+    if (maxMinutes >= 15 && authTime > 0) {
+      const sessionAgeMinutes = (Date.now() / 1000 - authTime) / 60;
+      if (sessionAgeMinutes > maxMinutes) {
+        throw Object.assign(
+          new Error('The enterprise session exceeded the tenant maximum session length. Sign in again to continue.'),
+          { code: 'TENANT_SESSION_REAUTH_REQUIRED', status: 401 },
+        );
+      }
+    }
+    const isAdmin = roles.some(role => ['TENANT_OWNER', 'TENANT_ADMIN'].includes(String(role).toUpperCase()));
+    if (securityPolicy.requireMfaForAdmins === true && isAdmin) {
+      const secondFactor = claims.firebase?.sign_in_second_factor || null;
+      if (!secondFactor) {
+        throw Object.assign(
+          new Error('This tenant requires multi-factor authentication for administrator access.'),
+          { code: 'TENANT_MFA_REQUIRED', status: 403 },
+        );
+      }
+    }
   }
 
   async listTenants({ user }) {
@@ -377,9 +410,9 @@ class TenantService {
     }
   }
 
-  async listAuditEvents({ context, limit = 100 }) {
+  async listAuditEvents({ context, limit = 100, filters = {} }) {
     if (!this.repository) throw Object.assign(new Error('Tenant audit store is unavailable'), { code: 'TENANT_AUDIT_UNAVAILABLE', status: 503 });
-    return this.repository.listAuditEvents(context, { limit });
+    return this.repository.listAuditEvents(context, { limit, ...filters });
   }
 
   async getAiUsageSummary({ context, days = 30 }) {
@@ -442,6 +475,123 @@ class TenantService {
     // Registry membership records are keyed by the verified external identity
     // subject; data-plane documents use the canonical UUID principal.
     return this.registry.listAccessibleWorkspaces({ tenantId: context.tenantId, principalId: context.subjectId, roles: context.roles });
+  }
+
+  async listAllWorkspaces({ context, includeArchived = false }) {
+    // Tenant-wide administration view: includes archived workspaces so they can
+    // be restored. Route-level policy restricts this to workspace administrators.
+    return this.registry.listWorkspaces(context.tenantId, { includeArchived: includeArchived === true });
+  }
+
+  assertWorkspaceScopeFor(context, workspaceId, message) {
+    if (context.workspaceScope !== 'TENANT' && workspaceId !== context.workspaceId) {
+      throw Object.assign(new Error(message), { code: 'WORKSPACE_FORBIDDEN', status: 403 });
+    }
+  }
+
+  async writeAudit(context, event) {
+    if (this.db && this.admin) {
+      await writeTenantAuditEvent(this.db, this.admin, buildTenantAuditEvent({ context, ...event }));
+    }
+  }
+
+  async updateWorkspace({ context, workspaceId, input }) {
+    workspaceId = assertUuid(workspaceId, 'Workspace identifier');
+    this.assertWorkspaceScopeFor(context, workspaceId, 'Workspace management access is not permitted');
+    const workspace = await this.registry.updateWorkspace({ tenantId: context.tenantId, workspaceId, name: input?.name });
+    await this.writeAudit(context, {
+      action: 'WORKSPACE_UPDATED', category: 'tenant.workspace',
+      resource: { type: 'workspace', id: workspaceId }, metadata: { name: workspace.name },
+    });
+    return workspace;
+  }
+
+  async setWorkspaceLifecycle({ context, workspaceId, nextState }) {
+    workspaceId = assertUuid(workspaceId, 'Workspace identifier');
+    const workspace = await this.registry.setWorkspaceLifecycleState({ tenantId: context.tenantId, workspaceId, nextState });
+    await this.writeAudit(context, {
+      action: `WORKSPACE_${String(workspace.lifecycleState).toUpperCase()}`, category: 'tenant.workspace', severity: 'HIGH',
+      resource: { type: 'workspace', id: workspaceId },
+    });
+    return workspace;
+  }
+
+  async listWorkspaceMembers({ context, workspaceId }) {
+    workspaceId = assertUuid(workspaceId, 'Workspace identifier');
+    this.assertWorkspaceScopeFor(context, workspaceId, 'Workspace member access is not permitted');
+    return this.registry.listWorkspaceMembers({ tenantId: context.tenantId, workspaceId });
+  }
+
+  async addWorkspaceMember({ context, workspaceId, principalId }) {
+    workspaceId = assertUuid(workspaceId, 'Workspace identifier');
+    this.assertWorkspaceScopeFor(context, workspaceId, 'Workspace member management is not permitted');
+    const member = await this.registry.addWorkspaceMember({ tenantId: context.tenantId, workspaceId, principalId });
+    await this.writeAudit(context, {
+      action: 'WORKSPACE_MEMBER_ADDED', category: 'tenant.workspace', severity: 'MEDIUM',
+      resource: { type: 'workspace', id: workspaceId }, metadata: { targetPrincipalId: member.principalId },
+    });
+    return member;
+  }
+
+  async removeWorkspaceMember({ context, workspaceId, principalId }) {
+    workspaceId = assertUuid(workspaceId, 'Workspace identifier');
+    this.assertWorkspaceScopeFor(context, workspaceId, 'Workspace member management is not permitted');
+    await this.registry.removeWorkspaceMember({ tenantId: context.tenantId, workspaceId, principalId });
+    await this.writeAudit(context, {
+      action: 'WORKSPACE_MEMBER_REMOVED', category: 'tenant.workspace', severity: 'MEDIUM',
+      resource: { type: 'workspace', id: workspaceId }, metadata: { targetPrincipalId: principalId },
+    });
+    return true;
+  }
+
+  async updateTeam({ context, teamId, input }) {
+    const team = await this.registry.getTeam(teamId, context.tenantId);
+    this.assertWorkspaceScopeFor(context, team.workspaceId, 'Workspace team access is not permitted');
+    const updated = await this.registry.updateTeam({ tenantId: context.tenantId, teamId, name: input?.name });
+    await this.writeAudit(context, {
+      action: 'TEAM_UPDATED', category: 'tenant.team',
+      resource: { type: 'team', id: updated.id }, metadata: { name: updated.name },
+    });
+    return updated;
+  }
+
+  async archiveTeam({ context, teamId }) {
+    const team = await this.registry.getTeam(teamId, context.tenantId);
+    this.assertWorkspaceScopeFor(context, team.workspaceId, 'Workspace team access is not permitted');
+    const archived = await this.registry.archiveTeam({ tenantId: context.tenantId, teamId });
+    await this.writeAudit(context, {
+      action: 'TEAM_ARCHIVED', category: 'tenant.team', severity: 'MEDIUM',
+      resource: { type: 'team', id: archived.id },
+    });
+    return archived;
+  }
+
+  async listTeamMembers({ context, teamId }) {
+    const team = await this.registry.getTeam(teamId, context.tenantId);
+    this.assertWorkspaceScopeFor(context, team.workspaceId, 'Workspace team access is not permitted');
+    return this.registry.listTeamMembers({ tenantId: context.tenantId, teamId });
+  }
+
+  async addTeamMember({ context, teamId, principalId }) {
+    const team = await this.registry.getTeam(teamId, context.tenantId);
+    this.assertWorkspaceScopeFor(context, team.workspaceId, 'Workspace team access is not permitted');
+    const member = await this.registry.addTeamMember({ tenantId: context.tenantId, teamId, principalId });
+    await this.writeAudit(context, {
+      action: 'TEAM_MEMBER_ADDED', category: 'tenant.team',
+      resource: { type: 'team', id: team.id }, metadata: { targetPrincipalId: member.principalId },
+    });
+    return member;
+  }
+
+  async removeTeamMember({ context, teamId, principalId }) {
+    const team = await this.registry.getTeam(teamId, context.tenantId);
+    this.assertWorkspaceScopeFor(context, team.workspaceId, 'Workspace team access is not permitted');
+    await this.registry.removeTeamMember({ tenantId: context.tenantId, teamId, principalId });
+    await this.writeAudit(context, {
+      action: 'TEAM_MEMBER_REMOVED', category: 'tenant.team',
+      resource: { type: 'team', id: team.id }, metadata: { targetPrincipalId: principalId },
+    });
+    return true;
   }
 
   async listTenantMemberships({ context }) {

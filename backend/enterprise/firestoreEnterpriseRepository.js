@@ -177,11 +177,40 @@ class FirestoreEnterpriseRepository {
     return document;
   }
 
-  async listAuditEvents(context, { limit = 100 } = {}) {
+  async listAuditEvents(context, { limit = 100, action = null, actor = null, outcome = null, severity = null, category = null, since = null, until = null } = {}) {
     this.assertContext(context);
     const boundedLimit = Math.max(1, Math.min(Number(limit) || 100, 250));
-    const snapshot = await this.tenantCollection(context, 'audit_events').orderBy('occurredAt', 'desc').limit(boundedLimit).get();
-    return snapshot.docs.map(document => ({ id: document.id, ...document.data() }));
+    const filters = {
+      action: action ? String(action).trim().toUpperCase() : null,
+      actor: actor ? String(actor).trim() : null,
+      outcome: ['SUCCESS', 'DENIED', 'FAILURE'].includes(String(outcome || '').toUpperCase()) ? String(outcome).toUpperCase() : null,
+      severity: ['INFO', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].includes(String(severity || '').toUpperCase()) ? String(severity).toUpperCase() : null,
+      category: category ? String(category).trim().toLowerCase() : null,
+      since: Number.isFinite(Date.parse(since)) ? new Date(Date.parse(since)).toISOString() : null,
+      until: Number.isFinite(Date.parse(until)) ? new Date(Date.parse(until)).toISOString() : null,
+    };
+    const hasFilters = Object.values(filters).some(Boolean);
+    // The scan is bounded and tenant-partitioned; filters are applied server-side
+    // so exports and views reflect the true tenant history, not just the page
+    // the browser happened to load.
+    const scanLimit = hasFilters ? Math.max(boundedLimit, 500) : boundedLimit;
+    const snapshot = await this.tenantCollection(context, 'audit_events').orderBy('occurredAt', 'desc').limit(scanLimit).get();
+    const events = snapshot.docs.map(document => ({ id: document.id, ...document.data() }));
+    if (!hasFilters) return events;
+    return events.filter(event => {
+      if (filters.action && !String(event.action || '').toUpperCase().includes(filters.action)) return false;
+      if (filters.actor) {
+        const actorText = `${event.actorSubjectId || ''} ${event.subjectId || ''} ${event.principalId || ''}`.toLowerCase();
+        if (!actorText.includes(filters.actor.toLowerCase())) return false;
+      }
+      if (filters.outcome && String(event.outcome || '').toUpperCase() !== filters.outcome) return false;
+      if (filters.severity && String(event.severity || '').toUpperCase() !== filters.severity) return false;
+      if (filters.category && !String(event.category || '').toLowerCase().includes(filters.category)) return false;
+      const occurredAt = String(event.occurredAt || '');
+      if (filters.since && occurredAt && occurredAt < filters.since) return false;
+      if (filters.until && occurredAt && occurredAt > filters.until) return false;
+      return true;
+    }).slice(0, boundedLimit);
   }
 
   async createResource(context, { id = crypto.randomUUID(), resourceType, classification = 'PRIVATE', payload = {} }) {

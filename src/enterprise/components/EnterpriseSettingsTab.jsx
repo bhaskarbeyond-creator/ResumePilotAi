@@ -9,10 +9,18 @@ export default function EnterpriseSettingsTab({ tenant }) {
   const configuration = useMemo(() => data?.configuration || null, [data]);
   const retentionDays = String(configuration?.retentionPolicy?.retentionDays ?? '');
   const [retentionInput, setRetentionInput] = useState(retentionDays);
+  const [requireMfa, setRequireMfa] = useState(false);
+  const [supportApproval, setSupportApproval] = useState(true);
+  const [ssoMode, setSsoMode] = useState('NONE');
+  const [sessionMax, setSessionMax] = useState('480');
 
   useEffect(() => {
     setRetentionInput(retentionDays);
-  }, [retentionDays]);
+    setRequireMfa(configuration?.securityPolicy?.requireMfaForAdmins === true);
+    setSupportApproval(configuration?.securityPolicy?.supportAccessRequiresApproval !== false);
+    setSsoMode(String(configuration?.identityPolicy?.ssoMode || 'NONE').toUpperCase());
+    setSessionMax(String(configuration?.identityPolicy?.sessionMaxMinutes ?? 480));
+  }, [retentionDays, configuration]);
 
   const [busy, setBusy] = useState(false);
   const [notification, setNotification] = useState(null);
@@ -30,6 +38,15 @@ export default function EnterpriseSettingsTab({ tenant }) {
           expectedRevision: configuration.revision,
           configuration: {
             retentionPolicy: { ...(configuration.retentionPolicy || {}), retentionDays: Number(retentionInput) },
+            securityPolicy: {
+              requireMfaForAdmins: requireMfa === true,
+              supportAccessRequiresApproval: supportApproval === true,
+            },
+            identityPolicy: {
+              ...(configuration.identityPolicy || {}),
+              ssoMode,
+              sessionMaxMinutes: Number(sessionMax),
+            },
           },
         },
       });
@@ -103,6 +120,58 @@ export default function EnterpriseSettingsTab({ tenant }) {
                 <option value="2555">7 Years (Financial / Regulatory Strict)</option>
               </select>
             </div>
+
+            <h3 className="enterprise-card-title" style={{ marginTop: '1.5rem' }}>Security Policy</h3>
+            <div className="enterprise-checkbox-list" style={{ marginTop: '0.5rem' }}>
+              <label className="enterprise-checkbox">
+                <input
+                  type="checkbox"
+                  checked={requireMfa}
+                  onChange={(e) => setRequireMfa(e.target.checked)}
+                />
+                <span>Require MFA for tenant administrators</span>
+              </label>
+              <label className="enterprise-checkbox">
+                <input
+                  type="checkbox"
+                  checked={supportApproval}
+                  onChange={(e) => setSupportApproval(e.target.checked)}
+                />
+                <span>Support access requires explicit tenant approval (break-glass grants)</span>
+              </label>
+            </div>
+
+            <h3 className="enterprise-card-title" style={{ marginTop: '1.5rem' }}>Identity Policy</h3>
+            <div className="enterprise-two-column-grid" style={{ marginTop: '0.5rem' }}>
+              <div className="enterprise-form-group">
+                <label htmlFor="sso-mode">Single Sign-On Mode</label>
+                <select
+                  id="sso-mode"
+                  value={ssoMode}
+                  onChange={(e) => setSsoMode(e.target.value)}
+                  className="enterprise-select"
+                >
+                  <option value="NONE">None (Firebase email/password &amp; social)</option>
+                  <option value="OIDC">OIDC (OpenID Connect)</option>
+                  <option value="SAML">SAML 2.0</option>
+                </select>
+                <small className="text-muted">SCIM provisioning becomes available once an SSO mode is active.</small>
+              </div>
+              <div className="enterprise-form-group">
+                <label htmlFor="session-max">Maximum Session Length (minutes)</label>
+                <input
+                  id="session-max"
+                  type="number"
+                  min="15"
+                  max="10080"
+                  value={sessionMax}
+                  onChange={(e) => setSessionMax(e.target.value)}
+                  className="enterprise-input"
+                />
+                <small className="text-muted">Between 15 minutes and 7 days. Enforced at context resolution.</small>
+              </div>
+            </div>
+
             <div className="enterprise-form-actions" style={{ marginTop: '1.5rem' }}>
               <button type="submit" className="enterprise-button enterprise-button-primary" disabled={busy || !configuration}>
                 <FiSave aria-hidden="true" /> {busy ? 'Saving…' : 'Save Organization Settings'}

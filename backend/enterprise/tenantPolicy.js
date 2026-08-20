@@ -38,6 +38,26 @@ function requireTenantPermission(permission) {
   };
 }
 
+// Some administrative operations are legitimately reachable through more than
+// one permission (for example a TENANT_ADMIN holds tenant.workspaces.manage
+// while a WORKSPACE_MANAGER holds workspace.manage). Authorization remains
+// entirely server-side; this simply expresses an OR over declared permissions.
+function requireAnyTenantPermission(...permissions) {
+  return (req, res, next) => {
+    const allowed = req.tenantContext && permissions.some(permission => hasTenantPermission(req.tenantContext, permission));
+    if (!allowed) {
+      return res.status(403).json({
+        error: {
+          code: 'TENANT_FORBIDDEN',
+          message: 'The active tenant role does not allow this action.',
+          requestId: res.locals?.requestId,
+        }
+      });
+    }
+    return next();
+  };
+}
+
 function assertSameTenant(context, resource) {
   if (!context?.tenantId || !resource?.tenantId || String(context.tenantId) !== String(resource.tenantId)) {
     const error = new Error('Resource is not available in the active tenant');
@@ -58,5 +78,6 @@ module.exports = {
   assertSameTenant,
   hasTenantPermission,
   permissionsForRoles,
+  requireAnyTenantPermission,
   requireTenantPermission,
 };

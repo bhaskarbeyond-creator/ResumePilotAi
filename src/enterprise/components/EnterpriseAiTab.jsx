@@ -10,6 +10,7 @@ const PROVIDERS = [
   { key: 'gemini', label: 'Google Gemini', blurb: 'Long-context comprehension' },
   { key: 'openai', label: 'OpenAI GPT', blurb: 'Complex technical summaries' },
   { key: 'groq', label: 'Groq LPU', blurb: 'Ultra-fast inference' },
+  { key: 'openrouter', label: 'OpenRouter', blurb: 'Multi-model routing gateway' },
   { key: 'deepseek', label: 'DeepSeek', blurb: 'Cost-efficient reasoning' },
 ];
 

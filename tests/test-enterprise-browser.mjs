@@ -36,7 +36,7 @@ function fixtureTenant(displayName) {
 }
 
 function createFixtureBackend() {
-  const state = { ...fixtureTenant('Northwind Careers'), teams: [], workspacesExtra: [], serviceAccounts: [], jobs: [], usage: { requests: 42, inputTokens: 12400, outputTokens: 8100, estimatedCostMicros: 250000, days: 30, byDay: [{ day: '2026-08-19', requests: 20, inputTokens: 6000, outputTokens: 4000, estimatedCostMicros: 120000 }, { day: '2026-08-20', requests: 22, inputTokens: 6400, outputTokens: 4100, estimatedCostMicros: 130000 }], byWorkspace: {}, byProvider: { openai: 42 }, byModel: { 'gpt-4o-mini': 42 } }, audit: [] };
+  const state = { ...fixtureTenant('Northwind Careers'), teams: [], teamMembers: [], workspacesExtra: [], workspaceMembers: [], serviceAccounts: [], jobs: [], usage: { requests: 42, inputTokens: 12400, outputTokens: 8100, estimatedCostMicros: 250000, days: 30, byDay: [{ day: '2026-08-19', requests: 20, inputTokens: 6000, outputTokens: 4000, estimatedCostMicros: 120000 }, { day: '2026-08-20', requests: 22, inputTokens: 6400, outputTokens: 4100, estimatedCostMicros: 130000 }], byWorkspace: {}, byProvider: { openai: 42 }, byModel: { 'gpt-4o-mini': 42 } }, audit: [] };
   const base = () => ({
     tenantId: state.tenant.id,
     workspaceId: state.workspace.id,
@@ -66,13 +66,51 @@ function createFixtureBackend() {
       } });
     }
     if (path === '/api/enterprise/workspaces' && method === 'GET') {
-      return route.fulfill({ json: { workspaces: [{ id: state.workspace.id, name: state.workspace.name, active: true, isDefault: true }, ...state.workspacesExtra.map(workspace => ({ ...workspace, active: false, isDefault: false }))] } });
+      const includeArchived = ['1', 'true'].includes(String(url.searchParams.get('includeArchived') || ''));
+      const extras = state.workspacesExtra
+        .filter(workspace => includeArchived || (workspace.lifecycleState || 'ACTIVE') === 'ACTIVE')
+        .map(workspace => ({ ...workspace, active: false, isDefault: false, lifecycleState: workspace.lifecycleState || 'ACTIVE' }));
+      return route.fulfill({ json: { workspaces: [{ id: state.workspace.id, name: state.workspace.name, active: true, isDefault: true, lifecycleState: 'ACTIVE' }, ...extras] } });
     }
     if (path === '/api/enterprise/workspaces' && method === 'POST') {
-      const workspace = { id: crypto.randomUUID(), tenantId: state.tenant.id, name: String(body?.name || 'Workspace') };
+      const workspace = { id: crypto.randomUUID(), tenantId: state.tenant.id, name: String(body?.name || 'Workspace'), lifecycleState: 'ACTIVE' };
       state.workspacesExtra.push(workspace);
       state.audit.push(auditEvent('WORKSPACE_CREATED'));
       return route.fulfill({ status: 201, json: { workspace } });
+    }
+    {
+      const wsMatch = path.match(/^\/api\/enterprise\/workspaces\/([^/]+)$/);
+      if (wsMatch && method === 'PATCH') {
+        const workspace = state.workspacesExtra.find(entry => entry.id === wsMatch[1]) || (state.workspace.id === wsMatch[1] ? state.workspace : null);
+        if (!workspace) return route.fulfill({ status: 404, json: { error: { code: 'WORKSPACE_NOT_FOUND' } } });
+        workspace.name = String(body?.name || workspace.name);
+        state.audit.push(auditEvent('WORKSPACE_UPDATED'));
+        return route.fulfill({ json: { workspace: { ...workspace, isDefault: workspace === state.workspace, lifecycleState: workspace.lifecycleState || 'ACTIVE' } } });
+      }
+      const lifecycleMatch = path.match(/^\/api\/enterprise\/workspaces\/([^/]+)\/(archive|restore)$/);
+      if (lifecycleMatch && method === 'POST') {
+        const workspace = state.workspacesExtra.find(entry => entry.id === lifecycleMatch[1]);
+        if (!workspace) return route.fulfill({ status: lifecycleMatch[1] === state.workspace.id ? 409 : 404, json: { error: { code: lifecycleMatch[1] === state.workspace.id ? 'WORKSPACE_DEFAULT_PROTECTED' : 'WORKSPACE_NOT_FOUND' } } });
+        workspace.lifecycleState = lifecycleMatch[2] === 'archive' ? 'ARCHIVED' : 'ACTIVE';
+        state.audit.push(auditEvent(lifecycleMatch[2] === 'archive' ? 'WORKSPACE_ARCHIVED' : 'WORKSPACE_ACTIVE'));
+        return route.fulfill({ json: { workspace: { id: workspace.id, name: workspace.name, lifecycleState: workspace.lifecycleState } } });
+      }
+      const wsMembersMatch = path.match(/^\/api\/enterprise\/workspaces\/([^/]+)\/members$/);
+      if (wsMembersMatch && method === 'GET') {
+        return route.fulfill({ json: { members: state.workspaceMembers.filter(member => member.workspaceId === wsMembersMatch[1] && member.status === 'ACTIVE') } });
+      }
+      if (wsMembersMatch && method === 'POST') {
+        const member = { id: crypto.randomUUID(), workspaceId: wsMembersMatch[1], principalId: String(body?.principalId || ''), status: 'ACTIVE' };
+        state.workspaceMembers.push(member);
+        state.audit.push(auditEvent('WORKSPACE_MEMBER_ADDED'));
+        return route.fulfill({ status: 201, json: { member } });
+      }
+      const wsMemberMatch = path.match(/^\/api\/enterprise\/workspaces\/([^/]+)\/members\/([^/]+)$/);
+      if (wsMemberMatch && method === 'DELETE') {
+        state.workspaceMembers = state.workspaceMembers.filter(member => !(member.workspaceId === wsMemberMatch[1] && member.principalId === decodeURIComponent(wsMemberMatch[2])));
+        state.audit.push(auditEvent('WORKSPACE_MEMBER_REMOVED'));
+        return route.fulfill({ status: 204, body: '' });
+      }
     }
     if (path === '/api/enterprise/memberships' && method === 'GET') return route.fulfill({ json: { memberships: state.memberships } });
     if (path === '/api/enterprise/memberships' && method === 'POST') {
@@ -87,12 +125,46 @@ function createFixtureBackend() {
       state.audit.push(auditEvent('TENANT_MEMBERSHIP_REMOVED'));
       return route.fulfill({ status: 204, body: '' });
     }
-    if (path === '/api/enterprise/teams' && method === 'GET') return route.fulfill({ json: { teams: state.teams } });
+    if (path === '/api/enterprise/teams' && method === 'GET') return route.fulfill({ json: { teams: state.teams.filter(team => team.status === 'ACTIVE') } });
     if (path === '/api/enterprise/teams' && method === 'POST') {
       const team = { id: crypto.randomUUID(), tenantId: state.tenant.id, workspaceId: body?.workspaceId || state.workspace.id, name: String(body?.name || 'Team'), status: 'ACTIVE' };
       state.teams.push(team);
       state.audit.push(auditEvent('TEAM_CREATED'));
       return route.fulfill({ status: 201, json: { team } });
+    }
+    {
+      const teamMatch = path.match(/^\/api\/enterprise\/teams\/([^/]+)$/);
+      if (teamMatch && method === 'PATCH') {
+        const team = state.teams.find(entry => entry.id === teamMatch[1] && entry.status === 'ACTIVE');
+        if (!team) return route.fulfill({ status: 404, json: { error: { code: 'TEAM_NOT_FOUND' } } });
+        team.name = String(body?.name || team.name);
+        state.audit.push(auditEvent('TEAM_UPDATED'));
+        return route.fulfill({ json: { team } });
+      }
+      const teamArchiveMatch = path.match(/^\/api\/enterprise\/teams\/([^/]+)\/archive$/);
+      if (teamArchiveMatch && method === 'POST') {
+        const team = state.teams.find(entry => entry.id === teamArchiveMatch[1] && entry.status === 'ACTIVE');
+        if (!team) return route.fulfill({ status: 404, json: { error: { code: 'TEAM_NOT_FOUND' } } });
+        team.status = 'ARCHIVED';
+        state.audit.push(auditEvent('TEAM_ARCHIVED'));
+        return route.fulfill({ json: { team } });
+      }
+      const teamMembersMatch = path.match(/^\/api\/enterprise\/teams\/([^/]+)\/members$/);
+      if (teamMembersMatch && method === 'GET') {
+        return route.fulfill({ json: { members: state.teamMembers.filter(member => member.teamId === teamMembersMatch[1] && member.status === 'ACTIVE') } });
+      }
+      if (teamMembersMatch && method === 'POST') {
+        const member = { id: crypto.randomUUID(), teamId: teamMembersMatch[1], workspaceId: state.workspace.id, principalId: String(body?.principalId || ''), status: 'ACTIVE' };
+        state.teamMembers.push(member);
+        state.audit.push(auditEvent('TEAM_MEMBER_ADDED'));
+        return route.fulfill({ status: 201, json: { member } });
+      }
+      const teamMemberMatch = path.match(/^\/api\/enterprise\/teams\/([^/]+)\/members\/([^/]+)$/);
+      if (teamMemberMatch && method === 'DELETE') {
+        state.teamMembers = state.teamMembers.filter(member => !(member.teamId === teamMemberMatch[1] && member.principalId === decodeURIComponent(teamMemberMatch[2])));
+        state.audit.push(auditEvent('TEAM_MEMBER_REMOVED'));
+        return route.fulfill({ status: 204, body: '' });
+      }
     }
     if (path === '/api/enterprise/roles-matrix') return route.fulfill({ json: { roles: { TENANT_OWNER: ['*'], TENANT_ADMIN: ['tenant.read'], MEMBER: ['resource.read'] } } });
     if (path === '/api/enterprise/resources' && method === 'GET') return route.fulfill({ json: { resources: [] } });
@@ -129,7 +201,16 @@ function createFixtureBackend() {
       return route.fulfill({ json: { status: job ? 'REPLAYED' : 'NOT_FOUND', jobId: body?.jobId } });
     }
     if (path === '/api/enterprise/usage/ai') return route.fulfill({ json: { usage: state.usage } });
-    if (path === '/api/enterprise/audit') return route.fulfill({ json: { events: [...state.audit].reverse() } });
+    if (path === '/api/enterprise/audit') {
+      // Mirror the real server-side filter contract so the browser test
+      // exercises true request-driven filtering, not client-side slicing.
+      let events = [...state.audit].reverse();
+      const outcome = url.searchParams.get('outcome');
+      const action = url.searchParams.get('action');
+      if (outcome) events = events.filter(event => event.outcome === outcome.toUpperCase());
+      if (action) events = events.filter(event => String(event.action || '').toUpperCase().includes(action.toUpperCase()));
+      return route.fulfill({ json: { events } });
+    }
     if (path === '/api/enterprise/observability/metrics') return route.fulfill({ json: { metrics: { sampleCount: 128, p50: 42, p95: 180, p99: 320, errors: { clientErrors: 3, serverErrors: 1, authErrors: 1, dbErrors: 0, redisErrors: 0, queueErrors: 0, aiErrors: 1 } } } });
     if (path === '/api/enterprise/data-plane/status') return route.fulfill({ json: { dataPlane: { provider: 'firestore', configured: true, durable: true, encryption: 'server-key', encryptionSecurityLevel: 'SERVER_SIDE_MASTER_KEY_ENVELOPE_AES_256_GCM', quotaStore: 'firestore-atomic', queue: 'firestore-durable-outbox' } } });
     if (path === '/api/enterprise/support-grants') return route.fulfill({ json: { grants: [] } });
@@ -208,6 +289,46 @@ async function main() {
     await page.waitForTimeout(600);
     check('workspace creation lands in the workspace list', (await page.locator('text=APAC Operations').count()) > 0);
 
+    // Workspace rename: open the rename modal, change the name, verify.
+    const renameButton = page.locator('button[title="Rename APAC Operations"]');
+    if (await renameButton.count()) {
+      await renameButton.click();
+      await page.waitForSelector('#ws-rename', { timeout: 10_000 });
+      await page.fill('#ws-rename', 'APAC & Japan Operations');
+      await page.keyboard.press('Enter');
+      await page.waitForTimeout(700);
+    }
+    check('workspace rename is reflected in the list', (await page.locator('text=APAC & Japan Operations').count()) > 0);
+
+    // Workspace archive → archived panel → restore.
+    const archiveButton = page.locator('button[title="Archive APAC & Japan Operations"]');
+    if (await archiveButton.count()) {
+      page.once('dialog', dialog => dialog.accept());
+      await archiveButton.click();
+      await page.waitForTimeout(700);
+    }
+    check('archived workspace appears in the archived panel', (await page.locator('.enterprise-pill:has-text("Archived")').count()) > 0);
+    const restoreButton = page.locator('button', { hasText: 'Restore' }).first();
+    if (await restoreButton.count()) {
+      await restoreButton.click();
+      await page.waitForTimeout(700);
+    }
+    check('restored workspace returns to the active list', (await page.locator('.enterprise-workspace-card:not(.archived) >> text=APAC & Japan Operations').count()) > 0);
+
+    // Workspace members drawer: add a member.
+    const membersButton = page.locator('button', { hasText: 'Members' }).first();
+    if (await membersButton.count()) {
+      await membersButton.click();
+      await page.waitForSelector('select[aria-label="Select tenant member to add"]', { timeout: 10_000 });
+      await page.selectOption('select[aria-label="Select tenant member to add"]', 'browser-member');
+      await page.click('button:has-text("Add to Workspace")');
+      await page.waitForTimeout(700);
+      check('workspace member add is reflected in the drawer', (await page.locator('.enterprise-modal >> text=browser-member').count()) > 0);
+      await page.click('.enterprise-modal-footer button:has-text("Close")');
+    } else {
+      check('workspace members drawer is reachable', false);
+    }
+
     // Teams module: create a team.
     await page.goto(`${base}/enterprise?tab=teams`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('input[placeholder*="Executive Search"]', { timeout: 15_000 });
@@ -215,6 +336,31 @@ async function main() {
     await page.keyboard.press('Enter');
     await page.waitForTimeout(600);
     check('team creation lands in the teams list', (await page.locator('text=Growth Recruiters').count()) > 0);
+
+    // Team member management drawer: add the second tenant member to the team.
+    const manageTeamMembers = page.locator('button', { hasText: 'Manage Members' }).first();
+    if (await manageTeamMembers.count()) {
+      await manageTeamMembers.click();
+      await page.waitForSelector('select[aria-label="Select tenant member to add to the team"]', { timeout: 10_000 });
+      await page.selectOption('select[aria-label="Select tenant member to add to the team"]', 'browser-member');
+      await page.click('button:has-text("Add to Team")');
+      await page.waitForTimeout(700);
+      check('team member add is reflected in the drawer', (await page.locator('.enterprise-modal >> text=browser-member').count()) > 0);
+      await page.click('.enterprise-modal-footer button:has-text("Close")');
+    } else {
+      check('team members drawer is reachable', false);
+    }
+
+    // Team rename via modal.
+    const teamRename = page.locator('button[title="Rename Growth Recruiters"]');
+    if (await teamRename.count()) {
+      await teamRename.click();
+      await page.waitForSelector('#team-rename', { timeout: 10_000 });
+      await page.fill('#team-rename', 'Growth & Talent Recruiters');
+      await page.keyboard.press('Enter');
+      await page.waitForTimeout(700);
+    }
+    check('team rename is reflected in the teams list', (await page.locator('text=Growth & Talent Recruiters').count()) > 0);
 
     // Users module: member list is real; removal changes state.
     await page.goto(`${base}/enterprise?tab=users`, { waitUntil: 'domcontentloaded' });
@@ -256,6 +402,16 @@ async function main() {
       (await page.locator('text=WORKSPACE_CREATED').count()) > 0
       && (await page.locator('text=TEAM_CREATED').count()) > 0
       && (await page.locator('text=SERVICE_ACCOUNT_CREATED').count()) > 0);
+
+    // Server-side audit filtering: an action filter narrows the result set at
+    // the API level (the fixture applies the same query contract as the server).
+    await page.fill('input[aria-label="Filter by action"]', 'TEAM_MEMBER');
+    await page.waitForTimeout(900);
+    check('audit action filter narrows results server-side',
+      (await page.locator('text=TEAM_MEMBER_ADDED').count()) > 0
+      && (await page.locator('td >> text=WORKSPACE_CREATED').count()) === 0);
+    await page.fill('input[aria-label="Filter by action"]', '');
+    await page.waitForTimeout(700);
 
     // Support + Settings modules render their server contracts.
     await page.goto(`${base}/enterprise?tab=support`, { waitUntil: 'domcontentloaded' });

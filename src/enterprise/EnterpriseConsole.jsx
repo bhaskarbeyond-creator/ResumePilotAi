@@ -228,7 +228,7 @@ function CommandPalette({ open, onClose, navigation, onSelect }) {
 
 function EnterpriseConsoleInner() {
   const user = useContext(AuthContext);
-  const { tenant, workspace, workspaces, selectWorkspace, enabled, loading, context } = useEnterpriseTenant();
+  const { tenant, workspace, workspaces, selectWorkspace, enabled, loading, context, error, reload } = useEnterpriseTenant();
   const permissions = useMemo(
     () => (loading ? ['*'] : (Array.isArray(context?.permissions) ? context.permissions : [])),
     [context?.permissions, loading],
@@ -285,6 +285,39 @@ function EnterpriseConsoleInner() {
         <h1>Enterprise Unavailable</h1>
         <p>Enterprise features are disabled or unavailable in this environment.</p>
         <Link to="/" className="enterprise-button enterprise-button-primary">Return Home</Link>
+      </main>
+    );
+  }
+
+  // Context-resolution failures (tenant suspended, MFA required, session
+  // re-authentication, network failure) get an explicit full-screen state —
+  // never a blank console or a misleading healthy shell.
+  if (!loading && enabled && error && !context) {
+    const code = error?.code || '';
+    const title = code === 'TENANT_MFA_REQUIRED'
+      ? 'Multi-Factor Authentication Required'
+      : code === 'TENANT_SESSION_REAUTH_REQUIRED'
+        ? 'Session Re-Authentication Required'
+        : code === 'TENANT_INACTIVE'
+          ? 'Organization Suspended'
+          : 'Enterprise Context Unavailable';
+    const hint = code === 'TENANT_MFA_REQUIRED'
+      ? 'This organization requires administrators to sign in with a second factor. Enroll MFA on your account and sign in again.'
+      : code === 'TENANT_SESSION_REAUTH_REQUIRED'
+        ? 'Your session exceeded the maximum session length configured by this organization. Sign out and sign in again to continue.'
+        : code === 'TENANT_INACTIVE'
+          ? 'This organization is currently suspended. A platform administrator must reactivate it before members can access enterprise features.'
+          : (error?.message || 'The enterprise service did not respond as expected.');
+    return (
+      <main className="enterprise-empty-state" role="main" aria-live="polite">
+        <h1>{title}</h1>
+        <p>{hint}</p>
+        <div className="enterprise-inline-actions" style={{ justifyContent: 'center', gap: '0.75rem' }}>
+          <button type="button" className="enterprise-button enterprise-button-primary" onClick={() => reload().catch(() => {})}>
+            Retry
+          </button>
+          <Link to="/" className="enterprise-button enterprise-button-secondary">Return Home</Link>
+        </div>
       </main>
     );
   }
