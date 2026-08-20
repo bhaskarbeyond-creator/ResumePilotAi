@@ -31,9 +31,10 @@
   - **AI Interview Coach & CBT Simulator Module**: `a15dd5d`
   - **AI Provider Fix (nvidia model deprecation + failover)**: `9f7dea7`
   - **AI Module Hardening & Resilience Pass (P1-P6)**: `9c479ff`
+  - **Contextual Interview Coach & Zero-Leakage Generation Pipeline**: `54cb62f`
 - **Freeze Status & Impact Governance**:
-  - **Frozen-module source impact**: AI Interview Coach request/authentication code (`DashboardInterviews.jsx`) was intentionally modified as part of P4 to route through canonical `generateUserAiContent('generate-interview')`, mitigating the previous cold-page authentication race by using the shared `getAuthHeaders()` authentication initialization flow.
-  - **Frozen-module behavioral impact**: **NONE**. The question generation contract, CBT examination flow, scoring algorithms, and report generation remain 100% behaviorally identical to the frozen baseline (`npm run test:interview` passing 28/28).
+  - **Frozen-module source impact**: `backend/routes/ai.js` and `src/utils/interviewCoach.js` were updated to introduce deterministic multi-pass artifact stripping (`cleanInterviewMetadataArtifacts`), candidate/JD blueprint extraction (`buildContextualBlueprint`), and 4-Level hierarchical prompt formulation (`[LEVEL 1: CANDIDATE VERIFIED EVIDENCE]` to `[LEVEL 4: TARGET JOB REQUIREMENTS SPECIFICATION]`).
+  - **Frozen-module behavioral impact**: **NONE**. The question generation contract, CBT examination flow, scoring algorithms, timer, and comprehensive report generation remain 100% behaviorally identical and backward compatible with the frozen baseline (`npm run test:interview` passing 28/28).
   - **All other frozen modules**: No direct or indirect impact identified. The CV Module, 4 CV Templates, Print/PDF Download Pipeline, Resume Builder Wizard, 51 Resume Templates, and 51-Template DOCX Export Pipeline remain untouched and fully certified.
 - **Modification Protocol**: Do not modify these certified baselines directly without strict regression testing (all test suites must remain 100% passing).
 
