@@ -19,8 +19,20 @@
 import { chromium } from 'playwright';
 import { createServer } from 'vite';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 
-const API_KEY = 'demo-browser-api-key';
+function readEnvKey() {
+  for (const file of ['.env', 'backend/.env']) {
+    try {
+      const content = fs.readFileSync(file, 'utf8');
+      const match = content.match(/VITE_FIREBASE_KEY=([^\r\n]+)/);
+      if (match) return match[1].trim();
+    } catch {}
+  }
+  return 'demo-browser-api-key';
+}
+
+const API_KEY = process.env.VITE_FIREBASE_KEY || readEnvKey();
 
 function fixtureTenant(displayName) {
   const tenantId = crypto.randomUUID();
@@ -53,7 +65,7 @@ function createFixtureBackend() {
     const url = new URL(route.request().url());
     const path = url.pathname;
     const method = route.request().method();
-    const body = route.request().postDataJSON ? safeJson(route.request()) : {};
+    const body = safeJson(route.request());
 
     if (delay.has(path)) await new Promise(resolve => setTimeout(resolve, 350));
     if (path === '/api/enterprise/status') return route.fulfill({ json: { enabled: true, apiVersion: 'tenant-foundation-v1' } });
@@ -220,8 +232,32 @@ function createFixtureBackend() {
   };
 }
 
-function safeJson(route) {
-  try { return route.request().postDataJSON(); } catch { return {}; }
+function safeJson(req) {
+  try {
+    if (req && typeof req.postDataJSON === 'function') return req.postDataJSON() || {};
+    if (req && typeof req.request === 'function' && typeof req.request().postDataJSON === 'function') return req.request().postDataJSON() || {};
+    return {};
+  } catch {
+    return {};
+  }
+}
+
+function makeMockJwt(payload = {}) {
+  const header = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url');
+  const claims = Buffer.from(JSON.stringify({
+    iss: 'https://securetoken.google.com/ai-resume-builder-424cf',
+    aud: 'ai-resume-builder-424cf',
+    auth_time: Math.floor(Date.now() / 1000),
+    user_id: 'browser-owner',
+    sub: 'browser-owner',
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + 3600,
+    email: 'owner@northwind.example',
+    email_verified: true,
+    firebase: { identities: { email: ['owner@northwind.example'] }, sign_in_provider: 'password' },
+    ...payload,
+  })).toString('base64url');
+  return `${header}.${claims}.mock_signature`;
 }
 
 async function main() {
@@ -255,18 +291,79 @@ async function main() {
 
     // Pre-seed a Firebase compat auth session and intercept token refresh so
     // the app believes a verified user is signed in without any real backend.
+    const mockToken = makeMockJwt();
     const authUserKey = `firebase:authUser:${API_KEY}:[DEFAULT]`;
-    await page.addInitScript(({ key }) => {
+    const initAuth = ({ key, apiKey, token }) => {
       window.__ENTERPRISE_ENABLED__ = true;
-      localStorage.setItem(key, JSON.stringify({
-        uid: 'browser-owner', email: 'owner@northwind.example', emailVerified: true, displayName: 'Northwind Owner',
-        stsTokenManager: { apiKey: key.split(':')[1], refreshToken: 'fixture-refresh', accessToken: 'fixture-access', expirationTime: Date.now() + 3_600_000 },
-        tenantId: null, createdAt: Date.now(), lastLoginAt: Date.now(), apiKey: key.split(':')[1], appName: '[DEFAULT]',
-      }));
-    }, { key: authUserKey });
+      const userObj = {
+        uid: 'browser-owner',
+        email: 'owner@northwind.example',
+        emailVerified: true,
+        displayName: 'Northwind Owner',
+        isAnonymous: false,
+        stsTokenManager: {
+          apiKey,
+          refreshToken: 'fixture-refresh',
+          accessToken: token,
+          expirationTime: Date.now() + 3_600_000,
+        },
+        createdAt: String(Date.now()),
+        lastLoginAt: String(Date.now()),
+        apiKey,
+        appName: '[DEFAULT]',
+      };
+      const userPayload = JSON.stringify(userObj);
+      localStorage.setItem(key, userPayload);
+      localStorage.setItem('firebase:authUser:demo-browser-api-key:[DEFAULT]', userPayload);
+      if (apiKey) localStorage.setItem(`firebase:authUser:${apiKey}:[DEFAULT]`, userPayload);
+      localStorage.setItem('user', 'browser-owner');
 
-    await page.route('**/securetoken.googleapis.com/**', route => route.fulfill({ status: 400, json: { error: { code: 400, message: 'TOKEN_EXCHANGE_UNAVAILABLE' } } }));
-    await page.route('**/identitytoolkit.googleapis.com/**', route => route.fulfill({ status: 400, json: {} }));
+      try {
+        const req = indexedDB.open('firebaseLocalStorageDb', 1);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains('firebaseLocalStorage')) {
+            db.createObjectStore('firebaseLocalStorage', { keyPath: 'fbase_key' });
+          }
+        };
+        req.onsuccess = () => {
+          const db = req.result;
+          const tx = db.transaction('firebaseLocalStorage', 'readwrite');
+          const store = tx.objectStore('firebaseLocalStorage');
+          store.put({ fbase_key: key, value: userObj });
+          if (apiKey) store.put({ fbase_key: `firebase:authUser:${apiKey}:[DEFAULT]`, value: userObj });
+          store.put({ fbase_key: 'firebase:authUser:demo-browser-api-key:[DEFAULT]', value: userObj });
+        };
+      } catch {}
+    };
+    await page.addInitScript(initAuth, { key: authUserKey, apiKey: API_KEY, token: mockToken });
+
+    await page.route('**/securetoken.googleapis.com/**', route => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        access_token: mockToken,
+        expires_in: '3600',
+        token_type: 'Bearer',
+        refresh_token: 'fixture-refresh',
+        id_token: mockToken,
+        user_id: 'browser-owner',
+        project_id: 'ai-resume-builder-424cf',
+      }),
+    }));
+    await page.route('**/identitytoolkit.googleapis.com/**', route => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        users: [{
+          localId: 'browser-owner',
+          email: 'owner@northwind.example',
+          emailVerified: true,
+          displayName: 'Northwind Owner',
+          providerUserInfo: [],
+        }],
+      }),
+    }));
     const backend = createFixtureBackend();
     await page.route('**/api/**', backend);
 
@@ -283,92 +380,80 @@ async function main() {
 
     // Workspaces module: create a workspace (real fixture state change).
     await page.goto(`${base}/enterprise?tab=workspaces`, { waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('input[placeholder*="Europe Operations"], input[placeholder^="e.g."]', { timeout: 15_000 });
-    await page.fill('input[placeholder^="e.g."]', 'APAC Operations');
-    await page.keyboard.press('Enter');
-    await page.waitForTimeout(600);
+    await page.waitForSelector('button:has-text("New Workspace")', { timeout: 15_000 });
+    await page.click('button:has-text("New Workspace")');
+    await page.waitForSelector('#ws-name', { timeout: 10_000 });
+    await page.fill('#ws-name', 'APAC Operations');
+    await page.click('.enterprise-modal button:has-text("Create Workspace")');
+    await page.waitForSelector('text=APAC Operations', { timeout: 10_000 });
     check('workspace creation lands in the workspace list', (await page.locator('text=APAC Operations').count()) > 0);
 
     // Workspace rename: open the rename modal, change the name, verify.
-    const renameButton = page.locator('button[title="Rename APAC Operations"]');
-    if (await renameButton.count()) {
-      await renameButton.click();
-      await page.waitForSelector('#ws-rename', { timeout: 10_000 });
-      await page.fill('#ws-rename', 'APAC & Japan Operations');
-      await page.keyboard.press('Enter');
-      await page.waitForTimeout(700);
-    }
+    await page.waitForSelector('button[title="Rename APAC Operations"]', { timeout: 10_000 });
+    await page.click('button[title="Rename APAC Operations"]');
+    await page.waitForSelector('#ws-rename', { timeout: 10_000 });
+    await page.fill('#ws-rename', 'APAC & Japan Operations');
+    await page.click('.enterprise-modal button:has-text("Save Name")');
+    await page.waitForSelector('text=APAC & Japan Operations', { timeout: 10_000 });
     check('workspace rename is reflected in the list', (await page.locator('text=APAC & Japan Operations').count()) > 0);
 
     // Workspace archive → archived panel → restore.
-    const archiveButton = page.locator('button[title="Archive APAC & Japan Operations"]');
-    if (await archiveButton.count()) {
-      page.once('dialog', dialog => dialog.accept());
-      await archiveButton.click();
-      await page.waitForTimeout(700);
-    }
+    await page.waitForSelector('button[title="Archive APAC & Japan Operations"]', { timeout: 10_000 });
+    page.once('dialog', dialog => dialog.accept());
+    await page.click('button[title="Archive APAC & Japan Operations"]');
+    await page.waitForSelector('.enterprise-pill:has-text("Archived")', { timeout: 10_000 });
     check('archived workspace appears in the archived panel', (await page.locator('.enterprise-pill:has-text("Archived")').count()) > 0);
     const restoreButton = page.locator('button', { hasText: 'Restore' }).first();
-    if (await restoreButton.count()) {
-      await restoreButton.click();
-      await page.waitForTimeout(700);
-    }
+    await restoreButton.click();
+    await page.waitForSelector('.enterprise-workspace-card:not(.archived) >> text=APAC & Japan Operations', { timeout: 10_000 });
     check('restored workspace returns to the active list', (await page.locator('.enterprise-workspace-card:not(.archived) >> text=APAC & Japan Operations').count()) > 0);
 
     // Workspace members drawer: add a member.
     const membersButton = page.locator('button', { hasText: 'Members' }).first();
-    if (await membersButton.count()) {
-      await membersButton.click();
-      await page.waitForSelector('select[aria-label="Select tenant member to add"]', { timeout: 10_000 });
-      await page.selectOption('select[aria-label="Select tenant member to add"]', 'browser-member');
-      await page.click('button:has-text("Add to Workspace")');
-      await page.waitForTimeout(700);
-      check('workspace member add is reflected in the drawer', (await page.locator('.enterprise-modal >> text=browser-member').count()) > 0);
-      await page.click('.enterprise-modal-footer button:has-text("Close")');
-    } else {
-      check('workspace members drawer is reachable', false);
-    }
+    await membersButton.click();
+    await page.waitForSelector('select[aria-label="Select tenant member to add"]', { timeout: 10_000 });
+    await page.selectOption('select[aria-label="Select tenant member to add"]', 'browser-member');
+    await page.click('button:has-text("Add to Workspace")');
+    await page.waitForSelector('.enterprise-modal >> text=browser-member', { timeout: 10_000 });
+    check('workspace member add is reflected in the drawer', (await page.locator('.enterprise-modal >> text=browser-member').count()) > 0);
+    await page.click('.enterprise-modal-header button[aria-label*="Close"]');
 
     // Teams module: create a team.
     await page.goto(`${base}/enterprise?tab=teams`, { waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('input[placeholder*="Executive Search"]', { timeout: 15_000 });
-    await page.fill('input[placeholder*="Executive Search"]', 'Growth Recruiters');
-    await page.keyboard.press('Enter');
-    await page.waitForTimeout(600);
+    await page.waitForSelector('button:has-text("Create Team")', { timeout: 15_000 });
+    await page.click('button:has-text("Create Team")');
+    await page.waitForSelector('#team-name', { timeout: 10_000 });
+    await page.fill('#team-name', 'Growth Recruiters');
+    await page.click('.enterprise-modal-footer button:has-text("Create Team")');
+    await page.waitForSelector('text=Growth Recruiters', { timeout: 10_000 });
     check('team creation lands in the teams list', (await page.locator('text=Growth Recruiters').count()) > 0);
 
     // Team member management drawer: add the second tenant member to the team.
     const manageTeamMembers = page.locator('button', { hasText: 'Manage Members' }).first();
-    if (await manageTeamMembers.count()) {
-      await manageTeamMembers.click();
-      await page.waitForSelector('select[aria-label="Select tenant member to add to the team"]', { timeout: 10_000 });
-      await page.selectOption('select[aria-label="Select tenant member to add to the team"]', 'browser-member');
-      await page.click('button:has-text("Add to Team")');
-      await page.waitForTimeout(700);
-      check('team member add is reflected in the drawer', (await page.locator('.enterprise-modal >> text=browser-member').count()) > 0);
-      await page.click('.enterprise-modal-footer button:has-text("Close")');
-    } else {
-      check('team members drawer is reachable', false);
-    }
+    await manageTeamMembers.click();
+    await page.waitForSelector('select[aria-label="Select tenant member to add to the team"]', { timeout: 10_000 });
+    await page.selectOption('select[aria-label="Select tenant member to add to the team"]', 'browser-member');
+    await page.click('button:has-text("Add to Team")');
+    await page.waitForSelector('.enterprise-modal >> text=browser-member', { timeout: 10_000 });
+    check('team member add is reflected in the drawer', (await page.locator('.enterprise-modal >> text=browser-member').count()) > 0);
+    await page.click('.enterprise-modal-header button[aria-label*="Close"]');
 
     // Team rename via modal.
-    const teamRename = page.locator('button[title="Rename Growth Recruiters"]');
-    if (await teamRename.count()) {
-      await teamRename.click();
-      await page.waitForSelector('#team-rename', { timeout: 10_000 });
-      await page.fill('#team-rename', 'Growth & Talent Recruiters');
-      await page.keyboard.press('Enter');
-      await page.waitForTimeout(700);
-    }
+    await page.waitForSelector('button[title="Rename Growth Recruiters"]', { timeout: 10_000 });
+    await page.click('button[title="Rename Growth Recruiters"]');
+    await page.waitForSelector('#team-rename', { timeout: 10_000 });
+    await page.fill('#team-rename', 'Growth & Talent Recruiters');
+    await page.click('.enterprise-modal-footer button:has-text("Save Name")');
+    await page.waitForSelector('text=Growth & Talent Recruiters', { timeout: 10_000 });
     check('team rename is reflected in the teams list', (await page.locator('text=Growth & Talent Recruiters').count()) > 0);
 
     // Users module: member list is real; removal changes state.
-    await page.goto(`${base}/enterprise?tab=users`, { waitUntil: 'domcontentloaded' });
+    await page.goto(`${base}/enterprise?tab=members`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('text=browser-member', { timeout: 15_000 });
     check('users module lists real members', (await page.locator('text=browser-member').count()) > 0);
 
     // Roles module: matrix renders from server data.
-    await page.goto(`${base}/enterprise?tab=roles`, { waitUntil: 'domcontentloaded' });
+    await page.goto(`${base}/enterprise?tab=access`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('text=TENANT_OWNER', { timeout: 15_000 });
     check('roles matrix renders server-provided roles', (await page.locator('text=TENANT_OWNER').count()) > 0);
 
@@ -379,19 +464,17 @@ async function main() {
 
     // Security module: service account lifecycle.
     await page.goto(`${base}/enterprise?tab=security`, { waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('input[placeholder*="Workday"]', { timeout: 15_000 });
-    check('security module renders durable jobs panel', (await page.locator('text=Durable Jobs & Dead Letters').count()) > 0);
-    await page.fill('input[placeholder*="Workday"]', 'ATS Export Bot');
-    const createButton = page.locator('button', { hasText: 'Create' }).first();
-    if (await createButton.count()) {
-      await createButton.click();
-      await page.waitForTimeout(600);
-    }
+    await page.waitForSelector('button:has-text("Create Service Account")', { timeout: 15_000 });
+    await page.click('button:has-text("Create Service Account")');
+    await page.waitForSelector('#sa-name', { timeout: 10_000 });
+    await page.fill('#sa-name', 'ATS Export Bot');
+    await page.click('.enterprise-modal button[type="submit"]');
+    await page.waitForSelector('text=ATS Export Bot', { timeout: 10_000 });
     check('security module shows service account after creation', (await page.locator('text=ATS Export Bot').count()) > 0);
 
     // Usage module: real ledger numbers from the durable usage endpoint.
     await page.goto(`${base}/enterprise?tab=usage`, { waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('text=Daily AI Consumption', { timeout: 15_000 });
+    await page.waitForSelector('text=12,400', { timeout: 15_000 });
     check('usage module renders durable ledger totals', (await page.locator('text=12,400').count()) > 0);
     check('usage module renders per-day rows', (await page.locator('text=2026-08-20').count()) > 0);
 
@@ -423,6 +506,7 @@ async function main() {
 
     // Keyboard navigation: tab focus reaches the primary navigation.
     await page.goto(`${base}/enterprise?tab=overview`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('.enterprise-shell, [aria-label="Enterprise Navigation"]', { timeout: 15_000 });
     for (let i = 0; i < 6; i += 1) await page.keyboard.press('Tab');
     const focusedLabel = await page.evaluate(() => document.activeElement?.getAttribute('aria-label') || document.activeElement?.tagName || '');
     check('keyboard navigation moves focus into the console', Boolean(focusedLabel));
@@ -431,19 +515,55 @@ async function main() {
     const ariaCount = await page.evaluate(() => document.querySelectorAll('[aria-label], [role], [aria-live]').length);
     check('aria landmarks/labels are present', ariaCount >= 5);
 
-    // Mobile viewport pass.
-    const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-    await mobile.addInitScript(() => { window.__ENTERPRISE_ENABLED__ = true; });
-    const mobileBackend = createFixtureBackend();
-    await mobile.route('**/api/**', mobileBackend);
-    await mobile.goto(`${base}/enterprise`, { waitUntil: 'domcontentloaded' });
-    await mobile.waitForSelector('.enterprise-shell, [aria-label="Enterprise Navigation"]', { timeout: 20_000 });
-    const hasHorizontalOverflow = await mobile.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 2);
-    check('mobile viewport has no horizontal overflow', !hasHorizontalOverflow);
-    await mobile.close();
+    // Viewport responsiveness matrix (Desktop, Tablet, Mobile)
+    const viewports = [
+      { name: 'Desktop (1280x800)', width: 1280, height: 800, isMobile: false },
+      { name: 'Tablet (768x1024)', width: 768, height: 1024, isMobile: true },
+      { name: 'Mobile (390x844)', width: 390, height: 844, isMobile: true },
+      { name: 'Mobile (375x667)', width: 375, height: 667, isMobile: true },
+    ];
+
+    for (const vp of viewports) {
+      const vpPage = await browser.newPage({ viewport: { width: vp.width, height: vp.height }, isMobile: vp.isMobile, hasTouch: vp.isMobile });
+      await vpPage.addInitScript(initAuth, { key: authUserKey, apiKey: API_KEY, token: mockToken });
+      await vpPage.route('**/securetoken.googleapis.com/**', route => route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          access_token: mockToken,
+          expires_in: '3600',
+          token_type: 'Bearer',
+          refresh_token: 'fixture-refresh',
+          id_token: mockToken,
+          user_id: 'browser-owner',
+          project_id: 'ai-resume-builder-424cf',
+        }),
+      }));
+      await vpPage.route('**/identitytoolkit.googleapis.com/**', route => route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          users: [{
+            localId: 'browser-owner',
+            email: 'owner@northwind.example',
+            emailVerified: true,
+            displayName: 'Northwind Owner',
+            providerUserInfo: [],
+          }],
+        }),
+      }));
+      const vpBackend = createFixtureBackend();
+      await vpPage.route('**/api/**', vpBackend);
+      await vpPage.goto(`${base}/enterprise`, { waitUntil: 'domcontentloaded' });
+      await vpPage.waitForSelector('.enterprise-shell, [aria-label="Enterprise Navigation"]', { timeout: 20_000 });
+      const overflow = await vpPage.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 2);
+      check(`${vp.name} viewport renders without horizontal overflow`, !overflow);
+      await vpPage.close();
+    }
 
     await page.close();
   } catch (error) {
+    console.error('[Enterprise Browser Test] caught error at:', error.stack || error);
     check(`browser workflow completed without error (${error.message.split('\n')[0]})`, false);
   } finally {
     await browser.close();
