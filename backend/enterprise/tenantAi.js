@@ -35,13 +35,26 @@ function normalizeAllowedProviders(policy = {}, configuredProviders = {}) {
 
 function applyTenantAiPolicy(configuration, context, policy = {}) {
   const allowedProviders = normalizeAllowedProviders(policy, configuration.providers);
+  // Model governance is enforced server-side: when the tenant declares a model
+  // allowlist, providers whose effective model is not allowlisted are disabled
+  // even if the provider itself is approved.
+  const allowedModels = Array.isArray(policy.allowedModels)
+    ? new Set(policy.allowedModels.map(value => String(value).trim()))
+    : null;
   const providers = Object.fromEntries(Object.entries(configuration.providers || {}).map(([name, provider]) => [name, {
     ...provider,
-    enabled: provider.enabled === true && allowedProviders.has(name),
+    enabled: provider.enabled === true && allowedProviders.has(name)
+      && (!allowedModels || allowedModels.size === 0 || allowedModels.has(String(provider.model || ''))),
   }]));
-  const primary = allowedProviders.has(configuration.primary) && providers[configuration.primary]?.enabled
-    ? configuration.primary
-    : Object.keys(providers).find(name => providers[name].enabled) || configuration.primary;
+  // The tenant-preferred primary model takes effect only through provider
+  // selection: the primary becomes the provider actually serving that model.
+  const modelPreferredPrimary = String(policy.primaryModel || '')
+    ? Object.keys(providers).find(name => providers[name]?.enabled && String(providers[name].model || '') === String(policy.primaryModel))
+    : undefined;
+  const primary = modelPreferredPrimary
+    || (allowedProviders.has(configuration.primary) && providers[configuration.primary]?.enabled
+      ? configuration.primary
+      : Object.keys(providers).find(name => providers[name].enabled) || configuration.primary);
   if (!providers[primary]?.enabled) {
     const error = new Error('No provider is permitted by the active tenant AI policy');
     error.code = 'TENANT_AI_PROVIDER_UNAVAILABLE';

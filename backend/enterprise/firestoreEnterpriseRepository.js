@@ -177,7 +177,7 @@ class FirestoreEnterpriseRepository {
     return document;
   }
 
-  async listAuditEvents(context, { limit = 100, action = null, actor = null, outcome = null, severity = null, category = null, since = null, until = null } = {}) {
+  async listAuditEvents(context, { limit = 100, action = null, actor = null, outcome = null, severity = null, category = null, since = null, until = null, cursor = null } = {}) {
     this.assertContext(context);
     const boundedLimit = Math.max(1, Math.min(Number(limit) || 100, 250));
     const filters = {
@@ -194,10 +194,15 @@ class FirestoreEnterpriseRepository {
     // so exports and views reflect the true tenant history, not just the page
     // the browser happened to load.
     const scanLimit = hasFilters ? Math.max(boundedLimit, 500) : boundedLimit;
-    const snapshot = await this.tenantCollection(context, 'audit_events').orderBy('occurredAt', 'desc').limit(scanLimit).get();
+    // Keyset pagination over occurredAt: the cursor is the timestamp of the
+    // last event of the previous page, so deep pages never rescan the head.
+    let query = this.tenantCollection(context, 'audit_events').orderBy('occurredAt', 'desc');
+    if (cursor && Number.isFinite(Date.parse(cursor))) {
+      query = query.startAfter(new Date(Date.parse(cursor)).toISOString());
+    }
+    const snapshot = await query.limit(scanLimit).get();
     const events = snapshot.docs.map(document => ({ id: document.id, ...document.data() }));
-    if (!hasFilters) return events;
-    return events.filter(event => {
+    const filtered = hasFilters ? events.filter(event => {
       if (filters.action && !String(event.action || '').toUpperCase().includes(filters.action)) return false;
       if (filters.actor) {
         const actorText = `${event.actorSubjectId || ''} ${event.subjectId || ''} ${event.principalId || ''}`.toLowerCase();
@@ -210,7 +215,13 @@ class FirestoreEnterpriseRepository {
       if (filters.since && occurredAt && occurredAt < filters.since) return false;
       if (filters.until && occurredAt && occurredAt > filters.until) return false;
       return true;
-    }).slice(0, boundedLimit);
+    }) : events;
+    const page = filtered.slice(0, boundedLimit);
+    // A full page may have further matches; the caller discovers that by
+    // fetching the next page (an empty page returns a null cursor).
+    const maybeMore = filtered.length >= boundedLimit;
+    const nextCursor = maybeMore && page.length ? String(page[page.length - 1].occurredAt || '') : null;
+    return Object.assign(page, { nextCursor: nextCursor || null });
   }
 
   async createResource(context, { id = crypto.randomUUID(), resourceType, classification = 'PRIVATE', payload = {} }) {
@@ -395,6 +406,9 @@ class FirestoreEnterpriseRepository {
         [`workspaces.${context.workspaceId || 'unassigned'}.requests`]: increment(1),
         [`workspaces.${context.workspaceId || 'unassigned'}.inputTokens`]: increment(usage.inputTokens),
         [`workspaces.${context.workspaceId || 'unassigned'}.outputTokens`]: increment(usage.outputTokens),
+        [`users.${usage.principalId || 'unknown'}.requests`]: increment(1),
+        [`users.${usage.principalId || 'unknown'}.inputTokens`]: increment(usage.inputTokens),
+        [`users.${usage.principalId || 'unknown'}.outputTokens`]: increment(usage.outputTokens),
         [`providers.${usage.provider || 'unknown'}.requests`]: increment(1),
         [`models.${usage.model || 'unknown'}.requests`]: increment(1),
         updatedAt: this.admin?.firestore?.FieldValue?.serverTimestamp?.() || new Date(),
@@ -415,6 +429,7 @@ class FirestoreEnterpriseRepository {
       estimatedCostMicros: 0,
       byDay: [],
       byWorkspace: {},
+      byUser: {},
       byProvider: {},
       byModel: {},
     };
@@ -435,6 +450,12 @@ class FirestoreEnterpriseRepository {
         slot.inputTokens += Number(value.inputTokens || 0);
         slot.outputTokens += Number(value.outputTokens || 0);
       }
+      for (const [principalId, value] of Object.entries(data.users || {})) {
+        const slot = summary.byUser[principalId] || (summary.byUser[principalId] = { requests: 0, inputTokens: 0, outputTokens: 0 });
+        slot.requests += Number(value.requests || 0);
+        slot.inputTokens += Number(value.inputTokens || 0);
+        slot.outputTokens += Number(value.outputTokens || 0);
+      }
       for (const [provider, value] of Object.entries(data.providers || {})) {
         summary.byProvider[provider] = (summary.byProvider[provider] || 0) + Number(value.requests || 0);
       }
@@ -444,6 +465,32 @@ class FirestoreEnterpriseRepository {
     }
     summary.byDay.sort((left, right) => String(left.day).localeCompare(String(right.day)));
     return summary;
+  }
+
+  async listAiUsageEvents(context, { limit = 50 } = {}) {
+    this.assertContext(context);
+    const boundedLimit = Math.max(1, Math.min(Number(limit) || 50, 200));
+    const snapshot = await this.tenantCollection(context, 'ai_usage')
+      .orderBy('createdAt', 'desc')
+      .limit(boundedLimit)
+      .get();
+    return snapshot.docs.map(document => {
+      const data = document.data() || {};
+      return {
+        id: document.id,
+        tenantId: data.tenantId || context.tenantId,
+        workspaceId: data.workspaceId || null,
+        principalId: data.principalId || null,
+        provider: data.provider || null,
+        model: data.model || null,
+        operation: data.operation || null,
+        inputTokens: Number(data.inputTokens || 0),
+        outputTokens: Number(data.outputTokens || 0),
+        estimatedCostMicros: Number(data.estimatedCostMicros || 0),
+        correlationId: data.correlationId || null,
+        createdAt: data.createdAt || null,
+      };
+    });
   }
 
   async ping() {

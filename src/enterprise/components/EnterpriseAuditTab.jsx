@@ -1,34 +1,60 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  FiSearch, FiDownload, FiEye, FiX
+  FiSearch, FiDownload, FiEye, FiX, FiChevronRight
 } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
+
+const OUTCOMES = ['ALL', 'SUCCESS', 'DENIED', 'FAILURE'];
+const SEVERITIES = ['ALL', 'INFO', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+const PAGE_SIZE = 100;
 
 function csvEscape(value) {
   const text = String(value ?? '');
   return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
-export default function EnterpriseAuditTab() {
+export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = null }) {
   const { request } = useTenantApi();
   const [searchQuery, setSearchQuery] = useState('');
   const [outcomeFilter, setOutcomeFilter] = useState('ALL');
+  const [severityFilter, setSeverityFilter] = useState('ALL');
   const [actionFilter, setActionFilter] = useState('');
+  const [actorFilter, setActorFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
   const [sinceDate, setSinceDate] = useState('');
   const [untilDate, setUntilDate] = useState('');
   const [inspectEvent, setInspectEvent] = useState(null);
+  const [cursor, setCursor] = useState(null);
+  const [accumulated, setAccumulated] = useState([]);
+
+  // Cross-tab investigation preset (e.g. member activity): applies the actor
+  // filter once, then is consumed so manual edits behave normally afterwards.
+  useEffect(() => {
+    if (preset?.actor) {
+      setActorFilter(preset.actor);
+      setCursor(null);
+      if (typeof onPresetConsumed === 'function') onPresetConsumed();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preset]);
 
   // Filters are applied server-side so the view and exports reflect the true
   // tenant history rather than only the page the browser happened to load.
   const query = useMemo(() => {
     const params = new URLSearchParams();
-    params.set('limit', '250');
+    params.set('limit', String(PAGE_SIZE));
     if (outcomeFilter !== 'ALL') params.set('outcome', outcomeFilter);
+    if (severityFilter !== 'ALL') params.set('severity', severityFilter);
     if (actionFilter.trim()) params.set('action', actionFilter.trim());
+    if (actorFilter.trim()) params.set('actor', actorFilter.trim());
+    if (categoryFilter.trim()) params.set('category', categoryFilter.trim());
     if (sinceDate) params.set('since', new Date(`${sinceDate}T00:00:00.000Z`).toISOString());
     if (untilDate) params.set('until', new Date(`${untilDate}T23:59:59.999Z`).toISOString());
+    if (cursor) params.set('cursor', cursor);
     return params.toString();
-  }, [outcomeFilter, actionFilter, sinceDate, untilDate]);
+  }, [outcomeFilter, severityFilter, actionFilter, actorFilter, categoryFilter, sinceDate, untilDate, cursor]);
+
+  const filterSignature = useMemo(() => query.replace(/&?cursor=[^&]*/, ''), [query]);
 
   const [auditState, refreshAudit] = useAsyncResource(
     () => request(`/api/enterprise/audit?${query}`),
@@ -36,7 +62,19 @@ export default function EnterpriseAuditTab() {
   );
   const { loading, error, data } = auditState;
 
-  const events = useMemo(() => (Array.isArray(data?.events) ? data.events : []), [data]);
+  // Reset the accumulated list whenever the filter set itself changes so
+  // pagination never mixes pages from different queries.
+  useEffect(() => { setAccumulated([]); }, [filterSignature]);
+
+  useEffect(() => {
+    if (data?.events) {
+      setAccumulated(previous => (cursor ? [...previous, ...(data.events || [])] : [...(data.events || [])]));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
+
+  const events = useMemo(() => accumulated, [accumulated]);
+  const nextCursor = data?.nextCursor || null;
 
   const filtered = events.filter(event => {
     if (!searchQuery.trim()) return true;
@@ -118,10 +156,23 @@ export default function EnterpriseAuditTab() {
               className="enterprise-select"
               aria-label="Filter by outcome"
             >
-              <option value="ALL">All Outcomes</option>
-              <option value="SUCCESS">Success Only</option>
-              <option value="DENIED">Denied / Blocked</option>
-              <option value="FAILURE">Failure</option>
+              {OUTCOMES.map(outcome => (
+                <option key={outcome} value={outcome}>
+                  {outcome === 'ALL' ? 'All Outcomes' : outcome === 'DENIED' ? 'Denied / Blocked' : outcome === 'FAILURE' ? 'Failure' : 'Success Only'}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="enterprise-select-group">
+            <select
+              value={severityFilter}
+              onChange={(e) => setSeverityFilter(e.target.value)}
+              className="enterprise-select"
+              aria-label="Filter by severity"
+            >
+              {SEVERITIES.map(severity => (
+                <option key={severity} value={severity}>{severity === 'ALL' ? 'All Severities' : severity}</option>
+              ))}
             </select>
           </div>
           <input
@@ -131,7 +182,25 @@ export default function EnterpriseAuditTab() {
             onChange={(e) => setActionFilter(e.target.value)}
             className="enterprise-input"
             aria-label="Filter by action"
-            style={{ maxWidth: '220px' }}
+            style={{ maxWidth: '180px' }}
+          />
+          <input
+            type="text"
+            placeholder="Actor contains… (principal)"
+            value={actorFilter}
+            onChange={(e) => setActorFilter(e.target.value)}
+            className="enterprise-input"
+            aria-label="Filter by actor principal"
+            style={{ maxWidth: '180px' }}
+          />
+          <input
+            type="text"
+            placeholder="Category… (e.g. tenant.security)"
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="enterprise-input"
+            aria-label="Filter by category"
+            style={{ maxWidth: '180px' }}
           />
           <label className="enterprise-inline-actions" style={{ gap: '0.35rem' }}>
             <span className="sr-only">From date</span>
@@ -155,49 +224,76 @@ export default function EnterpriseAuditTab() {
           </label>
         </div>
 
-        <DataState loading={loading} error={error} onRetry={refreshAudit}>
+        <DataState loading={loading && !cursor} error={error} onRetry={refreshAudit}>
           {filtered.length === 0 ? (
-            <p className="enterprise-empty">No audit events match this view for the active tenant.</p>
+            loading && cursor ? (
+              <div className="enterprise-loading-row"><span className="enterprise-spinner" aria-hidden="true" /><span className="text-muted">Loading more events…</span></div>
+            ) : (
+              <p className="enterprise-empty">No audit events match this view for the active tenant.</p>
+            )
           ) : (
-            <div className="enterprise-table-wrapper">
-              <table className="enterprise-table">
-                <thead>
-                  <tr>
-                    <th>Timestamp (UTC)</th>
-                    <th>Actor</th>
-                    <th>Action</th>
-                    <th>Resource</th>
-                    <th>Outcome</th>
-                    <th className="text-right">Details</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map(event => (
-                    <tr key={event.id}>
-                      <td><small className="text-muted">{new Date(event.occurredAt || event.createdAt || Date.now()).toISOString()}</small></td>
-                      <td><strong>{event.actorSubjectId || event.subjectId || event.principalId || 'system'}</strong></td>
-                      <td><code>{event.action}</code></td>
-                      <td><small>{event.resourceType ? `${event.resourceType}:${String(event.resourceId || '').slice(0, 8)}` : '—'}</small></td>
-                      <td>
-                        <span className={`enterprise-pill enterprise-pill-${event.outcome === 'SUCCESS' ? 'success' : (event.outcome === 'DENIED' ? 'warning' : 'danger')}`}>
-                          {event.outcome || '—'}
-                        </span>
-                      </td>
-                      <td className="text-right">
-                        <button
-                          type="button"
-                          className="enterprise-button-icon"
-                          title="Inspect Event Payload"
-                          onClick={() => setInspectEvent(event)}
-                        >
-                          <FiEye />
-                        </button>
-                      </td>
+            <>
+              <div className="enterprise-table-wrapper">
+                <table className="enterprise-table">
+                  <thead>
+                    <tr>
+                      <th>Timestamp (UTC)</th>
+                      <th>Actor</th>
+                      <th>Action</th>
+                      <th>Category</th>
+                      <th>Severity</th>
+                      <th>Resource</th>
+                      <th>Outcome</th>
+                      <th className="text-right">Details</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {filtered.map(event => (
+                      <tr key={event.id}>
+                        <td><small className="text-muted">{new Date(event.occurredAt || event.createdAt || Date.now()).toISOString()}</small></td>
+                        <td><strong>{event.actorSubjectId || event.subjectId || event.principalId || 'system'}</strong></td>
+                        <td><code>{event.action}</code></td>
+                        <td><small>{event.category || '—'}</small></td>
+                        <td>
+                          <span className={`enterprise-pill ${(event.severity === 'HIGH' || event.severity === 'CRITICAL') ? 'enterprise-pill-danger' : 'enterprise-pill-secondary'}`}>
+                            {event.severity || '—'}
+                          </span>
+                        </td>
+                        <td><small>{event.resourceType ? `${event.resourceType}:${String(event.resourceId || '').slice(0, 8)}` : '—'}</small></td>
+                        <td>
+                          <span className={`enterprise-pill enterprise-pill-${event.outcome === 'SUCCESS' ? 'success' : (event.outcome === 'DENIED' ? 'warning' : 'danger')}`}>
+                            {event.outcome || '—'}
+                          </span>
+                        </td>
+                        <td className="text-right">
+                          <button
+                            type="button"
+                            className="enterprise-button-icon"
+                            title="Inspect Event Payload"
+                            onClick={() => setInspectEvent(event)}
+                          >
+                            <FiEye />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="enterprise-inline-actions" style={{ justifyContent: 'center', marginTop: '0.75rem' }}>
+                {nextCursor && (
+                  <button
+                    type="button"
+                    className="enterprise-button enterprise-button-secondary enterprise-button-sm"
+                    onClick={() => setCursor(nextCursor)}
+                    disabled={loading}
+                  >
+                    {loading ? <span className="enterprise-spinner enterprise-spin" aria-hidden="true" /> : <FiChevronRight aria-hidden="true" />} Load more events
+                  </button>
+                )}
+                <small className="text-muted">{filtered.length} event{filtered.length === 1 ? '' : 's'} loaded{nextCursor ? ' · more available' : ' · end of trail'}</small>
+              </div>
+            </>
           )}
         </DataState>
       </div>

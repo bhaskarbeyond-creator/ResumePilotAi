@@ -18,6 +18,7 @@ import EnterpriseSecurityTab from './components/EnterpriseSecurityTab';
 import EnterpriseAuditTab from './components/EnterpriseAuditTab';
 import EnterpriseSettingsTab from './components/EnterpriseSettingsTab';
 import EnterpriseSupportTab from './components/EnterpriseSupportTab';
+import EnterprisePlatformTab from './components/EnterprisePlatformTab';
 import './enterprise.css';
 
 const NAVIGATION = [
@@ -33,9 +34,14 @@ const NAVIGATION = [
   { id: 'audit', label: 'Audit logs', icon: FiFileText, permission: 'tenant.audit.read' },
   { id: 'support', label: 'Support access', icon: FiHelpCircle, permission: 'tenant.settings.write' },
   { id: 'settings', label: 'Organization settings', icon: FiSettings, permission: 'tenant.settings.write' },
+  // Platform administration is a separate administrative layer over the tenant
+  // registry. It is visible only when the server-derived platform capability is
+  // true — never decided by the client.
+  { id: 'platform', label: 'Platform administration', icon: FiCommand, platformOnly: true },
 ];
 
-function canSee(item, permissions = []) {
+function canSee(item, permissions = [], platformAdmin = false) {
+  if (item.platformOnly) return platformAdmin === true;
   return !item.permission || permissions.includes('*') || permissions.includes(item.permission);
 }
 
@@ -228,7 +234,7 @@ function CommandPalette({ open, onClose, navigation, onSelect }) {
 
 function EnterpriseConsoleInner() {
   const user = useContext(AuthContext);
-  const { tenant, workspace, workspaces, selectWorkspace, enabled, loading, context, error, reload } = useEnterpriseTenant();
+  const { tenant, workspace, workspaces, selectWorkspace, enabled, loading, context, error, reload, platformAdmin } = useEnterpriseTenant();
   const permissions = useMemo(
     () => (loading ? ['*'] : (Array.isArray(context?.permissions) ? context.permissions : [])),
     [context?.permissions, loading],
@@ -237,10 +243,13 @@ function EnterpriseConsoleInner() {
   const navigate = useNavigate();
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  // Cross-tab investigation handoff (e.g. "view member activity" jumps to the
+  // audit log with the actor filter pre-applied). Consumed once by the audit tab.
+  const [auditPreset, setAuditPreset] = useState(null);
 
   const visibleNav = useMemo(() => {
-    return NAVIGATION.filter(item => canSee(item, permissions));
-  }, [permissions]);
+    return NAVIGATION.filter(item => canSee(item, permissions, platformAdmin));
+  }, [permissions, platformAdmin]);
 
   const requestedTab = useMemo(() => {
     const search = new URLSearchParams(location.search);
@@ -406,6 +415,10 @@ function EnterpriseConsoleInner() {
           {activeTab === 'members' && (
             <EnterpriseUsersTab
               currentPrincipalId={user?.uid}
+              onInspectActivity={(principalId) => {
+                setAuditPreset({ actor: String(principalId || '').trim() });
+                selectTab('audit');
+              }}
             />
           )}
 
@@ -443,7 +456,10 @@ function EnterpriseConsoleInner() {
           )}
 
           {activeTab === 'audit' && (
-            <EnterpriseAuditTab />
+            <EnterpriseAuditTab
+              preset={auditPreset}
+              onPresetConsumed={() => setAuditPreset(null)}
+            />
           )}
 
           {activeTab === 'support' && (
@@ -454,6 +470,10 @@ function EnterpriseConsoleInner() {
             <EnterpriseSettingsTab
               tenant={tenant}
             />
+          )}
+
+          {activeTab === 'platform' && (
+            <EnterprisePlatformTab />
           )}
         </main>
       </div>

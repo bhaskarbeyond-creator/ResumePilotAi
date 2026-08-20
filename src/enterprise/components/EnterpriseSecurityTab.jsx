@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
-  FiShield, FiLock, FiKey, FiPlus, FiTrash2, FiCopy, FiCheck, FiX, FiRotateCcw, FiLayers
+  FiShield, FiLock, FiKey, FiPlus, FiTrash2, FiCopy, FiCheck, FiX, FiRotateCcw, FiLayers, FiRefreshCw
 } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 
@@ -130,11 +130,14 @@ export default function EnterpriseSecurityTab() {
     () => request('/api/enterprise/service-accounts'),
     [request],
   );
+  const [configState] = useAsyncResource(() => request('/api/enterprise/configuration'), [request]);
+  const [planeState] = useAsyncResource(() => request('/api/enterprise/data-plane/status'), [request]);
   const { loading, error, data } = accountsState;
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [saName, setSaName] = useState('');
   const [saScopes, setSaScopes] = useState(['resource.read']);
   const [busy, setBusy] = useState(false);
+  const [rotatingId, setRotatingId] = useState(null);
   const [generatedKey, setGeneratedKey] = useState(null);
   const [copied, setCopied] = useState(false);
   const [actionError, setActionError] = useState(null);
@@ -142,6 +145,23 @@ export default function EnterpriseSecurityTab() {
 
   const serviceAccounts = useMemo(() => (Array.isArray(data?.serviceAccounts) ? data.serviceAccounts : []), [data]);
   const canManageServiceAccounts = hasPermission('tenant.security.manage');
+
+  // Real security posture from the revisioned tenant configuration and the
+  // live data-plane description — never synthesized.
+  const posture = useMemo(() => {
+    const configuration = configState.data?.configuration || null;
+    const plane = planeState.data?.dataPlane || null;
+    return {
+      loaded: !configState.loading && !planeState.loading,
+      requireMfaForAdmins: configuration?.securityPolicy?.requireMfaForAdmins === true,
+      sessionMaxMinutes: configuration?.identityPolicy?.sessionMaxMinutes ?? null,
+      ssoMode: String(configuration?.identityPolicy?.ssoMode || 'NONE').toUpperCase(),
+      supportApproval: configuration?.securityPolicy?.supportAccessRequiresApproval !== false,
+      encryption: plane?.encryption || 'none',
+      encryptionLevel: plane?.encryptionSecurityLevel || null,
+      dataPlaneConfigured: plane?.configured === true,
+    };
+  }, [configState, planeState]);
 
   const notify = (message) => {
     setNotification(message);
@@ -186,6 +206,22 @@ export default function EnterpriseSecurityTab() {
     }
   };
 
+  const handleRotate = async (account) => {
+    if (!window.confirm(`Rotate the API key for "${account.displayName}"? The current key stops working immediately and a replacement is shown exactly once.`)) return;
+    setRotatingId(account.id);
+    setActionError(null);
+    try {
+      const rotated = await request(`/api/enterprise/service-accounts/${encodeURIComponent(account.id)}/rotate`, { method: 'POST' });
+      setGeneratedKey({ plaintext: rotated.apiKey, name: `${rotated.serviceAccount.displayName} (rotated)` });
+      notify(`API key rotated for "${rotated.serviceAccount.displayName}". The previous key is now invalid.`);
+      refreshAccounts();
+    } catch (err) {
+      setActionError(err?.message || 'Service account key could not be rotated.');
+    } finally {
+      setRotatingId(null);
+    }
+  };
+
   const handleCopy = async () => {
     if (!generatedKey?.plaintext) return;
     try {
@@ -214,11 +250,11 @@ export default function EnterpriseSecurityTab() {
       )}
 
       {generatedKey && (
-        <div className="enterprise-card">
+        <div className="enterprise-card" role="alert">
           <h3 className="enterprise-card-title">API Key Generated — Save It Now</h3>
           <p className="enterprise-card-subtitle">The plaintext secret is shown exactly once and is never stored. Copy it before closing.</p>
-          <div className="enterprise-inline-actions">
-            <code className="enterprise-json-preview" style={{ display: 'inline-block', padding: '0.5rem 0.75rem' }}>{generatedKey.plaintext}</code>
+          <div className="enterprise-inline-actions" style={{ flexWrap: 'wrap' }}>
+            <code className="enterprise-json-preview" style={{ display: 'inline-block', padding: '0.5rem 0.75rem', wordBreak: 'break-all' }}>{generatedKey.plaintext}</code>
             <button type="button" className="enterprise-button enterprise-button-secondary" onClick={handleCopy}>
               <FiCopy aria-hidden="true" /> {copied ? 'Copied' : 'Copy Secret'}
             </button>
@@ -228,6 +264,69 @@ export default function EnterpriseSecurityTab() {
           </div>
         </div>
       )}
+
+      <div className="enterprise-card">
+        <h3 className="enterprise-card-title"><FiShield aria-hidden="true" /> Security Posture</h3>
+        <p className="enterprise-card-subtitle">Live policy state — every value is enforced server-side at enterprise context resolution</p>
+        <ul className="enterprise-health-list">
+          <li className="enterprise-health-item">
+            <div className={`enterprise-health-status ${posture.loaded ? (posture.requireMfaForAdmins ? 'online' : 'checking') : 'checking'}`} />
+            <div className="enterprise-health-copy">
+              <strong>Administrator MFA</strong>
+              <small>{posture.requireMfaForAdmins ? 'Required — administrators must sign in with a second factor' : 'Not required — administrators may sign in with a single factor'}</small>
+            </div>
+            <span className={`enterprise-pill ${posture.requireMfaForAdmins ? 'enterprise-pill-success' : 'enterprise-pill-warning'}`}>
+              {posture.requireMfaForAdmins ? 'Enforced' : 'Optional'}
+            </span>
+          </li>
+          <li className="enterprise-health-item">
+            <div className="enterprise-health-status online" />
+            <div className="enterprise-health-copy">
+              <strong>Session Policy</strong>
+              <small>Administrator sessions are re-authenticated after {posture.sessionMaxMinutes ?? '—'} minutes (enforced from the verified token auth_time claim)</small>
+            </div>
+            <span className="enterprise-pill enterprise-pill-success">Enforced</span>
+          </li>
+          <li className="enterprise-health-item">
+            <div className={`enterprise-health-status ${posture.loaded ? (posture.ssoMode === 'NONE' ? 'checking' : 'online') : 'checking'}`} />
+            <div className="enterprise-health-copy">
+              <strong>Identity Federation (SSO)</strong>
+              <small>{posture.ssoMode === 'NONE'
+                ? 'Not configured — Firebase email/password and social sign-ins are accepted'
+                : `${posture.ssoMode} required — non-federated sign-ins are rejected at enterprise context resolution`}</small>
+            </div>
+            <span className={`enterprise-pill ${posture.ssoMode === 'NONE' ? 'enterprise-pill-secondary' : 'enterprise-pill-success'}`}>
+              {posture.ssoMode === 'NONE' ? 'Password allowed' : `${posture.ssoMode} enforced`}
+            </span>
+          </li>
+          <li className="enterprise-health-item">
+            <div className={`enterprise-health-status ${posture.dataPlaneConfigured ? 'online' : 'offline'}`} />
+            <div className="enterprise-health-copy">
+              <strong>Payload Encryption</strong>
+              <small>{posture.encryption === 'server-key'
+                ? 'Server-key AES-256-GCM sealing of confidential tenant payloads'
+                : posture.encryption === 'unavailable'
+                  ? `Encryption provider unavailable (${posture.encryptionLevel || 'fail closed'}) — confidential payload operations are refused`
+                  : 'No encryption provider configured — confidential payload operations fail closed'}</small>
+            </div>
+            <span className={`enterprise-pill ${posture.encryption === 'server-key' ? 'enterprise-pill-success' : 'enterprise-pill-warning'}`}>
+              {posture.encryption === 'server-key' ? 'ServerKey AES-256-GCM' : posture.encryption || 'none'}
+            </span>
+          </li>
+          <li className="enterprise-health-item">
+            <div className={`enterprise-health-status ${posture.supportApproval ? 'online' : 'checking'}`} />
+            <div className="enterprise-health-copy">
+              <strong>Break-Glass Scope Policy</strong>
+              <small>{posture.supportApproval
+                ? 'Support grants are restricted to read-only diagnostic scopes'
+                : 'Repair (write) scopes are additionally permitted for support grants — this is a recorded tenant decision'}</small>
+            </div>
+            <span className={`enterprise-pill ${posture.supportApproval ? 'enterprise-pill-success' : 'enterprise-pill-warning'}`}>
+              {posture.supportApproval ? 'Diagnostic scopes only' : 'Repair scopes allowed'}
+            </span>
+          </li>
+        </ul>
+      </div>
 
       <div className="enterprise-card">
         <h2 className="enterprise-tab-title">Enterprise Security Center</h2>
@@ -284,31 +383,62 @@ export default function EnterpriseSecurityTab() {
                     <th>Name</th>
                     <th>Workspace</th>
                     <th>Scopes</th>
+                    <th>Key</th>
                     <th>Status</th>
                     <th className="text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {serviceAccounts.map(account => (
-                    <tr key={account.id}>
-                      <td><strong>{account.displayName}</strong><br /><small>{String(account.id).slice(0, 12)}…</small></td>
-                      <td><small>{account.workspaceId ? String(account.workspaceId).slice(0, 8) : '—'}</small></td>
-                      <td>{Array.isArray(account.scopes) ? account.scopes.map(s => <span key={s} className="enterprise-pill enterprise-pill-secondary">{s}</span>) : <small>—</small>}</td>
-                      <td><span className="enterprise-pill enterprise-pill-success">{account.status}</span></td>
-                      <td className="text-right">
-                        {canManageServiceAccounts && (
-                          <button
-                            type="button"
-                            className="enterprise-button-icon text-danger"
-                            title="Revoke API key"
-                            onClick={() => handleRevoke(account.id)}
-                          >
-                            <FiTrash2 />
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                  {serviceAccounts.map(account => {
+                    const expired = account.expiresAt && new Date(account.expiresAt).getTime() <= Date.now();
+                    const expiringSoon = !expired && account.expiresAt && (new Date(account.expiresAt).getTime() - Date.now()) < 7 * 24 * 60 * 60 * 1000;
+                    return (
+                      <tr key={account.id}>
+                        <td><strong>{account.displayName}</strong><br /><small>{String(account.id).slice(0, 12)}…</small></td>
+                        <td><small>{account.workspaceId ? String(account.workspaceId).slice(0, 8) : '—'}</small></td>
+                        <td>{Array.isArray(account.scopes) ? account.scopes.map(s => <span key={s} className="enterprise-pill enterprise-pill-secondary">{s}</span>) : <small>—</small>}</td>
+                        <td>
+                          <small className="text-muted" title={account.apiKeyId || ''}>
+                            {account.apiKeyPrefix ? `${account.apiKeyPrefix}…` : '—'}
+                          </small>
+                          <br />
+                          {expired ? (
+                            <span className="enterprise-pill enterprise-pill-danger">expired</span>
+                          ) : expiringSoon ? (
+                            <span className="enterprise-pill enterprise-pill-warning">expiring soon</span>
+                          ) : account.expiresAt ? (
+                            <small>{new Date(account.expiresAt).toLocaleDateString()}</small>
+                          ) : (
+                            <small className="text-muted">no expiry</small>
+                          )}
+                        </td>
+                        <td><span className="enterprise-pill enterprise-pill-success">{account.status}</span></td>
+                        <td className="text-right">
+                          {canManageServiceAccounts && (
+                            <div className="enterprise-table-actions" style={{ justifyContent: 'flex-end' }}>
+                              <button
+                                type="button"
+                                className="enterprise-button-icon"
+                                title="Rotate API key (old key stops working immediately)"
+                                disabled={rotatingId === account.id}
+                                onClick={() => handleRotate(account)}
+                              >
+                                {rotatingId === account.id ? <FiRefreshCw className="enterprise-spin" /> : <FiRefreshCw />}
+                              </button>
+                              <button
+                                type="button"
+                                className="enterprise-button-icon text-danger"
+                                title="Revoke API key"
+                                onClick={() => handleRevoke(account.id)}
+                              >
+                                <FiTrash2 />
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

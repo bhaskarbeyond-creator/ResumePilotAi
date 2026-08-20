@@ -19,6 +19,28 @@ function normalizeScopes(scopes) {
   return result;
 }
 
+// Break-glass scope governance. While a tenant keeps the default
+// supportAccessRequiresApproval policy, break-glass grants are limited to
+// read-only diagnostic scopes. Explicitly disabling that policy is the
+// tenant's recorded decision to also allow repair (write) scopes.
+const SUPPORT_DIAGNOSTIC_SCOPES = Object.freeze(['tenant.read', 'tenant.usage.read', 'tenant.audit.read', 'resource.read', 'workspace.read']);
+const SUPPORT_REPAIR_SCOPES = Object.freeze(['resource.update', 'resource.create']);
+
+function assertSupportScopes(scopes, { allowRepair = false } = {}) {
+  const requested = normalizeScopes(scopes);
+  const permitted = allowRepair
+    ? [...SUPPORT_DIAGNOSTIC_SCOPES, ...SUPPORT_REPAIR_SCOPES]
+    : SUPPORT_DIAGNOSTIC_SCOPES;
+  const denied = requested.filter(scope => !permitted.includes(scope));
+  if (denied.length) {
+    const error = new Error(`Support grant scopes are not permitted under the tenant support policy: ${denied.join(', ')}`);
+    error.code = 'SUPPORT_SCOPE_NOT_PERMITTED';
+    error.status = 403;
+    throw error;
+  }
+  return requested;
+}
+
 function createApiKeyMaterial({ tenantId, workspaceId = null, serviceAccountId, scopes, expiresAt = null, now = new Date() }) {
   assertUuid(tenantId, 'Tenant identifier');
   if (workspaceId) assertUuid(workspaceId, 'Workspace identifier');
@@ -54,6 +76,9 @@ function verifyApiKeyRecord(record, plaintext, { now = new Date() } = {}) {
 
 module.exports = {
   API_KEY_PREFIX,
+  SUPPORT_DIAGNOSTIC_SCOPES,
+  SUPPORT_REPAIR_SCOPES,
+  assertSupportScopes,
   createApiKeyMaterial,
   hashSecret,
   normalizeScopes,

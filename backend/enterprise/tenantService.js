@@ -4,7 +4,8 @@ const { permissionsFor } = require('../security/auth');
 const { buildTenantAuditEvent, writeTenantAuditEvent } = require('./tenantAudit');
 const { createEnterpriseRepository } = require('./enterpriseRepository');
 const { createEncryptionProvider } = require('./encryptionProvider');
-const { FirestoreTenantRegistry, InMemoryTenantRegistry, membershipDocumentId } = require('./tenantRegistry');
+const { FirestoreTenantRegistry, InMemoryTenantRegistry, membershipDocumentId, customRoleIds } = require('./tenantRegistry');
+const { assertSupportScopes } = require('./serviceIdentity');
 const { FirestoreServiceAccountStore } = require('./serviceAccountStore');
 const { FirestoreSupportGrantStore } = require('./supportAccessStore');
 const { FirestoreAtomicCounterStore, TenantQuotaGuard } = require('./tenantQuota');
@@ -71,7 +72,9 @@ class TenantService {
     const configuration = await this.registry.getTenantConfiguration(resolved.tenant.id);
     this.enforceTenantSecurityPolicies({ user, configuration, roles: resolved.membership.roles });
     const tenant = { ...resolved.tenant, configuration, aiPolicy: configuration.aiPolicy };
-    const permissions = [...permissionsForRoles(resolved.membership.roles)];
+    // Custom roles defined in the tenant configuration expand into their
+    // declared whitelisted permissions at resolution time (fail closed).
+    const permissions = [...permissionsForRoles(resolved.membership.roles, configuration.customRoles || {})];
     const workspaceScope = resolved.membership.roles.some(role => ['TENANT_OWNER', 'TENANT_ADMIN'].includes(String(role).toUpperCase()))
       ? 'TENANT'
       : 'WORKSPACE';
@@ -95,9 +98,10 @@ class TenantService {
 
   // Tenant-configured security and identity policies are enforced at every
   // context resolution, not just stored. Session age uses the verified Firebase
-  // auth_time claim; MFA uses the verified sign_in_second_factor claim. When a
-  // claim is absent from the verified token the corresponding check cannot be
-  // evaluated and is skipped — it never trusts client-supplied values.
+  // auth_time claim; MFA uses the verified sign_in_second_factor claim; SSO
+  // mode uses the verified firebase.sign_in_provider claim. When a claim is
+  // absent from the verified token the corresponding check cannot be evaluated
+  // and is skipped — it never trusts client-supplied values.
   enforceTenantSecurityPolicies({ user, configuration, roles = [] }) {
     const identityPolicy = configuration?.identityPolicy || {};
     const securityPolicy = configuration?.securityPolicy || {};
@@ -113,9 +117,27 @@ class TenantService {
         );
       }
     }
+    // SSO mode is an enforced identity policy: when the tenant declares SAML or
+    // OIDC, non-federated sign-ins (password, phone, anonymous) cannot resolve
+    // enterprise context. The provider is read from the verified token claims.
+    const ssoMode = String(identityPolicy.ssoMode || 'NONE').toUpperCase();
+    if (ssoMode !== 'NONE') {
+      const signInProvider = String(claims.firebase?.sign_in_provider || claims.sign_in_provider || '');
+      const federated = ssoMode === 'SAML'
+        ? signInProvider.startsWith('saml.')
+        : ssoMode === 'OIDC'
+          ? signInProvider.startsWith('oidc.')
+          : true;
+      if (signInProvider && !federated) {
+        throw Object.assign(
+          new Error('This organization requires federated single sign-on. Sign in with your identity provider to continue.'),
+          { code: 'TENANT_SSO_REQUIRED', status: 403 },
+        );
+      }
+    }
     const isAdmin = roles.some(role => ['TENANT_OWNER', 'TENANT_ADMIN'].includes(String(role).toUpperCase()));
     if (securityPolicy.requireMfaForAdmins === true && isAdmin) {
-      const secondFactor = claims.firebase?.sign_in_second_factor || null;
+      const secondFactor = claims.firebase?.sign_in_second_factor || claims.sign_in_second_factor || null;
       if (!secondFactor) {
         throw Object.assign(
           new Error('This tenant requires multi-factor authentication for administrator access.'),
@@ -175,6 +197,15 @@ class TenantService {
     if (tenant.lifecycleState !== 'ACTIVE') {
       throw Object.assign(new Error('Tenant is not active'), { code: 'TENANT_INACTIVE', status: 403 });
     }
+    // Break-glass scope governance is enforced server-side from the tenant's
+    // recorded security policy. The default (supportAccessRequiresApproval)
+    // restricts grants to read-only diagnostic scopes; explicitly disabling it
+    // is the tenant's recorded decision to allow repair (write) scopes.
+    const securityPolicy = tenantScopedRequest
+      ? (await this.registry.getTenantConfiguration(context.tenantId).catch(() => null))?.securityPolicy || {}
+      : {};
+    const allowRepair = securityPolicy.supportAccessRequiresApproval === false;
+    const scopes = assertSupportScopes(input?.scopes && Array.isArray(input.scopes) && input.scopes.length ? input.scopes : ['tenant.audit.read'], { allowRepair });
     const grant = await this.supportGrantStore.create({
       tenantId,
       workspaceId: workspace.id,
@@ -182,7 +213,7 @@ class TenantService {
       requestedBySubjectId: user.uid,
       reason: input?.reason,
       expiresInMinutes: input?.expiresInMinutes,
-      scopes: input?.scopes || ['tenant.audit.read'],
+      scopes,
     });
     if (this.db && this.admin) {
       await this.db.collection('security_audit_logs').doc().set({
@@ -319,6 +350,29 @@ class TenantService {
     return true;
   }
 
+  async rotateServiceAccount({ context, serviceAccountId }) {
+    if (!this.serviceAccountStore) {
+      throw Object.assign(new Error('Service account store is unavailable'), { code: 'SERVICE_ACCOUNT_STORE_UNAVAILABLE', status: 503 });
+    }
+    const rotated = await this.serviceAccountStore.rotate(serviceAccountId, {
+      tenantId: context.tenantId,
+      workspaceId: context.workspaceScope === 'TENANT' ? null : context.workspaceId,
+    });
+    if (!rotated) throw Object.assign(new Error('Service account was not found'), { code: 'SERVICE_ACCOUNT_NOT_FOUND', status: 404 });
+    if (this.db && this.admin) {
+      const event = buildTenantAuditEvent({
+        context,
+        action: 'SERVICE_ACCOUNT_KEY_ROTATED',
+        category: 'tenant.security',
+        severity: 'HIGH',
+        resource: { type: 'service_account', id: serviceAccountId },
+        metadata: { apiKeyId: rotated.material.record.id, apiKeyPrefix: rotated.material.record.prefix },
+      });
+      await writeTenantAuditEvent(this.db, this.admin, event);
+    }
+    return rotated;
+  }
+
   async listSupportGrants({ context }) {
     if (!this.supportGrantStore) {
       throw Object.assign(new Error('Support access store is unavailable'), { code: 'SUPPORT_ACCESS_UNAVAILABLE', status: 503 });
@@ -410,9 +464,9 @@ class TenantService {
     }
   }
 
-  async listAuditEvents({ context, limit = 100, filters = {} }) {
+  async listAuditEvents({ context, limit = 100, filters = {}, cursor = null }) {
     if (!this.repository) throw Object.assign(new Error('Tenant audit store is unavailable'), { code: 'TENANT_AUDIT_UNAVAILABLE', status: 503 });
-    return this.repository.listAuditEvents(context, { limit, ...filters });
+    return this.repository.listAuditEvents(context, { limit, ...filters, cursor });
   }
 
   async getAiUsageSummary({ context, days = 30 }) {
@@ -422,6 +476,55 @@ class TenantService {
 
   async getTenantConfiguration({ context }) {
     return this.registry.getTenantConfiguration(context.tenantId);
+  }
+
+  async updateTenantProfile({ context, displayName }) {
+    const tenant = await this.registry.updateTenantProfile({ tenantId: context.tenantId, displayName });
+    await this.writeAudit(context, {
+      action: 'TENANT_PROFILE_UPDATED', category: 'tenant.configuration', severity: 'HIGH',
+      resource: { type: 'tenant', id: context.tenantId },
+      metadata: { displayName: tenant.displayName },
+    });
+    return tenant;
+  }
+
+  async exportTenantData({ context }) {
+    if (!this.db) {
+      throw Object.assign(new Error('Tenant data export requires the Firestore data plane'), { code: 'TENANT_EXPORT_UNAVAILABLE', status: 503 });
+    }
+    const { exportTenantSnapshot, verifySnapshot } = require('./enterpriseBackup');
+    const snapshot = await exportTenantSnapshot({ db: this.db, tenantId: context.tenantId });
+    const verification = verifySnapshot(snapshot);
+    if (!verification.ok) {
+      throw Object.assign(new Error(`Tenant export failed integrity verification: ${verification.problems.join('; ')}`), { code: 'TENANT_EXPORT_INVALID', status: 500 });
+    }
+    await this.writeAudit(context, {
+      action: 'TENANT_DATA_EXPORTED', category: 'tenant.configuration', severity: 'HIGH',
+      resource: { type: 'tenant', id: context.tenantId },
+      metadata: { collections: (snapshot.manifest || []).length, documents: snapshot.documentCount ?? null, checksum: snapshot.checksum || null },
+    });
+    return snapshot;
+  }
+
+  async listAiUsageEvents({ context, limit }) {
+    this.assertRepository();
+    return this.repository.listAiUsageEvents(context, { limit });
+  }
+
+  async listPlatformTenants({ user, limit }) {
+    if (!isPlatformTenantProvisioner(user)) {
+      throw Object.assign(new Error('Platform tenant registry permission is required'), { code: 'FORBIDDEN', status: 403 });
+    }
+    const tenants = await this.registry.listAllTenants({ limit });
+    return tenants.map(tenant => ({
+      id: tenant.id,
+      slug: tenant.slug,
+      displayName: tenant.displayName,
+      lifecycleState: tenant.lifecycleState,
+      isolationTier: tenant.isolationTier,
+      region: tenant.dataPlane.region,
+      createdAt: tenant.createdAt || null,
+    }));
   }
 
   async updateTenantConfiguration({ context, input, expectedRevision }) {
@@ -547,10 +650,19 @@ class TenantService {
   async updateTeam({ context, teamId, input }) {
     const team = await this.registry.getTeam(teamId, context.tenantId);
     this.assertWorkspaceScopeFor(context, team.workspaceId, 'Workspace team access is not permitted');
-    const updated = await this.registry.updateTeam({ tenantId: context.tenantId, teamId, name: input?.name });
+    const leadChanged = input && Object.hasOwn(input, 'leadPrincipalId');
+    const updated = await this.registry.updateTeam({
+      tenantId: context.tenantId,
+      teamId,
+      name: input?.name,
+      leadPrincipalId: leadChanged ? (input.leadPrincipalId === '' ? null : input.leadPrincipalId) : undefined,
+    });
     await this.writeAudit(context, {
       action: 'TEAM_UPDATED', category: 'tenant.team',
-      resource: { type: 'team', id: updated.id }, metadata: { name: updated.name },
+      resource: { type: 'team', id: updated.id }, metadata: {
+        name: updated.name,
+        ...(leadChanged ? { leadPrincipalId: updated.leadPrincipalId || null } : {}),
+      },
     });
     return updated;
   }
@@ -564,6 +676,16 @@ class TenantService {
       resource: { type: 'team', id: archived.id },
     });
     return archived;
+  }
+
+  async restoreTeam({ context, teamId }) {
+    const restored = await this.registry.restoreTeam({ tenantId: context.tenantId, teamId });
+    this.assertWorkspaceScopeFor(context, restored.workspaceId, 'Workspace team access is not permitted');
+    await this.writeAudit(context, {
+      action: 'TEAM_RESTORED', category: 'tenant.team', severity: 'MEDIUM',
+      resource: { type: 'team', id: restored.id },
+    });
+    return restored;
   }
 
   async listTeamMembers({ context, teamId }) {
@@ -598,10 +720,11 @@ class TenantService {
     return this.registry.listTenantMemberships(context.tenantId);
   }
 
-  async listTeams({ context }) {
+  async listTeams({ context, includeArchived = false }) {
     return this.registry.listTeams({
       tenantId: context.tenantId,
       workspaceId: context.workspaceScope === 'TENANT' ? null : context.workspaceId,
+      includeArchived,
     });
   }
 
@@ -625,18 +748,39 @@ class TenantService {
   }
 
   async grantMembership({ context, input }) {
-    const targetPrincipalId = String(input?.principalId || '');
+    let targetPrincipalId = String(input?.principalId || '');
+    const invitationMode = String(input?.status || 'ACTIVE').toUpperCase() === 'INVITED';
     const requestedRoles = Array.isArray(input?.roles) ? input.roles.map(role => String(role).toUpperCase()) : ['MEMBER'];
     if (requestedRoles.includes('TENANT_OWNER') && !context.roles.includes('TENANT_OWNER')) {
       throw Object.assign(new Error('Only a tenant owner may grant tenant ownership'), { code: 'TENANT_OWNER_GRANT_FORBIDDEN', status: 403 });
     }
-    // The foundation grants only already-known identities. Email invitations/SCIM
-    // become separate lifecycle flows; never create a membership for an arbitrary
-    // unverified client-supplied subject.
+    // Only roles defined by the platform or by this tenant's configuration can
+    // be assigned (server-side allowlist, never client-defined).
+    const configuration = context.tenant?.configuration || await this.registry.getTenantConfiguration(context.tenantId);
+    const allowedRoles = customRoleIds(configuration.customRoles || {});
+    // The foundation grants only already-known identities. An invitation may be
+    // addressed to an email address; the backend resolves it to the verified
+    // Firebase identity server-side, so no membership is ever created for an
+    // arbitrary unverified client-supplied subject.
+    if (!targetPrincipalId && input?.invitationEmail) {
+      if (this.admin?.auth) {
+        try {
+          const resolved = await this.admin.auth().getUserByEmail(String(input.invitationEmail).trim().toLowerCase());
+          targetPrincipalId = resolved.uid;
+        } catch {
+          throw Object.assign(new Error('No registered identity exists for that email address'), { code: 'TARGET_PRINCIPAL_NOT_FOUND', status: 404 });
+        }
+      } else {
+        throw Object.assign(new Error('An email invitation requires the identity directory'), { code: 'TARGET_PRINCIPAL_NOT_FOUND', status: 404 });
+      }
+    }
     if (this.admin?.auth) {
       try {
         const target = await this.admin.auth().getUser(targetPrincipalId);
         if (target.disabled) throw Object.assign(new Error('Target identity is suspended'), { code: 'TARGET_PRINCIPAL_SUSPENDED', status: 409 });
+        if (invitationMode && !input?.invitationEmail && target.email) {
+          input = { ...input, invitationEmail: target.email };
+        }
       } catch (error) {
         if (error.status) throw error;
         throw Object.assign(new Error('Target identity was not found'), { code: 'TARGET_PRINCIPAL_NOT_FOUND', status: 404 });
@@ -647,19 +791,74 @@ class TenantService {
       principalId: targetPrincipalId,
       workspaceId: input?.workspaceId || context.workspaceId,
       roles: input?.roles || ['MEMBER'],
+      status: invitationMode ? 'INVITED' : 'ACTIVE',
+      invitationEmail: input?.invitationEmail || null,
+      allowedRoles,
     });
     if (this.db && this.admin) {
       const event = buildTenantAuditEvent({
         context,
-        action: 'TENANT_MEMBERSHIP_GRANTED',
+        action: invitationMode ? 'TENANT_INVITATION_CREATED' : 'TENANT_MEMBERSHIP_GRANTED',
         category: 'tenant.membership',
         resource: { type: 'membership', id: membership.id },
         severity: 'HIGH',
-        metadata: { targetPrincipalId: membership.principalId, roles: membership.roles.join(',') },
+        metadata: {
+          targetPrincipalId: membership.principalId,
+          roles: membership.roles.join(','),
+          status: membership.status,
+          ...(membership.invitationEmail ? { invitationEmail: membership.invitationEmail } : {}),
+        },
       });
       await writeTenantAuditEvent(this.db, this.admin, event);
     }
+    // Best-effort invitation email: delivery never blocks the grant, and the
+    // delivery state is recorded on the membership for administrators.
+    if (invitationMode) {
+      await this.deliverInvitationEmail(membership, context);
+    }
     return membership;
+  }
+
+  async deliverInvitationEmail(membership, context) {
+    if (!membership?.invitationEmail || !this.db) return null;
+    let deliveryState = 'DELIVERY_SKIPPED';
+    try {
+      const { EmailNotifier } = require('../services/emailNotifier');
+      const result = await EmailNotifier.notifyEnterpriseInvitation(this.db, {
+        userEmail: membership.invitationEmail,
+        organizationName: context?.tenant?.displayName || 'an enterprise organization',
+        inviterEmail: context?.subjectId || '',
+      });
+      deliveryState = result?.success ? 'DELIVERED' : String(result?.deliveryState || 'DELIVERY_FAILED').toUpperCase();
+    } catch {
+      deliveryState = 'DELIVERY_FAILED';
+    }
+    try {
+      await this.registry.markInvitationDelivery({
+        tenantId: membership.tenantId,
+        principalId: membership.principalId,
+        deliveryState,
+        deliveredAt: new Date().toISOString(),
+      });
+    } catch { /* delivery bookkeeping is best-effort; the invitation itself stands */ }
+    return deliveryState;
+  }
+
+  async resendMembershipInvitation({ context, principalId }) {
+    const membership = await this.registry.getMembership(context.tenantId, principalId);
+    if (String(membership.status || '').toUpperCase() !== 'INVITED') {
+      throw Object.assign(new Error('Only a pending invitation can be resent'), { code: 'INVITATION_NOT_PENDING', status: 409 });
+    }
+    if (!membership.invitationEmail) {
+      throw Object.assign(new Error('The invitation has no delivery address'), { code: 'INVITATION_NO_ADDRESS', status: 409 });
+    }
+    const deliveryState = await this.deliverInvitationEmail(membership, context);
+    await this.writeAudit(context, {
+      action: 'TENANT_INVITATION_RESENT', category: 'tenant.membership', severity: 'MEDIUM',
+      resource: { type: 'membership', id: membership.id },
+      metadata: { targetPrincipalId: principalId, invitationEmail: membership.invitationEmail, deliveryState: deliveryState || 'DELIVERY_SKIPPED' },
+    });
+    return { ...membership, lastDeliveryState: deliveryState || 'DELIVERY_SKIPPED' };
   }
 
   async updateTenantMembership({ context, principalId, input }) {
@@ -667,12 +866,14 @@ class TenantService {
     if (requestedRoles && requestedRoles.includes('TENANT_OWNER') && !context.roles.includes('TENANT_OWNER')) {
       throw Object.assign(new Error('Only a tenant owner may grant tenant ownership'), { code: 'TENANT_OWNER_GRANT_FORBIDDEN', status: 403 });
     }
+    const configuration = context.tenant?.configuration || await this.registry.getTenantConfiguration(context.tenantId);
     const membership = await this.registry.updateTenantMembership({
       tenantId: context.tenantId,
       principalId,
       roles: requestedRoles,
       status: input?.status ? String(input.status).toUpperCase() : null,
       workspaceId: input?.workspaceId || null,
+      allowedRoles: customRoleIds(configuration.customRoles || {}),
     });
     if (this.db && this.admin) {
       const event = buildTenantAuditEvent({

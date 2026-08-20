@@ -70,6 +70,38 @@ class InMemoryServiceAccountStore {
     this.accounts.set(account.id, { ...account, status: 'REVOKED', revokedAt: new Date().toISOString() });
     return true;
   }
+
+  async rotate(serviceAccountId, { tenantId, workspaceId = null, now = new Date() } = {}) {
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    serviceAccountId = assertUuid(serviceAccountId, 'Service account identifier');
+    const account = this.accounts.get(serviceAccountId);
+    if (!account || account.tenantId !== tenantId || account.status !== 'ACTIVE') return null;
+    if (workspaceId && account.workspaceId !== workspaceId) return null;
+    // Invalidate every previously issued key for this account, then issue
+    // fresh key material. The previous secret stops authenticating immediately.
+    for (const [hash, key] of this.keys.entries()) {
+      if (key.serviceAccountId === serviceAccountId && key.status === 'ACTIVE') {
+        this.keys.set(hash, { ...key, status: 'ROTATED', rotatedAt: new Date(now).toISOString() });
+      }
+    }
+    const material = createApiKeyMaterial({
+      tenantId: account.tenantId,
+      workspaceId: account.workspaceId,
+      serviceAccountId: account.id,
+      scopes: account.scopes,
+      now,
+    });
+    const rotatedAccount = {
+      ...account,
+      apiKeyId: material.record.id,
+      apiKeyPrefix: material.record.prefix,
+      expiresAt: material.record.expiresAt,
+      rotatedAt: new Date(now).toISOString(),
+    };
+    this.accounts.set(account.id, rotatedAccount);
+    this.keys.set(material.record.secretHash, material.record);
+    return { account: { ...rotatedAccount }, material };
+  }
 }
 
 class FirestoreServiceAccountStore {
@@ -149,6 +181,51 @@ class FirestoreServiceAccountStore {
     if (workspaceId && account.workspaceId !== workspaceId) return false;
     await reference.update({ status: 'REVOKED', revokedAt: this.admin.firestore.FieldValue.serverTimestamp(), updatedAt: this.admin.firestore.FieldValue.serverTimestamp() });
     return true;
+  }
+
+  async rotate(serviceAccountId, { tenantId, workspaceId = null, now = new Date() } = {}) {
+    this.assertAvailable();
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    serviceAccountId = assertUuid(serviceAccountId, 'Service account identifier');
+    const accountRef = this.db.collection('enterprise_service_accounts').doc(serviceAccountId);
+    const snapshot = await accountRef.get();
+    if (!snapshot.exists) return null;
+    const account = snapshot.data() || {};
+    if (account.tenantId !== tenantId || String(account.status || '').toUpperCase() !== 'ACTIVE') return null;
+    if (workspaceId && account.workspaceId !== workspaceId) return null;
+    // Mark all live key records for this account as rotated inside a
+    // transaction, then create the replacement key. A crash between the two
+    // leaves the account with zero valid keys (fail closed), never two.
+    const keysSnapshot = await this.db.collection('enterprise_api_keys')
+      .where('serviceAccountId', '==', serviceAccountId)
+      .where('status', '==', 'ACTIVE')
+      .get();
+    const material = createApiKeyMaterial({
+      tenantId: account.tenantId,
+      workspaceId: account.workspaceId,
+      serviceAccountId: account.id,
+      scopes: Array.isArray(account.scopes) ? account.scopes : [],
+      now,
+    });
+    const serverNow = this.admin.firestore.FieldValue.serverTimestamp();
+    await this.db.runTransaction(async transaction => {
+      for (const document of keysSnapshot.docs) {
+        transaction.update(document.ref, { status: 'ROTATED', rotatedAt: serverNow, updatedAt: serverNow });
+      }
+      transaction.create(this.db.collection('enterprise_api_keys').doc(material.record.secretHash), {
+        ...material.record,
+        createdAt: serverNow,
+        updatedAt: serverNow,
+      });
+      transaction.update(accountRef, {
+        apiKeyId: material.record.id,
+        apiKeyPrefix: material.record.prefix,
+        expiresAt: material.record.expiresAt,
+        rotatedAt: serverNow,
+        updatedAt: serverNow,
+      });
+    });
+    return { account: { ...account, id: accountRef.id, apiKeyId: material.record.id, apiKeyPrefix: material.record.prefix, expiresAt: material.record.expiresAt }, material };
   }
 }
 

@@ -165,12 +165,20 @@ router.get('/tenants', async (req, res) => {
   }
 });
 
-router.get('/roles-matrix', resolveTenantContext, requireTenantPermission('tenant.read'), (req, res) => {
+router.get('/roles-matrix', resolveTenantContext, requireTenantPermission('tenant.read'), async (req, res) => {
   const { TENANT_ROLES } = require('../enterprise/constants');
-  return res.json({ roles: TENANT_ROLES });
+  // Tenant-defined custom roles are returned alongside the platform roles so
+  // the console can render and assign the complete, live authorization model.
+  let customRoles = {};
+  try {
+    const configuration = await enterpriseService(req).getTenantConfiguration({ context: req.tenantContext });
+    customRoles = configuration.customRoles || {};
+  } catch { /* defaults on failure: empty custom role set */ }
+  return res.json({ roles: TENANT_ROLES, customRoles });
 });
 
 const respondWithContext = (req, res) => {
+  const { isPlatformTenantProvisioner } = require('../enterprise/tenantService');
   return res.json({
     context: {
       tenantId: req.tenantContext.tenantId,
@@ -188,6 +196,9 @@ const respondWithContext = (req, res) => {
       isolationTier: req.tenant.isolationTier,
     },
     workspace: req.workspace ? { id: req.workspace.id, name: req.workspace.name, isDefault: req.workspace.isDefault === true } : null,
+    // Server-derived caller capability: whether this identity may use the
+    // platform administration surface. Never a client-side decision.
+    platformAdmin: isPlatformTenantProvisioner(req.user),
   });
 };
 
@@ -276,7 +287,7 @@ router.delete('/workspaces/:workspaceId/members/:principalId', resolveTenantCont
 router.get('/memberships', resolveTenantContext, requireTenantPermission('tenant.members.read'), async (req, res) => {
   try {
     const memberships = await enterpriseService(req).listTenantMemberships({ context: req.tenantContext });
-    return res.json({ memberships: memberships.map(membership => ({ id: membership.id, principalId: membership.principalId, workspaceId: membership.workspaceId, roles: membership.roles, status: membership.status, createdAt: membership.createdAt || null })) });
+    return res.json({ memberships: memberships.map(membership => ({ id: membership.id, principalId: membership.principalId, workspaceId: membership.workspaceId, roles: membership.roles, status: membership.status, createdAt: membership.createdAt || null, invitationEmail: membership.invitationEmail || null, invitedAt: membership.invitedAt || null, acceptedAt: membership.acceptedAt || null, invitationDeliveryState: membership.invitationDeliveryState || null })) });
   } catch (error) {
     return res.status(error.status || 503).json({ error: { code: error.code || 'TENANT_MEMBERS_UNAVAILABLE', message: 'Tenant members are unavailable', requestId: res.locals?.requestId } });
   }
@@ -285,18 +296,27 @@ router.get('/memberships', resolveTenantContext, requireTenantPermission('tenant
 router.post('/memberships', resolveTenantContext, requireTenantPermission('tenant.members.manage'), async (req, res) => {
   try {
     const membership = await enterpriseService(req).grantMembership({ context: req.tenantContext, input: req.body || {} });
-    return res.status(201).json({ membership: { id: membership.id, tenantId: membership.tenantId, principalId: membership.principalId, workspaceId: membership.workspaceId, roles: membership.roles, status: membership.status } });
+    return res.status(201).json({ membership: { id: membership.id, tenantId: membership.tenantId, principalId: membership.principalId, workspaceId: membership.workspaceId, roles: membership.roles, status: membership.status, invitationEmail: membership.invitationEmail || null } });
   } catch (error) {
-    return res.status(error.status || 503).json({ error: { code: error.code || 'TENANT_MEMBERSHIP_GRANT_FAILED', message: error.status === 400 ? error.message : 'Tenant membership could not be granted', requestId: res.locals?.requestId } });
+    return res.status(error.status || 503).json({ error: { code: error.code || 'TENANT_MEMBERSHIP_GRANT_FAILED', message: [400, 403, 404, 409].includes(error.status) ? error.message : 'Tenant membership could not be granted', requestId: res.locals?.requestId } });
   }
 });
 
 router.patch('/memberships/:principalId', resolveTenantContext, requireTenantPermission('tenant.members.manage'), async (req, res) => {
   try {
     const membership = await enterpriseService(req).updateTenantMembership({ context: req.tenantContext, principalId: req.params.principalId, input: req.body || {} });
-    return res.json({ membership: { id: membership.id, tenantId: membership.tenantId, principalId: membership.principalId, workspaceId: membership.workspaceId, roles: membership.roles, status: membership.status } });
+    return res.json({ membership: { id: membership.id, tenantId: membership.tenantId, principalId: membership.principalId, workspaceId: membership.workspaceId, roles: membership.roles, status: membership.status, invitationEmail: membership.invitationEmail || null } });
   } catch (error) {
-    return res.status(error.status || 503).json({ error: { code: error.code || 'TENANT_MEMBERSHIP_UPDATE_FAILED', message: error.status === 409 ? error.message : 'Tenant membership could not be updated', requestId: res.locals?.requestId } });
+    return res.status(error.status || 503).json({ error: { code: error.code || 'TENANT_MEMBERSHIP_UPDATE_FAILED', message: [400, 404, 409].includes(error.status) ? error.message : 'Tenant membership could not be updated', requestId: res.locals?.requestId } });
+  }
+});
+
+router.post('/memberships/:principalId/invitation-resend', resolveTenantContext, requireTenantPermission('tenant.members.manage'), async (req, res) => {
+  try {
+    const membership = await enterpriseService(req).resendMembershipInvitation({ context: req.tenantContext, principalId: req.params.principalId });
+    return res.json({ membership: { id: membership.id, principalId: membership.principalId, status: membership.status, invitationEmail: membership.invitationEmail || null, lastDeliveryState: membership.lastDeliveryState || null } });
+  } catch (error) {
+    return res.status(error.status || 503).json({ error: { code: error.code || 'INVITATION_RESEND_FAILED', message: [404, 409].includes(error.status) ? error.message : 'Invitation could not be resent', requestId: res.locals?.requestId } });
   }
 });
 
@@ -345,12 +365,82 @@ router.post('/service-accounts/:serviceAccountId/revoke', resolveTenantContext, 
   }
 });
 
+router.post('/service-accounts/:serviceAccountId/rotate', resolveTenantContext, requireTenantPermission('tenant.security.manage'), async (req, res) => {
+  try {
+    const rotated = await enterpriseService(req).rotateServiceAccount({ context: req.tenantContext, serviceAccountId: req.params.serviceAccountId });
+    // The plaintext key is deliberately returned exactly once, exactly like
+    // creation. Persistence and logs contain only the hash and safe prefix.
+    return res.json({
+      serviceAccount: { id: rotated.account.id, tenantId: rotated.account.tenantId, workspaceId: rotated.account.workspaceId, displayName: rotated.account.displayName, status: rotated.account.status },
+      apiKey: rotated.material.plaintext,
+      apiKeyId: rotated.material.record.id,
+      apiKeyPrefix: rotated.material.record.prefix,
+      scopes: rotated.material.record.scopes,
+      expiresAt: rotated.material.record.expiresAt,
+    });
+  } catch (error) {
+    return res.status(error.status || 503).json({ error: { code: error.code || 'SERVICE_ACCOUNT_ROTATE_FAILED', message: error.status === 404 ? 'Service account was not found' : 'Service account key could not be rotated', requestId: res.locals?.requestId } });
+  }
+});
+
 router.post('/tenants/:tenantId/reactivate', async (req, res) => {
   try {
     const tenant = await enterpriseService(req).setTenantLifecycleAsPlatform({ user: req.user, tenantId: req.params.tenantId, nextState: 'ACTIVE', requestId: res.locals?.requestId });
     return res.json({ tenant: { id: tenant.id, lifecycleState: tenant.lifecycleState } });
   } catch (error) {
     return res.status(error.status || 503).json({ error: { code: error.code || 'TENANT_LIFECYCLE_UPDATE_FAILED', message: error.status === 403 ? 'Tenant reactivation is not permitted' : 'Tenant could not be reactivated', requestId: res.locals?.requestId } });
+  }
+});
+
+// ─── Tenant profile & data administration ────────────────────────────────────
+
+router.patch('/tenant', resolveTenantContext, requireTenantPermission('tenant.settings.write'), async (req, res) => {
+  try {
+    const tenant = await enterpriseService(req).updateTenantProfile({ context: req.tenantContext, displayName: req.body?.displayName });
+    return res.json({ tenant: { id: tenant.id, slug: tenant.slug, displayName: tenant.displayName, lifecycleState: tenant.lifecycleState, isolationTier: tenant.isolationTier } });
+  } catch (error) {
+    return res.status(error.status || 503).json({ error: { code: error.code || 'TENANT_PROFILE_UPDATE_FAILED', message: [400, 404].includes(error.status) ? error.message : 'Tenant profile could not be updated', requestId: res.locals?.requestId } });
+  }
+});
+
+router.get('/data/export', resolveTenantContext, requireTenantPermission('tenant.settings.write'), async (req, res) => {
+  try {
+    const snapshot = await enterpriseService(req).exportTenantData({ context: req.tenantContext });
+    return res.json({ snapshot });
+  } catch (error) {
+    return res.status(error.status || 503).json({ error: { code: error.code || 'TENANT_EXPORT_UNAVAILABLE', message: [403, 404].includes(error.status) ? error.message : 'Tenant data export is unavailable', requestId: res.locals?.requestId } });
+  }
+});
+
+// ─── Platform administration ──────────────────────────────────────────────────
+// These routes are gated on the caller's PLATFORM identity (super admin or
+// system.config.write), never on tenant membership. Tenant administrators
+// cannot reach them.
+
+router.get('/platform/tenants', async (req, res) => {
+  try {
+    const tenants = await enterpriseService(req).listPlatformTenants({ user: req.user, limit: req.query?.limit });
+    return res.json({ tenants });
+  } catch (error) {
+    return res.status(error.status || 503).json({ error: { code: error.code || 'PLATFORM_TENANTS_UNAVAILABLE', message: error.status === 403 ? 'Platform administration is not permitted' : 'Platform tenant registry is unavailable', requestId: res.locals?.requestId } });
+  }
+});
+
+router.post('/platform/tenants/:tenantId/suspend', async (req, res) => {
+  try {
+    const tenant = await enterpriseService(req).setTenantLifecycleAsPlatform({ user: req.user, tenantId: req.params.tenantId, nextState: 'SUSPENDED', requestId: res.locals?.requestId });
+    return res.json({ tenant: { id: tenant.id, lifecycleState: tenant.lifecycleState } });
+  } catch (error) {
+    return res.status(error.status || 503).json({ error: { code: error.code || 'TENANT_LIFECYCLE_UPDATE_FAILED', message: error.status === 403 ? 'Platform tenant suspension is not permitted' : 'Tenant could not be suspended', requestId: res.locals?.requestId } });
+  }
+});
+
+router.post('/platform/tenants/:tenantId/reactivate', async (req, res) => {
+  try {
+    const tenant = await enterpriseService(req).setTenantLifecycleAsPlatform({ user: req.user, tenantId: req.params.tenantId, nextState: 'ACTIVE', requestId: res.locals?.requestId });
+    return res.json({ tenant: { id: tenant.id, lifecycleState: tenant.lifecycleState } });
+  } catch (error) {
+    return res.status(error.status || 503).json({ error: { code: error.code || 'TENANT_LIFECYCLE_UPDATE_FAILED', message: error.status === 403 ? 'Platform tenant reactivation is not permitted' : 'Tenant could not be reactivated', requestId: res.locals?.requestId } });
   }
 });
 
@@ -377,8 +467,10 @@ router.get('/audit', resolveTenantContext, requireTenantPermission('tenant.audit
         since: req.query?.since || null,
         until: req.query?.until || null,
       },
+      cursor: req.query?.cursor || null,
     });
-    return res.json({ events });
+    // listAuditEvents returns an array with an attached nextCursor keyset hint.
+    return res.json({ events: [...events], nextCursor: events.nextCursor || null });
   } catch (error) {
     return res.status(error.status || 503).json({ error: { code: error.code || 'TENANT_AUDIT_UNAVAILABLE', message: 'Tenant audit events are unavailable', requestId: res.locals?.requestId } });
   }
@@ -386,7 +478,11 @@ router.get('/audit', resolveTenantContext, requireTenantPermission('tenant.audit
 
 router.get('/teams', resolveTenantContext, requireTenantPermission('workspace.read'), async (req, res) => {
   try {
-    const teams = await enterpriseService(req).listTeams({ context: req.tenantContext });
+    // includeArchived is honoured only for workspace administrators so archived
+    // teams can be inspected and restored; everyone else sees active ones.
+    const wantsArchived = ['1', 'true'].includes(String(req.query?.includeArchived || '').toLowerCase());
+    const allowed = wantsArchived && hasTenantPermission(req.tenantContext, 'workspace.manage');
+    const teams = await enterpriseService(req).listTeams({ context: req.tenantContext, includeArchived: allowed });
     return res.json({ teams });
   } catch (error) {
     return res.status(error.status || 503).json({ error: { code: error.code || 'TENANT_TEAMS_UNAVAILABLE', message: 'Teams are unavailable', requestId: res.locals?.requestId } });
@@ -417,6 +513,15 @@ router.post('/teams/:teamId/archive', resolveTenantContext, requireAnyTenantPerm
     return res.json({ team });
   } catch (error) {
     return res.status(error.status || 503).json({ error: { code: error.code || 'TENANT_TEAM_ARCHIVE_FAILED', message: [400, 403, 404].includes(error.status) ? error.message : 'Team could not be archived', requestId: res.locals?.requestId } });
+  }
+});
+
+router.post('/teams/:teamId/restore', resolveTenantContext, requireAnyTenantPermission('workspace.manage', 'tenant.workspaces.manage'), async (req, res) => {
+  try {
+    const team = await enterpriseService(req).restoreTeam({ context: req.tenantContext, teamId: req.params.teamId });
+    return res.json({ team });
+  } catch (error) {
+    return res.status(error.status || 503).json({ error: { code: error.code || 'TENANT_TEAM_RESTORE_FAILED', message: [400, 403, 404, 409].includes(error.status) ? error.message : 'Team could not be restored', requestId: res.locals?.requestId } });
   }
 });
 
@@ -507,6 +612,15 @@ router.get('/usage/ai', resolveTenantContext, requireTenantPermission('tenant.us
     return res.json({ usage: summary });
   } catch (error) {
     return res.status(error.status || 503).json({ error: { code: error.code || 'ENTERPRISE_USAGE_UNAVAILABLE', message: 'Tenant AI usage is unavailable', requestId: res.locals?.requestId } });
+  }
+});
+
+router.get('/usage/ai/events', resolveTenantContext, requireTenantPermission('tenant.usage.read'), async (req, res) => {
+  try {
+    const events = await enterpriseService(req).listAiUsageEvents({ context: req.tenantContext, limit: req.query?.limit });
+    return res.json({ events });
+  } catch (error) {
+    return res.status(error.status || 503).json({ error: { code: error.code || 'ENTERPRISE_USAGE_UNAVAILABLE', message: 'Tenant AI generation history is unavailable', requestId: res.locals?.requestId } });
   }
 });
 

@@ -34,18 +34,18 @@ function writeStorage(key, value) {
 export function EnterpriseTenantProvider({ children }) {
   const user = useContext(AuthContext);
   const enabled = enterpriseFeatureEnabled();
-  const [state, setState] = useState({ loading: enabled, error: null, serverDisabled: false, tenants: [], workspaces: [], context: null, tenant: null, workspace: null });
+  const [state, setState] = useState({ loading: enabled, error: null, serverDisabled: false, tenants: [], workspaces: [], context: null, tenant: null, workspace: null, platformAdmin: false });
 
   const load = useCallback(async ({ tenantId = '', workspaceId = '' } = {}) => {
     if (!enabled || !user?.uid) {
-      setState({ loading: false, error: null, serverDisabled: false, tenants: [], workspaces: [], context: null, tenant: null, workspace: null });
+      setState({ loading: false, error: null, serverDisabled: false, tenants: [], workspaces: [], context: null, tenant: null, workspace: null, platformAdmin: false });
       return null;
     }
     setState(previous => ({ ...previous, loading: true, error: null, serverDisabled: false }));
     try {
       const status = await enterpriseFetch('/api/enterprise/status');
       if (status.enabled !== true) {
-        const next = { loading: false, error: null, serverDisabled: true, tenants: [], workspaces: [], context: null, tenant: null, workspace: null };
+        const next = { loading: false, error: null, serverDisabled: true, tenants: [], workspaces: [], context: null, tenant: null, workspace: null, platformAdmin: false };
         setState(next);
         return next;
       }
@@ -67,6 +67,8 @@ export function EnterpriseTenantProvider({ children }) {
         context: active.context || null,
         tenant: active.tenant || null,
         workspace: active.workspace || null,
+        // Server-derived capability for the platform administration surface.
+        platformAdmin: active.platformAdmin === true,
       };
       setState(next);
       return next;

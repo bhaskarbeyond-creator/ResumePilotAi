@@ -7,12 +7,23 @@ function normalizeRole(value) {
   return Object.hasOwn(TENANT_ROLES, role) ? role : null;
 }
 
-function permissionsForRoles(roles = []) {
+function permissionsForRoles(roles = [], customRoles = {}) {
   const permissions = new Set();
+  const definitions = customRoles && typeof customRoles === 'object' ? customRoles : {};
   for (const rawRole of roles) {
     const role = normalizeRole(rawRole);
-    if (!role) continue;
-    for (const permission of TENANT_ROLES[role]) permissions.add(permission);
+    if (role) {
+      for (const permission of TENANT_ROLES[role]) permissions.add(permission);
+      continue;
+    }
+    // Tenant-defined custom role: contributes only its declared, whitelisted
+    // permissions. Undefined custom roles contribute nothing (fail closed).
+    const custom = definitions[String(rawRole || '').toUpperCase()];
+    if (custom && Array.isArray(custom.permissions)) {
+      for (const permission of custom.permissions) {
+        if (PERMISSIONS.includes(permission)) permissions.add(permission);
+      }
+    }
   }
   return permissions;
 }

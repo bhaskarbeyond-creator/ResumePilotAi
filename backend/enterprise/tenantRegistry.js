@@ -6,6 +6,7 @@ const {
   ISOLATION_TIERS,
   LEGACY_DATA_PLANE_TYPES,
   MEMBERSHIP_STATES,
+  PERMISSIONS,
   TENANT_LIFECYCLE_STATES,
   TENANT_ROLES,
 } = require('./constants');
@@ -70,21 +71,52 @@ function normalizeDataPlane(input = {}) {
   };
 }
 
-function normalizeRoles(roles = []) {
-  const normalized = [...new Set((Array.isArray(roles) ? roles : []).map(role => String(role || '').toUpperCase()).filter(role => Object.hasOwn(TENANT_ROLES, role)))];
+// Custom roles are tenant-defined bundles of whitelisted permissions. They can
+// never contain "*" and never grant tenant-wide workspace scope (that stays
+// bound to the builtin TENANT_OWNER/TENANT_ADMIN roles).
+const CUSTOM_ROLE_PATTERN = /^CUSTOM_[A-Z0-9_]{2,28}$/;
+
+function normalizeRoles(roles = [], extraRoles = []) {
+  const known = new Set([...Object.keys(TENANT_ROLES), ...extraRoles.map(role => String(role || '').toUpperCase())]);
+  const normalized = [...new Set((Array.isArray(roles) ? roles : []).map(role => String(role || '').toUpperCase()).filter(role => known.has(role)))];
   if (!normalized.length) throw Object.assign(new Error('At least one valid tenant role is required'), { code: 'INVALID_TENANT_ROLE', status: 400 });
   return normalized;
+}
+
+// Normalizes tenant-defined custom roles stored inside the tenant configuration.
+// Returns a frozen { id: { label, permissions } } map; invalid entries are
+// dropped rather than corrupting authorization for the whole tenant.
+function normalizeCustomRoles(customRoles, existing = {}) {
+  const source = Array.isArray(customRoles) ? customRoles : null;
+  if (!source) return existing.customRoles || {};
+  const normalized = {};
+  for (const entry of source.slice(0, 25)) {
+    if (!entry || typeof entry !== 'object') continue;
+    const id = String(entry.id || '').trim().toUpperCase();
+    if (!CUSTOM_ROLE_PATTERN.test(id)) continue;
+    const permissions = [...new Set((Array.isArray(entry.permissions) ? entry.permissions : [])
+      .map(permission => String(permission || '').trim())
+      .filter(permission => PERMISSIONS.includes(permission)))];
+    if (!permissions.length) continue;
+    normalized[id] = { label: String(entry.label || id).slice(0, 60), permissions: Object.freeze([...permissions]) };
+  }
+  return Object.freeze(normalized);
+}
+
+function customRoleIds(customRoles = {}) {
+  return Object.keys(customRoles || {});
 }
 
 function defaultTenantConfiguration(tenantId) {
   return {
     tenantId,
     revision: 1,
-    aiPolicy: { version: 1, allowedProviders: [], primaryModel: '' },
+    aiPolicy: { version: 1, allowedProviders: [], allowedModels: [], primaryModel: '' },
     quotaPolicy: { aiRequestsPerMinute: 12, aiRequestsPerDay: 100, renderConcurrency: 2 },
     retentionPolicy: { aiMemoryEnabled: false, retentionDays: 30 },
     securityPolicy: { requireMfaForAdmins: false, supportAccessRequiresApproval: true },
     identityPolicy: { ssoMode: 'NONE', scimEnabled: false, sessionMaxMinutes: 480 },
+    customRoles: {},
   };
 }
 
@@ -94,6 +126,9 @@ function normalizeTenantConfiguration(tenantId, input = {}, existing = defaultTe
   const allowedProviders = Array.isArray(aiPolicy.allowedProviders)
     ? [...new Set(aiPolicy.allowedProviders.map(provider => String(provider).toLowerCase()).filter(provider => /^[a-z0-9_-]{2,40}$/.test(provider)))].slice(0, 10)
     : [...(existing.aiPolicy?.allowedProviders || [])];
+  const allowedModels = Array.isArray(aiPolicy.allowedModels)
+    ? [...new Set(aiPolicy.allowedModels.map(model => String(model).trim()).filter(model => /^[A-Za-z0-9._:/-]{2,150}$/.test(model)))].slice(0, 25)
+    : [...(existing.aiPolicy?.allowedModels || [])];
   const quotaPolicy = input.quotaPolicy && typeof input.quotaPolicy === 'object' ? input.quotaPolicy : existing.quotaPolicy;
   const bounded = (value, fallback, min, max) => Number.isInteger(Number(value)) ? Math.max(min, Math.min(max, Number(value))) : fallback;
   const retentionPolicy = input.retentionPolicy && typeof input.retentionPolicy === 'object' ? input.retentionPolicy : existing.retentionPolicy;
@@ -108,7 +143,7 @@ function normalizeTenantConfiguration(tenantId, input = {}, existing = defaultTe
   return {
     tenantId,
     revision: Number(existing.revision || 0) + 1,
-    aiPolicy: { version: Number(existing.aiPolicy?.version || 0) + 1, allowedProviders, primaryModel },
+    aiPolicy: { version: Number(existing.aiPolicy?.version || 0) + 1, allowedProviders, allowedModels, primaryModel },
     quotaPolicy: {
       aiRequestsPerMinute: bounded(quotaPolicy.aiRequestsPerMinute, existing.quotaPolicy?.aiRequestsPerMinute || 12, 1, 10_000),
       aiRequestsPerDay: bounded(quotaPolicy.aiRequestsPerDay, existing.quotaPolicy?.aiRequestsPerDay || 100, 1, 10_000_000),
@@ -127,6 +162,7 @@ function normalizeTenantConfiguration(tenantId, input = {}, existing = defaultTe
       scimEnabled: ssoMode !== 'NONE' && identityPolicy.scimEnabled === true,
       sessionMaxMinutes: bounded(identityPolicy.sessionMaxMinutes, existing.identityPolicy?.sessionMaxMinutes || 480, 15, 10_080),
     },
+    customRoles: normalizeCustomRoles(input.customRoles, existing),
   };
 }
 
@@ -148,11 +184,16 @@ function validateMembership(record, principalId) {
   if (!record || record.principalId !== principalId) throw Object.assign(new Error('Tenant membership was not found'), { code: 'TENANT_MEMBERSHIP_NOT_FOUND', status: 404 });
   const status = String(record.status || '').toUpperCase();
   if (!MEMBERSHIP_STATES.includes(status)) throw Object.assign(new Error('Tenant membership state is invalid'), { code: 'TENANT_ROUTE_INVALID', status: 503 });
+  // Read-side validation keeps builtin roles plus syntactically valid custom
+  // role ids. Whether a custom role is actually defined (and what it grants)
+  // is resolved from the tenant configuration when permissions are computed,
+  // so an undefined custom role always contributes zero permissions.
   return {
     ...record,
     id: String(record.id || ''),
     status,
-    roles: normalizeRoles(record.roles),
+    roles: normalizeRoles(record.roles, (Array.isArray(record.roles) ? record.roles : [])
+      .filter(role => CUSTOM_ROLE_PATTERN.test(String(role || '').toUpperCase()))),
     canonicalPrincipalId: (() => {
       const expected = canonicalPrincipalId(principalId);
       if (record.canonicalPrincipalId && assertUuid(record.canonicalPrincipalId, 'Canonical principal identifier') !== expected) {
@@ -305,6 +346,7 @@ class FirestoreTenantRegistry {
       retentionPolicy: { ...defaults.retentionPolicy, ...(stored.retentionPolicy || {}) },
       securityPolicy: { ...defaults.securityPolicy, ...(stored.securityPolicy || {}) },
       identityPolicy: { ...defaults.identityPolicy, ...(stored.identityPolicy || {}) },
+      customRoles: normalizeCustomRoles(stored.customRoles, defaults),
     };
   }
 
@@ -340,6 +382,38 @@ class FirestoreTenantRegistry {
       transaction.set(reference, tenant, { merge: true });
     });
     return validateTenantRecord(tenant);
+  }
+
+  async updateTenantProfile({ tenantId, displayName }) {
+    this.assertAvailable();
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    const cleanName = compact(displayName, 120);
+    if (cleanName.length < 2) throw Object.assign(new Error('Tenant display name is invalid'), { code: 'INVALID_TENANT', status: 400 });
+    const reference = this.db.collection('enterprise_tenants').doc(tenantId);
+    let tenant;
+    await this.db.runTransaction(async transaction => {
+      const snapshot = await transaction.get(reference);
+      if (!snapshot.exists) throw Object.assign(new Error('Tenant was not found'), { code: 'TENANT_NOT_FOUND', status: 404 });
+      const current = validateTenantRecord(snapshot.data());
+      tenant = { ...current, displayName: cleanName, updatedAt: this.timestamp() };
+      transaction.set(reference, { displayName: cleanName, updatedAt: this.timestamp() }, { merge: true });
+    });
+    return validateTenantRecord(tenant);
+  }
+
+  async listAllTenants({ limit = 100 } = {}) {
+    this.assertAvailable();
+    // Platform-level registry view. Caller authorization is enforced by the
+    // service layer; the registry itself never decides who may call it.
+    const bounded = Math.max(1, Math.min(Number(limit) || 100, 500));
+    const snapshot = await this.db.collection('enterprise_tenants').orderBy('createdAt', 'desc').limit(bounded).get();
+    return snapshot.docs.map(document => {
+      try {
+        return validateTenantRecord({ ...document.data(), id: document.id });
+      } catch {
+        return null;
+      }
+    }).filter(Boolean);
   }
 
   async getMembership(tenantId, principalId) {
@@ -498,12 +572,14 @@ class FirestoreTenantRegistry {
     return accessible;
   }
 
-  async listTeams({ tenantId, workspaceId = null }) {
+  async listTeams({ tenantId, workspaceId = null, includeArchived = false }) {
     this.assertAvailable();
     tenantId = assertUuid(tenantId, 'Tenant identifier');
     const snapshot = await this.db.collection('enterprise_teams').where('tenantId', '==', tenantId).get();
     return snapshot.docs.map(document => ({ ...document.data(), id: document.id }))
-      .filter(team => team.status === 'ACTIVE' && (!workspaceId || team.workspaceId === workspaceId))
+      .filter(team => (includeArchived
+        ? ['ACTIVE', 'ARCHIVED'].includes(String(team.status || 'ACTIVE').toUpperCase())
+        : team.status === 'ACTIVE') && (!workspaceId || team.workspaceId === workspaceId))
       .sort((left, right) => String(left.name).localeCompare(String(right.name)));
   }
 
@@ -531,12 +607,27 @@ class FirestoreTenantRegistry {
     return { ...snapshot.data(), id: teamId };
   }
 
-  async updateTeam({ tenantId, teamId, name }) {
+  async updateTeam({ tenantId, teamId, name, leadPrincipalId = undefined }) {
     this.assertAvailable();
     const cleanName = compact(name, 100);
     if (cleanName.length < 2) throw Object.assign(new Error('Team name is invalid'), { code: 'INVALID_TEAM', status: 400 });
     const team = await this.getTeam(teamId, tenantId);
-    const updated = { ...team, name: cleanName, updatedAt: this.timestamp() };
+    // leadPrincipalId: undefined keeps the current lead, null/'' clears it, and
+    // a principal value must be an active member of the team's workspace.
+    let lead = Object.hasOwn(team, 'leadPrincipalId') ? team.leadPrincipalId : null;
+    if (leadPrincipalId !== undefined) {
+      lead = leadPrincipalId === null || leadPrincipalId === '' ? null : assertPrincipalId(leadPrincipalId);
+      if (lead) {
+        const membership = await this.getMembership(tenantId, lead).catch(() => null);
+        const workspaceMember = membership
+          ? await this.hasWorkspaceAccess({ tenantId, workspaceId: team.workspaceId, principalId: lead, roles: membership.roles })
+          : false;
+        if (!membership || String(membership.status || '').toUpperCase() !== 'ACTIVE' || !workspaceMember) {
+          throw Object.assign(new Error('A team lead must be an active member of the team workspace'), { code: 'INVALID_TEAM_LEAD', status: 400 });
+        }
+      }
+    }
+    const updated = { ...team, name: cleanName, leadPrincipalId: lead, updatedAt: this.timestamp() };
     await this.db.collection('enterprise_teams').doc(team.id).set(updated, { merge: true });
     return updated;
   }
@@ -546,6 +637,23 @@ class FirestoreTenantRegistry {
     const team = await this.getTeam(teamId, tenantId);
     await this.db.collection('enterprise_teams').doc(team.id).set({ ...team, status: 'ARCHIVED', updatedAt: this.timestamp() }, { merge: true });
     return { ...team, status: 'ARCHIVED' };
+  }
+
+  async restoreTeam({ tenantId, teamId }) {
+    this.assertAvailable();
+    // Restore resolves the team regardless of lifecycle status (getTeam only
+    // returns ACTIVE teams), so an archived team becomes retrievable again.
+    teamId = assertUuid(teamId, 'Team identifier');
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    const snapshot = await this.db.collection('enterprise_teams').doc(teamId).get();
+    const team = snapshot.data() || {};
+    if (!snapshot.exists || team.tenantId !== tenantId) {
+      throw Object.assign(new Error('Team was not found'), { code: 'TEAM_NOT_FOUND', status: 404 });
+    }
+    await this.getWorkspace(team.workspaceId, tenantId);
+    const now = this.timestamp();
+    await this.db.collection('enterprise_teams').doc(teamId).set({ status: 'ACTIVE', updatedAt: now }, { merge: true });
+    return { ...team, id: teamId, status: 'ACTIVE', updatedAt: now };
   }
 
   async listTeamMembers({ tenantId, teamId }) {
@@ -604,11 +712,19 @@ class FirestoreTenantRegistry {
     return { id, tenantId, name: cleanName, lifecycleState: 'ACTIVE', isDefault: isDefault === true };
   }
 
-  async grantMembership({ tenantId, principalId, workspaceId = null, roles = ['MEMBER'] }) {
+  async grantMembership({ tenantId, principalId, workspaceId = null, roles = ['MEMBER'], status = 'ACTIVE', invitationEmail = null, allowedRoles = [] }) {
     this.assertAvailable();
     tenantId = assertUuid(tenantId, 'Tenant identifier');
     principalId = assertPrincipalId(principalId);
-    const normalizedRoles = normalizeRoles(roles);
+    const normalizedRoles = normalizeRoles(roles, allowedRoles);
+    const membershipStatus = String(status || 'ACTIVE').toUpperCase() === 'INVITED' ? 'INVITED' : 'ACTIVE';
+    const normalizedEmail = invitationEmail ? String(invitationEmail).trim().toLowerCase().slice(0, 254) : null;
+    if (normalizedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      throw Object.assign(new Error('Invitation email is invalid'), { code: 'INVALID_INVITATION_EMAIL', status: 400 });
+    }
+    if (membershipStatus === 'INVITED' && !normalizedEmail) {
+      throw Object.assign(new Error('An invitation requires the invited identity email'), { code: 'INVALID_INVITATION_EMAIL', status: 400 });
+    }
     const tenant = await this.getTenant(tenantId);
     if (tenant.lifecycleState !== 'ACTIVE') throw Object.assign(new Error('Tenant is not active'), { code: 'TENANT_INACTIVE', status: 403 });
     let resolvedWorkspaceId = workspaceId ? assertUuid(workspaceId, 'Workspace identifier') : null;
@@ -631,15 +747,18 @@ class FirestoreTenantRegistry {
         principalId,
         canonicalPrincipalId: canonicalPrincipalId(principalId),
         workspaceId: resolvedWorkspaceId || current.workspaceId || null,
-        status: 'ACTIVE',
+        status: membershipStatus,
         roles: normalizedRoles,
         revision: Number(current.revision || 0) + 1,
         personalTenant: false,
+        invitationEmail: normalizedEmail,
+        invitedAt: membershipStatus === 'INVITED' ? now : null,
+        acceptedAt: membershipStatus === 'INVITED' ? null : (current.acceptedAt || null),
         createdAt: current.createdAt || now,
         updatedAt: now,
       };
       transaction.set(reference, membership, { merge: false });
-      transaction.set(workspaceReference, { id: workspaceReference.id, tenantId, workspaceId: resolvedWorkspaceId, principalId, status: 'ACTIVE', createdAt: current.createdAt || now, updatedAt: now }, { merge: false });
+      transaction.set(workspaceReference, { id: workspaceReference.id, tenantId, workspaceId: resolvedWorkspaceId, principalId, status: membershipStatus, createdAt: current.createdAt || now, updatedAt: now }, { merge: false });
     });
     return validateMembership(membership, principalId);
   }
@@ -653,7 +772,7 @@ class FirestoreTenantRegistry {
     }
   }
 
-  async updateTenantMembership({ tenantId, principalId, roles = null, status = null, workspaceId = null }) {
+  async updateTenantMembership({ tenantId, principalId, roles = null, status = null, workspaceId = null, allowedRoles = [] }) {
     this.assertAvailable();
     tenantId = assertUuid(tenantId, 'Tenant identifier');
     principalId = assertPrincipalId(principalId);
@@ -661,7 +780,7 @@ class FirestoreTenantRegistry {
     const snapshot = await reference.get();
     if (!snapshot.exists) throw Object.assign(new Error('Tenant membership was not found'), { code: 'TENANT_MEMBERSHIP_NOT_FOUND', status: 404 });
     const current = snapshot.data() || {};
-    const nextRoles = roles ? normalizeRoles(roles) : Array.isArray(current.roles) ? current.roles : [];
+    const nextRoles = roles ? normalizeRoles(roles, allowedRoles) : Array.isArray(current.roles) ? current.roles : [];
     const nextStatus = status ? String(status).toUpperCase() : String(current.status || 'ACTIVE').toUpperCase();
     if (nextRoles.includes('TENANT_OWNER') && nextStatus !== 'ACTIVE') {
       throw Object.assign(new Error('A tenant owner must remain active'), { code: 'TENANT_OWNER_MUST_BE_ACTIVE', status: 409 });
@@ -736,12 +855,59 @@ class FirestoreTenantRegistry {
       this.getMembership(requestedTenantId, principalId),
     ]);
     if (tenant.lifecycleState !== 'ACTIVE') throw Object.assign(new Error('Tenant is not active'), { code: 'TENANT_INACTIVE', status: 403 });
-    const workspaceId = requestedWorkspaceId || membership.workspaceId || null;
+    // An invitation is accepted exactly once — at the moment the invited
+    // identity first resolves this tenant. The transition is persisted so the
+    // acceptance is durable and auditable.
+    const accepted = membership.status === 'INVITED'
+      ? await this.acceptMembership(membership)
+      : membership;
+    const workspaceId = requestedWorkspaceId || accepted.workspaceId || null;
     const workspace = workspaceId ? await this.getWorkspace(workspaceId, requestedTenantId) : null;
-    if (workspace && !await this.hasWorkspaceAccess({ tenantId: requestedTenantId, workspaceId: workspace.id, principalId, roles: membership.roles })) {
+    if (workspace && !await this.hasWorkspaceAccess({ tenantId: requestedTenantId, workspaceId: workspace.id, principalId, roles: accepted.roles })) {
       throw Object.assign(new Error('Workspace membership was not found'), { code: 'WORKSPACE_MEMBERSHIP_NOT_FOUND', status: 404 });
     }
-    return { tenant, membership, workspace };
+    return { tenant, membership: accepted, workspace };
+  }
+
+  async acceptMembership(membership) {
+    this.assertAvailable();
+    const reference = this.db.collection('enterprise_memberships').doc(membership.id);
+    const now = this.timestamp();
+    let accepted;
+    await this.db.runTransaction(async transaction => {
+      const snapshot = await transaction.get(reference);
+      const current = snapshot.exists ? snapshot.data() || {} : {};
+      if (String(current.status || '').toUpperCase() !== 'INVITED') {
+        accepted = { ...current, id: reference.id };
+        return;
+      }
+      accepted = {
+        ...current,
+        status: 'ACTIVE',
+        acceptedAt: now,
+        revision: Number(current.revision || 0) + 1,
+        updatedAt: now,
+      };
+      transaction.set(reference, accepted, { merge: false });
+      if (accepted.workspaceId) {
+        const workspaceReference = this.db.collection('enterprise_workspace_memberships').doc(workspaceMembershipDocumentId(accepted.workspaceId, accepted.principalId));
+        transaction.set(workspaceReference, { status: 'ACTIVE', updatedAt: now }, { merge: true });
+      }
+    });
+    return validateMembership(accepted, membership.principalId);
+  }
+
+  async markInvitationDelivery({ tenantId, principalId, deliveryState, deliveredAt }) {
+    this.assertAvailable();
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    principalId = assertPrincipalId(principalId);
+    const reference = this.db.collection('enterprise_memberships').doc(membershipDocumentId(tenantId, principalId));
+    await reference.set({
+      invitationDeliveryState: String(deliveryState || 'DELIVERY_UNKNOWN').slice(0, 40),
+      invitationDeliveredAt: deliveredAt || new Date().toISOString(),
+      updatedAt: this.timestamp(),
+    }, { merge: true });
+    return true;
   }
 
   async provisionTenant({ ownerPrincipalId, displayName, slug, isolationTier = 'STANDARD', dataPlane = DEFAULT_DATA_PLANE, region = null }) {
@@ -840,6 +1006,28 @@ class InMemoryTenantRegistry {
     tenant.lifecycleState = assertTenantTransition(tenant.lifecycleState, nextState);
     this.tenants.set(tenantId, tenant);
     return validateTenantRecord(tenant);
+  }
+
+  async updateTenantProfile({ tenantId, displayName }) {
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    const tenant = this.tenants.get(tenantId);
+    if (!tenant) throw Object.assign(new Error('Tenant was not found'), { code: 'TENANT_NOT_FOUND', status: 404 });
+    const cleanName = compact(displayName, 120);
+    if (cleanName.length < 2) throw Object.assign(new Error('Tenant display name is invalid'), { code: 'INVALID_TENANT', status: 400 });
+    const updated = { ...tenant, displayName: cleanName };
+    this.tenants.set(tenantId, updated);
+    return validateTenantRecord(updated);
+  }
+
+  async listAllTenants({ limit = 100 } = {}) {
+    const bounded = Math.max(1, Math.min(Number(limit) || 100, 500));
+    return [...this.tenants.values()]
+      .sort((left, right) => String(right.createdAt || '').localeCompare(String(left.createdAt || '')))
+      .slice(0, bounded)
+      .map(tenant => {
+        try { return validateTenantRecord(tenant); } catch { return null; }
+      })
+      .filter(Boolean);
   }
 
   async getMembership(tenantId, principalId) {
@@ -955,10 +1143,12 @@ class InMemoryTenantRegistry {
     return accessible;
   }
 
-  async listTeams({ tenantId, workspaceId = null }) {
+  async listTeams({ tenantId, workspaceId = null, includeArchived = false }) {
     tenantId = assertUuid(tenantId, 'Tenant identifier');
     return [...this.teams.values()]
-      .filter(team => team.tenantId === tenantId && team.status === 'ACTIVE' && (!workspaceId || team.workspaceId === workspaceId))
+      .filter(team => team.tenantId === tenantId && (includeArchived
+        ? ['ACTIVE', 'ARCHIVED'].includes(String(team.status || 'ACTIVE').toUpperCase())
+        : team.status === 'ACTIVE') && (!workspaceId || team.workspaceId === workspaceId))
       .sort((left, right) => String(left.name).localeCompare(String(right.name)))
       .map(team => ({ ...team }));
   }
@@ -982,11 +1172,24 @@ class InMemoryTenantRegistry {
     return { ...team };
   }
 
-  async updateTeam({ tenantId, teamId, name }) {
+  async updateTeam({ tenantId, teamId, name, leadPrincipalId = undefined }) {
     const cleanName = compact(name, 100);
     if (cleanName.length < 2) throw Object.assign(new Error('Team name is invalid'), { code: 'INVALID_TEAM', status: 400 });
     const team = await this.getTeam(teamId, tenantId);
-    const updated = { ...team, name: cleanName };
+    let lead = Object.hasOwn(team, 'leadPrincipalId') ? team.leadPrincipalId : null;
+    if (leadPrincipalId !== undefined) {
+      lead = leadPrincipalId === null || leadPrincipalId === '' ? null : assertPrincipalId(leadPrincipalId);
+      if (lead) {
+        const membership = await this.getMembership(tenantId, lead).catch(() => null);
+        const workspaceMember = membership
+          ? await this.hasWorkspaceAccess({ tenantId, workspaceId: team.workspaceId, principalId: lead, roles: membership.roles })
+          : false;
+        if (!membership || String(membership.status || '').toUpperCase() !== 'ACTIVE' || !workspaceMember) {
+          throw Object.assign(new Error('A team lead must be an active member of the team workspace'), { code: 'INVALID_TEAM_LEAD', status: 400 });
+        }
+      }
+    }
+    const updated = { ...team, name: cleanName, leadPrincipalId: lead };
     this.teams.set(team.id, updated);
     return { ...updated };
   }
@@ -996,6 +1199,17 @@ class InMemoryTenantRegistry {
     const archived = { ...team, status: 'ARCHIVED' };
     this.teams.set(team.id, archived);
     return { ...archived };
+  }
+
+  async restoreTeam({ tenantId, teamId }) {
+    teamId = assertUuid(teamId, 'Team identifier');
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    const team = this.teams.get(teamId);
+    if (!team || team.tenantId !== tenantId) throw Object.assign(new Error('Team was not found'), { code: 'TEAM_NOT_FOUND', status: 404 });
+    await this.getWorkspace(team.workspaceId, tenantId);
+    const restored = { ...team, status: 'ACTIVE' };
+    this.teams.set(teamId, restored);
+    return { ...restored };
   }
 
   async listTeamMembers({ tenantId, teamId }) {
@@ -1040,9 +1254,17 @@ class InMemoryTenantRegistry {
     return { ...workspace };
   }
 
-  async grantMembership({ tenantId, principalId, workspaceId = null, roles = ['MEMBER'] }) {
+  async grantMembership({ tenantId, principalId, workspaceId = null, roles = ['MEMBER'], status = 'ACTIVE', invitationEmail = null, allowedRoles = [] }) {
     tenantId = assertUuid(tenantId, 'Tenant identifier');
     principalId = assertPrincipalId(principalId);
+    const membershipStatus = String(status || 'ACTIVE').toUpperCase() === 'INVITED' ? 'INVITED' : 'ACTIVE';
+    const normalizedEmail = invitationEmail ? String(invitationEmail).trim().toLowerCase().slice(0, 254) : null;
+    if (normalizedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      throw Object.assign(new Error('Invitation email is invalid'), { code: 'INVALID_INVITATION_EMAIL', status: 400 });
+    }
+    if (membershipStatus === 'INVITED' && !normalizedEmail) {
+      throw Object.assign(new Error('An invitation requires the invited identity email'), { code: 'INVALID_INVITATION_EMAIL', status: 400 });
+    }
     const tenant = await this.getTenant(tenantId);
     if (tenant.lifecycleState !== 'ACTIVE') throw Object.assign(new Error('Tenant is not active'), { code: 'TENANT_INACTIVE', status: 403 });
     let resolvedWorkspaceId = workspaceId ? assertUuid(workspaceId, 'Workspace identifier') : null;
@@ -1054,13 +1276,19 @@ class InMemoryTenantRegistry {
     if (!resolvedWorkspaceId) throw Object.assign(new Error('Tenant has no active workspace'), { code: 'WORKSPACE_NOT_FOUND', status: 409 });
     const id = membershipDocumentId(tenantId, principalId);
     const current = this.memberships.get(id) || {};
+    const now = new Date().toISOString();
     const membership = {
       id, tenantId, principalId, canonicalPrincipalId: canonicalPrincipalId(principalId), workspaceId: resolvedWorkspaceId || current.workspaceId || null,
-      status: 'ACTIVE', roles: normalizeRoles(roles), revision: Number(current.revision || 0) + 1,
+      status: membershipStatus, roles: normalizeRoles(roles, allowedRoles), revision: Number(current.revision || 0) + 1,
       personalTenant: false,
+      invitationEmail: normalizedEmail,
+      invitedAt: membershipStatus === 'INVITED' ? now : null,
+      acceptedAt: membershipStatus === 'INVITED' ? null : (current.acceptedAt || null),
+      createdAt: current.createdAt || now,
+      updatedAt: now,
     };
     this.memberships.set(id, membership);
-    this.workspaceMemberships.set(workspaceMembershipDocumentId(resolvedWorkspaceId, principalId), { tenantId, workspaceId: resolvedWorkspaceId, principalId, status: 'ACTIVE' });
+    this.workspaceMemberships.set(workspaceMembershipDocumentId(resolvedWorkspaceId, principalId), { tenantId, workspaceId: resolvedWorkspaceId, principalId, status: membershipStatus });
     return validateMembership(membership, principalId);
   }
 
@@ -1073,13 +1301,13 @@ class InMemoryTenantRegistry {
     }
   }
 
-  async updateTenantMembership({ tenantId, principalId, roles = null, status = null, workspaceId = null }) {
+  async updateTenantMembership({ tenantId, principalId, roles = null, status = null, workspaceId = null, allowedRoles = [] }) {
     tenantId = assertUuid(tenantId, 'Tenant identifier');
     principalId = assertPrincipalId(principalId);
     const id = membershipDocumentId(tenantId, principalId);
     const current = this.memberships.get(id);
     if (!current) throw Object.assign(new Error('Tenant membership was not found'), { code: 'TENANT_MEMBERSHIP_NOT_FOUND', status: 404 });
-    const nextRoles = roles ? normalizeRoles(roles) : Array.isArray(current.roles) ? current.roles : [];
+    const nextRoles = roles ? normalizeRoles(roles, allowedRoles) : Array.isArray(current.roles) ? current.roles : [];
     const nextStatus = status ? String(status).toUpperCase() : String(current.status || 'ACTIVE').toUpperCase();
     if (nextRoles.includes('TENANT_OWNER') && nextStatus !== 'ACTIVE') {
       throw Object.assign(new Error('A tenant owner must remain active'), { code: 'TENANT_OWNER_MUST_BE_ACTIVE', status: 409 });
@@ -1142,11 +1370,42 @@ class InMemoryTenantRegistry {
     const tenant = await this.getTenant(requestedTenantId);
     if (tenant.lifecycleState !== 'ACTIVE') throw Object.assign(new Error('Tenant is not active'), { code: 'TENANT_INACTIVE', status: 403 });
     const membership = await this.getMembership(requestedTenantId, principalId);
-    const workspace = await this.getWorkspace(requestedWorkspaceId || membership.workspaceId, requestedTenantId);
-    if (!await this.hasWorkspaceAccess({ tenantId: requestedTenantId, workspaceId: workspace.id, principalId, roles: membership.roles })) {
+    // Invitation acceptance: the first enterprise access by the invited
+    // identity durably transitions the membership to ACTIVE.
+    const accepted = membership.status === 'INVITED'
+      ? await this.acceptMembership(membership)
+      : membership;
+    const workspace = await this.getWorkspace(requestedWorkspaceId || accepted.workspaceId, requestedTenantId);
+    if (!await this.hasWorkspaceAccess({ tenantId: requestedTenantId, workspaceId: workspace.id, principalId, roles: accepted.roles })) {
       throw Object.assign(new Error('Workspace membership was not found'), { code: 'WORKSPACE_MEMBERSHIP_NOT_FOUND', status: 404 });
     }
-    return { tenant, membership, workspace };
+    return { tenant, membership: accepted, workspace };
+  }
+
+  async acceptMembership(membership) {
+    const current = this.memberships.get(membership.id) || membership;
+    if (String(current.status || '').toUpperCase() !== 'INVITED') return current;
+    const now = new Date().toISOString();
+    const accepted = { ...current, status: 'ACTIVE', acceptedAt: now, revision: Number(current.revision || 0) + 1, updatedAt: now };
+    this.memberships.set(membership.id, accepted);
+    if (accepted.workspaceId) {
+      const workspaceMembershipId = workspaceMembershipDocumentId(accepted.workspaceId, accepted.principalId);
+      const workspaceMembership = this.workspaceMemberships.get(workspaceMembershipId);
+      if (workspaceMembership) this.workspaceMemberships.set(workspaceMembershipId, { ...workspaceMembership, status: 'ACTIVE' });
+    }
+    return validateMembership(accepted, membership.principalId);
+  }
+
+  async markInvitationDelivery({ tenantId, principalId, deliveryState, deliveredAt }) {
+    const id = membershipDocumentId(assertUuid(tenantId, 'Tenant identifier'), assertPrincipalId(principalId));
+    const current = this.memberships.get(id);
+    if (!current) return false;
+    this.memberships.set(id, {
+      ...current,
+      invitationDeliveryState: String(deliveryState || 'DELIVERY_UNKNOWN').slice(0, 40),
+      invitationDeliveredAt: deliveredAt || new Date().toISOString(),
+    });
+    return true;
   }
 
   async provisionTenant({ ownerPrincipalId, displayName, slug, isolationTier = 'STANDARD', dataPlane = DEFAULT_DATA_PLANE, region = null }) {
@@ -1165,11 +1424,14 @@ class InMemoryTenantRegistry {
 }
 
 module.exports = {
+  CUSTOM_ROLE_PATTERN,
   DEFAULT_DATA_PLANE,
   FirestoreTenantRegistry,
   InMemoryTenantRegistry,
+  customRoleIds,
   identityMapDocumentId,
   membershipDocumentId,
+  normalizeCustomRoles,
   normalizeDataPlane,
   normalizeTier,
   validateMembership,

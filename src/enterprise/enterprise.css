@@ -1456,3 +1456,38 @@
 .enterprise-checkbox input {
   width: auto;
 }
+
+/* ═══ Completeness audit additions ═════════════════════════════════════════ */
+
+/* Input with a fixed prefix (custom role identifier builder) */
+.enterprise-input-affix {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--enterprise-border, #d9deea);
+  border-radius: 8px;
+  background: var(--enterprise-surface, #fff);
+  padding: 0 0.65rem;
+}
+.enterprise-input-affix .enterprise-input {
+  border: none;
+  box-shadow: none;
+  flex: 1;
+  min-width: 0;
+}
+.enterprise-input-affix:focus-within {
+  border-color: var(--enterprise-primary, #4f7cff);
+  outline: 2px solid color-mix(in srgb, var(--enterprise-primary, #4f7cff) 25%, transparent);
+  outline-offset: 1px;
+}
+
+/* Tenant-defined custom role cards are visually distinct from platform roles */
+.enterprise-role-card-custom {
+  border-left: 3px solid var(--enterprise-primary, #4f7cff);
+}
+
+@media (max-width: 640px) {
+  .enterprise-input-affix {
+    flex-wrap: wrap;
+  }
+}

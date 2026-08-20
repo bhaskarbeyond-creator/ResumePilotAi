@@ -7,20 +7,40 @@ import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 export default function EnterpriseSupportTab() {
   const { request } = useTenantApi();
   const [grantsState, refreshGrants] = useAsyncResource(() => request('/api/enterprise/support-grants'), [request]);
+  const [configState] = useAsyncResource(() => request('/api/enterprise/configuration'), [request]);
   const { loading, error, data } = grantsState;
+  const [statusFilter, setStatusFilter] = useState('ALL');
   const [showModal, setShowModal] = useState(false);
   const [reason, setReason] = useState('');
   const [duration, setDuration] = useState('240');
   const [supportSubjectId, setSupportSubjectId] = useState('');
+  const [scopes, setScopes] = useState(['tenant.audit.read']);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState(null);
   const [notification, setNotification] = useState(null);
 
+  // Server-enforced scope governance: while the tenant keeps the default
+  // support policy, only diagnostic scopes are permitted.
+  const DIAGNOSTIC_SCOPES = ['tenant.audit.read', 'tenant.read', 'tenant.usage.read', 'resource.read', 'workspace.read'];
+  const REPAIR_SCOPES = ['resource.update', 'resource.create'];
+  const repairAllowed = configState.data?.configuration?.securityPolicy?.supportAccessRequiresApproval === false;
+
   const grants = useMemo(() => (Array.isArray(data?.grants) ? data.grants : []), [data]);
+  const filteredGrants = useMemo(() => {
+    if (statusFilter === 'ALL') return grants;
+    if (statusFilter === 'LIVE') {
+      return grants.filter(grant => grant.status === 'ACTIVE' && new Date(grant.expiresAt).getTime() > Date.now());
+    }
+    return grants.filter(grant => String(grant.status || '').toUpperCase() === statusFilter);
+  }, [grants, statusFilter]);
 
   const notify = (message) => {
     setNotification(message);
     setTimeout(() => setNotification(null), 3500);
+  };
+
+  const toggleScope = (scope) => {
+    setScopes(prev => prev.includes(scope) ? prev.filter(s => s !== scope) : [...prev, scope]);
   };
 
   const handleGrant = async (e) => {
@@ -35,12 +55,13 @@ export default function EnterpriseSupportTab() {
           supportSubjectId: supportSubjectId.trim(),
           reason: reason.trim(),
           expiresInMinutes: Number(duration),
-          scopes: ['tenant.audit.read'],
+          scopes,
         },
       });
       setShowModal(false);
       setReason('');
       setSupportSubjectId('');
+      setScopes(['tenant.audit.read']);
       notify('Temporary support access granted with full audit recording.');
       refreshGrants();
     } catch (err) {
@@ -108,43 +129,73 @@ export default function EnterpriseSupportTab() {
         <DataState loading={loading} error={error} onRetry={refreshGrants}>
           {grants.length === 0 ? (
             <p className="enterprise-empty" style={{ marginTop: '1.5rem' }}>
-              No active support grants. Sovereign customer isolation active.
+              No support grants recorded. Sovereign customer isolation active.
             </p>
           ) : (
-            <div className="enterprise-table-wrapper" style={{ marginTop: '1.5rem' }}>
-              <table className="enterprise-table">
-                <thead>
-                  <tr>
-                    <th>Support Subject</th>
-                    <th>Reason</th>
-                    <th>Scope</th>
-                    <th>Expires At</th>
-                    <th>Status</th>
-                    <th className="text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {grants.map(grant => (
-                    <tr key={grant.id}>
-                      <td><strong>{grant.supportSubjectId || '—'}</strong></td>
-                      <td><em>"{grant.reason}"</em></td>
-                      <td><span className="enterprise-pill enterprise-pill-secondary">{(grant.scopes || []).join(', ')}</span></td>
-                      <td><small><FiClock /> {new Date(grant.expiresAt).toLocaleString()}</small></td>
-                      <td><span className="enterprise-pill enterprise-pill-success">{grant.status}</span></td>
-                      <td className="text-right">
-                        <button
-                          type="button"
-                          className="enterprise-button enterprise-button-danger enterprise-button-sm"
-                          onClick={() => handleRevoke(grant.id)}
-                        >
-                          Revoke Immediately
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <>
+              <div className="enterprise-inline-actions" style={{ margin: '1rem 0', flexWrap: 'wrap', gap: '0.5rem' }} role="group" aria-label="Filter grants by state">
+                {['ALL', 'LIVE', 'ACTIVE', 'REVOKED'].map(filter => (
+                  <button
+                    key={filter}
+                    type="button"
+                    className={`enterprise-button enterprise-button-sm ${statusFilter === filter ? 'enterprise-button-primary' : 'enterprise-button-secondary'}`}
+                    aria-pressed={statusFilter === filter}
+                    onClick={() => setStatusFilter(filter)}
+                  >
+                    {filter === 'ALL' ? 'All grants' : filter === 'LIVE' ? 'Live (unexpired)' : filter}
+                  </button>
+                ))}
+              </div>
+              {filteredGrants.length === 0 ? (
+                <p className="enterprise-empty">No grants match this view.</p>
+              ) : (
+                <div className="enterprise-table-wrapper">
+                  <table className="enterprise-table">
+                    <thead>
+                      <tr>
+                        <th>Support Subject</th>
+                        <th>Reason</th>
+                        <th>Scope</th>
+                        <th>Requested By</th>
+                        <th>Expires At</th>
+                        <th>Status</th>
+                        <th className="text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredGrants.map(grant => {
+                        const expired = grant.status === 'ACTIVE' && new Date(grant.expiresAt).getTime() <= Date.now();
+                        return (
+                          <tr key={grant.id}>
+                            <td><strong>{grant.supportSubjectId || '—'}</strong></td>
+                            <td><em>"{grant.reason}"</em></td>
+                            <td><span className="enterprise-pill enterprise-pill-secondary">{(grant.scopes || []).join(', ')}</span></td>
+                            <td><small className="text-muted">{grant.requestedBySubjectId || '—'}</small></td>
+                            <td><small><FiClock /> {new Date(grant.expiresAt).toLocaleString()}</small></td>
+                            <td>
+                              <span className={`enterprise-pill enterprise-pill-${grant.status === 'ACTIVE' && !expired ? 'success' : grant.status === 'REVOKED' ? 'secondary' : 'warning'}`}>
+                                {expired ? 'EXPIRED' : grant.status}
+                              </span>
+                            </td>
+                            <td className="text-right">
+                              {grant.status === 'ACTIVE' && !expired && (
+                                <button
+                                  type="button"
+                                  className="enterprise-button enterprise-button-danger enterprise-button-sm"
+                                  onClick={() => handleRevoke(grant.id)}
+                                >
+                                  Revoke Immediately
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
           )}
         </DataState>
       </div>
@@ -197,6 +248,36 @@ export default function EnterpriseSupportTab() {
                     <option value="240">4 Hours (Standard Investigation)</option>
                     <option value="480">8 Hours (Complex Migration Support)</option>
                   </select>
+                </div>
+                <div className="enterprise-form-group">
+                  <label>Grant Scopes <small className="text-muted">(server-enforced; least privilege)</small></label>
+                  <div className="enterprise-checkbox-list">
+                    {DIAGNOSTIC_SCOPES.map(scope => (
+                      <label key={scope} className="enterprise-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={scopes.includes(scope)}
+                          onChange={() => toggleScope(scope)}
+                        />
+                        <span><code>{scope}</code> <small className="text-muted">· diagnostic (read-only)</small></span>
+                      </label>
+                    ))}
+                    {repairAllowed && REPAIR_SCOPES.map(scope => (
+                      <label key={scope} className="enterprise-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={scopes.includes(scope)}
+                          onChange={() => toggleScope(scope)}
+                        />
+                        <span><code>{scope}</code> <small className="text-muted">· repair (write) — permitted because this tenant explicitly allows repair scopes</small></span>
+                      </label>
+                    ))}
+                  </div>
+                  {!repairAllowed && (
+                    <small className="text-muted">
+                      Repair (write) scopes are blocked by this tenant&apos;s support policy. They become selectable only after explicitly allowing them in Organization Settings.
+                    </small>
+                  )}
                 </div>
               </div>
               <div className="enterprise-modal-footer">

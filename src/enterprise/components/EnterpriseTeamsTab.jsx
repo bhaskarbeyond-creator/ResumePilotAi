@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
-  FiUsers, FiPlus, FiCheck, FiX, FiEdit2, FiArchive, FiTrash2, FiUserPlus
+  FiUsers, FiPlus, FiCheck, FiX, FiEdit2, FiArchive, FiRotateCcw, FiUserPlus, FiSearch, FiAward, FiTrash2
 } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 
@@ -106,7 +106,12 @@ function TeamMembersDrawer({ team, onClose }) {
                   <tbody>
                     {members.map(member => (
                       <tr key={member.id}>
-                        <td><strong>{member.principalId}</strong></td>
+                        <td>
+                          <strong>{member.principalId}</strong>
+                          {team.leadPrincipalId && team.leadPrincipalId === member.principalId && (
+                            <span className="enterprise-pill enterprise-pill-template" style={{ marginLeft: '0.5rem' }}>Lead</span>
+                          )}
+                        </td>
                         <td><span className="enterprise-pill enterprise-pill-success">{member.status}</span></td>
                         {canManage && (
                           <td className="text-right">
@@ -144,13 +149,39 @@ export default function EnterpriseTeamsTab() {
   const [teamName, setTeamName] = useState('');
   const [renameTarget, setRenameTarget] = useState(null);
   const [renameValue, setRenameValue] = useState('');
+  const [leadTarget, setLeadTarget] = useState(null);
+  const [leadValue, setLeadValue] = useState('');
   const [membersTarget, setMembersTarget] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState(null);
   const [notification, setNotification] = useState(null);
 
-  const teams = useMemo(() => (Array.isArray(data?.teams) ? data.teams : []), [data]);
   const canManageTeams = hasPermission('workspace.manage') || hasPermission('tenant.workspaces.manage');
+
+  // Archived teams are served only to workspace administrators so they can be
+  // inspected and restored — the same lifecycle contract as workspaces.
+  const [archivedState, refreshArchived] = useAsyncResource(
+    () => (canManageTeams ? request('/api/enterprise/teams?includeArchived=1') : Promise.resolve({ teams: [] })),
+    [request, canManageTeams],
+  );
+  const archivedTeams = useMemo(
+    () => (Array.isArray(archivedState.data?.teams) ? archivedState.data.teams.filter(team => String(team.status || '').toUpperCase() === 'ARCHIVED') : []),
+    [archivedState],
+  );
+
+  const [tenantMembersState] = useAsyncResource(() => request('/api/enterprise/memberships'), [request]);
+  const activeMemberOptions = useMemo(
+    () => (Array.isArray(tenantMembersState.data?.memberships) ? tenantMembersState.data.memberships.filter(member => member.status === 'ACTIVE') : []),
+    [tenantMembersState],
+  );
+
+  const teams = useMemo(() => {
+    const active = Array.isArray(data?.teams) ? data.teams : [];
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return active;
+    return active.filter(team => `${team.name} ${team.leadPrincipalId || ''}`.toLowerCase().includes(query));
+  }, [data, searchQuery]);
 
   const notify = (message) => {
     setNotification(message);
@@ -168,6 +199,7 @@ export default function EnterpriseTeamsTab() {
       setShowModal(false);
       setTeamName('');
       refreshTeams();
+      refreshArchived();
     } catch (err) {
       setActionError(err?.message || 'Team could not be created.');
     } finally {
@@ -194,15 +226,49 @@ export default function EnterpriseTeamsTab() {
     }
   };
 
+  const handleSaveLead = async (e) => {
+    e.preventDefault();
+    if (!leadTarget || busy) return;
+    setBusy(true);
+    setActionError(null);
+    try {
+      await request(`/api/enterprise/teams/${encodeURIComponent(leadTarget.id)}`, {
+        method: 'PATCH',
+        body: { leadPrincipalId: leadValue },
+      });
+      notify(leadValue ? `Team lead set to ${leadValue}.` : 'Team lead cleared.');
+      setLeadTarget(null);
+      setLeadValue('');
+      refreshTeams();
+    } catch (err) {
+      setActionError(err?.message || 'Team lead could not be updated.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const handleArchive = async (team) => {
-    if (!window.confirm(`Archive team "${team.name}"? The team is removed from the active roster; its history stays in the audit log.`)) return;
+    if (!window.confirm(`Archive team "${team.name}"? The team is removed from the active roster and can be restored later; its history stays in the audit log.`)) return;
     setActionError(null);
     try {
       await request(`/api/enterprise/teams/${encodeURIComponent(team.id)}/archive`, { method: 'POST' });
       notify(`Team "${team.name}" archived.`);
       refreshTeams();
+      refreshArchived();
     } catch (err) {
       setActionError(err?.message || 'Team could not be archived.');
+    }
+  };
+
+  const handleRestore = async (team) => {
+    setActionError(null);
+    try {
+      await request(`/api/enterprise/teams/${encodeURIComponent(team.id)}/restore`, { method: 'POST' });
+      notify(`Team "${team.name}" restored to the active roster.`);
+      refreshTeams();
+      refreshArchived();
+    } catch (err) {
+      setActionError(err?.message || 'Team could not be restored.');
     }
   };
 
@@ -241,9 +307,23 @@ export default function EnterpriseTeamsTab() {
           )}
         </div>
 
+        <div className="enterprise-filter-bar">
+          <div className="enterprise-search-wrapper">
+            <FiSearch className="enterprise-search-icon" aria-hidden="true" />
+            <input
+              type="text"
+              placeholder="Search teams by name or lead…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="enterprise-input"
+              aria-label="Search teams"
+            />
+          </div>
+        </div>
+
         <DataState loading={loading} error={error} onRetry={refreshTeams}>
           {teams.length === 0 ? (
-            <p className="enterprise-empty">No teams exist in this workspace yet. Create a team to group members.</p>
+            <p className="enterprise-empty">{searchQuery ? 'No teams match this search.' : 'No teams exist in this workspace yet. Create a team to group members.'}</p>
           ) : (
             <div className="enterprise-teams-grid">
               {teams.map(team => (
@@ -254,9 +334,22 @@ export default function EnterpriseTeamsTab() {
                       <span className="enterprise-pill enterprise-pill-secondary">
                         {team.workspaceId ? `ws ${String(team.workspaceId).slice(0, 8)}` : 'Tenant-wide'}
                       </span>
+                      {team.leadPrincipalId && (
+                        <span className="enterprise-pill enterprise-pill-template" style={{ marginLeft: '0.35rem' }} title={`Team lead: ${team.leadPrincipalId}`}>
+                          <FiAward aria-hidden="true" /> {String(team.leadPrincipalId).slice(0, 10)}…
+                        </span>
+                      )}
                     </div>
                     {canManageTeams && (
                       <div className="enterprise-inline-actions" style={{ gap: '0.25rem' }}>
+                        <button
+                          type="button"
+                          className="enterprise-button-icon"
+                          title="Set team lead"
+                          onClick={() => { setLeadTarget(team); setLeadValue(team.leadPrincipalId || ''); }}
+                        >
+                          <FiAward />
+                        </button>
                         <button
                           type="button"
                           className="enterprise-button-icon"
@@ -294,6 +387,44 @@ export default function EnterpriseTeamsTab() {
           )}
         </DataState>
       </div>
+
+      {canManageTeams && (
+        <div className="enterprise-card" style={{ marginTop: '1.5rem' }}>
+          <div className="enterprise-card-header-flex">
+            <div>
+              <h3 className="enterprise-card-title"><FiArchive aria-hidden="true" /> Archived Teams</h3>
+              <p className="enterprise-card-subtitle">Archived teams are hidden from the roster until restored. Data and history are preserved.</p>
+            </div>
+          </div>
+          <DataState loading={archivedState.loading} error={archivedState.error} onRetry={refreshArchived}>
+            {archivedTeams.length === 0 ? (
+              <p className="enterprise-empty">No archived teams.</p>
+            ) : (
+              <div className="enterprise-teams-grid">
+                {archivedTeams.map(team => (
+                  <div key={team.id} className="enterprise-team-card">
+                    <div className="enterprise-team-header">
+                      <div>
+                        <h3 className="enterprise-team-name">{team.name}</h3>
+                        <span className="enterprise-pill enterprise-pill-warning">Archived</span>
+                      </div>
+                      <div className="enterprise-inline-actions" style={{ gap: '0.25rem' }}>
+                        <button
+                          type="button"
+                          className="enterprise-button enterprise-button-secondary enterprise-button-sm"
+                          onClick={() => handleRestore(team)}
+                        >
+                          <FiRotateCcw aria-hidden="true" /> Restore
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </DataState>
+        </div>
+      )}
 
       {showModal && (
         <div className="enterprise-modal-backdrop" role="presentation" onClick={() => !busy && setShowModal(false)}>
@@ -366,6 +497,46 @@ export default function EnterpriseTeamsTab() {
                 <button type="button" className="enterprise-button enterprise-button-secondary" onClick={() => setRenameTarget(null)} disabled={busy}>Cancel</button>
                 <button type="submit" className="enterprise-button enterprise-button-primary" disabled={busy}>
                   {busy ? 'Saving…' : 'Save Name'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {leadTarget && (
+        <div className="enterprise-modal-backdrop" role="presentation" onClick={() => !busy && setLeadTarget(null)}>
+          <div className="enterprise-modal" role="dialog" aria-modal="true" aria-label="Set team lead" onClick={(e) => e.stopPropagation()}>
+            <div className="enterprise-modal-header">
+              <h3>Team Lead — {leadTarget.name}</h3>
+              <button type="button" className="enterprise-button-icon" onClick={() => setLeadTarget(null)} disabled={busy}>
+                <FiX />
+              </button>
+            </div>
+            <form onSubmit={handleSaveLead}>
+              <div className="enterprise-modal-body">
+                <div className="enterprise-form-group">
+                  <label htmlFor="team-lead">Lead Principal</label>
+                  <select
+                    id="team-lead"
+                    className="enterprise-select"
+                    value={leadValue}
+                    onChange={(e) => setLeadValue(e.target.value)}
+                  >
+                    <option value="">No lead</option>
+                    {activeMemberOptions.map(member => (
+                      <option key={member.principalId} value={member.principalId}>
+                        {member.principalId} ({(member.roles || []).join(', ')})
+                      </option>
+                    ))}
+                  </select>
+                  <small className="text-muted">The lead must be an active member of the team&apos;s workspace. The change is audited.</small>
+                </div>
+              </div>
+              <div className="enterprise-modal-footer">
+                <button type="button" className="enterprise-button enterprise-button-secondary" onClick={() => setLeadTarget(null)} disabled={busy}>Cancel</button>
+                <button type="submit" className="enterprise-button enterprise-button-primary" disabled={busy}>
+                  {busy ? 'Saving…' : 'Save Lead'}
                 </button>
               </div>
             </form>

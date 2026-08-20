@@ -24,6 +24,18 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
     () => request('/api/enterprise/memberships'),
     [request],
   );
+  const [teams] = useAsyncResource(
+    () => request('/api/enterprise/teams'),
+    [request],
+  );
+  const [usage] = useAsyncResource(
+    () => request('/api/enterprise/usage/ai?days=1'),
+    [request],
+  );
+  const [config] = useAsyncResource(
+    () => request('/api/enterprise/configuration'),
+    [request],
+  );
   const [audit] = useAsyncResource(
     () => request('/api/enterprise/audit'),
     [request],
@@ -45,6 +57,7 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
   const activity = useMemo(() => (Array.isArray(audit?.data?.events) ? audit.data.events.slice(0, 4) : []), [audit]);
 
   const memberCount = Array.isArray(members?.data?.memberships) ? members.data.memberships.length : 0;
+  const teamCount = Array.isArray(teams?.data?.teams) ? teams.data.teams.length : 0;
   const sampleCount = metricsData?.sampleCount || 0;
   const requestP95 = metricsData?.p95 || 0;
   const errorTotal = metricsData?.errors
@@ -57,12 +70,17 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
   const queueOk = queueState?.healthy === true;
   const queueDlq = queueState?.deadLetterCount || 0;
 
+  const dailyAiLimit = Number(config?.data?.configuration?.quotaPolicy?.aiRequestsPerDay || 0);
+  const todayAiRequests = Number(usage?.data?.usage?.requests || 0);
+  const quotaRatio = dailyAiLimit > 0 ? todayAiRequests / dailyAiLimit : 0;
+
   // Actionable recommendations derived exclusively from real, already-loaded
   // application state. Nothing here is synthesized or predicted.
   const recommendations = useMemo(() => {
     const items = [];
     const membershipRows = Array.isArray(members?.data?.memberships) ? members.data.memberships : [];
     const suspendedCount = membershipRows.filter(member => member.status === 'SUSPENDED').length;
+    const pendingInvitations = membershipRows.filter(member => member.status === 'INVITED').length;
     if (queueDlq > 0) {
       items.push({ id: 'dlq', tone: 'warning', label: `${queueDlq} dead-letter job${queueDlq === 1 ? '' : 's'} awaiting replay`, hint: 'Inspect and replay failed jobs from the Security & M2M console.', target: 'security' });
     }
@@ -75,17 +93,25 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
     if (!dataPlane.loading && planeState && planeOk && (!planeState.encryption || planeState.encryption === 'none')) {
       items.push({ id: 'encryption', tone: 'warning', label: 'Payload encryption is not active', hint: 'Configure the server-key encryption provider so confidential payloads are sealed at rest.', target: 'settings' });
     }
+    if (!usage.loading && quotaRatio >= 0.8) {
+      items.push({ id: 'quota', tone: quotaRatio >= 1 ? 'danger' : 'warning', label: quotaRatio >= 1
+        ? 'The daily AI request quota is exhausted'
+        : `AI quota is nearing its limit (${Math.round(quotaRatio * 100)}% of today's allowance used)`, hint: 'Raise the allowance or review the heaviest users in Usage & Quotas.', target: 'usage' });
+    }
     if (suspendedCount > 0) {
-      items.push({ id: 'suspended', tone: 'warning', label: `${suspendedCount} suspended member${suspendedCount === 1 ? '' : 's'} in this tenant`, hint: 'Review whether these members should be reactivated or removed.', target: 'members' });
+      items.push({ id: 'suspended', tone: 'warning', label: `${suspendedCount} suspended member${suspendedCount === 1 ? '' : 's'} affecting workspace access`, hint: 'Review whether these members should be reactivated or removed.', target: 'members' });
+    }
+    if (pendingInvitations > 0) {
+      items.push({ id: 'invitations', tone: 'info', label: `${pendingInvitations} pending invitation${pendingInvitations === 1 ? '' : 's'} not yet accepted`, hint: 'Resend or cancel pending invitations from Users & IAM.', target: 'members' });
     }
     if (!members.loading && membershipRows.length <= 1) {
-      items.push({ id: 'invite', tone: 'info', label: 'You are the only member of this organization', hint: 'Grant enterprise access to teammates from Users & IAM.', target: 'members' });
+      items.push({ id: 'invite', tone: 'info', label: 'You are the only member of this organization', hint: 'Invite teammates from Users & IAM.', target: 'members' });
     }
     if (!metrics.loading && errorTotal > 0) {
       items.push({ id: 'errors', tone: 'info', label: `${errorTotal} API error${errorTotal === 1 ? '' : 's'} observed in the current window`, hint: 'Check the audit trail for denied or failed operations.', target: 'audit' });
     }
     return items;
-  }, [members, metrics.loading, dataPlane.loading, queue.loading, queueState, planeState, planeOk, queueDlq, errorTotal]);
+  }, [members, metrics.loading, dataPlane.loading, queue.loading, queueState, planeState, planeOk, queueDlq, errorTotal, usage.loading, quotaRatio]);
 
   return (
     <div className="enterprise-tab-content">
@@ -141,6 +167,26 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
           <div className="enterprise-metric-value">{tenant?.id ? formatNumber(workspaces.length) : '—'}</div>
           <div className="enterprise-metric-footer">
             {workspaceId ? `Active: ${workspace?.name || 'Default'}` : 'No active workspace'}
+          </div>
+        </div>
+
+        <div className="enterprise-card enterprise-metric-box">
+          <div className="enterprise-metric-header">
+            <span>Teams</span>
+            <FiUsers className="enterprise-metric-icon" aria-hidden="true" />
+          </div>
+          <div className="enterprise-metric-value">{teams.loading ? '…' : formatNumber(teamCount)}</div>
+          <div className="enterprise-metric-footer">Active teams in scope</div>
+        </div>
+
+        <div className="enterprise-card enterprise-metric-box">
+          <div className="enterprise-metric-header">
+            <span>AI Usage Today</span>
+            <FiZap className="enterprise-metric-icon" aria-hidden="true" />
+          </div>
+          <div className="enterprise-metric-value">{usage.loading ? '…' : formatNumber(todayAiRequests)}</div>
+          <div className="enterprise-metric-footer">
+            {dailyAiLimit > 0 ? `${formatNumber(todayAiRequests)} of ${formatNumber(dailyAiLimit)} daily allowance` : 'No daily allowance configured'}
           </div>
         </div>
 

@@ -238,7 +238,12 @@ class HarnessQuery {
     }
     if (this._startAfter !== null && this._startAfter !== undefined && this._orderBy.length) {
       const order = this._orderBy[this._orderBy.length - 1];
-      const boundary = getPath(this._startAfter, order.field.split('.'));
+      // Real Firestore accepts either a snapshot or the raw orderBy value(s) in
+      // startAfter. Honour both: objects are projected onto the field path,
+      // scalars are used directly as the cursor boundary.
+      const boundary = this._startAfter !== null && typeof this._startAfter === 'object'
+        ? getPath(this._startAfter, order.field.split('.'))
+        : this._startAfter;
       let index = entries.findIndex(({ data }) => valuesEqual(getPath(data, order.field.split('.')), boundary));
       if (index >= 0) entries = entries.slice(index + 1);
     }

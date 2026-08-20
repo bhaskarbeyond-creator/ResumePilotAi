@@ -307,6 +307,24 @@ class EmailNotifier {
     /**
      * 17. OAuth Social Login — new user via LinkedIn/GitHub
      */
+    /**
+     * Enterprise tenant invitation → invitee receives access instructions
+     */
+    static async notifyEnterpriseInvitation(db, { userEmail, organizationName = 'an enterprise organization', inviterEmail = '' }) {
+        if (!userEmail) return { success: false, deliveryState: 'DELIVERY_FAILED', error: 'Invitation recipient unavailable' };
+        return sendNotification(db, {
+            to: userEmail,
+            templateType: 'enterprise-invitation',
+            customSubject: `You have been invited to ${organizationName} on ResumePilot Enterprise`,
+            customBody: [
+                `You have been invited to "${organizationName}" on ResumePilot Enterprise.`,
+                inviterEmail ? `Invited by: ${inviterEmail}` : '',
+                '',
+                'Accept the invitation by signing in to ResumePilot with this email address and opening the Enterprise console. The invitation activates automatically the first time you sign in.',
+            ].filter(Boolean).join('\n'),
+        });
+    }
+
     static async notifyOAuthNewUser(db, { userEmail, userName = 'User', provider = 'Social' }) {
         if (!userEmail) return;
         const siteUrl = `${process.env.PROTOCOL || 'https'}://${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}`;

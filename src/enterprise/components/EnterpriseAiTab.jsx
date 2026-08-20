@@ -1,32 +1,29 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  FiPlay, FiCheck, FiRefreshCw, FiLock
+  FiPlay, FiCheck, FiRefreshCw, FiLock, FiCpu
 } from 'react-icons/fi';
 import { useTenantApi } from '../useTenantApi';
 import { enterpriseFetch } from '../enterpriseApi';
 
 const PROVIDERS = [
-  { key: 'nvidia', label: 'NVIDIA NIM', blurb: 'Hardware-accelerated llama models' },
-  { key: 'gemini', label: 'Google Gemini', blurb: 'Long-context comprehension' },
-  { key: 'openai', label: 'OpenAI GPT', blurb: 'Complex technical summaries' },
-  { key: 'groq', label: 'Groq LPU', blurb: 'Ultra-fast inference' },
-  { key: 'openrouter', label: 'OpenRouter', blurb: 'Multi-model routing gateway' },
-  { key: 'deepseek', label: 'DeepSeek', blurb: 'Cost-efficient reasoning' },
+  { key: 'nvidia', label: 'NVIDIA NIM', blurb: 'Hardware-accelerated llama models', model: 'meta/llama-3.2-11b-vision-instruct' },
+  { key: 'gemini', label: 'Google Gemini', blurb: 'Long-context comprehension', model: 'gemini-2.0-flash' },
+  { key: 'openai', label: 'OpenAI GPT', blurb: 'Complex technical summaries', model: 'gpt-4o-mini' },
+  { key: 'groq', label: 'Groq LPU', blurb: 'Ultra-fast inference', model: 'llama-3.3-70b-versatile' },
+  { key: 'openrouter', label: 'OpenRouter', blurb: 'Multi-model routing gateway', model: 'meta-llama/llama-3.3-70b-instruct:free' },
+  { key: 'deepseek', label: 'DeepSeek', blurb: 'Cost-efficient reasoning', model: 'deepseek-chat' },
 ];
 
-const MODEL_OPTIONS = [
-  'meta/llama-3.2-11b-vision-instruct',
-  'gemini-2.0-flash',
-  'gpt-4o-mini',
-  'meta/llama-3.1-8b-instruct',
-];
+// Known platform model catalogue: each entry maps to the provider that serves
+// it. The tenant model allowlist is enforced against these identifiers.
+const MODEL_CATALOGUE = PROVIDERS.map(provider => ({ model: provider.model, provider: provider.key }));
 
 export default function EnterpriseAiTab() {
   const { request } = useTenantApi();
   const [configuration, setConfiguration] = useState(null);
   const [configError, setConfigError] = useState(null);
   const [configLoading, setConfigLoading] = useState(true);
-  const [primaryModel, setPrimaryModel] = useState(MODEL_OPTIONS[0]);
+  const [primaryModel, setPrimaryModel] = useState('');
   const [requestsPerMinute, setRequestsPerMinute] = useState(12);
   const [requestsPerDay, setRequestsPerDay] = useState(100);
   const [busy, setBusy] = useState(false);
@@ -35,6 +32,7 @@ export default function EnterpriseAiTab() {
   const [notification, setNotification] = useState(null);
 
   const allowed = useMemo(() => new Set((configuration?.aiPolicy?.allowedProviders || []).map(p => String(p).toLowerCase())), [configuration]);
+  const allowedModels = useMemo(() => new Set((configuration?.aiPolicy?.allowedModels || []).map(m => String(m))), [configuration]);
 
   const loadConfiguration = async () => {
     setConfigLoading(true);
@@ -43,7 +41,7 @@ export default function EnterpriseAiTab() {
       const result = await request('/api/enterprise/configuration');
       const config = result.configuration;
       setConfiguration(config);
-      setPrimaryModel(String(config?.aiPolicy?.primaryModel || MODEL_OPTIONS[0]));
+      setPrimaryModel(String(config?.aiPolicy?.primaryModel || ''));
       setRequestsPerMinute(Number(config?.quotaPolicy?.aiRequestsPerMinute ?? 12));
       setRequestsPerDay(Number(config?.quotaPolicy?.aiRequestsPerDay ?? 100));
     } catch (err) {
@@ -67,9 +65,31 @@ export default function EnterpriseAiTab() {
     });
   };
 
+  const toggleModel = (model) => {
+    setConfiguration(prev => {
+      if (!prev) return prev;
+      const current = new Set(prev.aiPolicy?.allowedModels || []);
+      if (current.has(model)) current.delete(model); else current.add(model);
+      const nextModels = [...current];
+      return {
+        ...prev,
+        aiPolicy: {
+          ...prev.aiPolicy,
+          allowedModels: nextModels,
+          // A primary model that is no longer allowed cannot stay selected.
+          primaryModel: nextModels.includes(prev.aiPolicy?.primaryModel) ? prev.aiPolicy.primaryModel : (nextModels[0] || ''),
+        },
+      };
+    });
+  };
+
   const handleSavePolicy = async (e) => {
     e.preventDefault();
     if (busy || !configuration) return;
+    if (allowed.size === 0) {
+      setConfigError('At least one provider must be approved — an empty allowlist denies all AI generation.');
+      return;
+    }
     setBusy(true);
     setConfigError(null);
     try {
@@ -78,7 +98,11 @@ export default function EnterpriseAiTab() {
         body: {
           expectedRevision: configuration.revision,
           configuration: {
-            aiPolicy: { allowedProviders: [...allowed], primaryModel },
+            aiPolicy: {
+              allowedProviders: [...allowed],
+              allowedModels: [...allowedModels],
+              primaryModel: allowedModels.size === 0 ? '' : primaryModel,
+            },
             quotaPolicy: {
               aiRequestsPerMinute: requestsPerMinute,
               aiRequestsPerDay: requestsPerDay,
@@ -117,6 +141,10 @@ export default function EnterpriseAiTab() {
     }
   };
 
+  const effectivePrimary = allowedModels.size === 0
+    ? 'Any model served by an approved provider'
+    : primaryModel || 'First allowed model';
+
   return (
     <div className="enterprise-tab-content">
       {notification && (
@@ -130,7 +158,7 @@ export default function EnterpriseAiTab() {
           <div>
             <h2 className="enterprise-tab-title">Enterprise AI Policy & Quota Console</h2>
             <p className="enterprise-tab-subtitle">
-              Tenant-isolated LLM provider allowlist and hard usage quotas
+              Tenant-isolated LLM provider allowlist, model governance, and hard usage quotas
             </p>
           </div>
           <button
@@ -149,7 +177,7 @@ export default function EnterpriseAiTab() {
           </div>
           <div>
             <strong>Zero-Leakage Enterprise Data Boundary</strong>
-            <p>Prompts and candidate resume facts are processed ephemerally with tenant RLS isolation and no model-training retention.</p>
+            <p>Prompts and candidate resume facts are processed ephemerally with tenant RLS isolation and no model-training retention. Provider and model eligibility are enforced server-side at generation time.</p>
           </div>
         </div>
 
@@ -200,6 +228,27 @@ export default function EnterpriseAiTab() {
               ))}
             </div>
 
+            <h3 className="enterprise-card-title" style={{ marginTop: '1.75rem' }}><FiCpu aria-hidden="true" /> Model Allowlist</h3>
+            <p className="enterprise-card-subtitle">
+              When at least one model is approved, providers serving a non-approved model are disabled at generation time — even if the provider itself is approved. An empty model allowlist permits every model of the approved providers.
+            </p>
+
+            <div className="enterprise-checkbox-list" style={{ marginTop: '0.75rem' }}>
+              {MODEL_CATALOGUE.map(entry => (
+                <label key={entry.model} className="enterprise-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={allowedModels.has(entry.model)}
+                    onChange={() => toggleModel(entry.model)}
+                  />
+                  <span>
+                    <code>{entry.model}</code>
+                    <small className="text-muted"> · served by {entry.provider}{allowed.has(entry.provider) ? '' : ' (provider not approved)'}</small>
+                  </span>
+                </label>
+              ))}
+            </div>
+
             <div className="enterprise-two-column-grid" style={{ marginTop: '1.5rem' }}>
               <div className="enterprise-form-group">
                 <label htmlFor="primary-model">Primary Production Model</label>
@@ -208,9 +257,14 @@ export default function EnterpriseAiTab() {
                   value={primaryModel}
                   onChange={(e) => setPrimaryModel(e.target.value)}
                   className="enterprise-select"
+                  disabled={allowedModels.size === 0}
                 >
-                  {MODEL_OPTIONS.map(model => <option key={model} value={model}>{model}</option>)}
+                  <option value="">First allowed model (no explicit preference)</option>
+                  {[...allowedModels].map(model => <option key={model} value={model}>{model}</option>)}
                 </select>
+                <small className="text-muted">
+                  Enforced through provider selection: generation prefers the approved provider that serves this model. Current effective primary: <strong>{effectivePrimary}</strong>.
+                </small>
               </div>
               <div className="enterprise-form-group">
                 <label htmlFor="req-limit">Tenant Rate Limit (Requests / Minute)</label>
@@ -223,6 +277,7 @@ export default function EnterpriseAiTab() {
                   onChange={(e) => setRequestsPerMinute(Number(e.target.value))}
                   className="enterprise-input"
                 />
+                <small className="text-muted">Enforced per principal through durable atomic quota counters before any provider call.</small>
               </div>
             </div>
 
@@ -238,6 +293,7 @@ export default function EnterpriseAiTab() {
                 onChange={(e) => setRequestsPerDay(Number(e.target.value))}
                 className="enterprise-range"
               />
+              <small className="text-muted">Consumption is visible in Usage &amp; Quotas with per-workspace and per-user breakdowns.</small>
             </div>
 
             <div className="enterprise-form-actions">

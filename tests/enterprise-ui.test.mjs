@@ -131,3 +131,116 @@ test('settings expose governed security and identity policies against the revisi
   assert.match(view, /sessionMaxMinutes/);
   assert.match(view, /expectedRevision: configuration\.revision/);
 });
+
+// ═══ Completeness audit UI coverage ═══════════════════════════════════════════
+
+test('team administration exposes the complete lifecycle including restore, archived view, and lead', async () => {
+  const view = await fs.readFile('src/enterprise/components/EnterpriseTeamsTab.jsx', 'utf8');
+  assert.match(view, /\/restore/);
+  assert.match(view, /includeArchived=1/);
+  assert.match(view, /Archived Teams/);
+  assert.match(view, /handleRestore/);
+  assert.match(view, /leadPrincipalId/);
+});
+
+test('audit view exposes actor, severity, and category filters plus keyset pagination', async () => {
+  const view = await fs.readFile('src/enterprise/components/EnterpriseAuditTab.jsx', 'utf8');
+  assert.match(view, /params\.set\('actor'/);
+  assert.match(view, /params\.set\('severity'/);
+  assert.match(view, /params\.set\('category'/);
+  assert.match(view, /params\.set\('cursor'/);
+  assert.match(view, /nextCursor/);
+  assert.match(view, /Load more events/);
+});
+
+test('users view exposes invitations, effective permissions, member activity, and export', async () => {
+  const view = await fs.readFile('src/enterprise/components/EnterpriseUsersTab.jsx', 'utf8');
+  assert.match(view, /invitation-resend/);
+  assert.match(view, /status: wantsInvitation \? 'INVITED' : 'ACTIVE'/);
+  assert.match(view, /effectivePermissions/);
+  assert.match(view, /onInspectActivity/);
+  assert.match(view, /handleExport\('csv'\)/);
+  assert.match(view, /roles-matrix/);
+  assert.match(view, /customRoles/);
+});
+
+test('security view exposes key rotation, expiry visibility, and a real posture section', async () => {
+  const view = await fs.readFile('src/enterprise/components/EnterpriseSecurityTab.jsx', 'utf8');
+  assert.match(view, /\/rotate/);
+  assert.match(view, /handleRotate/);
+  assert.match(view, /expiresAt/);
+  assert.match(view, /expiring soon/);
+  assert.match(view, /Security Posture/);
+  assert.match(view, /data-plane\/status/);
+});
+
+test('ai governance view exposes the enforced model allowlist and primary model', async () => {
+  const view = await fs.readFile('src/enterprise/components/EnterpriseAiTab.jsx', 'utf8');
+  assert.match(view, /allowedModels/);
+  assert.match(view, /primaryModel/);
+  assert.match(view, /Model Allowlist/);
+  assert.doesNotMatch(view, /coming soon/i);
+});
+
+test('usage view exposes quota consumption, per-user breakdown, generation ledger, and window selector', async () => {
+  const view = await fs.readFile('src/enterprise/components/EnterpriseUsageTab.jsx', 'utf8');
+  assert.match(view, /days=\$\{daysWindow\}/);
+  assert.match(view, /Quota Consumption/);
+  assert.match(view, /aiRequestsPerDay/);
+  assert.match(view, /byUser/);
+  assert.match(view, /usage\/ai\/events/);
+  assert.match(view, /Recent AI Generations/);
+  assert.match(view, /role="progressbar"/);
+});
+
+test('settings expose organization rename and verified data export alongside policies', async () => {
+  const view = await fs.readFile('src/enterprise/components/EnterpriseSettingsTab.jsx', 'utf8');
+  assert.match(view, /\/api\/enterprise\/tenant/);
+  assert.match(view, /Rename Organization/);
+  assert.match(view, /data\/export/);
+  assert.match(view, /checksum/);
+  assert.match(view, /federated identity provider/);
+});
+
+test('roles view exposes custom role definition and member counts', async () => {
+  const view = await fs.readFile('src/enterprise/components/EnterpriseRolesTab.jsx', 'utf8');
+  assert.match(view, /customRoles/);
+  assert.match(view, /Define Custom Role/);
+  assert.match(view, /memberCountByRole/);
+  assert.match(view, /assigned member/);
+});
+
+test('platform administration tab is server-gated and exposes the tenant registry lifecycle', async () => {
+  const view = await fs.readFile('src/enterprise/components/EnterprisePlatformTab.jsx', 'utf8');
+  assert.match(view, /platform\/tenants/);
+  assert.match(view, /'suspend' : 'reactivate'/);
+  assert.match(view, /handleLifecycle/);
+  assert.match(view, /Provision Tenant/);
+  const consoleView = await source('console');
+  assert.match(consoleView, /platformOnly: true/);
+  assert.match(consoleView, /platformAdmin === true/);
+  assert.match(consoleView, /EnterprisePlatformTab/);
+});
+
+test('overview exposes team and quota intelligence derived from live endpoints', async () => {
+  const view = await fs.readFile('src/enterprise/components/EnterpriseOverviewTab.jsx', 'utf8');
+  assert.match(view, /usage\/ai\?days=1/);
+  assert.match(view, /quotaRatio/);
+  assert.match(view, /AI quota is nearing its limit/);
+  assert.match(view, /pendingInvitations/);
+});
+
+test('support view exposes server-enforced scope governance and grant lifecycle visibility', async () => {
+  const view = await fs.readFile('src/enterprise/components/EnterpriseSupportTab.jsx', 'utf8');
+  assert.match(view, /DIAGNOSTIC_SCOPES/);
+  assert.match(view, /repairAllowed/);
+  assert.match(view, /requestedBySubjectId/);
+  assert.match(view, /statusFilter/);
+  assert.match(view, /scopes,/);
+});
+
+test('settings rename refreshes the console context', async () => {
+  const view = await fs.readFile('src/enterprise/components/EnterpriseSettingsTab.jsx', 'utf8');
+  assert.match(view, /useEnterpriseTenant/);
+  assert.match(view, /reload\(\)\.catch/);
+});

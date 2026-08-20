@@ -25,6 +25,7 @@ const REQUIRED_METHODS = Object.freeze([
   'listAuditEvents',
   'recordAiUsage',
   'getAiUsageSummary',
+  'listAiUsageEvents',
   'ping',
 ]);
 
