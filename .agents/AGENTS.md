@@ -33,11 +33,17 @@
   - **AI Module Hardening & Resilience Pass (P1-P6)**: `9c479ff`
   - **Contextual Interview Coach & Zero-Leakage Generation Pipeline**: `54cb62f`
   - **Wizard Experience Engine, Recommendation Deduplication & Processing Modal (Light Edition)**: `2be055e`
+  - **Enterprise Production Freeze (IAM, Multi-Tenancy, Queue, Encryption, AI Governance, Backup/Restore, 12 Console Modules, 10/10 adversarial isolation)**: `161dad4`
 - **Freeze Status & Impact Governance**:
   - **Processing Modal & Wizard UI**: `DashboardInterviews.jsx` (Light theme `AiGenerationProcessingModal` with 5-stage progress, elapsed timer, rotating tips, cancel/escape handler) and `BuildResume.jsx` (single brand logo in sidebar + clean `Resume Steps` header) are certified and frozen.
   - **Experience Engine & Rich Context Summary**: `src/utils/resumeData.js` (`calculateYearsOfExperience` merging overlapping date intervals across all formats) and `SummaryStep.jsx` (transmitting accurate years + complete education, certifications, projects, skills payload) are certified and frozen.
   - **Recommendation Deduplication**: `SkillsStep.jsx` (dynamic real-time suppression of added skills + `existingSkills` API argument), `CertificationsStep.jsx` (completion state detection + `All Added ✓` button handling), and `backend/services/aiRuntime.js` (negative constraint rules against re-generating existing skills/certs + spelling excellence) are certified and frozen.
-  - **All other frozen modules**: No regression. All test suites pass 100% (Interview 28/28, Security 163/163, Product/Templates 301/301).
+  - **Enterprise IAM, Tenant Isolation & Multi-Tenancy**: `backend/enterprise/tenantService.js`, `backend/enterprise/tenantContext.js`, `backend/enterprise/tenantPolicy.js`, and `backend/routes/enterprise.js` — 10/10 adversarial isolation probes passed, fully certified.
+  - **Enterprise Durable Outbox & Queue**: `backend/enterprise/enterpriseOutbox.js` — HMAC-SHA256 signed envelopes, DLQ, lease recovery, tamper rejection certified.
+  - **Enterprise AES-256-GCM Encryption**: `backend/enterprise/tenantEncryption.js` — zero plaintext leakage, auth tag verification, fail-closed without key certified.
+  - **Enterprise AI Governance & Quotas**: `backend/enterprise/tenantAi.js`, `backend/enterprise/tenantQuota.js` — client authority injection blocked, atomic Firestore quota bucketing certified.
+  - **Enterprise Logical Backup/Restore**: `backend/enterprise/tenantBackup.js` — SHA-256 checksums, dry-run, path injection rejection, byte-for-byte restore certified.
+  - **All other frozen modules**: No regression. All test suites pass 100% (Interview 28/28, Security 163/163, Product/Templates 301/301, Enterprise 157/157, Portfolio 19/19).
 - **Modification Protocol**: Do not modify these certified baselines directly without strict regression testing (all test suites must remain 100% passing).
 
 ## 7. Continuous Synchronization & Deployment Protocol
