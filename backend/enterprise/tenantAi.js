@@ -1,0 +1,90 @@
+'use strict';
+
+const crypto = require('crypto');
+const { tenantCacheKey } = require('./tenantCache');
+
+const CLIENT_AUTHORITY_FIELDS = new Set([
+  'tenantId', 'tenant_id', 'workspaceId', 'workspace_id', 'uid', 'userId', 'user_id',
+  'ownerUid', 'owner_uid', 'resourceId', 'resource_id', 'vectorNamespace', 'vector_namespace',
+  'dataPlaneId', 'data_plane_id'
+]);
+
+function assertNoClientAuthority(input, label = 'AI request') {
+  const candidate = input && typeof input === 'object' ? input : {};
+  for (const key of Object.keys(candidate)) {
+    if (CLIENT_AUTHORITY_FIELDS.has(key)) {
+      const error = new Error(`${label} cannot supply identity, tenant, workspace, resource, or vector authority`);
+      error.code = 'CLIENT_AI_CONTEXT_REJECTED';
+      error.status = 400;
+      throw error;
+    }
+  }
+  return candidate;
+}
+
+function normalizeAllowedProviders(policy = {}, configuredProviders = {}) {
+  const allowed = Array.isArray(policy.allowedProviders) && policy.allowedProviders.length
+    ? new Set(policy.allowedProviders.map(value => String(value).toLowerCase()))
+    : new Set(Object.keys(configuredProviders));
+  return allowed;
+}
+
+function applyTenantAiPolicy(configuration, context, policy = {}) {
+  const allowedProviders = normalizeAllowedProviders(policy, configuration.providers);
+  const providers = Object.fromEntries(Object.entries(configuration.providers || {}).map(([name, provider]) => [name, {
+    ...provider,
+    enabled: provider.enabled === true && allowedProviders.has(name),
+  }]));
+  const primary = allowedProviders.has(configuration.primary) && providers[configuration.primary]?.enabled
+    ? configuration.primary
+    : Object.keys(providers).find(name => providers[name].enabled) || configuration.primary;
+  if (!providers[primary]?.enabled) {
+    const error = new Error('No provider is permitted by the active tenant AI policy');
+    error.code = 'TENANT_AI_PROVIDER_UNAVAILABLE';
+    error.status = 403;
+    throw error;
+  }
+  return Object.freeze({
+    ...configuration,
+    primary,
+    providers,
+    tenantPolicyVersion: Number(policy.version || context.policyVersion),
+    tenantAiProfile: String(policy.profile || context.dataPlane.aiProfile || 'platform-default'),
+  });
+}
+
+function buildTenantAiOperation({ context, operation, payload, sourceResources = [], policy = {} }) {
+  assertNoClientAuthority(payload, 'AI payload');
+  if (!Array.isArray(sourceResources)) throw Object.assign(new Error('AI sources are invalid'), { code: 'INVALID_AI_SOURCES', status: 400 });
+  for (const source of sourceResources) {
+    if (!source || source.tenantId !== context.tenantId || (source.workspaceId && source.workspaceId !== context.workspaceId)) {
+      throw Object.assign(new Error('AI source is outside the active tenant context'), { code: 'TENANT_AI_SOURCE_DENIED', status: 404 });
+    }
+  }
+  const sourceDigest = crypto.createHash('sha256').update(JSON.stringify(sourceResources.map(source => ({ id: source.id, revision: source.revision, tenantId: source.tenantId, workspaceId: source.workspaceId || null })))).digest('hex');
+  return Object.freeze({
+    tenantId: context.tenantId,
+    workspaceId: context.workspaceId,
+    principalId: context.principalId,
+    correlationId: context.correlationId,
+    operation: String(operation || ''),
+    policyVersion: Number(policy.version || context.policyVersion),
+    sourceDigest,
+    sourceCount: sourceResources.length,
+    cacheKey: tenantCacheKey({
+      tenantId: context.tenantId,
+      workspaceId: context.workspaceId,
+      subjectId: context.principalId,
+      domain: `ai-${String(operation || '').toLowerCase()}`,
+      resourceId: sourceDigest,
+      revision: Number(policy.version || context.policyVersion),
+    }),
+  });
+}
+
+module.exports = {
+  CLIENT_AUTHORITY_FIELDS,
+  applyTenantAiPolicy,
+  assertNoClientAuthority,
+  buildTenantAiOperation,
+};

@@ -4,8 +4,6 @@ import { JSDOM } from 'jsdom';
 import { createServer } from 'vite';
 import react from '@vitejs/plugin-react';
 
-/* global document */
-
 // ── jsdom browser environment (repo-standard harness) ────────────────────────
 const dom = new JSDOM('<!doctype html><html><body><div id="test-root"></div></body></html>', { url: 'https://app.example.com/' });
 globalThis.window = dom.window;

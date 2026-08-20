@@ -84,6 +84,7 @@ const PortfolioBuilder = lazy(() => import('./components/PortfolioBuilder/Portfo
 const PublicPortfolio = lazy(() => import('./components/PublicPortfolio/PublicPortfolio'));
 const PortfolioGallery = lazy(() => import('./components/PortfolioGallery/PortfolioGallery'));
 const BuildResume = lazy(() => import('./components/BuildResume/BuildResume'));
+const EnterpriseConsole = lazy(() => import('./enterprise/EnterpriseConsole'));
 const Features = lazy(() => import('./components/Features/Features'));
 const JobsLanding = lazy(() => import('./components/JobsLanding/JobsLanding'));
 const MainJobListings = lazy(() => import('./components/JobsListings/MainJobListings'));
@@ -349,6 +350,7 @@ const AuthWrapper = () => {
                             <Route path="/cover-letter" element={<CoverLetter key={user?.uid || 'guest'} />} />
                             <Route path="/cover-letter/*" element={<CoverLetter key={user?.uid || 'guest'} />} />
                             <Route path="/dashboard/*" element={<RequireAuthenticated user={user}><Dashboard key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
+                            <Route path="/enterprise/*" element={<RequireAuthenticated user={user}><EnterpriseConsole key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
                             <Route path="/contact" element={<Contact user={user} />} />
                             <Route path="/build-resume/*" element={<MaybeApplicationShell user={user}><BuildResume key={user?.uid || 'guest'} /></MaybeApplicationShell>} />
                             <Route path="/create-resume/*" element={<MaybeApplicationShell user={user}><BuildResume key={user?.uid || 'guest'} /></MaybeApplicationShell>} />

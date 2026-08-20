@@ -18,6 +18,8 @@ const { loadProviderConfiguration, generateWithProviders } = require('./services
 const { loadAiAdminSettings, saveAiAdminSettings, testAiProvider, fetchProviderModels } = require('./services/aiAdmin');
 const { mergeAdminSettingCategory } = require('./services/adminSettingsMerge');
 const { createExportRenderToken, consumeExportRenderToken, discardExportRenderToken } = require('./security/exportTokens');
+const { createTenantService } = require('./enterprise/tenantService');
+const { enterpriseRouter } = require('./routes/enterprise');
 const app = express();
 const cors = require('cors');
 const cryptoRandom = require('crypto');
@@ -113,6 +115,9 @@ try {
 }
 // Make Firestore accessible to routes via req.app.get('db')
 app.set('db', db);
+// The enterprise control plane is intentionally server-only. It is dormant until
+// enterprise routes are enabled and does not alter certified UID-scoped paths.
+app.set('tenantService', createTenantService({ db, admin }));
 
 // Auto-initialize system fonts for Playwright PDF rendering on Linux servers
 const initSystemFonts = () => {
@@ -1728,6 +1733,10 @@ app.use('/api', aiRoutes);
 app.use('/api', emailRoutes);
 app.use('/api/email', emailRoutes);
 
+// Enterprise tenancy APIs are feature-gated at the client, server-authorized, and
+// deliberately isolated from existing certified UID-scoped module routes.
+app.use('/api/enterprise', enterpriseRouter);
+
 // AI provider configuration is split: secrets remain in a server-only document while
 // browser-readable settings contain models/toggles only.
 app.get('/api/admin/ai-settings', async (req, res) => {
@@ -3127,7 +3136,16 @@ if (require.main === module) {
             workerRunning = true;
             try {
                 const emailRoute = require('./routes/email');
-                await processOutboxOnce({ db, admin, workerId, dispatch: event => emailRoute.dispatchNotification(db, { to: event.recipient, templateType: event.templateType, vars: event.vars }) });
+                const tenantService = app.get('tenantService');
+                await processOutboxOnce({
+                    db,
+                    admin,
+                    workerId,
+                    // Tenant-bound outbox events are reauthorized at execution time;
+                    // legacy events retain their certified UID-era delivery behavior.
+                    authorize: event => tenantService?.authorizeOutboxEvent(event),
+                    dispatch: event => emailRoute.dispatchNotification(db, { to: event.recipient, templateType: event.templateType, vars: event.vars })
+                });
             } catch (error) { console.error('[Notification outbox]', error.message); }
             finally { workerRunning = false; }
         };
