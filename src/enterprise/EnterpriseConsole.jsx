@@ -1,12 +1,12 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import {
   FiActivity, FiBarChart2, FiBell, FiCommand, FiCreditCard, FiDatabase,
   FiFileText, FiHelpCircle, FiLock, FiSearch, FiSettings, FiShield,
   FiSliders, FiUsers, FiX, FiZap, FiMenu, FiCheck, FiFolder, FiKey
 } from 'react-icons/fi';
+import { AuthContext } from '../main';
 import { EnterpriseTenantProvider, useEnterpriseTenant } from './EnterpriseContext';
-import { enterpriseFetch } from './enterpriseApi';
 import EnterpriseOverviewTab from './components/EnterpriseOverviewTab';
 import EnterpriseUsersTab from './components/EnterpriseUsersTab';
 import EnterpriseTeamsTab from './components/EnterpriseTeamsTab';
@@ -177,7 +177,8 @@ function CommandPalette({ open, onClose, navigation, onSelect }) {
 }
 
 function EnterpriseConsoleInner() {
-  const { tenant, workspace, workspaces, selectWorkspace, isEnterpriseEnabled, loading, error } = useEnterpriseTenant();
+  const user = useContext(AuthContext);
+  const { tenant, workspace, workspaces, selectWorkspace, enabled, loading } = useEnterpriseTenant();
   const [activeTab, setActiveTab] = useState('overview');
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -197,7 +198,7 @@ function EnterpriseConsoleInner() {
     return NAVIGATION.filter(item => canSee(item, tenant?.permissions || ['*']));
   }, [tenant?.permissions]);
 
-  if (!isEnterpriseEnabled && !loading) {
+  if (!enabled && !loading) {
     return (
       <main className="enterprise-empty-state" role="main">
         <h1>Enterprise Unavailable</h1>
@@ -293,14 +294,12 @@ function EnterpriseConsoleInner() {
 
           {activeTab === 'members' && (
             <EnterpriseUsersTab
-              workspaces={workspaces}
+              currentPrincipalId={user?.uid}
             />
           )}
 
           {activeTab === 'teams' && (
-            <EnterpriseTeamsTab
-              workspaces={workspaces}
-            />
+            <EnterpriseTeamsTab />
           )}
 
           {activeTab === 'workspaces' && (
@@ -308,7 +307,6 @@ function EnterpriseConsoleInner() {
               workspaces={workspaces}
               activeWorkspace={workspace}
               onSelectWorkspace={selectWorkspace}
-              onCreateWorkspace={(name) => {}}
             />
           )}
 

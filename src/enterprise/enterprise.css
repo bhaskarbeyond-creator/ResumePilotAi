@@ -1407,3 +1407,52 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Data-plane state rows */
+.enterprise-loading-row,
+.enterprise-error-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.25rem 1rem;
+  color: var(--enterprise-text, inherit);
+}
+.enterprise-error-row strong {
+  display: block;
+  margin-bottom: 0.15rem;
+}
+.enterprise-error-icon {
+  color: #b45309;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+.enterprise-inline-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+.enterprise-button[disabled],
+.enterprise-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.enterprise-button-icon[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.enterprise-checkbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.enterprise-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+.enterprise-checkbox input {
+  width: auto;
+}

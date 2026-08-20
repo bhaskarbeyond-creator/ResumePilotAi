@@ -100,6 +100,15 @@ router.post('/support-grants/:grantId/revoke', async (req, res) => {
   }
 });
 
+router.get('/support-grants', resolveTenantContext, requireTenantPermission('tenant.settings.write'), async (req, res) => {
+  try {
+    const grants = await enterpriseService(req).listSupportGrants({ context: req.tenantContext });
+    return res.json({ grants: grants.map(grant => ({ id: grant.id, tenantId: grant.tenantId, workspaceId: grant.workspaceId, supportSubjectId: grant.supportSubjectId, requestedBySubjectId: grant.requestedBySubjectId, reason: grant.reason, scopes: grant.scopes, status: grant.status, createdAt: grant.createdAt, expiresAt: grant.expiresAt })) });
+  } catch (error) {
+    return res.status(error.status || 503).json({ error: { code: error.code || 'SUPPORT_GRANT_LIST_FAILED', message: 'Support grants are unavailable', requestId: res.locals?.requestId } });
+  }
+});
+
 router.get('/support/context', async (req, res) => {
   try {
     const result = await enterpriseService(req).resolveSupportContext({
@@ -162,6 +171,15 @@ router.get('/workspaces', resolveTenantContext, requireTenantPermission('workspa
   }
 });
 
+router.post('/workspaces', resolveTenantContext, requireTenantPermission('workspace.manage'), async (req, res) => {
+  try {
+    const workspace = await enterpriseService(req).createWorkspace({ context: req.tenantContext, input: req.body || {} });
+    return res.status(201).json({ workspace: { id: workspace.id, tenantId: workspace.tenantId, name: workspace.name, isDefault: workspace.isDefault === true } });
+  } catch (error) {
+    return res.status(error.status || 503).json({ error: { code: error.code || 'WORKSPACE_CREATE_FAILED', message: error.status === 400 ? error.message : 'Workspace could not be created', requestId: res.locals?.requestId } });
+  }
+});
+
 router.get('/memberships', resolveTenantContext, requireTenantPermission('tenant.members.read'), async (req, res) => {
   try {
     const memberships = await enterpriseService(req).listTenantMemberships({ context: req.tenantContext });
@@ -180,6 +198,24 @@ router.post('/memberships', resolveTenantContext, requireTenantPermission('tenan
   }
 });
 
+router.patch('/memberships/:principalId', resolveTenantContext, requireTenantPermission('tenant.members.manage'), async (req, res) => {
+  try {
+    const membership = await enterpriseService(req).updateTenantMembership({ context: req.tenantContext, principalId: req.params.principalId, input: req.body || {} });
+    return res.json({ membership: { id: membership.id, tenantId: membership.tenantId, principalId: membership.principalId, workspaceId: membership.workspaceId, roles: membership.roles, status: membership.status } });
+  } catch (error) {
+    return res.status(error.status || 503).json({ error: { code: error.code || 'TENANT_MEMBERSHIP_UPDATE_FAILED', message: error.status === 409 ? error.message : 'Tenant membership could not be updated', requestId: res.locals?.requestId } });
+  }
+});
+
+router.delete('/memberships/:principalId', resolveTenantContext, requireTenantPermission('tenant.members.manage'), async (req, res) => {
+  try {
+    await enterpriseService(req).removeTenantMembership({ context: req.tenantContext, principalId: req.params.principalId });
+    return res.status(204).end();
+  } catch (error) {
+    return res.status(error.status || 503).json({ error: { code: error.code || 'TENANT_MEMBERSHIP_REMOVE_FAILED', message: error.status === 409 ? error.message : 'Tenant membership could not be removed', requestId: res.locals?.requestId } });
+  }
+});
+
 router.post('/service-accounts', resolveTenantContext, requireTenantPermission('tenant.security.manage'), async (req, res) => {
   try {
     const created = await enterpriseService(req).createServiceAccount({ context: req.tenantContext, input: req.body || {} });
@@ -195,6 +231,24 @@ router.post('/service-accounts', resolveTenantContext, requireTenantPermission('
     });
   } catch (error) {
     return res.status(error.status || 503).json({ error: { code: error.code || 'SERVICE_ACCOUNT_CREATE_FAILED', message: error.status === 400 ? error.message : 'Service account could not be created', requestId: res.locals?.requestId } });
+  }
+});
+
+router.get('/service-accounts', resolveTenantContext, requireTenantPermission('tenant.security.read'), async (req, res) => {
+  try {
+    const accounts = await enterpriseService(req).listServiceAccounts({ context: req.tenantContext });
+    return res.json({ serviceAccounts: accounts.map(account => ({ id: account.id, tenantId: account.tenantId, workspaceId: account.workspaceId, displayName: account.displayName, status: account.status, createdAt: account.createdAt || null })) });
+  } catch (error) {
+    return res.status(error.status || 503).json({ error: { code: error.code || 'SERVICE_ACCOUNT_LIST_FAILED', message: 'Service accounts are unavailable', requestId: res.locals?.requestId } });
+  }
+});
+
+router.post('/service-accounts/:serviceAccountId/revoke', resolveTenantContext, requireTenantPermission('tenant.security.manage'), async (req, res) => {
+  try {
+    await enterpriseService(req).revokeServiceAccount({ context: req.tenantContext, serviceAccountId: req.params.serviceAccountId });
+    return res.status(204).end();
+  } catch (error) {
+    return res.status(error.status || 503).json({ error: { code: error.code || 'SERVICE_ACCOUNT_REVOKE_FAILED', message: error.status === 404 ? 'Service account was not found' : 'Service account could not be revoked', requestId: res.locals?.requestId } });
   }
 });
 

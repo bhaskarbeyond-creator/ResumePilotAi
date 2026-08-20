@@ -1,45 +1,38 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
-  FiUsers, FiPlus, FiEdit2, FiTrash2, FiSliders, FiCheck, FiX
+  FiUsers, FiPlus, FiCheck, FiX
 } from 'react-icons/fi';
+import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 
-const INITIAL_TEAMS = [
-  { id: 'team-1', name: 'Core Platform Engineering', description: 'Cloud infrastructure, backend microservices, and security systems', memberCount: 6, workspace: 'Engineering', lead: 'Elena Rostova' },
-  { id: 'team-2', name: 'Product Experience & Design', description: 'Design tokens, templates, and UI/UX design systems', memberCount: 4, workspace: 'Product & Design', lead: 'Marcus Chen' },
-  { id: 'team-3', name: 'Talent Acquisition & Recruiting', description: 'Candidate screening, hiring pipelines, and assessment review', memberCount: 3, workspace: 'Recruiting', lead: 'David Kim' },
-];
-
-export default function EnterpriseTeamsTab({ workspaces }) {
-  const [teams, setTeams] = useState(INITIAL_TEAMS);
+export default function EnterpriseTeamsTab() {
+  const { request, workspaceId } = useTenantApi();
+  const [teamsState, refreshTeams] = useAsyncResource(() => request('/api/enterprise/teams'), [request]);
+  const { loading, error, data } = teamsState;
   const [showModal, setShowModal] = useState(false);
   const [teamName, setTeamName] = useState('');
-  const [teamDescription, setTeamDescription] = useState('');
-  const [teamWorkspace, setTeamWorkspace] = useState(workspaces?.[0]?.name || 'Engineering');
+  const [busy, setBusy] = useState(false);
+  const [actionError, setActionError] = useState(null);
   const [notification, setNotification] = useState(null);
 
-  const handleCreateTeam = (e) => {
-    e.preventDefault();
-    if (!teamName.trim()) return;
-    const newTeam = {
-      id: `team-${Date.now()}`,
-      name: teamName.trim(),
-      description: teamDescription.trim() || 'Workspace team group',
-      memberCount: 1,
-      workspace: teamWorkspace,
-      lead: 'You',
-    };
-    setTeams(prev => [newTeam, ...prev]);
-    setShowModal(false);
-    setTeamName('');
-    setTeamDescription('');
-    setNotification(`Team "${newTeam.name}" created successfully.`);
-    setTimeout(() => setNotification(null), 3000);
-  };
+  const teams = useMemo(() => (Array.isArray(data?.teams) ? data.teams : []), [data]);
 
-  const handleDeleteTeam = (teamId) => {
-    setTeams(prev => prev.filter(t => t.id !== teamId));
-    setNotification('Team deleted.');
-    setTimeout(() => setNotification(null), 3000);
+  const handleCreateTeam = async (e) => {
+    e.preventDefault();
+    if (!teamName.trim() || busy) return;
+    setBusy(true);
+    setActionError(null);
+    try {
+      await request('/api/enterprise/teams', { method: 'POST', body: { name: teamName.trim(), workspaceId } });
+      setNotification(`Team "${teamName.trim()}" created.`);
+      setShowModal(false);
+      setTeamName('');
+      refreshTeams();
+    } catch (err) {
+      setActionError(err?.message || 'Team could not be created.');
+    } finally {
+      setBusy(false);
+      setTimeout(() => setNotification(null), 3500);
+    }
   };
 
   return (
@@ -47,6 +40,14 @@ export default function EnterpriseTeamsTab({ workspaces }) {
       {notification && (
         <div className="enterprise-toast enterprise-toast-success">
           <FiCheck aria-hidden="true" /> {notification}
+        </div>
+      )}
+      {actionError && (
+        <div className="enterprise-card" role="alert">
+          <div className="enterprise-error-row">
+            <span className="enterprise-error-icon" aria-hidden="true">⚠</span>
+            <div><strong>Team action failed</strong><p className="text-muted">{actionError}</p></div>
+          </div>
         </div>
       )}
 
@@ -67,40 +68,39 @@ export default function EnterpriseTeamsTab({ workspaces }) {
           </button>
         </div>
 
-        <div className="enterprise-teams-grid">
-          {teams.map(team => (
-            <div key={team.id} className="enterprise-team-card">
-              <div className="enterprise-team-header">
-                <div>
-                  <h3 className="enterprise-team-name">{team.name}</h3>
-                  <span className="enterprise-pill enterprise-pill-secondary">{team.workspace}</span>
+        <DataState loading={loading} error={error}>
+          {teams.length === 0 ? (
+            <p className="enterprise-empty">No teams exist in this workspace yet. Create a team to group members.</p>
+          ) : (
+            <div className="enterprise-teams-grid">
+              {teams.map(team => (
+                <div key={team.id} className="enterprise-team-card">
+                  <div className="enterprise-team-header">
+                    <div>
+                      <h3 className="enterprise-team-name">{team.name}</h3>
+                      <span className="enterprise-pill enterprise-pill-secondary">
+                        {team.workspaceId ? `ws ${String(team.workspaceId).slice(0, 8)}` : 'Tenant-wide'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="enterprise-team-footer">
+                    <div className="enterprise-team-meta">
+                      <FiUsers aria-hidden="true" /> Scoped workspace team
+                    </div>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  className="enterprise-button-icon text-danger"
-                  title="Delete Team"
-                  onClick={() => handleDeleteTeam(team.id)}
-                >
-                  <FiTrash2 />
-                </button>
-              </div>
-              <p className="enterprise-team-desc">{team.description}</p>
-              <div className="enterprise-team-footer">
-                <div className="enterprise-team-meta">
-                  <FiUsers aria-hidden="true" /> <strong>{team.memberCount}</strong> members · Lead: <em>{team.lead}</em>
-                </div>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
+          )}
+        </DataState>
       </div>
 
       {showModal && (
-        <div className="enterprise-modal-backdrop" role="presentation" onClick={() => setShowModal(false)}>
+        <div className="enterprise-modal-backdrop" role="presentation" onClick={() => !busy && setShowModal(false)}>
           <div className="enterprise-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
             <div className="enterprise-modal-header">
               <h3>Create Enterprise Team</h3>
-              <button type="button" className="enterprise-button-icon" onClick={() => setShowModal(false)}>
+              <button type="button" className="enterprise-button-icon" onClick={() => setShowModal(false)} disabled={busy}>
                 <FiX />
               </button>
             </div>
@@ -119,46 +119,18 @@ export default function EnterpriseTeamsTab({ workspaces }) {
                     autoFocus
                   />
                 </div>
-
-                <div className="enterprise-form-group">
-                  <label htmlFor="team-desc">Description</label>
-                  <input
-                    id="team-desc"
-                    type="text"
-                    placeholder="Purpose and focus of this team…"
-                    value={teamDescription}
-                    onChange={(e) => setTeamDescription(e.target.value)}
-                    className="enterprise-input"
-                  />
-                </div>
-
-                <div className="enterprise-form-group">
-                  <label htmlFor="team-workspace">Assigned Workspace</label>
-                  <select
-                    id="team-workspace"
-                    value={teamWorkspace}
-                    onChange={(e) => setTeamWorkspace(e.target.value)}
-                    className="enterprise-select"
-                  >
-                    {workspaces?.map(w => (
-                      <option key={w.id} value={w.name}>{w.name}</option>
-                    ))}
-                  </select>
-                </div>
               </div>
               <div className="enterprise-modal-footer">
                 <button
                   type="button"
                   className="enterprise-button enterprise-button-secondary"
                   onClick={() => setShowModal(false)}
+                  disabled={busy}
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="enterprise-button enterprise-button-primary"
-                >
-                  Create Team
+                <button type="submit" className="enterprise-button enterprise-button-primary" disabled={busy}>
+                  {busy ? 'Creating…' : 'Create Team'}
                 </button>
               </div>
             </form>

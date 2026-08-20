@@ -1,47 +1,65 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  FiFileText, FiPlus, FiDownload, FiEdit3, FiCopy, FiTrash2,
-  FiSearch, FiCheck, FiFilter, FiExternalLink, FiShare2
+  FiFileText, FiPlus, FiEdit3, FiCopy, FiTrash2, FiSearch, FiCheck
 } from 'react-icons/fi';
+import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 
-const SAMPLE_ENTERPRISE_RESUMES = [
-  { id: 'res-ent-1', title: 'Senior Cloud Solutions Architect', candidate: 'Alexander Wright', templateId: 'Cv51', status: 'PUBLISHED', lastModified: 'Today at 10:14 AM', author: 'Alexander Wright' },
-  { id: 'res-ent-2', title: 'Staff Frontend Infrastructure Engineer', candidate: 'Elena Rostova', templateId: 'Cv12', status: 'REVIEW', lastModified: 'Yesterday', author: 'Elena Rostova' },
-  { id: 'res-ent-3', title: 'Principal Product Manager', candidate: 'Marcus Chen', templateId: 'Cv1', status: 'PUBLISHED', lastModified: 'Aug 18, 2026', author: 'Marcus Chen' },
-  { id: 'res-ent-4', title: 'Director of Enterprise Security', candidate: 'Sarah Jenkins', templateId: 'Cv40', status: 'DRAFT', lastModified: 'Aug 15, 2026', author: 'Sarah Jenkins' },
-  { id: 'res-ent-5', title: 'Lead AI & Machine Learning Scientist', candidate: 'David Kim', templateId: 'Cv50', status: 'PUBLISHED', lastModified: 'Aug 12, 2026', author: 'David Kim' },
-];
+function resourceTitle(resource) {
+  const title = resource?.payload?.title || resource?.payload?.positionTitle;
+  return title ? String(title).slice(0, 120) : `Resume ${String(resource.id).slice(0, 8)}`;
+}
 
-export default function EnterpriseResumesTab({ _tenant, _workspace }) {
-  const [resumes, setResumes] = useState(SAMPLE_ENTERPRISE_RESUMES);
+export default function EnterpriseResumesTab() {
+  const { request } = useTenantApi();
+  const [resumesState, refreshResumes] = useAsyncResource(
+    () => request('/api/enterprise/resources?resourceType=resume'),
+    [request],
+  );
+  const { loading, error, data } = resumesState;
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [busy, setBusy] = useState(false);
+  const [actionError, setActionError] = useState(null);
   const [notification, setNotification] = useState(null);
 
-  const filteredResumes = resumes.filter(r => {
-    const matchesSearch = `${r.title} ${r.candidate} ${r.templateId}`.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'ALL' || r.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const resources = useMemo(() => (Array.isArray(data?.resources) ? data.resources : []), [data]);
+  const filtered = resources.filter(resource =>
+    `${resourceTitle(resource)} ${resource.ownerPrincipalId || ''}`.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-  const handleDuplicate = (resume) => {
-    const duplicate = {
-      ...resume,
-      id: `res-ent-${Date.now()}`,
-      title: `${resume.title} (Copy)`,
-      status: 'DRAFT',
-      lastModified: 'Just now',
-    };
-    setResumes(prev => [duplicate, ...prev]);
-    setNotification(`Duplicated "${resume.title}" into draft.`);
-    setTimeout(() => setNotification(null), 3000);
+  const notify = (message) => {
+    setNotification(message);
+    setTimeout(() => setNotification(null), 3500);
   };
 
-  const handleDelete = (resumeId) => {
-    setResumes(prev => prev.filter(r => r.id !== resumeId));
-    setNotification('Document removed from enterprise workspace.');
-    setTimeout(() => setNotification(null), 3000);
+  const handleDuplicate = async (resource) => {
+    if (busy) return;
+    setBusy(true);
+    setActionError(null);
+    try {
+      await request('/api/enterprise/resources', {
+        method: 'POST',
+        body: { resourceType: 'resume', payload: { ...(resource.payload || {}), title: `${resourceTitle(resource)} (Copy)` } },
+      });
+      notify(`Duplicated "${resourceTitle(resource)}" into draft.`);
+      refreshResumes();
+    } catch (err) {
+      setActionError(err?.message || 'Document could not be duplicated.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDelete = async (resource) => {
+    if (!window.confirm(`Delete "${resourceTitle(resource)}" from the enterprise workspace? This cannot be undone.`)) return;
+    setActionError(null);
+    try {
+      await request(`/api/enterprise/resources/${resource.id}`, { method: 'DELETE' });
+      notify('Document removed from enterprise workspace.');
+      refreshResumes();
+    } catch (err) {
+      setActionError(err?.message || 'Document could not be deleted.');
+    }
   };
 
   return (
@@ -51,14 +69,21 @@ export default function EnterpriseResumesTab({ _tenant, _workspace }) {
           <FiCheck aria-hidden="true" /> {notification}
         </div>
       )}
+      {actionError && (
+        <div className="enterprise-card" role="alert">
+          <div className="enterprise-error-row">
+            <span className="enterprise-error-icon" aria-hidden="true">⚠</span>
+            <div><strong>Document action failed</strong><p className="text-muted">{actionError}</p></div>
+          </div>
+        </div>
+      )}
 
-      {/* Header with Title and Create Button */}
       <div className="enterprise-card">
         <div className="enterprise-card-header-flex">
           <div>
             <h2 className="enterprise-tab-title">Enterprise Document Library</h2>
             <p className="enterprise-tab-subtitle">
-              Workspace-scoped resumes and executive CVs with team collaboration and 51 certified design presets
+              Workspace-scoped resumes and executive CVs backed by the RLS data plane
             </p>
           </div>
           <Link
@@ -69,116 +94,89 @@ export default function EnterpriseResumesTab({ _tenant, _workspace }) {
           </Link>
         </div>
 
-        {/* Filter Bar */}
         <div className="enterprise-filter-bar">
           <div className="enterprise-search-wrapper">
             <FiSearch className="enterprise-search-icon" aria-hidden="true" />
             <input
               type="text"
-              placeholder="Search resumes by title, candidate name, or template ID…"
+              placeholder="Search resumes by title or owner…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="enterprise-input"
             />
           </div>
-
-          <div className="enterprise-select-group">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="enterprise-select"
-              aria-label="Filter by status"
-            >
-              <option value="ALL">All Statuses</option>
-              <option value="PUBLISHED">Published</option>
-              <option value="REVIEW">In Review</option>
-              <option value="DRAFT">Draft</option>
-            </select>
-          </div>
         </div>
 
-        {/* Resumes Table */}
-        <div className="enterprise-table-wrapper">
-          <table className="enterprise-table">
-            <thead>
-              <tr>
-                <th>Document Title / Candidate</th>
-                <th>Template Preset</th>
-                <th>Status</th>
-                <th>Last Modified</th>
-                <th>Owner / Collaborator</th>
-                <th className="text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredResumes.map(resume => (
-                <tr key={resume.id}>
-                  <td>
-                    <div className="enterprise-user-cell">
-                      <div className="enterprise-avatar enterprise-avatar-doc">
-                        <FiFileText />
-                      </div>
-                      <div>
-                        <strong>{resume.title}</strong>
-                        <small>{resume.candidate}</small>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <span className="enterprise-pill enterprise-pill-template">
-                      {resume.templateId} (Certified 51)
-                    </span>
-                  </td>
-                  <td>
-                    <span className={`enterprise-pill enterprise-pill-${resume.status === 'PUBLISHED' ? 'success' : (resume.status === 'REVIEW' ? 'warning' : 'secondary')}`}>
-                      {resume.status}
-                    </span>
-                  </td>
-                  <td>
-                    <small className="text-muted">{resume.lastModified}</small>
-                  </td>
-                  <td>
-                    <small>{resume.author}</small>
-                  </td>
-                  <td className="text-right">
-                    <div className="enterprise-table-actions">
-                      <Link
-                        to={`/build-resume?id=${resume.id}`}
-                        className="enterprise-button-icon"
-                        title="Edit in Smart Composer"
-                      >
-                        <FiEdit3 />
-                      </Link>
-                      <button
-                        type="button"
-                        className="enterprise-button-icon"
-                        title="Duplicate Document"
-                        onClick={() => handleDuplicate(resume)}
-                      >
-                        <FiCopy />
-                      </button>
-                      <button
-                        type="button"
-                        className="enterprise-button-icon text-danger"
-                        title="Delete Document"
-                        onClick={() => handleDelete(resume.id)}
-                      >
-                        <FiTrash2 />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {filteredResumes.length === 0 && (
-                <tr>
-                  <td colSpan="6" className="enterprise-empty-row">
-                    No documents found matching the search criteria.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        <DataState loading={loading} error={error}>
+          {filtered.length === 0 ? (
+            <p className="enterprise-empty">
+              {searchQuery ? 'No documents match this search.' : 'No enterprise documents yet. Create a resume to begin.'}
+            </p>
+          ) : (
+            <div className="enterprise-table-wrapper">
+              <table className="enterprise-table">
+                <thead>
+                  <tr>
+                    <th>Document</th>
+                    <th>Owner</th>
+                    <th>Classification</th>
+                    <th>Revision</th>
+                    <th className="text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map(resource => (
+                    <tr key={resource.id}>
+                      <td>
+                        <div className="enterprise-user-cell">
+                          <div className="enterprise-avatar enterprise-avatar-doc">
+                            <FiFileText />
+                          </div>
+                          <div>
+                            <strong>{resourceTitle(resource)}</strong>
+                            <small>{String(resource.id).slice(0, 12)}…</small>
+                          </div>
+                        </div>
+                      </td>
+                      <td><small>{resource.ownerPrincipalId || '—'}</small></td>
+                      <td><span className="enterprise-pill enterprise-pill-secondary">{resource.classification || 'PRIVATE'}</span></td>
+                      <td><small>v{resource.revision || 1}</small></td>
+                      <td className="text-right">
+                        <div className="enterprise-table-actions">
+                          <Link
+                            to={`/build-resume?id=${resource.id}`}
+                            className="enterprise-button-icon"
+                            title="Edit in Smart Composer"
+                          >
+                            <FiEdit3 />
+                          </Link>
+                          <button
+                            type="button"
+                            className="enterprise-button-icon"
+                            title="Duplicate Document"
+                            onClick={() => handleDuplicate(resource)}
+                            disabled={busy}
+                          >
+                            <FiCopy />
+                          </button>
+                          <button
+                            type="button"
+                            className="enterprise-button-icon text-danger"
+                            title="Delete Document"
+                            onClick={() => handleDelete(resource)}
+                            disabled={busy}
+                          >
+                            <FiTrash2 />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </DataState>
       </div>
     </div>
   );

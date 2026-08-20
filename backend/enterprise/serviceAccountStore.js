@@ -44,6 +44,27 @@ class InMemoryServiceAccountStore {
     if (!account || account.status !== 'ACTIVE') return null;
     return { account, key };
   }
+
+  async list({ tenantId, workspaceId = null }) {
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    const rows = [];
+    for (const account of this.accounts.values()) {
+      if (account.tenantId !== tenantId || account.status === 'REVOKED') continue;
+      if (workspaceId && account.workspaceId !== workspaceId) continue;
+      rows.push({ ...account });
+    }
+    return rows.sort((a, b) => String(a.displayName).localeCompare(String(b.displayName)));
+  }
+
+  async revoke(serviceAccountId, { tenantId, workspaceId = null }) {
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    serviceAccountId = assertUuid(serviceAccountId, 'Service account identifier');
+    const account = this.accounts.get(serviceAccountId);
+    if (!account || account.tenantId !== tenantId || account.status === 'REVOKED') return false;
+    if (workspaceId && account.workspaceId !== workspaceId) return false;
+    this.accounts.set(account.id, { ...account, status: 'REVOKED', revokedAt: new Date().toISOString() });
+    return true;
+  }
 }
 
 class FirestoreServiceAccountStore {
@@ -92,6 +113,32 @@ class FirestoreServiceAccountStore {
     const account = accountSnapshot.data() || {};
     if (account.status !== 'ACTIVE' || account.tenantId !== key.tenantId || account.workspaceId !== key.workspaceId) return null;
     return { account: { ...account, id: accountSnapshot.id }, key: { ...key, id: snapshot.id } };
+  }
+
+  async list({ tenantId, workspaceId = null }) {
+    this.assertAvailable();
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    let query = this.db.collection('enterprise_service_accounts').where('tenantId', '==', tenantId);
+    if (workspaceId) query = query.where('workspaceId', '==', assertUuid(workspaceId, 'Workspace identifier'));
+    const snapshot = await query.get();
+    const rows = snapshot.docs
+      .map(document => ({ ...document.data(), id: document.id }))
+      .filter(account => String(account.status || '').toUpperCase() !== 'REVOKED');
+    return rows.sort((a, b) => String(a.displayName).localeCompare(String(b.displayName)));
+  }
+
+  async revoke(serviceAccountId, { tenantId, workspaceId = null }) {
+    this.assertAvailable();
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    serviceAccountId = assertUuid(serviceAccountId, 'Service account identifier');
+    const reference = this.db.collection('enterprise_service_accounts').doc(serviceAccountId);
+    const snapshot = await reference.get();
+    if (!snapshot.exists) return false;
+    const account = snapshot.data() || {};
+    if (account.tenantId !== tenantId || String(account.status || '').toUpperCase() === 'REVOKED') return false;
+    if (workspaceId && account.workspaceId !== workspaceId) return false;
+    await reference.update({ status: 'REVOKED', revokedAt: this.admin.firestore.FieldValue.serverTimestamp(), updatedAt: this.admin.firestore.FieldValue.serverTimestamp() });
+    return true;
   }
 }
 

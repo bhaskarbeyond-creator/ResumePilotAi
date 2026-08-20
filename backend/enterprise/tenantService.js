@@ -3,7 +3,7 @@
 const { permissionsFor } = require('../security/auth');
 const { buildTenantAuditEvent, writeTenantAuditEvent } = require('./tenantAudit');
 const { createTenantPool, TenantDataPlaneRouter } = require('./tenantDataPlane');
-const { FirestoreTenantRegistry } = require('./tenantRegistry');
+const { FirestoreTenantRegistry, InMemoryTenantRegistry, membershipDocumentId } = require('./tenantRegistry');
 const { FirestoreServiceAccountStore } = require('./serviceAccountStore');
 const { FirestoreSupportGrantStore } = require('./supportAccessStore');
 const { FirestoreAtomicCounterStore, TenantQuotaGuard } = require('./tenantQuota');
@@ -222,6 +222,67 @@ class TenantService {
     return created;
   }
 
+  async listServiceAccounts({ context }) {
+    if (!this.serviceAccountStore) {
+      throw Object.assign(new Error('Service account store is unavailable'), { code: 'SERVICE_ACCOUNT_STORE_UNAVAILABLE', status: 503 });
+    }
+    return this.serviceAccountStore.list({
+      tenantId: context.tenantId,
+      workspaceId: context.workspaceScope === 'TENANT' ? null : context.workspaceId,
+    });
+  }
+
+  async revokeServiceAccount({ context, serviceAccountId }) {
+    if (!this.serviceAccountStore) {
+      throw Object.assign(new Error('Service account store is unavailable'), { code: 'SERVICE_ACCOUNT_STORE_UNAVAILABLE', status: 503 });
+    }
+    const revoked = await this.serviceAccountStore.revoke(serviceAccountId, {
+      tenantId: context.tenantId,
+      workspaceId: context.workspaceScope === 'TENANT' ? null : context.workspaceId,
+    });
+    if (!revoked) throw Object.assign(new Error('Service account was not found'), { code: 'SERVICE_ACCOUNT_NOT_FOUND', status: 404 });
+    if (this.db && this.admin) {
+      const event = buildTenantAuditEvent({
+        context,
+        action: 'SERVICE_ACCOUNT_REVOKED',
+        category: 'tenant.security',
+        severity: 'HIGH',
+        resource: { type: 'service_account', id: serviceAccountId },
+      });
+      await writeTenantAuditEvent(this.db, this.admin, event);
+    }
+    return true;
+  }
+
+  async listSupportGrants({ context }) {
+    if (!this.supportGrantStore) {
+      throw Object.assign(new Error('Support access store is unavailable'), { code: 'SUPPORT_ACCESS_UNAVAILABLE', status: 503 });
+    }
+    return this.supportGrantStore.list({
+      tenantId: context.tenantId,
+      workspaceId: context.workspaceScope === 'TENANT' ? null : context.workspaceId,
+    });
+  }
+
+  async createWorkspace({ context, input }) {
+    const workspace = await this.registry.createWorkspace({
+      tenantId: context.tenantId,
+      name: input?.name,
+      isDefault: input?.isDefault === true,
+    });
+    if (this.db && this.admin) {
+      const event = buildTenantAuditEvent({
+        context,
+        action: 'WORKSPACE_CREATED',
+        category: 'tenant.workspace',
+        resource: { type: 'workspace', id: workspace.id },
+        metadata: { name: workspace.name },
+      });
+      await writeTenantAuditEvent(this.db, this.admin, event);
+    }
+    return workspace;
+  }
+
   async authenticateServiceApiKey({ apiKey, requestedTenantId = null, requestedWorkspaceId = null, requestId }) {
     if (!this.serviceAccountStore) {
       throw Object.assign(new Error('Service account store is unavailable'), { code: 'SERVICE_ACCOUNT_STORE_UNAVAILABLE', status: 503 });
@@ -417,6 +478,48 @@ class TenantService {
     return membership;
   }
 
+  async updateTenantMembership({ context, principalId, input }) {
+    const requestedRoles = Array.isArray(input?.roles) ? input.roles.map(role => String(role).toUpperCase()) : null;
+    if (requestedRoles && requestedRoles.includes('TENANT_OWNER') && !context.roles.includes('TENANT_OWNER')) {
+      throw Object.assign(new Error('Only a tenant owner may grant tenant ownership'), { code: 'TENANT_OWNER_GRANT_FORBIDDEN', status: 403 });
+    }
+    const membership = await this.registry.updateTenantMembership({
+      tenantId: context.tenantId,
+      principalId,
+      roles: requestedRoles,
+      status: input?.status ? String(input.status).toUpperCase() : null,
+      workspaceId: input?.workspaceId || null,
+    });
+    if (this.db && this.admin) {
+      const event = buildTenantAuditEvent({
+        context,
+        action: 'TENANT_MEMBERSHIP_UPDATED',
+        category: 'tenant.membership',
+        resource: { type: 'membership', id: membership.id },
+        severity: 'HIGH',
+        metadata: { targetPrincipalId: membership.principalId, roles: membership.roles.join(','), status: membership.status },
+      });
+      await writeTenantAuditEvent(this.db, this.admin, event);
+    }
+    return membership;
+  }
+
+  async removeTenantMembership({ context, principalId }) {
+    await this.registry.removeTenantMembership({ tenantId: context.tenantId, principalId });
+    if (this.db && this.admin) {
+      const event = buildTenantAuditEvent({
+        context,
+        action: 'TENANT_MEMBERSHIP_REMOVED',
+        category: 'tenant.membership',
+        resource: { type: 'membership', id: membershipDocumentId(context.tenantId, principalId) },
+        severity: 'HIGH',
+        metadata: { targetPrincipalId: principalId },
+      });
+      await writeTenantAuditEvent(this.db, this.admin, event);
+    }
+    return true;
+  }
+
   async withTenantDataPlane(context, callback) {
     if (!this.dataPlaneRouter) {
       throw Object.assign(new Error('Tenant PostgreSQL data plane is not configured'), { code: 'TENANT_DATA_PLANE_UNAVAILABLE', status: 503 });
@@ -509,8 +612,18 @@ function createTenantService({ db, admin, registry = null, dataPlaneRouter = nul
   if (!resolvedRouter && String(environment.TENANT_DATABASE_URL || '').trim()) {
     resolvedRouter = new TenantDataPlaneRouter({ sharedPool: createTenantPool({ connectionString: environment.TENANT_DATABASE_URL }) });
   }
+  const environmentIsProduction = String(environment.NODE_ENV || '').toLowerCase() === 'production';
+  const resolvedRegistry = registry || (
+    db
+      ? new FirestoreTenantRegistry({ db, admin })
+      // Local/dev fallback: without a Firestore handle the control plane cannot persist.
+      // Never used in production; a production process must have db (Firestore) configured.
+      : environmentIsProduction
+        ? new FirestoreTenantRegistry({ db: null, admin })
+        : new InMemoryTenantRegistry()
+  );
   return new TenantService({
-    registry: registry || new FirestoreTenantRegistry({ db, admin }),
+    registry: resolvedRegistry,
     db,
     admin,
     dataPlaneRouter: resolvedRouter,

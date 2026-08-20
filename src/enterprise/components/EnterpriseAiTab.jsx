@@ -1,57 +1,114 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  FiZap, FiShield, FiSliders, FiCheckCircle, FiAlertTriangle,
-  FiPlay, FiCheck, FiRefreshCw, FiCpu, FiLock
+  FiPlay, FiCheck, FiRefreshCw, FiLock
 } from 'react-icons/fi';
+import { useTenantApi } from '../useTenantApi';
 import { enterpriseFetch } from '../enterpriseApi';
 
-export default function EnterpriseAiTab({
-  tenant,
-  workspace
-}) {
-  const [providers, setProviders] = useState({
-    nvidia: true,
-    gemini: true,
-    openai: false,
-    groq: false,
-    deepseek: false,
-  });
+const PROVIDERS = [
+  { key: 'nvidia', label: 'NVIDIA NIM', blurb: 'Hardware-accelerated llama models' },
+  { key: 'gemini', label: 'Google Gemini', blurb: 'Long-context comprehension' },
+  { key: 'openai', label: 'OpenAI GPT', blurb: 'Complex technical summaries' },
+  { key: 'groq', label: 'Groq LPU', blurb: 'Ultra-fast inference' },
+  { key: 'deepseek', label: 'DeepSeek', blurb: 'Cost-efficient reasoning' },
+];
 
-  const [primaryModel, setPrimaryModel] = useState('meta/llama-3.2-11b-vision-instruct');
-  const [requestsPerMinute, setRequestsPerMinute] = useState(60);
-  const [tokensPerDay, setTokensPerDay] = useState(100000);
+const MODEL_OPTIONS = [
+  'meta/llama-3.2-11b-vision-instruct',
+  'gemini-2.0-flash',
+  'gpt-4o-mini',
+  'meta/llama-3.1-8b-instruct',
+];
+
+export default function EnterpriseAiTab() {
+  const { request } = useTenantApi();
+  const [configuration, setConfiguration] = useState(null);
+  const [configError, setConfigError] = useState(null);
+  const [configLoading, setConfigLoading] = useState(true);
+  const [primaryModel, setPrimaryModel] = useState(MODEL_OPTIONS[0]);
+  const [requestsPerMinute, setRequestsPerMinute] = useState(12);
+  const [requestsPerDay, setRequestsPerDay] = useState(100);
+  const [busy, setBusy] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState(null);
   const [notification, setNotification] = useState(null);
 
-  const handleToggleProvider = (key) => {
-    setProviders(prev => ({ ...prev, [key]: !prev[key] }));
+  const allowed = useMemo(() => new Set((configuration?.aiPolicy?.allowedProviders || []).map(p => String(p).toLowerCase())), [configuration]);
+
+  const loadConfiguration = async () => {
+    setConfigLoading(true);
+    setConfigError(null);
+    try {
+      const result = await request('/api/enterprise/configuration');
+      const config = result.configuration;
+      setConfiguration(config);
+      setRequestsPerMinute(Number(config?.quotaPolicy?.aiRequestsPerMinute ?? 12));
+      setRequestsPerDay(Number(config?.quotaPolicy?.aiRequestsPerDay ?? 100));
+    } catch (err) {
+      setConfigError(err?.message || 'AI policy configuration could not be loaded.');
+    } finally {
+      setConfigLoading(false);
+    }
   };
 
-  const handleSavePolicy = (e) => {
+  useEffect(() => {
+    loadConfiguration();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const toggleProvider = (key) => {
+    setConfiguration(prev => {
+      if (!prev) return prev;
+      const current = new Set((prev.aiPolicy?.allowedProviders || []).map(p => String(p).toLowerCase()));
+      if (current.has(key)) current.delete(key); else current.add(key);
+      return { ...prev, aiPolicy: { ...prev.aiPolicy, allowedProviders: [...current] } };
+    });
+  };
+
+  const handleSavePolicy = async (e) => {
     e.preventDefault();
-    setNotification('Enterprise AI policy and quota configuration saved successfully.');
-    setTimeout(() => setNotification(null), 3500);
+    if (busy || !configuration) return;
+    setBusy(true);
+    setConfigError(null);
+    try {
+      await request('/api/enterprise/configuration', {
+        method: 'PATCH',
+        body: {
+          expectedRevision: configuration.revision,
+          configuration: {
+            aiPolicy: { allowedProviders: [...allowed] },
+            quotaPolicy: {
+              aiRequestsPerMinute: requestsPerMinute,
+              aiRequestsPerDay: requestsPerDay,
+            },
+          },
+        },
+      });
+      setNotification('Enterprise AI policy and quota configuration saved.');
+      await loadConfiguration();
+    } catch (err) {
+      setConfigError(err?.message || 'AI policy could not be saved.');
+    } finally {
+      setBusy(false);
+      setTimeout(() => setNotification(null), 3500);
+    }
   };
 
   const handleTestAi = async () => {
     setTesting(true);
     setTestResult(null);
     try {
-      // Simulate real AI policy check
+      // Real server reachability + policy report; no fabricated latency or model claims.
       const response = await enterpriseFetch('/api/enterprise/status');
       setTestResult({
         status: 'SUCCESS',
-        provider: 'nvidia (NVIDIA NIM)',
-        model: primaryModel,
-        latencyMs: 240,
-        policyEnforced: 'ZERO_DATA_LEAKAGE_STRICT',
-        message: 'AI Provider reached with verified tenant-scoped isolation.',
+        message: `Enterprise AI policy endpoint is reachable (apiVersion ${response.apiVersion}). Provider generation requires configured AI keys and the RLS data plane.`,
+        enabled: response.enabled === true,
       });
     } catch (err) {
       setTestResult({
         status: 'ERROR',
-        message: err.message || 'AI request failed.',
+        message: err?.message || 'AI policy endpoint could not be reached.',
       });
     } finally {
       setTesting(false);
@@ -66,13 +123,12 @@ export default function EnterpriseAiTab({
         </div>
       )}
 
-      {/* Header */}
       <div className="enterprise-card">
         <div className="enterprise-card-header-flex">
           <div>
             <h2 className="enterprise-tab-title">Enterprise AI Policy & Quota Console</h2>
             <p className="enterprise-tab-subtitle">
-              Configure tenant-isolated LLM providers, model routing, failover mechanisms, and hard usage quotas
+              Tenant-isolated LLM provider allowlist and hard usage quotas
             </p>
           </div>
           <button
@@ -85,162 +141,106 @@ export default function EnterpriseAiTab({
           </button>
         </div>
 
-        {/* Security & Data Boundary Card */}
         <div className="enterprise-security-banner">
           <div className="enterprise-security-banner-icon">
             <FiLock />
           </div>
           <div>
-            <strong>Zero-Leakage Enterprise Data Boundary Active</strong>
-            <p>Prompts and candidate resume facts are processed ephemerally with zero model-training retention and strict tenant RLS isolation.</p>
+            <strong>Zero-Leakage Enterprise Data Boundary</strong>
+            <p>Prompts and candidate resume facts are processed ephemerally with tenant RLS isolation and no model-training retention.</p>
           </div>
         </div>
 
-        {/* AI Policy Test Result Display */}
         {testResult && (
           <div className={`enterprise-test-box ${testResult.status === 'SUCCESS' ? 'success' : 'error'}`}>
             <div className="enterprise-test-box-header">
-              <strong>{testResult.status === 'SUCCESS' ? '✓ AI Connection & Policy Test Passed' : '✗ AI Test Failed'}</strong>
-              <small>{testResult.latencyMs ? `${testResult.latencyMs}ms response` : ''}</small>
+              <strong>{testResult.status === 'SUCCESS' ? '✓ AI Policy Endpoint Reachable' : '✗ AI Policy Test Failed'}</strong>
             </div>
             <p>{testResult.message}</p>
-            {testResult.status === 'SUCCESS' && (
-              <div className="enterprise-test-pills">
-                <span className="enterprise-pill enterprise-pill-success">Provider: {testResult.provider}</span>
-                <span className="enterprise-pill enterprise-pill-template">Model: {testResult.model}</span>
-                <span className="enterprise-pill enterprise-pill-secondary">Policy: {testResult.policyEnforced}</span>
-              </div>
-            )}
           </div>
         )}
 
-        <form onSubmit={handleSavePolicy}>
-          {/* Provider Allowlist */}
-          <h3 className="enterprise-card-title" style={{ marginTop: '1.5rem' }}>Approved Provider Allowlist</h3>
-          <p className="enterprise-card-subtitle">Only verified providers enabled below will receive tenant generation requests</p>
-
-          <div className="enterprise-provider-grid">
-            <label className={`enterprise-provider-card ${providers.nvidia ? 'active' : ''}`}>
-              <input
-                type="checkbox"
-                checked={providers.nvidia}
-                onChange={() => handleToggleProvider('nvidia')}
-              />
-              <div className="enterprise-provider-content">
-                <div className="enterprise-provider-header">
-                  <strong>NVIDIA NIM (Fast Vision & Instruct)</strong>
-                  <span className="enterprise-pill enterprise-pill-success">Primary · Ultra-low latency</span>
-                </div>
-                <p>Hardware-accelerated llama-3.2 models with 220ms response benchmarks.</p>
-              </div>
-            </label>
-
-            <label className={`enterprise-provider-card ${providers.gemini ? 'active' : ''}`}>
-              <input
-                type="checkbox"
-                checked={providers.gemini}
-                onChange={() => handleToggleProvider('gemini')}
-              />
-              <div className="enterprise-provider-content">
-                <div className="enterprise-provider-header">
-                  <strong>Google Gemini</strong>
-                  <span className="enterprise-pill enterprise-pill-success">Active Failover</span>
-                </div>
-                <p>Gemini 1.5 Flash and Pro models with long-context comprehension.</p>
-              </div>
-            </label>
-
-            <label className={`enterprise-provider-card ${providers.openai ? 'active' : ''}`}>
-              <input
-                type="checkbox"
-                checked={providers.openai}
-                onChange={() => handleToggleProvider('openai')}
-              />
-              <div className="enterprise-provider-content">
-                <div className="enterprise-provider-header">
-                  <strong>OpenAI GPT-4o</strong>
-                  <span className="enterprise-pill enterprise-pill-secondary">Configurable</span>
-                </div>
-                <p>GPT-4o and GPT-4o mini models for complex technical summaries.</p>
-              </div>
-            </label>
-
-            <label className={`enterprise-provider-card ${providers.groq ? 'active' : ''}`}>
-              <input
-                type="checkbox"
-                checked={providers.groq}
-                onChange={() => handleToggleProvider('groq')}
-              />
-              <div className="enterprise-provider-content">
-                <div className="enterprise-provider-header">
-                  <strong>Groq LPUs</strong>
-                  <span className="enterprise-pill enterprise-pill-secondary">Configurable</span>
-                </div>
-                <p>Ultra-fast inference LPUs with Mixtral & Llama architecture.</p>
-              </div>
-            </label>
+        {configLoading ? (
+          <div className="enterprise-loading-row"><span className="enterprise-spinner" aria-hidden="true" /><span className="text-muted">Loading AI policy…</span></div>
+        ) : configError ? (
+          <div className="enterprise-card" role="alert">
+            <div className="enterprise-error-row">
+              <span className="enterprise-error-icon" aria-hidden="true">⚠</span>
+              <div><strong>AI policy unavailable</strong><p className="text-muted">{configError}</p></div>
+            </div>
           </div>
+        ) : configuration ? (
+          <form onSubmit={handleSavePolicy}>
+            <h3 className="enterprise-card-title" style={{ marginTop: '1.5rem' }}>Approved Provider Allowlist</h3>
+            <p className="enterprise-card-subtitle">Only providers enabled below receive tenant generation requests. An empty allowlist denies all providers (fail closed).</p>
 
-          {/* Model Selection and Quotas */}
-          <div className="enterprise-two-column-grid" style={{ marginTop: '1.5rem' }}>
-            <div className="enterprise-form-group">
-              <label htmlFor="primary-model">Primary Production Model</label>
-              <select
-                id="primary-model"
-                value={primaryModel}
-                onChange={(e) => setPrimaryModel(e.target.value)}
-                className="enterprise-select"
-              >
-                <option value="meta/llama-3.2-11b-vision-instruct">meta/llama-3.2-11b-vision-instruct (Default Recommended)</option>
-                <option value="nvidia/nemotron-mini-4b-instruct">nvidia/nemotron-mini-4b-instruct (Fast Failover Candidate)</option>
-                <option value="gemini-1.5-flash">gemini-1.5-flash (Google Gemini Flash)</option>
-                <option value="gpt-4o-mini">gpt-4o-mini (OpenAI Fast Tier)</option>
-              </select>
+            <div className="enterprise-provider-grid">
+              {PROVIDERS.map(provider => (
+                <label key={provider.key} className={`enterprise-provider-card ${allowed.has(provider.key) ? 'active' : ''}`}>
+                  <input
+                    type="checkbox"
+                    checked={allowed.has(provider.key)}
+                    onChange={() => toggleProvider(provider.key)}
+                  />
+                  <div className="enterprise-provider-content">
+                    <div className="enterprise-provider-header">
+                      <strong>{provider.label}</strong>
+                      <span className="enterprise-pill enterprise-pill-secondary">{provider.blurb}</span>
+                    </div>
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            <div className="enterprise-two-column-grid" style={{ marginTop: '1.5rem' }}>
+              <div className="enterprise-form-group">
+                <label htmlFor="primary-model">Primary Production Model</label>
+                <select
+                  id="primary-model"
+                  value={primaryModel}
+                  onChange={(e) => setPrimaryModel(e.target.value)}
+                  className="enterprise-select"
+                >
+                  {MODEL_OPTIONS.map(model => <option key={model} value={model}>{model}</option>)}
+                </select>
+              </div>
+              <div className="enterprise-form-group">
+                <label htmlFor="req-limit">Tenant Rate Limit (Requests / Minute)</label>
+                <input
+                  id="req-limit"
+                  type="number"
+                  min="1"
+                  max="10000"
+                  value={requestsPerMinute}
+                  onChange={(e) => setRequestsPerMinute(Number(e.target.value))}
+                  className="enterprise-input"
+                />
+              </div>
             </div>
 
             <div className="enterprise-form-group">
-              <label htmlFor="req-limit">Tenant Rate Limit (Requests / Minute)</label>
+              <label htmlFor="token-quota">Daily Request Allowance ({requestsPerDay.toLocaleString()} / day)</label>
               <input
-                id="req-limit"
-                type="number"
-                min="10"
-                max="600"
-                value={requestsPerMinute}
-                onChange={(e) => setRequestsPerMinute(Number(e.target.value))}
-                className="enterprise-input"
+                id="token-quota"
+                type="range"
+                min="100"
+                max="1000000"
+                step="100"
+                value={requestsPerDay}
+                onChange={(e) => setRequestsPerDay(Number(e.target.value))}
+                className="enterprise-range"
               />
             </div>
-          </div>
 
-          <div className="enterprise-form-group">
-            <label htmlFor="token-quota">Daily Token Allowance ({tokensPerDay.toLocaleString()} tokens/day)</label>
-            <input
-              id="token-quota"
-              type="range"
-              min="10000"
-              max="1000000"
-              step="10000"
-              value={tokensPerDay}
-              onChange={(e) => setTokensPerDay(Number(e.target.value))}
-              className="enterprise-range"
-            />
-            <div className="enterprise-range-labels">
-              <span>10k (Starter)</span>
-              <span>100k (Standard)</span>
-              <span>500k (Scale)</span>
-              <span>1M (Dedicated)</span>
+            <div className="enterprise-form-actions">
+              <button type="submit" className="enterprise-button enterprise-button-primary" disabled={busy}>
+                {busy ? 'Saving…' : 'Save AI Policy Changes'}
+              </button>
             </div>
-          </div>
-
-          <div className="enterprise-form-actions">
-            <button
-              type="submit"
-              className="enterprise-button enterprise-button-primary"
-            >
-              Save AI Policy Changes
-            </button>
-          </div>
-        </form>
+          </form>
+        ) : (
+          <p className="enterprise-empty">No AI policy is available for this tenant.</p>
+        )}
       </div>
     </div>
   );

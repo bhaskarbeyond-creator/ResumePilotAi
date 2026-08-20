@@ -1,28 +1,39 @@
 import React, { useState } from 'react';
-import {
-  FiSliders, FiPlus, FiCheck, FiTrash2, FiLayers, FiX
-} from 'react-icons/fi';
+import { FiSliders, FiPlus, FiCheck, FiX } from 'react-icons/fi';
+import { useTenantApi } from '../useTenantApi';
+import { useEnterpriseTenant } from '../EnterpriseContext';
 
 export default function EnterpriseWorkspacesTab({
   workspaces,
   activeWorkspace,
   onSelectWorkspace,
-  onCreateWorkspace
 }) {
+  const { request } = useTenantApi();
+  const { reload } = useEnterpriseTenant();
   const [showModal, setShowModal] = useState(false);
   const [workspaceName, setWorkspaceName] = useState('');
+  const [busy, setBusy] = useState(false);
   const [notification, setNotification] = useState(null);
+  const [error, setError] = useState(null);
 
-  const handleCreate = (e) => {
+  const handleCreate = async (e) => {
     e.preventDefault();
-    if (!workspaceName.trim()) return;
-    if (onCreateWorkspace) {
-      onCreateWorkspace(workspaceName.trim());
+    const name = workspaceName.trim();
+    if (!name || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await request('/api/enterprise/workspaces', { method: 'POST', body: { name } });
+      setNotification(`Workspace "${name}" created.`);
+      setShowModal(false);
+      setWorkspaceName('');
+      await reload();
+    } catch (err) {
+      setError(err?.message || 'Workspace could not be created.');
+    } finally {
+      setBusy(false);
+      setTimeout(() => setNotification(null), 3500);
     }
-    setNotification(`Workspace "${workspaceName.trim()}" created.`);
-    setShowModal(false);
-    setWorkspaceName('');
-    setTimeout(() => setNotification(null), 3000);
   };
 
   return (
@@ -30,6 +41,14 @@ export default function EnterpriseWorkspacesTab({
       {notification && (
         <div className="enterprise-toast enterprise-toast-success">
           <FiCheck aria-hidden="true" /> {notification}
+        </div>
+      )}
+      {error && (
+        <div className="enterprise-card" role="alert">
+          <div className="enterprise-error-row">
+            <span className="enterprise-error-icon" aria-hidden="true">⚠</span>
+            <div><strong>Workspace action failed</strong><p className="text-muted">{error}</p></div>
+          </div>
         </div>
       )}
 
@@ -51,7 +70,7 @@ export default function EnterpriseWorkspacesTab({
         </div>
 
         <div className="enterprise-workspaces-list">
-          {workspaces?.map(ws => (
+          {(workspaces || []).map(ws => (
             <div
               key={ws.id}
               className={`enterprise-workspace-card ${ws.id === activeWorkspace?.id ? 'active' : ''}`}
@@ -85,15 +104,18 @@ export default function EnterpriseWorkspacesTab({
               </div>
             </div>
           ))}
+          {!(workspaces || []).length && (
+            <p className="enterprise-empty">No workspaces are available. Create one to partition your organization.</p>
+          )}
         </div>
       </div>
 
       {showModal && (
-        <div className="enterprise-modal-backdrop" role="presentation" onClick={() => setShowModal(false)}>
+        <div className="enterprise-modal-backdrop" role="presentation" onClick={() => !busy && setShowModal(false)}>
           <div className="enterprise-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
             <div className="enterprise-modal-header">
               <h3>Create New Workspace</h3>
-              <button type="button" className="enterprise-button-icon" onClick={() => setShowModal(false)}>
+              <button type="button" className="enterprise-button-icon" onClick={() => setShowModal(false)} disabled={busy}>
                 <FiX />
               </button>
             </div>
@@ -118,14 +140,12 @@ export default function EnterpriseWorkspacesTab({
                   type="button"
                   className="enterprise-button enterprise-button-secondary"
                   onClick={() => setShowModal(false)}
+                  disabled={busy}
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="enterprise-button enterprise-button-primary"
-                >
-                  Create Workspace
+                <button type="submit" className="enterprise-button enterprise-button-primary" disabled={busy}>
+                  {busy ? 'Creating…' : 'Create Workspace'}
                 </button>
               </div>
             </form>

@@ -64,6 +64,17 @@ class InMemorySupportGrantStore {
     this.grants.set(grant.id, { ...grant, status: 'REVOKED', revokedAt: new Date().toISOString() });
     return true;
   }
+
+  async list({ tenantId, workspaceId = null }) {
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    const rows = [];
+    for (const grant of this.grants.values()) {
+      if (grant.tenantId !== tenantId || grant.status !== 'ACTIVE') continue;
+      if (workspaceId && grant.workspaceId !== workspaceId) continue;
+      rows.push({ ...grant });
+    }
+    return rows.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  }
 }
 
 class FirestoreSupportGrantStore {
@@ -101,6 +112,17 @@ class FirestoreSupportGrantStore {
     if (!snapshot.exists) return false;
     await reference.update({ status: 'REVOKED', revokedAt: this.admin.firestore.FieldValue.serverTimestamp(), updatedAt: this.admin.firestore.FieldValue.serverTimestamp() });
     return true;
+  }
+
+  async list({ tenantId, workspaceId = null }) {
+    this.assertAvailable();
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    let query = this.db.collection('enterprise_support_grants').where('tenantId', '==', tenantId).where('status', '==', 'ACTIVE');
+    if (workspaceId) query = query.where('workspaceId', '==', assertUuid(workspaceId, 'Workspace identifier'));
+    const snapshot = await query.get();
+    return snapshot.docs
+      .map(document => ({ ...document.data(), id: document.id }))
+      .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
   }
 }
 

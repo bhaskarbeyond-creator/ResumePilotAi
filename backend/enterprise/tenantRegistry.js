@@ -381,6 +381,19 @@ class FirestoreTenantRegistry {
     return { id, tenantId, workspaceId, name: cleanName, status: 'ACTIVE' };
   }
 
+  async createWorkspace({ tenantId, name, isDefault = false }) {
+    this.assertAvailable();
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    const cleanName = compact(name, 120);
+    if (cleanName.length < 2) throw Object.assign(new Error('Workspace name is invalid'), { code: 'INVALID_WORKSPACE', status: 400 });
+    const id = crypto.randomUUID();
+    const now = this.timestamp();
+    await this.db.collection('enterprise_workspaces').doc(id).create({
+      id, tenantId, name: cleanName, lifecycleState: 'ACTIVE', isDefault: isDefault === true, createdAt: now, updatedAt: now,
+    });
+    return { id, tenantId, name: cleanName, lifecycleState: 'ACTIVE', isDefault: isDefault === true };
+  }
+
   async grantMembership({ tenantId, principalId, workspaceId = null, roles = ['MEMBER'] }) {
     this.assertAvailable();
     tenantId = assertUuid(tenantId, 'Tenant identifier');
@@ -419,6 +432,62 @@ class FirestoreTenantRegistry {
       transaction.set(workspaceReference, { id: workspaceReference.id, tenantId, workspaceId: resolvedWorkspaceId, principalId, status: 'ACTIVE', createdAt: current.createdAt || now, updatedAt: now }, { merge: false });
     });
     return validateMembership(membership, principalId);
+  }
+
+  async assertNotLastOwner(tenantId, principalId, nextRoles, nextStatus) {
+    if (nextRoles && nextRoles.includes('TENANT_OWNER')) return;
+    const memberships = await this.listTenantMemberships(tenantId);
+    const owners = memberships.filter(member => Array.isArray(member.roles) && member.roles.includes('TENANT_OWNER') && String(member.status || '').toUpperCase() === 'ACTIVE');
+    if (owners.length === 1 && owners[0].principalId === principalId) {
+      throw Object.assign(new Error('A tenant must retain at least one active owner'), { code: 'LAST_TENANT_OWNER', status: 409 });
+    }
+  }
+
+  async updateTenantMembership({ tenantId, principalId, roles = null, status = null, workspaceId = null }) {
+    this.assertAvailable();
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    principalId = assertPrincipalId(principalId);
+    const reference = this.db.collection('enterprise_memberships').doc(membershipDocumentId(tenantId, principalId));
+    const snapshot = await reference.get();
+    if (!snapshot.exists) throw Object.assign(new Error('Tenant membership was not found'), { code: 'TENANT_MEMBERSHIP_NOT_FOUND', status: 404 });
+    const current = snapshot.data() || {};
+    const nextRoles = roles ? normalizeRoles(roles) : Array.isArray(current.roles) ? current.roles : [];
+    const nextStatus = status ? String(status).toUpperCase() : String(current.status || 'ACTIVE').toUpperCase();
+    if (nextRoles.includes('TENANT_OWNER') && nextStatus !== 'ACTIVE') {
+      throw Object.assign(new Error('A tenant owner must remain active'), { code: 'TENANT_OWNER_MUST_BE_ACTIVE', status: 409 });
+    }
+    if (nextStatus === 'REMOVED' || !nextRoles.includes('TENANT_OWNER')) {
+      await this.assertNotLastOwner(tenantId, principalId, nextRoles, nextStatus);
+    }
+    const now = this.timestamp();
+    const membership = {
+      ...current,
+      tenantId,
+      principalId,
+      canonicalPrincipalId: canonicalPrincipalId(principalId),
+      roles: nextRoles,
+      status: nextStatus,
+      revision: Number(current.revision || 0) + 1,
+      updatedAt: now,
+    };
+    if (workspaceId) {
+      membership.workspaceId = assertUuid(workspaceId, 'Workspace identifier');
+      await this.getWorkspace(membership.workspaceId, tenantId);
+    }
+    await reference.set(membership, { merge: false });
+    return validateMembership(membership, principalId);
+  }
+
+  async removeTenantMembership({ tenantId, principalId }) {
+    this.assertAvailable();
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    principalId = assertPrincipalId(principalId);
+    await this.assertNotLastOwner(tenantId, principalId, [], 'REMOVED');
+    const reference = this.db.collection('enterprise_memberships').doc(membershipDocumentId(tenantId, principalId));
+    const snapshot = await reference.get();
+    if (!snapshot.exists) throw Object.assign(new Error('Tenant membership was not found'), { code: 'TENANT_MEMBERSHIP_NOT_FOUND', status: 404 });
+    await reference.update({ status: 'REMOVED', revision: Number((snapshot.data() || {}).revision || 0) + 1, updatedAt: this.timestamp() });
+    return true;
   }
 
   async listMemberships(principalId) {
@@ -620,6 +689,15 @@ class InMemoryTenantRegistry {
     return { ...team };
   }
 
+  async createWorkspace({ tenantId, name, isDefault = false }) {
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    const cleanName = compact(name, 120);
+    if (cleanName.length < 2) throw Object.assign(new Error('Workspace name is invalid'), { code: 'INVALID_WORKSPACE', status: 400 });
+    const workspace = { id: crypto.randomUUID(), tenantId, name: cleanName, lifecycleState: 'ACTIVE', isDefault: isDefault === true };
+    this.workspaces.set(workspace.id, workspace);
+    return { ...workspace };
+  }
+
   async grantMembership({ tenantId, principalId, workspaceId = null, roles = ['MEMBER'] }) {
     tenantId = assertUuid(tenantId, 'Tenant identifier');
     principalId = assertPrincipalId(principalId);
@@ -642,6 +720,55 @@ class InMemoryTenantRegistry {
     this.memberships.set(id, membership);
     this.workspaceMemberships.set(workspaceMembershipDocumentId(resolvedWorkspaceId, principalId), { tenantId, workspaceId: resolvedWorkspaceId, principalId, status: 'ACTIVE' });
     return validateMembership(membership, principalId);
+  }
+
+  async assertNotLastOwner(tenantId, principalId, nextRoles, nextStatus) {
+    if (nextRoles && nextRoles.includes('TENANT_OWNER')) return;
+    const memberships = await this.listTenantMemberships(tenantId);
+    const owners = memberships.filter(member => Array.isArray(member.roles) && member.roles.includes('TENANT_OWNER') && String(member.status || '').toUpperCase() === 'ACTIVE');
+    if (owners.length === 1 && owners[0].principalId === principalId) {
+      throw Object.assign(new Error('A tenant must retain at least one active owner'), { code: 'LAST_TENANT_OWNER', status: 409 });
+    }
+  }
+
+  async updateTenantMembership({ tenantId, principalId, roles = null, status = null, workspaceId = null }) {
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    principalId = assertPrincipalId(principalId);
+    const id = membershipDocumentId(tenantId, principalId);
+    const current = this.memberships.get(id);
+    if (!current) throw Object.assign(new Error('Tenant membership was not found'), { code: 'TENANT_MEMBERSHIP_NOT_FOUND', status: 404 });
+    const nextRoles = roles ? normalizeRoles(roles) : Array.isArray(current.roles) ? current.roles : [];
+    const nextStatus = status ? String(status).toUpperCase() : String(current.status || 'ACTIVE').toUpperCase();
+    if (nextRoles.includes('TENANT_OWNER') && nextStatus !== 'ACTIVE') {
+      throw Object.assign(new Error('A tenant owner must remain active'), { code: 'TENANT_OWNER_MUST_BE_ACTIVE', status: 409 });
+    }
+    if (nextStatus === 'REMOVED' || !nextRoles.includes('TENANT_OWNER')) {
+      await this.assertNotLastOwner(tenantId, principalId, nextRoles, nextStatus);
+    }
+    let nextWorkspaceId = current.workspaceId || null;
+    if (workspaceId) {
+      nextWorkspaceId = assertUuid(workspaceId, 'Workspace identifier');
+      await this.getWorkspace(nextWorkspaceId, tenantId);
+      this.workspaceMemberships.set(workspaceMembershipDocumentId(nextWorkspaceId, principalId), { tenantId, workspaceId: nextWorkspaceId, principalId, status: nextStatus });
+    }
+    const membership = {
+      ...current, tenantId, principalId, canonicalPrincipalId: canonicalPrincipalId(principalId),
+      roles: nextRoles, status: nextStatus, workspaceId: nextWorkspaceId,
+      revision: Number(current.revision || 0) + 1,
+    };
+    this.memberships.set(id, membership);
+    return validateMembership(membership, principalId);
+  }
+
+  async removeTenantMembership({ tenantId, principalId }) {
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    principalId = assertPrincipalId(principalId);
+    await this.assertNotLastOwner(tenantId, principalId, [], 'REMOVED');
+    const id = membershipDocumentId(tenantId, principalId);
+    const current = this.memberships.get(id);
+    if (!current) throw Object.assign(new Error('Tenant membership was not found'), { code: 'TENANT_MEMBERSHIP_NOT_FOUND', status: 404 });
+    this.memberships.set(id, { ...current, status: 'REMOVED', revision: Number(current.revision || 0) + 1 });
+    return true;
   }
 
   async listMemberships(principalId) {

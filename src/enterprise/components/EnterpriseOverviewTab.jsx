@@ -1,20 +1,61 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   FiUsers, FiSliders, FiZap, FiDatabase, FiShield, FiTrendingUp,
-  FiPlus, FiUserPlus, FiFileText, FiClock, FiCheckCircle, FiAlertTriangle
+  FiPlus, FiUserPlus, FiFileText, FiCheckCircle
 } from 'react-icons/fi';
+import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 
-export default function EnterpriseOverviewTab({
-  tenant,
-  workspace,
-  workspaces,
-  onNavigate,
-  onOpenInviteModal,
-  onOpenCreateWorkspaceModal
-}) {
+function formatNumber(value) {
+  const number = Number(value || 0);
+  return Number.isFinite(number) ? number.toLocaleString() : '—';
+}
+
+function formatDuration(ms) {
+  const value = Number(ms);
+  if (!Number.isFinite(value) || value <= 0) return '—';
+  if (value < 1) return `${Math.round(value * 100) / 100} ms`;
+  return `${Math.round(value)} ms`;
+}
+
+export default function EnterpriseOverviewTab({ onNavigate }) {
+  const { request, tenant, workspace, workspaceId } = useTenantApi();
+
+  const [members] = useAsyncResource(
+    () => request('/api/enterprise/memberships'),
+    [request],
+  );
+  const [audit] = useAsyncResource(
+    () => request('/api/enterprise/audit'),
+    [request],
+  );
+  const [metrics] = useAsyncResource(
+    () => request('/api/enterprise/observability/metrics'),
+    [request],
+  );
+  const [cache] = useAsyncResource(
+    () => request('/api/enterprise/cache/status'),
+    [request],
+  );
+  const [queue] = useAsyncResource(
+    () => request('/api/enterprise/queue/status'),
+    [request],
+  );
+
+  const metricsData = useMemo(() => metrics?.data?.metrics || null, [metrics]);
+  const activity = useMemo(() => (Array.isArray(audit?.data?.events) ? audit.data.events.slice(0, 4) : []), [audit]);
+
+  const memberCount = Array.isArray(members?.data?.memberships) ? members.data.memberships.length : 0;
+  const sampleCount = metricsData?.sampleCount || 0;
+  const requestP95 = metricsData?.p95 || 0;
+  const errorTotal = metricsData?.errors
+    ? (metricsData.errors.serverErrors || 0) + (metricsData.errors.clientErrors || 0)
+    : 0;
+
+  const cacheOk = cache?.data?.cache?.ok === true;
+  const queueOk = queue?.data?.queue?.healthy === true;
+
   return (
     <div className="enterprise-tab-content">
-      {/* Top Banner / Context Info */}
       <div className="enterprise-card enterprise-banner-card">
         <div className="enterprise-banner-header">
           <div>
@@ -32,9 +73,9 @@ export default function EnterpriseOverviewTab({
             <button
               type="button"
               className="enterprise-button enterprise-button-secondary"
-              onClick={onOpenInviteModal}
+              onClick={() => onNavigate('members')}
             >
-              <FiUserPlus aria-hidden="true" /> Invite User
+              <FiUserPlus aria-hidden="true" /> Manage Members
             </button>
             <button
               type="button"
@@ -47,16 +88,15 @@ export default function EnterpriseOverviewTab({
         </div>
       </div>
 
-      {/* KPI Metrics Grid */}
       <div className="enterprise-metrics-grid">
         <div className="enterprise-card enterprise-metric-box">
           <div className="enterprise-metric-header">
-            <span>Total Members</span>
+            <span>Enterprise Members</span>
             <FiUsers className="enterprise-metric-icon" aria-hidden="true" />
           </div>
-          <div className="enterprise-metric-value">12</div>
+          <div className="enterprise-metric-value">{members.loading ? '…' : formatNumber(memberCount)}</div>
           <div className="enterprise-metric-footer text-success">
-            <FiTrendingUp aria-hidden="true" /> 4 active today
+            <FiTrendingUp aria-hidden="true" /> Memberships in active tenant
           </div>
         </div>
 
@@ -65,141 +105,104 @@ export default function EnterpriseOverviewTab({
             <span>Workspaces</span>
             <FiSliders className="enterprise-metric-icon" aria-hidden="true" />
           </div>
-          <div className="enterprise-metric-value">{workspaces?.length || 1}</div>
+          <div className="enterprise-metric-value">{tenant?.id ? 'Scoped' : '—'}</div>
           <div className="enterprise-metric-footer">
-            Scoped to current tenant
+            {workspaceId ? `Active: ${workspace?.name || 'Default'}` : 'No active workspace'}
           </div>
         </div>
 
         <div className="enterprise-card enterprise-metric-box">
           <div className="enterprise-metric-header">
-            <span>AI Token Quota (Daily)</span>
+            <span>Request Latency (p95)</span>
             <FiZap className="enterprise-metric-icon" aria-hidden="true" />
           </div>
-          <div className="enterprise-metric-value">18.4k <small>/ 100k</small></div>
+          <div className="enterprise-metric-value">{metrics.loading ? '…' : formatDuration(requestP95)}</div>
           <div className="enterprise-metric-footer text-success">
-            18% consumed · Healthy
+            {formatNumber(sampleCount)} sampled requests
           </div>
         </div>
 
         <div className="enterprise-card enterprise-metric-box">
           <div className="enterprise-metric-header">
-            <span>Storage & Artifacts</span>
+            <span>Observed Errors</span>
             <FiDatabase className="enterprise-metric-icon" aria-hidden="true" />
           </div>
-          <div className="enterprise-metric-value">2.1 GB <small>/ 50 GB</small></div>
+          <div className="enterprise-metric-value">{metrics.loading ? '…' : formatNumber(errorTotal)}</div>
           <div className="enterprise-metric-footer text-success">
-            HMAC-SHA256 encrypted
+            Client + server errors in window
           </div>
         </div>
       </div>
 
-      {/* Two Column Layout: Quick Actions & Security/System Health */}
       <div className="enterprise-two-column-grid">
-        {/* Left Column: Quick Actions & Shortcuts */}
         <div className="enterprise-card">
           <h3 className="enterprise-card-title">Management Shortcuts</h3>
           <p className="enterprise-card-subtitle">Common enterprise administrative workflows</p>
           <div className="enterprise-shortcuts-list">
-            <button
-              type="button"
-              className="enterprise-shortcut-item"
-              onClick={() => onNavigate('members')}
-            >
-              <div className="enterprise-shortcut-icon">
-                <FiUsers aria-hidden="true" />
-              </div>
-              <div className="enterprise-shortcut-copy">
-                <strong>Manage Team & User Access</strong>
-                <small>Invite colleagues, configure roles and workspace assignments</small>
-              </div>
-              <span>→</span>
-            </button>
-
-            <button
-              type="button"
-              className="enterprise-shortcut-item"
-              onClick={() => onNavigate('ai')}
-            >
-              <div className="enterprise-shortcut-icon">
-                <FiZap aria-hidden="true" />
-              </div>
-              <div className="enterprise-shortcut-copy">
-                <strong>Configure Enterprise AI Policy</strong>
-                <small>Manage provider allowlist, models, and tenant rate limits</small>
-              </div>
-              <span>→</span>
-            </button>
-
-            <button
-              type="button"
-              className="enterprise-shortcut-item"
-              onClick={() => onNavigate('security')}
-            >
-              <div className="enterprise-shortcut-icon">
-                <FiShield aria-hidden="true" />
-              </div>
-              <div className="enterprise-shortcut-copy">
-                <strong>Service Accounts & API Keys</strong>
-                <small>Generate scoped machine-to-machine credentials</small>
-              </div>
-              <span>→</span>
-            </button>
-
-            <button
-              type="button"
-              className="enterprise-shortcut-item"
-              onClick={() => onNavigate('audit')}
-            >
-              <div className="enterprise-shortcut-icon">
-                <FiFileText aria-hidden="true" />
-              </div>
-              <div className="enterprise-shortcut-copy">
-                <strong>Inspect Audit Logs</strong>
-                <small>Review immutable tamper-evident system event records</small>
-              </div>
-              <span>→</span>
-            </button>
+            {[
+              { id: 'members', label: 'Manage Team & User Access', icon: FiUsers },
+              { id: 'ai', label: 'Configure Enterprise AI Policy', icon: FiZap },
+              { id: 'security', label: 'Service Accounts & API Keys', icon: FiShield },
+              { id: 'audit', label: 'Inspect Audit Logs', icon: FiFileText },
+            ].map(shortcut => {
+              const Icon = shortcut.icon;
+              return (
+                <button
+                  key={shortcut.id}
+                  type="button"
+                  className="enterprise-shortcut-item"
+                  onClick={() => onNavigate(shortcut.id)}
+                >
+                  <div className="enterprise-shortcut-icon">
+                    <Icon aria-hidden="true" />
+                  </div>
+                  <div className="enterprise-shortcut-copy">
+                    <strong>{shortcut.label}</strong>
+                  </div>
+                  <span>→</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Right Column: Infrastructure Health & Security Posture */}
         <div className="enterprise-card">
           <h3 className="enterprise-card-title">Infrastructure & Security Posture</h3>
-          <p className="enterprise-card-subtitle">Live production subsystem status</p>
+          <p className="enterprise-card-subtitle">Live subsystem status</p>
           <ul className="enterprise-health-list">
             <li className="enterprise-health-item">
-              <div className="enterprise-health-status online" />
+              <div className={`enterprise-health-status ${metrics.loading ? 'checking' : 'online'}`} />
               <div className="enterprise-health-copy">
-                <strong>PostgreSQL 16 Forced RLS Data Plane</strong>
-                <small>Zero cross-tenant row leakage · Transaction-local scoping</small>
+                <strong>Observability & Metrics</strong>
+                <small>{sampleCount > 0 ? `${formatNumber(sampleCount)} requests tracked` : 'No requests tracked yet'}</small>
               </div>
-              <span className="enterprise-pill enterprise-pill-success">Operational</span>
+              <span className="enterprise-pill enterprise-pill-success">Online</span>
             </li>
-
             <li className="enterprise-health-item">
-              <div className="enterprise-health-status online" />
+              <div className={`enterprise-health-status ${cache.loading ? 'checking' : (cacheOk ? 'online' : 'offline')}`} />
               <div className="enterprise-health-copy">
-                <strong>Distributed Redis TCP Cache Cluster</strong>
-                <small>Tenant key separation · TTL cache eviction active</small>
+                <strong>Distributed Cache & Rate Limiting</strong>
+                <small>{cache.loading ? 'Checking…' : (cacheOk ? 'Cache reachable' : 'Cache unavailable')}</small>
               </div>
-              <span className="enterprise-pill enterprise-pill-success">Operational</span>
+              <span className={`enterprise-pill ${cache.loading ? '' : (cacheOk ? 'enterprise-pill-success' : 'enterprise-pill-warning')}`}>
+                {cache.loading ? 'Checking' : (cacheOk ? 'Operational' : 'Unavailable')}
+              </span>
             </li>
-
             <li className="enterprise-health-item">
-              <div className="enterprise-health-status online" />
+              <div className={`enterprise-health-status ${queue.loading ? 'checking' : (queueOk ? 'online' : 'offline')}`} />
               <div className="enterprise-health-copy">
-                <strong>Signed Asynchronous Job Queue & DLQ</strong>
-                <small>HMAC-SHA256 signature · Worker reauthorization active</small>
+                <strong>Signed Job Queue & DLQ</strong>
+                <small>{queue.loading ? 'Checking…' : (queueOk ? 'Worker healthy' : 'Queue unavailable')}</small>
               </div>
-              <span className="enterprise-pill enterprise-pill-success">Operational</span>
+              <span className={`enterprise-pill ${queue.loading ? '' : (queueOk ? 'enterprise-pill-success' : 'enterprise-pill-warning')}`}>
+                {queue.loading ? 'Checking' : (queueOk ? 'Operational' : 'Unavailable')}
+              </span>
             </li>
-
             <li className="enterprise-health-item">
               <div className="enterprise-health-status online" />
               <div className="enterprise-health-copy">
                 <strong>Cloudflare Edge WAF & HSTS</strong>
-                <small>TLS 1.3 · CSP · DDoS & API abuse protection active</small>
+                <small>TLS 1.3 · CSP · DDoS & API abuse protection</small>
               </div>
               <span className="enterprise-pill enterprise-pill-success">Enforced</span>
             </li>
@@ -207,11 +210,10 @@ export default function EnterpriseOverviewTab({
         </div>
       </div>
 
-      {/* Recent Activity Timeline */}
       <div className="enterprise-card" style={{ marginTop: '1.5rem' }}>
         <div className="enterprise-card-header-flex">
           <div>
-            <h3 className="enterprise-card-title">Recent Workspace Activity</h3>
+            <h3 className="enterprise-card-title">Recent Activity</h3>
             <p className="enterprise-card-subtitle">Audit stream of verified actions in active context</p>
           </div>
           <button
@@ -222,32 +224,24 @@ export default function EnterpriseOverviewTab({
             View Full Audit Log
           </button>
         </div>
-        <div className="enterprise-activity-feed">
-          <div className="enterprise-activity-row">
-            <div className="enterprise-activity-icon"><FiCheckCircle /></div>
-            <div className="enterprise-activity-copy">
-              <strong>Enterprise context authenticated and verified</strong>
-              <small>Actor: {tenant?.slug || 'owner'} · Workspace: {workspace?.name || 'Default'}</small>
-            </div>
-            <time className="enterprise-activity-time">Just now</time>
+        {audit.loading ? (
+          <div className="enterprise-loading-row"><span className="enterprise-spinner" aria-hidden="true" /><span className="text-muted">Loading activity…</span></div>
+        ) : activity.length === 0 ? (
+          <div className="enterprise-loading-row"><span className="text-muted">No audit events recorded for the active tenant yet.</span></div>
+        ) : (
+          <div className="enterprise-activity-feed">
+            {activity.map(event => (
+              <div className="enterprise-activity-row" key={event.id}>
+                <div className="enterprise-activity-icon"><FiCheckCircle aria-hidden="true" /></div>
+                <div className="enterprise-activity-copy">
+                  <strong>{event.action || 'EVENT'}</strong>
+                  <small>{event.actorSubjectId || event.principalId || 'system'} · {event.workspaceId ? `ws ${String(event.workspaceId).slice(0, 8)}` : 'tenant-wide'}</small>
+                </div>
+                <time className="enterprise-activity-time">{new Date(event.occurredAt || event.createdAt || Date.now()).toLocaleString()}</time>
+              </div>
+            ))}
           </div>
-          <div className="enterprise-activity-row">
-            <div className="enterprise-activity-icon"><FiZap /></div>
-            <div className="enterprise-activity-copy">
-              <strong>AI generation policy evaluated</strong>
-              <small>Provider: Primary Allowlist · Token Scope: Verified</small>
-            </div>
-            <time className="enterprise-activity-time">12 mins ago</time>
-          </div>
-          <div className="enterprise-activity-row">
-            <div className="enterprise-activity-icon"><FiShield /></div>
-            <div className="enterprise-activity-copy">
-              <strong>Tenant data plane health check completed</strong>
-              <small>100/100 transactions verified · 0 deadlocks</small>
-            </div>
-            <time className="enterprise-activity-time">1 hour ago</time>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
