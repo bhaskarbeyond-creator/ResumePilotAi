@@ -32,9 +32,9 @@ See `docs/ENTERPRISE_RESTORE_POINT.md` for full capture evidence.
 | Restore point | SHA / result |
 |---|---|
 | Final local foundation tag | `enterprise-tenant-foundation-verified` |
-| Final foundation object | Superseded by the current final certification report and final verification tag |
-| Detached checkout proof | Created at the prior foundation tag, clean/detached, then removed after validation |
-| Detached enterprise suite | Prior run passed; current suite is 50 backend tests + 4 UI tests |
+| Final foundation object | `3970bdd633002f2097f2df06de80eee1a77f330d` |
+| Detached checkout proof | Created at `enterprise-tenant-foundation-hardened`, clean/detached, then removed after validation |
+| Detached enterprise suite | 50 backend tests + 4 UI tests PASS |
 | Detached certified suites | Interview 28/28 PASS; Security 163/163 PASS; Product 301/301 PASS |
 | Detached production build | PASS — 4.14s observed |
 | Restore tags retained | `enterprise-pre-migration-restore` and `enterprise-tenant-foundation-verified` both resolved to their recorded objects |
