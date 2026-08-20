@@ -104,7 +104,7 @@ function freezeContext(input) {
   }
 
   const isolationTier = String(tenant.isolationTier || 'STANDARD').toUpperCase();
-  const dataPlaneType = String(dataPlane.type || tenant.dataPlaneType || 'SHARED_POSTGRES').toUpperCase();
+  const dataPlaneType = String(dataPlane.type || tenant.dataPlaneType || 'FIRESTORE').toUpperCase();
   if (!ISOLATION_TIERS.includes(isolationTier) || !DATA_PLANE_TYPES.includes(dataPlaneType)) {
     const error = new Error('Tenant data-plane configuration is invalid');
     error.code = 'TENANT_ROUTE_INVALID';

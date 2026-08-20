@@ -1,5 +1,15 @@
 'use strict';
 
+/**
+ * Optional legacy PostgreSQL tenant data plane (RLS adapter).
+ *
+ * This module is ONLY used when ENTERPRISE_DATA_PROVIDER=postgres AND
+ * TENANT_DATABASE_URL is configured. The canonical enterprise data plane is
+ * Firestore (firestoreEnterpriseRepository.js) which requires no external
+ * database. All tenant isolation here is enforced by PostgreSQL row-level
+ * security driven by the verified server context.
+ */
+
 const { Pool } = require('pg');
 const { assertUuid } = require('./tenantContext');
 

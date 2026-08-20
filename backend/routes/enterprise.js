@@ -333,9 +333,9 @@ router.post('/ai/generate-content', resolveTenantContext, requireTenantPermissio
     }
     const operation = String(req.body?.operation || '');
     const payload = assertNoClientAuthority(req.body?.payload || {}, 'Tenant AI payload');
-    // Fail closed before provider invocation when the RLS-backed tenant usage ledger
-    // is not available. Legacy AI routes remain unchanged until their adapters migrate.
-    if (!enterpriseService(req).dataPlaneRouter) {
+    // Fail closed before provider invocation when the durable tenant usage
+    // ledger is not available. Legacy AI routes remain unchanged.
+    if (!enterpriseService(req).meteringAvailable()) {
       return res.status(503).json({ error: { code: 'TENANT_AI_METERING_UNAVAILABLE', message: 'Tenant AI metering is unavailable.', requestId: res.locals?.requestId } });
     }
     const aiOperation = buildTenantAiOperation({ context: req.tenantContext, operation, payload, policy: req.tenant.aiPolicy || {} });
@@ -359,6 +359,15 @@ router.post('/ai/generate-content', resolveTenantContext, requireTenantPermissio
     return res.json({ data, context: { tenantId: req.tenantContext.tenantId, workspaceId: req.tenantContext.workspaceId, correlationId: req.tenantContext.correlationId, policyVersion: aiOperation.policyVersion } });
   } catch (error) {
     return res.status(error.status || 502).json({ error: { code: error.code || 'TENANT_AI_GENERATION_FAILED', message: error.status === 400 ? error.message : 'Tenant AI generation is unavailable.', requestId: res.locals?.requestId } });
+  }
+});
+
+router.get('/usage/ai', resolveTenantContext, requireTenantPermission('tenant.usage.read'), async (req, res) => {
+  try {
+    const summary = await enterpriseService(req).getAiUsageSummary({ context: req.tenantContext, days: req.query?.days });
+    return res.json({ usage: summary });
+  } catch (error) {
+    return res.status(error.status || 503).json({ error: { code: error.code || 'ENTERPRISE_USAGE_UNAVAILABLE', message: 'Tenant AI usage is unavailable', requestId: res.locals?.requestId } });
   }
 });
 
@@ -421,31 +430,91 @@ router.get('/observability/metrics', resolveTenantContext, requireTenantPermissi
 router.get('/cache/status', resolveTenantContext, requireTenantPermission('tenant.read'), async (req, res) => {
   const { pingRedis } = require('../enterprise/redisCacheService');
   const result = await pingRedis();
-  return res.json({ cache: result });
+  // Truthful reporting: Redis is an optional accelerator. "unavailable" never
+  // implies degraded correctness — durable Firestore stores carry correctness.
+  return res.json({ cache: { ...result, optional: true, correctnessBackstore: 'firestore' } });
 });
 
-const { EnterpriseQueueWorkerEngine } = require('../enterprise/tenantWorker');
-const enterpriseQueueEngine = new EnterpriseQueueWorkerEngine({
-  signingSecret: runtimeSecret('TENANT_JOB_SIGNING_SECRET', 'staging-enterprise-secret-key-min-32chars!'),
-});
+// Durable enterprise job queue (Firestore-backed outbox). The signing secret
+// never leaves the server; envelopes are created from the verified context.
+function requireJobSigningSecret() {
+  const secret = runtimeSecret('TENANT_JOB_SIGNING_SECRET', 'staging-enterprise-secret-key-min-32chars!');
+  if (!secret || Buffer.byteLength(secret) < 32) {
+    throw Object.assign(new Error('Tenant job signing secret is unavailable'), { code: 'TENANT_JOB_SIGNING_UNAVAILABLE', status: 503 });
+  }
+  return secret;
+}
 
-router.get('/queue/status', resolveTenantContext, requireTenantPermission('tenant.read'), (req, res) => {
-  return res.json({ queue: enterpriseQueueEngine.getStatus() });
-});
+function outboxRuntime(req) {
+  const db = req.app.get('db');
+  const admin = req.app.get('firebaseAdmin') || null;
+  if (!db || !admin?.firestore?.FieldValue) {
+    throw Object.assign(new Error('Durable enterprise queue requires Firestore'), { code: 'ENTERPRISE_OUTBOX_UNAVAILABLE', status: 503 });
+  }
+  return { db, admin, signingSecret: requireJobSigningSecret() };
+}
 
-router.post('/queue/enqueue', resolveTenantContext, requireTenantPermission('resource.create'), async (req, res) => {
+router.get('/queue/status', resolveTenantContext, requireTenantPermission('tenant.read'), async (req, res) => {
+  const { getOutboxStatus } = require('../enterprise/enterpriseOutbox');
   try {
-    const result = await enterpriseQueueEngine.enqueue(req.body?.envelope);
-    return res.status(result.status === 'ENQUEUED' ? 201 : 200).json(result);
+    const { db, admin, signingSecret } = outboxRuntime(req);
+    const status = await getOutboxStatus({ db, admin, signingSecret });
+    return res.json({ queue: status });
   } catch (error) {
-    return res.status(error.status || 400).json({ error: { code: error.code || 'QUEUE_ENQUEUE_FAILED', message: error.message, requestId: res.locals?.requestId } });
+    if (error.code === 'TENANT_JOB_SIGNING_UNAVAILABLE') {
+      const { db, admin } = req.app.get('db') && req.app.get('firebaseAdmin')?.firestore?.FieldValue
+        ? { db: req.app.get('db'), admin: req.app.get('firebaseAdmin') }
+        : { db: null, admin: null };
+      return res.json({ queue: await getOutboxStatus({ db, admin, signingSecret: null }) });
+    }
+    // Firestore handle missing: report the queue as not configured, never healthy.
+    return res.json({ queue: await getOutboxStatus({ db: null, admin: null, signingSecret: null }) });
   }
 });
 
-router.post('/queue/replay', resolveTenantContext, requireTenantPermission('tenant.settings.write'), (req, res) => {
-  const jobId = req.body?.jobId;
-  const result = enterpriseQueueEngine.replayDeadLetterJob(jobId);
-  return res.json(result);
+router.get('/queue/jobs', resolveTenantContext, requireTenantPermission('tenant.read'), async (req, res) => {
+  try {
+    const { listOutboxJobs } = require('../enterprise/enterpriseOutbox');
+    const { db } = outboxRuntime(req);
+    const jobs = await listOutboxJobs({ db, context: req.tenantContext, status: req.query?.status, limit: req.query?.limit });
+    return res.json({ jobs });
+  } catch (error) {
+    return res.status(error.status || 503).json({ error: { code: error.code || 'ENTERPRISE_OUTBOX_UNAVAILABLE', message: 'Tenant jobs are unavailable', requestId: res.locals?.requestId } });
+  }
+});
+
+router.post('/queue/jobs', resolveTenantContext, requireTenantPermission('resource.create'), async (req, res) => {
+  try {
+    const { enqueueOutboxJob } = require('../enterprise/enterpriseOutbox');
+    const { createTenantJobEnvelope } = require('../enterprise/tenantJobs');
+    const { db, admin, signingSecret } = outboxRuntime(req);
+    // The envelope is derived from the verified server context and signed
+    // server-side; the client never supplies identity, routing, or signature.
+    const envelope = createTenantJobEnvelope({
+      context: req.tenantContext,
+      jobType: req.body?.jobType,
+      resource: req.body?.resource,
+      idempotencyKey: req.body?.idempotencyKey,
+      classification: req.body?.classification,
+      signingSecret,
+    });
+    const result = await enqueueOutboxJob({ db, admin, envelope });
+    return res.status(result.status === 'ENQUEUED' ? 201 : 200).json({ ...result, jobType: envelope.jobType, correlationId: envelope.correlationId });
+  } catch (error) {
+    return res.status(error.status || 400).json({ error: { code: error.code || 'QUEUE_ENQUEUE_FAILED', message: error.status === 400 ? error.message : 'Job could not be enqueued', requestId: res.locals?.requestId } });
+  }
+});
+
+router.post('/queue/replay', resolveTenantContext, requireTenantPermission('tenant.settings.write'), async (req, res) => {
+  try {
+    const { replayDeadLetterJob } = require('../enterprise/enterpriseOutbox');
+    const { db, admin } = outboxRuntime(req);
+    const result = await replayDeadLetterJob({ db, admin, jobId: req.body?.jobId, context: req.tenantContext });
+    if (result.status === 'NOT_FOUND') return res.status(404).json({ error: { code: 'JOB_NOT_FOUND', message: 'Dead-letter job was not found in this tenant', requestId: res.locals?.requestId } });
+    return res.json(result);
+  } catch (error) {
+    return res.status(error.status || 503).json({ error: { code: error.code || 'QUEUE_REPLAY_FAILED', message: 'Job could not be replayed', requestId: res.locals?.requestId } });
+  }
 });
 
 router.post('/storage/token', resolveTenantContext, requireTenantPermission('resource.read'), (req, res) => {

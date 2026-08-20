@@ -51,8 +51,12 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
     ? (metricsData.errors.serverErrors || 0) + (metricsData.errors.clientErrors || 0)
     : 0;
 
-  const cacheOk = cache?.data?.cache?.ok === true;
-  const queueOk = queue?.data?.queue?.healthy === true;
+  const cacheState = cache?.data?.cache || null;
+  const cacheOk = cacheState?.ok === true;
+  const cacheOptionalOff = cacheState && cacheState.ok !== true && cacheState.optional === true;
+  const queueState = queue?.data?.queue || null;
+  const queueOk = queueState?.healthy === true;
+  const queueDlq = queueState?.deadLetterCount || 0;
 
   return (
     <div className="enterprise-tab-content">
@@ -179,23 +183,33 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
               <span className="enterprise-pill enterprise-pill-success">Online</span>
             </li>
             <li className="enterprise-health-item">
-              <div className={`enterprise-health-status ${cache.loading ? 'checking' : (cacheOk ? 'online' : 'offline')}`} />
+              <div className={`enterprise-health-status ${cache.loading ? 'checking' : (cacheOk ? 'online' : (cacheOptionalOff ? 'online' : 'offline'))}`} />
               <div className="enterprise-health-copy">
-                <strong>Distributed Cache & Rate Limiting</strong>
-                <small>{cache.loading ? 'Checking…' : (cacheOk ? 'Cache reachable' : 'Cache unavailable')}</small>
+                <strong>Optional Redis Accelerator</strong>
+                <small>
+                  {cache.loading ? 'Checking…' : cacheOk
+                    ? `Cache reachable (${Math.round(cacheState.latencyMs || 0)} ms)`
+                    : cacheOptionalOff
+                      ? 'Not configured — optional. Quotas, limits, and jobs use durable Firestore.'
+                      : 'Configured but unreachable — correctness is unaffected.'}
+                </small>
               </div>
-              <span className={`enterprise-pill ${cache.loading ? '' : (cacheOk ? 'enterprise-pill-success' : 'enterprise-pill-warning')}`}>
-                {cache.loading ? 'Checking' : (cacheOk ? 'Operational' : 'Unavailable')}
+              <span className={`enterprise-pill ${cache.loading ? '' : (cacheOk ? 'enterprise-pill-success' : (cacheOptionalOff ? '' : 'enterprise-pill-warning'))}`}>
+                {cache.loading ? 'Checking' : cacheOk ? 'Operational' : cacheOptionalOff ? 'Optional · Off' : 'Degraded (optional)'}
               </span>
             </li>
             <li className="enterprise-health-item">
               <div className={`enterprise-health-status ${queue.loading ? 'checking' : (queueOk ? 'online' : 'offline')}`} />
               <div className="enterprise-health-copy">
-                <strong>Signed Queue Engine</strong>
-                <small>{queue.loading ? 'Checking…' : (queue?.data?.queue?.durable === false ? 'Local engine only; pair with the Firestore notification outbox for durable jobs.' : 'Queue status reported by the backend')}</small>
+                <strong>Durable Job Outbox</strong>
+                <small>
+                  {queue.loading ? 'Checking…' : queueState
+                    ? `Firestore-backed · ${formatNumber(queueState.activeQueued || 0)} active · ${formatNumber(queueDlq)} dead-lettered`
+                    : 'Queue status unavailable'}
+                </small>
               </div>
               <span className={`enterprise-pill ${queue.loading ? '' : (queueOk ? 'enterprise-pill-success' : 'enterprise-pill-warning')}`}>
-                {queue.loading ? 'Checking' : (queueOk ? 'Operational' : 'Unavailable')}
+                {queue.loading ? 'Checking' : queueOk ? (queueDlq > 0 ? 'Operational · DLQ' : 'Operational') : 'Unavailable'}
               </span>
             </li>
             <li className="enterprise-health-item">

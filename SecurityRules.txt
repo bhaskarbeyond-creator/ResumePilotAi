@@ -254,6 +254,35 @@ service cloud.firestore {
 
     match /notification_outbox/{id} { allow read, write: if false; }
     match /export_render_tokens/{id} { allow read, write: if false; }
+
+    // ---------------------------------------------------------------------------
+    // ENTERPRISE DATA PLANE — server-only, deny-all for every client.
+    // The enterprise tenancy (tenants, workspaces, memberships, resources, audit,
+    // usage, quotas, service accounts, support grants, durable outbox) is read and
+    // written exclusively by the backend through the Admin SDK, which bypasses
+    // these rules. Tenant isolation is enforced server-side by the verified
+    // context + tenant-partitioned paths; no browser client may touch these
+    // documents directly.
+    // ---------------------------------------------------------------------------
+    match /tenants/{tenantId}/{document=**} { allow read, write: if false; }
+    match /enterprise_tenants/{id} { allow read, write: if false; }
+    match /enterprise_tenant_slugs/{id} { allow read, write: if false; }
+    match /enterprise_tenant_configurations/{id} { allow read, write: if false; }
+    match /enterprise_workspaces/{id} { allow read, write: if false; }
+    match /enterprise_memberships/{id} { allow read, write: if false; }
+    match /enterprise_workspace_memberships/{id} { allow read, write: if false; }
+    match /enterprise_teams/{id} { allow read, write: if false; }
+    match /enterprise_service_accounts/{id} { allow read, write: if false; }
+    match /enterprise_api_keys/{id} { allow read, write: if false; }
+    match /enterprise_support_grants/{id} { allow read, write: if false; }
+    match /enterprise_audit_events/{id} { allow read, write: if false; }
+    match /enterprise_quota_buckets/{id} { allow read, write: if false; }
+    match /enterprise_outbox/{id} { allow read, write: if false; }
+    match /enterprise_migration_ledger/{id} { allow read, write: if false; }
+    match /enterprise_principal_tenants/{id} { allow read, write: if false; }
+    match /enterprise_data_plane_probes/{id} { allow read, write: if false; }
+    match /security_audit_logs/{id} { allow read, write: if false; }
+
     // Reset/verification tokens, provider secrets, audit logs and webhook ledgers are server-only.
     match /{document=**} { allow read, write: if false; }
   }

@@ -4,6 +4,7 @@ const appApi = require('firebase-admin/app');
 const { getAuth } = require('firebase-admin/auth');
 const firestoreApi = require('firebase-admin/firestore');
 const { getDatabase } = require('firebase-admin/database');
+const { getStorage } = require('firebase-admin/storage');
 
 const unwrap = app => app?._delegate || app;
 const wrap = app => ({
@@ -13,6 +14,7 @@ const wrap = app => ({
   auth: () => getAuth(app),
   firestore: () => firestoreApi.getFirestore(app),
   database: () => getDatabase(app),
+  storage: () => getStorage(app),
   delete: () => appApi.deleteApp(app),
 });
 
@@ -23,6 +25,7 @@ const firebaseAdmin = {
   auth(app) { return getAuth(unwrap(app) || appApi.getApp()); },
   firestore(app) { return firestoreApi.getFirestore(unwrap(app) || appApi.getApp()); },
   database(app) { return getDatabase(unwrap(app) || appApi.getApp()); },
+  storage(app) { return getStorage(unwrap(app) || appApi.getApp()); },
   credential: { cert: appApi.cert, applicationDefault: appApi.applicationDefault },
 };
 

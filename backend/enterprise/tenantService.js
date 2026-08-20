@@ -2,14 +2,14 @@
 
 const { permissionsFor } = require('../security/auth');
 const { buildTenantAuditEvent, writeTenantAuditEvent } = require('./tenantAudit');
-const { createTenantPool, TenantDataPlaneRouter } = require('./tenantDataPlane');
+const { createEnterpriseRepository } = require('./enterpriseRepository');
+const { createEncryptionProvider } = require('./encryptionProvider');
 const { FirestoreTenantRegistry, InMemoryTenantRegistry, membershipDocumentId } = require('./tenantRegistry');
 const { FirestoreServiceAccountStore } = require('./serviceAccountStore');
 const { FirestoreSupportGrantStore } = require('./supportAccessStore');
 const { FirestoreAtomicCounterStore, TenantQuotaGuard } = require('./tenantQuota');
 const { assertUuid, canonicalPrincipalId, freezeContext } = require('./tenantContext');
 const { permissionsForRoles } = require('./tenantPolicy');
-const tenantRepository = require('./tenantRepository');
 
 function profileFromUser(user) {
   return {
@@ -29,15 +29,33 @@ function isSupportEligible(user) {
 }
 
 class TenantService {
-  constructor({ registry, db = null, admin = null, dataPlaneRouter = null, repository = tenantRepository, serviceAccountStore = null, supportGrantStore = null, quotaGuard = null }) {
+  constructor({ registry, db = null, admin = null, repository = null, serviceAccountStore = null, supportGrantStore = null, quotaGuard = null, encryptionProvider = null, dataProviderName = 'firestore' }) {
     this.registry = registry;
     this.db = db;
     this.admin = admin;
-    this.dataPlaneRouter = dataPlaneRouter;
+    // Enterprise business logic reaches tenant data exclusively through the
+    // repository abstraction. There is no provider branching in services.
     this.repository = repository;
     this.serviceAccountStore = serviceAccountStore;
     this.supportGrantStore = supportGrantStore;
     this.quotaGuard = quotaGuard;
+    this.encryptionProvider = encryptionProvider;
+    this.dataProviderName = dataProviderName;
+  }
+
+  /** Truthful description of the active enterprise runtime for logs and health. */
+  describeRuntime() {
+    return {
+      dataProvider: this.repository ? this.repository.providerName || this.dataProviderName : this.dataProviderName,
+      dataPlaneConfigured: Boolean(this.repository),
+      encryption: this.encryptionProvider ? this.encryptionProvider.describe() : { provider: 'none', configured: false, securityLevel: 'ENCRYPTION_UNAVAILABLE_FAIL_CLOSED' },
+      quotaStore: this.quotaGuard ? 'firestore-atomic' : 'unavailable',
+    };
+  }
+
+  /** AI metering is available exactly when the durable repository is configured. */
+  meteringAvailable() {
+    return Boolean(this.repository);
   }
 
   async resolveContext({ user, requestedTenantId, requestedWorkspaceId, requestId }) {
@@ -358,11 +376,13 @@ class TenantService {
   }
 
   async listAuditEvents({ context, limit = 100 }) {
-    if (!this.db) throw Object.assign(new Error('Tenant audit store is unavailable'), { code: 'TENANT_AUDIT_UNAVAILABLE', status: 503 });
-    const boundedLimit = Math.max(1, Math.min(Number(limit) || 100, 250));
-    const snapshot = await this.db.collection('enterprise_audit_events').where('tenantId', '==', context.tenantId).limit(boundedLimit).get();
-    return snapshot.docs.map(document => ({ id: document.id, ...document.data() }))
-      .sort((left, right) => new Date(right.occurredAt || 0) - new Date(left.occurredAt || 0));
+    if (!this.repository) throw Object.assign(new Error('Tenant audit store is unavailable'), { code: 'TENANT_AUDIT_UNAVAILABLE', status: 503 });
+    return this.repository.listAuditEvents(context, { limit });
+  }
+
+  async getAiUsageSummary({ context, days = 30 }) {
+    if (!this.repository) throw Object.assign(new Error('Tenant usage ledger is unavailable'), { code: 'ENTERPRISE_USAGE_UNAVAILABLE', status: 503 });
+    return this.repository.getAiUsageSummary(context, { days });
   }
 
   async getTenantConfiguration({ context }) {
@@ -533,44 +553,37 @@ class TenantService {
   }
 
   async withTenantDataPlane(context, callback) {
-    if (!this.dataPlaneRouter) {
-      throw Object.assign(new Error('Tenant PostgreSQL data plane is not configured'), { code: 'TENANT_DATA_PLANE_UNAVAILABLE', status: 503 });
+    // Retained for compatibility with the optional PostgreSQL adapter surface;
+    // canonical services call repository methods directly.
+    if (!this.repository) {
+      throw Object.assign(new Error('Enterprise data plane is not configured'), { code: 'ENTERPRISE_DATA_PLANE_UNAVAILABLE', status: 503 });
     }
-    return this.dataPlaneRouter.withContext(context, callback);
+    return callback(this.repository);
   }
 
   async createResource({ context, input }) {
-    return this.withTenantDataPlane(context, async tx => {
-      const resource = await this.repository.createTenantResource(tx, context, input);
-      await this.repository.appendTenantAuditEvent(tx, context, { action: 'RESOURCE_CREATED', category: 'resource.lifecycle', resource: { type: resource.resourceType, id: resource.id } });
-      return resource;
-    });
+    this.assertRepository();
+    return this.repository.createResource(context, input);
   }
 
   async getResource({ context, resourceId }) {
-    return this.withTenantDataPlane(context, tx => this.repository.getTenantResource(tx, context, resourceId));
+    this.assertRepository();
+    return this.repository.getResource(context, resourceId);
   }
 
   async listResources({ context, options }) {
-    return this.withTenantDataPlane(context, tx => this.repository.listTenantResources(tx, context, options));
+    this.assertRepository();
+    return this.repository.listResources(context, options);
   }
 
   async updateResource({ context, resourceId, input }) {
-    return this.withTenantDataPlane(context, async tx => {
-      const resource = await this.repository.updateTenantResource(tx, context, resourceId, input);
-      if (resource) await this.repository.appendTenantAuditEvent(tx, context, { action: 'RESOURCE_UPDATED', category: 'resource.lifecycle', resource: { type: resource.resourceType, id: resource.id } });
-      return resource;
-    });
+    this.assertRepository();
+    return this.repository.updateResource(context, resourceId, input);
   }
 
   async deleteResource({ context, resourceId }) {
-    return this.withTenantDataPlane(context, async tx => {
-      const resource = await this.repository.getTenantResource(tx, context, resourceId);
-      if (!resource) return false;
-      await this.repository.deleteTenantResource(tx, context, resourceId);
-      await this.repository.appendTenantAuditEvent(tx, context, { action: 'RESOURCE_DELETED', category: 'resource.lifecycle', severity: 'HIGH', resource: { type: resource.resourceType, id: resource.id } });
-      return true;
-    });
+    this.assertRepository();
+    return this.repository.deleteResource(context, resourceId);
   }
 
   async consumeTenantQuota({ context, metric, limit, windowMs, principalScoped = true }) {
@@ -581,11 +594,20 @@ class TenantService {
   }
 
   async recordAiUsage({ context, input }) {
-    return this.withTenantDataPlane(context, async tx => {
-      const usage = await this.repository.recordTenantAiUsage(tx, context, input);
-      await this.repository.appendTenantAuditEvent(tx, context, { action: 'AI_GENERATION_COMPLETED', category: 'ai.usage', resource: null, metadata: { provider: input.provider, model: input.model, operation: input.operation } });
-      return usage;
+    this.assertRepository();
+    return this.repository.recordAiUsage(context, {
+      ...input,
+      // One durable ledger entry per correlation id: duplicate provider
+      // callbacks or worker retries never double-count usage.
+      idempotencyKey: input?.idempotencyKey || context.correlationId,
     });
+  }
+
+  assertRepository() {
+    if (!this.repository) {
+      throw Object.assign(new Error('Enterprise data plane is not configured'), { code: 'ENTERPRISE_DATA_PLANE_UNAVAILABLE', status: 503 });
+    }
+    return this.repository;
   }
 
   async provisionTenant({ user, input, requestId }) {
@@ -616,14 +638,7 @@ class TenantService {
   }
 }
 
-function createTenantService({ db, admin, registry = null, dataPlaneRouter = null, serviceAccountStore = null, supportGrantStore = null, quotaGuard = null, environment = process.env } = {}) {
-  let resolvedRouter = dataPlaneRouter;
-  // Pool creation is opt-in and does not connect at startup. A missing explicit
-  // TENANT_DATABASE_URL leaves RLS-backed resource routes unavailable rather than
-  // falling back to Firebase or a generic database URL.
-  if (!resolvedRouter && String(environment.TENANT_DATABASE_URL || '').trim()) {
-    resolvedRouter = new TenantDataPlaneRouter({ sharedPool: createTenantPool({ connectionString: environment.TENANT_DATABASE_URL }) });
-  }
+function createTenantService({ db, admin, registry = null, repository = null, serviceAccountStore = null, supportGrantStore = null, quotaGuard = null, environment = process.env } = {}) {
   const environmentIsProduction = String(environment.NODE_ENV || '').toLowerCase() === 'production';
   const resolvedRegistry = registry || (
     db
@@ -634,14 +649,49 @@ function createTenantService({ db, admin, registry = null, dataPlaneRouter = nul
         ? new FirestoreTenantRegistry({ db: null, admin })
         : new InMemoryTenantRegistry()
   );
+  // Enterprise data plane: Firestore is canonical and needs no external
+  // database. The PostgreSQL adapter is opt-in via ENTERPRISE_DATA_PROVIDER=
+  // postgres + TENANT_DATABASE_URL and is never constructed implicitly.
+  let encryptionProvider = null;
+  try {
+    encryptionProvider = createEncryptionProvider(environment);
+  } catch (error) {
+    // Misconfigured keys surface per-operation (fail closed) instead of
+    // crashing unrelated startup paths; the runtime description stays truthful.
+    encryptionProvider = Object.freeze({
+      describe: () => ({ provider: error.code === 'ENTERPRISE_ENCRYPTION_PROVIDER_UNAVAILABLE' ? 'unavailable' : 'server-key', configured: false, error: error.message, securityLevel: 'ENCRYPTION_UNAVAILABLE_FAIL_CLOSED' }),
+    });
+  }
+  let resolvedRepository = repository;
+  if (!resolvedRepository && db) {
+    try {
+      resolvedRepository = createEnterpriseRepository({
+        environment,
+        db,
+        admin,
+        encryptionProvider: encryptionProvider && typeof encryptionProvider.encryptValue === 'function' ? encryptionProvider : null,
+      });
+    } catch (error) {
+      // An explicitly requested-but-misconfigured provider must not crash the
+      // legacy application process. Enterprise data routes fail closed with the
+      // configuration error; the runtime description surfaces the cause.
+      console.error('[Enterprise data plane] Repository construction failed:', error.message);
+      resolvedRepository = null;
+      encryptionProvider = Object.freeze({
+        describe: () => ({ provider: 'unavailable', configured: false, error: error.message, securityLevel: 'DATA_PLANE_UNAVAILABLE_FAIL_CLOSED' }),
+      });
+    }
+  }
   return new TenantService({
     registry: resolvedRegistry,
     db,
     admin,
-    dataPlaneRouter: resolvedRouter,
+    repository: resolvedRepository || null,
     serviceAccountStore: serviceAccountStore || (db && admin ? new FirestoreServiceAccountStore({ db, admin }) : null),
     supportGrantStore: supportGrantStore || (db && admin ? new FirestoreSupportGrantStore({ db, admin }) : null),
     quotaGuard: quotaGuard || (db && admin ? new TenantQuotaGuard({ store: new FirestoreAtomicCounterStore({ db, admin }) }) : null),
+    encryptionProvider: encryptionProvider && typeof encryptionProvider.encryptValue === 'function' ? encryptionProvider : null,
+    dataProviderName: String(environment.ENTERPRISE_DATA_PROVIDER || 'firestore').toLowerCase(),
   });
 }
 

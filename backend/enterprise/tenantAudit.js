@@ -41,7 +41,10 @@ async function writeTenantAuditEvent(db, admin, event) {
     error.status = 503;
     throw error;
   }
-  await db.collection('enterprise_audit_events').doc(event.id).set({
+  // Canonical location: the tenant-partitioned audit collection. Structural
+  // partitioning keeps one tenant's audit trail physically inaccessible from
+  // another tenant's context.
+  await db.collection(`tenants/${event.tenantId}/audit_events`).doc(event.id).set({
     ...event,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
   });

@@ -19,13 +19,15 @@ const {
 } = require('./tenantContext');
 
 const DEFAULT_DATA_PLANE = Object.freeze({
-  id: 'shared-primary',
-  type: 'SHARED_POSTGRES',
+  // Canonical Firebase-native enterprise data plane. No external database,
+  // cache, or queue infrastructure is required to operate a tenant.
+  id: 'firestore-primary',
+  type: 'FIRESTORE',
   region: 'default',
   routingVersion: 1,
   storageProfile: 'shared',
   cacheProfile: 'shared',
-  queueProfile: 'shared',
+  queueProfile: 'firestore-durable-outbox',
   aiProfile: 'platform-default',
   securityProfile: 'standard',
 });

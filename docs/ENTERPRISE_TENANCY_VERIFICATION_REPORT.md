@@ -1,3 +1,5 @@
+> **SUPERSEDED (2026-08-20 architecture refactor):** The enterprise architecture described here (PostgreSQL/RLS data plane, local queue, Redis) was replaced by the Firestore-first architecture. The current truth is `docs/ENTERPRISE_ARCHITECTURE.md`; the deployment runbook is `docs/ENTERPRISE_LOCAL_INFRASTRUCTURE_HANDOFF.md`. This document is retained as history.
+
 # Enterprise Tenancy Foundation — Verification & Certification Report
 
 **Assessment date:** 2026-08-20

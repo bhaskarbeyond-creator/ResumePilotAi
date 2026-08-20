@@ -9,7 +9,18 @@ const ISOLATION_TIERS = Object.freeze([
 ]);
 
 const DATA_PLANE_TYPES = Object.freeze([
-  'SHARED_POSTGRES', 'DEDICATED_POSTGRES'
+  // FIRESTORE is the canonical enterprise data plane (Firebase-native, no
+  // external database required). The PostgreSQL types remain valid for tenants
+  // that were provisioned against the legacy adapter and keep routing metadata
+  // stored in older documents readable.
+  'FIRESTORE', 'SHARED_POSTGRES', 'DEDICATED_POSTGRES'
+]);
+
+const ENTERPRISE_DATA_PROVIDERS = Object.freeze([
+  // Canonical Firebase-native data plane.
+  'firestore',
+  // Optional legacy adapter. Requires TENANT_DATABASE_URL; never the default.
+  'postgres'
 ]);
 
 const MEMBERSHIP_STATES = Object.freeze([
@@ -53,6 +64,7 @@ const PERMISSIONS = Object.freeze([
 
 module.exports = {
   DATA_PLANE_TYPES,
+  ENTERPRISE_DATA_PROVIDERS,
   ISOLATION_TIERS,
   MEMBERSHIP_STATES,
   PERMISSIONS,

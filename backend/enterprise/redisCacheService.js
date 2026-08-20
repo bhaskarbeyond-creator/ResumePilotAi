@@ -1,5 +1,16 @@
 'use strict';
 
+/**
+ * OPTIONAL Redis accelerator for the enterprise plane.
+ *
+ * Redis is a performance accelerator only. Correctness (quotas, rate limits
+ * that gate security decisions, dedupe, leases, job state) lives in durable
+ * Firestore stores (TenantQuotaGuard / enterprise outbox). When Redis is not
+ * configured or not reachable, the application continues to operate correctly
+ * and every status surface reports Redis honestly — it is never reported
+ * healthy while unavailable.
+ */
+
 const Redis = require('ioredis');
 const { tenantCacheKey, tenantRateLimitKey, tenantCachePrefix } = require('./tenantCache');
 
@@ -7,6 +18,10 @@ let redisClient = null;
 
 function getRedisUrl() {
   return process.env.TENANT_REDIS_URL || process.env.REDIS_URL || null;
+}
+
+function redisConfigured() {
+  return Boolean(getRedisUrl());
 }
 
 function initRedisClient(url = getRedisUrl(), options = {}) {
@@ -84,11 +99,20 @@ async function invalidateTenantPrefix({ tenantId, workspaceId = null }) {
   return 0;
 }
 
+/**
+ * ADVISORY-ONLY rate signal. This function must never be the enforcement
+ * point for a security decision: without Redis there is no durable counter,
+ * so it reports `authoritative: false`. Security-relevant limits (AI quotas,
+ * tenant abuse ceilings) are enforced by the durable Firestore TenantQuotaGuard.
+ */
 async function checkTenantRateLimit({ tenantId, principalId, operation, window = '1m', limit = 60 }) {
   const client = await getClient();
   if (!client || client.status !== 'ready') {
-    // Fail-open for rate limiter if Redis is offline
-    return { allowed: true, current: 1, limit, remaining: limit - 1, source: 'fallback' };
+    if (!redisConfigured()) {
+      return { allowed: true, current: 1, limit, remaining: limit - 1, source: 'not-configured', authoritative: false };
+    }
+    // Configured but unreachable: still advisory; durable stores carry correctness.
+    return { allowed: true, current: 1, limit, remaining: limit - 1, source: 'unavailable', authoritative: false };
   }
   const key = tenantRateLimitKey({ tenantId, principalId, operation, window });
   const current = await client.incr(key);
@@ -103,19 +127,24 @@ async function checkTenantRateLimit({ tenantId, principalId, operation, window =
     limit,
     remaining: Math.max(0, limit - current),
     source: 'redis',
+    authoritative: false,
   };
 }
 
 async function pingRedis() {
+  const url = getRedisUrl();
+  if (!url) {
+    return { ok: false, configured: false, status: 'not-configured', optional: true, error: 'NO_REDIS_CONFIGURED' };
+  }
   const client = await getClient();
-  if (!client) return { ok: false, status: 'unavailable', error: 'NO_REDIS_CONFIGURED' };
+  if (!client) return { ok: false, configured: true, status: 'unavailable', optional: true, error: 'CLIENT_UNAVAILABLE' };
   const start = Date.now();
   try {
     const pong = await client.ping();
     const latencyMs = Date.now() - start;
-    return { ok: pong === 'PONG', status: pong === 'PONG' ? 'healthy' : 'degraded', pong, latencyMs };
+    return { ok: pong === 'PONG', configured: true, status: pong === 'PONG' ? 'healthy' : 'degraded', pong, latencyMs, optional: true };
   } catch (err) {
-    return { ok: false, status: 'unhealthy', error: err.message };
+    return { ok: false, configured: true, status: 'unhealthy', optional: true, error: err.message };
   }
 }
 
@@ -127,5 +156,6 @@ module.exports = {
   invalidateTenantCache,
   invalidateTenantPrefix,
   pingRedis,
+  redisConfigured,
   setTenantCache,
 };

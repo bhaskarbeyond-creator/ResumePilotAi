@@ -19,6 +19,7 @@ const { loadAiAdminSettings, saveAiAdminSettings, testAiProvider, fetchProviderM
 const { mergeAdminSettingCategory } = require('./services/adminSettingsMerge');
 const { createExportRenderToken, consumeExportRenderToken, discardExportRenderToken } = require('./security/exportTokens');
 const { createTenantService } = require('./enterprise/tenantService');
+const redisCacheService = require('./enterprise/redisCacheService');
 const { enterpriseRouter } = require('./routes/enterprise');
 const { enterpriseM2mRouter } = require('./routes/enterpriseM2m');
 const { enterpriseFeatureEnabled } = require('./enterprise/featureFlags');
@@ -117,9 +118,26 @@ try {
 }
 // Make Firestore accessible to routes via req.app.get('db')
 app.set('db', db);
+// The Firebase admin runtime is exposed for enterprise services (outbox,
+// storage) that need FieldValue/Timestamp sentinels — never secrets.
+app.set('firebaseAdmin', admin);
 // The enterprise control plane is intentionally server-only. It is dormant until
 // enterprise routes are enabled and does not alter certified UID-scoped paths.
 app.set('tenantService', createTenantService({ db, admin }));
+// Truthful one-time architecture statement. Never logs secrets or URLs.
+if (enterpriseFeatureEnabled()) {
+    const runtime = app.get('tenantService')?.describeRuntime?.() || {};
+    console.log('[Enterprise Architecture]', JSON.stringify({
+        enterpriseTenancy: 'ENABLED',
+        dataProvider: `Enterprise Data Provider: ${String(runtime.dataProvider || 'unknown')}`,
+        dataPlaneConfigured: runtime.dataPlaneConfigured === true,
+        redis: redisCacheService.redisConfigured() ? 'Redis: configured (optional accelerator)' : 'Redis: not configured (optional)',
+        queue: 'Queue: Firestore Durable Outbox',
+        encryption: `Encryption Provider: ${String(runtime.encryption?.provider === 'server-key' ? 'ServerKey' : runtime.encryption?.provider || 'none')}`,
+        encryptionSecurityLevel: runtime.encryption?.securityLevel || null,
+        quotaStore: runtime.quotaStore || 'unavailable',
+    }));
+}
 
 // Auto-initialize system fonts for Playwright PDF rendering on Linux servers
 const initSystemFonts = () => {
@@ -3092,10 +3110,20 @@ app.get('/readyz', (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     const requestDb = req.app.get('db');
     const firebaseReady = Boolean(requestDb && admin?.auth);
+    const tenantService = req.app.get('tenantService');
+    const enterpriseRuntime = tenantService?.describeRuntime ? tenantService.describeRuntime() : null;
     return res.status(firebaseReady ? 200 : 503).json({
         status: firebaseReady ? 'ready' : 'not_ready',
         checks: {
             firebaseAdmin: firebaseReady ? 'READY' : 'UNAVAILABLE',
+            enterprise: enterpriseRuntime ? {
+                dataProvider: enterpriseRuntime.dataProvider,
+                dataPlaneConfigured: enterpriseRuntime.dataPlaneConfigured === true,
+                encryption: enterpriseRuntime.encryption?.provider || 'none',
+                quotaStore: enterpriseRuntime.quotaStore,
+                queue: 'firestore-durable-outbox',
+                redis: redisCacheService.redisConfigured() ? 'configured' : 'not-configured',
+            } : 'UNAVAILABLE',
             aiProviders: 'NOT_CHECKED', paymentProviders: 'NOT_CHECKED', smtp: 'NOT_CHECKED',
             cmsScheduler: process.env.CMS_SCHEDULER_ENABLED === 'true' ? 'CONFIGURED' : 'DISABLED',
             notificationOutbox: process.env.NOTIFICATION_OUTBOX_WORKER_ENABLED === 'true' ? 'LOCAL_WORKER_CONFIGURED' : process.env.NOTIFICATION_OUTBOX_EXTERNAL_WORKER === 'true' ? 'EXTERNAL_WORKER_DECLARED' : 'DISABLED',
@@ -3107,10 +3135,20 @@ app.get('/api/readyz', (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     const requestDb = req.app.get('db');
     const firebaseReady = Boolean(requestDb && admin?.auth);
+    const tenantService = req.app.get('tenantService');
+    const enterpriseRuntime = tenantService?.describeRuntime ? tenantService.describeRuntime() : null;
     return res.status(firebaseReady ? 200 : 503).json({
         status: firebaseReady ? 'ready' : 'not_ready',
         checks: {
             firebaseAdmin: firebaseReady ? 'READY' : 'UNAVAILABLE',
+            enterprise: enterpriseRuntime ? {
+                dataProvider: enterpriseRuntime.dataProvider,
+                dataPlaneConfigured: enterpriseRuntime.dataPlaneConfigured === true,
+                encryption: enterpriseRuntime.encryption?.provider || 'none',
+                quotaStore: enterpriseRuntime.quotaStore,
+                queue: 'firestore-durable-outbox',
+                redis: redisCacheService.redisConfigured() ? 'configured' : 'not-configured',
+            } : 'UNAVAILABLE',
             aiProviders: 'NOT_CHECKED', paymentProviders: 'NOT_CHECKED', smtp: 'NOT_CHECKED',
             cmsScheduler: process.env.CMS_SCHEDULER_ENABLED === 'true' ? 'CONFIGURED' : 'DISABLED',
             notificationOutbox: process.env.NOTIFICATION_OUTBOX_WORKER_ENABLED === 'true' ? 'LOCAL_WORKER_CONFIGURED' : process.env.NOTIFICATION_OUTBOX_EXTERNAL_WORKER === 'true' ? 'EXTERNAL_WORKER_DECLARED' : 'DISABLED',
@@ -3169,6 +3207,71 @@ if (require.main === module) {
         const outboxTimer = setInterval(runOutbox, intervalMs);
         outboxTimer.unref?.();
         setTimeout(runOutbox, 5_000).unref?.();
+    }
+
+    // Durable enterprise job worker (Firestore outbox). Jobs are claimed via
+    // leases, signature/expiry verified, and tenant membership reauthorized at
+    // execution time. Handlers that are not registered cause the job to fail,
+    // retry with backoff, and dead-letter — never silent drops.
+    if (process.env.ENTERPRISE_OUTBOX_WORKER_ENABLED === 'true' && db && admin) {
+        const { runOutboxWorkerOnce, sweepExpiredJobs } = require('./enterprise/enterpriseOutbox');
+        const workerId = `enterprise-${process.pid}-${crypto.randomUUID()}`;
+        const intervalMs = Math.max(5_000, Math.min(Number(process.env.ENTERPRISE_OUTBOX_INTERVAL_MS) || 15_000, 300_000));
+        const signingSecret = process.env.TENANT_JOB_SIGNING_SECRET || '';
+        let enterpriseWorkerRunning = false;
+        const runEnterpriseOutbox = async () => {
+            if (enterpriseWorkerRunning) return;
+            enterpriseWorkerRunning = true;
+            try {
+                if (Buffer.byteLength(signingSecret) < 32) {
+                    console.error('[Enterprise outbox worker] TENANT_JOB_SIGNING_SECRET is missing or too short; worker idle (fail closed).');
+                    return;
+                }
+                const tenantService = app.get('tenantService');
+                await sweepExpiredJobs({ db, admin, now: Date.now() });
+                const outcomes = await runOutboxWorkerOnce({
+                    db,
+                    admin,
+                    tenantService,
+                    signingSecret,
+                    workerId,
+                    maxJobs: 5,
+                    handlers: {
+                        // NOTIFY fans a tenant notification into the certified
+                        // durable email outbox; delivery retries happen there.
+                        NOTIFY: async ({ envelope }) => {
+                            await db.collection('notification_outbox').doc(require('crypto').createHash('sha256').update(`email\0${envelope.correlationId}`).digest('hex')).create({
+                                eventId: `${envelope.correlationId}:notify`,
+                                channel: 'email',
+                                recipient: envelope.recipient || null,
+                                templateType: 'tenant_notification',
+                                vars: {},
+                                metadata: { tenantId: envelope.tenantId, jobId: envelope.jobId },
+                                tenant: null,
+                                state: envelope.recipient ? 'NOTIFICATION_QUEUED' : 'SKIPPED_NO_RECIPIENT',
+                                attemptCount: 0,
+                                nextAttemptAt: admin.firestore.Timestamp.fromMillis(Date.now()),
+                                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                            }).catch(() => {});
+                            return { notified: Boolean(envelope.recipient) };
+                        },
+                    },
+                });
+                for (const outcome of outcomes) {
+                    if (outcome.status === 'DEAD_LETTER' || outcome.status === 'REJECTED') {
+                        console.warn('[Enterprise outbox worker]', JSON.stringify(outcome));
+                    }
+                }
+            } catch (error) {
+                console.error('[Enterprise outbox worker]', error.message);
+            } finally {
+                enterpriseWorkerRunning = false;
+            }
+        };
+        const enterpriseTimer = setInterval(runEnterpriseOutbox, intervalMs);
+        enterpriseTimer.unref?.();
+        setTimeout(runEnterpriseOutbox, 7_000).unref?.();
     }
 
     // Listen HTTP/HTTPS port safely

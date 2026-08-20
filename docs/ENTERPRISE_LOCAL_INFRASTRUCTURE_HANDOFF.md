@@ -1,664 +1,188 @@
 # Enterprise Local Infrastructure Handoff
 
-**Status:** LOCAL VERIFIED / STAGING-INFRA PENDING / PRODUCTION UNVERIFIED  
-**Repository branch for this handoff:** `arena/01a01f1c-resumepilotai`  
+**Status:** LOCAL VERIFIED (repository test matrix) / PRODUCTION DEPLOYMENT PENDING LOCAL OPERATOR  
+**Repository branch:** `arena/01a0200e-resumepilotai` (this session's branch; based on the enterprise work from `806113bb`)  
 **Date:** 2026-08-20
 
-This document is for the local senior developer who has direct server, Firebase, DNS, and hosting access.
-
-## 0. Truthful architecture summary
-
-### Canonical control plane
-- **Firebase Auth** = identity proof
-- **Firestore** = enterprise control plane
-  - tenants
-  - workspaces
-  - memberships
-  - tenant configuration
-  - service accounts metadata
-  - support grants
-  - audit/event documents
-  - quota counters
-- **Realtime Database / legacy Firebase data** = existing consumer product state
-
-### Enterprise resource data plane
-- **PostgreSQL is still required for full enterprise resource functionality**.
-- The enterprise resume/resource APIs are intentionally **fail-closed** when `TENANT_DATABASE_URL` is missing.
-- This is the RLS-backed boundary for:
-  - enterprise resources/documents
-  - enterprise AI usage ledger
-  - strict tenant/workspace row isolation
-
-### Redis
-- **Optional**.
-- Used only for cache/rate-limit acceleration.
-- If Redis is absent, the app reports that honestly and falls back to durable stores for correctness-sensitive paths.
-- No fake in-memory Redis is used.
-
-### Queue / worker / DLQ
-- The checked-in `/api/enterprise/queue/*` engine is **signed but local-process and non-durable**.
-- The durable worker implementation in this repo today is the **Firestore-backed notification outbox**.
-- Do **not** market the local queue route as a production durable job broker.
-
-### Storage / encryption
-- Tenant artifact access uses **tenant/workspace-scoped object keys** plus **HMAC-signed short-lived artifact tokens**.
-- Production **must** set `TENANT_ARTIFACT_SIGNING_SECRET`.
-- Production **must** set `TENANT_JOB_SIGNING_SECRET`.
-- There is **no KMS integration** in this repo today.
-- Security guarantee is secret-based HMAC signing on the server only.
-
-### Hostinger consequence
-If Hostinger shared hosting cannot provide outbound connectivity to a managed PostgreSQL instance, then:
-- keep `ENTERPRISE_TENANCY_ENABLED=false`
-- keep `VITE_ENTERPRISE_TENANCY_ENABLED=false`
-- deploy consumer features only
-
-Do **not** enable enterprise in production unless Firestore admin credentials and external PostgreSQL connectivity are both verified.
+This document is for the local senior developer with direct Hostinger, Firebase,
+and DNS access. It describes what the application now requires, what it no
+longer requires, and the exact deployment actions that remain yours.
 
 ---
 
-## 1. Required environment variables
+## 0. Truthful architecture summary (what changed and why)
 
-Copy `.env.example` and set these values.
+The enterprise plane was refactored so the application runs correctly on
+**Hostinger + Firebase alone**. Nothing below is aspirational — every claim is
+backed by tests in this repository.
 
-### Public browser variables
-```env
-VITE_WEBSITE_URL=https://YOUR_DOMAIN
-VITE_FIREBASE_KEY=...
-VITE_FIREBASE_DOMAIN=...
-VITE_FIREBASE_DATABASE_URL=...
-VITE_FIREBASE_PROJECT_ID=...
-VITE_FIREBASE_STORAGE_BUCKET=...
-VITE_FIREBASE_SENDER_ID=...
-VITE_FIREBASE_APP_ID=...
-VITE_GOOGLE_MAPS_API_KEY=...
-VITE_MEASUREMENT_ID=...
-VITE_RAZORPAY_KEY_ID=...
+### What is NO LONGER required
+
+| Previously required | Now |
+|---|---|
+| PostgreSQL (`TENANT_DATABASE_URL`) + RLS for tenant resources | **Not required.** Firestore is the canonical data plane. PostgreSQL remains an opt-in legacy adapter (`ENTERPRISE_DATA_PROVIDER=postgres`). |
+| Redis for rate limiting / caching | **Not required.** Redis is an optional accelerator; quotas/limits use durable Firestore atomic counters. Absence is reported honestly and never weakens correctness. |
+| Local in-process queue (`EnterpriseQueueWorkerEngine`) | **Deleted.** Durable jobs use the Firestore-backed enterprise outbox (lease claiming, retries, DLQ, replay). |
+| (Implied) external KMS | Never existed; now there is an explicit provider abstraction. The implemented provider is server-side envelope encryption (AES-256-GCM, versioned keys). The `kms` slot fails loudly as "not implemented" — no KMS is claimed. |
+
+### What IS required (production)
+
+1. Firebase project with **Auth**, **Firestore**, (optionally) **Storage**.
+2. Backend env (server-only, never `VITE_`-prefixed):
+   - `ENTERPRISE_TENANCY_ENABLED=true` and `VITE_ENTERPRISE_TENANCY_ENABLED=true` at build time
+   - `ENTERPRISE_DATA_PROVIDER=firestore` (or unset — it is the default)
+   - `ENTERPRISE_ENCRYPTION_KEYS={"v1":"<openssl rand -base64 32>"}` (required; resource writes fail closed without it)
+   - `TENANT_JOB_SIGNING_SECRET` (≥32 bytes) and `TENANT_ARTIFACT_SIGNING_SECRET` (≥32 bytes)
+   - `ENTERPRISE_OUTBOX_WORKER_ENABLED=true` on the backend instance that should run the job worker
+3. Firestore security rules deployed from `SecurityRules.txt` (denies all
+   client access to `tenants/**` and `enterprise_*`).
+4. Composite indexes deployed from `firestore.indexes.json` (`resources`,
+   `enterprise_outbox`).
+
+### Data model deployed (Admin SDK only; clients are deny-all)
+
+Control plane: `enterprise_tenants`, `enterprise_tenant_slugs`,
+`enterprise_tenant_configurations`, `enterprise_workspaces`,
+`enterprise_memberships`, `enterprise_workspace_memberships`,
+`enterprise_teams`, `enterprise_service_accounts`, `enterprise_api_keys`,
+`enterprise_support_grants`, `enterprise_principal_tenants`,
+`enterprise_quota_buckets`, `enterprise_migration_ledger`,
+`enterprise_outbox` (durable jobs + DLQ).
+
+Data plane (tenant-partitioned): `tenants/{tenantId}/resources`,
+`tenants/{tenantId}/audit_events`, `tenants/{tenantId}/ai_usage`,
+`tenants/{tenantId}/ai_usage_daily`.
+
+Isolation is enforced by three independent layers (partitioned paths,
+query-level workspace predicates, read-level scope re-verification) plus
+per-request membership resolution. PostgreSQL RLS is no longer part of the
+boundary; the optional adapter keeps its own RLS behavior if you ever enable it.
+
+---
+
+## 1. Exact deployment actions (local operator checklist)
+
+### 1.1 Firebase console
+
+- [ ] Enable **Email/Password** (and any SSO providers) in Firebase Auth.
+- [ ] Create **Firestore** (production mode) in the region closest to your
+      Hostinger datacenter (e.g. `asia-south1`).
+- [ ] (If artifact uploads/downloads are used) enable **Storage** and note the
+      bucket for `ENTERPRISE_STORAGE_BUCKET`.
+- [ ] Create a **service account** for the backend
+      (`IAM & Admin → Service Accounts → Firebase Admin` role) and export the
+      JSON key, **or** plan to use Hostinger-level env-var credentials
+      (`FIREBASE_CLIENT_EMAIL` + `FIREBASE_PRIVATE_KEY`). Prefer ADC/Workload
+      Identity if you move to Cloud Run later.
+
+### 1.2 Firestore rules + indexes
+
+```bash
+firebase deploy --only firestore:rules,firestore:indexes
+# rules file: SecurityRules.txt (mapped in firebase.json)
+# indexes file: firestore.indexes.json
 ```
 
-### Backend core
-```env
+Verify: in the Firebase console → Firestore → Rules, the last blocks must show
+`allow read, write: if false;` for `tenants/{tenantId}/{document=**}` and every
+`enterprise_*` collection.
+
+### 1.3 Hostinger backend environment
+
+Set (Node app / `.env` on the hosting panel — server-side only):
+
+```
 NODE_ENV=production
-PORT=8080
-PROTOCOL=https
-WEBSITE_NAME=YOUR_DOMAIN
-CORS_ALLOWED_ORIGINS=https://YOUR_DOMAIN
-TRUST_PROXY_HOPS=
+ENTERPRISE_TENANCY_ENABLED=true
+ENTERPRISE_DATA_PROVIDER=firestore
+ENTERPRISE_ENCRYPTION_KEYS={"v1":"<openssl rand -base64 32>"}
+TENANT_JOB_SIGNING_SECRET=<openssl rand -base64 32>
+TENANT_ARTIFACT_SIGNING_SECRET=<openssl rand -base64 32>
+ENTERPRISE_OUTBOX_WORKER_ENABLED=true
+ENTERPRISE_STORAGE_PROVIDER=firebase-storage
+FIREBASE_PROJECT_ID=<project-id>
+FIREBASE_DATABASE_URL=<rtdb-url>          # legacy product data
+FIREBASE_CLIENT_EMAIL=<sa-email>          # or use ADC
+FIREBASE_PRIVATE_KEY=<sa-private-key>
 ```
 
-### Enterprise feature flags
-```env
-ENTERPRISE_TENANCY_ENABLED=false
-VITE_ENTERPRISE_TENANCY_ENABLED=false
-```
-Only switch both to `true` after sections 3, 8, 11, 12, and 13 are fully verified.
+Do **not** set `TENANT_DATABASE_URL`, `REDIS_URL`, or `TENANT_REDIS_URL`
+unless you deliberately enable the optional adapters.
 
-### Firebase Admin
-Preferred:
-```env
-FIREBASE_PROJECT_ID=...
-FIREBASE_DATABASE_URL=...
-FIREBASE_USE_ADC=true
+**Key custody:** back up `ENTERPRISE_ENCRYPTION_KEYS` in your password manager
+/ secret store. Losing the active key makes encrypted resources unreadable
+(fail closed). To rotate: add `v2`, set `ENTERPRISE_ENCRYPTION_ACTIVE_KEY=v2`,
+keep `v1` until documents are rewritten.
+
+### 1.4 Frontend build
+
 ```
-Fallback if ADC is unavailable:
-```env
-FIREBASE_CLIENT_EMAIL=...
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+VITE_ENTERPRISE_TENANCY_ENABLED=true npm run build
 ```
 
-### Enterprise PostgreSQL
-```env
-TENANT_DATABASE_URL=postgres://USER:PASSWORD@HOST:5432/DBNAME?sslmode=require
-```
-This is required for:
-- `/api/enterprise/resources`
-- enterprise resume/document library
-- enterprise AI metering route
-- RLS isolation in the enterprise resource plane
+### 1.5 Post-deploy verification (15 minutes, all read-only)
 
-### Optional Redis
-```env
-REDIS_URL=redis://HOST:6379
-TENANT_REDIS_URL=redis://HOST:6379
-```
-You may set only one; `TENANT_REDIS_URL` wins if both are set.
-
-### Required enterprise signing secrets
-Generate 32+ byte secrets:
-```env
-TENANT_JOB_SIGNING_SECRET=REPLACE_WITH_32_PLUS_BYTES
-TENANT_ARTIFACT_SIGNING_SECRET=REPLACE_WITH_32_PLUS_BYTES
-```
-Example generation command:
 ```bash
-openssl rand -base64 48
+curl -s https://<your-domain>/api/readyz | jq .checks.enterprise
+# expect: dataProvider=firestore, dataPlaneConfigured=true,
+#         encryption=server-key, queue=firestore-durable-outbox,
+#         redis=not-configured
 ```
 
-### Optional worker flags
-```env
-NOTIFICATION_OUTBOX_WORKER_ENABLED=true
-NOTIFICATION_OUTBOX_EXTERNAL_WORKER=false
-NOTIFICATION_OUTBOX_INTERVAL_MS=15000
-CMS_SCHEDULER_ENABLED=false
-CMS_SCHEDULER_INTERVAL_MS=300000
-PDF_RENDERER_ISOLATED=false
-```
+Then, signed in as a verified admin in the browser:
+- [ ] `/enterprise` loads; the startup banner shows the tenant.
+- [ ] Overview: "Durable Job Outbox — Operational", "Optional Redis
+      Accelerator — Optional · Off".
+- [ ] Create + delete a workspace; create a team; create a test resource;
+      create + revoke a service account.
+- [ ] Usage tab shows real ledger numbers after an AI generation.
+- [ ] Audit tab shows every action above.
+- [ ] Security → Durable Jobs shows the queue/DLQ and replay works on a
+      dead-lettered job (enqueue one via the API if you want to see a DLQ
+      entry).
+
+### 1.6 Backup strategy (operator-owned)
+
+- [ ] Enable **scheduled Firestore exports** to a GCS bucket (this is the
+      infrastructure-level backup; the in-app logical snapshots in
+      `enterpriseBackup.js` are for tenant-scoped drills/verification, not a
+      substitute): https://cloud.google.com/firestore/docs/manage-data-schedule-exports
+- [ ] Run one restore drill in a staging project before relying on it.
 
 ---
 
-## 2. Required Firebase configuration
-
-### Auth
-Verify:
-- Firebase Auth project matches all `VITE_FIREBASE_*` values.
-- production auth domain is authorized
-- email verification is enabled if enterprise users are expected to access the console
-- support/admin users have correct custom claims where needed
-
-### Firestore collections used by enterprise
-Confirm read/write availability for these collections from the backend service account:
-- `enterprise_tenants`
-- `enterprise_tenant_slugs`
-- `enterprise_workspaces`
-- `enterprise_memberships`
-- `enterprise_workspace_memberships`
-- `enterprise_principal_tenants`
-- `enterprise_tenant_configurations`
-- `enterprise_service_accounts`
-- `enterprise_api_keys`
-- `enterprise_support_grants`
-- `enterprise_audit_events`
-- `enterprise_quota_counters`
-- `security_audit_logs`
-
-### Firebase verification command
-After deployment, hit:
-```bash
-curl -fsS https://YOUR_DOMAIN/api/readyz
-```
-Expected:
-- HTTP `200`
-- `checks.firebaseAdmin = "READY"`
-
----
-
-## 3. Required database configuration
-
-### Mandatory decision
-For enterprise mode, use **managed PostgreSQL reachable from the backend**.
-
-### Why PostgreSQL remains required
-The current codebase intentionally requires Postgres for:
-- enterprise resource CRUD
-- RLS-enforced tenant/workspace separation
-- enterprise AI usage ledger
-
-Without `TENANT_DATABASE_URL`, these routes fail closed with `503 TENANT_DATA_PLANE_UNAVAILABLE` or `503 TENANT_AI_METERING_UNAVAILABLE`.
-
-### Migration command
-Run from repo root:
-```bash
-npm --prefix backend run migrate:enterprise
-```
-
-### Verify migration applied
-Use psql against the managed database and confirm:
-- enterprise tables exist
-- RLS policies exist
-- `FORCE ROW LEVEL SECURITY` is present on protected tables
-
-Suggested commands:
-```bash
-psql "$TENANT_DATABASE_URL" -c "\dt"
-psql "$TENANT_DATABASE_URL" -c "SELECT schemaname, tablename, rowsecurity FROM pg_tables WHERE schemaname='public' ORDER BY tablename;"
-```
-
-### Expected result
-- migration completes without SQL errors
-- enterprise resource endpoints stop returning `TENANT_DATA_PLANE_UNAVAILABLE`
-
----
-
-## 4. Required Redis configuration
-
-Redis is optional.
-
-### If Redis is available
-Set:
-```env
-REDIS_URL=redis://HOST:6379
-```
-or
-```env
-TENANT_REDIS_URL=redis://HOST:6379
-```
-
-### If Redis is not available
-Leave both unset.
-Expected behavior:
-- `/api/enterprise/cache/status` reports unavailable/unhealthy truthfully
-- correctness-sensitive enterprise operations continue using durable stores
-- no fake Redis behavior is claimed
-
-### Verification command
-Authenticated enterprise request:
-```bash
-curl -H "Authorization: Bearer <ID_TOKEN>" \
-     -H "X-Tenant-Id: <TENANT_ID>" \
-     https://YOUR_DOMAIN/api/enterprise/cache/status
-```
-Expected when configured and reachable:
-- `cache.ok = true`
-- `cache.status = "healthy"`
-
----
-
-## 5. Required storage configuration
-
-This repo signs tenant artifact tokens but does **not** provision a bucket automatically.
-
-You must provide a server-side storage target that honors tenant/workspace object keys such as:
-```text
-tenants/<tenantId>/workspaces/<workspaceId>/artifacts/<resourceType>/<resourceId>/<artifact>.v1.pdf
-```
-
-Minimum requirements:
-- no direct public listing of tenant object paths
-- server-side upload validation
-- download only through verified backend authorization/token flow
-- content-type restrictions enforced at upload time
-
-### Verification commands
-Authenticated token issue:
-```bash
-curl -X POST \
-  -H "Authorization: Bearer <ID_TOKEN>" \
-  -H "Content-Type: application/json" \
-  -H "X-Tenant-Id: <TENANT_ID>" \
-  -H "X-Workspace-Id: <WORKSPACE_ID>" \
-  -d '{"objectKey":"tenants/<TENANT_ID>/workspaces/<WORKSPACE_ID>/artifacts/resume/<RESOURCE_ID>/file.v1.pdf","purpose":"DOWNLOAD","expiresInMs":60000}' \
-  https://YOUR_DOMAIN/api/enterprise/storage/token
-```
-Expected:
-- HTTP `200`
-- JSON contains `token`
-
----
-
-## 6. Required encryption / signing configuration
-
-There is **no KMS implementation** here.
-Use strong server-only env secrets.
-
-### Required
-```env
-TENANT_JOB_SIGNING_SECRET=32+ bytes
-TENANT_ARTIFACT_SIGNING_SECRET=32+ bytes
-```
-
-### Production behavior now
-- if `TENANT_JOB_SIGNING_SECRET` is missing in production, queue engine status becomes `misconfigured`
-- if `TENANT_ARTIFACT_SIGNING_SECRET` is missing in production, artifact token operations fail closed
-
-### Evidence to capture
-- redacted screenshot of secret presence in the production env manager
-- response from `/api/enterprise/queue/status`
-- successful artifact token issue/verify flow
-
----
-
-## 7. Required queue configuration
-
-### Truthful current state
-- enterprise queue route = signed, local, **non-durable**
-- notification outbox = Firestore-backed durable worker path for notifications
-
-### Recommendation
-For production today:
-- enable `NOTIFICATION_OUTBOX_WORKER_ENABLED=true` only after Firestore admin verification
-- keep PM2 at **1 instance** unless you separately validate multi-instance behavior for your deployment model
-- do not depend on `/api/enterprise/queue/enqueue` for critical durable business jobs
-
-### Verification command
-```bash
-curl -H "Authorization: Bearer <ID_TOKEN>" \
-     -H "X-Tenant-Id: <TENANT_ID>" \
-     https://YOUR_DOMAIN/api/enterprise/queue/status
-```
-Expected:
-- `queue.healthy = true` when `TENANT_JOB_SIGNING_SECRET` is set
-- `queue.durable = false`
-
----
-
-## 8. PM2 configuration
-
-Use a **single backend instance** for the current enterprise implementation.
-
-### Suggested PM2 app
-```js
-module.exports = {
-  apps: [
-    {
-      name: 'resumepilot-backend',
-      cwd: '/ABSOLUTE/PATH/ResumePilotAi/backend',
-      script: 'index.js',
-      interpreter: 'node',
-      instances: 1,
-      exec_mode: 'fork',
-      autorestart: true,
-      watch: false,
-      max_memory_restart: '750M',
-      env: {
-        NODE_ENV: 'production',
-        PORT: 8080,
-        NOTIFICATION_OUTBOX_WORKER_ENABLED: 'true',
-        NOTIFICATION_OUTBOX_EXTERNAL_WORKER: 'false'
-      }
-    }
-  ]
-};
-```
-
-### Start commands
-```bash
-pm2 start ecosystem.config.cjs
-pm2 save
-pm2 status
-pm2 logs resumepilot-backend --lines 200
-```
-
----
-
-## 9. Build commands
-
-From repo root:
-```bash
-npm ci
-npm --prefix backend ci --omit=dev
-npm run build
-```
-
-If you need to run backend tests on a machine where `redis-memory-server` postinstall is blocked:
-```bash
-npm --prefix backend ci --ignore-scripts
-```
-
-### Required local verification before production enablement
-```bash
-npm run lint
-npm run test:security
-npm run test:interview
-npm run test:product
-npm run test:enterprise
-npm run audit:production
-npm run build
-```
-
----
-
-## 10. Deployment commands
-
-Example sequence:
-```bash
-git fetch --all --tags --prune
-git checkout arena/01a01f1c-resumepilotai
-git pull --ff-only origin arena/01a01f1c-resumepilotai
-npm ci
-npm --prefix backend ci --omit=dev
-npm run build
-npm --prefix backend run migrate:enterprise
-pm2 restart resumepilot-backend --update-env
-```
-
-If frontend is served separately, deploy the `dist/` output after `npm run build`.
-
----
-
-## 11. Health checks
-
-### Public health
-```bash
-curl -fsS https://YOUR_DOMAIN/healthz
-curl -fsS https://YOUR_DOMAIN/api/healthz
-curl -fsS https://YOUR_DOMAIN/api/health
-```
-Expected:
-```json
-{"status":"ok","firebaseAdminConfigured":true,...}
-```
-
-### Readiness
-```bash
-curl -i https://YOUR_DOMAIN/readyz
-curl -i https://YOUR_DOMAIN/api/readyz
-```
-Expected:
-- HTTP `200`
-- `status = "ready"`
-- `checks.firebaseAdmin = "READY"`
-
----
-
-## 12. Enterprise checks
-
-### Feature flag check
-Authenticated:
-```bash
-curl -H "Authorization: Bearer <ID_TOKEN>" https://YOUR_DOMAIN/api/enterprise/status
-```
-Expected after enablement:
-```json
-{"enabled":true,"apiVersion":"tenant-foundation-v1"}
-```
-
-### Tenant context
-```bash
-curl -H "Authorization: Bearer <ID_TOKEN>" https://YOUR_DOMAIN/api/enterprise/context
-```
-Expected:
-- HTTP `200`
-- `context.tenantId` present
-- `context.workspaceId` present
-- `X-Tenant-Context` response header present
-
-### Roles matrix
-```bash
-curl -H "Authorization: Bearer <ID_TOKEN>" \
-     -H "X-Tenant-Id: <TENANT_ID>" \
-     https://YOUR_DOMAIN/api/enterprise/roles-matrix
-```
-Expected:
-- HTTP `200`
-- role definitions returned from backend constants
-
-### Service accounts
-Create/list/revoke through `/api/enterprise/service-accounts` and confirm:
-- plaintext key appears exactly once at creation
-- list returns `scopes`
-- revoke removes active visibility
-
-### Support grants
-Create/list/revoke through `/api/enterprise/support-grants` and confirm:
-- active tenant/workspace is inherited from server-validated context
-- wrong tenant/workspace cannot revoke another tenant’s grant
-
----
-
-## 13. Tenant A/B tests
-
-Use two real Firebase users with two separate tenant memberships.
-
-### Must pass
-1. Tenant A user cannot resolve Tenant B context with `X-Tenant-Id: <tenantB>`.
-2. Tenant A cannot list Tenant B service accounts.
-3. Tenant A cannot list Tenant B audit events.
-4. Tenant A cannot verify Tenant B artifact token.
-5. Tenant A cannot use Tenant B support grant.
-6. Tenant A cannot use Tenant B service-account key.
-
-### Example expected failures
-- `404 TENANT_MEMBERSHIP_NOT_FOUND`
-- `404 TENANT_RESOURCE_NOT_FOUND`
-- `403 SUPPORT_GRANT_DENIED`
-- `404 SERVICE_TENANT_NOT_FOUND`
-
----
-
-## 14. Failure tests
-
-Run these before enabling enterprise publicly:
-
-### PostgreSQL removed or wrong URL
-Expected:
-- `/api/enterprise/resources` returns `503 TENANT_DATA_PLANE_UNAVAILABLE`
-- `/api/enterprise/ai/generate-content` returns `503 TENANT_AI_METERING_UNAVAILABLE`
-
-### Redis removed
-Expected:
-- `/api/enterprise/cache/status` reports unavailable/unhealthy truthfully
-- app does not claim Redis is healthy
-
-### Missing job signing secret in production
-Expected:
-- `/api/enterprise/queue/status` => `healthy=false`, `status="misconfigured"`
-
-### Missing artifact signing secret in production
-Expected:
-- `/api/enterprise/storage/token` fails closed
-
-### Suspended tenant
-Expected:
-- context resolution fails with `TENANT_INACTIVE`
-
----
-
-## 15. Rollback procedure
-
-### Fast rollback
-1. Set:
-```env
-ENTERPRISE_TENANCY_ENABLED=false
-VITE_ENTERPRISE_TENANCY_ENABLED=false
-```
-2. redeploy frontend build
-3. restart backend with PM2
-4. confirm `/api/enterprise/status` reports `enabled=false`
-
-### Code rollback
-```bash
-git log --oneline --decorate -20
-git checkout <last-known-good-sha>
-npm ci
-npm --prefix backend ci --omit=dev
-npm run build
-pm2 restart resumepilot-backend --update-env
-```
-
-### Database rollback
-- restore latest verified `pg_dump` backup to the managed Postgres instance
-- do **not** restore a partial subset of tenant tables without corresponding Firestore control-plane review
-
----
-
-## 16. Backup procedure
-
-### PostgreSQL
-```bash
-pg_dump "$TENANT_DATABASE_URL" --format=custom --file=enterprise-$(date +%F-%H%M%S).dump
-```
-
-### Firestore
-Use your existing Firebase/GCP export process for the enterprise collections listed in section 2.
-If you have gcloud access:
-```bash
-gcloud firestore export gs://YOUR_BACKUP_BUCKET/firestore-$(date +%F-%H%M%S)
-```
-
-### Evidence to capture
-- pg_dump file checksum
-- Firestore export job ID or console screenshot
-- timestamp and operator identity
-
----
-
-## 17. Monitoring commands
-
-```bash
-pm2 status
-pm2 logs resumepilot-backend --lines 200
-curl -fsS https://YOUR_DOMAIN/api/healthz
-curl -fsS https://YOUR_DOMAIN/api/readyz
-```
-
-Authenticated enterprise probes:
-```bash
-curl -H "Authorization: Bearer <ID_TOKEN>" -H "X-Tenant-Id: <TENANT_ID>" https://YOUR_DOMAIN/api/enterprise/cache/status
-curl -H "Authorization: Bearer <ID_TOKEN>" -H "X-Tenant-Id: <TENANT_ID>" https://YOUR_DOMAIN/api/enterprise/queue/status
-curl -H "Authorization: Bearer <ID_TOKEN>" -H "X-Tenant-Id: <TENANT_ID>" https://YOUR_DOMAIN/api/enterprise/observability/metrics
-```
-
----
-
-## 18. Expected outputs
-
-### `/api/readyz`
-- `status: ready`
-- `checks.firebaseAdmin: READY`
-
-### `/api/enterprise/status`
-- `enabled: true` only after final enablement
-
-### `/api/enterprise/context`
-- valid tenant/workspace IDs
-- backend-resolved permissions
-
-### `/api/enterprise/cache/status`
-- `ok: true` only when Redis actually answers
-
-### `/api/enterprise/queue/status`
-- `healthy: true` only when `TENANT_JOB_SIGNING_SECRET` is configured
-- `durable: false`
-
----
-
-## 19. Evidence to capture
-
-Capture all of the following before declaring enterprise production-ready:
-
-1. `npm run build` output
-2. `npm run test:enterprise` output
-3. `npm run test:security` output
-4. `npm run test:interview` output
-5. `npm run test:product` output
-6. `npm run audit:production` output
-7. `/api/healthz` response
-8. `/api/readyz` response
-9. `/api/enterprise/status` response
-10. `/api/enterprise/context` response for Tenant A and Tenant B
-11. successful workspace create/list flow
-12. successful service-account create/list/revoke flow
-13. successful support-grant create/list/revoke flow
-14. tenant A → tenant B denial screenshots/logs
-15. Postgres migration evidence
-16. Firestore admin credential evidence
-17. PM2 process status
-18. rollback dry-run notes
-
----
-
-## 20. Final go/no-go rule
-
-**GO** only when all are true:
-- Firestore admin is verified
-- enterprise Postgres is reachable
-- migrations applied
-- health and readiness are clean
-- feature flags are enabled on both server and client
-- tenant A/B isolation checks pass
-- enterprise resource CRUD works
-- service-account lifecycle works
-- support-grant lifecycle works
-- signing secrets are configured
-
-**NO-GO** if any of these remain false.
+## 2. What was verified in-repository (and how you can re-run it)
+
+| Suite | Command | Covers |
+|---|---|---|
+| Enterprise (all) | `npm run test:enterprise` | 141 tests incl. Firestore isolation, durable outbox/DLQ, encryption, AI metering, backup/restore, migration, architecture truth, full workflow |
+| Legacy regression | `npm run test:product && npm run test:interview && npm run test:security` | 51+4 templates, DOCX, wizard, coach, CBT, payments, account isolation |
+| Build / lint / audit | `npm run build && npm run lint && npm run audit:production` | 0 errors; 0 production vulnerabilities |
+| Browser workflow | `npm run test:enterprise:browser` | full console workflow (needs `npx playwright install chromium`; skips loudly when the binary is absent) |
+
+PostgreSQL/Redis/KMS-absent operation is the *default* tested configuration:
+the entire matrix above runs with no PostgreSQL server, no Redis server, and no
+KMS in the environment.
+
+## 3. Known limitations (truthful)
+
+- External penetration testing: **PENDING** (no third-party firm engaged).
+- The managed-KMS encryption provider is a configuration slot, not an
+  implementation. The active provider is server-side envelope encryption.
+- `s3`/`r2` storage providers are explicit not-implemented slots; the working
+  provider is Firebase Storage.
+- OIDC/SCIM identity policies are stored and surfaced but SSO login flows are
+  not implemented; issuer-aware worker reauthorization covers Firebase subjects.
+- Playwright browser tests require a local chromium binary; CI sandboxes skip
+  them with an explicit notice (they never report fake results).
+- Firestore scheduled exports (infrastructure backups) are the local
+  operator's responsibility per §1.6.
+
+## 4. Rollback
+
+The previous architecture remains available without code changes:
+`ENTERPRISE_DATA_PROVIDER=postgres` + `TENANT_DATABASE_URL` re-activates the
+RLS adapter for resources/usage. Redis can be attached at any time purely as
+an accelerator. The in-memory queue is gone by design; if the Firestore outbox
+ever needs to be drained, `enterprise_outbox` documents can be listed and
+replayed tenant by tenant through the audited replay API.

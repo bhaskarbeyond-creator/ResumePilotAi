@@ -4,13 +4,32 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const { freezeContext } = require('../enterprise/tenantContext');
-const { createTenantJobEnvelope, validateTenantJobEnvelope } = require('../enterprise/tenantJobs');
-const { EnterpriseQueueWorkerEngine } = require('../enterprise/tenantWorker');
-const { checkTenantRateLimit, pingRedis } = require('../enterprise/redisCacheService');
+const { createTenantJobEnvelope } = require('../enterprise/tenantJobs');
+const outbox = require('../enterprise/enterpriseOutbox');
+const { checkTenantRateLimit } = require('../enterprise/redisCacheService');
 const { createTenantArtifactToken, verifyTenantArtifactToken } = require('../enterprise/tenantSignedArtifacts');
 const { withTenantTransaction } = require('../enterprise/tenantDataPlane');
+const { MemoryFirestore, createMemoryAdmin } = require('../test/helpers/memoryFirestore');
+const { FirestoreAtomicCounterStore, TenantQuotaGuard } = require('../enterprise/tenantQuota');
 
-test('Chaos & Failure: Database unavailable fails closed and throws TENANT_DATA_PLANE_UNAVAILABLE', async () => {
+const SIGNING_SECRET = 'staging-test-queue-secret-key-32byteslong!';
+
+function enterpriseContext({ tenantId = crypto.randomUUID(), workspaceId = crypto.randomUUID(), principalId = crypto.randomUUID(), subjectId = 'usr_chaos_tester', lifecycleState = 'ACTIVE' } = {}) {
+  return freezeContext({
+    tenantId,
+    workspaceId,
+    principalId,
+    subjectId,
+    identityIssuer: 'firebase',
+    tenant: { id: tenantId, lifecycleState, isolationTier: 'STANDARD' },
+    membership: { status: 'ACTIVE', roles: ['MEMBER'] },
+    roles: ['MEMBER'],
+    permissions: ['resume.read'],
+    dataPlane: { id: 'firestore-primary', type: 'FIRESTORE', region: 'default', routingVersion: 1, storageProfile: 'shared', cacheProfile: 'shared', queueProfile: 'firestore-durable-outbox', aiProfile: 'platform-default', securityProfile: 'standard' },
+  });
+}
+
+test('Chaos & Failure: optional PostgreSQL adapter fails closed when unavailable', async () => {
   const badPool = null;
   const context = { tenantId: crypto.randomUUID(), principalId: crypto.randomUUID() };
 
@@ -26,117 +45,121 @@ test('Chaos & Failure: Database unavailable fails closed and throws TENANT_DATA_
   );
 });
 
-test('Chaos & Failure: Redis offline fails open gracefully for rate limiter with fallback status', async () => {
-  // Offline mock redis test
-  const rateLimitRes = await checkTenantRateLimit({
+test('Chaos & Failure: Redis absent leaves the advisory limiter honest while the durable Firestore quota guard still enforces', async () => {
+  delete process.env.TENANT_REDIS_URL;
+  delete process.env.REDIS_URL;
+
+  const advisory = await checkTenantRateLimit({
     tenantId: crypto.randomUUID(),
     principalId: crypto.randomUUID(),
     operation: 'resume-export',
   });
+  assert.equal(advisory.allowed, true);
+  assert.equal(advisory.source, 'not-configured');
+  assert.equal(advisory.authoritative, false, 'advisory signal must never be treated as a security control');
 
-  assert.equal(rateLimitRes.allowed, true);
-  assert.equal(rateLimitRes.source, 'fallback');
+  // The durable quota guard (Firestore transactions) enforces limits with no
+  // Redis anywhere in the process: correctness never depended on the cache.
+  const db = new MemoryFirestore();
+  const admin = createMemoryAdmin({ db });
+  const guard = new TenantQuotaGuard({ store: new FirestoreAtomicCounterStore({ db, admin }) });
+  const context = enterpriseContext();
+  const consume = () => guard.consume({ context, metric: 'chaos-minute', limit: 2, windowMs: 60_000, principalScoped: true });
+  const first = await consume();
+  const second = await consume();
+  assert.equal(first.used, 1);
+  assert.equal(second.used, 2);
+  await assert.rejects(consume, err => err.code === 'TENANT_QUOTA_EXCEEDED' && err.status === 429);
 });
 
-test('Chaos & Failure: Worker restart and recovery from unhandled job crash', async () => {
-  const secret = 'staging-test-queue-secret-key-32byteslong!';
-  const workerEngine = new EnterpriseQueueWorkerEngine({ signingSecret: secret });
+test('Chaos & Failure: worker crash mid-execution is recovered after lease expiry by another worker', async () => {
+  const db = new MemoryFirestore();
+  const admin = createMemoryAdmin({ db });
+  const context = enterpriseContext({ subjectId: 'usr_crash_recovery' });
+  const envelope = createTenantJobEnvelope({ context, jobType: 'EXPORT_PDF', resource: { type: 'RESUME', id: 'res-crash-1' }, idempotencyKey: 'chaos-crash-1', signingSecret: SIGNING_SECRET });
+  await outbox.enqueueOutboxJob({ db, admin, envelope });
 
-  const tenantId = crypto.randomUUID();
-  const workspaceId = crypto.randomUUID();
-  const principalId = crypto.randomUUID();
+  // Worker A claims the job then "crashes" — no completion, no failure write.
+  const claimed = await outbox.claimNextOutboxJob({ db, admin, workerId: 'crashed-worker', now: Date.now(), leaseMs: 1_000 });
+  assert.ok(claimed, 'job must be claimed by the crashing worker');
 
-  const context = freezeContext({
-    tenantId,
-    workspaceId,
-    principalId,
-    subjectId: 'usr_chaos_tester',
-    identityIssuer: 'firebase',
-    tenant: { id: tenantId, lifecycleState: 'ACTIVE', isolationTier: 'STANDARD' },
-    membership: { status: 'ACTIVE', roles: ['MEMBER'] },
-    roles: ['MEMBER'],
-    permissions: ['resume.read'],
-    dataPlane: { id: 'shared-primary', type: 'SHARED_POSTGRES', region: 'default', routingVersion: 1, storageProfile: 'shared', cacheProfile: 'shared', queueProfile: 'shared', aiProfile: 'platform-default', securityProfile: 'standard' },
+  // While the lease is held, another worker cannot steal the job.
+  const stolen = await outbox.claimNextOutboxJob({ db, admin, workerId: 'rescue-worker', now: Date.now() + 100, leaseMs: 1_000 });
+  assert.equal(stolen, null, 'an actively leased job must not be claimable');
+
+  // After the lease expires, the rescue worker reclaims and completes it.
+  const reclaimed = await outbox.claimNextOutboxJob({ db, admin, workerId: 'rescue-worker', now: Date.now() + 5_000, leaseMs: 1_000 });
+  assert.ok(reclaimed, 'expired lease must make the job reclaimable');
+  assert.equal(reclaimed.attemptCount, 2, 'crash counts as an attempt');
+  const tenantService = { resolveContext: async () => ({ context }) };
+  const outcomes = await outbox.runOutboxWorkerOnce({
+    db,
+    admin,
+    tenantService,
+    signingSecret: SIGNING_SECRET,
+    handlers: { EXPORT_PDF: async () => ({ exported: true }) },
+    workerId: 'final-worker',
+    now: Date.now() + 6_000,
+    maxJobs: 3,
+    backoffBaseMs: 1,
+    backoffJitter: false,
   });
-
-  let callCount = 0;
-  workerEngine.registerHandler('EXPORT_PDF', async () => {
-    callCount++;
-    if (callCount <= 2) {
-      throw new Error('Simulated transient worker crash/reboot');
-    }
-    return { exported: true, url: 'https://storage/export.pdf' };
-  });
-
-  const envelope = createTenantJobEnvelope({
-    context,
-    jobType: 'EXPORT_PDF',
-    resource: { type: 'RESUME', id: 'res-chaos-1' },
-    idempotencyKey: 'chaos-1',
-    signingSecret: secret,
-  });
-
-  await workerEngine.enqueue(envelope);
-
-  // Attempt 1: fails and schedules retry
-  const res1 = await workerEngine.processNextJob();
-  assert.equal(res1.status, 'RETRY_SCHEDULED');
-
-  // Attempt 2: fails again and schedules retry
-  workerEngine.jobQueue[0].nextRunAt = Date.now() - 100; // fast-forward backoff
-  const res2 = await workerEngine.processNextJob();
-  assert.equal(res2.status, 'RETRY_SCHEDULED');
-
-  // Attempt 3: recovers and succeeds!
-  workerEngine.jobQueue[0].nextRunAt = Date.now() - 100; // fast-forward backoff
-  const res3 = await workerEngine.processNextJob();
-  assert.equal(res3.status, 'COMPLETED');
-  assert.equal(res3.result.exported, true);
+  assert.ok(outcomes.some(outcome => outcome.status === 'COMPLETED'), `expected completion after recovery, got ${JSON.stringify(outcomes)}`);
 });
 
-test('Chaos & Failure: Revoked or suspended tenant context rejects queued worker reauthorization', async () => {
-  const secret = 'staging-test-queue-secret-key-32byteslong!';
-  const workerEngine = new EnterpriseQueueWorkerEngine({ signingSecret: secret });
+test('Chaos & Failure: transient handler failures retry with backoff and eventually succeed', async () => {
+  const db = new MemoryFirestore();
+  const admin = createMemoryAdmin({ db });
+  const context = enterpriseContext({ subjectId: 'usr_transient' });
+  const envelope = createTenantJobEnvelope({ context, jobType: 'EXPORT_PDF', resource: { type: 'RESUME', id: 'res-transient-1' }, idempotencyKey: 'chaos-transient-1', signingSecret: SIGNING_SECRET });
+  await outbox.enqueueOutboxJob({ db, admin, envelope, maxAttempts: 5 });
 
-  const tenantId = crypto.randomUUID();
-  const workspaceId = crypto.randomUUID();
-  const principalId = crypto.randomUUID();
-
-  const context = freezeContext({
-    tenantId,
-    workspaceId,
-    principalId,
-    subjectId: 'usr_suspended_tenant',
-    identityIssuer: 'firebase',
-    tenant: { id: tenantId, lifecycleState: 'ACTIVE', isolationTier: 'STANDARD' },
-    membership: { status: 'ACTIVE', roles: ['MEMBER'] },
-    roles: ['MEMBER'],
-    permissions: ['resume.read'],
-    dataPlane: { id: 'shared-primary', type: 'SHARED_POSTGRES', region: 'default', routingVersion: 1, storageProfile: 'shared', cacheProfile: 'shared', queueProfile: 'shared', aiProfile: 'platform-default', securityProfile: 'standard' },
-  });
-
-  workerEngine.registerHandler('EXPORT_PDF', async () => {
-    return { ok: true };
-  });
-
-  const envelope = createTenantJobEnvelope({
-    context,
-    jobType: 'EXPORT_PDF',
-    resource: { type: 'RESUME', id: 'res-suspended-1' },
-    idempotencyKey: 'suspended-1',
-    signingSecret: secret,
-  });
-
-  await workerEngine.enqueue(envelope);
-
-  // Resolver simulates tenant was SUSPENDED between enqueue and execution
-  const mockResolver = async () => {
-    return { lifecycleState: 'SUSPENDED' };
+  const tenantService = { resolveContext: async () => ({ context }) };
+  let attempts = 0;
+  let clock = Date.now();
+  const handlers = {
+    EXPORT_PDF: async () => {
+      attempts += 1;
+      if (attempts <= 2) throw new Error('Simulated transient provider outage');
+      return { exported: true };
+    },
   };
 
-  // Processing fails due to revoked/suspended tenant
-  const res = await workerEngine.processNextJob({ contextResolver: mockResolver });
-  assert.equal(res.status, 'RETRY_SCHEDULED');
+  const first = await outbox.runOutboxWorkerOnce({ db, admin, tenantService, signingSecret: SIGNING_SECRET, handlers, workerId: 'w1', now: clock, maxJobs: 3, backoffBaseMs: 1_000, backoffJitter: false });
+  assert.equal(first[0].status, 'RETRY_SCHEDULED');
+  clock = first[0].nextRunAt;
+  const second = await outbox.runOutboxWorkerOnce({ db, admin, tenantService, signingSecret: SIGNING_SECRET, handlers, workerId: 'w1', now: clock, maxJobs: 3, backoffBaseMs: 1_000, backoffJitter: false });
+  assert.equal(second[0].status, 'RETRY_SCHEDULED');
+  assert.ok(second[0].backoffMs > first[0].backoffMs, 'backoff must grow exponentially');
+  clock = second[0].nextRunAt;
+  const third = await outbox.runOutboxWorkerOnce({ db, admin, tenantService, signingSecret: SIGNING_SECRET, handlers, workerId: 'w1', now: clock, maxJobs: 3, backoffBaseMs: 1_000, backoffJitter: false });
+  assert.equal(third[0].status, 'COMPLETED');
+  assert.equal(attempts, 3);
+});
+
+test('Chaos & Failure: suspended or revoked tenants are terminally rejected at execution time', async () => {
+  const db = new MemoryFirestore();
+  const admin = createMemoryAdmin({ db });
+  const context = enterpriseContext({ subjectId: 'usr_suspended_tenant' });
+  const envelope = createTenantJobEnvelope({ context, jobType: 'EXPORT_PDF', resource: { type: 'RESUME', id: 'res-suspended-1' }, idempotencyKey: 'chaos-suspended-1', signingSecret: SIGNING_SECRET });
+  await outbox.enqueueOutboxJob({ db, admin, envelope });
+
+  // The tenant was suspended between enqueue and execution.
+  const suspendedService = {
+    resolveContext: async () => {
+      throw Object.assign(new Error('Tenant is not active'), { code: 'TENANT_INACTIVE', status: 403 });
+    },
+  };
+  const outcomes = await outbox.runOutboxWorkerOnce({
+    db, admin, tenantService: suspendedService, signingSecret: SIGNING_SECRET,
+    handlers: { EXPORT_PDF: async () => ({ ok: true }) },
+    workerId: 'w1', now: Date.now(), maxJobs: 3, backoffBaseMs: 1, backoffJitter: false,
+  });
+  assert.equal(outcomes[0].status, 'REJECTED');
+  assert.equal(outcomes[0].reason, 'TENANT_INACTIVE');
+
+  const status = await outbox.getOutboxStatus({ db, admin, signingSecret: SIGNING_SECRET });
+  assert.equal(status.counts.REJECTED, 1, 'deterministic rejection must not retry');
 });
 
 test('Chaos & Failure: Artifact storage token rejects expired credentials and mismatched purpose', async () => {
@@ -155,46 +178,21 @@ test('Chaos & Failure: Artifact storage token rejects expired credentials and mi
     membership: { status: 'ACTIVE', roles: ['MEMBER'] },
     roles: ['MEMBER'],
     permissions: ['resource.read'],
-    dataPlane: { id: 'shared-primary', type: 'SHARED_POSTGRES', region: 'default', routingVersion: 1, storageProfile: 'shared', cacheProfile: 'shared', queueProfile: 'shared', aiProfile: 'platform-default', securityProfile: 'standard' },
+    dataPlane: { id: 'firestore-primary', type: 'FIRESTORE', region: 'default', routingVersion: 1, storageProfile: 'shared', cacheProfile: 'shared', queueProfile: 'firestore-durable-outbox', aiProfile: 'platform-default', securityProfile: 'standard' },
   });
 
   const objectKey = `tenants/${tenantId}/workspaces/${workspaceId}/exports/resume/res-101/artifact-abc.v1.pdf`;
 
-  const token = createTenantArtifactToken({
-    context,
-    objectKey,
-    purpose: 'DOWNLOAD',
-    expiresInMs: 2000,
-    signingSecret: secret,
-  });
+  const token = createTenantArtifactToken({ context, objectKey, purpose: 'DOWNLOAD', expiresInMs: 2_000, signingSecret: secret });
 
-  // Valid verification
-  const verified = verifyTenantArtifactToken({
-    context,
-    token,
-    purpose: 'DOWNLOAD',
-    signingSecret: secret,
-  });
+  const verified = verifyTenantArtifactToken({ context, token, purpose: 'DOWNLOAD', signingSecret: secret });
   assert.equal(verified.tenantId, tenantId);
 
-  // Mismatched purpose (requested UPLOAD when token was signed for DOWNLOAD)
   assert.throws(() => {
-    verifyTenantArtifactToken({
-      context,
-      token,
-      purpose: 'UPLOAD',
-      signingSecret: secret,
-    });
+    verifyTenantArtifactToken({ context, token, purpose: 'UPLOAD', signingSecret: secret });
   }, /expired or invalid/i);
 
-  // Expired token
   assert.throws(() => {
-    verifyTenantArtifactToken({
-      context,
-      token,
-      purpose: 'DOWNLOAD',
-      signingSecret: secret,
-      now: Date.now() + 50000,
-    });
+    verifyTenantArtifactToken({ context, token, purpose: 'DOWNLOAD', signingSecret: secret, now: Date.now() + 50_000 });
   }, /expired or invalid/i);
 });

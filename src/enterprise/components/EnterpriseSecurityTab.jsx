@@ -1,10 +1,128 @@
 import React, { useMemo, useState } from 'react';
 import {
-  FiShield, FiLock, FiKey, FiPlus, FiTrash2, FiCopy, FiCheck, FiX
+  FiShield, FiLock, FiKey, FiPlus, FiTrash2, FiCopy, FiCheck, FiX, FiRotateCcw, FiLayers
 } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 
 const SCOPE_OPTIONS = ['resource.read', 'resource.create', 'resource.update', 'ai.use'];
+
+const JOB_STATUS_FILTERS = ['ALL', 'QUEUED', 'RETRYING', 'DEAD_LETTER', 'REJECTED', 'COMPLETED'];
+
+function DurableJobsCard() {
+  const { request, hasPermission } = useTenantApi();
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [jobsState, refreshJobs] = useAsyncResource(
+    () => request(`/api/enterprise/queue/jobs${statusFilter !== 'ALL' ? `?status=${statusFilter}` : ''}`),
+    [request, statusFilter],
+  );
+  const [queueStatus] = useAsyncResource(() => request('/api/enterprise/queue/status'), [request]);
+  const [busyId, setBusyId] = useState(null);
+  const [actionError, setActionError] = useState(null);
+  const jobs = useMemo(() => (Array.isArray(jobsState?.data?.jobs) ? jobsState.data.jobs : []), [jobsState]);
+  const canReplay = hasPermission('tenant.settings.write');
+  const engine = queueStatus?.data?.queue || {};
+
+  const handleReplay = async (jobId) => {
+    if (!window.confirm('Replay this dead-letter job back into the durable queue with a fresh attempt budget?')) return;
+    setBusyId(jobId);
+    setActionError(null);
+    try {
+      await request('/api/enterprise/queue/replay', { method: 'POST', body: { jobId } });
+      refreshJobs();
+    } catch (err) {
+      setActionError(err?.message || 'Job could not be replayed.');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  return (
+    <div className="enterprise-card" style={{ marginTop: '1.5rem' }}>
+      <div className="enterprise-card-header-flex">
+        <div>
+          <h2 className="enterprise-tab-title"><FiLayers aria-hidden="true" /> Durable Jobs & Dead Letters</h2>
+          <p className="enterprise-tab-subtitle">
+            {engine.engine === 'firestore-durable-outbox'
+              ? 'Firestore-backed outbox with signed envelopes, lease-based workers, retries, and DLQ'
+              : 'Durable queue status unavailable'}
+          </p>
+        </div>
+        <span className={`enterprise-pill ${engine.healthy === true ? 'enterprise-pill-success' : 'enterprise-pill-warning'}`}>
+          {engine.healthy === true ? 'Durable · Online' : engine.configured === false ? 'Not configured' : 'Misconfigured'}
+        </span>
+      </div>
+
+      <div className="enterprise-inline-actions" style={{ margin: '0.75rem 0', flexWrap: 'wrap', gap: '0.5rem' }} role="group" aria-label="Filter jobs by status">
+        {JOB_STATUS_FILTERS.map(filter => (
+          <button
+            key={filter}
+            type="button"
+            className={`enterprise-button enterprise-button-sm ${statusFilter === filter ? 'enterprise-button-primary' : 'enterprise-button-secondary'}`}
+            aria-pressed={statusFilter === filter}
+            onClick={() => setStatusFilter(filter)}
+          >
+            {filter === 'ALL' ? 'All jobs' : filter.replace('_', ' ')}
+          </button>
+        ))}
+      </div>
+
+      {actionError && (
+        <div role="alert" className="enterprise-error-row" style={{ marginBottom: '0.75rem' }}>
+          <span className="enterprise-error-icon" aria-hidden="true">⚠</span>
+          <span className="text-muted">{actionError}</span>
+        </div>
+      )}
+
+      <DataState loading={jobsState.loading} error={jobsState.error} onRetry={refreshJobs}>
+        {jobs.length === 0 ? (
+          <p className="enterprise-empty">No jobs in this state for the active tenant.</p>
+        ) : (
+          <div className="enterprise-table-wrap" role="region" aria-label="Durable jobs">
+            <table className="enterprise-table">
+              <thead>
+                <tr>
+                  <th scope="col">Job</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Attempts</th>
+                  <th scope="col">Last outcome</th>
+                  <th scope="col">{canReplay ? 'Actions' : ''}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {jobs.map(job => (
+                  <tr key={job.jobId}>
+                    <td><code title={job.jobId}>{job.jobType}</code><br /><small className="text-muted">{String(job.correlationId || '').slice(0, 14)}…</small></td>
+                    <td>
+                      <span className={`enterprise-pill ${job.status === 'DEAD_LETTER' || job.status === 'REJECTED' ? 'enterprise-pill-warning' : ''}`}>
+                        {job.status}
+                      </span>
+                    </td>
+                    <td>{job.attemptCount}/{job.maxAttempts}</td>
+                    <td className="text-muted" style={{ maxWidth: '280px' }}>
+                      {job.rejectedReason || job.lastError || '—'}
+                    </td>
+                    <td>
+                      {canReplay && job.status === 'DEAD_LETTER' && (
+                        <button
+                          type="button"
+                          className="enterprise-button enterprise-button-secondary enterprise-button-sm"
+                          onClick={() => handleReplay(job.jobId)}
+                          disabled={busyId === job.jobId}
+                        >
+                          <FiRotateCcw aria-hidden="true" /> {busyId === job.jobId ? 'Replaying…' : 'Replay'}
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </DataState>
+    </div>
+  );
+}
 
 export default function EnterpriseSecurityTab() {
   const { request, hasPermission } = useTenantApi();
@@ -248,6 +366,8 @@ export default function EnterpriseSecurityTab() {
           </div>
         </div>
       )}
+
+      <DurableJobsCard />
     </div>
   );
 }

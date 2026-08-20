@@ -237,10 +237,10 @@ test('tenant AI route rejects client-controlled scope and fails closed without a
   assert.equal(unavailable.body.error.code, 'TENANT_AI_METERING_UNAVAILABLE');
 });
 
-test('RLS-backed resource routes fail closed when no approved PostgreSQL data plane is configured', async () => {
+test('resource routes fail closed when no enterprise data-plane repository is configured', async () => {
   const response = await request(app).get('/api/enterprise/resources').set('Authorization', bearer('alice'));
   assert.equal(response.status, 503);
-  assert.equal(response.body.error.code, 'TENANT_DATA_PLANE_UNAVAILABLE');
+  assert.equal(response.body.error.code, 'ENTERPRISE_DATA_PLANE_UNAVAILABLE');
 });
 
 test('enterprise foundation requires verified identity and tenant provisioning requires platform permission', async () => {
