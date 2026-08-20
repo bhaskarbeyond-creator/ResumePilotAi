@@ -59,7 +59,10 @@ export default [
     files: ['tests/**/*.mjs'],
     languageOptions: {
       ecmaVersion: 'latest',
-      globals: globals.node,
+      // The test directory intentionally contains both Node contract tests and
+      // Playwright page.evaluate callbacks. Browser globals in this scope make
+      // those callbacks lintable without disabling no-undef for the suite.
+      globals: { ...globals.node, ...globals.browser },
       parserOptions: { sourceType: 'module' },
     },
     rules: { ...js.configs.recommended.rules, ...hygieneWarnings },

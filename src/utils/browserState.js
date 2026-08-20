@@ -4,7 +4,7 @@ const ACCOUNT_SCOPED_LOCAL_KEYS = [
   'currentCoverId', 'currentCoverItem', 'interviewProgress',
   'oauth_user_session', 'linkedin_user_session', 'github_user_session', 'google_user_session', 'fb_user_session',
 ];
-const ACCOUNT_SCOPED_LOCAL_PREFIXES = ['resume_recovery:', 'interviewHistory:', 'interviewSession:'];
+const ACCOUNT_SCOPED_LOCAL_PREFIXES = ['resume_recovery:', 'interviewHistory:', 'interviewSession:', 'enterprise_context_request:'];
 
 export function clearAccountScopedBrowserState(options = {}) {
   try {

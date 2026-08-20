@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { tenantContextAuditProjection } = require('../enterprise/tenantContext');
 
 const MAX_ATTEMPTS = 5;
 const BASE_RETRY_MS = 60_000;
@@ -14,12 +15,13 @@ function validEmail(value) {
   return /^[^\s@,;<>]{1,64}@[^\s@,;<>]{1,190}$/.test(String(value || '').trim());
 }
 
-function queueEmailInTransaction(transaction, db, admin, { eventId, recipient, templateType, vars = {}, metadata = {} }) {
+function queueEmailInTransaction(transaction, db, admin, { eventId, recipient, templateType, vars = {}, metadata = {}, tenantContext = null }) {
   if (!eventId || !validEmail(recipient) || !/^[A-Za-z][A-Za-z0-9_-]{0,79}$/.test(String(templateType || ''))) throw new Error('Invalid notification outbox event');
   const id = outboxId(eventId);
+  const tenant = tenantContext ? tenantContextAuditProjection(tenantContext) : null;
   transaction.set(db.collection('notification_outbox').doc(id), {
     eventId: String(eventId).slice(0, 300), channel: 'email', recipient: String(recipient).trim().toLowerCase(),
-    templateType, vars, metadata, state: 'NOTIFICATION_QUEUED', attemptCount: 0,
+    templateType, vars, metadata, tenant, state: 'NOTIFICATION_QUEUED', attemptCount: 0,
     nextAttemptAt: admin.firestore.Timestamp.fromMillis(Date.now()), createdAt: admin.firestore.FieldValue.serverTimestamp(),
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
   }, { merge: false });
@@ -74,12 +76,20 @@ async function finishAttempt(db, admin, event, workerId, result, now = Date.now(
   });
 }
 
-async function processOutboxOnce({ db, admin, dispatch, workerId = crypto.randomUUID(), now = Date.now() }) {
+async function processOutboxOnce({ db, admin, dispatch, authorize = null, workerId = crypto.randomUUID(), now = Date.now() }) {
   const event = await claimDueEvent(db, admin, workerId, now);
   if (!event) return { processed: false };
   let result;
-  try { result = await dispatch(event); }
-  catch (error) { result = { success: false, error: error.message }; }
+  try {
+    // Legacy events have no tenant context and retain the certified delivery path.
+    // A tenant-bound event is fail-closed unless the worker explicitly reauthorizes it.
+    const authorized = event.tenant ? (typeof authorize === 'function' && await authorize(event)) : true;
+    if (authorized !== true) {
+      result = { success: false, error: 'TENANT_CONTEXT_REAUTHORIZATION_FAILED' };
+    } else {
+      result = await dispatch(event);
+    }
+  } catch (error) { result = { success: false, error: error.message }; }
   await finishAttempt(db, admin, event, workerId, result, now);
   return { processed: true, eventId: event.eventId, providerAccepted: result?.success === true };
 }
