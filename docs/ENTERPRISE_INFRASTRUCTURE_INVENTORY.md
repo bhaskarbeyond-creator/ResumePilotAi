@@ -156,3 +156,17 @@ This document provides a strict, evidence-based inventory of all infrastructure 
 
 > **Current Defensible Score:** **8.6 / 10**  
 > **Certification Decision:** **`enterprise-production-ready-candidate`**
+
+---
+
+## Senior Cloud Review Correction (2026-08-20)
+
+A senior cloud review (`enterprise-senior-cloud-review-start` restore point, work at `b5b5d42`) independently re-verified this inventory and records the following corrections:
+
+1. **Redis is NOT verifiable in this environment.** The 4 Redis integration tests **skip** because no Redis server binary is available (no root, outbound downloads blocked). Classification here: **`LOCAL (NOT RUN) / UNVERIFIED`** — do not report Redis as green without a runnable Redis server.
+2. **All "cloud/edge production" rows are `UNVERIFIED` in this review** because the production host (`airesume.projectdemo.guru`) is **not reachable** from the review sandbox and no production credentials are present. They are not "PRODUCTION VERIFIED" in this review.
+3. **PostgreSQL/RLS is `LOCAL VERIFIED`** via PGlite (in-process WASM), not a managed database. `TENANT_DATABASE_URL` is unset → the RLS data plane is not connected to any production application.
+4. **New backend endpoints added and covered by real-HTTP tests** (`enterprise-admin-crud.test.js`): workspace create, service-account list/revoke, support-grant list, membership update/remove (with last-owner protection).
+5. **Corrected test totals:** product suite is 313 (not 301); overall 592 tests → 588 PASS + 4 SKIP + 0 FAIL. The prior "575/575 / 79/79 / 100%" claims are not reproduced.
+
+See `docs/ENTERPRISE_10_10_CERTIFICATION_REPORT.md` for the full independent review and the honest score (NOT 10/10).
