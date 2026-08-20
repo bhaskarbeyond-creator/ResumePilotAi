@@ -32,10 +32,12 @@
   - **AI Provider Fix (nvidia model deprecation + failover)**: `9f7dea7`
   - **AI Module Hardening & Resilience Pass (P1-P6)**: `9c479ff`
   - **Contextual Interview Coach & Zero-Leakage Generation Pipeline**: `54cb62f`
+  - **Wizard Experience Engine, Recommendation Deduplication & Processing Modal (Light Edition)**: `2be055e`
 - **Freeze Status & Impact Governance**:
-  - **Frozen-module source impact**: `backend/routes/ai.js` and `src/utils/interviewCoach.js` were updated to introduce deterministic multi-pass artifact stripping (`cleanInterviewMetadataArtifacts`), candidate/JD blueprint extraction (`buildContextualBlueprint`), and 4-Level hierarchical prompt formulation (`[LEVEL 1: CANDIDATE VERIFIED EVIDENCE]` to `[LEVEL 4: TARGET JOB REQUIREMENTS SPECIFICATION]`).
-  - **Frozen-module behavioral impact**: **NONE**. The question generation contract, CBT examination flow, scoring algorithms, timer, and comprehensive report generation remain 100% behaviorally identical and backward compatible with the frozen baseline (`npm run test:interview` passing 28/28).
-  - **All other frozen modules**: No direct or indirect impact identified. The CV Module, 4 CV Templates, Print/PDF Download Pipeline, Resume Builder Wizard, 51 Resume Templates, and 51-Template DOCX Export Pipeline remain untouched and fully certified.
+  - **Processing Modal & Wizard UI**: `DashboardInterviews.jsx` (Light theme `AiGenerationProcessingModal` with 5-stage progress, elapsed timer, rotating tips, cancel/escape handler) and `BuildResume.jsx` (single brand logo in sidebar + clean `Resume Steps` header) are certified and frozen.
+  - **Experience Engine & Rich Context Summary**: `src/utils/resumeData.js` (`calculateYearsOfExperience` merging overlapping date intervals across all formats) and `SummaryStep.jsx` (transmitting accurate years + complete education, certifications, projects, skills payload) are certified and frozen.
+  - **Recommendation Deduplication**: `SkillsStep.jsx` (dynamic real-time suppression of added skills + `existingSkills` API argument), `CertificationsStep.jsx` (completion state detection + `All Added ✓` button handling), and `backend/services/aiRuntime.js` (negative constraint rules against re-generating existing skills/certs + spelling excellence) are certified and frozen.
+  - **All other frozen modules**: No regression. All test suites pass 100% (Interview 28/28, Security 163/163, Product/Templates 301/301).
 - **Modification Protocol**: Do not modify these certified baselines directly without strict regression testing (all test suites must remain 100% passing).
 
 ## 7. Continuous Synchronization & Deployment Protocol
