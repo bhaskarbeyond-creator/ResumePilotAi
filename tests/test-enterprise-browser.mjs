@@ -131,7 +131,7 @@ function createFixtureBackend() {
     if (path === '/api/enterprise/usage/ai') return route.fulfill({ json: { usage: state.usage } });
     if (path === '/api/enterprise/audit') return route.fulfill({ json: { events: [...state.audit].reverse() } });
     if (path === '/api/enterprise/observability/metrics') return route.fulfill({ json: { metrics: { sampleCount: 128, p50: 42, p95: 180, p99: 320, errors: { clientErrors: 3, serverErrors: 1, authErrors: 1, dbErrors: 0, redisErrors: 0, queueErrors: 0, aiErrors: 1 } } } });
-    if (path === '/api/enterprise/cache/status') return route.fulfill({ json: { cache: { ok: false, configured: false, status: 'not-configured', optional: true } } });
+    if (path === '/api/enterprise/data-plane/status') return route.fulfill({ json: { dataPlane: { provider: 'firestore', configured: true, durable: true, encryption: 'server-key', encryptionSecurityLevel: 'SERVER_SIDE_MASTER_KEY_ENVELOPE_AES_256_GCM', quotaStore: 'firestore-atomic', queue: 'firestore-durable-outbox' } } });
     if (path === '/api/enterprise/support-grants') return route.fulfill({ json: { grants: [] } });
     if (path === '/api/enterprise/support/context') return route.fulfill({ status: 403, json: { error: { code: 'SUPPORT_GRANT_DENIED' } } });
     if (path.startsWith('/api/enterprise/')) return route.fulfill({ status: 200, json: {} });
@@ -198,7 +198,7 @@ async function main() {
 
     // Overview module: durable queue + optional redis panels are truthful.
     check('overview shows the durable job outbox panel', (await page.locator('text=Durable Job Outbox').count()) > 0);
-    check('overview marks the Redis accelerator optional', (await page.locator('text=Optional').count()) > 0);
+    check('overview shows the Firestore data-plane panel', (await page.locator('text=Firestore Data Plane').count()) > 0);
 
     // Workspaces module: create a workspace (real fixture state change).
     await page.goto(`${base}/enterprise?tab=workspaces`, { waitUntil: 'domcontentloaded' });

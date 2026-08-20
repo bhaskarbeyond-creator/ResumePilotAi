@@ -7,8 +7,7 @@
     "test": "node --test test/*.test.js",
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test:enterprise": "node --test enterprise-test/*.test.js",
-    "migrate:enterprise": "node scripts/applyEnterpriseMigrations.js"
+    "test:enterprise": "node --test enterprise-test/*.test.js"
   },
   "author": "",
   "license": "ISC",

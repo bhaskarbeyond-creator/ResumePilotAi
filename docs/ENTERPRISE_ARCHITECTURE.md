@@ -7,11 +7,15 @@
 
 ## 1. Design goal
 
-The enterprise plane must run correctly on the actual production target —
-**Hostinger shared hosting + Firebase (Auth, Firestore, Storage)** — without
-PostgreSQL, Redis, an external KMS, or any non-durable local queue. Removing
-that infrastructure must not weaken isolation, authorization, durability, or
-auditability.
+The enterprise plane runs on the actual production target — **Hostinger
+Node.js hosting + Firebase (Auth, Firestore, Storage)** — with **zero external
+infrastructure**: no PostgreSQL, no Redis, no RabbitMQ/Kafka/SQS, no external
+KMS, and no non-durable local queue. These are not optional dependencies that
+can be switched on — the PostgreSQL adapter, Redis client, and their
+dependencies were deleted from the codebase and the dependency tree. The
+architecture was hardened so their removal weakens nothing: isolation,
+authorization, durability, auditability, and quotas are all carried by
+Firestore.
 
 ## 2. Architecture (as implemented)
 
@@ -27,9 +31,8 @@ Express API (/api/enterprise/*)
    ↓ requireTenantPermission (RBAC)
    ↓ TenantService (business logic — zero provider branching)
    ↓ EnterpriseRepository abstraction
-        ├─ FirestoreEnterpriseRepository   ← canonical data plane
-        └─ PostgresEnterpriseRepository    ← optional legacy adapter (opt-in)
-   ↓ Firestore data plane (tenant-partitioned)
+        └─ FirestoreEnterpriseRepository   ← the only data plane
+   ↓ Firestore (tenant-partitioned)
 Enterprise durable outbox (Firestore) → worker → retry / DLQ → AI / notifications
 ```
 
@@ -37,8 +40,9 @@ Enterprise durable outbox (Firestore) → worker → retry / DLQ → AI / notifi
 
 ```
 Enterprise Architecture {"enterpriseTenancy":"ENABLED","dataProvider":"Enterprise Data Provider: firestore",
-  "redis":"Redis: not configured (optional)","queue":"Queue: Firestore Durable Outbox",
-  "encryption":"Encryption Provider: ServerKey","quotaStore":"firestore-atomic"}
+  "cache":"Cache: none (Firestore is the durable store; no external cache exists in this architecture)",
+  "queue":"Queue: Firestore Durable Outbox","encryption":"Encryption Provider: ServerKey",
+  "quotaStore":"firestore-atomic"}
 ```
 
 `GET /readyz` exposes the same facts per check.
@@ -144,15 +148,14 @@ version.
   handler fans out to the certified durable notification outbox; unhandled job
   types retry → DLQ, never silently dropped).
 
-## 7. Redis — optional accelerator, never correctness
+## 7. No cache tier — by removal, not by fallback
 
-With `REDIS_URL`/`TENANT_REDIS_URL` set, Redis warms caches; the status
-endpoint reports health honestly. Without Redis **everything works**:
-quotas/rate limits are enforced by `TenantQuotaGuard` on Firestore atomic
-counters; jobs and audit live in Firestore. `checkTenantRateLimit` is
-explicitly advisory (`authoritative: false`) and is not used by any
-authorization decision. Verified by tests running both with and without Redis
-(binaries unavailable environments skip only the real-server tests).
+Redis was removed completely: no client, no `REDIS_URL`/`TENANT_REDIS_URL`
+wiring, no health surface, and no `ioredis` dependency. Quotas and limits are
+enforced by `TenantQuotaGuard` on Firestore atomic counters; jobs, audit, and
+usage live in Firestore. The architecture test suite asserts the absence of
+any Redis module, dependency, or route reference so it cannot silently
+return.
 
 ## 8. AI metering
 
@@ -197,14 +200,15 @@ the server's truth.
 
 | Variable | Status | Notes |
 |---|---|---|
-| `ENTERPRISE_DATA_PROVIDER` | optional (default `firestore`) | `postgres` opts into the legacy adapter |
-| `TENANT_DATABASE_URL` | **optional / deprecated** | only for `ENTERPRISE_DATA_PROVIDER=postgres` |
-| `REDIS_URL`, `TENANT_REDIS_URL` | **optional** | accelerator only |
 | `ENTERPRISE_ENCRYPTION_KEYS` / `_KEY` | **required when tenancy enabled** | 32-byte base64; fail closed without |
-| `ENTERPRISE_ENCRYPTION_ACTIVE_KEY` | optional | rotation |
+| `ENTERPRISE_ENCRYPTION_ACTIVE_KEY` | optional | key rotation |
 | `TENANT_JOB_SIGNING_SECRET` | required for jobs | ≥32 bytes |
 | `TENANT_ARTIFACT_SIGNING_SECRET` | required for artifact tokens | ≥32 bytes |
-| `ENTERPRISE_OUTBOX_WORKER_ENABLED` | optional | local worker timer |
-| `ENTERPRISE_STORAGE_PROVIDER` | optional (default `firebase-storage`) | |
+| `ENTERPRISE_OUTBOX_WORKER_ENABLED` | optional | enables the local durable-worker timer |
+| `ENTERPRISE_OUTBOX_INTERVAL_MS` | optional (default 15000) | worker poll interval |
+| `ENTERPRISE_STORAGE_PROVIDER` | optional (default `firebase-storage`) | only implemented provider |
 
-`DATABASE_URL` is not used by the enterprise plane at all.
+Removed variables (setting them has no effect and no equivalent exists):
+`ENTERPRISE_DATA_PROVIDER`, `TENANT_DATABASE_URL`, `DATABASE_URL`,
+`REDIS_URL`, `TENANT_REDIS_URL`. There is no PostgreSQL or Redis service in
+this architecture to point them at.

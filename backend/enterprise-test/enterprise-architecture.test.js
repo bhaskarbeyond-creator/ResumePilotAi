@@ -38,6 +38,15 @@ test('PostgreSQL is fully removed from the enterprise runtime', () => {
       assert.equal(pkg[section]?.[dep], undefined, `backend ${section} must not include ${dep}`);
     }
   }
+  // Production dependency trees must resolve without any PostgreSQL client:
+  // the only pg entry in the root lockfile is a dev-only transitive of the
+  // firebase-tools CLI (used to deploy rules), never shipped at runtime.
+  const rootLock = JSON.parse(read('package-lock.json'));
+  const rootProd = { ...(rootLock.packages?.['']?.dependencies || {}) };
+  assert.equal(rootProd.pg, undefined, 'root production dependencies must not include pg');
+  if (rootLock.packages?.['node_modules/pg']) {
+    assert.equal(rootLock.packages['node_modules/pg'].dev, true, 'any pg entry must be dev-only tooling');
+  }
 });
 
 test('the volatile in-process queue engine is gone from production code', () => {

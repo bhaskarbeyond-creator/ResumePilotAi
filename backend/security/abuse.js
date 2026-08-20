@@ -6,7 +6,11 @@ function identityKey(req) {
   return req.user?.uid || req.ip || 'unknown';
 }
 
-/** Lightweight per-account limiter. Production should additionally use a shared Redis store. */
+/**
+ * Lightweight per-account limiter for the legacy consumer plane. The enterprise
+ * plane enforces its durable limits through the Firestore TenantQuotaGuard;
+ * there is no Redis store in this architecture.
+ */
 function accountRateLimit({ namespace, limit, windowMs }) {
   return (req, res, next) => {
     const now = Date.now();
