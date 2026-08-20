@@ -2,7 +2,7 @@ import { execSync } from 'node:child_process';
 import https from 'node:https';
 import fs from 'node:fs';
 
-const COMMIT_SHA = '55085f6';
+const COMMIT_SHA = 'a258059';
 fs.writeFileSync('backend/COMMIT_SHA', COMMIT_SHA + '\n');
 
 console.log('=== Step 1: Remote Pre-Deployment Backup ===');
