@@ -6,6 +6,7 @@ import {
   FiSliders, FiUsers, FiX, FiZap
 } from 'react-icons/fi';
 import { EnterpriseTenantProvider, useEnterpriseTenant } from './EnterpriseContext';
+import { enterpriseFetch } from './enterpriseApi';
 import './enterprise.css';
 
 const NAVIGATION = [
@@ -133,36 +134,100 @@ function Members() {
     if (!tenant?.id) return undefined;
     const controller = new AbortController();
     setState({ loading: true, error: null, memberships: [], teams: [] });
-    const options = { headers: { 'X-Tenant-Id': tenant.id, 'X-Workspace-Id': workspace?.id || '' }, cache: 'no-store', signal: controller.signal };
     Promise.all([
-      fetch('/api/enterprise/memberships', options).then(async response => ({ response, data: await response.json().catch(() => ({})) })),
-      fetch('/api/enterprise/teams', options).then(async response => ({ response, data: await response.json().catch(() => ({})) })),
+      enterpriseFetch('/api/enterprise/memberships', { tenantId: tenant.id, workspaceId: workspace?.id || '', signal: controller.signal }),
+      enterpriseFetch('/api/enterprise/teams', { tenantId: tenant.id, workspaceId: workspace?.id || '', signal: controller.signal }),
     ]).then(([members, teams]) => {
-      if (!members.response.ok) throw new Error(members.data?.error?.message || 'Members are unavailable.');
-      if (!teams.response.ok) throw new Error(teams.data?.error?.message || 'Teams are unavailable.');
-      setState({ loading: false, error: null, memberships: Array.isArray(members.data.memberships) ? members.data.memberships : [], teams: Array.isArray(teams.data.teams) ? teams.data.teams : [] });
-    }).catch(error => { if (error.name !== 'AbortError') setState({ loading: false, error, memberships: [], teams: [] }); });
+      setState({
+        loading: false,
+        error: null,
+        memberships: Array.isArray(members.memberships) ? members.memberships : [],
+        teams: Array.isArray(teams.teams) ? teams.teams : []
+      });
+    }).catch(error => {
+      if (error.name !== 'AbortError') setState({ loading: false, error, memberships: [], teams: [] });
+    });
     return () => controller.abort();
   }, [tenant?.id, workspace?.id]);
-  return <section className="enterprise-panel-grid"><section className="enterprise-panel"><header><h1>Users</h1><span className="enterprise-status">Role aware</span></header>{state.loading && <p role="status">Loading tenant members…</p>}{state.error && <p role="alert" className="enterprise-error">{state.error.message}</p>}{!state.loading && !state.error && state.memberships.length === 0 && <p className="enterprise-muted">No members are available in this tenant.</p>}{state.memberships.map(member => <div className="enterprise-member-row" key={member.id}><span className="enterprise-avatar" aria-hidden="true">{String(member.principalId).slice(0, 1).toUpperCase()}</span><div><strong>{member.principalId}</strong><small>{member.roles?.join(', ') || 'Member'} · {member.status}</small></div></div>)}</section><section className="enterprise-panel"><header><h1>Teams</h1><span className="enterprise-status">Workspace scoped</span></header>{state.loading && <p role="status">Loading teams…</p>}{!state.loading && !state.error && state.teams.length === 0 && <p className="enterprise-muted">No teams exist in this workspace yet.</p>}{state.teams.map(team => <div className="enterprise-member-row" key={team.id}><FiUsers aria-hidden="true" /><div><strong>{team.name}</strong><small>{team.status}</small></div></div>)}</section></section>;
+  return (
+    <section className="enterprise-panel-grid">
+      <section className="enterprise-panel">
+        <header><h1>Users</h1><span className="enterprise-status">Role aware</span></header>
+        {state.loading && <p role="status">Loading tenant members…</p>}
+        {state.error && <p role="alert" className="enterprise-error">{state.error.message}</p>}
+        {!state.loading && !state.error && state.memberships.length === 0 && <p className="enterprise-muted">No members are available in this tenant.</p>}
+        {state.memberships.map(member => (
+          <div className="enterprise-member-row" key={member.id}>
+            <span className="enterprise-avatar" aria-hidden="true">{String(member.principalId).slice(0, 1).toUpperCase()}</span>
+            <div><strong>{member.principalId}</strong><small>{member.roles?.join(', ') || 'Member'} · {member.status}</small></div>
+          </div>
+        ))}
+      </section>
+      <section className="enterprise-panel">
+        <header><h1>Teams</h1><span className="enterprise-status">Workspace scoped</span></header>
+        {state.loading && <p role="status">Loading teams…</p>}
+        {!state.loading && !state.error && state.teams.length === 0 && <p className="enterprise-muted">No teams exist in this workspace yet.</p>}
+        {state.teams.map(team => (
+          <div className="enterprise-member-row" key={team.id}>
+            <FiUsers aria-hidden="true" />
+            <div><strong>{team.name}</strong><small>{team.status}</small></div>
+          </div>
+        ))}
+      </section>
+    </section>
+  );
 }
 
 function Access() {
   const { context } = useEnterpriseTenant();
-  return <section className="enterprise-panel"><header><h1>Roles & permissions</h1><span className="enterprise-status">Active role</span></header><p>Your active roles: <strong>{context?.roles?.join(', ') || 'Member'}</strong></p><div className="enterprise-permission-grid">{(context?.permissions || []).map(permission => <span key={permission}><FiShield aria-hidden="true" /> {permission}</span>)}</div><p className="enterprise-muted">Permission visibility is explanatory. API policy and data-plane RLS remain the enforcement layers.</p></section>;
+  return (
+    <section className="enterprise-panel">
+      <header><h1>Roles & permissions</h1><span className="enterprise-status">Active role</span></header>
+      <p>Your active roles: <strong>{context?.roles?.join(', ') || 'Member'}</strong></p>
+      <div className="enterprise-permission-grid">
+        {(context?.permissions || []).map(permission => (
+          <span key={permission}><FiShield aria-hidden="true" /> {permission}</span>
+        ))}
+      </div>
+      <p className="enterprise-muted">Permission visibility is explanatory. API policy and data-plane RLS remain the enforcement layers.</p>
+    </section>
+  );
 }
 
 function Security() {
-  return <section className="enterprise-panel-grid"><EmptyPanel title="Security center">MFA, SSO, SCIM, sessions, service accounts, and API keys are shown here only after their server-side policy and audit controls are enabled.</EmptyPanel><EmptyPanel title="Support access">Support access is default-deny and must be time-bound, case-scoped, and auditable.</EmptyPanel></section>;
+  return (
+    <section className="enterprise-panel-grid">
+      <EmptyPanel title="Security center">MFA, SSO, SCIM, sessions, service accounts, and API keys are shown here only after their server-side policy and audit controls are enabled.</EmptyPanel>
+      <EmptyPanel title="Support access">Support access is default-deny and must be time-bound, case-scoped, and auditable.</EmptyPanel>
+    </section>
+  );
 }
 
 function AiWorkspace() {
   const { tenant, workspace } = useEnterpriseTenant();
-  return <section className="enterprise-panel enterprise-ai-panel"><header><div><p className="enterprise-eyebrow">AI workspace</p><h1>Scoped AI assistance</h1></div><span className="enterprise-security-pill"><FiLock aria-hidden="true" /> {tenant?.displayName} / {workspace?.name}</span></header><p>Select only explicitly authorized documents before an AI request. No workspace-wide context is silently added.</p><div className="enterprise-ai-scope"><FiFileText aria-hidden="true" /><div><strong>No source selected</strong><small>Attach an authorized resume, CV, or approved workspace source to begin.</small></div></div><p className="enterprise-muted">Model/provider, memory, RAG, and retention policy will be displayed here after the tenant AI policy is configured.</p></section>;
+  return (
+    <section className="enterprise-panel enterprise-ai-panel">
+      <header>
+        <div><p className="enterprise-eyebrow">AI workspace</p><h1>Scoped AI assistance</h1></div>
+        <span className="enterprise-security-pill"><FiLock aria-hidden="true" /> {tenant?.displayName} / {workspace?.name}</span>
+      </header>
+      <p>Select only explicitly authorized documents before an AI request. No workspace-wide context is silently added.</p>
+      <div className="enterprise-ai-scope">
+        <FiFileText aria-hidden="true" />
+        <div><strong>No source selected</strong><small>Attach an authorized resume, CV, or approved workspace source to begin.</small></div>
+      </div>
+      <p className="enterprise-muted">Model/provider, memory, RAG, and retention policy will be displayed here after the tenant AI policy is configured.</p>
+    </section>
+  );
 }
 
 function Usage() {
-  return <section className="enterprise-panel-grid"><EmptyPanel title="Usage & billing">Plans, seats, AI/API/storage usage, quotas, invoices, and overage rules will show authoritative values only. No synthetic trends are displayed.</EmptyPanel><EmptyPanel title="Quota controls">Tenant controls are enforced server-side; this view explains the current limit and escalation path.</EmptyPanel></section>;
+  return (
+    <section className="enterprise-panel-grid">
+      <EmptyPanel title="Usage & billing">Plans, seats, AI/API/storage usage, quotas, invoices, and overage rules will show authoritative values only. No synthetic trends are displayed.</EmptyPanel>
+      <EmptyPanel title="Quota controls">Tenant controls are enforced server-side; this view explains the current limit and escalation path.</EmptyPanel>
+    </section>
+  );
 }
 
 function Audit() {
@@ -172,26 +237,65 @@ function Audit() {
     if (!tenant?.id) return undefined;
     const controller = new AbortController();
     setState({ loading: true, error: null, events: [] });
-    fetch('/api/enterprise/audit', { headers: { 'X-Tenant-Id': tenant.id, 'X-Workspace-Id': workspace?.id || '' }, cache: 'no-store', signal: controller.signal })
-      .then(async response => {
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data?.error?.message || 'Audit events are unavailable.');
-        return Array.isArray(data.events) ? data.events : [];
+    enterpriseFetch('/api/enterprise/audit', { tenantId: tenant.id, workspaceId: workspace?.id || '', signal: controller.signal })
+      .then(data => {
+        setState({ loading: false, error: null, events: Array.isArray(data.events) ? data.events : [] });
       })
-      .then(events => setState({ loading: false, error: null, events }))
-      .catch(error => { if (error.name !== 'AbortError') setState({ loading: false, error, events: [] }); });
+      .catch(error => {
+        if (error.name !== 'AbortError') setState({ loading: false, error, events: [] });
+      });
     return () => controller.abort();
   }, [tenant?.id, workspace?.id]);
-  return <section className="enterprise-panel"><header><h1>Audit logs</h1><span className="enterprise-status">Tenant scoped</span></header><div className="enterprise-filter-row"><button type="button">Actor</button><button type="button">Resource</button><button type="button">Action</button><button type="button">Severity</button><button type="button">Date</button></div><div className="enterprise-table-wrap"><table><caption className="sr-only">Tenant audit events</caption><thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Resource</th><th>Outcome</th></tr></thead><tbody>{state.loading && <tr><td colSpan="5" className="enterprise-muted" role="status">Loading tenant audit events…</td></tr>}{state.error && <tr><td colSpan="5" role="alert" className="enterprise-error">{state.error.message}</td></tr>}{!state.loading && !state.error && state.events.length === 0 && <tr><td colSpan="5" className="enterprise-muted">No tenant audit events are available yet.</td></tr>}{state.events.map(event => <tr key={event.id}><td>{event.occurredAt ? new Date(event.occurredAt).toLocaleString() : '—'}</td><td>{event.principalId || 'System'}</td><td>{event.action}</td><td>{event.resourceType || '—'}</td><td>{event.outcome}</td></tr>)}</tbody></table></div></section>;
+  return (
+    <section className="enterprise-panel">
+      <header><h1>Audit logs</h1><span className="enterprise-status">Tenant scoped</span></header>
+      <div className="enterprise-filter-row"><button type="button">Actor</button><button type="button">Resource</button><button type="button">Action</button><button type="button">Severity</button><button type="button">Date</button></div>
+      <div className="enterprise-table-wrap">
+        <table>
+          <caption className="sr-only">Tenant audit events</caption>
+          <thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Resource</th><th>Outcome</th></tr></thead>
+          <tbody>
+            {state.loading && <tr><td colSpan="5" className="enterprise-muted" role="status">Loading tenant audit events…</td></tr>}
+            {state.error && <tr><td colSpan="5" role="alert" className="enterprise-error">{state.error.message}</td></tr>}
+            {!state.loading && !state.error && state.events.length === 0 && <tr><td colSpan="5" className="enterprise-muted">No tenant audit events are available yet.</td></tr>}
+            {state.events.map(event => (
+              <tr key={event.id}>
+                <td>{event.occurredAt ? new Date(event.occurredAt).toLocaleString() : '—'}</td>
+                <td>{event.principalId || 'System'}</td>
+                <td>{event.action}</td>
+                <td>{event.resourceType || '—'}</td>
+                <td>{event.outcome}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
 }
 
 function Privacy() {
-  return <section className="enterprise-panel-grid"><EmptyPanel title="Data & privacy">Tenant exports, retention, deletion, public links, legal holds, and AI memory policy will be governed here.</EmptyPanel><EmptyPanel title="Migration safety">Legacy Firebase resources remain personal and are not migrated until deterministic ownership validation succeeds.</EmptyPanel></section>;
+  return (
+    <section className="enterprise-panel-grid">
+      <EmptyPanel title="Data & privacy">Tenant exports, retention, deletion, public links, legal holds, and AI memory policy will be governed here.</EmptyPanel>
+      <EmptyPanel title="Migration safety">Legacy Firebase resources remain personal and are not migrated until deterministic ownership validation succeeds.</EmptyPanel>
+    </section>
+  );
 }
 
 function Settings() {
   const { tenant, context } = useEnterpriseTenant();
-  return <section className="enterprise-panel"><header><h1>Tenant settings</h1><span className="enterprise-status">Version {context?.dataPlane?.routingVersion || 1}</span></header><dl className="enterprise-definition-list"><div><dt>Lifecycle</dt><dd>{tenant?.lifecycleState || 'ACTIVE'}</dd></div><div><dt>Isolation tier</dt><dd>{tenant?.isolationTier || 'STANDARD'}</dd></div><div><dt>Region</dt><dd>{context?.dataPlane?.region || 'default'}</dd></div><div><dt>Data plane</dt><dd>{context?.dataPlane?.type || 'SHARED_POSTGRES'}</dd></div></dl></section>;
+  return (
+    <section className="enterprise-panel">
+      <header><h1>Tenant settings</h1><span className="enterprise-status">Version {context?.dataPlane?.routingVersion || 1}</span></header>
+      <dl className="enterprise-definition-list">
+        <div><dt>Lifecycle</dt><dd>{tenant?.lifecycleState || 'ACTIVE'}</dd></div>
+        <div><dt>Isolation tier</dt><dd>{tenant?.isolationTier || 'STANDARD'}</dd></div>
+        <div><dt>Region</dt><dd>{context?.dataPlane?.region || 'default'}</dd></div>
+        <div><dt>Data plane</dt><dd>{context?.dataPlane?.type || 'SHARED_POSTGRES'}</dd></div>
+      </dl>
+    </section>
+  );
 }
 
 const PANELS = { overview: Overview, members: Members, access: Access, security: Security, ai: AiWorkspace, usage: Usage, audit: Audit, privacy: Privacy, settings: Settings };

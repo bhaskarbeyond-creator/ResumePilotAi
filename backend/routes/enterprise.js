@@ -50,8 +50,8 @@ function requestedContext(req) {
   // These values are intentionally only context requests. The registry verifies
   // active membership before a TenantContext is attached to the request.
   return {
-    requestedTenantId: normalizeRequestedTenantId(req.get('x-tenant-id') || req.query?.tenantId),
-    requestedWorkspaceId: normalizeRequestedWorkspaceId(req.get('x-workspace-id') || req.query?.workspaceId),
+    requestedTenantId: normalizeRequestedTenantId(req.get('x-tenant-id') || req.query?.tenantId || req.body?.tenantId),
+    requestedWorkspaceId: normalizeRequestedWorkspaceId(req.get('x-workspace-id') || req.query?.workspaceId || req.body?.workspaceId),
   };
 }
 
@@ -129,7 +129,7 @@ router.get('/tenants', async (req, res) => {
   }
 });
 
-router.get('/context', resolveTenantContext, (req, res) => {
+const respondWithContext = (req, res) => {
   return res.json({
     context: {
       tenantId: req.tenantContext.tenantId,
@@ -148,7 +148,10 @@ router.get('/context', resolveTenantContext, (req, res) => {
     },
     workspace: req.workspace ? { id: req.workspace.id, name: req.workspace.name, isDefault: req.workspace.isDefault === true } : null,
   });
-});
+};
+
+router.get('/context', resolveTenantContext, respondWithContext);
+router.post('/context', resolveTenantContext, respondWithContext);
 
 router.get('/workspaces', resolveTenantContext, requireTenantPermission('workspace.read'), async (req, res) => {
   try {

@@ -356,7 +356,14 @@ const HomepageNavbar = ({ authBtnHandler, user, logout }) => {
                                     <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-purple-600 transition-all duration-200 group-hover:w-full"></span>
                                 </Link>
 
-                     
+                                {/* Enterprise Link */}
+                                <Link 
+                                    to="/enterprise" 
+                                    className="text-indigo-600 hover:text-indigo-800 font-semibold transition-colors duration-200 relative group"
+                                >
+                                    Enterprise
+                                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-indigo-600 transition-all duration-200 group-hover:w-full"></span>
+                                </Link>
                             </div>
                         </div>
                     </div>
@@ -460,6 +467,9 @@ const HomepageNavbar = ({ authBtnHandler, user, logout }) => {
                         </Link>
                         <Link to="/contact" className="block px-3 py-2 rounded-lg text-gray-700 hover:text-purple-600 hover:bg-purple-50/70 transition-all duration-300 font-medium">
                             {t('navbar.contact')}
+                        </Link>
+                        <Link to="/enterprise" className="block px-3 py-2 rounded-lg text-indigo-600 font-semibold hover:bg-indigo-50/70 transition-all duration-300">
+                            Enterprise Workspace
                         </Link>
 
                         {/* Mobile Auth Buttons */}

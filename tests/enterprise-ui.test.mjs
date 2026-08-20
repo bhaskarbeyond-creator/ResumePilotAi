@@ -27,11 +27,12 @@ test('enterprise route is authenticated and isolated from certified builder rout
 });
 
 test('tenant context selection is feature-gated, server-resolved and cleared with account browser state', async () => {
-  const [context, browserState] = await Promise.all([source('context'), source('browserState')]);
+  const [context, browserState, api] = await Promise.all([source('context'), source('browserState'), fs.readFile('src/enterprise/enterpriseApi.js', 'utf8')]);
   assert.match(context, /VITE_ENTERPRISE_TENANCY_ENABLED === 'true'/);
-  assert.match(context, /request\('\/api\/enterprise\/status'/);
-  assert.match(context, /request\('\/api\/enterprise\/context'/);
-  assert.match(context, /X-Tenant-Id/);
+  assert.match(context, /enterpriseFetch\('\/api\/enterprise\/status'/);
+  assert.match(context, /enterpriseFetch\('\/api\/enterprise\/context'/);
+  assert.match(api, /X-Tenant-Id/);
+  assert.match(api, /Authorization.*Bearer/);
   assert.match(context, /server verifies.*membership/);
   assert.match(context, /enterprise_context_request:/);
   assert.match(context, /enterprise_workspace_request:/);

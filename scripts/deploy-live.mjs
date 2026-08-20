@@ -2,15 +2,14 @@ import { execSync } from 'node:child_process';
 import https from 'node:https';
 import fs from 'node:fs';
 
-const COMMIT_SHA = '30162111005a7e6b01ce48652cba16c7fb7d1303';
+const COMMIT_SHA = '486b42b6a9da01518f8e8aee2a033c706d860d5b';
 fs.writeFileSync('backend/COMMIT_SHA', COMMIT_SHA + '\n');
 
 console.log('=== Step 1: Remote Pre-Deployment Backup ===');
-execSync('ssh airesume "mkdir -p backups && tar -czf backups/pre-deploy-$(date +%s).tar.gz backend domains/airesume.projectdemo.guru/public_html 2>/dev/null || true"', { stdio: 'inherit' });
+execSync('ssh airesume "mkdir -p backups && tar -czf backups/pre-deploy-$(date +%s).tar.gz backend/index.js backend/routes backend/enterprise 2>/dev/null || true"', { stdio: 'inherit' });
 console.log('Remote backup complete.');
 
 console.log('\n=== Step 2: Deploying Backend Files ===');
-// Create tarball of backend source files excluding node_modules and .env
 execSync('tar -czf backend-bundle.tar.gz -C backend COMMIT_SHA index.js package.json routes services security enterprise sql', { stdio: 'inherit' });
 execSync('ssh airesume "mkdir -p backend/enterprise backend/sql"', { stdio: 'inherit' });
 execSync('scp backend-bundle.tar.gz airesume:backend-bundle.tar.gz', { stdio: 'inherit' });
@@ -26,7 +25,7 @@ fs.unlinkSync('dist-bundle.tar.gz');
 console.log('Frontend bundle deployed.');
 
 console.log('\n=== Step 4: Restarting Backend via PM2 ===');
-execSync('ssh airesume "export PATH=/opt/alt/alt-nodejs20/root/usr/bin:/usr/local/bin:/usr/bin:/bin:$PATH; pm2 restart airesume-backend"', { stdio: 'inherit' });
+execSync('ssh airesume "export PATH=/opt/alt/alt-nodejs20/root/usr/bin:/home/u727965524/.local/bin:/usr/local/bin:/usr/bin:/bin:$PATH; ~/.local/bin/pm2 restart airesume-backend --update-env"', { stdio: 'inherit' });
 console.log('PM2 restarted.');
 
 console.log('\n=== Step 5: Verifying Live Production Endpoints ===');
@@ -57,7 +56,10 @@ async function verifyLive() {
 
   const root = await fetchUrl('/');
   console.log('[3] Root page Status:', root.status, 'HTML bytes:', root.body.length);
-  console.log('Contains EnterpriseConsole asset:', root.body.includes('EnterpriseConsole') || root.body.includes('DAYZX_y2'));
+  console.log('Contains Enterprise in HTML/JS:', root.body.includes('Enterprise') || root.body.includes('HomepageNavbar'));
+
+  const enterprisePage = await fetchUrl('/enterprise');
+  console.log('[4] /enterprise page Status:', enterprisePage.status, 'HTML bytes:', enterprisePage.body.length);
 }
 
 verifyLive().catch(console.error);

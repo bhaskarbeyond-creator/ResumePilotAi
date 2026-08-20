@@ -1,9 +1,16 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { AuthContext } from '../main';
+import { enterpriseFetch } from './enterpriseApi';
 
 const EnterpriseTenantContext = createContext(null);
 
-export const enterpriseFeatureEnabled = () => import.meta.env?.VITE_ENTERPRISE_TENANCY_ENABLED === 'true';
+export const enterpriseFeatureEnabled = () => {
+  // Check build-time env var or dynamic window override
+  if (typeof window !== 'undefined' && window.__ENTERPRISE_ENABLED__ !== undefined) {
+    return window.__ENTERPRISE_ENABLED__ === true;
+  }
+  return import.meta.env?.VITE_ENTERPRISE_TENANCY_ENABLED === 'true';
+};
 
 function tenantStorageKey(uid) {
   return `enterprise_context_request:${uid}`;
@@ -24,21 +31,6 @@ function writeStorage(key, value) {
   } catch { /* optional browser state only; never authorization */ }
 }
 
-async function request(path, { tenantId = '', workspaceId = '' } = {}) {
-  const headers = { Accept: 'application/json' };
-  if (tenantId) headers['X-Tenant-Id'] = tenantId;
-  if (workspaceId) headers['X-Workspace-Id'] = workspaceId;
-  const response = await fetch(path, { headers, cache: 'no-store' });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const error = new Error(data?.error?.message || 'Enterprise tenant service is unavailable.');
-    error.code = data?.error?.code || 'TENANT_CONTEXT_UNAVAILABLE';
-    error.status = response.status;
-    throw error;
-  }
-  return data;
-}
-
 export function EnterpriseTenantProvider({ children }) {
   const user = useContext(AuthContext);
   const enabled = enterpriseFeatureEnabled();
@@ -51,7 +43,7 @@ export function EnterpriseTenantProvider({ children }) {
     }
     setState(previous => ({ ...previous, loading: true, error: null, serverDisabled: false }));
     try {
-      const status = await request('/api/enterprise/status');
+      const status = await enterpriseFetch('/api/enterprise/status');
       if (status.enabled !== true) {
         const next = { loading: false, error: null, serverDisabled: true, tenants: [], workspaces: [], context: null, tenant: null, workspace: null };
         setState(next);
@@ -60,10 +52,10 @@ export function EnterpriseTenantProvider({ children }) {
       const requestedTenantId = tenantId || readStorage(tenantStorageKey(user.uid));
       const requestedWorkspaceId = workspaceId || (requestedTenantId ? readStorage(workspaceStorageKey(user.uid, requestedTenantId)) : '');
       const [tenantList, active] = await Promise.all([
-        request('/api/enterprise/tenants'),
-        request('/api/enterprise/context', { tenantId: requestedTenantId, workspaceId: requestedWorkspaceId }),
+        enterpriseFetch('/api/enterprise/tenants'),
+        enterpriseFetch('/api/enterprise/context', { method: 'POST', body: { tenantId: requestedTenantId, workspaceId: requestedWorkspaceId } }),
       ]);
-      const workspaceList = await request('/api/enterprise/workspaces', { tenantId: active.tenant?.id || '', workspaceId: active.workspace?.id || '' });
+      const workspaceList = await enterpriseFetch('/api/enterprise/workspaces', { tenantId: active.tenant?.id || '', workspaceId: active.workspace?.id || '' });
       writeStorage(tenantStorageKey(user.uid), active.tenant?.id || '');
       if (active.tenant?.id) writeStorage(workspaceStorageKey(user.uid, active.tenant.id), active.workspace?.id || '');
       const next = {
