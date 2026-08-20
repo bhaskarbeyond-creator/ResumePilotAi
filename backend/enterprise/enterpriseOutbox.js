@@ -117,12 +117,35 @@ async function enqueueOutboxJob({ db, admin, envelope, now = Date.now(), maxAtte
  */
 async function claimNextOutboxJob({ db, admin, workerId, now = Date.now(), leaseMs = DEFAULT_LEASE_MS }) {
   assertDb(db);
-  const due = await db.collection(OUTBOX_COLLECTION)
-    .where('status', 'in', CLAIMABLE_STATES)
-    .where('nextAttemptAt', '<=', ts(admin, now))
-    .orderBy('nextAttemptAt')
-    .limit(10)
-    .get();
+  let due;
+  try {
+    due = await db.collection(OUTBOX_COLLECTION)
+      .where('status', 'in', CLAIMABLE_STATES)
+      .where('nextAttemptAt', '<=', ts(admin, now))
+      .orderBy('nextAttemptAt')
+      .limit(10)
+      .get();
+  } catch (error) {
+    if (error.code === 9 || String(error.message || '').includes('requires an index')) {
+      const fallbackSnapshot = await db.collection(OUTBOX_COLLECTION)
+        .where('status', 'in', CLAIMABLE_STATES)
+        .limit(50)
+        .get();
+      const filtered = fallbackSnapshot.docs
+        .filter(doc => {
+          const val = doc.data() || {};
+          const leaseUntil = tsMillis(val.leaseExpiresAt);
+          const nextAttempt = tsMillis(val.nextAttemptAt);
+          const isClaimable = val.status === 'PROCESSING' ? (leaseUntil > 0 && leaseUntil <= now) : nextAttempt <= now;
+          return isClaimable;
+        })
+        .sort((a, b) => tsMillis(a.data()?.nextAttemptAt) - tsMillis(b.data()?.nextAttemptAt))
+        .slice(0, 10);
+      due = { docs: filtered };
+    } else {
+      throw error;
+    }
+  }
   for (const candidate of due.docs) {
     let claimed = null;
     await db.runTransaction(async transaction => {
@@ -131,8 +154,7 @@ async function claimNextOutboxJob({ db, admin, workerId, now = Date.now(), lease
       const leaseUntil = tsMillis(value.leaseExpiresAt);
       const claimable =
         CLAIMABLE_STATES.includes(value.status) &&
-        tsMillis(value.nextAttemptAt) <= now &&
-        (value.status !== 'PROCESSING' || leaseUntil <= now);
+        (value.status === 'PROCESSING' ? leaseUntil <= now : tsMillis(value.nextAttemptAt) <= now);
       if (!claimable) return;
       transaction.update(candidate.ref, {
         status: 'PROCESSING',
@@ -142,7 +164,7 @@ async function claimNextOutboxJob({ db, admin, workerId, now = Date.now(), lease
         lastAttemptAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
-      claimed = { ref: candidate.ref, jobId: candidate.id, ...value, attemptCount: Number(value.attemptCount || 0) + 1 };
+      claimed = { ref: candidate.ref, jobId: candidate.id, ...value, leaseOwner: String(workerId), attemptCount: Number(value.attemptCount || 0) + 1 };
     });
     if (claimed) return claimed;
   }
@@ -260,7 +282,7 @@ async function replayDeadLetterJob({ db, admin, jobId, context, now = Date.now()
         outcome: 'SUCCESS',
         resourceType: value.jobType,
         resourceId: String(jobId),
-        correlationId: context.correlationId,
+        correlationId: context.correlationId || context.requestId || null,
         metadata: { jobType: value.jobType || '' },
         occurredAt: new Date(now).toISOString(),
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -373,11 +395,27 @@ async function runOutboxWorkerOnce({
  */
 async function sweepExpiredJobs({ db, admin, now = Date.now(), limit = 50 }) {
   assertDb(db);
-  const due = await db.collection(OUTBOX_COLLECTION)
-    .where('status', 'in', ['QUEUED', 'RETRYING'])
-    .where('expiresAt', '<=', ts(admin, now))
-    .limit(limit)
-    .get();
+  let due;
+  try {
+    due = await db.collection(OUTBOX_COLLECTION)
+      .where('status', 'in', ['QUEUED', 'RETRYING'])
+      .where('expiresAt', '<=', ts(admin, now))
+      .limit(limit)
+      .get();
+  } catch (error) {
+    if (error.code === 9 || String(error.message || '').includes('requires an index')) {
+      const fallbackSnapshot = await db.collection(OUTBOX_COLLECTION)
+        .where('status', 'in', ['QUEUED', 'RETRYING'])
+        .limit(limit * 2)
+        .get();
+      const filtered = fallbackSnapshot.docs
+        .filter(doc => tsMillis(doc.data()?.expiresAt) <= now)
+        .slice(0, limit);
+      due = { docs: filtered };
+    } else {
+      throw error;
+    }
+  }
   const rejected = [];
   for (const document of due.docs) {
     const outcome = await rejectOutboxJob({ db, admin, job: { ref: document.ref, jobId: document.id }, reason: 'EXPIRED_TENANT_JOB', now });
