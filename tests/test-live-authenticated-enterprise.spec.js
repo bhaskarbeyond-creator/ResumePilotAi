@@ -122,6 +122,26 @@ test.describe('Live Authenticated Enterprise E2E Audit', () => {
     await page.locator('button.enterprise-nav-item').filter({ hasText: 'Users & IAM' }).click();
     await expect(page.locator('h2.enterprise-tab-title').filter({ hasText: 'Users & IAM' })).toBeVisible();
 
+    // Verify Invite modal has complete role dropdown options
+    const inviteBtn = page.locator('button').filter({ hasText: 'Invite Member' }).first();
+    if (await inviteBtn.isVisible()) {
+      await inviteBtn.click();
+      await expect(page.locator('#member-role')).toBeVisible();
+      const roleOptionsText = await page.locator('#member-role option').allTextContents();
+      console.log('Live Role Options in Invite Modal:', roleOptionsText);
+      expect(roleOptionsText.some(t => t.includes('Administrator'))).toBe(true);
+      expect(roleOptionsText.some(t => t.includes('Workspace Manager'))).toBe(true);
+      expect(roleOptionsText.some(t => t.includes('Enterprise Member'))).toBe(true);
+      expect(roleOptionsText.some(t => t.includes('Read-Only Viewer'))).toBe(true);
+      expect(roleOptionsText.some(t => t.includes('Billing Administrator'))).toBe(true);
+      // Close modal
+      await page.locator('.enterprise-modal-header button.enterprise-button-icon').click();
+    }
+
+    // Verify AppSwitcher and Sign Out topbar buttons
+    await expect(page.locator('button.enterprise-app-switcher-btn')).toBeVisible();
+    await expect(page.locator('button.enterprise-exit-link')).toBeVisible();
+
     // ─────────────────────────────────────────────────────────────
     // Module 4: Teams
     // ─────────────────────────────────────────────────────────────
@@ -230,10 +250,10 @@ test.describe('Live Authenticated Enterprise E2E Audit', () => {
     await expect(page.locator('.enterprise-sidebar.mobile-open')).toBeVisible();
     await mobileToggle.click();
 
-    // Reset Viewport & Switch to Roles & permissions to verify full canvas expansion and document.title
+    // Reset Viewport & Switch to Audit logs to verify actor humanization and clean layout
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.locator('button.enterprise-nav-item').filter({ hasText: 'Roles & permissions' }).click();
-    await page.waitForTimeout(1000);
+    await page.locator('button.enterprise-nav-item').filter({ hasText: 'Audit logs' }).click();
+    await page.waitForTimeout(1500);
 
     // Verify document.title does NOT contain Page Not Found
     const docTitle = await page.title();
@@ -241,9 +261,18 @@ test.describe('Live Authenticated Enterprise E2E Audit', () => {
     expect(docTitle).toContain('Enterprise Console');
     expect(docTitle).not.toContain('Page Not Found');
 
-    // Capture Evidence Screenshot
+    // Assert tab content is visible
+    await expect(page.locator('h2.enterprise-tab-title').filter({ hasText: 'Immutable Audit Trail' })).toBeVisible();
+
+    // Capture Evidence Screenshot of Audit Trail
     console.log('Capturing Live E2E Screenshot...');
     await page.screenshot({ path: 'enterprise_live_authenticated_audit_success.png', fullPage: true });
+
+    // Switch to Security tab to capture Security Posture alignment and HelpTooltip
+    await page.locator('button.enterprise-nav-item').filter({ hasText: 'Security & M2M' }).click();
+    await page.waitForTimeout(1000);
+    await expect(page.locator('h3.enterprise-card-title').filter({ hasText: 'Security Posture' })).toBeVisible();
+    await page.screenshot({ path: 'enterprise_live_security_posture_success.png', fullPage: true });
 
     // Verify console errors
     console.log('Live Console Errors logged during run:', consoleErrors);
