@@ -21,6 +21,10 @@
         overflow-y: scroll;
         padding-left: 280px; // Default padding to accommodate expanded sidebar
         transition: padding-left 0.3s ease;
+
+        @media (max-width: 1024px) {
+            padding-left: 0 !important;
+        }
         
         &.admin__right--sidebar-collapsed {
             padding-left: 70px; // Reduced padding when sidebar is collapsed

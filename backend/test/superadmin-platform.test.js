@@ -168,3 +168,59 @@ test('Platform API: /api/platform/maintenance status is readable by Admin and ed
   assert.equal(adminToggle.status, 403);
   assert.equal(adminToggle.body.error.code, 'FORBIDDEN');
 });
+
+test('Platform API: command center returns structured intelligence for admins and rejects users', async () => {
+  const res = await request(app).get('/api/platform/command-center').set(bearer('admin'));
+  assert.equal(res.status, 200);
+  assert.ok(res.body.healthScore !== undefined);
+  assert.ok(Array.isArray(res.body.recommendations));
+  assert.ok(res.body.signals);
+  assert.ok(res.body.signals.database);
+  assert.ok(res.body.sources);
+
+  const user = await request(app).get('/api/platform/command-center').set(bearer('user'));
+  assert.equal(user.status, 403);
+});
+
+test('Platform API: encryption and observability are read-only control-plane views', async () => {
+  const enc = await request(app).get('/api/platform/encryption').set(bearer('admin'));
+  assert.equal(enc.status, 200);
+  assert.ok(enc.body.encryption);
+  assert.ok(enc.body.encryption.provider);
+
+  const obs = await request(app).get('/api/platform/observability').set(bearer('admin'));
+  assert.equal(obs.status, 200);
+  assert.ok(obs.body.metrics);
+  assert.equal(typeof obs.body.metrics.sampleCount, 'number');
+});
+
+test('Platform API: tenant decommission and announcements require Super Admin', async () => {
+  const decommission = await request(app)
+    .post('/api/platform/tenants/11111111-1111-4111-8111-111111111111/decommission')
+    .set(bearer('admin'))
+    .send({ reason: 'Need to retire this disposable tenant' });
+  assert.equal(decommission.status, 403);
+
+  const announce = await request(app)
+    .post('/api/platform/announcements')
+    .set(bearer('admin'))
+    .send({ title: 'Hello', message: 'World announcement' });
+  assert.equal(announce.status, 403);
+
+  const invalid = await request(app)
+    .post('/api/platform/tenants/11111111-1111-4111-8111-111111111111/decommission')
+    .set(bearer('super-admin'))
+    .send({ reason: 'short' });
+  assert.equal(invalid.status, 400);
+  assert.equal(invalid.body.error.code, 'REASON_REQUIRED');
+});
+
+test('Platform API: search rejects empty queries and accepts admin search', async () => {
+  const empty = await request(app).get('/api/platform/search?q=a').set(bearer('admin'));
+  assert.equal(empty.status, 200);
+  assert.deepEqual(empty.body.users, []);
+
+  const res = await request(app).get('/api/platform/search?q=acme').set(bearer('admin'));
+  assert.equal(res.status, 200);
+  assert.ok(Array.isArray(res.body.tenants));
+});

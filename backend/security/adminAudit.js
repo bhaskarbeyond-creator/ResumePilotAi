@@ -65,7 +65,10 @@ function deriveAction(method, pathname, body = {}) {
   if (path.includes('/ads')) return `${normMethod}_AD_BANNER`;
   if (path.includes('/website-meta')) return 'UPDATE_WEBSITE_META';
   if (path.includes('/landing-content')) return 'UPDATE_LANDING_CONTENT';
+  if (path.includes('/platform/tenants') && path.includes('decommission')) return 'DECOMMISSION_PLATFORM_TENANT';
   if (path.includes('/platform/tenants')) return `${normMethod}_PLATFORM_TENANT`;
+  if (path.includes('/platform/announcements')) return `${normMethod}_PLATFORM_ANNOUNCEMENT`;
+  if (path.includes('/platform/queues')) return `${normMethod}_PLATFORM_QUEUE`;
   if (path.includes('/audit-logs')) return 'READ_AUDIT_LOGS';
   
   return `${normMethod}_${path.replace(/^\/api\//, '').replace(/[^a-zA-Z0-9]/g, '_').toUpperCase().slice(0, 60)}`;

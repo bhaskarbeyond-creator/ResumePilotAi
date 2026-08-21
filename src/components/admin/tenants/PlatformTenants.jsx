@@ -1,17 +1,22 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import fire from '../../../conf/fire';
+import { useAdminSession } from '../AdminContext';
+import { decommissionTenant } from '../../../services/platformApi';
 import {
   FiServer, FiRefreshCw, FiPlus, FiSearch, FiShieldOff,
-  FiPlay, FiCheck, FiAlertTriangle, FiX, FiLayers
+  FiPlay, FiCheck, FiAlertTriangle, FiX, FiEye
 } from 'react-icons/fi';
 
 export default function PlatformTenants() {
+  const { isSuperAdmin } = useAdminSession();
   const [tenants, setTenants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [busyTenant, setBusyTenant] = useState(null);
   const [notification, setNotification] = useState(null);
+  const [selectedTenant, setSelectedTenant] = useState(null);
+  const [decommissionReason, setDecommissionReason] = useState('');
 
   // Provisioning Modal State
   const [showProvisionModal, setShowProvisionModal] = useState(false);
@@ -50,6 +55,14 @@ export default function PlatformTenants() {
     fetchTenants();
   }, [fetchTenants]);
 
+  useEffect(() => {
+    const focus = new URLSearchParams(window.location.search).get('focus');
+    if (focus && tenants.length) {
+      const match = tenants.find(item => item.id === focus);
+      if (match) setSelectedTenant(match);
+    }
+  }, [tenants]);
+
   const handleLifecycle = async (tenant, nextState) => {
     const verb = nextState === 'SUSPENDED' ? 'Suspend' : 'Reactivate';
     if (!window.confirm(`Are you sure you want to ${verb.toLowerCase()} tenant "${tenant.displayName}" (${tenant.slug})?`)) {
@@ -62,7 +75,8 @@ export default function PlatformTenants() {
       if (!user) throw new Error('Authentication required');
       const token = await user.getIdToken();
 
-      const res = await fetch(`/api/enterprise/platform/tenants/${encodeURIComponent(tenant.id)}/${nextState.toLowerCase()}`, {
+      const actionPath = nextState === 'SUSPENDED' ? 'suspend' : 'reactivate';
+      const res = await fetch(`/api/enterprise/platform/tenants/${encodeURIComponent(tenant.id)}/${actionPath}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -119,6 +133,27 @@ export default function PlatformTenants() {
       alert(err.message || 'Provisioning failed');
     } finally {
       setProvisioning(false);
+    }
+  };
+
+  const handleDecommission = async (tenant) => {
+    if (!isSuperAdmin) return;
+    if (decommissionReason.trim().length < 8) {
+      alert('A decommission reason of at least 8 characters is required.');
+      return;
+    }
+    if (!window.confirm(`Decommission tenant "${tenant.displayName}"? This moves it to DELETING via the existing Enterprise lifecycle.`)) return;
+    setBusyTenant(`${tenant.id}:DELETING`);
+    try {
+      await decommissionTenant(tenant.id, decommissionReason.trim());
+      setNotification(`Tenant "${tenant.displayName}" marked DELETING.`);
+      setDecommissionReason('');
+      setSelectedTenant(null);
+      fetchTenants();
+    } catch (err) {
+      alert(err.message || 'Decommission failed');
+    } finally {
+      setBusyTenant(null);
     }
   };
 
@@ -277,7 +312,10 @@ export default function PlatformTenants() {
                         {tenant.lifecycleState}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-right">
+                    <td className="py-3 px-4 text-right space-x-1">
+                      <button type="button" onClick={() => setSelectedTenant(tenant)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-50 text-slate-700 border border-slate-200 font-bold hover:bg-slate-100 text-[11px]">
+                        <FiEye /> Details
+                      </button>
                       {tenant.lifecycleState === 'ACTIVE' ? (
                         <button
                           type="button"
@@ -287,7 +325,7 @@ export default function PlatformTenants() {
                         >
                           <FiShieldOff /> {busyTenant === `${tenant.id}:SUSPENDED` ? 'Suspending…' : 'Suspend'}
                         </button>
-                      ) : (
+                      ) : tenant.lifecycleState === 'SUSPENDED' ? (
                         <button
                           type="button"
                           onClick={() => handleLifecycle(tenant, 'ACTIVE')}
@@ -296,7 +334,7 @@ export default function PlatformTenants() {
                         >
                           <FiPlay /> {busyTenant === `${tenant.id}:ACTIVE` ? 'Reactivating…' : 'Reactivate'}
                         </button>
-                      )}
+                      ) : null}
                     </td>
                   </tr>
                 ))}
@@ -388,6 +426,41 @@ export default function PlatformTenants() {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {selectedTenant && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/50" onClick={() => setSelectedTenant(null)}>
+          <aside className="h-full w-full max-w-md bg-white shadow-2xl p-5 overflow-y-auto" onClick={e => e.stopPropagation()} aria-label="Tenant detail">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">{selectedTenant.displayName}</h3>
+                <p className="text-xs font-mono text-slate-500">{selectedTenant.id}</p>
+              </div>
+              <button type="button" onClick={() => setSelectedTenant(null)} className="p-1 text-slate-400"><FiX /></button>
+            </div>
+            <dl className="mt-4 grid grid-cols-2 gap-3 text-xs">
+              <div><dt className="uppercase text-[10px] font-extrabold text-slate-400">Slug</dt><dd className="font-semibold">{selectedTenant.slug}</dd></div>
+              <div><dt className="uppercase text-[10px] font-extrabold text-slate-400">Lifecycle</dt><dd className="font-semibold">{selectedTenant.lifecycleState}</dd></div>
+              <div><dt className="uppercase text-[10px] font-extrabold text-slate-400">Isolation</dt><dd className="font-semibold">{selectedTenant.isolationTier}</dd></div>
+              <div><dt className="uppercase text-[10px] font-extrabold text-slate-400">Region</dt><dd className="font-semibold">{selectedTenant.region || 'default'}</dd></div>
+            </dl>
+            <div className="mt-4 flex flex-wrap gap-2 text-xs">
+              <a className="px-3 py-1.5 rounded-lg bg-slate-100 font-bold" href={`/enterprise?tab=audit&tenant=${encodeURIComponent(selectedTenant.id)}`}>Tenant audit</a>
+              <a className="px-3 py-1.5 rounded-lg bg-slate-100 font-bold" href={`/enterprise?tab=usage&tenant=${encodeURIComponent(selectedTenant.id)}`}>Usage</a>
+              <a className="px-3 py-1.5 rounded-lg bg-slate-100 font-bold" href="/adm/security">Security events</a>
+            </div>
+            {isSuperAdmin && selectedTenant.lifecycleState !== 'DELETING' && selectedTenant.lifecycleState !== 'DELETED' && (
+              <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-3 text-xs">
+                <p className="font-bold text-red-800">Decommission (SUPER_ADMIN)</p>
+                <p className="text-red-700 mt-1">Uses the existing Enterprise lifecycle transition to DELETING. This does not hard-delete data immediately.</p>
+                <textarea className="mt-2 w-full rounded-lg border border-red-200 p-2" rows={3} placeholder="Required reason (min 8 characters)" value={decommissionReason} onChange={e => setDecommissionReason(e.target.value)} />
+                <button type="button" onClick={() => handleDecommission(selectedTenant)} disabled={busyTenant === `${selectedTenant.id}:DELETING`} className="mt-2 px-3 py-1.5 rounded-lg bg-red-700 text-white font-bold">
+                  {busyTenant === `${selectedTenant.id}:DELETING` ? 'Decommissioning…' : 'Decommission tenant'}
+                </button>
+              </div>
+            )}
+          </aside>
         </div>
       )}
     </div>

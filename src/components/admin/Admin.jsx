@@ -21,12 +21,15 @@ import LandingPages from './landingPages/LandingPages';
 import AdminAuditLogs from './audit/AdminAuditLogs';
 import PlatformQueues from './queues/PlatformQueues';
 import PlatformTenants from './tenants/PlatformTenants';
+import PlatformSecurity from './security/PlatformSecurity';
+import PlatformOperations from './operations/PlatformOperations';
 import AdminCommandPalette from './command/AdminCommandPalette';
-import { FaCircle, FaExternalLinkAlt, FaSignOutAlt, FaChevronRight, FaSyncAlt, FaCrown } from 'react-icons/fa';
-import { FiSearch, FiCommand } from 'react-icons/fi';
+import { AdminProvider } from './AdminContext';
+import { FaCircle, FaExternalLinkAlt, FaSignOutAlt, FaChevronRight, FaSyncAlt, FaCrown, FaBars } from 'react-icons/fa';
+import { FiSearch } from 'react-icons/fi';
 import AdminReauthPrompt from './AdminReauthPrompt';
 
-const AdminHeader = ({ userEmail, isSuperAdminUser, onLogout, onOpenCommandPalette }) => {
+const AdminHeader = ({ userEmail, isSuperAdminUser, onLogout, onOpenCommandPalette, onToggleMobileNav }) => {
     const location = useLocation();
     const pathSegments = location.pathname.split('/').filter(Boolean);
     const currentTab = new URLSearchParams(location.search).get('tab');
@@ -66,6 +69,9 @@ const AdminHeader = ({ userEmail, isSuperAdminUser, onLogout, onOpenCommandPalet
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3">
+                <button type="button" onClick={onToggleMobileNav} className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white p-2 text-slate-700 lg:hidden" aria-label="Open admin navigation">
+                    <FaBars />
+                </button>
                 <button
                     type="button"
                     onClick={onOpenCommandPalette}
@@ -105,6 +111,7 @@ const AdminHeader = ({ userEmail, isSuperAdminUser, onLogout, onOpenCommandPalet
 const Admin = () => {
     const [authState, setAuthState] = useState({ checking: true, allowed: false, isSuperAdmin: false, user: null });
     const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+    const [mobileNavOpen, setMobileNavOpen] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
         try { return localStorage.getItem('adminSidebarCollapsed') === 'true'; } catch { return false; }
     });
@@ -130,7 +137,7 @@ const Admin = () => {
         try {
             const token = await user.getIdTokenResult();
             isSuperAdminUser = String(token.claims?.role || '').toUpperCase() === 'SUPER_ADMIN' || token.claims?.permissions?.includes('*');
-        } catch (_) { /* ignore */ }
+        } catch { /* ignore */ }
         setAuthState({ checking: false, allowed, isSuperAdmin: isSuperAdminUser, user });
     }), []);
 
@@ -142,11 +149,14 @@ const Admin = () => {
     if (!authState.allowed) return <Navigate to="/" replace />;
 
     return (
+        <AdminProvider value={{ isSuperAdmin: authState.isSuperAdmin, userEmail: authState.user?.email || '', uid: authState.user?.uid || '' }}>
         <div className="admin min-h-screen bg-slate-50 font-sans text-slate-900">
             <div className="admin__left">
                 <Sidebar
                     onSidebarToggle={setSidebarCollapsed}
                     sidebarCollapsed={sidebarCollapsed}
+                    mobileOpen={mobileNavOpen}
+                    onCloseMobile={() => setMobileNavOpen(false)}
                     onOpenCommandPalette={() => setCommandPaletteOpen(true)}
                 />
             </div>
@@ -156,6 +166,7 @@ const Admin = () => {
                     isSuperAdminUser={authState.isSuperAdmin}
                     onLogout={handleLogout}
                     onOpenCommandPalette={() => setCommandPaletteOpen(true)}
+                    onToggleMobileNav={() => setMobileNavOpen(true)}
                 />
                 <AdminReauthPrompt />
                 <AdminCommandPalette isOpen={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
@@ -166,6 +177,8 @@ const Admin = () => {
                         <Route path="audit-logs" element={<AdminAuditLogs />} />
                         <Route path="queues" element={<PlatformQueues />} />
                         <Route path="tenants" element={<PlatformTenants />} />
+                        <Route path="security" element={<PlatformSecurity />} />
+                        <Route path="operations" element={<PlatformOperations />} />
                         <Route path="settings" element={<Settings />} />
                         <Route path="user/ss" element={<UserEdit />} />
                         <Route path="users" element={<UsersManager />} />
@@ -183,6 +196,7 @@ const Admin = () => {
                 </main>
             </div>
         </div>
+        </AdminProvider>
     );
 };
 

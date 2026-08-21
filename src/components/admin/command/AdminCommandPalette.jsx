@@ -18,6 +18,12 @@ const COMMAND_ITEMS = [
   { id: 'nav-jobs', label: 'Jobs Manager', category: 'Navigation', icon: FiLayers, path: '/adm/jobs-manager' },
   { id: 'nav-blog', label: 'Blog Engine', category: 'Navigation', icon: FiFileText, path: '/adm/blog-management' },
   { id: 'nav-messages', label: 'Contact Messages', category: 'Navigation', icon: FiMail, path: '/adm/messages' },
+  { id: 'nav-security', label: 'Security Events', category: 'Navigation', icon: FiLock, path: '/adm/security' },
+  { id: 'nav-ops', label: 'Platform Operations', category: 'Navigation', icon: FiActivity, path: '/adm/operations' },
+  { id: 'nav-reviews', label: 'Reviews', category: 'Navigation', icon: FiFileText, path: '/adm/reviews' },
+  { id: 'nav-trusted', label: 'Trusted By', category: 'Navigation', icon: FiShield, path: '/adm/trustedby' },
+  { id: 'nav-landing', label: 'Landing Pages', category: 'Navigation', icon: FiLayers, path: '/adm/landing-pages' },
+  { id: 'nav-companies', label: 'Company Management', category: 'Navigation', icon: FiBriefcase, path: '/adm/company-management' },
 
   // Settings Tabs
   { id: 'set-ai', label: 'AI Models & Provider Settings', category: 'Settings', icon: FaRobot, path: '/adm/settings?tab=aiSettings' },
