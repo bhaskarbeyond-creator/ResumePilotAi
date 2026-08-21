@@ -757,6 +757,159 @@ router.patch('/announcements/:id', requireSuperAdmin, async (req, res) => {
   return res.json({ success: true, id });
 });
 
+router.delete('/announcements/:id', requireSuperAdmin, async (req, res) => {
+  const db = req.app?.get('db');
+  if (!db) return res.status(503).json({ error: { code: 'DATABASE_UNAVAILABLE', message: 'Database unavailable' } });
+  const id = String(req.params.id || '');
+  if (!/^[A-Za-z0-9_-]{1,128}$/.test(id)) {
+    return res.status(400).json({ error: { code: 'INVALID_ANNOUNCEMENT', message: 'Invalid announcement id' } });
+  }
+  const ref = db.collection('platform_announcements').doc(id);
+  const snap = await ref.get();
+  if (!snap.exists) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Announcement not found' } });
+  await ref.delete();
+  return res.json({ success: true, id });
+});
+
+async function inspectAttentionSignals(req) {
+  const db = req.app?.get('db');
+  const extras = { paymentFailed: 0, highSecurity: 0, suspendedTenants: 0, maintenanceEnabled: false };
+  if (!db) return extras;
+  const [payments, security, tenants, maintenance] = await Promise.all([
+    safeQuery('payments', () => db.collection('payment_orders').limit(100).get()),
+    safeQuery('security', () => db.collection('security_audit_logs').orderBy('createdAt', 'desc').limit(20).get()),
+    safeQuery('tenants', () => db.collection('enterprise_tenants').limit(200).get()),
+    safeQuery('maintenance', () => db.collection('settings').doc('maintenance').get()),
+  ]);
+  if (payments.ok) {
+    payments.value.forEach(doc => {
+      const status = String(doc.data()?.status || '').toUpperCase();
+      if (['FAILED', 'CANCELLED', 'DECLINED'].includes(status)) extras.paymentFailed += 1;
+    });
+  }
+  if (security.ok) {
+    security.value.forEach(doc => {
+      const data = doc.data() || {};
+      const severity = String(data.severity || (String(data.action || '').includes('DENIED') ? 'HIGH' : 'INFO')).toUpperCase();
+      if (['HIGH', 'CRITICAL'].includes(severity)) extras.highSecurity += 1;
+    });
+  }
+  if (tenants.ok) {
+    tenants.value.forEach(doc => {
+      if (String(doc.data()?.lifecycleState || '') === 'SUSPENDED') extras.suspendedTenants += 1;
+    });
+  }
+  extras.maintenanceEnabled = maintenance.ok && maintenance.value.exists && maintenance.value.data()?.enabled === true;
+  return extras;
+}
+
+function attentionItemsFromSignals(health, extras = {}) {
+  const items = [];
+  if (health.subsystems.database.status !== 'HEALTHY') {
+    items.push({ id: 'db-down', severity: 'HIGH', title: 'Firestore ping failed', href: '/adm/operations', kind: 'health' });
+  }
+  if (health.subsystems.queue.deadLetterJobs > 0) {
+    items.push({ id: 'dlq', severity: 'HIGH', title: `${health.subsystems.queue.deadLetterJobs} notification DLQ item(s)`, href: '/adm/queues', kind: 'queue' });
+  }
+  if (health.status !== 'HEALTHY') {
+    items.push({ id: 'platform-health', severity: health.status === 'UNHEALTHY' ? 'HIGH' : 'MEDIUM', title: `Platform status ${health.status}`, href: '/adm/dashboard', kind: 'health' });
+  }
+  if (extras.paymentFailed > 0) {
+    items.push({ id: 'payments', severity: 'MEDIUM', title: `${extras.paymentFailed} failed payment order(s) in latest sample`, href: '/adm/settings?tab=ordersManagement', kind: 'payments' });
+  }
+  if (extras.highSecurity > 0) {
+    items.push({ id: 'security', severity: 'HIGH', title: `${extras.highSecurity} high-severity security event(s)`, href: '/adm/security', kind: 'security' });
+  }
+  if (extras.suspendedTenants > 0) {
+    items.push({ id: 'suspended-tenants', severity: 'MEDIUM', title: `${extras.suspendedTenants} suspended tenant(s)`, href: '/adm/tenants', kind: 'tenancy' });
+  }
+  if (extras.maintenanceEnabled) {
+    items.push({ id: 'maintenance', severity: 'HIGH', title: 'Maintenance mode is enabled', href: '/adm/operations', kind: 'ops' });
+  }
+  return items;
+}
+
+router.get('/attention', async (req, res) => {
+  const health = await buildHealthPayload(req);
+  const extras = await inspectAttentionSignals(req);
+  return res.json({
+    items: attentionItemsFromSignals(health, extras),
+    healthScore: health.healthScore,
+    status: health.status,
+    note: 'Attention items are derived from inspected platform signals. This is not a ticket system.',
+  });
+});
+
+router.get('/enterprise-queue', async (req, res) => {
+  try {
+    const { getOutboxStatus } = require('../enterprise/enterpriseOutbox');
+    const db = req.app?.get('db');
+    const admin = req.app?.get('firebaseAdmin');
+    const signingSecret = process.env.TENANT_JOB_SIGNING_SECRET || null;
+    const queue = await getOutboxStatus({ db, admin, signingSecret });
+    return res.json({
+      queue,
+      note: 'Global Enterprise durable-outbox posture. Tenant job replay remains in /enterprise.',
+    });
+  } catch (error) {
+    return res.status(503).json({ error: { code: 'ENTERPRISE_QUEUE_UNAVAILABLE', message: error.message } });
+  }
+});
+
+const PLATFORM_OPERATOR_ROLES = new Set(['ADMIN', 'SUPPORT', 'USER']);
+
+router.get('/operators', async (req, res) => {
+  const db = req.app?.get('db');
+  if (!db) return res.json({ operators: [] });
+  try {
+    const snap = await db.collection('users').where('role', 'in', ['ADMIN', 'SUPER_ADMIN', 'SUPPORT']).limit(100).get();
+    const operators = [];
+    snap.forEach(doc => {
+      const data = doc.data() || {};
+      operators.push({
+        id: doc.id,
+        email: data.email || null,
+        role: String(data.role || 'USER').toUpperCase(),
+        suspended: data.suspended === true,
+        displayName: data.displayName || `${data.firstname || ''} ${data.lastname || ''}`.trim() || null,
+      });
+    });
+    return res.json({ operators, note: 'Roles shown are the Firestore role field. Authoritative access is the Firebase custom claim.' });
+  } catch (error) {
+    return res.status(500).json({ error: { code: 'OPERATORS_UNAVAILABLE', message: error.message } });
+  }
+});
+
+router.post('/operators', requireSuperAdmin, async (req, res) => {
+  const uid = String(req.body?.uid || '').trim();
+  const nextRole = String(req.body?.role || '').toUpperCase();
+  if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid) || !PLATFORM_OPERATOR_ROLES.has(nextRole)) {
+    return res.status(400).json({ error: { code: 'INVALID_OPERATOR', message: 'A valid uid and role of ADMIN, SUPPORT, or USER is required' } });
+  }
+  const db = req.app?.get('db');
+  const admin = req.app?.get('firebaseAdmin');
+  if (!db || !admin?.auth) {
+    return res.status(503).json({ error: { code: 'IDENTITY_UNAVAILABLE', message: 'Identity directory unavailable' } });
+  }
+  if (uid === req.user?.uid && nextRole !== 'ADMIN' && nextRole !== 'SUPER_ADMIN') {
+    return res.status(400).json({ error: { code: 'SELF_DEMOTION_PROHIBITED', message: 'Self-demotion is prohibited' } });
+  }
+  try {
+    const target = await admin.auth().getUser(uid);
+    const currentRole = String(target.customClaims?.role || '').toUpperCase();
+    if (currentRole === 'SUPER_ADMIN') {
+      return res.status(403).json({ error: { code: 'SUPER_ADMIN_PROTECTED', message: 'SUPER_ADMIN claims cannot be changed from this API' } });
+    }
+    await admin.auth().setCustomUserClaims(uid, { ...(target.customClaims || {}), role: nextRole });
+    await admin.auth().revokeRefreshTokens(uid);
+    await db.collection('users').doc(uid).set({ role: nextRole, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    return res.json({ success: true, uid, role: nextRole });
+  } catch (error) {
+    const status = error.code === 'auth/user-not-found' ? 404 : 500;
+    return res.status(status).json({ error: { code: status === 404 ? 'USER_NOT_FOUND' : 'OPERATOR_UPDATE_FAILED', message: status === 404 ? 'User not found' : 'Operator role could not be updated' } });
+  }
+});
+
 router.get('/tenants/:tenantId', async (req, res) => {
   const tenantService = req.app?.get('tenantService');
   if (!tenantService?.listPlatformTenants) {

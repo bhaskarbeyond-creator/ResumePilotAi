@@ -68,6 +68,8 @@ function deriveAction(method, pathname, body = {}) {
   if (path.includes('/platform/tenants') && path.includes('decommission')) return 'DECOMMISSION_PLATFORM_TENANT';
   if (path.includes('/platform/tenants')) return `${normMethod}_PLATFORM_TENANT`;
   if (path.includes('/platform/announcements')) return `${normMethod}_PLATFORM_ANNOUNCEMENT`;
+  if (path.includes('/platform/operators')) return `${normMethod}_PLATFORM_OPERATOR`;
+  if (path.includes('/platform/maintenance')) return `${normMethod}_PLATFORM_MAINTENANCE`;
   if (path.includes('/platform/queues')) return `${normMethod}_PLATFORM_QUEUE`;
   if (path.includes('/audit-logs')) return 'READ_AUDIT_LOGS';
   
@@ -95,7 +97,7 @@ function deriveSeverity(method, pathname, statusCode) {
   if (normMethod === 'DELETE' || path.includes('delete') || path.includes('purge') || path.includes('refund')) {
     return 'HIGH';
   }
-  if (path.includes('firebase-service-account') || path.includes('security') || path.includes('suspend')) {
+  if (path.includes('firebase-service-account') || path.includes('security') || path.includes('suspend') || path.includes('decommission') || path.includes('/platform/operators') || path.includes('/platform/maintenance')) {
     return 'HIGH';
   }
   if (normMethod === 'POST' || normMethod === 'PUT' || normMethod === 'PATCH') {

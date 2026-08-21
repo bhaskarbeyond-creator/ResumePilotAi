@@ -23,6 +23,8 @@ import PlatformQueues from './queues/PlatformQueues';
 import PlatformTenants from './tenants/PlatformTenants';
 import PlatformSecurity from './security/PlatformSecurity';
 import PlatformOperations from './operations/PlatformOperations';
+import PlatformAttention from './attention/PlatformAttention';
+import PlatformOperators from './operators/PlatformOperators';
 import AdminCommandPalette from './command/AdminCommandPalette';
 import { AdminProvider } from './AdminContext';
 import { FaCircle, FaExternalLinkAlt, FaSignOutAlt, FaChevronRight, FaSyncAlt, FaCrown, FaBars } from 'react-icons/fa';
@@ -94,7 +96,7 @@ const AdminHeader = ({ userEmail, isSuperAdminUser, onLogout, onOpenCommandPalet
                                 <FaCrown className="text-amber-500 h-3 w-3" /> Super Admin
                             </span>
                         ) : (
-                            'Administrator'
+                            'Platform Admin'
                         )}
                     </div>
                     <div className="max-w-48 truncate text-[10px] text-slate-500" title={userEmail}>{userEmail || 'Authenticated admin'}</div>
@@ -179,6 +181,8 @@ const Admin = () => {
                         <Route path="tenants" element={<PlatformTenants />} />
                         <Route path="security" element={<PlatformSecurity />} />
                         <Route path="operations" element={<PlatformOperations />} />
+                        <Route path="attention" element={<PlatformAttention />} />
+                        <Route path="operators" element={<PlatformOperators />} />
                         <Route path="settings" element={<Settings />} />
                         <Route path="user/ss" element={<UserEdit />} />
                         <Route path="users" element={<UsersManager />} />

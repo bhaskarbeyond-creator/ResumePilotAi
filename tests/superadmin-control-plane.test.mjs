@@ -8,14 +8,16 @@ test('super admin shell mounts control-plane modules without dropping consumer a
     fs.readFile('src/components/admin/sidebar/sidebar.jsx', 'utf8'),
     fs.readFile('src/components/admin/command/AdminCommandPalette.jsx', 'utf8'),
   ]);
-  for (const route of ['dashboard', 'audit-logs', 'queues', 'tenants', 'security', 'operations', 'users', 'settings', 'reviews', 'trustedby', 'messages']) {
+  for (const route of ['dashboard', 'audit-logs', 'queues', 'tenants', 'security', 'operations', 'attention', 'operators', 'users', 'settings', 'reviews', 'trustedby', 'messages', 'phrases']) {
     assert.match(admin, new RegExp(`path="${route}"`));
   }
   assert.match(sidebar, /Control Plane/);
   assert.match(sidebar, /Consumer Product/);
   assert.match(sidebar, /Security Events/);
+  assert.match(sidebar, /Phrases/);
   assert.match(palette, /\/adm\/security/);
   assert.match(palette, /\/adm\/operations/);
+  assert.match(palette, /\/adm\/phrases/);
 });
 
 test('tenant registry calls the real Enterprise suspend/reactivate endpoints', async () => {
@@ -50,7 +52,12 @@ test('platform operations and security modules wire to existing data planes', as
   assert.match(ops, /getEncryptionStatus/);
   assert.match(ops, /getBackupStatus/);
   assert.match(ops, /setMaintenance/);
+  assert.match(ops, /deleteAnnouncement/);
+  assert.match(ops, /getEnterpriseQueue/);
+  assert.match(ops, /window\.confirm/);
   assert.match(security, /getSecurityEvents/);
   assert.match(security, /security_audit_logs/);
   assert.match(api, /\/api\/platform\/command-center/);
+  assert.match(api, /\/api\/platform\/attention/);
+  assert.match(api, /\/api\/platform\/operators/);
 });

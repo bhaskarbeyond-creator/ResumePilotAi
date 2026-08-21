@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import fire from '../../../conf/fire';
+import { useAdminSession } from '../AdminContext';
 import {
   FiActivity, FiRefreshCw, FiAlertTriangle, FiCheckCircle,
   FiRotateCw, FiClock, FiMail, FiLayers, FiAlertCircle
 } from 'react-icons/fi';
 
 export default function PlatformQueues() {
+  const { isSuperAdmin } = useAdminSession();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [retrying, setRetrying] = useState(false);
@@ -101,10 +103,11 @@ export default function PlatformQueues() {
             <button
               type="button"
               onClick={() => handleRetry(null, true)}
-              disabled={retrying}
+              disabled={retrying || !isSuperAdmin}
+              title={isSuperAdmin ? 'Replay dead-letter jobs' : 'Super Admin only'}
               className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-600 text-white text-xs font-bold hover:bg-amber-700 transition shadow-xs disabled:opacity-50"
             >
-              <FiRotateCw className={retrying ? 'animate-spin' : ''} /> Replay All Dead Letters ({summary.deadLetterCount})
+              <FiRotateCw className={retrying ? 'animate-spin' : ''} /> {isSuperAdmin ? `Replay All Dead Letters (${summary.deadLetterCount})` : 'Replay Super Admin only'}
             </button>
           )}
         </div>
@@ -232,10 +235,11 @@ export default function PlatformQueues() {
                         <button
                           type="button"
                           onClick={() => handleRetry(job.id, false)}
-                          disabled={retrying}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 font-bold hover:bg-amber-100 text-[11px] transition"
+                          disabled={retrying || !isSuperAdmin}
+                          title={isSuperAdmin ? 'Replay this job' : 'Super Admin only'}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 font-bold hover:bg-amber-100 text-[11px] transition disabled:opacity-50"
                         >
-                          <FiRotateCw /> Retry
+                          <FiRotateCw /> {isSuperAdmin ? 'Retry' : 'Super Admin only'}
                         </button>
                       ) : (
                         <span className="text-slate-400 text-[11px]">—</span>

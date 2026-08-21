@@ -13,17 +13,17 @@ Belongs in `/adm`? Yes / No / Via Enterprise
 | 5 | Tenant lifecycle | EXISTS | Yes | Active / Suspended / DELETING |
 | 6 | Tenant suspension | EXISTS | Yes | `/suspend` (URL bug fixed) |
 | 7 | Tenant reactivation | EXISTS | Yes | `/reactivate` (URL bug fixed) |
-| 8 | Tenant decommissioning | EXISTS | Yes | Super Admin `DELETING` |
+| 8 | Tenant decommissioning | EXISTS | Yes | Super Admin `DELETING` + reason + confirm |
 | 9 | Tenant health | PARTIAL | Yes | Attention list from lifecycle; no per-tenant synthetic score |
 | 10 | Tenant usage | EXTERNAL | Via Enterprise | Link to `/enterprise?tab=usage` |
 | 11 | Tenant quotas | EXTERNAL | Via Enterprise | Existing tenant quota APIs |
 | 12 | Global users | EXISTS | Yes | `/adm/users` |
 | 13 | User lifecycle | PARTIAL | Yes | Suspend/delete/membership; no archive |
 | 14 | User security | PARTIAL | Yes | Role/suspend + token revoke; MFA mgmt is user-self |
-| 15 | Platform roles | PARTIAL | Yes | ADMIN toggle; SUPER_ADMIN not assignable from UI |
+| 15 | Platform roles | EXISTS | Yes | `/adm/operators` assigns ADMIN/SUPPORT/USER; SUPER_ADMIN out-of-band |
 | 16 | Platform permissions | MISSING | No | Hardcoded in `auth.js` (intentional fail-closed) |
-| 17 | SUPER_ADMIN separation | PARTIAL | Yes | Server gates on decommission, DLQ replay, maintenance, announcements |
-| 18 | Support engineers | EXTERNAL | Via Enterprise | `EnterpriseSupportTab` |
+| 17 | SUPER_ADMIN separation | EXISTS | Yes | Server gates: decommission, DLQ replay, maintenance, announcement CUD, operators |
+| 18 | Support engineers | EXTERNAL | Via Enterprise | `EnterpriseSupportTab`; SUPPORT cannot open `/adm` |
 | 19 | Break-glass | EXTERNAL | Via Enterprise | Support grants |
 | 20 | Service accounts | EXTERNAL | Via Enterprise | `EnterpriseSecurityTab` |
 | 21 | M2M | EXTERNAL | Via Enterprise | `enterpriseM2m` |
@@ -38,8 +38,8 @@ Belongs in `/adm`? Yes / No / Via Enterprise
 | 30 | Global audit | EXISTS | Yes | `/adm/audit-logs` |
 | 31 | Security events | EXISTS | Yes | `/adm/security` |
 | 32 | Queue | EXISTS | Yes | `/adm/queues` (notification outbox) |
-| 33 | DLQ | EXISTS | Yes | Replay Super Admin only |
-| 34 | Background jobs | PARTIAL | Yes | Outbox + Enterprise durable jobs (Enterprise UI) |
+| 33 | DLQ | EXISTS | Yes | Replay Super Admin only + confirm |
+| 34 | Background jobs | PARTIAL | Yes | Notification outbox + Enterprise outbox posture (`/adm/operations`) |
 | 35 | Notifications | PARTIAL | Yes | Outbox + settings |
 | 36 | Email delivery | PARTIAL | Yes | Queue monitor + SMTP settings |
 | 37 | Email failures | EXISTS | Yes | DLQ + lastError |
@@ -54,8 +54,8 @@ Belongs in `/adm`? Yes / No / Via Enterprise
 | 46 | API health | EXISTS | Yes | `/api/healthz` `/readyz` header + command center |
 | 47 | Deployment health | PARTIAL | Yes | Commit SHA + runtime; PM2 not queried from this host |
 | 48 | Release management | MISSING | No | Deploy remains operational/runbook |
-| 49 | Maintenance mode | EXISTS | Yes | Super Admin + public_config dual-write |
-| 50 | Platform announcements | EXISTS | Yes | Super Admin CRUD enable/disable |
+| 49 | Maintenance mode | EXISTS | Yes | Super Admin + confirm on enable + public_config dual-write |
+| 50 | Platform announcements | EXISTS | Yes | Super Admin full CRUD (POST/PATCH/DELETE) |
 | 51 | Billing | EXISTS | Yes | Orders/subscriptions settings |
 | 52 | Subscriptions | EXISTS | Yes | |
 | 53 | Payments | EXISTS | Yes | Payment health sample + ledger |
@@ -71,10 +71,13 @@ Belongs in `/adm`? Yes / No / Via Enterprise
 | 63 | Trusted-by | EXISTS | Yes | |
 | 64 | Ads | EXISTS | Yes | |
 | 65 | Global search | PARTIAL | Yes | Command palette + `GET /api/platform/search` (email/id/tenant) |
-| 66 | Command palette | EXISTS | Yes | ⌘K |
+| 66 | Command palette | EXISTS | Yes | ⌘K nav + live entity search |
 | 67 | Notifications center | PARTIAL | Yes | Announcements + consumer notifications |
 | 68 | Admin activity | EXISTS | Yes | Audit + dashboard stream |
-| 69 | Incident management | PARTIAL | Yes | Recommendations + security events; no ticket system |
+| 69 | Incident management | PARTIAL | Yes | `/adm/attention` derived signals; no ticket system |
 | 70 | Platform risk intelligence | PARTIAL | Yes | Risk score from inspected signals only |
+| 71 | Phrases CMS | EXISTS | Yes | `/adm/phrases` restored in sidebar + palette |
+| 72 | Platform operators | EXISTS | Yes | `/adm/operators` + `GET/POST /api/platform/operators` |
+| 73 | Enterprise outbox posture | EXISTS | Yes | `GET /api/platform/enterprise-queue` (read-only) |
 
 **Not blindly added:** a second tenant registry, a fake metrics warehouse, a competing M2M system, or a fabricated revenue trend chart.

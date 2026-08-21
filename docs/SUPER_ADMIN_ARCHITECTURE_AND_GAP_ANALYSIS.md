@@ -89,8 +89,10 @@ Role separation (server-enforced):
 | `/adm/audit-logs` | `GET /api/admin/audit-logs` | `admin_audit_logs` |
 | `/adm/security` | `GET /api/platform/security-events` | `security_audit_logs` |
 | `/adm/queues` | `GET/POST /api/platform/queues*` | `notification_outbox` |
-| `/adm/operations` | encryption, observability, backup-status, maintenance, announcements | Enterprise runtime + `platform_announcements` + `settings/maintenance` |
-| `/adm/users` and consumer modules | Existing `/api/admin/*` | Unchanged |
+| `/adm/operations` | encryption, observability, backup-status, enterprise-queue, maintenance, announcements CRUD | Enterprise runtime + `platform_announcements` + `settings/maintenance` + `enterprise_outbox` status |
+| `/adm/attention` | `GET /api/platform/attention` | Inspected health, DLQ, payments, security, tenants, maintenance |
+| `/adm/operators` | `GET/POST /api/platform/operators` | `users.role` listing; claims remain authoritative |
+| `/adm/users` and consumer modules (incl. phrases) | Existing `/api/admin/*` | Unchanged |
 | `/adm/settings` | Existing 30-tab settings | Unchanged |
 
 ---

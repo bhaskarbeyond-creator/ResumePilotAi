@@ -58,6 +58,9 @@ test('grouped navigation reaches every control-plane module', async ({ page }) =
     ['Security Events', 'Security Events'],
     ['Queue & DLQ Monitor', 'Platform Queue & DLQ Monitor'],
     ['Platform Operations', 'Platform Operations'],
+    ['Attention', 'Attention'],
+    ['Platform Operators', 'Platform Operators'],
+    ['Phrases', 'Phrases'],
   ];
   for (const [nav, heading] of modules) {
     await page.getByRole('link', { name: nav }).first().click();

@@ -4,7 +4,7 @@ import {
     FiHome, FiGrid, FiSettings, FiUsers, FiFileText,
     FiMail, FiLogOut, FiSearch, FiShield, FiBriefcase,
     FiLayers, FiGlobe, FiChevronDown, FiChevronRight, FiEdit,
-    FiActivity, FiLock, FiTool,
+    FiActivity, FiLock, FiTool, FiAlertTriangle, FiType,
 } from 'react-icons/fi';
 import {
     FaRegBuilding, FaCog, FaCreditCard, FaShareAlt, FaChartLine,
@@ -140,12 +140,14 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
                 { path: '/adm/security', icon: FiLock, label: 'Security Events' },
                 { path: '/adm/queues', icon: FiActivity, label: 'Queue & DLQ Monitor' },
                 { path: '/adm/operations', icon: FiTool, label: 'Platform Operations' },
+                { path: '/adm/attention', icon: FiAlertTriangle, label: 'Attention' },
             ],
         },
         {
             label: 'Identity',
             items: [
                 { path: '/adm/users', icon: FiUsers, label: 'Users Manager' },
+                { path: '/adm/operators', icon: FiLock, label: 'Platform Operators' },
             ],
         },
         {
@@ -159,6 +161,7 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
                 { path: '/adm/reviews', icon: MdOutlineReviews, label: 'Reviews' },
                 { path: '/adm/trustedby', icon: FiShield, label: 'Trusted by' },
                 { path: '/adm/messages', icon: FiMail, label: 'Messages' },
+                { path: '/adm/phrases', icon: FiType, label: 'Phrases' },
             ],
         },
     ];

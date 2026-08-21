@@ -116,6 +116,23 @@ export function createSuperAdminFixtureBackend(state = seedSuperAdminState()) {
       state.announcements.push(item);
       return json({ announcement: item }, 201);
     }
+    if (path.startsWith('/api/platform/announcements/') && method === 'DELETE') {
+      const id = path.split('/').pop();
+      state.announcements = state.announcements.filter(item => item.id !== id);
+      return json({ success: true, id });
+    }
+    if (path === '/api/platform/attention') {
+      return json({ items: state.recommendations, status: state.status, healthScore: state.healthScore, note: 'Fixture attention' });
+    }
+    if (path === '/api/platform/enterprise-queue') {
+      return json({ queue: { status: 'online', deadLetterCount: 0, configured: true }, note: 'Fixture enterprise outbox' });
+    }
+    if (path === '/api/platform/operators' && method === 'GET') {
+      return json({ operators: [{ id: 'super-admin', email: 'super@example.com', role: 'SUPER_ADMIN', suspended: false }], note: 'Fixture operators' });
+    }
+    if (path === '/api/platform/operators' && method === 'POST') {
+      return json({ success: true, uid: body.uid, role: body.role });
+    }
     if (path === '/api/platform/search') return json({ query: url.searchParams.get('q'), users: [], tenants: state.tenants.filter(item => item.displayName.toLowerCase().includes(String(url.searchParams.get('q') || '').toLowerCase())) });
     if (path.startsWith('/api/')) return json({ success: true });
     return route.fallback();

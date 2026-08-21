@@ -6,6 +6,7 @@ import {
   FiCommand, FiRefreshCw, FiZap, FiLock
 } from 'react-icons/fi';
 import { FaRobot, FaCreditCard, FaEnvelope, FaGlobeAsia, FaReceipt } from 'react-icons/fa';
+import { searchPlatform } from '../../../services/platformApi';
 
 const COMMAND_ITEMS = [
   // Primary Navigation
@@ -24,6 +25,9 @@ const COMMAND_ITEMS = [
   { id: 'nav-trusted', label: 'Trusted By', category: 'Navigation', icon: FiShield, path: '/adm/trustedby' },
   { id: 'nav-landing', label: 'Landing Pages', category: 'Navigation', icon: FiLayers, path: '/adm/landing-pages' },
   { id: 'nav-companies', label: 'Company Management', category: 'Navigation', icon: FiBriefcase, path: '/adm/company-management' },
+  { id: 'nav-phrases', label: 'Phrases', category: 'Navigation', icon: FiFileText, path: '/adm/phrases' },
+  { id: 'nav-attention', label: 'Attention / derived incidents', category: 'Navigation', icon: FiActivity, path: '/adm/attention' },
+  { id: 'nav-operators', label: 'Platform Operators', category: 'Navigation', icon: FiLock, path: '/adm/operators' },
 
   // Settings Tabs
   { id: 'set-ai', label: 'AI Models & Provider Settings', category: 'Settings', icon: FaRobot, path: '/adm/settings?tab=aiSettings' },
@@ -40,6 +44,7 @@ const COMMAND_ITEMS = [
 export default function AdminCommandPalette({ isOpen, onClose }) {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [entityHits, setEntityHits] = useState([]);
   const inputRef = useRef(null);
   const navigate = useNavigate();
 
@@ -51,14 +56,49 @@ export default function AdminCommandPalette({ isOpen, onClose }) {
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const q = query.trim();
+    if (q.length < 2) {
+      setEntityHits([]);
+      return undefined;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const result = await searchPlatform(q);
+        if (cancelled) return;
+        const hits = [
+          ...(result.tenants || []).map(tenant => ({
+            id: `tenant-${tenant.id}`,
+            label: `Tenant: ${tenant.displayName || tenant.slug}`,
+            category: 'Tenants',
+            icon: FiServer,
+            path: `/adm/tenants?focus=${encodeURIComponent(tenant.id)}`,
+          })),
+          ...(result.users || []).map(user => ({
+            id: `user-${user.id}`,
+            label: `User: ${user.email || user.id}`,
+            category: 'Users',
+            icon: FiUsers,
+            path: '/adm/users',
+          })),
+        ];
+        setEntityHits(hits);
+      } catch {
+        if (!cancelled) setEntityHits([]);
+      }
+    }, 250);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [query]);
+
   const filteredItems = useMemo(() => {
-    if (!query.trim()) return COMMAND_ITEMS;
-    const q = query.toLowerCase();
-    return COMMAND_ITEMS.filter(item =>
+    const q = query.trim().toLowerCase();
+    const nav = !q ? COMMAND_ITEMS : COMMAND_ITEMS.filter(item =>
       item.label.toLowerCase().includes(q) ||
       item.category.toLowerCase().includes(q)
     );
-  }, [query]);
+    return [...entityHits, ...nav];
+  }, [query, entityHits]);
 
   const handleSelect = (item) => {
     onClose();

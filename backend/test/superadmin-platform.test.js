@@ -56,6 +56,8 @@ test('Super Admin & Platform Module: Action & Category Derivation', () => {
   assert.equal(deriveAction('DELETE', '/api/admin/users/12345'), 'DELETE_USER_PROFILE');
   assert.equal(deriveAction('POST', '/api/platform/maintenance'), 'POST_PLATFORM_MAINTENANCE');
   assert.equal(deriveAction('POST', '/api/platform/tenants'), 'POST_PLATFORM_TENANT');
+  assert.equal(deriveAction('POST', '/api/platform/operators'), 'POST_PLATFORM_OPERATOR');
+  assert.equal(deriveAction('DELETE', '/api/platform/announcements/ann-1'), 'DELETE_PLATFORM_ANNOUNCEMENT');
   assert.equal(deriveAction('GET', '/api/admin/health-summary'), 'READ_HEALTH_SUMMARY');
 
   assert.equal(deriveCategory('/api/admin/ai-settings'), 'ai.governance');
@@ -72,6 +74,9 @@ test('Super Admin & Platform Module: Severity derivation matches operational ris
   assert.equal(deriveSeverity('POST', '/api/admin/firebase-service-account', 200), 'HIGH');
   assert.equal(deriveSeverity('POST', '/api/admin/ai-settings', 500), 'HIGH');
   assert.equal(deriveSeverity('POST', '/api/admin/ai-settings', 403), 'MEDIUM');
+  assert.equal(deriveSeverity('POST', '/api/platform/operators', 200), 'HIGH');
+  assert.equal(deriveSeverity('POST', '/api/platform/tenants/abc/decommission', 200), 'HIGH');
+  assert.equal(deriveSeverity('POST', '/api/platform/maintenance', 200), 'HIGH');
 });
 
 test('Super Admin & Platform Module: isSuperAdmin correctly identifies role & wildcard', () => {
@@ -213,6 +218,27 @@ test('Platform API: tenant decommission and announcements require Super Admin', 
     .send({ reason: 'short' });
   assert.equal(invalid.status, 400);
   assert.equal(invalid.body.error.code, 'REASON_REQUIRED');
+});
+
+test('Platform API: announcement delete and operator assignment require Super Admin', async () => {
+  const del = await request(app).delete('/api/platform/announcements/ann-1').set(bearer('admin'));
+  assert.equal(del.status, 403);
+
+  const assign = await request(app).post('/api/platform/operators').set(bearer('admin')).send({ uid: 'user-1', role: 'SUPPORT' });
+  assert.equal(assign.status, 403);
+
+  const invalid = await request(app).post('/api/platform/operators').set(bearer('super-admin')).send({ uid: 'user-1', role: 'SUPER_ADMIN' });
+  assert.equal(invalid.status, 400);
+});
+
+test('Platform API: attention and enterprise-queue are readable by Admin', async () => {
+  const attention = await request(app).get('/api/platform/attention').set(bearer('admin'));
+  assert.equal(attention.status, 200);
+  assert.ok(Array.isArray(attention.body.items));
+
+  const queue = await request(app).get('/api/platform/enterprise-queue').set(bearer('admin'));
+  assert.equal(queue.status, 200);
+  assert.ok(queue.body.queue);
 });
 
 test('Platform API: search rejects empty queries and accepts admin search', async () => {

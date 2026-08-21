@@ -97,6 +97,7 @@ function enforceApiPolicy(req, res, next) {
       pathname === '/platform/queues/retry'
       || pathname === '/platform/announcements'
       || pathname.startsWith('/platform/announcements/')
+      || pathname === '/platform/operators'
       || /\/platform\/tenants\/[^/]+\/decommission$/.test(pathname)
     ));
   if (requiresRecentAuthentication) {

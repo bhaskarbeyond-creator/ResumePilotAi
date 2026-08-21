@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 import { FiActivity, FiAlertTriangle, FiCheck, FiDatabase, FiLock, FiRefreshCw, FiSave, FiTool } from 'react-icons/fi';
 import { useAdminSession } from '../AdminContext';
 import {
+  deleteAnnouncement,
   getAnnouncements,
   getBackupStatus,
   getEncryptionStatus,
+  getEnterpriseQueue,
   getMaintenance,
   getObservability,
   saveAnnouncement,
@@ -18,6 +20,7 @@ export default function PlatformOperations() {
   const [encryption, setEncryption] = useState(null);
   const [observability, setObservability] = useState(null);
   const [backup, setBackup] = useState(null);
+  const [enterpriseQueue, setEnterpriseQueue] = useState(null);
   const [maintenance, setMaintenanceState] = useState({ enabled: false, message: '' });
   const [announcements, setAnnouncements] = useState([]);
   const [error, setError] = useState(null);
@@ -30,16 +33,18 @@ export default function PlatformOperations() {
     setLoading(true);
     setError(null);
     try {
-      const [enc, obs, bak, maint, notes] = await Promise.all([
+      const [enc, obs, bak, maint, notes, entQueue] = await Promise.all([
         getEncryptionStatus(),
         getObservability(),
         getBackupStatus(),
         getMaintenance(),
         getAnnouncements(),
+        getEnterpriseQueue(),
       ]);
       setEncryption(enc);
       setObservability(obs);
       setBackup(bak);
+      setEnterpriseQueue(entQueue);
       setMaintenanceState({ enabled: maint.enabled === true, message: maint.message || '' });
       setAnnouncements(notes.announcements || []);
     } catch (err) {
@@ -54,6 +59,9 @@ export default function PlatformOperations() {
   const saveMaint = async (event) => {
     event.preventDefault();
     if (!isSuperAdmin) return;
+    if (maintenance.enabled && !window.confirm('Enable public maintenance mode? Non-admin visitors will see the maintenance banner.')) {
+      return;
+    }
     setSaving(true);
     setNotice(null);
     try {
@@ -138,6 +146,8 @@ export default function PlatformOperations() {
           <p className="mt-3 text-sm font-semibold">Available: {backup?.capability?.available ? 'Yes' : 'No'}</p>
           <p className="text-xs text-slate-500 mt-1">Last recorded tenant export: {backup?.lastRecordedExport?.createdAt || 'None in admin audit sample'}</p>
           <Link to="/enterprise?tab=settings" className="inline-block mt-3 text-xs font-bold text-indigo-700">Open Enterprise tenant export →</Link>
+          <p className="mt-3 text-xs text-slate-500">{enterpriseQueue?.note}</p>
+          <p className="text-xs font-semibold">Enterprise outbox: {enterpriseQueue?.queue?.status || 'unavailable'} · DLQ {enterpriseQueue?.queue?.deadLetterCount ?? '—'}</p>
         </section>
 
         <section className="bg-white rounded-2xl border border-slate-200 p-4">
@@ -176,7 +186,10 @@ export default function PlatformOperations() {
                 <p className="text-slate-600">{item.message}</p>
               </div>
               {isSuperAdmin && (
-                <button type="button" onClick={() => toggleAnnouncement(item)} className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white font-bold">{item.enabled ? 'Disable' : 'Enable'}</button>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => toggleAnnouncement(item)} className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white font-bold">{item.enabled ? 'Disable' : 'Enable'}</button>
+                  <button type="button" onClick={async () => { if (!window.confirm(`Permanently delete announcement “${item.title}”? This cannot be undone.`)) return; try { await deleteAnnouncement(item.id); load(); } catch (err) { setError(err.message); } }} className="px-2.5 py-1 rounded-lg border border-red-200 bg-white text-red-700 font-bold">Delete</button>
+                </div>
               )}
             </div>
           ))}
