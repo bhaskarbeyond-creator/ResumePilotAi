@@ -57,5 +57,20 @@ function setTokenVerifierForTests(verifier) {
   verifyToken = verifier;
 }
 
+function isSuperAdmin(user) {
+  const role = String(user?.claims?.role || '').toUpperCase();
+  const permissions = permissionsFor(user);
+  return role === 'SUPER_ADMIN' || permissions.has('*');
+}
+
+function requireSuperAdmin(req, res, next) {
+  if (!isSuperAdmin(req.user)) {
+    return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Super admin permission required', requestId: res.locals?.requestId } });
+  }
+  return next();
+}
+
 const requireAdmin = requirePermission('system.config.write');
-module.exports = { requireAuth, requireVerifiedEmail, requirePermission, requireAdmin, permissionsFor, setTokenVerifierForTests };
+module.exports = { requireAuth, requireVerifiedEmail, requirePermission, requireAdmin, requireSuperAdmin, isSuperAdmin, permissionsFor, setTokenVerifierForTests };
+
+

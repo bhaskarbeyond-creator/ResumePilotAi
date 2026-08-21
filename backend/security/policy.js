@@ -2,11 +2,13 @@ const { permissionsFor } = require('./auth');
 
 const ADMIN_PREFIXES = [
   '/admin/',
-  '/email/admin/'
+  '/email/admin/',
+  '/platform/'
 ];
 
 const ADMIN_EXACT = new Set([
   '/admin',
+  '/platform',
   '/send-sms',
   '/invoice',
   '/invoice/generate',
@@ -26,7 +28,7 @@ const ADMIN_EXACT = new Set([
 const VERIFIED_PREFIXES = [
   '/generate-', '/check-grammar', '/ai/', '/pay', '/paypal/', '/razorpay/',
   '/paytm/', '/phonepe/', '/export', '/invoice', '/send-invoice-email',
-  '/linkedin-scraper', '/subscription/', '/account/', '/messages/', '/jobs/', '/job-applications/', '/employer/', '/notify/', '/admin/ai'
+  '/linkedin-scraper', '/subscription/', '/account/', '/messages/', '/jobs/', '/job-applications/', '/employer/', '/notify/', '/admin/ai', '/platform/'
 ];
 
 const RECENT_AUTH_PATHS = new Set([
@@ -38,6 +40,7 @@ const RECENT_AUTH_PATHS = new Set([
   '/admin/ai-settings',
   '/admin/ai/test-provider',
   '/admin/ai/fetch-models',
+  '/platform/maintenance',
   '/auth/purge-orphaned-auth',
   '/auth/linkedin/test-credentials',
   '/auth/github/test-credentials'

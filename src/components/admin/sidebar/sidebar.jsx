@@ -4,6 +4,7 @@ import {
     FiHome, FiGrid, FiSettings, FiUsers, FiFileText,
     FiMail, FiLogOut, FiSearch, FiShield, FiBriefcase,
     FiLayers, FiGlobe, FiChevronDown, FiChevronRight, FiEdit,
+    FiActivity,
 } from 'react-icons/fi';
 import {
     FaRegBuilding, FaCog, FaCreditCard, FaShareAlt, FaChartLine,
@@ -11,6 +12,7 @@ import {
     FaMapMarkerAlt, FaPaintBrush, FaFileCode, FaShieldAlt, FaHeartbeat,
     FaFire, FaFacebook, FaCloud, FaLinkedin, FaStamp, FaCode,
     FaCookieBite, FaCommentAlt, FaGlobeAsia, FaBrain, FaCubes, FaReceipt,
+    FaServer,
 } from 'react-icons/fa';
 import { GoSidebarCollapse, GoSidebarExpand } from 'react-icons/go';
 import { MdOutlineReviews } from 'react-icons/md';
@@ -87,7 +89,7 @@ const SETTINGS_GROUPS = [
     ]},
 ];
 
-const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: notifyParentOfToggle }) => {
+const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: notifyParentOfToggle, onOpenCommandPalette }) => {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
         const stored = readSidebarPreference();
         return stored === null ? Boolean(initialSidebarCollapsed) : stored === 'true';
@@ -131,6 +133,9 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
     const navItems = [
         { path: '/', icon: FiHome, label: 'Home' },
         { path: '/adm/dashboard', icon: FiGrid, label: 'Dashboard' },
+        { path: '/adm/audit-logs', icon: FiShield, label: 'Admin Audit Trail' },
+        { path: '/adm/queues', icon: FiActivity, label: 'Queue & DLQ Monitor' },
+        { path: '/adm/tenants', icon: FaServer, label: 'Tenants Registry' },
         { path: '/adm/users', icon: FiUsers, label: 'Users Manager' },
         { path: '/adm/employer-applications', icon: FiBriefcase, label: 'Employer Applications' },
         { path: '/adm/jobs-manager', icon: FiLayers, label: 'Jobs Manager' },
@@ -194,33 +199,45 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
                                     <GoSidebarCollapse className="w-5 h-5 text-gray-600" />
                                 </button>
                             </div>
-                            {/* Optional: Search Icon placeholder like ProfileDisplay */}
                             <div className="flex justify-center">
                                 <button
-                                    // onClick={toggleSidebar} // Or some search action
+                                    onClick={onOpenCommandPalette}
                                     className="w-10 h-10 bg-gray-50 hover:bg-gray-100 rounded-lg flex items-center justify-center transition-colors duration-200"
-                                    aria-label="Search">
-                                    <FiSearch className="w-4 h-4 text-gray-400" />
+                                    aria-label="Quick Actions (Ctrl+K)">
+                                    <FiSearch className="w-4 h-4 text-gray-500" />
                                 </button>
                             </div>
                         </div>
                     ) : (
-                        <div className="space-y-5">
+                        <div className="space-y-4">
                             <div className="flex items-center justify-between">
                                 {/* Brand Name - changed from Nolito SVG to text */}
                                 <Link to="/" className="flex items-center gap-2 group">
-                                    <span className="font-semibold text-xl text-gray-900 group-hover:text-purple-700 transition-colors">ResumePilot Admin</span>
+                                    <span className="font-semibold text-lg text-gray-900 group-hover:text-purple-700 transition-colors">ResumePilot Admin</span>
                                 </Link>
 
                                 <button
                                     onClick={toggleSidebar}
-                                    className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors duration-200"
+                                    className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors duration-200"
                                     aria-label="Collapse sidebar">
-                                    <GoSidebarExpand className="w-5 h-5 text-gray-600" />
+                                    <GoSidebarExpand className="w-4 h-4 text-gray-600" />
                                 </button>
                             </div>
-                            {/* Optional: Search Bar - omitted to keep functionality closer to original Sidebar */}
-                            {/* If you want it, copy from ProfileDisplay */}
+                            
+                            {/* Quick Actions Search Bar */}
+                            <button
+                                type="button"
+                                onClick={onOpenCommandPalette}
+                                className="w-full flex items-center justify-between px-3 py-2 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200/80 text-xs text-slate-500 font-medium transition cursor-pointer shadow-2xs"
+                            >
+                                <span className="flex items-center gap-2">
+                                    <FiSearch className="h-3.5 w-3.5 text-slate-400" />
+                                    Quick actions…
+                                </span>
+                                <kbd className="text-[10px] font-mono bg-white border border-slate-200 px-1.5 py-0.5 rounded text-slate-400 shadow-2xs">
+                                    ⌘K
+                                </kbd>
+                            </button>
                         </div>
                     )}
                 </div>

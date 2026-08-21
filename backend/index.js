@@ -22,6 +22,9 @@ const { createTenantService } = require('./enterprise/tenantService');
 const { enterpriseRouter } = require('./routes/enterprise');
 const { enterpriseM2mRouter } = require('./routes/enterpriseM2m');
 const { enterpriseFeatureEnabled } = require('./enterprise/featureFlags');
+const { createAdminAuditMiddleware } = require('./security/adminAudit');
+const { adminAuditRouter } = require('./routes/adminAudit');
+const { platformRouter } = require('./routes/platform');
 const app = express();
 const cors = require('cors');
 const cryptoRandom = require('crypto');
@@ -1781,6 +1784,13 @@ app.use('/api/email', emailRoutes);
 // allowlists and RBAC for each principal kind.
 app.use('/api/enterprise/m2m', enterpriseM2mRouter);
 app.use('/api/enterprise', enterpriseRouter);
+
+// Administrative & Platform Audit Logging
+app.use(['/api/admin', '/api/platform'], createAdminAuditMiddleware());
+
+// Super Admin / Platform & Audit Routes
+app.use('/api/admin', adminAuditRouter);
+app.use('/api/platform', platformRouter);
 
 // AI provider configuration is split: secrets remain in a server-only document while
 // browser-readable settings contain models/toggles only.
