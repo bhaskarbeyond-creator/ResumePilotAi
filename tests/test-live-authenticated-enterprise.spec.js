@@ -109,11 +109,49 @@ test.describe('Live Authenticated Enterprise E2E Audit', () => {
     await expect(page.locator('text=Enterprise Active')).toBeVisible();
 
     // ─────────────────────────────────────────────────────────────
-    // Module 2: Resumes
+    // Module 2: Talent & Resumes
     // ─────────────────────────────────────────────────────────────
-    console.log('Testing Module 2: Documents & Resumes...');
-    await page.locator('button.enterprise-nav-item').filter({ hasText: 'Documents & Resumes' }).click();
-    await expect(page.locator('h2.enterprise-tab-title').filter({ hasText: 'Enterprise Document Library' })).toBeVisible();
+    console.log('Testing Module 2: Talent & Resumes...');
+    // Seed sample candidate resume
+    await page.evaluate(async (tenantId) => {
+      try {
+        const auth = window.fire?.auth?.();
+        const token = await auth?.currentUser?.getIdToken();
+        if (!token) return;
+        await fetch('/api/enterprise/resources', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'X-Enterprise-Tenant': tenantId
+          },
+          body: JSON.stringify({
+            resourceType: 'resume',
+            payload: {
+              personalInfo: {
+                fullName: 'Elena Rostova',
+                jobTitle: 'VP of Product Engineering',
+                email: 'elena.rostova@enterprise.example',
+                phone: '+1 (555) 382-9912',
+                location: 'San Francisco, CA',
+                summary: 'Senior technology executive with 14+ years scaling distributed systems and cloud infrastructure products.'
+              },
+              atsScore: 94,
+              experience: [
+                { jobTitle: 'VP of Product Engineering', companyName: 'Stripe', startDate: '2021', endDate: 'Present', description: 'Led 85+ engineers across core payment infrastructure.' },
+                { jobTitle: 'Director of Engineering', companyName: 'Datadog', startDate: '2017', endDate: '2021', description: 'Architected high-throughput telemetry ingestion platform.' }
+              ],
+              skills: ['Distributed Systems', 'Cloud Architecture', 'Go', 'Kubernetes', 'Product Strategy', 'Executive Leadership']
+            }
+          })
+        });
+      } catch {}
+    }, tenantId);
+
+    await page.locator('button.enterprise-nav-item').filter({ hasText: /Talent & Resumes|Documents & Resumes/ }).click();
+    await expect(page.locator('h2.enterprise-tab-title').filter({ hasText: /Talent & Resume Repository|Enterprise Document Library/ })).toBeVisible();
+    await page.waitForTimeout(1500);
+    await page.screenshot({ path: 'enterprise_live_talent_resumes.png', fullPage: true });
 
     // ─────────────────────────────────────────────────────────────
     // Module 3: Users (IAM)

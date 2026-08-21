@@ -29,7 +29,7 @@ import './enterprise.css';
 // the tenancy hierarchy (tenant → workspace → team → user → resource).
 const NAVIGATION = [
   { id: 'overview', label: 'Overview', icon: FiActivity, group: 'Home', description: 'Real-time command center, key operational metrics, and tenant health', keywords: 'dashboard command center health' },
-  { id: 'resumes', label: 'Documents & Resumes', icon: FiFileText, group: 'Organization', description: 'Enterprise document library, shared CV templates, and drafting assets', keywords: 'cv library documents' },
+  { id: 'resumes', label: 'Talent & Resumes', icon: FiFileText, group: 'Organization', description: 'Enterprise candidate talent pool, shared executive CVs, and drafting assets', keywords: 'talent candidate cv library documents resumes' },
   { id: 'members', label: 'Users & IAM', icon: FiUsers, permission: 'tenant.members.read', group: 'Organization', description: 'Manage enterprise memberships, invitations, roles, and identity access', keywords: 'people invitations identity access membership' },
   { id: 'teams', label: 'Teams', icon: FiUsers, permission: 'workspace.read', group: 'Organization', description: 'Organize members into functional teams and assign workspace leads', keywords: 'groups squads' },
   { id: 'workspaces', label: 'Workspaces', icon: FiSliders, permission: 'workspace.read', group: 'Organization', description: 'Configure isolated departmental workspaces and default landing zones', keywords: 'departments business units' },
@@ -58,7 +58,7 @@ const QUICK_ACTIONS = [
   { id: 'action-suspended', label: 'Review suspended members', icon: FiUsers, target: 'members', params: { status: 'SUSPENDED' }, permission: 'tenant.members.read', keywords: 'deactivated blocked' },
   { id: 'action-new-workspace', label: 'Create a new workspace', icon: FiPlus, target: 'workspaces', params: { create: '1' }, permission: 'tenant.workspaces.manage', keywords: 'department unit' },
   { id: 'action-new-team', label: 'Create a new team', icon: FiPlus, target: 'teams', params: { create: '1' }, permission: 'workspace.manage', keywords: 'squad group' },
-  { id: 'action-new-resume', label: 'Open the enterprise document library', icon: FiPlus, target: 'resumes', params: null, permission: 'resource.create', keywords: 'document cv resume create' },
+  { id: 'action-new-resume', label: 'Open candidate talent repository', icon: FiPlus, target: 'resumes', params: null, permission: 'resource.create', keywords: 'talent candidate document cv resume create' },
   { id: 'action-new-sa', label: 'Create a service account', icon: FiLock, target: 'security', params: { create: '1' }, permission: 'tenant.security.manage', keywords: 'api key m2m machine' },
   { id: 'action-dlq', label: 'Inspect dead-letter jobs', icon: FiLock, target: 'security', params: { focus: 'jobs' }, permission: 'tenant.security.read', keywords: 'queue dlq replay failed' },
   { id: 'action-audit-denied', label: 'Investigate denied operations', icon: FiFileText, target: 'audit', params: { outcome: 'DENIED' }, permission: 'tenant.audit.read', keywords: 'forbidden failures security' },

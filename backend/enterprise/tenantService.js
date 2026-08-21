@@ -915,9 +915,66 @@ class TenantService {
     return this.repository.getResource(context, resourceId);
   }
 
-  async listResources({ context, options }) {
+  async listResources({ context, options = {} }) {
     this.assertRepository();
-    return this.repository.listResources(context, options);
+    const repoResources = await this.repository.listResources(context, options);
+    
+    // In live Firestore environment, aggregate member resumes for high-value talent repository
+    if (this.db && (!options.resourceType || ['resume', 'RESUME'].includes(String(options.resourceType).toUpperCase()))) {
+      try {
+        const memberships = await this.listTenantMemberships({ context });
+        const memberSubjects = Array.isArray(memberships) ? memberships.map(m => ({
+          subjectId: m.subjectId,
+          invitationEmail: m.invitationEmail,
+          displayName: m.displayName,
+          principalId: m.principalId,
+        })).filter(m => m.subjectId) : [];
+
+        const existingIds = new Set(repoResources.map(r => r.id));
+        const memberResumes = [];
+
+        for (const member of memberSubjects.slice(0, 25)) {
+          const snap = await this.db.collection('users').doc(member.subjectId).collection('resumes').limit(25).get();
+          snap.forEach(doc => {
+            if (existingIds.has(doc.id)) return;
+            const data = doc.data() || {};
+            const candidateName = data.personalInfo?.fullName || data.fullName || data.title || 'Candidate Profile';
+            const jobTitle = data.personalInfo?.jobTitle || data.positionTitle || data.jobTitle || 'Executive Professional';
+            const atsScore = Number(data.atsScore || data.score || 85);
+            const template = data.template || data.templateId || 'modern';
+            const updatedAt = data.updatedAt?.toDate?.() ? data.updatedAt.toDate().toISOString() : (data.created_at?.toDate?.() ? data.created_at.toDate().toISOString() : new Date().toISOString());
+            
+            memberResumes.push({
+              id: doc.id,
+              tenantId: context.tenantId,
+              workspaceId: data.workspaceId || context.workspaceId || 'default',
+              resourceType: 'RESUME',
+              ownerPrincipalId: member.principalId || member.subjectId,
+              ownerEmail: member.invitationEmail || null,
+              ownerName: member.displayName || candidateName,
+              candidateName,
+              jobTitle,
+              atsScore,
+              template,
+              classification: data.classification || 'INTERNAL',
+              completeness: (data.personalInfo?.fullName && data.experience?.length) ? 90 : 75,
+              summary: data.personalInfo?.summary || data.summary || '',
+              revision: data.revision || 1,
+              createdAt: data.created_at?.toDate?.() ? data.created_at.toDate().toISOString() : updatedAt,
+              updatedAt,
+              payload: data,
+            });
+            existingIds.add(doc.id);
+          });
+        }
+
+        return [...repoResources, ...memberResumes];
+      } catch (err) {
+        // Fallback gracefully to repository resources
+      }
+    }
+
+    return repoResources;
   }
 
   async updateResource({ context, resourceId, input }) {

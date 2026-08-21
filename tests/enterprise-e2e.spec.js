@@ -74,7 +74,7 @@ test('shell renders grouped navigation, breadcrumbs, and the signed-in identity'
 
   // All 13 modules for a tenant owner with platform capability.
   await expect(page.locator('.enterprise-nav-item')).toHaveCount(13);
-  for (const label of ['Overview', 'Documents & Resumes', 'Users & IAM', 'Teams', 'Workspaces',
+  for (const label of ['Overview', 'Talent & Resumes', 'Users & IAM', 'Teams', 'Workspaces',
     'Roles & permissions', 'AI workspace', 'Security & M2M', 'Usage & Quotas', 'Audit logs',
     'Support access', 'Organization settings', 'Platform administration']) {
     await expect(page.locator(`.enterprise-nav-item:has-text("${label}")`).first()).toBeVisible();
