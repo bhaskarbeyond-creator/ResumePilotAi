@@ -825,8 +825,12 @@ class TenantService {
     try {
       const emailNotifierMod = require('../services/emailNotifier');
       const EmailNotifier = emailNotifierMod?.EmailNotifier || emailNotifierMod?.default || emailNotifierMod;
-      const siteUrl = `${process.env.PROTOCOL || 'https'}://${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}`;
-      const actionUrl = `${siteUrl}/enterprise?tab=overview&tenant=${encodeURIComponent(context?.tenant?.id || '')}`;
+      const { enterpriseConsoleUrl } = require('../services/publicAppUrl');
+      const actionUrl = enterpriseConsoleUrl({
+        tab: 'overview',
+        tenantId: context?.tenant?.id || '',
+        workspaceId: membership.workspaceId || context?.workspaceId || '',
+      });
       const result = await EmailNotifier.notifyEnterpriseInvitation(this.db, {
         userEmail: membership.invitationEmail,
         organizationName: context?.tenant?.displayName || 'an enterprise organization',

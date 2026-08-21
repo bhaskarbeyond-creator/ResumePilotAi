@@ -21,6 +21,9 @@ test('enterprise route is authenticated and isolated from certified builder rout
   assert.match(main, /const EnterpriseConsole = lazy\(\(\) => import\('\.\/enterprise\/EnterpriseConsole'\)\)/);
   assert.match(main, /path="\/build-resume\/\*"[^\n]+BuildResume/);
   assert.match(main, /path="\/dashboard\/\*"[^\n]+Dashboard/);
+  assert.match(main, /loginPathWithNext/);
+  assert.match(main, /PostLoginRedirect/);
+  assert.match(main, /isSafeInternalPath/);
   const sidebar = await source('sidebar');
   assert.match(sidebar, /VITE_ENTERPRISE_TENANCY_ENABLED === 'true'/);
   assert.match(sidebar, /Enterprise Workspace/);

@@ -1,7 +1,8 @@
 import './bootstrap';
 import React, { Suspense, lazy, useState, useEffect, useRef, createContext } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Routes, Route, Link, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { isSafeInternalPath, loginPathWithNext } from './utils/safeInternalPath';
 import './tailwind.css';
 import './index.scss';
 import './cv-templates/css/globalTemplateEnhancements.css';
@@ -92,7 +93,26 @@ const BlogList = lazy(() => import('./components/Blog/BlogList/BlogList'));
 const BlogPost = lazy(() => import('./components/Blog/BlogPost/BlogPost'));
 const BlogEditor = lazy(() => import('./components/Blog/BlogEditor/BlogEditor'));
 const NotFound = () => <main className="flex min-h-screen items-center justify-center bg-slate-50 p-6"><div className="text-center"><h1 className="text-3xl font-bold text-slate-900">Page not found</h1><p className="mt-3 text-slate-600">The requested page does not exist or is no longer available.</p><Link to="/" className="mt-5 inline-block rounded-lg bg-slate-900 px-4 py-2 text-white">Return home</Link></div></main>;
-const RequireAuthenticated = ({ user, children }) => user ? children : <Navigate to="/login" replace />;
+function RequireAuthenticated({ user, children }) {
+    const location = useLocation();
+    if (user) return children;
+    const next = `${location.pathname}${location.search}${location.hash}`;
+    return <Navigate to={loginPathWithNext(next)} replace />;
+}
+
+function PostLoginRedirect({ user }) {
+    const location = useLocation();
+    const navigate = useNavigate();
+    useEffect(() => {
+        if (!user || location.pathname !== '/login') return;
+        const next = new URLSearchParams(location.search).get('next');
+        if (next && isSafeInternalPath(next)) {
+            navigate(next, { replace: true });
+        }
+    }, [user, location.pathname, location.search, navigate]);
+    return null;
+}
+
 const AuthenticatedAppShell = lazy(() => import('./components/AppShell/AuthenticatedAppShell'));
 const MaybeApplicationShell = ({ user, children }) => (
     user ? <AuthenticatedAppShell>{children}</AuthenticatedAppShell> : children
@@ -338,6 +358,7 @@ const AuthWrapper = () => {
             )}
             <GoogleMapsProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || import.meta.env.VITE_APP_GOOGLE_MAPS_API_KEY}>
             <BrowserRouter>
+                <PostLoginRedirect user={user} />
                 <GA4Provider>
                     <RouteSeo />
                     <RouteFocus />

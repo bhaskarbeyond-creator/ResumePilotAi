@@ -6,6 +6,7 @@ const net = require('net');
 const fs = require('fs');
 const path = require('path');
 const { assertPublicNetworkTarget } = require('../security/network');
+const { enterpriseConsoleUrl, resolvePublicAppOrigin, sanitizeAbsoluteHttpUrl } = require('../services/publicAppUrl');
 
 // In-memory Outbox Log Store (persisted to DB if available)
 let emailLogsStore = [];
@@ -256,10 +257,21 @@ function escapeEmailHtml(value) {
     })[char]);
 }
 function safeEmailUrl(value, fallback = '#') {
+    const url = sanitizeAbsoluteHttpUrl(value);
+    return url ? escapeEmailHtml(url) : fallback;
+}
+
+function hrefAttr(value, fallback = '#') {
+    return safeEmailUrl(value, fallback);
+}
+
+function publicSiteOrigin() {
     try {
-        const parsed = new URL(String(value));
-        return ['https:', 'http:'].includes(parsed.protocol) ? escapeEmailHtml(parsed.href) : fallback;
-    } catch (_) { return fallback; }
+        return resolvePublicAppOrigin();
+    } catch (error) {
+        console.error('[Email] Public application origin is not configured:', error.message);
+        throw error;
+    }
 }
 
 function humanizeName(raw, fallback = 'Team Member') {
@@ -330,7 +342,7 @@ function replaceEmailVariables(templateText, vars = {}) {
 }
 
 // Shared Header/Footer Layout Wrapper for 10/10 Aesthetic Consistency & Anti-Spam
-function buildEmailWrapper(title, badgeText, contentHtml, brandName = 'ResumePilot AI', siteUrl = 'https://airesume.projectdemo.guru', supportEmail = 'support@airesume.projectdemo.guru') {
+function buildEmailWrapper(title, badgeText, contentHtml, brandName = 'ResumePilot AI', siteUrl = '', supportEmail = '') {
     return `<!DOCTYPE html>
 <html>
 <head>
@@ -361,7 +373,7 @@ function buildEmailWrapper(title, badgeText, contentHtml, brandName = 'ResumePil
             <!-- Footer -->
             <div style="background-color: #f8fafc; padding: 24px 32px; border-top: 1px solid #f1f5f9; text-align: center; font-size: 12px; color: #64748b;">
                 <p style="margin: 0 0 8px 0; font-weight: 600; color: #475569;">© ${new Date().getFullYear()} ${escapeEmailHtml(brandName)}. All rights reserved.</p>
-                <p style="margin: 0;">Need support? Email us at <a href="mailto:${supportEmail}" style="color: #4f46e5; text-decoration: none; font-weight: 600;">${supportEmail}</a> or visit <a href="${siteUrl}" style="color: #4f46e5; text-decoration: none; font-weight: 600;">${siteUrl}</a></p>
+                <p style="margin: 0;">Need support? Email us at <a href="mailto:${escapeEmailHtml(supportEmail)}" style="color: #4f46e5; text-decoration: none; font-weight: 600;">${escapeEmailHtml(supportEmail)}</a> or visit <a href="${hrefAttr(siteUrl)}" style="color: #4f46e5; text-decoration: none; font-weight: 600;">${escapeEmailHtml(siteUrl)}</a></p>
                 <p style="margin: 8px 0 0 0; font-size: 11px; color: #94a3b8;">This is an authenticated enterprise communication. To manage notification preferences, visit your account console.</p>
             </div>
         </div>
@@ -373,7 +385,7 @@ function buildEmailWrapper(title, badgeText, contentHtml, brandName = 'ResumePil
 /**
  * Converts custom text / shortcode bodies into high-fidelity HTML email blocks.
  */
-function formatCustomEmailBody(customBody, vars = {}, brandName = 'ResumePilot AI', siteUrl = 'https://airesume.projectdemo.guru', supportEmail = 'support@airesume.projectdemo.guru') {
+function formatCustomEmailBody(customBody, vars = {}, brandName = 'ResumePilot AI', siteUrl = '', supportEmail = '') {
     const rawReplaced = replaceEmailVariables(customBody, vars);
     
     // Split into paragraphs / lines
@@ -389,7 +401,8 @@ function formatCustomEmailBody(customBody, vars = {}, brandName = 'ResumePilot A
         const hasUrl = urlMatch || (vars.action_url && p.includes(vars.action_url)) || p.startsWith('http');
         
         if (hasUrl) {
-            const targetUrl = safeEmailUrl(urlMatch ? urlMatch[0] : (vars.action_url || `${siteUrl}/enterprise`));
+            const rawTarget = sanitizeAbsoluteHttpUrl(urlMatch ? urlMatch[0] : (vars.action_url || `${siteUrl}/enterprise`));
+            const targetUrl = hrefAttr(rawTarget);
             let btnLabel = 'Open Enterprise Console &rarr;';
             const lower = ((customBody || '') + ' ' + (p || '')).toLowerCase();
             if (lower.includes('invit') || lower.includes('join') || lower.includes('onboard') || lower.includes('welcome')) {
@@ -410,6 +423,7 @@ function formatCustomEmailBody(customBody, vars = {}, brandName = 'ResumePilot A
                         ${btnLabel}
                     </a>
                 </div>
+                <p style="font-size: 12px; color: #94a3b8; text-align: center; word-break: break-all; margin: 0 0 16px;">If the button does not work, copy this link:<br/><a href="${targetUrl}" style="color: #4f46e5;">${escapeEmailHtml(rawTarget)}</a></p>
             `;
         } else if (p.toLowerCase().includes('assigned access level:') || p.toLowerCase().includes('assigned role:') || p.toLowerCase().includes('new access role:') || p.toLowerCase().includes('your assigned role:') || p.toLowerCase().includes('your updated role:')) {
             contentHtml += `
@@ -443,13 +457,24 @@ function formatCustomEmailBody(customBody, vars = {}, brandName = 'ResumePilot A
 // Enterprise Dynamic HTML Template Generator
 function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
     const rawVars = vars || {};
+    const origin = sanitizeAbsoluteHttpUrl(rawVars.site_url) || publicSiteOrigin();
+    const rawActionUrl = sanitizeAbsoluteHttpUrl(rawVars.action_url) || `${origin}/enterprise`;
+    const rawResetLink = sanitizeAbsoluteHttpUrl(rawVars.reset_link) || `${origin}/login`;
+    const rawRetryUrl = sanitizeAbsoluteHttpUrl(rawVars.retry_url) || `${origin}/pricing`;
+    const rawVerificationLink = sanitizeAbsoluteHttpUrl(rawVars.verification_link);
     vars = Object.fromEntries(Object.entries(rawVars).map(([key, value]) => [
         key,
-        ['site_url', 'reset_link', 'retry_url', 'action_url'].includes(key) ? safeEmailUrl(value) : escapeEmailHtml(value)
+        ['site_url', 'reset_link', 'retry_url', 'action_url', 'verification_link'].includes(key)
+            ? hrefAttr(value)
+            : escapeEmailHtml(value)
     ]));
     const brandName = vars.brand_name || escapeEmailHtml(process.env.SMTP_SENDER_NAME || 'ResumePilot AI');
-    const siteUrl = vars.site_url || `${process.env.PROTOCOL || 'https'}://${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}`;
-    const supportEmail = vars.support_email || process.env.SMTP_REPLY_TO || `support@${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}`;
+    const siteUrl = origin;
+    const supportEmail = rawVars.support_email || process.env.SMTP_REPLY_TO || `support@${new URL(origin).hostname}`;
+    vars.action_url = hrefAttr(rawActionUrl);
+    vars.reset_link = hrefAttr(rawResetLink);
+    vars.retry_url = hrefAttr(rawRetryUrl);
+    if (rawVerificationLink) vars.verification_link = hrefAttr(rawVerificationLink);
 
     const candidateName = vars.candidate_name || vars.customer_name || 'Valued Candidate';
     const invoiceNo = vars.invoice_number || vars.transaction_id || 'RPAI-INV-1001';
@@ -931,8 +956,9 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
                     <p style="margin: 0; font-size: 13px; color: #64748b; line-height: 1.5;">You'll have access to collaborative resume builders, AI content optimization, team templates, and candidate evaluation tools.</p>
                 </div>
                 <div style="text-align: center; margin: 28px 0;">
-                    <a href="${vars.action_url || `${siteUrl}/enterprise`}" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 14px; display: inline-block; box-shadow: 0 10px 20px -5px rgba(79,70,229,0.4);">Accept Your Invitation &rarr;</a>
+                    <a href="${vars.action_url}" target="_blank" rel="noopener noreferrer" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 14px; display: inline-block; box-shadow: 0 10px 20px -5px rgba(79,70,229,0.4);">Accept Your Invitation &rarr;</a>
                 </div>
+                <p style="font-size: 12px; color: #94a3b8; margin-top: 8px; text-align: center; word-break: break-all;">If the button does not work, copy this link:<br/><a href="${vars.action_url}" style="color: #4f46e5;">${escapeEmailHtml(rawActionUrl)}</a></p>
                 <p style="font-size: 12px; color: #94a3b8; margin-top: 24px; text-align: center;">This invitation link remains active for ${vars.expires_in || '7 days'}. If you did not expect this invitation, you can safely ignore this email.</p>`
             );
             break;
@@ -971,7 +997,6 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
             break;
 
         case 'enterprise_security_alert':
-        case 'security_alert':
             subject = vars.subject || `🚨 Security Notice: Emergency Diagnostic Support Access for ${vars.organization_name || brandName}`;
             bodyHtml = buildEmailWrapper(
                 'Enterprise Security Alert',
@@ -1487,7 +1512,7 @@ router.post('/send-invoice-email', async (req, res) => {
                 amount: amount,
                 plan_name: planName,
                 gstin: gstin,
-                site_url: `${process.env.PROTOCOL || 'https'}://${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}`,
+                site_url: publicSiteOrigin(),
                 support_email: config.smtp.replyTo || config.smtp.username
             }, customTemplatesStore);
 
@@ -1687,8 +1712,8 @@ async function dispatchNotification(db, { to, templateType, vars = {}, customSub
         }
 
         const brandName = config.smtp?.senderName || 'ResumePilot AI';
-        const siteUrl = `${process.env.PROTOCOL || 'https'}://${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}`;
-        const supportEmail = config.smtp?.replyTo || `support@${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}`;
+        const siteUrl = publicSiteOrigin();
+        const supportEmail = config.smtp?.replyTo || `support@${new URL(siteUrl).hostname}`;
 
         const rawCandidate = vars.user_name || vars.candidate_name || to;
         const candidateName = humanizeName(rawCandidate, 'Team Member');
@@ -1715,18 +1740,17 @@ async function dispatchNotification(db, { to, templateType, vars = {}, customSub
             'enterprise_quota_alert': 'usage',
         };
         const targetTab = contextualTabMap[templateType] || 'overview';
-        const defaultActionUrl = `${siteUrl}/enterprise?tab=${targetTab}`;
-        const finalActionUrl = vars.action_url || defaultActionUrl;
+        const defaultActionUrl = enterpriseConsoleUrl({
+            tab: targetTab,
+            tenantId: vars.tenant_id || vars.tenantId || '',
+            workspaceId: vars.workspace_id || vars.workspaceId || '',
+        });
+        const finalActionUrl = sanitizeAbsoluteHttpUrl(vars.action_url) || defaultActionUrl;
 
         const mergedVars = {
             brand_name: brandName,
             site_url: siteUrl,
             support_email: supportEmail,
-            candidate_name: candidateName,
-            user_name: candidateName,
-            organization_name: orgName,
-            inviter_name: inviterName,
-            role_title: roleTitle,
             workspace_name: vars.workspace_name || 'Main Workspace',
             team_name: vars.team_name || 'Core Team',
             updater_name: updaterName,
@@ -1739,10 +1763,8 @@ async function dispatchNotification(db, { to, templateType, vars = {}, customSub
             quota_limit: vars.quota_limit || '1,000,000',
             reset_date: vars.reset_date || '1st of next month',
             expires_in: vars.expires_in || '7 days',
-            action_url: finalActionUrl,
             date: vars.date || new Date().toLocaleDateString('en-IN', { dateStyle: 'medium' }),
             ...vars,
-            // Override with normalized humanized strings
             candidate_name: candidateName,
             user_name: candidateName,
             inviter_name: inviterName,
@@ -1767,7 +1789,7 @@ async function dispatchNotification(db, { to, templateType, vars = {}, customSub
 
         const senderDomain = config.smtp?.username?.includes('@')
             ? config.smtp.username.split('@')[1]
-            : (process.env.WEBSITE_NAME || 'airesume.projectdemo.guru');
+            : new URL(siteUrl).hostname;
         const messageId = `<${Date.now()}.${Math.random().toString(36).substring(2, 11)}@${senderDomain}>`;
 
         const mailOptions = {
@@ -1817,4 +1839,5 @@ router.dispatchNotification = dispatchNotification;
 module.exports = router;
 module.exports.dispatchNotification = dispatchNotification;
 module.exports.getEmailConfig = getEmailConfig;
-module.exports._test = { normalizedMailSection, normalizeTemplateToggles, projectMailSection };
+module.exports.renderEmailTemplate = renderEmailTemplate;
+module.exports._test = { normalizedMailSection, normalizeTemplateToggles, projectMailSection, renderEmailTemplate, formatCustomEmailBody, replaceEmailVariables };

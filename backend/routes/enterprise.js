@@ -853,8 +853,12 @@ router.post('/test-email', resolveTenantContext, requireTenantPermission('tenant
         'enterprise_quota_alert': 'usage',
       };
       const targetTab = tabMap[templateId] || 'overview';
-      const siteUrl = `${process.env.PROTOCOL || 'https'}://${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}`;
-      const actionUrl = req.body?.vars?.action_url || `${siteUrl}/enterprise?tab=${targetTab}&tenant=${encodeURIComponent(req.tenant?.id || 'demo')}`;
+      const { enterpriseConsoleUrl, sanitizeAbsoluteHttpUrl } = require('../services/publicAppUrl');
+      const actionUrl = sanitizeAbsoluteHttpUrl(req.body?.vars?.action_url) || enterpriseConsoleUrl({
+        tab: targetTab,
+        tenantId: req.tenant?.id || '',
+        workspaceId: req.workspace?.id || '',
+      });
 
       const result = await emailRoute.dispatchNotification(db, {
         to: recipient,

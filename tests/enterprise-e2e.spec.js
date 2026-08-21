@@ -395,6 +395,15 @@ test('API failure produces a truthful error state and Retry genuinely recovers',
 // 8. Navigation history, refresh, responsive
 // ---------------------------------------------------------------------------
 
+test('unauthenticated enterprise email deep link preserves the return path on login', async ({ page }) => {
+  await page.goto(`${base}/enterprise?tab=overview&tenant=11111111-2222-4333-8333-444444444444`, { waitUntil: 'domcontentloaded' });
+  await expect(page).toHaveURL(/\/login\?next=/, { timeout: 30_000 });
+  const next = new URL(page.url()).searchParams.get('next');
+  expect(next).toContain('/enterprise');
+  expect(next).toContain('tab=overview');
+  expect(next).toContain('tenant=11111111-2222-4333-8333-444444444444');
+});
+
 test('deep links survive refresh; browser back/forward walk the module history', async ({ page }) => {
   await bootConsole(page, { tab: 'members', extraParams: '&status=INVITED' });
   await expect(page.locator('.enterprise-chip:has-text("Invited")')).toHaveClass(/active/);

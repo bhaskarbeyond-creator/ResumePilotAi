@@ -92,6 +92,12 @@ async function getAdminEmail(db) {
     return null;
 }
 
+const { resolvePublicAppOrigin } = require('./publicAppUrl');
+
+function publicSiteOrigin() {
+    return resolvePublicAppOrigin();
+}
+
 const sendNotification = async (db, { to, templateType, vars, customSubject, customBody }) => {
     if (!to) return { success: false, deliveryState: 'DELIVERY_FAILED', error: 'Notification recipient unavailable' };
     try {
@@ -119,7 +125,7 @@ class EmailNotifier {
         const userDelivery = await sendNotification(db, {
             to: userEmail,
             templateType: 'welcome',
-            vars: { candidate_name: name, user_name: name, site_url: `${process.env.PROTOCOL || 'https'}://${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}` }
+            vars: { candidate_name: name, user_name: name, site_url: publicSiteOrigin() }
         });
         const adminEmail = await getAdminEmail(db);
         const adminDelivery = adminEmail
@@ -182,7 +188,7 @@ class EmailNotifier {
      */
     static async notifyPaymentFailed(db, { userEmail, userName = 'Customer', amount = 'Amount unavailable', retryUrl }) {
         if (!userEmail) return;
-        const siteUrl = `${process.env.PROTOCOL || 'https'}://${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}`;
+        const siteUrl = publicSiteOrigin();
         return sendNotification(db, {
             to: userEmail,
             templateType: 'payment_failed',
@@ -236,7 +242,7 @@ class EmailNotifier {
      */
     static async notifyAIResumeReady(db, { userEmail, userName = 'Candidate', atsScore = 'Not measured' }) {
         if (!userEmail) return;
-        const siteUrl = `${process.env.PROTOCOL || 'https'}://${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}`;
+        const siteUrl = publicSiteOrigin();
         return sendNotification(db, {
             to: userEmail,
             templateType: 'ai_resume_ready',
@@ -354,7 +360,7 @@ class EmailNotifier {
      */
     static async notifyEnterpriseInvitation(db, { userEmail, organizationName = 'an enterprise organization', inviterEmail = '', roleTitle = 'Enterprise Member', actionUrl = '' }) {
         if (!userEmail) return { success: false, deliveryState: 'DELIVERY_FAILED', error: 'Invitation recipient unavailable' };
-        const siteUrl = `${process.env.PROTOCOL || 'https'}://${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}`;
+        const siteUrl = publicSiteOrigin();
         const url = actionUrl || `${siteUrl}/enterprise`;
         const humanName = humanizeName(userEmail, 'Team Member');
         const humanInviter = humanizeName(inviterEmail, 'Your team administrator');
@@ -396,7 +402,7 @@ class EmailNotifier {
 
     static async notifyOAuthNewUser(db, { userEmail, userName = 'User', provider = 'Social' }) {
         if (!userEmail) return;
-        const siteUrl = `${process.env.PROTOCOL || 'https'}://${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}`;
+        const siteUrl = publicSiteOrigin();
         // Send user welcome email
         sendNotification(db, {
             to: userEmail,

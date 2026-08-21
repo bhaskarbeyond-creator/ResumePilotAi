@@ -288,7 +288,7 @@ export default function EnterpriseEmailTab() {
       .replace(/{{quota_limit}}/g, '1,000,000')
       .replace(/{{reset_date}}/g, '1st of next month')
       .replace(/{{expires_in}}/g, '7 days')
-      .replace(/{{action_url}}/g, `https://airesume.projectdemo.guru/enterprise?tab=${targetTab}`);
+      .replace(/{{action_url}}/g, `${typeof window !== 'undefined' ? window.location.origin : ''}/enterprise?tab=${targetTab}`);
   };
 
   const handleSendTest = async (e) => {
