@@ -87,9 +87,8 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
   const teamCount = Array.isArray(teams?.data?.teams) ? teams.data.teams.length : 0;
   const sampleCount = metricsData?.sampleCount || 0;
   const requestP95 = metricsData?.p95 || 0;
-  const errorTotal = metricsData?.errors
-    ? (metricsData.errors.serverErrors || 0) + (metricsData.errors.clientErrors || 0)
-    : 0;
+  const serverErrors = metricsData?.errors?.serverErrors || 0;
+  const clientErrors = metricsData?.errors?.clientErrors || 0;
 
   const planeState = dataPlane?.data?.dataPlane || null;
   const planeOk = planeState?.configured === true && planeState?.durable === true;
@@ -135,11 +134,11 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
     if (!members.loading && membershipRows.length <= 1) {
       items.push({ id: 'invite', tone: 'info', label: 'You are the only member of this organization', hint: 'Invite teammates from Users & IAM.', target: 'members', params: { invite: '1' } });
     }
-    if (!metrics.loading && errorTotal > 0) {
-      items.push({ id: 'errors', tone: 'info', label: `${errorTotal} API error${errorTotal === 1 ? '' : 's'} observed in the current window`, hint: 'Check the audit trail for denied or failed operations.', target: 'audit' });
+    if (!metrics.loading && serverErrors > 0) {
+      items.push({ id: 'errors', tone: 'danger', label: `${serverErrors} server error${serverErrors === 1 ? '' : 's'} observed in the current window`, hint: 'Check the audit trail for failed backend operations.', target: 'audit' });
     }
     return items;
-  }, [members, metrics.loading, dataPlane.loading, queue.loading, queueState, planeState, planeOk, queueDlq, errorTotal, usage.loading, quotaRatio]);
+  }, [members, metrics.loading, dataPlane.loading, queue.loading, queueState, planeState, planeOk, queueDlq, serverErrors, usage.loading, quotaRatio]);
 
   return (
     <div className="enterprise-tab-content">
@@ -244,12 +243,12 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
 
         <div className="enterprise-card enterprise-metric-box">
           <div className="enterprise-metric-header">
-            <span>Observed Errors</span>
+            <span>Server Errors (5xx)</span>
             <FiDatabase className="enterprise-metric-icon" aria-hidden="true" />
           </div>
-          <div className="enterprise-metric-value">{metrics.loading ? '…' : formatNumber(errorTotal)}</div>
-          <div className="enterprise-metric-footer text-success">
-            Client + server errors in window
+          <div className="enterprise-metric-value">{metrics.loading ? '…' : formatNumber(serverErrors)}</div>
+          <div className={`enterprise-metric-footer ${serverErrors === 0 ? 'text-success' : 'text-danger'}`}>
+            {serverErrors === 0 ? '✓ 100% Operational · 0 server errors' : `${serverErrors} server error(s) in window`}
           </div>
         </div>
       </div>
