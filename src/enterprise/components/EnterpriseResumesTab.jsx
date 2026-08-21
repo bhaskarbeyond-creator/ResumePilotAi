@@ -1,13 +1,15 @@
 import React, { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   FiFileText, FiPlus, FiEdit3, FiCopy, FiTrash2, FiSearch, FiCheck,
   FiEye, FiDownload, FiStar, FiUser, FiBriefcase, FiAward, FiLayers,
-  FiX, FiExternalLink, FiSliders, FiCheckCircle
+  FiX, FiExternalLink, FiSliders, FiCheckCircle, FiChevronDown, FiChevronRight,
+  FiUsers, FiMaximize2, FiPrinter
 } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 import HelpTooltip from './HelpTooltip';
 import EnterpriseConfirmModal from './EnterpriseConfirmModal';
+import EnterpriseResumePdfModal, { normalizeResumeValues } from './EnterpriseResumePdfModal';
 
 function getCandidateName(resource) {
   return resource?.candidateName ||
@@ -22,6 +24,7 @@ function getJobTitle(resource) {
     resource?.payload?.personalInfo?.jobTitle ||
     resource?.payload?.positionTitle ||
     resource?.payload?.jobTitle ||
+    resource?.payload?.occupation ||
     'Executive Professional';
 }
 
@@ -34,8 +37,9 @@ function getCompleteness(resource) {
   if (resource?.completeness) return Number(resource.completeness);
   const p = resource?.payload || {};
   let score = 25;
-  if (p.personalInfo?.fullName) score += 25;
+  if (p.personalInfo?.fullName || p.firstname) score += 25;
   if (Array.isArray(p.experience) && p.experience.length > 0) score += 25;
+  else if (Array.isArray(p.employment) && p.employment.length > 0) score += 25;
   if (Array.isArray(p.education) && p.education.length > 0) score += 15;
   if (Array.isArray(p.skills) && p.skills.length > 0) score += 10;
   return Math.min(100, score);
@@ -59,6 +63,7 @@ function formatRelativeTime(dateStr) {
 }
 
 export default function EnterpriseResumesTab() {
+  const navigate = useNavigate();
   const { request, hasPermission, workspace, tenant } = useTenantApi();
   const [resumesState, refreshResumes] = useAsyncResource(
     () => request('/api/enterprise/resources?resourceType=resume'),
@@ -67,6 +72,8 @@ export default function EnterpriseResumesTab() {
   const { loading, error, data } = resumesState;
   const [searchQuery, setSearchQuery] = useState('');
   const [atsFilter, setAtsFilter] = useState('ALL'); // ALL, HIGH (>=80), MEDIUM (60-79), LOW (<60)
+  const [viewMode, setViewMode] = useState('grouped'); // 'grouped' (Club by Candidate) or 'flat' (All Resumes)
+  const [expandedCandidateKeys, setExpandedCandidateKeys] = useState(new Set());
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState(null);
   const [notification, setNotification] = useState(null);
@@ -96,15 +103,91 @@ export default function EnterpriseResumesTab() {
     });
   }, [resources, searchQuery, atsFilter]);
 
+  // Group resumes by Candidate identity for clean UX clubbing
+  const groupedCandidates = useMemo(() => {
+    const map = new Map();
+
+    for (const resource of filtered) {
+      const email = (resource.ownerEmail || '').trim().toLowerCase();
+      const principal = (resource.ownerPrincipalId || '').trim();
+      const name = getCandidateName(resource).trim();
+      
+      // Group key: email first, then principal ID, then lowercase candidate name
+      const key = email || (principal ? `uid:${principal}` : `name:${name.toLowerCase()}`);
+
+      if (!map.has(key)) {
+        map.set(key, {
+          key,
+          candidateName: name,
+          ownerEmail: resource.ownerEmail || null,
+          ownerPrincipalId: resource.ownerPrincipalId || null,
+          resumes: [],
+          bestAtsScore: 0,
+          rolesSet: new Set(),
+          workspacesSet: new Set(),
+          completenessSum: 0,
+          latestUpdatedAt: '',
+        });
+      }
+
+      const group = map.get(key);
+      group.resumes.push(resource);
+
+      const ats = getAtsScore(resource);
+      if (ats > group.bestAtsScore) group.bestAtsScore = ats;
+
+      const role = getJobTitle(resource);
+      if (role) group.rolesSet.add(role);
+
+      const ws = resource.workspaceName || workspace?.name || 'Main Workspace';
+      group.workspacesSet.add(ws);
+
+      group.completenessSum += getCompleteness(resource);
+
+      const updated = resource.updatedAt || resource.createdAt || '';
+      if (!group.latestUpdatedAt || new Date(updated) > new Date(group.latestUpdatedAt)) {
+        group.latestUpdatedAt = updated;
+        group.candidateName = name; // Prefer latest candidate name
+      }
+    }
+
+    const list = Array.from(map.values()).map(group => {
+      // Sort individual resumes by latest updated descending
+      group.resumes.sort((a, b) => {
+        const da = new Date(a.updatedAt || a.createdAt || 0).getTime();
+        const db = new Date(b.updatedAt || b.createdAt || 0).getTime();
+        return db - da;
+      });
+      group.rolesList = Array.from(group.rolesSet);
+      group.workspacesList = Array.from(group.workspacesSet);
+      group.avgCompleteness = Math.round(group.completenessSum / group.resumes.length);
+      group.latestResume = group.resumes[0];
+      return group;
+    });
+
+    // Sort candidate groups by most recent activity
+    list.sort((a, b) => {
+      const da = new Date(a.latestUpdatedAt || 0).getTime();
+      const db = new Date(b.latestUpdatedAt || 0).getTime();
+      return db - da;
+    });
+
+    return list;
+  }, [filtered, workspace]);
+
   // Statistics
   const stats = useMemo(() => {
     const total = resources.length;
-    if (total === 0) return { total: 0, avgAts: 0, highMatch: 0, completeAvg: 0 };
+    if (total === 0) return { total: 0, uniqueCandidates: 0, avgAts: 0, highMatch: 0, completeAvg: 0 };
     const atsSum = resources.reduce((acc, r) => acc + getAtsScore(r), 0);
     const high = resources.filter(r => getAtsScore(r) >= 80).length;
     const compSum = resources.reduce((acc, r) => acc + getCompleteness(r), 0);
+    
+    const candidateKeys = new Set(resources.map(r => (r.ownerEmail || r.ownerPrincipalId || getCandidateName(r)).toLowerCase()));
+
     return {
       total,
+      uniqueCandidates: candidateKeys.size,
       avgAts: Math.round(atsSum / total),
       highMatch: high,
       completeAvg: Math.round(compSum / total)
@@ -124,6 +207,34 @@ export default function EnterpriseResumesTab() {
     if (next.has(id)) next.delete(id);
     else next.add(id);
     setSelectedRows(next);
+  };
+
+  const toggleSelectCandidate = (candidateGroup) => {
+    const resumeIds = candidateGroup.resumes.map(r => r.id);
+    const allSelected = resumeIds.every(id => selectedRows.has(id));
+    const next = new Set(selectedRows);
+
+    if (allSelected) {
+      resumeIds.forEach(id => next.delete(id));
+    } else {
+      resumeIds.forEach(id => next.add(id));
+    }
+    setSelectedRows(next);
+  };
+
+  const toggleExpandCandidate = (key) => {
+    const next = new Set(expandedCandidateKeys);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    setExpandedCandidateKeys(next);
+  };
+
+  const expandAllCandidates = () => {
+    setExpandedCandidateKeys(new Set(groupedCandidates.map(g => g.key)));
+  };
+
+  const collapseAllCandidates = () => {
+    setExpandedCandidateKeys(new Set());
   };
 
   const notify = (message) => {
@@ -280,7 +391,7 @@ export default function EnterpriseResumesTab() {
               <HelpTooltip text="Centralized repository of candidate resumes, executive CVs, and talent assets with live ATS compatibility scoring and workspace isolation" />
             </h2>
             <p className="enterprise-tab-subtitle">
-              Manage organization-wide resumes, audit ATS optimization scores, and preview candidate profiles across all workspaces.
+              Manage organization-wide resumes, audit ATS optimization scores, and preview candidate profiles with high-fidelity PDF rendering across all workspaces.
             </p>
           </div>
           <div className="enterprise-actions-row">
@@ -305,7 +416,7 @@ export default function EnterpriseResumesTab() {
           </div>
           <div className="enterprise-metric-value">{loading ? '…' : stats.total}</div>
           <div className="enterprise-metric-footer text-success">
-            ✓ Active candidate profiles
+            ✓ Across {stats.uniqueCandidates} candidate{stats.uniqueCandidates === 1 ? '' : 's'}
           </div>
         </div>
 
@@ -348,9 +459,88 @@ export default function EnterpriseResumesTab() {
         <div className="enterprise-card-header-flex">
           <div>
             <h3 className="enterprise-card-title">Candidate Profiles &amp; Executive Resumes</h3>
-            <p className="enterprise-card-subtitle">Unified talent roster backed by tenant data isolation</p>
+            <p className="enterprise-card-subtitle">
+              {viewMode === 'grouped'
+                ? `Clubbed Candidate Roster (${groupedCandidates.length} Candidates · ${filtered.length} Resumes)`
+                : `Individual Resume Catalog (${filtered.length} Resumes)`}
+            </p>
           </div>
-          <div className="enterprise-inline-actions" style={{ gap: '0.5rem' }}>
+          <div className="enterprise-inline-actions" style={{ gap: '0.5rem', flexWrap: 'wrap' }}>
+            {/* View Mode Toggle Switcher */}
+            <div
+              style={{
+                display: 'inline-flex',
+                background: 'var(--ep-slate-100)',
+                borderRadius: '8px',
+                padding: '3px',
+                border: '1px solid var(--ep-slate-200)'
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setViewMode('grouped')}
+                style={{
+                  border: 'none',
+                  background: viewMode === 'grouped' ? '#ffffff' : 'transparent',
+                  color: viewMode === 'grouped' ? 'var(--ep-brand-600)' : 'var(--ep-slate-600)',
+                  fontWeight: 700,
+                  fontSize: '0.78rem',
+                  padding: '5px 12px',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  boxShadow: viewMode === 'grouped' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <FiUsers aria-hidden="true" /> Club by Candidate
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('flat')}
+                style={{
+                  border: 'none',
+                  background: viewMode === 'flat' ? '#ffffff' : 'transparent',
+                  color: viewMode === 'flat' ? 'var(--ep-brand-600)' : 'var(--ep-slate-600)',
+                  fontWeight: 700,
+                  fontSize: '0.78rem',
+                  padding: '5px 12px',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  boxShadow: viewMode === 'flat' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <FiFileText aria-hidden="true" /> All Resumes (Flat)
+              </button>
+            </div>
+
+            {viewMode === 'grouped' && groupedCandidates.length > 0 && (
+              <div style={{ display: 'inline-flex', gap: '4px' }}>
+                <button
+                  type="button"
+                  className="enterprise-button enterprise-button-secondary enterprise-button-sm"
+                  onClick={expandAllCandidates}
+                  title="Expand all candidate resumes"
+                  style={{ fontSize: '0.76rem', padding: '5px 10px' }}
+                >
+                  Expand All
+                </button>
+                <button
+                  type="button"
+                  className="enterprise-button enterprise-button-secondary enterprise-button-sm"
+                  onClick={collapseAllCandidates}
+                  title="Collapse all candidate resumes"
+                  style={{ fontSize: '0.76rem', padding: '5px 10px' }}
+                >
+                  Collapse All
+                </button>
+              </div>
+            )}
+
             <button
               type="button"
               className="enterprise-button enterprise-button-secondary enterprise-button-sm"
@@ -438,7 +628,369 @@ export default function EnterpriseResumesTab() {
                 </Link>
               )}
             </div>
+          ) : viewMode === 'grouped' ? (
+            /* =========================================================================
+               GROUPED / CLUBBED BY CANDIDATE VIEW
+               ========================================================================= */
+            <div className="enterprise-table-wrapper">
+              <table className="enterprise-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '40px' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedRows.size === filtered.length && filtered.length > 0}
+                        ref={input => { if (input) input.indeterminate = selectedRows.size > 0 && selectedRows.size < filtered.length; }}
+                        onChange={toggleSelectAll}
+                        aria-label="Select all documents"
+                      />
+                    </th>
+                    <th>Candidate &amp; Identity</th>
+                    <th>Resumes &amp; Versions</th>
+                    <th>Target Roles</th>
+                    <th>
+                      Best ATS Match
+                      <HelpTooltip text="Highest algorithmic ATS optimization score across all candidate resume versions" />
+                    </th>
+                    <th>Completeness</th>
+                    <th>Latest Activity</th>
+                    <th className="text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {groupedCandidates.map(group => {
+                    const isExpanded = expandedCandidateKeys.has(group.key);
+                    const resumeIds = group.resumes.map(r => r.id);
+                    const allSelected = resumeIds.every(id => selectedRows.has(id));
+                    const someSelected = !allSelected && resumeIds.some(id => selectedRows.has(id));
+
+                    return (
+                      <React.Fragment key={group.key}>
+                        {/* Parent Candidate Row */}
+                        <tr
+                          className={`${allSelected ? 'selected' : ''}`}
+                          style={{
+                            background: isExpanded ? 'var(--ep-slate-50)' : undefined,
+                            transition: 'background 0.15s ease'
+                          }}
+                        >
+                          <td>
+                            <input
+                              type="checkbox"
+                              checked={allSelected}
+                              ref={input => { if (input) input.indeterminate = someSelected; }}
+                              onChange={() => toggleSelectCandidate(group)}
+                              aria-label={`Select all resumes for ${group.candidateName}`}
+                            />
+                          </td>
+                          <td>
+                            <div className="enterprise-user-cell">
+                              <div
+                                className="enterprise-avatar"
+                                style={{
+                                  background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+                                  color: '#ffffff',
+                                  fontWeight: 700,
+                                  boxShadow: '0 2px 6px rgba(79, 70, 229, 0.3)'
+                                }}
+                              >
+                                {group.candidateName.charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <strong
+                                  style={{ cursor: 'pointer', color: 'var(--ep-slate-900)' }}
+                                  onClick={() => toggleExpandCandidate(group.key)}
+                                  title="Click to expand candidate resume versions"
+                                >
+                                  {group.candidateName}
+                                </strong>
+                                <small style={{ display: 'block', color: 'var(--ep-slate-500)', fontSize: '0.75rem' }}>
+                                  {group.ownerEmail || (group.ownerPrincipalId ? `UID: ${String(group.ownerPrincipalId).slice(0, 10)}…` : 'Direct Profile')}
+                                </small>
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              onClick={() => toggleExpandCandidate(group.key)}
+                              style={{
+                                background: isExpanded ? 'var(--ep-brand-50)' : 'var(--ep-slate-100)',
+                                color: isExpanded ? 'var(--ep-brand-700)' : 'var(--ep-slate-700)',
+                                border: `1px solid ${isExpanded ? 'var(--ep-brand-200)' : 'var(--ep-slate-200)'}`,
+                                borderRadius: '20px',
+                                padding: '4px 10px',
+                                fontSize: '0.78rem',
+                                fontWeight: 700,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease'
+                              }}
+                            >
+                              <FiFileText aria-hidden="true" style={{ fontSize: '0.75rem' }} />
+                              <span>{group.resumes.length} {group.resumes.length === 1 ? 'Version' : 'Versions'}</span>
+                              {isExpanded ? <FiChevronDown aria-hidden="true" /> : <FiChevronRight aria-hidden="true" />}
+                            </button>
+                          </td>
+                          <td>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', maxWidth: '280px' }}>
+                              {group.rolesList.slice(0, 2).map((role, rIdx) => (
+                                <span
+                                  key={rIdx}
+                                  style={{
+                                    background: 'var(--ep-slate-100)',
+                                    color: 'var(--ep-slate-700)',
+                                    border: '1px solid var(--ep-slate-200)',
+                                    borderRadius: '4px',
+                                    padding: '2px 6px',
+                                    fontSize: '0.74rem',
+                                    fontWeight: 500,
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    maxWidth: '130px'
+                                  }}
+                                  title={role}
+                                >
+                                  {role}
+                                </span>
+                              ))}
+                              {group.rolesList.length > 2 && (
+                                <span
+                                  style={{
+                                    fontSize: '0.72rem',
+                                    color: 'var(--ep-slate-500)',
+                                    fontWeight: 600,
+                                    alignSelf: 'center'
+                                  }}
+                                >
+                                  +{group.rolesList.length - 2} more
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span className={`enterprise-pill ${group.bestAtsScore >= 80 ? 'enterprise-pill-success' : group.bestAtsScore >= 60 ? 'enterprise-pill-warning' : 'enterprise-pill-secondary'}`}>
+                                {group.bestAtsScore}% ATS
+                              </span>
+                            </div>
+                          </td>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <div style={{ width: '55px', height: '6px', background: 'var(--ep-slate-200)', borderRadius: '3px', overflow: 'hidden' }}>
+                                <div style={{ width: `${group.avgCompleteness}%`, height: '100%', background: group.avgCompleteness >= 80 ? 'var(--ep-emerald-500)' : 'var(--ep-brand-500)' }} />
+                              </div>
+                              <small style={{ fontWeight: 600, color: 'var(--ep-slate-600)' }}>{group.avgCompleteness}%</small>
+                            </div>
+                          </td>
+                          <td>
+                            <small style={{ color: 'var(--ep-slate-500)' }}>
+                              {formatRelativeTime(group.latestUpdatedAt)}
+                            </small>
+                          </td>
+                          <td className="text-right">
+                            <div className="enterprise-table-actions">
+                              {/* EYE ICON: Opens Full-Fidelity PDF Resume Popup Modal */}
+                              <button
+                                type="button"
+                                className="enterprise-button-icon"
+                                title="View Resume in Full-Screen PDF Popup"
+                                onClick={() => setPreviewResource(group.latestResume)}
+                                style={{
+                                  color: 'var(--ep-brand-600)',
+                                  background: 'var(--ep-brand-50)'
+                                }}
+                              >
+                                <FiEye aria-hidden="true" />
+                              </button>
+                              <button
+                                type="button"
+                                className="enterprise-button-icon"
+                                title={isExpanded ? 'Collapse versions' : 'Expand all candidate versions'}
+                                onClick={() => toggleExpandCandidate(group.key)}
+                              >
+                                {isExpanded ? <FiChevronDown /> : <FiChevronRight />}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+
+                        {/* Nested Sub-Table: All Resume Versions for this Candidate */}
+                        {isExpanded && (
+                          <tr style={{ background: '#f8fafc' }}>
+                            <td colSpan={8} style={{ padding: '0 0 14px 44px', borderBottom: '2px solid var(--ep-slate-200)' }}>
+                              <div
+                                style={{
+                                  background: '#ffffff',
+                                  border: '1px solid var(--ep-slate-200)',
+                                  borderLeft: '4px solid var(--ep-brand-600)',
+                                  borderRadius: '8px',
+                                  overflow: 'hidden',
+                                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                                  margin: '8px 16px 8px 0'
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    padding: '8px 14px',
+                                    background: 'var(--ep-slate-50)',
+                                    borderBottom: '1px solid var(--ep-slate-200)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between'
+                                  }}
+                                >
+                                  <span style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--ep-slate-700)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                    All Versions for {group.candidateName} ({group.resumes.length})
+                                  </span>
+                                  {canCreate && (
+                                    <Link
+                                      to={`/build-resume?clone=${group.latestResume?.id || ''}`}
+                                      className="enterprise-button enterprise-button-secondary enterprise-button-sm"
+                                      style={{ padding: '3px 8px', fontSize: '0.72rem' }}
+                                    >
+                                      <FiPlus aria-hidden="true" /> New Version
+                                    </Link>
+                                  )}
+                                </div>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                                  <thead>
+                                    <tr style={{ background: 'var(--ep-slate-50)', borderBottom: '1px solid var(--ep-slate-200)', color: 'var(--ep-slate-500)', fontSize: '0.72rem' }}>
+                                      <th style={{ width: '36px', padding: '6px 12px' }}>#</th>
+                                      <th style={{ padding: '6px 12px', textAlign: 'left' }}>Target Role &amp; Version</th>
+                                      <th style={{ padding: '6px 12px', textAlign: 'left' }}>Template Preset</th>
+                                      <th style={{ padding: '6px 12px', textAlign: 'left' }}>ATS Match</th>
+                                      <th style={{ padding: '6px 12px', textAlign: 'left' }}>Completeness</th>
+                                      <th style={{ padding: '6px 12px', textAlign: 'left' }}>Workspace</th>
+                                      <th style={{ padding: '6px 12px', textAlign: 'left' }}>Updated</th>
+                                      <th style={{ padding: '6px 12px', textAlign: 'right' }}>Actions</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {group.resumes.map((resume, idx) => {
+                                      const ats = getAtsScore(resume);
+                                      const comp = getCompleteness(resume);
+                                      const isRowSelected = selectedRows.has(resume.id);
+                                      const tmpl = resume.payload?.templateId || resume.payload?.template || resume.template || 'Cv1';
+
+                                      return (
+                                        <tr
+                                          key={resume.id}
+                                          style={{
+                                            borderBottom: idx === group.resumes.length - 1 ? 'none' : '1px solid var(--ep-slate-100)',
+                                            background: isRowSelected ? 'var(--enterprise-primary-soft)' : undefined
+                                          }}
+                                        >
+                                          <td style={{ padding: '8px 12px' }}>
+                                            <input
+                                              type="checkbox"
+                                              checked={isRowSelected}
+                                              onChange={() => toggleSelectRow(resume.id)}
+                                              aria-label={`Select resume ${resume.id}`}
+                                            />
+                                          </td>
+                                          <td style={{ padding: '8px 12px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                              <strong
+                                                style={{ color: 'var(--ep-slate-800)', cursor: 'pointer' }}
+                                                onClick={() => setPreviewResource(resume)}
+                                                title="Click to preview in PDF"
+                                              >
+                                                {getJobTitle(resume)}
+                                              </strong>
+                                              {idx === 0 && (
+                                                <span style={{ fontSize: '0.66rem', fontWeight: 700, padding: '1px 6px', borderRadius: '4px', background: 'var(--ep-emerald-50)', color: 'var(--ep-emerald-700)', border: '1px solid var(--ep-emerald-200)' }}>
+                                                  Latest
+                                                </span>
+                                              )}
+                                            </div>
+                                          </td>
+                                          <td style={{ padding: '8px 12px' }}>
+                                            <span style={{ fontSize: '0.74rem', background: 'var(--ep-slate-100)', padding: '2px 6px', borderRadius: '4px', color: 'var(--ep-slate-700)' }}>
+                                              {tmpl}
+                                            </span>
+                                          </td>
+                                          <td style={{ padding: '8px 12px' }}>
+                                            <span className={`enterprise-pill ${ats >= 80 ? 'enterprise-pill-success' : ats >= 60 ? 'enterprise-pill-warning' : 'enterprise-pill-secondary'}`} style={{ fontSize: '0.72rem', padding: '2px 8px' }}>
+                                              {ats}% ATS
+                                            </span>
+                                          </td>
+                                          <td style={{ padding: '8px 12px' }}>
+                                            <small style={{ fontWeight: 600, color: 'var(--ep-slate-600)' }}>{comp}%</small>
+                                          </td>
+                                          <td style={{ padding: '8px 12px', color: 'var(--ep-slate-500)', fontSize: '0.78rem' }}>
+                                            {resume.workspaceName || workspace?.name || 'Main Workspace'}
+                                          </td>
+                                          <td style={{ padding: '8px 12px', color: 'var(--ep-slate-400)', fontSize: '0.75rem' }}>
+                                            {formatRelativeTime(resume.updatedAt || resume.createdAt)}
+                                          </td>
+                                          <td style={{ padding: '8px 12px', textAlign: 'right' }}>
+                                            <div className="enterprise-table-actions" style={{ justifyContent: 'flex-end', gap: '4px' }}>
+                                              {/* EYE ICON: Opens Full-Fidelity PDF Resume Popup Modal */}
+                                              <button
+                                                type="button"
+                                                className="enterprise-button-icon"
+                                                title="View Resume in PDF Popup"
+                                                onClick={() => setPreviewResource(resume)}
+                                                style={{ color: 'var(--ep-brand-600)' }}
+                                              >
+                                                <FiEye />
+                                              </button>
+                                              {canUpdate && (
+                                                <Link
+                                                  to={`/build-resume?id=${resume.id}`}
+                                                  className="enterprise-button-icon"
+                                                  title="Edit in Smart Composer"
+                                                >
+                                                  <FiEdit3 />
+                                                </Link>
+                                              )}
+                                              {canCreate && (
+                                                <button
+                                                  type="button"
+                                                  className="enterprise-button-icon"
+                                                  title="Duplicate Resume"
+                                                  onClick={() => handleDuplicate(resume)}
+                                                  disabled={busy}
+                                                >
+                                                  <FiCopy />
+                                                </button>
+                                              )}
+                                              {canUpdate && (
+                                                <button
+                                                  type="button"
+                                                  className="enterprise-button-icon text-danger"
+                                                  title="Delete Resume"
+                                                  onClick={() => handleDelete(resume)}
+                                                  disabled={busy}
+                                                >
+                                                  <FiTrash2 />
+                                                </button>
+                                              )}
+                                            </div>
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           ) : (
+            /* =========================================================================
+               FLAT ALL RESUMES LIST VIEW
+               ========================================================================= */
             <div className="enterprise-table-wrapper">
               <table className="enterprise-table">
                 <thead>
@@ -525,11 +1077,13 @@ export default function EnterpriseResumesTab() {
                         </td>
                         <td className="text-right">
                           <div className="enterprise-table-actions">
+                            {/* EYE ICON: Opens Full-Fidelity PDF Resume Popup Modal */}
                             <button
                               type="button"
                               className="enterprise-button-icon"
-                              title="Quick Preview Candidate Profile"
+                              title="View Resume in PDF Popup"
                               onClick={() => setPreviewResource(resource)}
+                              style={{ color: 'var(--ep-brand-600)' }}
                             >
                               <FiEye />
                             </button>
@@ -576,121 +1130,13 @@ export default function EnterpriseResumesTab() {
         </DataState>
       </div>
 
-      {/* Quick Candidate Resume Preview Slide-out Modal */}
-      {previewResource && (
-        <div className="enterprise-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="preview-title" onClick={() => setPreviewResource(null)}>
-          <div className="enterprise-modal enterprise-modal-lg" onClick={e => e.stopPropagation()} style={{ maxWidth: '780px', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div className="enterprise-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <span className="enterprise-pill enterprise-pill-success" style={{ marginBottom: '6px' }}>
-                  Candidate Talent Profile · {getAtsScore(previewResource)}% ATS Score
-                </span>
-                <h3 id="preview-title" className="enterprise-modal-title" style={{ margin: 0, fontSize: '1.25rem' }}>
-                  {getCandidateName(previewResource)}
-                </h3>
-                <p className="enterprise-card-subtitle" style={{ margin: 0 }}>
-                  {getJobTitle(previewResource)} · {previewResource.workspaceName || workspace?.name || 'Main Workspace'}
-                </p>
-              </div>
-              <button
-                type="button"
-                className="enterprise-modal-close"
-                onClick={() => setPreviewResource(null)}
-                aria-label="Close modal"
-              >
-                <FiX />
-              </button>
-            </div>
-
-            <div className="enterprise-modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '24px' }}>
-              {/* ATS Compatibility Meter */}
-              <div style={{ background: 'var(--ep-slate-50)', border: '1px solid var(--ep-slate-200)', borderRadius: '12px', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <strong style={{ fontSize: '0.9rem', color: 'var(--ep-slate-800)', display: 'block' }}>ATS Compatibility Assessment</strong>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--ep-slate-500)' }}>Standard corporate keyword density and structured sections verified.</span>
-                </div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: getAtsScore(previewResource) >= 80 ? 'var(--ep-emerald-600)' : 'var(--ep-amber-600)' }}>
-                  {getAtsScore(previewResource)}<span style={{ fontSize: '0.9rem' }}>/100</span>
-                </div>
-              </div>
-
-              {/* Executive Summary */}
-              <div>
-                <h4 style={{ fontSize: '0.88rem', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--ep-slate-500)', margin: '0 0 8px 0' }}>
-                  Professional Summary
-                </h4>
-                <p style={{ fontSize: '0.9rem', color: 'var(--ep-slate-700)', lineHeight: 1.6, margin: 0, background: '#fff', border: '1px solid var(--ep-slate-200)', padding: '14px', borderRadius: '8px' }}>
-                  {previewResource.summary || previewResource.payload?.personalInfo?.summary || previewResource.payload?.summary || 'Experienced professional with a demonstrated history of excellence and proven domain contributions.'}
-                </p>
-              </div>
-
-              {/* Work Experience */}
-              {Array.isArray(previewResource.payload?.experience) && previewResource.payload.experience.length > 0 && (
-                <div>
-                  <h4 style={{ fontSize: '0.88rem', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--ep-slate-500)', margin: '0 0 10px 0' }}>
-                    Experience Timeline ({previewResource.payload.experience.length} Roles)
-                  </h4>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {previewResource.payload.experience.map((exp, idx) => (
-                      <div key={idx} style={{ background: '#fff', border: '1px solid var(--ep-slate-200)', padding: '14px 16px', borderRadius: '8px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                          <strong style={{ fontSize: '0.92rem', color: 'var(--ep-slate-900)' }}>{exp.jobTitle || exp.title || 'Role Title'}</strong>
-                          <span style={{ fontSize: '0.78rem', color: 'var(--ep-slate-500)' }}>{exp.startDate || exp.date || '2022'} – {exp.endDate || (exp.current ? 'Present' : '2024')}</span>
-                        </div>
-                        <div style={{ fontSize: '0.82rem', color: 'var(--ep-brand-600)', fontWeight: 600, marginBottom: '6px' }}>
-                          {exp.companyName || exp.company || 'Enterprise Organization'}
-                        </div>
-                        {exp.description && (
-                          <p style={{ fontSize: '0.82rem', color: 'var(--ep-slate-600)', margin: 0, lineHeight: 1.5 }}>
-                            {exp.description}
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Skills */}
-              {Array.isArray(previewResource.payload?.skills) && previewResource.payload.skills.length > 0 && (
-                <div>
-                  <h4 style={{ fontSize: '0.88rem', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--ep-slate-500)', margin: '0 0 8px 0' }}>
-                    Core Competencies &amp; Skills
-                  </h4>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                    {previewResource.payload.skills.map((skill, idx) => {
-                      const skillName = typeof skill === 'string' ? skill : skill.name || skill.skill;
-                      return (
-                        <span key={idx} style={{ background: 'var(--ep-slate-100)', color: 'var(--ep-slate-800)', border: '1px solid var(--ep-slate-200)', borderRadius: '6px', padding: '4px 10px', fontSize: '0.78rem', fontWeight: 500 }}>
-                          {skillName}
-                        </span>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="enterprise-modal-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <button
-                type="button"
-                className="enterprise-button enterprise-button-secondary"
-                onClick={() => setPreviewResource(null)}
-              >
-                Close Preview
-              </button>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <Link
-                  to={`/build-resume?id=${previewResource.id}`}
-                  className="enterprise-button enterprise-button-primary"
-                >
-                  <FiEdit3 aria-hidden="true" /> Open in Smart Composer
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* FULL-FIDELITY PDF RESUME PREVIEW POPUP MODAL */}
+      <EnterpriseResumePdfModal
+        isOpen={!!previewResource}
+        resume={previewResource}
+        onClose={() => setPreviewResource(null)}
+        onEdit={(id) => navigate(`/build-resume?id=${id}`)}
+      />
 
       {confirmConfig && (
         <EnterpriseConfirmModal
