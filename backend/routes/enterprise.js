@@ -836,33 +836,53 @@ router.post('/test-email', resolveTenantContext, requireTenantPermission('tenant
   try {
     const emailRoute = require('./email');
     const { db } = outboxRuntime(req);
-    const result = await emailRoute.dispatchNotification(db, {
-      to: recipient,
-      templateType: templateId,
-      vars: {
-        organization_name: req.tenant?.displayName || 'ResumePilot Enterprise',
-        inviter_name: req.user?.displayName || 'Enterprise Administrator',
-        candidate_name: req.user?.displayName || 'Enterprise User',
-        user_name: req.user?.displayName || 'Enterprise User',
-        role_title: 'Administrator (TENANT_ADMIN)',
-        workspace_name: req.workspace?.name || 'Main Workspace',
-        team_name: 'Core Engineering',
-        updater_name: 'Security Operations',
-        granted_by: req.user?.displayName || 'Enterprise Administrator',
-        support_agent: 'support-tier3@resumepilot.ai',
-        reason: 'Investigating isolated outbox webhook latency',
-        expires_at: new Date(Date.now() + 4 * 3600 * 1000).toLocaleString(),
-        usage_percent: '85',
-        consumed_tokens: '850,000',
-        quota_limit: '1,000,000',
-        reset_date: '1st of next month',
-        expires_in: '7 days',
-        action_url: `https://airesume.projectdemo.guru/enterprise?tenant=${req.tenant?.id || 'demo'}`,
-        ...(req.body?.vars || {}),
-      },
-      customSubject,
-      customBody,
-    });
+      const tabMap = {
+        'invitation': 'overview',
+        'enterprise-invitation': 'overview',
+        'enterprise_invitation': 'overview',
+        'role_change': 'access',
+        'enterprise_role_update': 'access',
+        'role_update': 'access',
+        'team_assignment': 'teams',
+        'enterprise_workspace_assignment': 'teams',
+        'workspace_assignment': 'teams',
+        'security_alert': 'audit',
+        'enterprise_security_alert': 'audit',
+        'quota_warning': 'usage',
+        'quota_alert': 'usage',
+        'enterprise_quota_alert': 'usage',
+      };
+      const targetTab = tabMap[templateId] || 'overview';
+      const siteUrl = `${process.env.PROTOCOL || 'https'}://${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}`;
+      const actionUrl = req.body?.vars?.action_url || `${siteUrl}/enterprise?tab=${targetTab}&tenant=${encodeURIComponent(req.tenant?.id || 'demo')}`;
+
+      const result = await emailRoute.dispatchNotification(db, {
+        to: recipient,
+        templateType: templateId,
+        vars: {
+          organization_name: req.tenant?.displayName || 'ResumePilot Enterprise',
+          inviter_name: req.user?.displayName || 'Enterprise Administrator',
+          candidate_name: req.user?.displayName || 'Enterprise User',
+          user_name: req.user?.displayName || 'Enterprise User',
+          role_title: 'Enterprise Administrator',
+          workspace_name: req.workspace?.name || 'Main Workspace',
+          team_name: 'Core Engineering',
+          updater_name: 'Security Operations',
+          granted_by: req.user?.displayName || 'Enterprise Administrator',
+          support_agent: 'support-tier3@resumepilot.ai',
+          reason: 'Investigating isolated outbox webhook latency',
+          expires_at: new Date(Date.now() + 4 * 3600 * 1000).toLocaleString(),
+          usage_percent: '85',
+          consumed_tokens: '850,000',
+          quota_limit: '1,000,000',
+          reset_date: '1st of next month',
+          expires_in: '7 days',
+          action_url: actionUrl,
+          ...(req.body?.vars || {}),
+        },
+        customSubject,
+        customBody,
+      });
     if (!result?.success && result?.error) {
       return res.status(502).json({ error: { code: 'EMAIL_DISPATCH_FAILED', message: result.error, requestId: res.locals?.requestId } });
     }

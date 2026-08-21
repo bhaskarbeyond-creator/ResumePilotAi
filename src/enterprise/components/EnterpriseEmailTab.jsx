@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   FiMail, FiSend, FiEye, FiCheck, FiRefreshCw, FiLock, FiSliders,
-  FiUserPlus, FiShield, FiAlertTriangle, FiFileText
+  FiUserPlus, FiShield, FiAlertTriangle, FiFileText, FiExternalLink
 } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 import { useEnterpriseTenant } from '../EnterpriseContext';
@@ -60,7 +61,181 @@ const DEFAULT_TEMPLATES = [
   }
 ];
 
+function renderFormattedInline(text) {
+  if (!text) return null;
+  const lines = text.split('\n');
+  return lines.map((line, lineIdx) => {
+    const parts = [];
+    const tokenRegex = /(\*\*([^*]+)\*\*|\*([^*]+)\*)/g;
+    let lastIndex = 0;
+    let match;
+    let key = 0;
+
+    while ((match = tokenRegex.exec(line)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(line.substring(lastIndex, match.index));
+      }
+      if (match[2]) {
+        parts.push(<strong key={key++}>{match[2]}</strong>);
+      } else if (match[3]) {
+        parts.push(<em key={key++}>{match[3]}</em>);
+      }
+      lastIndex = match.index + match[0].length;
+    }
+    if (lastIndex < line.length) {
+      parts.push(line.substring(lastIndex));
+    }
+
+    return (
+      <React.Fragment key={lineIdx}>
+        {lineIdx > 0 && <br />}
+        {parts}
+      </React.Fragment>
+    );
+  });
+}
+
+function EmailCardPreview({ rawBody, templateId, onNavigateTab }) {
+  if (!rawBody) return null;
+  const paragraphs = rawBody.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+
+  const tabMap = {
+    'invitation': { tab: 'overview', label: 'Accept Your Invitation →' },
+    'role_change': { tab: 'access', label: 'Review Updated Permissions →' },
+    'team_assignment': { tab: 'teams', label: 'Open Team Workspace →' },
+    'security_alert': { tab: 'audit', label: 'Review Security Audit Log →' },
+    'quota_warning': { tab: 'usage', label: 'Inspect Token Usage →' }
+  };
+
+  const defaultMeta = tabMap[templateId] || { tab: 'overview', label: 'Open Enterprise Console →' };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+      {paragraphs.map((p, idx) => {
+        const isActionUrl = p.startsWith('http') || p.includes('{{action_url}}') || p.includes('/enterprise');
+        const isRoleCallout = p.toLowerCase().includes('assigned role:') || p.toLowerCase().includes('updated role:') || p.toLowerCase().includes('assigned access level:') || p.toLowerCase().includes('new role:');
+        const isBulletList = p.startsWith('•') || p.startsWith('-') || p.startsWith('* ');
+        const isNote = p.toLowerCase().startsWith('*note:') || p.toLowerCase().startsWith('note:');
+        const isGreeting = p.startsWith('Hi ') || p.startsWith('Hello ') || p.startsWith('Dear ') || p.startsWith('ATTENTION:');
+
+        if (isActionUrl) {
+          const actionMeta = tabMap[templateId] || defaultMeta;
+          return (
+            <div key={idx} style={{ textAlign: 'center', margin: '20px 0' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof onNavigateTab === 'function') {
+                    onNavigateTab(actionMeta.tab);
+                  }
+                }}
+                style={{
+                  background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '13px 32px',
+                  borderRadius: '10px',
+                  fontWeight: 700,
+                  fontSize: '0.92rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: '0 4px 14px rgba(79, 70, 229, 0.35)',
+                  cursor: 'pointer',
+                  transition: 'transform 0.15s ease, box-shadow 0.15s ease'
+                }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 18px rgba(79, 70, 229, 0.45)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(79, 70, 229, 0.35)'; }}
+              >
+                <span>{actionMeta.label}</span>
+                <FiExternalLink aria-hidden="true" style={{ fontSize: '0.88rem' }} />
+              </button>
+              <div style={{ marginTop: '8px', fontSize: '0.72rem', color: '#94a3b8' }}>
+                Interactive CTA &bull; Links to <code>/enterprise?tab={actionMeta.tab}</code> (click to test navigation)
+              </div>
+            </div>
+          );
+        }
+
+        if (isRoleCallout) {
+          return (
+            <div
+              key={idx}
+              style={{
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderLeft: '4px solid #4f46e5',
+                borderRadius: '8px',
+                padding: '14px 18px',
+                fontSize: '0.88rem',
+                color: '#1e293b'
+              }}
+            >
+              {renderFormattedInline(p)}
+            </div>
+          );
+        }
+
+        if (isGreeting) {
+          return (
+            <h3
+              key={idx}
+              style={{
+                margin: '0 0 6px',
+                fontSize: '1.15rem',
+                fontWeight: 800,
+                color: '#0f172a'
+              }}
+            >
+              {renderFormattedInline(p)}
+            </h3>
+          );
+        }
+
+        if (isBulletList) {
+          const items = p.split('\n').map(item => item.replace(/^[•\-\*]\s*/, '').trim()).filter(Boolean);
+          return (
+            <ul key={idx} style={{ margin: '8px 0', paddingLeft: '20px', fontSize: '0.86rem', color: '#475569', lineHeight: 1.6 }}>
+              {items.map((item, itemIdx) => (
+                <li key={itemIdx}>{renderFormattedInline(item)}</li>
+              ))}
+            </ul>
+          );
+        }
+
+        if (isNote) {
+          return (
+            <div
+              key={idx}
+              style={{
+                background: '#f1f5f9',
+                borderRadius: '6px',
+                padding: '10px 14px',
+                fontSize: '0.78rem',
+                color: '#64748b',
+                lineHeight: 1.5
+              }}
+            >
+              {renderFormattedInline(p)}
+            </div>
+          );
+        }
+
+        return (
+          <p
+            key={idx}
+            style={{ margin: '4px 0', fontSize: '0.88rem', color: '#475569', lineHeight: 1.65 }}
+          >
+            {renderFormattedInline(p)}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function EnterpriseEmailTab() {
+  const navigate = useNavigate();
   const { request, hasPermission } = useTenantApi();
   const { tenant, user } = useEnterpriseTenant();
   const [selectedTemplateId, setSelectedTemplateId] = useState('invitation');
@@ -83,10 +258,19 @@ export default function EnterpriseEmailTab() {
     setTemplates(prev => prev.map(t => (t.id === selectedTemplateId ? { ...t, [field]: value } : t)));
   };
 
+  const templateTabMap = {
+    'invitation': 'overview',
+    'role_change': 'access',
+    'team_assignment': 'teams',
+    'security_alert': 'audit',
+    'quota_warning': 'usage'
+  };
+
   const renderSamplePreview = (text) => {
     if (!text) return '';
     const org = tenant?.displayName || 'Babu M\'s Personal Workspace';
     const userName = user?.displayName || 'Alex Morgan';
+    const targetTab = templateTabMap[currentTemplate.id] || 'overview';
     return text
       .replace(/{{organization_name}}/g, org)
       .replace(/{{inviter_name}}/g, `${user?.displayName || 'Babu M'} (Admin)`)
@@ -104,7 +288,7 @@ export default function EnterpriseEmailTab() {
       .replace(/{{quota_limit}}/g, '1,000,000')
       .replace(/{{reset_date}}/g, '1st of next month')
       .replace(/{{expires_in}}/g, '7 days')
-      .replace(/{{action_url}}/g, `https://airesume.projectdemo.guru/enterprise?tenant=${tenant?.id || 'demo'}`);
+      .replace(/{{action_url}}/g, `https://airesume.projectdemo.guru/enterprise?tab=${targetTab}`);
   };
 
   const handleSendTest = async (e) => {
@@ -256,9 +440,11 @@ export default function EnterpriseEmailTab() {
                     </div>
                   </div>
 
-                  <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, fontSize: '0.88rem', color: '#334155' }}>
-                    {renderSamplePreview(currentTemplate.body)}
-                  </div>
+                  <EmailCardPreview
+                    rawBody={renderSamplePreview(currentTemplate.body)}
+                    templateId={currentTemplate.id}
+                    onNavigateTab={tab => navigate(`/enterprise?tab=${tab}`)}
+                  />
 
                   <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #f1f5f9', fontSize: '0.72rem', color: '#94a3b8', textAlign: 'center' }}>
                     This is an automated notification from {tenant?.displayName || 'ResumePilot Enterprise'}. Security keys and data planes are isolated per tenant policy.

@@ -825,11 +825,14 @@ class TenantService {
     try {
       const emailNotifierMod = require('../services/emailNotifier');
       const EmailNotifier = emailNotifierMod?.EmailNotifier || emailNotifierMod?.default || emailNotifierMod;
+      const siteUrl = `${process.env.PROTOCOL || 'https'}://${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}`;
+      const actionUrl = `${siteUrl}/enterprise?tab=overview&tenant=${encodeURIComponent(context?.tenant?.id || '')}`;
       const result = await EmailNotifier.notifyEnterpriseInvitation(this.db, {
         userEmail: membership.invitationEmail,
         organizationName: context?.tenant?.displayName || 'an enterprise organization',
         inviterEmail: context?.subjectId || '',
         roleTitle: (membership.roles || []).join(', ') || 'Enterprise Member',
+        actionUrl,
       });
       deliveryState = result?.success ? 'DELIVERED' : String(result?.deliveryState || 'DELIVERY_FAILED').toUpperCase();
     } catch (err) {

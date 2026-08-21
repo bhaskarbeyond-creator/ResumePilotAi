@@ -384,34 +384,40 @@ function formatCustomEmailBody(customBody, vars = {}, brandName = 'ResumePilot A
 
     let contentHtml = '';
     for (const p of paragraphs) {
-        // If line contains action URL or button link
-        if (vars.action_url && (p.includes(vars.action_url) || p.startsWith('http'))) {
+        // If line is an action URL, contains http URL, or matches action_url
+        const urlMatch = p.match(/https?:\/\/[^\s<>"')]+/i);
+        const hasUrl = urlMatch || (vars.action_url && p.includes(vars.action_url)) || p.startsWith('http');
+        
+        if (hasUrl) {
+            const targetUrl = safeEmailUrl(urlMatch ? urlMatch[0] : (vars.action_url || `${siteUrl}/enterprise`));
             let btnLabel = 'Open Enterprise Console &rarr;';
-            const lower = (customBody || '').toLowerCase();
-            if (lower.includes('invit') || lower.includes('join')) {
-                btnLabel = 'Accept Invitation &rarr;';
-            } else if (lower.includes('workspace') || lower.includes('team')) {
+            const lower = ((customBody || '') + ' ' + (p || '')).toLowerCase();
+            if (lower.includes('invit') || lower.includes('join') || lower.includes('onboard') || lower.includes('welcome')) {
+                btnLabel = 'Accept Your Invitation &rarr;';
+            } else if (lower.includes('workspace') || lower.includes('team') || lower.includes('squad')) {
                 btnLabel = 'Open Team Workspace &rarr;';
-            } else if (lower.includes('audit') || lower.includes('security') || lower.includes('break-glass')) {
+            } else if (lower.includes('audit') || lower.includes('security') || lower.includes('break-glass') || lower.includes('diagnostic')) {
                 btnLabel = 'Review Security Audit Log &rarr;';
-            } else if (lower.includes('quota') || lower.includes('token') || lower.includes('usage')) {
+            } else if (lower.includes('quota') || lower.includes('token') || lower.includes('usage') || lower.includes('capacity')) {
                 btnLabel = 'Inspect Token Usage &rarr;';
+            } else if (lower.includes('role') || lower.includes('permission') || lower.includes('access')) {
+                btnLabel = 'Review Updated Permissions &rarr;';
             }
 
             contentHtml += `
-                <div style="text-align: center; margin: 28px 0;">
-                    <a href="${vars.action_url}" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 14px; display: inline-block; box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4);">
+                <div style="text-align: center; margin: 32px 0;">
+                    <a href="${targetUrl}" target="_blank" rel="noopener noreferrer" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #ffffff; padding: 15px 36px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 15px; display: inline-block; box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4); letter-spacing: 0.3px;">
                         ${btnLabel}
                     </a>
                 </div>
             `;
-        } else if (p.toLowerCase().includes('assigned access level:') || p.toLowerCase().includes('assigned role:') || p.toLowerCase().includes('new access role:')) {
+        } else if (p.toLowerCase().includes('assigned access level:') || p.toLowerCase().includes('assigned role:') || p.toLowerCase().includes('new access role:') || p.toLowerCase().includes('your assigned role:') || p.toLowerCase().includes('your updated role:')) {
             contentHtml += `
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #4f46e5; border-radius: 8px; padding: 16px 20px; margin: 20px 0; font-size: 14px; color: #1e293b; font-weight: 600;">
                     ${formatInlineMarkdown(p)}
                 </div>
             `;
-        } else if (p.startsWith('Hello ') || p.startsWith('Hi ') || p.startsWith('Dear ')) {
+        } else if (p.startsWith('Hello ') || p.startsWith('Hi ') || p.startsWith('Dear ') || p.startsWith('ATTENTION:')) {
             contentHtml += `<h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0; margin-bottom: 16px;">${formatInlineMarkdown(p)}</h2>`;
         } else if (p.startsWith('•') || p.startsWith('-') || p.startsWith('* ')) {
             const items = p.split('\n').map(item => item.replace(/^[•\-\*]\s*/, '').trim()).filter(Boolean);
@@ -1692,6 +1698,26 @@ async function dispatchNotification(db, { to, templateType, vars = {}, customSub
         const updaterName = humanizeName(vars.updater_name, 'an administrator');
         const grantedBy = humanizeName(vars.granted_by, 'an administrator');
 
+        const contextualTabMap = {
+            'invitation': 'overview',
+            'enterprise-invitation': 'overview',
+            'enterprise_invitation': 'overview',
+            'role_change': 'access',
+            'enterprise_role_update': 'access',
+            'role_update': 'access',
+            'team_assignment': 'teams',
+            'enterprise_workspace_assignment': 'teams',
+            'workspace_assignment': 'teams',
+            'security_alert': 'audit',
+            'enterprise_security_alert': 'audit',
+            'quota_warning': 'usage',
+            'quota_alert': 'usage',
+            'enterprise_quota_alert': 'usage',
+        };
+        const targetTab = contextualTabMap[templateType] || 'overview';
+        const defaultActionUrl = `${siteUrl}/enterprise?tab=${targetTab}`;
+        const finalActionUrl = vars.action_url || defaultActionUrl;
+
         const mergedVars = {
             brand_name: brandName,
             site_url: siteUrl,
@@ -1713,7 +1739,7 @@ async function dispatchNotification(db, { to, templateType, vars = {}, customSub
             quota_limit: vars.quota_limit || '1,000,000',
             reset_date: vars.reset_date || '1st of next month',
             expires_in: vars.expires_in || '7 days',
-            action_url: vars.action_url || `${siteUrl}/enterprise`,
+            action_url: finalActionUrl,
             date: vars.date || new Date().toLocaleDateString('en-IN', { dateStyle: 'medium' }),
             ...vars,
             // Override with normalized humanized strings
@@ -1722,6 +1748,7 @@ async function dispatchNotification(db, { to, templateType, vars = {}, customSub
             inviter_name: inviterName,
             organization_name: orgName,
             role_title: roleTitle,
+            action_url: finalActionUrl,
         };
 
         const rendered = renderEmailTemplate(templateType || 'default', mergedVars, customTemplatesStore);

@@ -49,8 +49,11 @@ export function EnterpriseTenantProvider({ children }) {
         setState(next);
         return next;
       }
-      const requestedTenantId = tenantId || readStorage(tenantStorageKey(user.uid));
-      const requestedWorkspaceId = workspaceId || (requestedTenantId ? readStorage(workspaceStorageKey(user.uid, requestedTenantId)) : '');
+      const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      const paramTenantId = urlParams?.get('tenant') || '';
+      const paramWorkspaceId = urlParams?.get('workspace') || '';
+      const requestedTenantId = tenantId || paramTenantId || readStorage(tenantStorageKey(user.uid));
+      const requestedWorkspaceId = workspaceId || paramWorkspaceId || (requestedTenantId ? readStorage(workspaceStorageKey(user.uid, requestedTenantId)) : '');
       const [tenantList, active] = await Promise.all([
         enterpriseFetch('/api/enterprise/tenants'),
         enterpriseFetch('/api/enterprise/context', { method: 'POST', body: { tenantId: requestedTenantId, workspaceId: requestedWorkspaceId } }),
