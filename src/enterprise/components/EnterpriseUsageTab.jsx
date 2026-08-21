@@ -4,6 +4,7 @@ import {
 } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 import { useEnterpriseTenant } from '../EnterpriseContext';
+import HelpTooltip from './HelpTooltip';
 
 const DAY_WINDOWS = [7, 30, 90, 365];
 
@@ -117,7 +118,10 @@ export default function EnterpriseUsageTab({ initialParams = null, onNavigate = 
       <div className="enterprise-card">
         <div className="enterprise-card-header-flex">
           <div>
-            <h2 className="enterprise-tab-title">Usage & Quota Analytics</h2>
+            <h2 className="enterprise-tab-title">
+              Usage & Quota Analytics
+              <HelpTooltip text="Inspect AI token expenditure, compute latencies, daily quota limits, and per-user generation ledger" />
+            </h2>
             <p className="enterprise-tab-subtitle">
               Durable AI usage ledger for the active tenant{usageData ? ` · last ${usageData.days} days` : ''}
             </p>

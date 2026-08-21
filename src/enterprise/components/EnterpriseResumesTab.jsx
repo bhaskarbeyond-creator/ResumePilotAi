@@ -4,6 +4,7 @@ import {
   FiFileText, FiPlus, FiEdit3, FiCopy, FiTrash2, FiSearch, FiCheck
 } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
+import HelpTooltip from './HelpTooltip';
 
 function resourceTitle(resource) {
   const title = resource?.payload?.title || resource?.payload?.positionTitle;
@@ -143,7 +144,10 @@ export default function EnterpriseResumesTab() {
       <div className="enterprise-card">
         <div className="enterprise-card-header-flex">
           <div>
-            <h2 className="enterprise-tab-title">Enterprise Document Library</h2>
+            <h2 className="enterprise-tab-title">
+              Enterprise Document Library
+              <HelpTooltip text="Workspace-scoped resumes, CVs, and executive career documents protected by tenant RLS isolation" />
+            </h2>
             <p className="enterprise-tab-subtitle">
               Workspace-scoped resumes and executive CVs backed by the RLS data plane
             </p>

@@ -5,6 +5,7 @@ import {
 } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 import { useEnterpriseTenant } from '../EnterpriseContext';
+import HelpTooltip from './HelpTooltip';
 
 export const ROLE_LABELS = {
   TENANT_OWNER: { title: 'Tenant Owner', desc: 'Full root access to all organizations, billing, security, and policies', badge: 'Owner' },
@@ -341,7 +342,10 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
       <div className="enterprise-card">
         <div className="enterprise-card-header-flex">
           <div>
-            <h2 className="enterprise-tab-title">Users & IAM</h2>
+            <h2 className="enterprise-tab-title">
+              Users & IAM
+              <HelpTooltip text="Server-verified enterprise memberships, invitations, roles, and default landing workspaces" />
+            </h2>
             <p className="enterprise-tab-subtitle">
               Server-verified enterprise memberships, invitations, roles, and workspace access
             </p>
@@ -468,7 +472,10 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
                       </th>
                     )}
                     <th>Principal</th>
-                    <th>Role / Assignment</th>
+                    <th>
+                      Role / Assignment
+                      <HelpTooltip text="Assign roles directly via dropdown or view effective capabilities" />
+                    </th>
                     <th>Status</th>
                     <th>Invitation</th>
                     <th className="text-right">Actions</th>

@@ -4,6 +4,7 @@ import {
 } from 'react-icons/fi';
 import { useTenantApi } from '../useTenantApi';
 import { enterpriseFetch } from '../enterpriseApi';
+import HelpTooltip from './HelpTooltip';
 
 const PROVIDERS = [
   { key: 'nvidia', label: 'NVIDIA NIM', blurb: 'Hardware-accelerated llama models', model: 'meta/llama-3.2-11b-vision-instruct' },
@@ -156,7 +157,10 @@ export default function EnterpriseAiTab() {
       <div className="enterprise-card">
         <div className="enterprise-card-header-flex">
           <div>
-            <h2 className="enterprise-tab-title">Enterprise AI Policy & Quota Console</h2>
+            <h2 className="enterprise-tab-title">
+              Enterprise AI Policy & Quota Console
+              <HelpTooltip text="Tenant-isolated LLM provider allowlist, model governance, zero-leakage ephemeral inference, and hard token quotas" />
+            </h2>
             <p className="enterprise-tab-subtitle">
               Tenant-isolated LLM provider allowlist, model governance, and hard usage quotas
             </p>

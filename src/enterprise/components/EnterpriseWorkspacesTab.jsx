@@ -4,6 +4,7 @@ import {
 } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 import { useEnterpriseTenant } from '../EnterpriseContext';
+import HelpTooltip from './HelpTooltip';
 
 function WorkspaceMembersDrawer({ workspace, onClose }) {
   const { request, hasPermission } = useTenantApi();
@@ -259,7 +260,10 @@ export default function EnterpriseWorkspacesTab({
       <div className="enterprise-card">
         <div className="enterprise-card-header-flex">
           <div>
-            <h2 className="enterprise-tab-title">Workspaces</h2>
+            <h2 className="enterprise-tab-title">
+              Workspaces
+              <HelpTooltip text="Logical departmental sub-divisions for distinct teams, offices, and document boundaries within this tenant" />
+            </h2>
             <p className="enterprise-tab-subtitle">
               Logical sub-divisions for separate business units, departments, or geographical offices within this tenant
             </p>

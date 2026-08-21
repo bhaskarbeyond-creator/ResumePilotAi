@@ -3,6 +3,7 @@ import {
   FiServer, FiPlus, FiRefreshCw, FiCheck, FiX, FiShieldOff, FiPlay, FiSearch
 } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
+import HelpTooltip from './HelpTooltip';
 
 /**
  * Platform administration console.
@@ -104,7 +105,10 @@ export default function EnterprisePlatformTab() {
       <div className="enterprise-card">
         <div className="enterprise-card-header-flex">
           <div>
-            <h2 className="enterprise-tab-title"><FiServer aria-hidden="true" /> Platform Administration</h2>
+            <h2 className="enterprise-tab-title">
+              <FiServer aria-hidden="true" /> Platform Administration
+              <HelpTooltip text="Centralized multi-tenant provisioning registry, tenant lifecycle controls, and isolation tier management" />
+            </h2>
             <p className="enterprise-tab-subtitle">
               Centralized registry of every enterprise tenant. This layer is separate from tenant administration and gated on the platform provisioner capability.
             </p>

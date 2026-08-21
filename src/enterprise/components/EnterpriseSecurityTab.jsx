@@ -3,6 +3,7 @@ import {
   FiShield, FiLock, FiKey, FiPlus, FiTrash2, FiCopy, FiCheck, FiX, FiRotateCcw, FiLayers, FiRefreshCw
 } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
+import HelpTooltip from './HelpTooltip';
 
 const SCOPE_OPTIONS = ['resource.read', 'resource.create', 'resource.update', 'ai.use'];
 
@@ -279,7 +280,10 @@ export default function EnterpriseSecurityTab({ initialParams = null }) {
       )}
 
       <div className="enterprise-card">
-        <h3 className="enterprise-card-title"><FiShield aria-hidden="true" /> Security Posture</h3>
+        <h3 className="enterprise-card-title">
+          <FiShield aria-hidden="true" /> Security Posture
+          <HelpTooltip text="Live server-enforced security controls, MFA requirements, session lifetimes, and cryptographic validation" />
+        </h3>
         <p className="enterprise-card-subtitle">Live policy state — every value is enforced server-side at enterprise context resolution</p>
         <ul className="enterprise-health-list">
           <li className="enterprise-health-item">
@@ -371,7 +375,10 @@ export default function EnterpriseSecurityTab({ initialParams = null }) {
 
         <div className="enterprise-card-header-flex" style={{ marginTop: '1.5rem' }}>
           <div>
-            <h3 className="enterprise-card-title">Service Accounts & M2M API Keys</h3>
+            <h3 className="enterprise-card-title">
+              Service Accounts & M2M API Keys
+              <HelpTooltip text="Machine-to-machine scoped API tokens for automated CI/CD pipelines, background daemons, and microservices" />
+            </h3>
             <p className="enterprise-card-subtitle">Credential lifecycle managed through the enterprise API</p>
           </div>
           {canManageServiceAccounts && (

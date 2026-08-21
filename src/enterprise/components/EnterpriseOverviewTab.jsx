@@ -4,6 +4,7 @@ import {
   FiPlus, FiUserPlus, FiFileText, FiCheckCircle, FiAlertTriangle
 } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource } from '../useTenantApi';
+import HelpTooltip from './HelpTooltip';
 
 function formatNumber(value) {
   const number = Number(value || 0);
@@ -150,6 +151,7 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
             </span>
             <h2 className="enterprise-tab-title" style={{ marginTop: '0.75rem' }}>
               {tenant?.displayName || 'Enterprise Workspace'}
+              <HelpTooltip text="Tenant command center summarizing live membership, quota consumption, compute velocity, and system health" />
             </h2>
             <p className="enterprise-tab-subtitle">
               Active Workspace: <strong>{workspace?.name || 'Default'}</strong> · Region: <strong>{context?.dataPlane?.region || 'default'}</strong> · Routing Version: <strong>{context?.dataPlane?.routingVersion || 1}</strong>
@@ -331,7 +333,10 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
         </div>
 
         <div className="enterprise-card">
-          <h3 className="enterprise-card-title">Infrastructure & Security Posture</h3>
+          <h3 className="enterprise-card-title">
+            <FiShield aria-hidden="true" /> Infrastructure & Security Posture
+            <HelpTooltip text="Live verification of Firestore persistence, HMAC outbox queue worker, encryption tier, and system metrics" />
+          </h3>
           <p className="enterprise-card-subtitle">Live subsystem status</p>
           <ul className="enterprise-health-list">
             <li className="enterprise-health-item">

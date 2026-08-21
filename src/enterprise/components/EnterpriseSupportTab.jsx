@@ -3,6 +3,7 @@ import {
   FiHelpCircle, FiLock, FiPlus, FiTrash2, FiCheck, FiX, FiClock, FiShield
 } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
+import HelpTooltip from './HelpTooltip';
 
 export default function EnterpriseSupportTab() {
   const { request } = useTenantApi();
@@ -102,7 +103,10 @@ export default function EnterpriseSupportTab() {
       <div className="enterprise-card">
         <div className="enterprise-card-header-flex">
           <div>
-            <h2 className="enterprise-tab-title">Break-Glass & Support Access</h2>
+            <h2 className="enterprise-tab-title">
+              Break-Glass & Support Access
+              <HelpTooltip text="Time-bound, cryptographically validated emergency break-glass grants for certified support engineers" />
+            </h2>
             <p className="enterprise-tab-subtitle">
               Time-bound, purpose-restricted access grants allowing verified support engineers to diagnose tenant issues
             </p>

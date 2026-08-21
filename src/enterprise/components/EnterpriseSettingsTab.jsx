@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { FiSave, FiAlertTriangle, FiDownload, FiCheck } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 import { useEnterpriseTenant } from '../EnterpriseContext';
+import HelpTooltip from './HelpTooltip';
 
 export default function EnterpriseSettingsTab({ tenant }) {
   const { request } = useTenantApi();
@@ -141,7 +142,10 @@ export default function EnterpriseSettingsTab({ tenant }) {
 
       <DataState loading={loading} error={error} onRetry={refreshConfig}>
         <div className="enterprise-card">
-          <h2 className="enterprise-tab-title">Organization Settings</h2>
+          <h2 className="enterprise-tab-title">
+            Organization Settings
+            <HelpTooltip text="Configure tenant identity, document retention policies, security controls, and enterprise data export" />
+          </h2>
           <p className="enterprise-tab-subtitle">Configure organization profile and governance policies</p>
 
           <form onSubmit={handleRename}>

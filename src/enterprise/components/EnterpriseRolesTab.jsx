@@ -5,6 +5,7 @@ import {
   FiInfo, FiLayers, FiCheckSquare, FiSquare, FiExternalLink
 } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
+import HelpTooltip from './HelpTooltip';
 
 const ROLE_THEMES = {
   TENANT_OWNER: {
@@ -420,7 +421,10 @@ export default function EnterpriseRolesTab({ onNavigate = null }) {
                 {roleEntries.length} Total Roles
               </span>
             </div>
-            <h2 className="enterprise-tab-title">Roles & Access Control Matrix</h2>
+            <h2 className="enterprise-tab-title">
+              Roles & Access Control Matrix
+              <HelpTooltip text="Inspect server-enforced role permissions, fine-grained capability grants, and define custom tenant roles" />
+            </h2>
             <p className="enterprise-tab-subtitle">
               Granular role-based access control (RBAC), capability matrix, and tenant-defined custom roles with least-privilege enforcement.
             </p>

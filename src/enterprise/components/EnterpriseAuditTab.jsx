@@ -4,6 +4,7 @@ import {
 } from 'react-icons/fi';
 import fire from '../../conf/fire';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
+import HelpTooltip from './HelpTooltip';
 
 const OUTCOMES = ['ALL', 'SUCCESS', 'DENIED', 'FAILURE'];
 const SEVERITIES = ['ALL', 'INFO', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
@@ -223,7 +224,10 @@ export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = n
                 {filtered.length} Events Loaded
               </span>
             </div>
-            <h2 className="enterprise-tab-title">Immutable Audit Trail</h2>
+            <h2 className="enterprise-tab-title">
+              Immutable Audit Trail
+              <HelpTooltip text="Append-only immutable forensic audit trail recording every administrative event, access mutation, and AI generation" />
+            </h2>
             <p className="enterprise-tab-subtitle">
               Server-recorded forensic trail of administrator actions, identity mutations, AI generations, and security events.
             </p>

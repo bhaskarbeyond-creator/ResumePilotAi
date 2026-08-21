@@ -4,6 +4,7 @@ import {
 } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 import { useEnterpriseTenant } from '../EnterpriseContext';
+import HelpTooltip from './HelpTooltip';
 
 function TeamMembersDrawer({ team, onClose }) {
   const { request, hasPermission } = useTenantApi();
@@ -307,7 +308,10 @@ export default function EnterpriseTeamsTab({ initialParams = null }) {
       <div className="enterprise-card">
         <div className="enterprise-card-header-flex">
           <div>
-            <h2 className="enterprise-tab-title">Teams Management</h2>
+            <h2 className="enterprise-tab-title">
+              Teams Management
+              <HelpTooltip text="Organize members into functional squads, assign team leads, and manage workspace team rosters" />
+            </h2>
             <p className="enterprise-tab-subtitle">
               Organize members into functional units scoped to specific workspaces and collaboration groups
             </p>

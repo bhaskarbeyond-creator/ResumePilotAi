@@ -2547,34 +2547,127 @@ details.enterprise-disclosure[open] > summary::before { content: '▾ '; }
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
-   Instant Enterprise Guide Tooltip System
+   Universal Icon & Text Alignment (Headings, Cards, Buttons, Pills)
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.enterprise-shell h1,
+.enterprise-shell h2,
+.enterprise-shell h3,
+.enterprise-shell h4,
+.enterprise-shell h5,
+.enterprise-tab-title,
+.enterprise-card-title,
+.enterprise-section-title,
+.enterprise-stat-title,
+.enterprise-modal-header h3,
+.enterprise-modal-header h2,
+.enterprise-team-name,
+.enterprise-workspace-title-row,
+.enterprise-error-row strong,
+.enterprise-usage-title,
+.enterprise-metric-header,
+.enterprise-banner-header h2 {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+  line-height: 1.3 !important;
+}
+
+.enterprise-shell h1 > svg,
+.enterprise-shell h2 > svg,
+.enterprise-shell h3 > svg,
+.enterprise-shell h4 > svg,
+.enterprise-shell h5 > svg,
+.enterprise-tab-title > svg,
+.enterprise-card-title > svg,
+.enterprise-section-title > svg,
+.enterprise-stat-title > svg,
+.enterprise-modal-header h3 > svg,
+.enterprise-modal-header h2 > svg,
+.enterprise-usage-title > svg,
+.enterprise-metric-header > svg,
+.enterprise-banner-header h2 > svg {
+  flex-shrink: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  vertical-align: middle !important;
+  font-size: 1.1em !important;
+}
+
+.enterprise-button,
+.enterprise-button-primary,
+.enterprise-button-secondary,
+.enterprise-button-danger,
+.enterprise-button-sm,
+.enterprise-tab-btn,
+.enterprise-nav-item,
+.enterprise-chip,
+.enterprise-pill,
+.enterprise-app-switcher-btn,
+.enterprise-context-button,
+.enterprise-workspace,
+.enterprise-exit-link,
+.enterprise-identity-trigger,
+.enterprise-identity-popover-item,
+.enterprise-toast,
+.enterprise-health-copy strong,
+.enterprise-shortcut-item {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.enterprise-button > svg,
+.enterprise-button-primary > svg,
+.enterprise-button-secondary > svg,
+.enterprise-button-danger > svg,
+.enterprise-tab-btn > svg,
+.enterprise-nav-item > svg,
+.enterprise-chip > svg,
+.enterprise-pill > svg,
+.enterprise-app-switcher-btn > svg,
+.enterprise-identity-trigger > svg,
+.enterprise-identity-popover-item > svg,
+.enterprise-toast > svg {
+  flex-shrink: 0 !important;
+  vertical-align: middle !important;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Instant Enterprise Guide Tooltip & Help '?' Component
    ════════════════════════════════════════════════════════════════════════════ */
 
 [data-tooltip] {
   position: relative;
+  cursor: help;
 }
 
 [data-tooltip]::after {
   content: attr(data-tooltip);
   position: absolute;
-  bottom: calc(100% + 6px);
+  bottom: calc(100% + 8px);
   left: 50%;
   transform: translateX(-50%) translateY(4px);
   background: #0f172a;
   color: #f8fafc;
   font-size: 0.74rem;
   font-weight: 500;
-  line-height: 1.3;
-  padding: 6px 10px;
+  line-height: 1.35;
+  padding: 8px 12px;
   border-radius: 6px;
-  white-space: nowrap;
+  white-space: normal;
+  width: max-content;
+  max-width: 280px;
+  text-align: left;
   pointer-events: none;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.15s ease, transform 0.15s ease;
-  z-index: 1000;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  z-index: 2000;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 [data-tooltip]:hover::after,
@@ -2582,6 +2675,31 @@ details.enterprise-disclosure[open] > summary::before { content: '▾ '; }
   opacity: 1;
   visibility: visible;
   transform: translateX(-50%) translateY(0);
+}
+
+/* Help Tooltip Icon '?' Badge */
+.enterprise-help-container {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  vertical-align: middle !important;
+  margin-left: 4px;
+  color: var(--ep-slate-400);
+  cursor: help;
+  outline: none;
+  border-radius: 50%;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.enterprise-help-container:hover,
+.enterprise-help-container:focus-visible {
+  color: var(--ep-brand-600);
+  transform: scale(1.1);
+}
+
+.enterprise-help-icon {
+  font-size: 0.9em;
+  flex-shrink: 0;
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
