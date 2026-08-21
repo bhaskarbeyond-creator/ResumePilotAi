@@ -222,13 +222,15 @@ const rateLimit = require('express-rate-limit');
 app.use(helmet());
 app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" })); // Allow cross-origin image/resource loading if needed
 
-// Global API Rate Limiter (200 requests per 15 minutes)
+// Global API Rate Limiter (2500 requests per 15 minutes for interactive SPA & enterprise console usage)
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 200,
-    message: 'Too many requests from this IP, please try again after 15 minutes',
+    max: process.env.NODE_ENV === 'test' ? 10000 : Number(process.env.GLOBAL_RATE_LIMIT_MAX || 2500),
+    message: { error: { code: 'RATE_LIMITED', message: 'Too many requests, please try again in a few moments.', requestId: undefined } },
     standardHeaders: true,
     legacyHeaders: false,
+    keyGenerator: req => req.user?.uid || req.ip || 'global',
+    validate: { trustProxy: false, keyGeneratorIpFallback: false }
 });
 app.use('/api', globalLimiter);
 

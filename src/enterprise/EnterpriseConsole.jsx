@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   FiActivity, FiBarChart2, FiChevronRight, FiCommand, FiFileText, FiHelpCircle, FiLock,
   FiSearch, FiSettings, FiShield, FiSliders, FiUserPlus, FiUsers, FiZap, FiMenu, FiPlus,
-  FiLogOut, FiHome, FiGrid, FiExternalLink, FiChevronDown, FiUser
+  FiLogOut, FiHome, FiGrid, FiExternalLink, FiChevronDown, FiUser, FiX
 } from 'react-icons/fi';
 import { AuthContext } from '../main';
 import { signOutUser } from '../utils/signOut';
@@ -556,27 +556,42 @@ function EnterpriseConsoleInner() {
   // never a blank console or a misleading healthy shell.
   if (!loading && enabled && error && !context) {
     const code = error?.code || '';
-    const title = code === 'TENANT_MFA_REQUIRED'
-      ? 'Multi-Factor Authentication Required'
-      : code === 'TENANT_SESSION_REAUTH_REQUIRED'
-        ? 'Session Re-Authentication Required'
-        : code === 'TENANT_INACTIVE'
-          ? 'Organization Suspended'
-          : 'Enterprise Context Unavailable';
-    const hint = code === 'TENANT_MFA_REQUIRED'
-      ? 'This organization requires administrators to sign in with a second factor. Enroll MFA on your account and sign in again.'
-      : code === 'TENANT_SESSION_REAUTH_REQUIRED'
-        ? 'Your session exceeded the maximum session length configured by this organization. Sign out and sign in again to continue.'
-        : code === 'TENANT_INACTIVE'
-          ? 'This organization is currently suspended. A platform administrator must reactivate it before members can access enterprise features.'
-          : (error?.message || 'The enterprise service did not respond as expected.');
+    const status = error?.status || 0;
+    const isRateLimited = status === 429 || code === 'RATE_LIMITED';
+    const title = isRateLimited
+      ? 'Rate Limit Active'
+      : code === 'TENANT_MFA_REQUIRED'
+        ? 'Multi-Factor Authentication Required'
+        : code === 'TENANT_SESSION_REAUTH_REQUIRED'
+          ? 'Session Re-Authentication Required'
+          : code === 'TENANT_INACTIVE'
+            ? 'Organization Suspended'
+            : 'Enterprise Context Unavailable';
+    const hint = isRateLimited
+      ? 'The enterprise service received a high volume of requests. Please wait a moment and click Retry Connection.'
+      : code === 'TENANT_MFA_REQUIRED'
+        ? 'This organization requires administrators to sign in with a second factor. Enroll MFA on your account and sign in again.'
+        : code === 'TENANT_SESSION_REAUTH_REQUIRED'
+          ? 'Your session exceeded the maximum session length configured by this organization. Sign out and sign in again to continue.'
+          : code === 'TENANT_INACTIVE'
+            ? 'This organization is currently suspended. A platform administrator must reactivate it before members can access enterprise features.'
+            : (error?.message || 'The enterprise service did not respond as expected.');
     return (
       <main className="enterprise-empty-state" role="main" aria-live="polite">
+        <div style={{
+          width: '52px', height: '52px', borderRadius: '50%',
+          background: isRateLimited ? 'var(--ep-amber-50)' : 'var(--ep-rose-50)',
+          color: isRateLimited ? 'var(--ep-amber-600)' : 'var(--ep-rose-600)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: '1.5rem', marginBottom: '16px'
+        }}>
+          {isRateLimited ? <FiActivity /> : <FiShield />}
+        </div>
         <h1>{title}</h1>
         <p>{hint}</p>
         <div className="enterprise-inline-actions" style={{ justifyContent: 'center', gap: '0.75rem' }}>
           <button type="button" className="enterprise-button enterprise-button-primary" onClick={() => reload().catch(() => {})}>
-            Retry
+            Retry Connection
           </button>
           <Link to="/" className="enterprise-button enterprise-button-secondary">Return Home</Link>
         </div>
@@ -605,8 +620,10 @@ function EnterpriseConsoleInner() {
             <span className="enterprise-brand-logo">R</span>
             <span className="enterprise-brand-title">ResumePilot Enterprise</span>
           </Link>
-          <TenantSwitcher />
-          <WorkspaceBadge />
+          <div className="enterprise-topbar-context-desktop">
+            <TenantSwitcher />
+            <WorkspaceBadge />
+          </div>
         </div>
 
         <div className="enterprise-topbar-right">
@@ -632,15 +649,66 @@ function EnterpriseConsoleInner() {
             style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', background: 'none', border: '1px solid var(--ep-slate-200)' }}
           >
             <FiLogOut aria-hidden="true" />
-            <span>Sign Out</span>
+            <span className="enterprise-exit-text">Sign Out</span>
           </button>
         </div>
       </header>
+
+      {/* Mobile Horizontal Quick-Navigation Pill Bar */}
+      <nav className="enterprise-mobile-pill-strip" aria-label="Quick module navigation">
+        <div className="enterprise-mobile-pill-track">
+          {visibleNav.map(item => {
+            const Icon = item.icon;
+            const active = activeTab === item.id;
+            return (
+              <button
+                key={`mobile-pill-${item.id}`}
+                type="button"
+                className={`enterprise-mobile-pill ${active ? 'active' : ''}`}
+                onClick={() => selectTab(item.id)}
+                aria-current={active ? 'page' : undefined}
+              >
+                <Icon aria-hidden="true" />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+
+      {/* Mobile Drawer Backdrop */}
+      {mobileMenuOpen && (
+        <div
+          className="enterprise-mobile-backdrop"
+          onClick={() => setMobileMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
 
       {/* Main Grid: Sidebar + Content */}
       <div className="enterprise-layout">
         {/* Navigation Sidebar */}
         <aside className={`enterprise-sidebar ${mobileMenuOpen ? 'mobile-open' : ''}`} role="navigation" aria-label="Enterprise Navigation">
+          <div className="enterprise-mobile-sidebar-header">
+            <div className="enterprise-brand-link">
+              <span className="enterprise-brand-logo">R</span>
+              <span className="enterprise-brand-title">ResumePilot Enterprise</span>
+            </div>
+            <button
+              type="button"
+              className="enterprise-mobile-close-btn"
+              onClick={() => setMobileMenuOpen(false)}
+              aria-label="Close navigation drawer"
+            >
+              <FiX />
+            </button>
+          </div>
+
+          <div className="enterprise-mobile-context-bar">
+            <TenantSwitcher />
+            <WorkspaceBadge />
+          </div>
+
           <nav className="enterprise-nav-list">
             {groupedNav.map(section => (
               <div className="enterprise-nav-group" key={section.group}>

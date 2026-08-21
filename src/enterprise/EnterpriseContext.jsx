@@ -36,7 +36,7 @@ export function EnterpriseTenantProvider({ children }) {
   const enabled = enterpriseFeatureEnabled();
   const [state, setState] = useState({ loading: enabled, error: null, serverDisabled: false, tenants: [], workspaces: [], context: null, tenant: null, workspace: null, platformAdmin: false });
 
-  const load = useCallback(async ({ tenantId = '', workspaceId = '' } = {}) => {
+  const load = useCallback(async ({ tenantId = '', workspaceId = '', forceRefresh = false } = {}) => {
     if (!enabled || !user?.uid) {
       setState({ loading: false, error: null, serverDisabled: false, tenants: [], workspaces: [], context: null, tenant: null, workspace: null, platformAdmin: false });
       return null;
@@ -58,9 +58,11 @@ export function EnterpriseTenantProvider({ children }) {
         enterpriseFetch('/api/enterprise/tenants'),
         enterpriseFetch('/api/enterprise/context', { method: 'POST', body: { tenantId: requestedTenantId, workspaceId: requestedWorkspaceId } }),
       ]);
-      const workspaceList = await enterpriseFetch('/api/enterprise/workspaces', { tenantId: active.tenant?.id || '', workspaceId: active.workspace?.id || '' });
-      writeStorage(tenantStorageKey(user.uid), active.tenant?.id || '');
-      if (active.tenant?.id) writeStorage(workspaceStorageKey(user.uid, active.tenant.id), active.workspace?.id || '');
+      const activeTenantId = active.tenant?.id || '';
+      const activeWorkspaceId = active.workspace?.id || '';
+      const workspaceList = await enterpriseFetch('/api/enterprise/workspaces', { tenantId: activeTenantId, workspaceId: activeWorkspaceId });
+      writeStorage(tenantStorageKey(user.uid), activeTenantId);
+      if (activeTenantId) writeStorage(workspaceStorageKey(user.uid, activeTenantId), activeWorkspaceId);
       const next = {
         loading: false,
         error: null,
@@ -76,7 +78,12 @@ export function EnterpriseTenantProvider({ children }) {
       setState(next);
       return next;
     } catch (error) {
-      setState(previous => ({ ...previous, loading: false, error, serverDisabled: false, workspaces: [], context: null, tenant: null, workspace: null }));
+      setState(previous => ({
+        ...previous,
+        loading: false,
+        error,
+        serverDisabled: false,
+      }));
       throw error;
     }
   }, [enabled, user?.uid]);
