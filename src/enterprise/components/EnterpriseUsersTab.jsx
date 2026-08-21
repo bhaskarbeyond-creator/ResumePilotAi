@@ -6,7 +6,22 @@ import {
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 import { useEnterpriseTenant } from '../EnterpriseContext';
 
-const BUILTIN_ROLE_ORDER = ['MEMBER', 'VIEWER', 'WORKSPACE_MANAGER', 'TENANT_ADMIN', 'TENANT_OWNER'];
+export const ROLE_LABELS = {
+  TENANT_OWNER: { title: 'Tenant Owner', desc: 'Full root access to all organizations, billing, security, and policies', badge: 'Owner' },
+  TENANT_ADMIN: { title: 'Administrator', desc: 'Manage users, teams, security keys, workspaces, and AI settings', badge: 'Admin' },
+  WORKSPACE_MANAGER: { title: 'Workspace Manager', desc: 'Manage departmental workspaces, team members, and document resources', badge: 'Manager' },
+  BILLING_ADMIN: { title: 'Billing Administrator', desc: 'Manage subscriptions, invoices, and token quota allocations', badge: 'Billing' },
+  MEMBER: { title: 'Enterprise Member', desc: 'Standard access to create, edit, share resumes and use AI engine', badge: 'Member' },
+  VIEWER: { title: 'Read-Only Viewer', desc: 'View-only access to published documents and workspaces', badge: 'Viewer' }
+};
+
+export function formatRoleLabel(role) {
+  if (ROLE_LABELS[role]) return ROLE_LABELS[role].title;
+  if (role && role.startsWith('CUSTOM_')) return `Custom: ${role.replace(/^CUSTOM_/, '').replace(/_/g, ' ')}`;
+  return role || 'Member';
+}
+
+const ALL_STANDARD_ROLES = ['TENANT_ADMIN', 'WORKSPACE_MANAGER', 'MEMBER', 'VIEWER', 'BILLING_ADMIN'];
 const STATUS_FILTERS = ['ALL', 'ACTIVE', 'SUSPENDED', 'INVITED'];
 
 function csvEscape(value) {
@@ -66,10 +81,17 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
     return { builtin, custom, all: [...builtin, ...custom] };
   }, [rolesState]);
 
+  // Comprehensive role list: guaranteed to include all standard assignable roles + any custom roles
   const roleOptions = useMemo(() => {
-    const builtin = BUILTIN_ROLE_ORDER.filter(role => roleEntries.builtin.some(([id]) => id === role));
-    return [...builtin, ...roleEntries.custom.map(([id]) => id)];
-  }, [roleEntries]);
+    const builtinFromApi = Object.keys(rolesState.data?.roles || {});
+    const customFromApi = Object.keys(rolesState.data?.customRoles || {});
+    const combined = new Set([
+      ...ALL_STANDARD_ROLES,
+      ...builtinFromApi.filter(r => r !== 'TENANT_OWNER'),
+      ...customFromApi
+    ]);
+    return [...combined];
+  }, [rolesState]);
 
   const filtered = members.filter(member => {
     if (statusFilter !== 'ALL' && String(member.status || '').toUpperCase() !== statusFilter) return false;
@@ -391,7 +413,7 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
             >
               <option value="ALL">All roles</option>
               {roleOptions.map(role => (
-                <option key={role} value={role}>{role}</option>
+                <option key={role} value={role}>{formatRoleLabel(role)} ({role})</option>
               ))}
             </select>
             <select
@@ -446,7 +468,7 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
                       </th>
                     )}
                     <th>Principal</th>
-                    <th>Roles</th>
+                    <th>Role / Assignment</th>
                     <th>Status</th>
                     <th>Invitation</th>
                     <th className="text-right">Actions</th>
@@ -492,7 +514,7 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
                               title="Owner role is locked on your active session to prevent accidental lockout"
                               style={{ display: 'inline-flex', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 650 }}
                             >
-                              TENANT_OWNER (Owner)
+                              Tenant Owner (TENANT_OWNER)
                             </span>
                           ) : (
                             <select
@@ -500,9 +522,14 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
                               value={(member.roles && member.roles[0]) || 'MEMBER'}
                               disabled={!canManageMembers || busyAction === `role:${member.principalId}`}
                               onChange={(e) => handleRoleChange(member.principalId, e.target.value)}
-                              aria-label={`Role for ${member.principalId}`}
+                              aria-label={`Role for ${displayName}`}
+                              title={`Change role for ${displayName}`}
                             >
-                              {roleOptions.map(role => <option key={role} value={role}>{role}</option>)}
+                              {roleOptions.map(role => (
+                                <option key={role} value={role}>
+                                  {formatRoleLabel(role)} ({role})
+                                </option>
+                              ))}
                             </select>
                           )}
                         </td>
@@ -526,7 +553,7 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
                             <button
                               type="button"
                               className="enterprise-button-icon"
-                              title={`View membership details for ${member.principalId}`}
+                              title={`View membership details for ${displayName}`}
                               onClick={() => setDetailMember(member)}
                             >
                               <FiEye />
@@ -535,7 +562,7 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
                               <button
                                 type="button"
                                 className="enterprise-button-icon"
-                                title={`View audit activity for ${member.principalId}`}
+                                title={`View audit activity for ${displayName}`}
                                 onClick={() => onInspectActivity(member.principalId)}
                               >
                                 <FiActivity />
@@ -664,8 +691,15 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
                     onChange={(e) => setInviteRole(e.target.value)}
                     className="enterprise-select"
                   >
-                    {roleOptions.filter(role => role !== 'TENANT_OWNER').map(role => <option key={role} value={role}>{role}</option>)}
+                    {roleOptions.filter(role => role !== 'TENANT_OWNER').map(role => (
+                      <option key={role} value={role}>
+                        {formatRoleLabel(role)} ({role})
+                      </option>
+                    ))}
                   </select>
+                  <small className="text-muted">
+                    {ROLE_LABELS[inviteRole]?.desc || 'Role capability set applied across all tenant resources.'}
+                  </small>
                 </div>
                 <div className="enterprise-form-group">
                   <label htmlFor="member-workspace">Primary Workspace</label>
@@ -722,12 +756,37 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
                 </div>
               </div>
               <div className="enterprise-form-group">
-                <label>Roles</label>
-                <div className="enterprise-inline-actions" style={{ flexWrap: 'wrap', gap: '0.35rem' }}>
-                  {(detailMember.roles || []).map(role => (
-                    <span key={role} className={`enterprise-pill ${role.startsWith('CUSTOM_') ? 'enterprise-pill-template' : 'enterprise-pill-secondary'}`}>{role}</span>
-                  ))}
-                </div>
+                <label htmlFor="detail-role">Assigned Role</label>
+                {detailMember.principalId === currentPrincipalId ? (
+                  <div className="enterprise-inline-actions">
+                    <span className="enterprise-pill enterprise-pill-template" style={{ display: 'inline-flex', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 650 }}>
+                      Tenant Owner (TENANT_OWNER) · Active Session Lock
+                    </span>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    <select
+                      id="detail-role"
+                      className="enterprise-select"
+                      value={(detailMember.roles && detailMember.roles[0]) || 'MEMBER'}
+                      disabled={!canManageMembers}
+                      onChange={(e) => {
+                        const newRole = e.target.value;
+                        handleRoleChange(detailMember.principalId, newRole);
+                        setDetailMember(prev => ({ ...prev, roles: [newRole] }));
+                      }}
+                    >
+                      {roleOptions.map(role => (
+                        <option key={role} value={role}>
+                          {formatRoleLabel(role)} ({role})
+                        </option>
+                      ))}
+                    </select>
+                    <small className="text-muted">
+                      {ROLE_LABELS[detailMember.roles?.[0]]?.desc || 'Live capability set applied across all tenant resources.'}
+                    </small>
+                  </div>
+                )}
               </div>
               <div className="enterprise-two-column-grid">
                 <div className="enterprise-form-group">

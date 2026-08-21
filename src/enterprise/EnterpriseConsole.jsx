@@ -3,8 +3,10 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   FiActivity, FiBarChart2, FiChevronRight, FiCommand, FiFileText, FiHelpCircle, FiLock,
   FiSearch, FiSettings, FiShield, FiSliders, FiUserPlus, FiUsers, FiZap, FiMenu, FiPlus,
+  FiLogOut, FiHome, FiGrid, FiExternalLink, FiChevronDown, FiUser
 } from 'react-icons/fi';
 import { AuthContext } from '../main';
+import { signOutUser } from '../utils/signOut';
 import { EnterpriseTenantProvider, useEnterpriseTenant } from './EnterpriseContext';
 import EnterpriseOverviewTab from './components/EnterpriseOverviewTab';
 import EnterpriseUsersTab from './components/EnterpriseUsersTab';
@@ -185,6 +187,178 @@ function WorkspaceBadge() {
             ))}
             {!workspaces.length && <p className="enterprise-empty">No workspace is available.</p>}
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AppSwitcher({ platformAdmin }) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [open]);
+
+  return (
+    <div className="enterprise-app-switcher" ref={dropdownRef}>
+      <button
+        type="button"
+        className="enterprise-app-switcher-btn"
+        onClick={() => setOpen(val => !val)}
+        aria-expanded={open}
+        aria-label="Switch application"
+        data-tooltip="Switch App / Views"
+      >
+        <FiGrid aria-hidden="true" />
+        <span>Switch View</span>
+        <FiChevronDown aria-hidden="true" style={{ fontSize: '0.75rem', opacity: 0.7 }} />
+      </button>
+
+      {open && (
+        <div className="enterprise-popover enterprise-app-popover" role="menu">
+          <div className="enterprise-app-popover-header">
+            <span>SWITCH APPLICATION</span>
+          </div>
+          <div className="enterprise-app-popover-list">
+            <Link to="/dashboard" className="enterprise-app-item" role="menuitem" onClick={() => setOpen(false)}>
+              <div className="enterprise-app-item-icon"><FiHome /></div>
+              <div>
+                <strong>User Dashboard</strong>
+                <small>Resumes, job tracker, interviews & cover letters</small>
+              </div>
+            </Link>
+
+            <Link to="/build-resume" className="enterprise-app-item" role="menuitem" onClick={() => setOpen(false)}>
+              <div className="enterprise-app-item-icon"><FiFileText /></div>
+              <div>
+                <strong>AI Resume Builder</strong>
+                <small>Create & format high-impact resumes</small>
+              </div>
+            </Link>
+
+            {platformAdmin && (
+              <Link to="/admin" className="enterprise-app-item" role="menuitem" onClick={() => setOpen(false)}>
+                <div className="enterprise-app-item-icon enterprise-app-admin-icon"><FiShield /></div>
+                <div>
+                  <strong>Platform Admin Portal</strong>
+                  <small>System configurations & AI settings</small>
+                </div>
+              </Link>
+            )}
+
+            <Link to="/" className="enterprise-app-item" role="menuitem" onClick={() => setOpen(false)}>
+              <div className="enterprise-app-item-icon"><FiExternalLink /></div>
+              <div>
+                <strong>ResumePilot Home</strong>
+                <small>Public homepage & features</small>
+              </div>
+            </Link>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function UserIdentityMenu({ user, roles, platformAdmin }) {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [open]);
+
+  const handleSignOut = async () => {
+    setOpen(false);
+    await signOutUser();
+    navigate('/login');
+  };
+
+  const displayName = user?.displayName || user?.email?.split('@')[0] || 'Administrator';
+  const displayEmail = user?.email || user?.uid || '';
+  const initial = String(displayName).slice(0, 1).toUpperCase();
+
+  return (
+    <div className="enterprise-identity-container" ref={menuRef}>
+      <button
+        type="button"
+        className="enterprise-identity-trigger"
+        aria-label="Signed-in user identity menu"
+        aria-expanded={open}
+        onClick={() => setOpen(val => !val)}
+        data-tooltip="Click for profile options & logout"
+      >
+        <span className="enterprise-avatar" aria-hidden="true">
+          {initial}
+        </span>
+        <span className="enterprise-identity-copy">
+          <strong>{displayName}</strong>
+          <small>{roles.length ? roles.join(' · ') : 'Member'}{platformAdmin ? ' · Platform admin' : ''}</small>
+        </span>
+        <FiChevronDown className="enterprise-identity-chevron" aria-hidden="true" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }} />
+      </button>
+
+      {open && (
+        <div className="enterprise-identity-popover" role="menu">
+          <div className="enterprise-identity-popover-header">
+            <div className="enterprise-avatar">{initial}</div>
+            <div>
+              <strong>{displayName}</strong>
+              <small>{displayEmail}</small>
+              <div style={{ marginTop: '4px' }}>
+                <span className="enterprise-pill enterprise-pill-template" style={{ fontSize: '0.68rem', padding: '2px 8px' }}>
+                  {roles[0] || 'MEMBER'}{platformAdmin ? ' · Platform Admin' : ''}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="enterprise-identity-popover-divider" />
+
+          <div className="enterprise-identity-popover-section">
+            <span className="enterprise-popover-section-label">SWITCH VIEW</span>
+            <Link to="/dashboard" className="enterprise-identity-popover-item" role="menuitem" onClick={() => setOpen(false)}>
+              <FiHome /> <span>User Dashboard</span>
+            </Link>
+            <Link to="/build-resume" className="enterprise-identity-popover-item" role="menuitem" onClick={() => setOpen(false)}>
+              <FiFileText /> <span>Resume Builder</span>
+            </Link>
+            {platformAdmin && (
+              <Link to="/admin" className="enterprise-identity-popover-item" role="menuitem" onClick={() => setOpen(false)}>
+                <FiShield /> <span>Platform Admin Panel</span>
+              </Link>
+            )}
+          </div>
+
+          <div className="enterprise-identity-popover-divider" />
+
+          <button
+            type="button"
+            className="enterprise-identity-popover-item text-danger"
+            role="menuitem"
+            onClick={handleSignOut}
+          >
+            <FiLogOut /> <span>Sign Out / Logout</span>
+          </button>
         </div>
       )}
     </div>
@@ -444,9 +618,20 @@ function EnterpriseConsoleInner() {
             <span>Search console…</span>
             <kbd>⌘K</kbd>
           </button>
-          <Link to="/" className="enterprise-exit-link" title="Exit to consumer home">
-            Exit Console
-          </Link>
+
+          <AppSwitcher platformAdmin={platformAdmin} />
+
+          <button
+            type="button"
+            className="enterprise-exit-link"
+            onClick={async () => { await signOutUser(); navigate('/login'); }}
+            data-tooltip="Sign Out of Session"
+            aria-label="Sign Out"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', background: 'none', border: '1px solid var(--ep-slate-200)' }}
+          >
+            <FiLogOut aria-hidden="true" />
+            <span>Sign Out</span>
+          </button>
         </div>
       </header>
 
@@ -478,17 +663,12 @@ function EnterpriseConsoleInner() {
               </div>
             ))}
           </nav>
-          {/* Identity footer: the signed-in administrator always knows who they
-              are, which roles apply, and that authorization is server-derived. */}
-          <div className="enterprise-identity" aria-label="Signed-in identity" title="Your authenticated session and server-resolved role capabilities">
-            <span className="enterprise-avatar" aria-hidden="true">
-              {String(user?.email || user?.uid || 'U').slice(0, 1).toUpperCase()}
-            </span>
-            <span className="enterprise-identity-copy">
-              <strong>{user?.displayName || user?.email || user?.uid || 'Signed in'}</strong>
-              <small>{roles.length ? roles.join(' · ') : 'Member'}{platformAdmin ? ' · Platform admin' : ''}</small>
-            </span>
-          </div>
+          {/* Identity footer: interactive user menu with view switching and logout */}
+          <UserIdentityMenu
+            user={user}
+            roles={roles}
+            platformAdmin={platformAdmin}
+          />
         </aside>
 
         {/* Dynamic Main Workspace */}
