@@ -212,7 +212,7 @@ for item in ['index.js', 'package.json', '.env']:
         sftp.put(local_path, os.path.join(remote_backend, item).replace('\\', '/'))
         print(f"Uploaded backend/{item}")
 
-for folder in ['routes', 'services', 'security']:
+for folder in ['routes', 'services', 'security', 'enterprise']:
     local_folder = os.path.join(local_backend, folder)
     if os.path.exists(local_folder):
         upload_dir(local_folder, os.path.join(remote_backend, folder).replace('\\', '/'))

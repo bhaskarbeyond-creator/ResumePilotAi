@@ -20,6 +20,44 @@ class EnterpriseObservability {
       aiErrors: 0,
       quotaErrors: 0,
     };
+    this.durableDb = null;
+    this.admin = null;
+    this.lastFlushTime = Date.now();
+  }
+
+  setDurableStore(db, admin) {
+    if (this.durableDb) return;
+    this.durableDb = db;
+    this.admin = admin;
+    setInterval(() => this.flushToDurableStore(), 1000 * 60 * 15); // Flush every 15 minutes
+  }
+
+  async flushToDurableStore() {
+    if (!this.durableDb || !this.admin) return;
+    try {
+      const currentMetrics = this.getMetrics();
+      if (currentMetrics.sampleCount === 0) return;
+      
+      const payload = {
+        lastFlushedAt: this.admin.firestore.FieldValue.serverTimestamp(),
+        lifetimeSamples: this.admin.firestore.FieldValue.increment(currentMetrics.sampleCount),
+        errors: {
+          clientErrors: this.admin.firestore.FieldValue.increment(this.errorCounts.clientErrors),
+          serverErrors: this.admin.firestore.FieldValue.increment(this.errorCounts.serverErrors),
+          authErrors: this.admin.firestore.FieldValue.increment(this.errorCounts.authErrors),
+          aiErrors: this.admin.firestore.FieldValue.increment(this.errorCounts.aiErrors),
+          quotaErrors: this.admin.firestore.FieldValue.increment(this.errorCounts.quotaErrors),
+        }
+      };
+      await this.durableDb.collection('data').doc('observability').set(payload, { merge: true });
+      
+      // Reset after flush
+      this.latencies = [];
+      this.errorCounts = { clientErrors: 0, serverErrors: 0, authErrors: 0, aiErrors: 0, quotaErrors: 0 };
+      this.lastFlushTime = Date.now();
+    } catch (err) {
+      console.warn('[EnterpriseObservability] Failed to flush to durable store:', err.message);
+    }
   }
 
   recordRequest({ requestId, correlationId, tenantId, workspaceId, method, path, status, durationMs, error = null }) {

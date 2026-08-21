@@ -28,6 +28,7 @@ export default function PlatformOperations() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState({ title: '', message: '', severity: 'INFO' });
+  const [confirmAction, setConfirmAction] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -59,9 +60,24 @@ export default function PlatformOperations() {
   const saveMaint = async (event) => {
     event.preventDefault();
     if (!isSuperAdmin) return;
-    if (maintenance.enabled && !window.confirm('Enable public maintenance mode? Non-admin visitors will see the maintenance banner.')) {
+    
+    if (maintenance.enabled && confirmAction?.id !== 'maintenance') {
+      setConfirmAction({
+        id: 'maintenance',
+        title: 'Enable Maintenance Mode',
+        message: 'Enable public maintenance mode? Non-admin visitors will see the maintenance banner and will not be able to access the platform.',
+        confirmText: 'Enable Maintenance',
+        danger: true,
+        action: () => executeSaveMaint()
+      });
       return;
     }
+    
+    await executeSaveMaint();
+  };
+
+  const executeSaveMaint = async () => {
+    setConfirmAction(null);
     setSaving(true);
     setNotice(null);
     try {
@@ -99,6 +115,25 @@ export default function PlatformOperations() {
     } catch (err) {
       setError(err.message);
     }
+  };
+
+  const confirmDeleteAnnouncement = (item) => {
+    setConfirmAction({
+      id: `delete-${item.id}`,
+      title: 'Delete Announcement',
+      message: `Permanently delete announcement "${item.title}"? This cannot be undone.`,
+      confirmText: 'Delete',
+      danger: true,
+      action: async () => {
+        setConfirmAction(null);
+        try {
+          await deleteAnnouncement(item.id);
+          load();
+        } catch (err) {
+          setError(err.message);
+        }
+      }
+    });
   };
 
   const enc = encryption?.encryption || {};
@@ -188,16 +223,61 @@ export default function PlatformOperations() {
               {isSuperAdmin && (
                 <div className="flex gap-2">
                   <button type="button" onClick={() => toggleAnnouncement(item)} className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white font-bold">{item.enabled ? 'Disable' : 'Enable'}</button>
-                  <button type="button" onClick={async () => { if (!window.confirm(`Permanently delete announcement “${item.title}”? This cannot be undone.`)) return; try { await deleteAnnouncement(item.id); load(); } catch (err) { setError(err.message); } }} className="px-2.5 py-1 rounded-lg border border-red-200 bg-white text-red-700 font-bold">Delete</button>
+                  <button type="button" onClick={() => confirmDeleteAnnouncement(item)} className="px-2.5 py-1 rounded-lg border border-red-200 bg-white text-red-700 font-bold">Delete</button>
                 </div>
               )}
             </div>
           ))}
         </div>
       </section>
+
+      {/* Confirmation Modal */}
+      {confirmAction && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
+          onClick={() => setConfirmAction(null)}
+        >
+          <div
+            className="w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col transform transition-all"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className={`p-4 border-b border-slate-100 flex items-center gap-3 ${confirmAction.danger ? 'bg-red-50' : 'bg-slate-50'}`}>
+              {confirmAction.danger ? <FiAlertTriangle className="text-red-600 h-5 w-5" /> : <FiTool className="text-indigo-600 h-5 w-5" />}
+              <h3 className={`font-bold ${confirmAction.danger ? 'text-red-900' : 'text-slate-900'}`}>
+                {confirmAction.title}
+              </h3>
+            </div>
+            <div className="p-5 text-sm text-slate-600 leading-relaxed">
+              {confirmAction.message}
+            </div>
+            <div className="p-4 pt-2 flex justify-end gap-3 bg-slate-50 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setConfirmAction(null)}
+                className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold hover:bg-slate-50 transition shadow-2xs text-xs"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmAction.action}
+                className={`px-4 py-2 rounded-xl text-white font-bold transition shadow-xs text-xs ${
+                  confirmAction.danger ? 'bg-red-600 hover:bg-red-700' : 'bg-indigo-600 hover:bg-indigo-700'
+                }`}
+              >
+                {confirmAction.confirmText}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+function confirmDeleteAnnouncementComponentState() {} // placeholder
+
+
 
 function Stat({ label, value }) {
   return (

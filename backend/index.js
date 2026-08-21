@@ -28,7 +28,7 @@ const { platformRouter } = require('./routes/platform');
 const app = express();
 const cors = require('cors');
 const cryptoRandom = require('crypto');
-const { requireAuth, requirePermission, permissionsFor } = require('./security/auth');
+const { requireAuth, requirePermission, permissionsFor, requireSuperAdmin } = require('./security/auth');
 const { enforceApiPolicy } = require('./security/policy');
 const { createEnterpriseAuthMiddleware } = require('./enterprise/enterpriseAuth');
 const {
@@ -2147,7 +2147,7 @@ app.post('/api/admin/gdpr-settings', async (req, res) => {
     return res.json({ success: true, settings: gdpr });
 });
 
-app.post('/api/admin/ai-settings', async (req, res) => {
+app.post('/api/admin/ai-settings', requireSuperAdmin, async (req, res) => {
     try {
         const result = await saveAiAdminSettings({
             db: req.app.get('db'), admin, input: req.body || {},
@@ -2160,7 +2160,7 @@ app.post('/api/admin/ai-settings', async (req, res) => {
     }
 });
 
-app.post('/api/admin/ai/test-provider', async (req, res) => {
+app.post('/api/admin/ai/test-provider', requireSuperAdmin, async (req, res) => {
     try {
         const result = await testAiProvider({
             db: req.app.get('db'), environment: process.env,
@@ -2317,7 +2317,7 @@ app.post('/api/admin/ai/reset-quota', async (req, res) => {
     }
 });
 
-app.post('/api/admin/payment-settings', async (req, res) => {
+app.post('/api/admin/payment-settings', requireSuperAdmin, async (req, res) => {
     if (!db || !admin) return res.status(503).json({ success: false, error: 'Settings service unavailable.' });
     const input = req.body || {};
     const numberInRange = (value, min, max, fallback) => {
@@ -2434,7 +2434,7 @@ app.delete('/api/admin/coupons/:code', async (req, res) => {
     } catch (error) { const status = error.code === 'ADMIN_TARGET_CHANGED' ? 409 : error.code === 'NOT_FOUND' ? 404 : 500; return res.status(status).json({ success: false, code: error.code, error: status === 500 ? 'Unable to delete coupon.' : error.message }); }
 });
 
-app.post('/api/admin/payment/test-provider', async (req, res) => {
+app.post('/api/admin/payment/test-provider', requireSuperAdmin, async (req, res) => {
     const { type, secretKey } = req.body;
     if (!['stripe', 'razorpay', 'paytm', 'phonepe'].includes(type)) return res.status(400).json({ success: false, code: 'PAYMENT_PROVIDER_VALIDATION_ERROR', error: 'Unsupported payment provider test.' });
     try {
@@ -2556,7 +2556,7 @@ app.get('/api/admin/twilio-settings', async (req, res) => {
     }
 });
 
-app.post('/api/admin/twilio-settings', async (req, res) => {
+app.post('/api/admin/twilio-settings', requireSuperAdmin, async (req, res) => {
     const requestDb = req.app.get('db');
     if (!requestDb || !admin) return res.status(503).json({ success: false, error: 'SMS configuration service unavailable.' });
     const accountSid = String(req.body?.accountSid || '').trim();
@@ -3375,7 +3375,7 @@ app.get('/api/admin/firebase-service-account', (req, res) => {
     });
 });
 
-app.post('/api/admin/firebase-service-account', async (req, res) => {
+app.post('/api/admin/firebase-service-account', requireSuperAdmin, async (req, res) => {
     if (process.env.ALLOW_RUNTIME_FIREBASE_CREDENTIAL_ROTATION !== 'true' || process.env.NODE_ENV === 'production') {
         return res.status(501).json({ success: false, code: 'RUNTIME_SECRET_ROTATION_DISABLED', error: 'Runtime Firebase credential rotation is disabled. Use Workload Identity or the deployment Secret Manager.' });
     }

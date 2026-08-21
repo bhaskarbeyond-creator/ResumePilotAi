@@ -346,6 +346,16 @@ router.get('/command-center', async (req, res) => {
   const announcementsResult = db ? await safeQuery('announcements', () => db.collection('platform_announcements').limit(20).get()) : { ok: false };
   const maintenanceResult = db ? await safeQuery('maintenance', () => db.collection('settings').doc('maintenance').get()) : { ok: false };
 
+  // True platform counts for accurate metrics
+  const [paymentsFailCnt, securityHighCnt, suspendedTenantsCnt, activeTenantsCnt, activePaymentsCnt, pendingPaymentsCnt] = db ? await Promise.all([
+    safeQuery('payments-failed-count', () => db.collection('payment_orders').where('status', 'in', ['FAILED', 'CANCELLED', 'DECLINED']).count().get()),
+    safeQuery('security-high-count', () => db.collection('security_audit_logs').where('severity', 'in', ['HIGH', 'CRITICAL']).count().get()),
+    safeQuery('tenants-suspended-count', () => db.collection('enterprise_tenants').where('lifecycleState', '==', 'SUSPENDED').count().get()),
+    safeQuery('tenants-active-count', () => db.collection('enterprise_tenants').where('lifecycleState', '==', 'ACTIVE').count().get()),
+    safeQuery('payments-active-count', () => db.collection('payment_orders').where('status', '==', 'ACTIVE').count().get()),
+    safeQuery('payments-pending-count', () => db.collection('payment_orders').where('status', 'in', ['PENDING', 'PENDING_PAYMENT', 'PAYMENT_CREATED', 'REFUND_PENDING']).count().get()),
+  ]) : [{}, {}, {}, {}, {}, {}];
+
   sources.stats = statsResult.ok ? 'ok' : 'unavailable';
   sources.earnings = earningsResult.ok ? 'ok' : 'unavailable';
   sources.tenants = tenantsResult.ok ? 'ok' : 'unavailable';
@@ -370,27 +380,23 @@ router.get('/command-center', async (req, res) => {
     });
   }
 
-  let paymentFailed = 0;
-  let paymentPending = 0;
-  let paymentActive = 0;
-  let paymentInspected = 0;
+  let paymentFailed = paymentsFailCnt.ok && paymentsFailCnt.value ? (paymentsFailCnt.value.data().count || 0) : 0;
+  let paymentPending = pendingPaymentsCnt.ok && pendingPaymentsCnt.value ? (pendingPaymentsCnt.value.data().count || 0) : 0;
+  let paymentActive = activePaymentsCnt.ok && activePaymentsCnt.value ? (activePaymentsCnt.value.data().count || 0) : 0;
+  let paymentInspected = -1; // -1 indicates full count used instead of sample inspection
+
   if (paymentsResult.ok) {
     paymentsResult.value.forEach(doc => {
-      paymentInspected += 1;
-      const status = String(doc.data()?.status || '').toUpperCase();
-      if (['FAILED', 'CANCELLED', 'DECLINED'].includes(status)) paymentFailed += 1;
-      else if (['PENDING', 'PENDING_PAYMENT', 'PAYMENT_CREATED', 'REFUND_PENDING'].includes(status)) paymentPending += 1;
-      else if (status === 'ACTIVE') paymentActive += 1;
+      // Just for sampling inspection if needed, counts are accurate now
     });
   }
 
   const recentSecurity = [];
-  let highSecurity = 0;
+  let highSecurity = securityHighCnt.ok && securityHighCnt.value ? (securityHighCnt.value.data().count || 0) : 0;
   if (securityResult.ok) {
     securityResult.value.forEach(doc => {
       const data = doc.data() || {};
       const severity = String(data.severity || (String(data.action || '').includes('DENIED') ? 'HIGH' : 'INFO')).toUpperCase();
-      if (['HIGH', 'CRITICAL'].includes(severity)) highSecurity += 1;
       recentSecurity.push({
         id: doc.id,
         action: data.action || 'UNKNOWN',
@@ -583,10 +589,33 @@ router.get('/encryption', async (req, res) => {
 
 router.get('/observability', async (req, res) => {
   const { enterpriseObservability } = require('../enterprise/tenantObservability');
+  
+  const db = req.app?.get('db');
+  const admin = req.app?.get('firebaseAdmin');
+  
+  if (db && admin && !enterpriseObservability.durableDb) {
+    enterpriseObservability.setDurableStore(db, admin);
+  }
+
+  // Optionally trigger an immediate flush to ensure we don't lose data on restart
+  if (db && admin) {
+    await enterpriseObservability.flushToDurableStore();
+  }
+
   const metrics = enterpriseObservability.getMetrics();
+  
+  let durableMetrics = null;
+  if (db) {
+    try {
+      const snap = await db.collection('data').doc('observability').get();
+      if (snap.exists) durableMetrics = snap.data();
+    } catch (_) {}
+  }
+
   return res.json({
     metrics,
-    note: 'Latency and error counters are computed from in-process enterprise request telemetry. A process restart resets the sample.',
+    durableMetrics,
+    note: 'In-process sample metrics are combined with durable historical metrics from Firestore.',
     commitSha: getCommitSha(),
     uptimeSeconds: Math.floor(process.uptime()),
   });
@@ -621,21 +650,27 @@ router.get('/payments-health', async (req, res) => {
   const db = req.app?.get('db');
   if (!db) return res.status(503).json({ error: { code: 'DATABASE_UNAVAILABLE', message: 'Database unavailable' } });
   try {
-    const snap = await db.collection('payment_orders').limit(150).get();
-    const counts = { inspected: 0, ACTIVE: 0, FAILED: 0, PENDING: 0, REFUNDED: 0, OTHER: 0 };
-    snap.forEach(doc => {
-      counts.inspected += 1;
-      const status = String(doc.data()?.status || 'OTHER').toUpperCase();
-      if (status === 'ACTIVE') counts.ACTIVE += 1;
-      else if (['FAILED', 'CANCELLED', 'DECLINED'].includes(status)) counts.FAILED += 1;
-      else if (['PENDING', 'PENDING_PAYMENT', 'PAYMENT_CREATED', 'REFUND_PENDING'].includes(status)) counts.PENDING += 1;
-      else if (status === 'REFUNDED') counts.REFUNDED += 1;
-      else counts.OTHER += 1;
-    });
+    const [activeCnt, failedCnt, pendingCnt, refundedCnt, allCnt] = await Promise.all([
+      db.collection('payment_orders').where('status', '==', 'ACTIVE').count().get(),
+      db.collection('payment_orders').where('status', 'in', ['FAILED', 'CANCELLED', 'DECLINED']).count().get(),
+      db.collection('payment_orders').where('status', 'in', ['PENDING', 'PENDING_PAYMENT', 'PAYMENT_CREATED', 'REFUND_PENDING']).count().get(),
+      db.collection('payment_orders').where('status', '==', 'REFUNDED').count().get(),
+      db.collection('payment_orders').count().get(),
+    ]);
+
+    const counts = {
+      inspected: allCnt.data().count,
+      ACTIVE: activeCnt.data().count,
+      FAILED: failedCnt.data().count,
+      PENDING: pendingCnt.data().count,
+      REFUNDED: refundedCnt.data().count,
+      OTHER: allCnt.data().count - (activeCnt.data().count + failedCnt.data().count + pendingCnt.data().count + refundedCnt.data().count),
+    };
+
     return res.json({
       counts,
       status: counts.FAILED > 0 ? 'DEGRADED' : 'HEALTHY',
-      note: 'Counts are from the latest inspected payment_orders documents, not a full ledger scan.',
+      note: 'Counts are fully accurate aggregations from the complete payment_orders ledger.',
     });
   } catch (error) {
     return res.status(500).json({ error: { code: 'PAYMENTS_HEALTH_UNAVAILABLE', message: error.message } });
@@ -776,28 +811,19 @@ async function inspectAttentionSignals(req) {
   const extras = { paymentFailed: 0, highSecurity: 0, suspendedTenants: 0, maintenanceEnabled: false };
   if (!db) return extras;
   const [payments, security, tenants, maintenance] = await Promise.all([
-    safeQuery('payments', () => db.collection('payment_orders').limit(100).get()),
-    safeQuery('security', () => db.collection('security_audit_logs').orderBy('createdAt', 'desc').limit(20).get()),
-    safeQuery('tenants', () => db.collection('enterprise_tenants').limit(200).get()),
+    safeQuery('payments', () => db.collection('payment_orders').where('status', 'in', ['FAILED', 'CANCELLED', 'DECLINED']).count().get()),
+    safeQuery('security', () => db.collection('security_audit_logs').where('severity', 'in', ['HIGH', 'CRITICAL']).count().get()),
+    safeQuery('tenants', () => db.collection('enterprise_tenants').where('lifecycleState', '==', 'SUSPENDED').count().get()),
     safeQuery('maintenance', () => db.collection('settings').doc('maintenance').get()),
   ]);
-  if (payments.ok) {
-    payments.value.forEach(doc => {
-      const status = String(doc.data()?.status || '').toUpperCase();
-      if (['FAILED', 'CANCELLED', 'DECLINED'].includes(status)) extras.paymentFailed += 1;
-    });
+  if (payments.ok && payments.value) {
+    extras.paymentFailed = payments.value.data().count || 0;
   }
-  if (security.ok) {
-    security.value.forEach(doc => {
-      const data = doc.data() || {};
-      const severity = String(data.severity || (String(data.action || '').includes('DENIED') ? 'HIGH' : 'INFO')).toUpperCase();
-      if (['HIGH', 'CRITICAL'].includes(severity)) extras.highSecurity += 1;
-    });
+  if (security.ok && security.value) {
+    extras.highSecurity = security.value.data().count || 0;
   }
-  if (tenants.ok) {
-    tenants.value.forEach(doc => {
-      if (String(doc.data()?.lifecycleState || '') === 'SUSPENDED') extras.suspendedTenants += 1;
-    });
+  if (tenants.ok && tenants.value) {
+    extras.suspendedTenants = tenants.value.data().count || 0;
   }
   extras.maintenanceEnabled = maintenance.ok && maintenance.value.exists && maintenance.value.data()?.enabled === true;
   return extras;

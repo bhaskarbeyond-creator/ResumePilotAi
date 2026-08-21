@@ -17,6 +17,7 @@ export default function PlatformTenants() {
   const [notification, setNotification] = useState(null);
   const [selectedTenant, setSelectedTenant] = useState(null);
   const [decommissionReason, setDecommissionReason] = useState('');
+  const [confirmAction, setConfirmAction] = useState(null);
 
   // Provisioning Modal State
   const [showProvisionModal, setShowProvisionModal] = useState(false);
@@ -65,10 +66,23 @@ export default function PlatformTenants() {
 
   const handleLifecycle = async (tenant, nextState) => {
     const verb = nextState === 'SUSPENDED' ? 'Suspend' : 'Reactivate';
-    if (!window.confirm(`Are you sure you want to ${verb.toLowerCase()} tenant "${tenant.displayName}" (${tenant.slug})?`)) {
+    
+    if (confirmAction?.id !== `${tenant.id}-${nextState}`) {
+      setConfirmAction({
+        id: `${tenant.id}-${nextState}`,
+        title: `${verb} Organization`,
+        message: `Are you sure you want to ${verb.toLowerCase()} the organization "${tenant.displayName}" (${tenant.slug})?`,
+        confirmText: verb,
+        danger: nextState === 'SUSPENDED',
+        action: () => executeLifecycle(tenant, nextState)
+      });
       return;
     }
+  };
 
+  const executeLifecycle = async (tenant, nextState) => {
+    const verb = nextState === 'SUSPENDED' ? 'Suspend' : 'Reactivate';
+    setConfirmAction(null);
     setBusyTenant(`${tenant.id}:${nextState}`);
     try {
       const user = fire.auth().currentUser;
@@ -86,7 +100,7 @@ export default function PlatformTenants() {
         throw new Error(errData.error?.message || `Failed to ${verb.toLowerCase()} tenant`);
       }
 
-      setNotification(`Tenant "${tenant.displayName}" has been ${nextState.toLowerCase()}.`);
+      setNotification(`Organization "${tenant.displayName}" has been ${nextState.toLowerCase()}.`);
       fetchTenants();
     } catch (err) {
       alert(err.message || 'Action failed');
@@ -142,11 +156,26 @@ export default function PlatformTenants() {
       alert('A decommission reason of at least 8 characters is required.');
       return;
     }
-    if (!window.confirm(`Decommission tenant "${tenant.displayName}"? This moves it to DELETING via the existing Enterprise lifecycle.`)) return;
+    
+    if (confirmAction?.id !== `decommission-${tenant.id}`) {
+      setConfirmAction({
+        id: `decommission-${tenant.id}`,
+        title: 'Decommission Organization',
+        message: `Are you sure you want to decommission "${tenant.displayName}"? This moves it to DELETING via the existing Enterprise lifecycle. It will be permanently deleted after the retention period.`,
+        confirmText: 'Decommission',
+        danger: true,
+        action: () => executeDecommission(tenant)
+      });
+      return;
+    }
+  };
+
+  const executeDecommission = async (tenant) => {
+    setConfirmAction(null);
     setBusyTenant(`${tenant.id}:DELETING`);
     try {
       await decommissionTenant(tenant.id, decommissionReason.trim());
-      setNotification(`Tenant "${tenant.displayName}" marked DELETING.`);
+      setNotification(`Organization "${tenant.displayName}" marked DELETING.`);
       setDecommissionReason('');
       setSelectedTenant(null);
       fetchTenants();
@@ -461,6 +490,46 @@ export default function PlatformTenants() {
               </div>
             )}
           </aside>
+        </div>
+      )}
+      {/* Confirmation Modal */}
+      {confirmAction && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
+          onClick={() => setConfirmAction(null)}
+        >
+          <div
+            className="w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col transform transition-all"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className={`p-4 border-b border-slate-100 flex items-center gap-3 ${confirmAction.danger ? 'bg-red-50' : 'bg-slate-50'}`}>
+              {confirmAction.danger ? <FiAlertTriangle className="text-red-600 h-5 w-5" /> : <FiServer className="text-indigo-600 h-5 w-5" />}
+              <h3 className={`font-bold ${confirmAction.danger ? 'text-red-900' : 'text-slate-900'}`}>
+                {confirmAction.title}
+              </h3>
+            </div>
+            <div className="p-5 text-sm text-slate-600 leading-relaxed">
+              {confirmAction.message}
+            </div>
+            <div className="p-4 pt-2 flex justify-end gap-3 bg-slate-50 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setConfirmAction(null)}
+                className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold hover:bg-slate-50 transition shadow-2xs text-xs"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmAction.action}
+                className={`px-4 py-2 rounded-xl text-white font-bold transition shadow-xs text-xs ${
+                  confirmAction.danger ? 'bg-red-600 hover:bg-red-700' : 'bg-indigo-600 hover:bg-indigo-700'
+                }`}
+              >
+                {confirmAction.confirmText}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

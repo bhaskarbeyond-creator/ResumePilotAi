@@ -54,7 +54,7 @@ test('platform operations and security modules wire to existing data planes', as
   assert.match(ops, /setMaintenance/);
   assert.match(ops, /deleteAnnouncement/);
   assert.match(ops, /getEnterpriseQueue/);
-  assert.match(ops, /window\.confirm/);
+  assert.match(ops, /setConfirmAction/);
   assert.match(security, /getSecurityEvents/);
   assert.match(security, /security_audit_logs/);
   assert.match(api, /\/api\/platform\/command-center/);
