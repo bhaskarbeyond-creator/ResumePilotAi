@@ -2405,3 +2405,144 @@ details.enterprise-disclosure[open] > summary::before { content: '▾ '; }
   font-size: 0.84rem;
   font-weight: 500;
 }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Executive Roles & Access Matrix System
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.enterprise-role-card {
+  background: #ffffff;
+  border: 1px solid var(--enterprise-border);
+  border-radius: var(--enterprise-radius-lg);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.enterprise-role-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--ep-brand-300);
+  box-shadow: var(--enterprise-shadow-md);
+}
+
+.enterprise-role-card.highlighted {
+  border-color: var(--ep-brand-500);
+  box-shadow: 0 0 0 2px var(--ep-brand-100), var(--enterprise-shadow-md);
+}
+
+.enterprise-role-badge-owner {
+  background: #f5f3ff;
+  color: #6d28d9;
+  border: 1px solid #ddd6fe;
+}
+
+.enterprise-role-badge-admin {
+  background: #eef2ff;
+  color: #4338ca;
+  border: 1px solid #c7d2fe;
+}
+
+.enterprise-role-badge-manager {
+  background: #ecfeff;
+  color: #0e7490;
+  border: 1px solid #a5f3fc;
+}
+
+.enterprise-role-badge-member {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.enterprise-role-badge-viewer {
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.enterprise-role-badge-billing {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.enterprise-role-badge-custom {
+  background: #faf5ff;
+  color: #7e22ce;
+  border: 1px solid #e9d5ff;
+}
+
+.enterprise-matrix-grant {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-weight: 700;
+  font-size: 0.76rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.enterprise-matrix-all-grant {
+  background: linear-gradient(135deg, #4f46e5, #4338ca);
+  color: #ffffff;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-weight: 750;
+  font-size: 0.74rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 1px 3px rgba(79, 70, 229, 0.25);
+}
+
+.enterprise-matrix-deny {
+  color: #cbd5e1;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.enterprise-matrix-category-header td {
+  background: #f8fafc !important;
+  border-top: 2px solid #e2e8f0 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  font-weight: 750 !important;
+  color: #0f172a !important;
+  font-size: 0.84rem !important;
+  padding: 12px 18px !important;
+  letter-spacing: 0.01em;
+}
+
+.enterprise-matrix-highlight-col {
+  background: #f8faff !important;
+}
+
+.enterprise-role-member-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--ep-slate-50);
+  border: 1px solid var(--ep-slate-200);
+  border-radius: 6px;
+  font-size: 0.78rem;
+  color: var(--ep-slate-700);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.enterprise-role-member-link:hover {
+  background: var(--ep-brand-50);
+  border-color: var(--ep-brand-300);
+  color: var(--ep-brand-700);
+}
+

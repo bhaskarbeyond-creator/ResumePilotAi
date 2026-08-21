@@ -549,7 +549,7 @@ function EnterpriseConsoleInner() {
           )}
 
           {activeTab === 'access' && (
-            <EnterpriseRolesTab />
+            <EnterpriseRolesTab onNavigate={selectTab} />
           )}
 
           {activeTab === 'ai' && (
