@@ -203,6 +203,40 @@ test.describe('Live Authenticated Enterprise E2E Audit', () => {
     await page.locator('button.enterprise-nav-item').filter({ hasText: 'Roles & permissions' }).click();
     await expect(page.locator('h2.enterprise-tab-title').filter({ hasText: 'Roles & Access Control Matrix' })).toBeVisible();
 
+    // Define and verify dynamic Custom Role creation
+    const defineRoleBtn = page.locator('button').filter({ hasText: 'Define Custom Role' }).first();
+    if (await defineRoleBtn.isVisible()) {
+      console.log('Testing Custom Role Creation & Dynamic UI Integration...');
+      await defineRoleBtn.click();
+      const customSuffix = Date.now().toString().slice(-4);
+      const customId = `AUDITOR_${customSuffix}`;
+      const customLabel = `Quality Auditor ${customSuffix}`;
+      await page.locator('#custom-role-id').fill(customId);
+      await page.locator('#custom-role-label').fill(customLabel);
+      await page.locator('.enterprise-modal-footer button.enterprise-button-primary').click();
+      await page.waitForTimeout(1000);
+      
+      // Verify custom role card is rendered dynamically
+      await expect(page.locator(`text=${customLabel}`).first()).toBeVisible({ timeout: 10000 });
+
+      // Navigate back to Users & IAM to verify custom role is immediately selectable in IAM UI
+      console.log('Verifying Custom Role is dynamically available in Users & IAM...');
+      await page.locator('button.enterprise-nav-item').filter({ hasText: 'Users & IAM' }).click();
+      await expect(page.locator('h2.enterprise-tab-title').filter({ hasText: 'Enterprise Members' })).toBeVisible();
+
+      // Open Invite modal and verify custom role is in dropdown
+      const inviteBtn = page.locator('button').filter({ hasText: 'Invite Member' }).first();
+      if (await inviteBtn.isVisible()) {
+        await inviteBtn.click();
+        const roleDropdown = page.locator('#member-role');
+        await expect(roleDropdown).toBeVisible();
+        const roleOptionsText = await roleDropdown.locator('option').allInnerTexts();
+        expect(roleOptionsText.some(t => t.includes(customLabel) || t.includes(customId))).toBe(true);
+        // Close modal
+        await page.locator('.enterprise-modal-header button.enterprise-button-icon').click();
+      }
+    }
+
     // ─────────────────────────────────────────────────────────────
     // Module 7: AI Administration
     // ─────────────────────────────────────────────────────────────

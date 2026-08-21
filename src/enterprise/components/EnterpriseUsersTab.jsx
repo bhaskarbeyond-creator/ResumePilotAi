@@ -525,9 +525,10 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
                             >
                               {roleOptions.map(role => {
                                 const level = getRoleLevel(role);
+                                const label = formatRoleLabel(role, rolesState.data?.customRoles);
                                 return (
                                   <option key={role} value={role}>
-                                    Level {level} · {formatRoleLabel(role)}
+                                    {role.startsWith('CUSTOM_') ? `Custom · ${label}` : `Level ${level} · ${label}`}
                                   </option>
                                 );
                               })}
@@ -692,14 +693,19 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
                     onChange={(e) => setInviteRole(e.target.value)}
                     className="enterprise-select"
                   >
-                    {roleOptions.filter(role => role !== 'TENANT_OWNER').map(role => (
-                      <option key={role} value={role}>
-                        {formatRoleLabel(role)} ({role})
-                      </option>
-                    ))}
+                    {roleOptions.filter(role => role !== 'TENANT_OWNER').map(role => {
+                      const label = formatRoleLabel(role, rolesState.data?.customRoles);
+                      return (
+                        <option key={role} value={role}>
+                          {role.startsWith('CUSTOM_') ? `Custom · ${label}` : label} ({role})
+                        </option>
+                      );
+                    })}
                   </select>
                   <small className="text-muted">
-                    {ROLE_LABELS[inviteRole]?.desc || 'Role capability set applied across all tenant resources.'}
+                    {rolesState.data?.customRoles?.[inviteRole]?.label
+                      ? `Custom role with ${rolesState.data.customRoles[inviteRole].permissions?.length || 0} granted capabilities.`
+                      : (ROLE_HIERARCHY[inviteRole]?.desc || 'Role capability set applied across all tenant resources.')}
                   </small>
                 </div>
                 <div className="enterprise-form-group">
@@ -794,15 +800,19 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
                         const isCurrentRole = (detailMember.roles || []).includes(role);
                         const curLvl = getRoleLevel(detailMember.roles?.[0]);
                         const direction = lvl > curLvl ? '⬆ Upgrade to' : (lvl < curLvl ? '⬇ Downgrade to' : 'Current:');
+                        const isCustom = role.startsWith('CUSTOM_');
+                        const label = formatRoleLabel(role, rolesState.data?.customRoles);
                         return (
                           <option key={role} value={role}>
-                            Level {lvl} · {direction} {formatRoleLabel(role)} ({role})
+                            {isCustom ? `Custom · ${label} (${role})` : `Level ${lvl} · ${direction} ${label} (${role})`}
                           </option>
                         );
                       })}
                     </select>
                     <small className="text-muted" style={{ fontSize: '0.78rem' }}>
-                      {ROLE_HIERARCHY[detailMember.roles?.[0]]?.desc || 'Live capability set applied across all tenant resources.'}
+                      {rolesState.data?.customRoles?.[detailMember.roles?.[0]]?.label
+                        ? `Custom permission bundle with ${rolesState.data.customRoles[detailMember.roles[0]].permissions?.length || 0} granted capabilities.`
+                        : (ROLE_HIERARCHY[detailMember.roles?.[0]]?.desc || 'Live capability set applied across all tenant resources.')}
                     </small>
                   </div>
                 )}

@@ -87,10 +87,24 @@ function normalizeRoles(roles = [], extraRoles = []) {
 // Returns a frozen { id: { label, permissions } } map; invalid entries are
 // dropped rather than corrupting authorization for the whole tenant.
 function normalizeCustomRoles(customRoles, existing = {}) {
-  const source = Array.isArray(customRoles) ? customRoles : null;
-  if (!source) return existing.customRoles || {};
+  let source = null;
+  if (Array.isArray(customRoles)) {
+    source = customRoles;
+  } else if (customRoles && typeof customRoles === 'object') {
+    source = Object.entries(customRoles).map(([id, def]) => ({
+      id,
+      label: def?.label || id,
+      permissions: Array.isArray(def?.permissions) ? def.permissions : (Array.isArray(def) ? def : []),
+    }));
+  }
+  if (!source) {
+    if (existing?.customRoles && typeof existing.customRoles === 'object') {
+      return normalizeCustomRoles(existing.customRoles);
+    }
+    return Object.freeze({});
+  }
   const normalized = {};
-  for (const entry of source.slice(0, 25)) {
+  for (const entry of source.slice(0, 50)) {
     if (!entry || typeof entry !== 'object') continue;
     const id = String(entry.id || '').trim().toUpperCase();
     if (!CUSTOM_ROLE_PATTERN.test(id)) continue;

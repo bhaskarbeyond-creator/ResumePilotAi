@@ -71,8 +71,11 @@ export const ALL_STANDARD_ROLES = [
 /**
  * Humanizes role identifier to title
  */
-export function formatRoleLabel(role) {
+export function formatRoleLabel(role, customRoles = null) {
   if (!role) return 'Enterprise Member';
+  if (customRoles && typeof customRoles === 'object' && customRoles[role]?.label) {
+    return customRoles[role].label;
+  }
   if (ROLE_HIERARCHY[role]) return ROLE_HIERARCHY[role].title;
   if (role.startsWith('CUSTOM_')) return `Custom: ${role.replace(/^CUSTOM_/, '').replace(/_/g, ' ')}`;
   return role;
