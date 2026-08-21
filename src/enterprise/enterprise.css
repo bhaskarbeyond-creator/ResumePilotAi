@@ -2681,12 +2681,10 @@ details.enterprise-disclosure[open] > summary::before { content: '▾ '; }
   cursor: help;
 }
 
+/* Base Tooltip Bubble */
 [data-tooltip]::after {
   content: attr(data-tooltip);
   position: absolute;
-  bottom: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%) translateY(4px);
   background: #0f172a;
   color: #f8fafc;
   font-size: 0.74rem;
@@ -2702,16 +2700,80 @@ details.enterprise-disclosure[open] > summary::before { content: '▾ '; }
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.15s ease, transform 0.15s ease;
-  z-index: 2000;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  z-index: 999999 !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+/* Default / Top Position */
+[data-tooltip]::after,
+[data-tooltip][data-tooltip-pos="top"]::after {
+  bottom: calc(100% + 8px);
+  top: auto;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%) translateY(4px);
 }
 
 [data-tooltip]:hover::after,
-[data-tooltip]:focus-visible::after {
+[data-tooltip]:focus-visible::after,
+[data-tooltip][data-tooltip-pos="top"]:hover::after,
+[data-tooltip][data-tooltip-pos="top"]:focus-visible::after {
   opacity: 1;
   visibility: visible;
   transform: translateX(-50%) translateY(0);
+  z-index: 999999 !important;
+}
+
+/* Bottom Position (Ideal for Page Headers & Top Navigation Elements) */
+[data-tooltip][data-tooltip-pos="bottom"]::after {
+  top: calc(100% + 8px);
+  bottom: auto;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+[data-tooltip][data-tooltip-pos="bottom"]:hover::after,
+[data-tooltip][data-tooltip-pos="bottom"]:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+  z-index: 999999 !important;
+}
+
+/* Right Position */
+[data-tooltip][data-tooltip-pos="right"]::after {
+  left: calc(100% + 8px);
+  right: auto;
+  top: 50%;
+  bottom: auto;
+  transform: translateY(-50%) translateX(-4px);
+}
+
+[data-tooltip][data-tooltip-pos="right"]:hover::after,
+[data-tooltip][data-tooltip-pos="right"]:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(0);
+  z-index: 999999 !important;
+}
+
+/* Left Position */
+[data-tooltip][data-tooltip-pos="left"]::after {
+  right: calc(100% + 8px);
+  left: auto;
+  top: 50%;
+  bottom: auto;
+  transform: translateY(-50%) translateX(4px);
+}
+
+[data-tooltip][data-tooltip-pos="left"]:hover::after,
+[data-tooltip][data-tooltip-pos="left"]:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(0);
+  z-index: 999999 !important;
 }
 
 /* Help Tooltip Icon '?' Badge */

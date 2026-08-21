@@ -264,6 +264,16 @@ test.describe('Live Authenticated Enterprise E2E Audit', () => {
     console.log('Testing Module: Email & Notifications...');
     await page.locator('button.enterprise-nav-item').filter({ hasText: 'Email & Notifications' }).click();
     await expect(page.locator('h2.enterprise-tab-title').filter({ hasText: 'Email & Notification Templates' })).toBeVisible();
+    
+    // Dispatch test email preview
+    const sendTestBtn = page.locator('button').filter({ hasText: 'Send Test Preview' }).first();
+    if (await sendTestBtn.isVisible()) {
+      console.log('Testing Test Email Dispatch Action...');
+      await sendTestBtn.click();
+      await page.waitForTimeout(1000);
+      await expect(page.locator('.enterprise-toast-success, .enterprise-toast')).toBeVisible({ timeout: 8000 });
+    }
+    
     await page.screenshot({ path: path.resolve('enterprise_live_email_templates.png'), fullPage: true });
 
     // ─────────────────────────────────────────────────────────────

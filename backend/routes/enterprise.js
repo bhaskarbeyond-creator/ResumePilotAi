@@ -824,6 +824,46 @@ router.post('/storage/verify', resolveTenantContext, requireTenantPermission('re
   }
 });
 
+router.post('/test-email', resolveTenantContext, requireTenantPermission('tenant.settings.write'), async (req, res) => {
+  const recipient = String(req.body?.recipientEmail || req.user?.email || '').trim().toLowerCase();
+  if (!/^[^\s@,;<>]{1,64}@[^\s@,;<>]{1,190}$/.test(recipient)) {
+    return res.status(400).json({ error: { code: 'INVALID_RECIPIENT', message: 'A valid recipient email address is required', requestId: res.locals?.requestId } });
+  }
+  const templateId = String(req.body?.templateId || 'invitation').trim();
+  const customSubject = req.body?.customSubject ? String(req.body.customSubject).slice(0, 200) : null;
+  const customBody = req.body?.customBody ? String(req.body.customBody).slice(0, 5000) : null;
+  
+  try {
+    const emailRoute = require('./email');
+    const { db } = outboxRuntime(req);
+    const result = await emailRoute.dispatchNotification(db, {
+      to: recipient,
+      templateType: templateId,
+      vars: {
+        organization_name: req.tenant?.displayName || 'ResumePilot Enterprise',
+        inviter_name: req.user?.displayName || 'Enterprise Administrator',
+        candidate_name: req.user?.displayName || 'Enterprise User',
+        user_name: req.user?.displayName || 'Enterprise User',
+        role_title: 'Administrator (TENANT_ADMIN)',
+        workspace_name: req.workspace?.name || 'Main Workspace',
+        team_name: 'Core Engineering',
+        action_url: `https://airesume.projectdemo.guru/enterprise?tenant=${req.tenant?.id || 'demo'}`,
+        usage_percent: '85',
+        consumed_tokens: '850,000',
+        quota_limit: '1,000,000',
+      },
+      customSubject,
+      customBody,
+    });
+    if (!result?.success && result?.error) {
+      return res.status(502).json({ error: { code: 'EMAIL_DISPATCH_FAILED', message: result.error, requestId: res.locals?.requestId } });
+    }
+    return res.json({ success: true, messageId: result?.result?.messageId || 'SENT', recipient });
+  } catch (error) {
+    return res.status(503).json({ error: { code: error.code || 'EMAIL_SERVICE_UNAVAILABLE', message: error.message || 'Email delivery service is unavailable', requestId: res.locals?.requestId } });
+  }
+});
+
 router.post('/tenants', async (req, res) => {
   try {
     const result = await enterpriseService(req).provisionTenant({ user: req.user, input: req.body || {}, requestId: res.locals?.requestId });

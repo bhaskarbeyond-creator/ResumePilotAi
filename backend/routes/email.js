@@ -775,6 +775,96 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
             );
             break;
 
+        case 'enterprise-invitation':
+        case 'enterprise_invitation':
+        case 'invitation':
+            subject = vars.subject || `You have been invited to join ${vars.organization_name || 'Acme Corp'} on ResumePilot Enterprise`;
+            bodyHtml = buildEmailWrapper(
+                'Enterprise Workspace Invitation',
+                'ENTERPRISE INVITATION 🏢',
+                `
+                <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">Hello ${candidateName},</h2>
+                <p style="font-size: 14px; color: #475569; line-height: 1.6;">${vars.inviter_name || 'An administrator'} has invited you to join the enterprise organization <strong>${vars.organization_name || 'Enterprise Organization'}</strong> on ResumePilot AI.</p>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; margin: 20px 0;">
+                    <p style="margin: 0 0 8px; font-size: 13px; color: #334155;"><strong>Assigned Access Level:</strong> ${vars.role_title || 'Enterprise Member (MEMBER)'}</p>
+                    <p style="margin: 0; font-size: 13px; color: #64748b;">Accept your invitation to access collaborative workspaces, resume drafting tools, and enterprise AI quotas.</p>
+                </div>
+                <div style="text-align: center; margin-top: 26px;">
+                    <a href="${vars.action_url || `${siteUrl}/enterprise`}" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 14px; display: inline-block;">Accept Enterprise Invitation &rarr;</a>
+                </div>
+                <p style="font-size: 12px; color: #94a3b8; margin-top: 24px; text-align: center;">This invitation link will expire in 7 days. If you did not expect this invitation, you can safely ignore this email.</p>`
+            );
+            break;
+
+        case 'enterprise_role_update':
+        case 'role_update':
+            subject = vars.subject || `Access Level Updated: ${vars.role_title || 'New Role'} — ${vars.organization_name || brandName}`;
+            bodyHtml = buildEmailWrapper(
+                'Access Level Update Notice',
+                'ACCESS & IAM UPDATE 🛡️',
+                `
+                <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">Hello ${candidateName},</h2>
+                <p style="font-size: 14px; color: #475569; line-height: 1.6;">Your access permissions for <strong>${vars.organization_name || 'your enterprise organization'}</strong> have been updated by ${vars.updater_name || 'an administrator'}.</p>
+                <div style="background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 12px; padding: 18px; margin: 20px 0;">
+                    <p style="margin: 0; font-size: 14px; color: #3730a3; font-weight: 700;">New Access Role: ${vars.role_title || 'Updated Role'}</p>
+                </div>
+                <div style="text-align: center; margin-top: 24px;">
+                    <a href="${vars.action_url || `${siteUrl}/enterprise`}" style="background-color: #4f46e5; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 13px; display: inline-block;">Open Enterprise Console &rarr;</a>
+                </div>`
+            );
+            break;
+
+        case 'enterprise_workspace_assignment':
+        case 'workspace_assignment':
+            subject = vars.subject || `Assigned to ${vars.workspace_name || 'Workspace'} — ${vars.organization_name || brandName}`;
+            bodyHtml = buildEmailWrapper(
+                'Workspace Assignment',
+                'COLLABORATION UPDATE 🗂️',
+                `
+                <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">Hello ${candidateName},</h2>
+                <p style="font-size: 14px; color: #475569; line-height: 1.6;">You have been assigned to workspace <strong>${vars.workspace_name || 'Workspace'}</strong> ${vars.team_name ? `and team <strong>${vars.team_name}</strong>` : ''} in ${vars.organization_name || 'ResumePilot Enterprise'}.</p>
+                <div style="text-align: center; margin-top: 24px;">
+                    <a href="${vars.action_url || `${siteUrl}/enterprise`}" style="background-color: #4f46e5; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 13px; display: inline-block;">Go to Workspace &rarr;</a>
+                </div>`
+            );
+            break;
+
+        case 'enterprise_security_alert':
+        case 'security_alert':
+            subject = vars.subject || `🚨 Security Alert: Break-Glass Support Access — ${vars.organization_name || brandName}`;
+            bodyHtml = buildEmailWrapper(
+                'Enterprise Security Alert',
+                'SECURITY ALERT 🚨',
+                `
+                <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                    <h3 style="color: #991b1b; margin: 0 0 6px 0; font-size: 16px; font-weight: 800;">Emergency Break-Glass Access Granted</h3>
+                    <p style="color: #7f1d1d; margin: 0; font-size: 13px; line-height: 1.5;">A time-bound support grant was authorized for support engineer <strong>${vars.support_agent || 'Support Engineer'}</strong>.</p>
+                </div>
+                <p style="font-size: 13px; color: #475569;"><strong>Reason:</strong> ${vars.reason || 'Technical investigation'}</p>
+                <p style="font-size: 13px; color: #475569;"><strong>Expires:</strong> ${vars.expires_at || 'In 4 hours'}</p>
+                <div style="text-align: center; margin-top: 24px;">
+                    <a href="${vars.action_url || `${siteUrl}/enterprise?tab=audit`}" style="background-color: #dc2626; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 13px; display: inline-block;">Review Audit Log &rarr;</a>
+                </div>`
+            );
+            break;
+
+        case 'enterprise_quota_alert':
+        case 'quota_alert':
+            subject = vars.subject || `⚠️ AI Quota Alert: ${vars.usage_percent || '80'}% Consumed — ${vars.organization_name || brandName}`;
+            bodyHtml = buildEmailWrapper(
+                'AI Quota Alert',
+                'QUOTA WARNING ⚡',
+                `
+                <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                    <h3 style="color: #92400e; margin: 0 0 6px 0; font-size: 16px; font-weight: 800;">Token Consumption Velocity Alert</h3>
+                    <p style="color: #b45309; margin: 0; font-size: 13px; line-height: 1.5;">Your organization has consumed <strong>${vars.usage_percent || '85'}%</strong> of its monthly AI token allocation (${vars.consumed_tokens || '850,000'} / ${vars.quota_limit || '1,000,000'} tokens).</p>
+                </div>
+                <div style="text-align: center; margin-top: 24px;">
+                    <a href="${vars.action_url || `${siteUrl}/enterprise?tab=usage`}" style="background-color: #d97706; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 13px; display: inline-block;">Inspect Token Usage &rarr;</a>
+                </div>`
+            );
+            break;
+
         default:
             subject = vars.subject || `Notification from ${brandName}`;
             bodyHtml = buildEmailWrapper(

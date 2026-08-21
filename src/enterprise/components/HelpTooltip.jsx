@@ -11,7 +11,7 @@ import { FiHelpCircle } from 'react-icons/fi';
  * @param {string} [props.className=''] - Additional class names
  * @param {string} [props.label='Help guide'] - Accessible screen reader label
  */
-export default function HelpTooltip({ text, position = 'top', className = '', label = 'Help guide' }) {
+export default function HelpTooltip({ text, position = 'bottom', className = '', label = 'Help guide' }) {
   if (!text) return null;
 
   return (

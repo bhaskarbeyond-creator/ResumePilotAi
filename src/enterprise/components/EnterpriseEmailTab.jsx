@@ -113,11 +113,18 @@ export default function EnterpriseEmailTab() {
     setSendingTest(true);
     setActionError(null);
     try {
-      // Send test invitation / template preview
-      await new Promise(r => setTimeout(r, 900));
-      notify(`Test email template for "${currentTemplate.name}" sent to ${testEmail}!`);
+      const result = await request('/api/enterprise/test-email', {
+        method: 'POST',
+        body: {
+          templateId: currentTemplate.id,
+          recipientEmail: testEmail,
+          customSubject: currentTemplate.subject,
+          customBody: currentTemplate.body,
+        },
+      });
+      notify(`Test email for "${currentTemplate.name}" dispatched to ${testEmail}! ${result?.messageId && result.messageId !== 'SENT' ? `(ID: ${result.messageId})` : ''}`);
     } catch (err) {
-      setActionError(err?.message || 'Failed to dispatch test email.');
+      setActionError(err?.message || 'Failed to dispatch test email. Verify SMTP settings in Administration.');
     } finally {
       setSendingTest(false);
     }
