@@ -175,7 +175,7 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
       </div>
 
       <div className="enterprise-metrics-grid">
-        <div className="enterprise-card enterprise-metric-box">
+        <div className="enterprise-card enterprise-metric-box" title="Total registered enterprise identities and team memberships in this tenant">
           <div className="enterprise-metric-header">
             <span>Enterprise Members</span>
             <FiUsers className="enterprise-metric-icon" aria-hidden="true" />
@@ -186,7 +186,7 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
           </div>
         </div>
 
-        <div className="enterprise-card enterprise-metric-box">
+        <div className="enterprise-card enterprise-metric-box" title="Configured workspace partitions for team and resource isolation">
           <div className="enterprise-metric-header">
             <span>Workspaces</span>
             <FiSliders className="enterprise-metric-icon" aria-hidden="true" />
@@ -197,7 +197,7 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
           </div>
         </div>
 
-        <div className="enterprise-card enterprise-metric-box">
+        <div className="enterprise-card enterprise-metric-box" title="Active departmental squads and project teams in scope">
           <div className="enterprise-metric-header">
             <span>Teams</span>
             <FiUsers className="enterprise-metric-icon" aria-hidden="true" />
@@ -206,7 +206,7 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
           <div className="enterprise-metric-footer">Active teams in scope</div>
         </div>
 
-        <div className="enterprise-card enterprise-metric-box">
+        <div className="enterprise-card enterprise-metric-box" title="Daily AI generation requests consumed versus your provisioned quota limit">
           <div className="enterprise-metric-header">
             <span>AI Usage Today</span>
             <FiZap className="enterprise-metric-icon" aria-hidden="true" />
@@ -230,7 +230,7 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
           </div>
         </div>
 
-        <div className="enterprise-card enterprise-metric-box">
+        <div className="enterprise-card enterprise-metric-box" title="95th percentile response latency for API requests in the current telemetry window">
           <div className="enterprise-metric-header">
             <span>Request Latency (p95)</span>
             <FiZap className="enterprise-metric-icon" aria-hidden="true" />
@@ -241,7 +241,7 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
           </div>
         </div>
 
-        <div className="enterprise-card enterprise-metric-box">
+        <div className="enterprise-card enterprise-metric-box" title="Server-side HTTP 5xx errors recorded by in-process telemetry">
           <div className="enterprise-metric-header">
             <span>Server Errors (5xx)</span>
             <FiDatabase className="enterprise-metric-icon" aria-hidden="true" />

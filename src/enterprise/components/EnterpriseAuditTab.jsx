@@ -254,6 +254,7 @@ export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = n
             onChange={(e) => setActionFilter(e.target.value)}
             className="enterprise-input"
             aria-label="Filter by action"
+            title="Filter audit log by action keyword (e.g. TEAM, MEMBERSHIP, WORKSPACE)"
             style={{ maxWidth: '180px' }}
           />
           <input
@@ -263,6 +264,7 @@ export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = n
             onChange={(e) => setActorFilter(e.target.value)}
             className="enterprise-input"
             aria-label="Filter by actor principal"
+            title="Filter audit log by actor principal ID or email"
             style={{ maxWidth: '180px' }}
           />
           <input
@@ -272,6 +274,7 @@ export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = n
             onChange={(e) => setCategoryFilter(e.target.value)}
             className="enterprise-input"
             aria-label="Filter by category"
+            title="Filter audit log by category path (e.g. tenant.security, tenant.roles)"
             style={{ maxWidth: '180px' }}
           />
           <label className="enterprise-inline-actions" style={{ gap: '0.35rem' }}>
@@ -282,6 +285,7 @@ export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = n
               onChange={(e) => setSinceDate(e.target.value)}
               className="enterprise-input"
               aria-label="Events from date (UTC)"
+              title="Filter audit events starting from date"
             />
           </label>
           <label className="enterprise-inline-actions" style={{ gap: '0.35rem' }}>
@@ -292,6 +296,7 @@ export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = n
               onChange={(e) => setUntilDate(e.target.value)}
               className="enterprise-input"
               aria-label="Events until date (UTC)"
+              title="Filter audit events up to date"
             />
           </label>
         </div>

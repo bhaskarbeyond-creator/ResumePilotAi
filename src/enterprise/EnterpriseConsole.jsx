@@ -25,22 +25,22 @@ import './enterprise.css';
 // reads as Platform → Organization → Governance → Administration, mirroring
 // the tenancy hierarchy (tenant → workspace → team → user → resource).
 const NAVIGATION = [
-  { id: 'overview', label: 'Overview', icon: FiActivity, group: 'Home', keywords: 'dashboard command center health' },
-  { id: 'resumes', label: 'Documents & Resumes', icon: FiFileText, group: 'Organization', keywords: 'cv library documents' },
-  { id: 'members', label: 'Users & IAM', icon: FiUsers, permission: 'tenant.members.read', group: 'Organization', keywords: 'people invitations identity access membership' },
-  { id: 'teams', label: 'Teams', icon: FiUsers, permission: 'workspace.read', group: 'Organization', keywords: 'groups squads' },
-  { id: 'workspaces', label: 'Workspaces', icon: FiSliders, permission: 'workspace.read', group: 'Organization', keywords: 'departments business units' },
-  { id: 'access', label: 'Roles & permissions', icon: FiShield, permission: 'tenant.roles.manage', group: 'Governance', keywords: 'rbac matrix custom role' },
-  { id: 'ai', label: 'AI workspace', icon: FiZap, permission: 'tenant.ai.manage', group: 'Governance', keywords: 'models providers llm policy quota' },
-  { id: 'security', label: 'Security & M2M', icon: FiLock, permission: 'tenant.security.read', group: 'Governance', keywords: 'service accounts api keys mfa posture jobs dlq' },
-  { id: 'usage', label: 'Usage & Quotas', icon: FiBarChart2, permission: 'tenant.usage.read', group: 'Governance', keywords: 'analytics consumption tokens cost' },
-  { id: 'audit', label: 'Audit logs', icon: FiFileText, permission: 'tenant.audit.read', group: 'Governance', keywords: 'trail events investigation forensics' },
-  { id: 'support', label: 'Support access', icon: FiHelpCircle, permission: 'tenant.settings.write', group: 'Administration', keywords: 'break-glass grants' },
-  { id: 'settings', label: 'Organization settings', icon: FiSettings, permission: 'tenant.settings.write', group: 'Administration', keywords: 'configuration retention identity sso danger' },
+  { id: 'overview', label: 'Overview', icon: FiActivity, group: 'Home', description: 'Real-time command center, key operational metrics, and tenant health', keywords: 'dashboard command center health' },
+  { id: 'resumes', label: 'Documents & Resumes', icon: FiFileText, group: 'Organization', description: 'Enterprise document library, shared CV templates, and drafting assets', keywords: 'cv library documents' },
+  { id: 'members', label: 'Users & IAM', icon: FiUsers, permission: 'tenant.members.read', group: 'Organization', description: 'Manage enterprise memberships, invitations, roles, and identity access', keywords: 'people invitations identity access membership' },
+  { id: 'teams', label: 'Teams', icon: FiUsers, permission: 'workspace.read', group: 'Organization', description: 'Organize members into functional teams and assign workspace leads', keywords: 'groups squads' },
+  { id: 'workspaces', label: 'Workspaces', icon: FiSliders, permission: 'workspace.read', group: 'Organization', description: 'Configure isolated departmental workspaces and default landing zones', keywords: 'departments business units' },
+  { id: 'access', label: 'Roles & permissions', icon: FiShield, permission: 'tenant.roles.manage', group: 'Governance', description: 'Inspect role hierarchy, fine-grained capabilities, and custom roles', keywords: 'rbac matrix custom role' },
+  { id: 'ai', label: 'AI workspace', icon: FiZap, permission: 'tenant.ai.manage', group: 'Governance', description: 'Configure LLM provider models, token quota limits, and AI governance', keywords: 'models providers llm policy quota' },
+  { id: 'security', label: 'Security & M2M', icon: FiLock, permission: 'tenant.security.read', group: 'Governance', description: 'Manage service accounts, secret key rotation, DLQ, and security posture', keywords: 'service accounts api keys mfa posture jobs dlq' },
+  { id: 'usage', label: 'Usage & Quotas', icon: FiBarChart2, permission: 'tenant.usage.read', group: 'Governance', description: 'Track token consumption, compute credits, and plan capacity limits', keywords: 'analytics consumption tokens cost' },
+  { id: 'audit', label: 'Audit logs', icon: FiFileText, permission: 'tenant.audit.read', group: 'Governance', description: 'Immutable forensic event trail, actor actions, and compliance records', keywords: 'trail events investigation forensics' },
+  { id: 'support', label: 'Support access', icon: FiHelpCircle, permission: 'tenant.settings.write', group: 'Administration', description: 'Time-bound break-glass support grants and authorization audit', keywords: 'break-glass grants' },
+  { id: 'settings', label: 'Organization settings', icon: FiSettings, permission: 'tenant.settings.write', group: 'Administration', description: 'Manage tenant identity policy, SSO configuration, and data retention', keywords: 'configuration retention identity sso danger' },
   // Platform administration is a separate administrative layer over the tenant
   // registry. It is visible only when the server-derived platform capability is
   // true — never decided by the client.
-  { id: 'platform', label: 'Platform administration', icon: FiCommand, platformOnly: true, group: 'Administration', keywords: 'tenants provisioning registry' },
+  { id: 'platform', label: 'Platform administration', icon: FiCommand, platformOnly: true, group: 'Administration', description: 'Multi-tenant registry management and global system administration', keywords: 'tenants provisioning registry' },
 ];
 
 const NAV_GROUP_ORDER = ['Home', 'Organization', 'Governance', 'Administration'];
@@ -468,6 +468,7 @@ function EnterpriseConsoleInner() {
                       className={`enterprise-nav-item ${active ? 'active' : ''}`}
                       aria-current={active ? 'page' : undefined}
                       onClick={() => selectTab(item.id)}
+                      title={item.description}
                     >
                       <Icon className="enterprise-nav-icon" aria-hidden="true" />
                       <span>{item.label}</span>
@@ -479,7 +480,7 @@ function EnterpriseConsoleInner() {
           </nav>
           {/* Identity footer: the signed-in administrator always knows who they
               are, which roles apply, and that authorization is server-derived. */}
-          <div className="enterprise-identity" aria-label="Signed-in identity">
+          <div className="enterprise-identity" aria-label="Signed-in identity" title="Your authenticated session and server-resolved role capabilities">
             <span className="enterprise-avatar" aria-hidden="true">
               {String(user?.email || user?.uid || 'U').slice(0, 1).toUpperCase()}
             </span>

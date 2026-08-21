@@ -559,11 +559,15 @@
   display: grid;
   grid-template-columns: var(--ep-sidebar-width) 1fr;
   min-height: calc(100vh - var(--ep-topbar-height));
+  align-items: start;
 }
 
 /* ── Light Sidebar ───────────────────────────────────────────────────────── */
 
 .enterprise-sidebar {
+  position: sticky;
+  top: var(--ep-topbar-height);
+  height: calc(100vh - var(--ep-topbar-height));
   background: var(--ep-sidebar-bg);
   border-right: 1px solid var(--ep-sidebar-border);
   padding: 16px 12px;
@@ -573,6 +577,8 @@
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--ep-slate-300) transparent;
+  box-sizing: border-box;
+  z-index: 30;
 }
 
 .enterprise-nav-group {

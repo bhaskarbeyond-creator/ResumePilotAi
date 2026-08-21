@@ -272,6 +272,7 @@ export default function EnterpriseRolesTab() {
               type="button"
               className="enterprise-button enterprise-button-primary"
               onClick={() => setEditor({ custom: true })}
+              title="Define a new tenant custom role with specific capability permissions"
             >
               <FiPlus aria-hidden="true" /> Define Custom Role
             </button>
@@ -281,7 +282,7 @@ export default function EnterpriseRolesTab() {
         <DataState loading={loading} error={error} onRetry={refreshRoles}>
           <div className="enterprise-roles-summary-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px', marginBottom: '24px' }}>
             {roleEntries.map(role => (
-              <div key={role.id} className={`enterprise-role-card enterprise-card ${role.custom ? 'enterprise-role-card-custom' : ''}`} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+              <div key={role.id} className={`enterprise-role-card enterprise-card ${role.custom ? 'enterprise-role-card-custom' : ''}`} style={{ display: 'flex', flexDirection: 'column', height: '100%' }} title={`Role definition for ${role.id}`}>
                 <div className="enterprise-role-header" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
                   <span className={`enterprise-pill ${role.custom ? 'enterprise-pill-template' : 'enterprise-pill-secondary'}`}>
                     {(role.custom ? role.label : roleLabel(role.id)).toUpperCase()}
@@ -292,7 +293,7 @@ export default function EnterpriseRolesTab() {
                       <button
                         type="button"
                         className="enterprise-button-icon"
-                        title={`Edit ${role.id}`}
+                        title={`Edit custom role ${role.id}`}
                         onClick={() => setEditor({ custom: true, initial: { id: role.id, label: customRoles[role.id]?.label || role.id, permissions: role.permissions } })}
                       >
                         <FiEdit2 />
@@ -300,7 +301,7 @@ export default function EnterpriseRolesTab() {
                       <button
                         type="button"
                         className="enterprise-button-icon text-danger"
-                        title={`Delete ${role.id}`}
+                        title={`Delete custom role ${role.id}`}
                         onClick={() => setDeleteTarget(role.id)}
                       >
                         <FiTrash2 />
@@ -321,8 +322,8 @@ export default function EnterpriseRolesTab() {
             <table className="enterprise-table">
               <thead>
                 <tr>
-                  <th>Resource Capability</th>
-                  {roleEntries.map(role => <th key={role.id} className="text-center">{role.custom ? role.id.replace('CUSTOM_', '') : roleLabel(role.id)}</th>)}
+                  <th title="Granular system permission capability">Resource Capability</th>
+                  {roleEntries.map(role => <th key={role.id} className="text-center" title={`Granted permissions for ${role.id}`}>{role.custom ? role.id.replace('CUSTOM_', '') : roleLabel(role.id)}</th>)}
                 </tr>
               </thead>
               <tbody>

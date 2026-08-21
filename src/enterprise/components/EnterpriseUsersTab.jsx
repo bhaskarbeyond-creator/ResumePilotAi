@@ -363,6 +363,7 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
               className={`enterprise-chip ${statusFilter === status ? 'active' : ''}`}
               aria-pressed={statusFilter === status}
               onClick={() => setStatusFilter(status)}
+              title={`Filter member list by ${status === 'ALL' ? 'all' : status.toLowerCase()} status`}
             >
               {status === 'ALL' ? 'All members' : status.charAt(0) + status.slice(1).toLowerCase()}
               <span className="enterprise-chip-count">{loading ? '…' : statusCounts[status] ?? 0}</span>
