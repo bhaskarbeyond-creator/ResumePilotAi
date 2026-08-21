@@ -1,4 +1,3 @@
-import fire from '../conf/fire';
 
 let reauthHandler = null;
 
@@ -22,9 +21,9 @@ export function apiErrorCode(response, result = {}) {
 }
 
 async function refreshAuthorizationHeader(options = {}) {
-  const user = fire.auth().currentUser || (typeof window !== 'undefined' && window.fire?.auth
+  const user = typeof window !== 'undefined' && window.fire?.auth
     ? window.fire.auth().currentUser
-    : null);
+    : null;
   if (!user) return options;
   const token = await user.getIdToken(true).catch(() => null);
   if (!token) return options;

@@ -128,7 +128,7 @@ test('Twilio settings persist in the canonical secret namespace without response
   app.set('db', fakeDb);
   try {
     const authToken = 'fixture-twilio-auth-token-1234';
-    const saved = await request(app).post('/api/admin/twilio-settings').set(bearer('admin')).send({
+    const saved = await request(app).post('/api/admin/twilio-settings').set(bearer('super-admin')).send({
       accountSid: `AC${'a'.repeat(32)}`, authToken, fromPhoneNumber: '+14155552671', enableSmsAlerts: true, expectedRevision: 0,
     });
     assert.equal(saved.status, 200);
@@ -377,7 +377,7 @@ test('fresh authorized admin reaches revisioned AI settings persistence without 
   const originalDb = app.get('db');
   app.set('db', fakeDb);
   try {
-    const saved = await request(app).post('/api/admin/ai-settings').set(bearer('admin')).send({ provider: 'gemini', model: 'gemini-2.0-flash', geminiApiKey: 'gemini-secret-value', expectedRevision: 0, enableFallback: true });
+    const saved = await request(app).post('/api/admin/ai-settings').set(bearer('super-admin')).send({ provider: 'gemini', model: 'gemini-2.0-flash', geminiApiKey: 'gemini-secret-value', expectedRevision: 0, enableFallback: true });
     assert.equal(saved.status, 200);
     assert.equal(saved.body.success, true);
     assert.equal(saved.body.revision, 1);
@@ -401,12 +401,12 @@ test('fresh authorized admin provider test reaches the dedicated AI route with u
   const originalFetch = global.fetch;
   try {
     global.fetch = async () => ({ ok: true, status: 200, json: async () => ({ choices: [{ message: { content: 'OK' } }] }) });
-    const valid = await request(app).post('/api/admin/ai/test-provider').set(bearer('admin')).send({ provider: 'openai', model: 'gpt-4o-mini', apiKey: 'openai-secret-value' });
+    const valid = await request(app).post('/api/admin/ai/test-provider').set(bearer('super-admin')).send({ provider: 'openai', model: 'gpt-4o-mini', apiKey: 'openai-secret-value' });
     assert.equal(valid.status, 200);
     assert.equal(valid.body.success, true);
     assert.equal(valid.body.provider, 'openai');
     global.fetch = async () => ({ ok: false, status: 401, json: async () => ({ error: { message: 'provider-sensitive-detail' } }) });
-    const invalid = await request(app).post('/api/admin/ai/test-provider').set(bearer('admin')).send({ provider: 'openai', model: 'gpt-4o-mini', apiKey: 'invalid-secret-value' });
+    const invalid = await request(app).post('/api/admin/ai/test-provider').set(bearer('super-admin')).send({ provider: 'openai', model: 'gpt-4o-mini', apiKey: 'invalid-secret-value' });
     assert.equal(invalid.status, 422);
     assert.equal(invalid.body.code, 'AI_PROVIDER_AUTHENTICATION_FAILED');
     assert.doesNotMatch(JSON.stringify(invalid.body), /provider-sensitive-detail|invalid-secret-value/);

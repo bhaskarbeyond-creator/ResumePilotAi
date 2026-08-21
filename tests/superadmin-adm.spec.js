@@ -71,8 +71,9 @@ test('grouped navigation reaches every control-plane module', async ({ page }) =
 test('tenant lifecycle uses suspend/reactivate and Super Admin decommission drawer', async ({ page }) => {
   const { state } = await bootAdm(page, { path: '/adm/tenants' });
   await expect(page.getByText('Northwind Careers')).toBeVisible();
-  page.once('dialog', dialog => dialog.accept());
   await page.getByRole('button', { name: 'Suspend' }).click();
+  await expect(page.getByText('Are you sure you want to suspend')).toBeVisible();
+  await page.locator('.fixed.inset-0').getByRole('button', { name: 'Suspend', exact: true }).click();
   await expect.poll(() => state.tenants.find(item => item.id === 'tenant-active')?.lifecycleState).toBe('SUSPENDED');
   await page.getByRole('button', { name: 'Details' }).first().click();
   await expect(page.getByLabel('Tenant detail')).toBeVisible();
