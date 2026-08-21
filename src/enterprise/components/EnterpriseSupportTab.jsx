@@ -4,6 +4,7 @@ import {
 } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 import HelpTooltip from './HelpTooltip';
+import EnterpriseConfirmModal from './EnterpriseConfirmModal';
 
 export default function EnterpriseSupportTab() {
   const { request } = useTenantApi();
@@ -19,6 +20,7 @@ export default function EnterpriseSupportTab() {
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState(null);
   const [notification, setNotification] = useState(null);
+  const [confirmConfig, setConfirmConfig] = useState(null);
 
   // Server-enforced scope governance: while the tenant keeps the default
   // support policy, only diagnostic scopes are permitted.
@@ -72,16 +74,24 @@ export default function EnterpriseSupportTab() {
     }
   };
 
-  const handleRevoke = async (id) => {
-    if (!window.confirm('Immediately revoke this support grant?')) return;
-    setActionError(null);
-    try {
-      await request(`/api/enterprise/support-grants/${id}/revoke`, { method: 'POST' });
-      notify('Support grant immediately revoked.');
-      refreshGrants();
-    } catch (err) {
-      setActionError(err?.message || 'Support grant could not be revoked.');
-    }
+  const handleRevoke = (id) => {
+    setConfirmConfig({
+      title: 'Revoke Support Grant',
+      message: 'Are you sure you want to immediately revoke this support access grant? The support engineer will immediately lose all diagnostic permissions.',
+      confirmLabel: 'Revoke Grant',
+      variant: 'danger',
+      onConfirm: async () => {
+        setConfirmConfig(null);
+        setActionError(null);
+        try {
+          await request(`/api/enterprise/support-grants/${id}/revoke`, { method: 'POST' });
+          notify('Support grant immediately revoked.');
+          refreshGrants();
+        } catch (err) {
+          setActionError(err?.message || 'Support grant could not be revoked.');
+        }
+      }
+    });
   };
 
   return (
@@ -299,6 +309,20 @@ export default function EnterpriseSupportTab() {
             </form>
           </div>
         </div>
+      )}
+
+      {confirmConfig && (
+        <EnterpriseConfirmModal
+          isOpen={!!confirmConfig}
+          title={confirmConfig.title}
+          message={confirmConfig.message}
+          confirmLabel={confirmConfig.confirmLabel}
+          cancelLabel={confirmConfig.cancelLabel}
+          variant={confirmConfig.variant}
+          busy={busy}
+          onConfirm={confirmConfig.onConfirm}
+          onClose={() => setConfirmConfig(null)}
+        />
       )}
     </div>
   );

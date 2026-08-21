@@ -310,18 +310,37 @@ class EmailNotifier {
     /**
      * Enterprise tenant invitation → invitee receives access instructions
      */
-    static async notifyEnterpriseInvitation(db, { userEmail, organizationName = 'an enterprise organization', inviterEmail = '' }) {
+    static async notifyEnterpriseInvitation(db, { userEmail, organizationName = 'an enterprise organization', inviterEmail = '', roleTitle = 'Enterprise Member', actionUrl = '' }) {
         if (!userEmail) return { success: false, deliveryState: 'DELIVERY_FAILED', error: 'Invitation recipient unavailable' };
+        const siteUrl = `${process.env.PROTOCOL || 'https'}://${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}`;
+        const url = actionUrl || `${siteUrl}/enterprise`;
         return sendNotification(db, {
             to: userEmail,
             templateType: 'enterprise-invitation',
-            customSubject: `You have been invited to ${organizationName} on ResumePilot Enterprise`,
+            vars: {
+                user_name: userEmail.split('@')[0],
+                inviter_name: inviterEmail || 'Enterprise Administrator',
+                organization_name: organizationName,
+                role_title: roleTitle,
+                action_url: url,
+                expires_in: '7 days',
+            },
+            customSubject: `You have been invited to join ${organizationName} on ResumePilot Enterprise`,
             customBody: [
-                `You have been invited to "${organizationName}" on ResumePilot Enterprise.`,
-                inviterEmail ? `Invited by: ${inviterEmail}` : '',
-                '',
-                'Accept the invitation by signing in to ResumePilot with this email address and opening the Enterprise console. The invitation activates automatically the first time you sign in.',
-            ].filter(Boolean).join('\n'),
+                `Hello {{user_name}},`,
+                ``,
+                `{{inviter_name}} has invited you to join the enterprise workspace for {{organization_name}} on ResumePilot AI.`,
+                ``,
+                `Your assigned access level: {{role_title}}`,
+                ``,
+                `Click the link below to accept your invitation and access your enterprise tools, collaborative resume workspace, and AI features:`,
+                `{{action_url}}`,
+                ``,
+                `This invitation link will expire in {{expires_in}}. If you did not expect this invitation, you can safely ignore this email.`,
+                ``,
+                `Best regards,`,
+                `The {{organization_name}} Team`,
+            ].join('\n'),
         });
     }
 

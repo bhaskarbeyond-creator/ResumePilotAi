@@ -3,6 +3,7 @@ import { FiSave, FiAlertTriangle, FiDownload, FiCheck } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 import { useEnterpriseTenant } from '../EnterpriseContext';
 import HelpTooltip from './HelpTooltip';
+import EnterpriseConfirmModal from './EnterpriseConfirmModal';
 
 export default function EnterpriseSettingsTab({ tenant }) {
   const { request } = useTenantApi();
@@ -19,6 +20,7 @@ export default function EnterpriseSettingsTab({ tenant }) {
   const [ssoMode, setSsoMode] = useState('NONE');
   const [sessionMax, setSessionMax] = useState('480');
   const [exporting, setExporting] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState(null);
 
   useEffect(() => {
     setRetentionInput(retentionDays);
@@ -87,41 +89,57 @@ export default function EnterpriseSettingsTab({ tenant }) {
     }
   };
 
-  const handleExport = async () => {
+  const handleExport = () => {
     if (exporting) return;
-    if (!window.confirm('Export a verified snapshot of this organization\'s enterprise data? The export is recorded in the audit trail.')) return;
-    setExporting(true);
-    setActionError(null);
-    try {
-      const result = await request('/api/enterprise/data/export');
-      const snapshot = result?.snapshot || {};
-      const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.setAttribute('href', url);
-      anchor.setAttribute('download', `tenant-snapshot-${snapshot.tenantId || 'export'}-${Date.now()}.json`);
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      URL.revokeObjectURL(url);
-      setNotification(`Exported ${snapshot.documentCount ?? 0} documents (checksum ${String(snapshot.checksum || '').slice(0, 12)}…).`);
-      setTimeout(() => setNotification(null), 5000);
-    } catch (err) {
-      setActionError(err?.message || 'Tenant data export is unavailable.');
-    } finally {
-      setExporting(false);
-    }
+    setConfirmConfig({
+      title: 'Export Tenant Data Snapshot',
+      message: 'Export a verified snapshot of this organization\'s enterprise data? The snapshot is signed with a SHA-256 checksum and recorded in the immutable audit trail.',
+      confirmLabel: 'Export Verified Snapshot',
+      variant: 'primary',
+      onConfirm: async () => {
+        setConfirmConfig(null);
+        setExporting(true);
+        setActionError(null);
+        try {
+          const result = await request('/api/enterprise/data/export');
+          const snapshot = result?.snapshot || {};
+          const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const anchor = document.createElement('a');
+          anchor.setAttribute('href', url);
+          anchor.setAttribute('download', `tenant-snapshot-${snapshot.tenantId || 'export'}-${Date.now()}.json`);
+          document.body.appendChild(anchor);
+          anchor.click();
+          anchor.remove();
+          URL.revokeObjectURL(url);
+          setNotification(`Exported ${snapshot.documentCount ?? 0} documents (checksum ${String(snapshot.checksum || '').slice(0, 12)}…).`);
+          setTimeout(() => setNotification(null), 5000);
+        } catch (err) {
+          setActionError(err?.message || 'Tenant data export is unavailable.');
+        } finally {
+          setExporting(false);
+        }
+      }
+    });
   };
 
-  const handleSuspend = async () => {
-    if (!window.confirm('Suspend this enterprise organization? All members and service accounts will lose access until it is reactivated by a platform administrator.')) return;
-    setActionError(null);
-    try {
-      await request('/api/enterprise/lifecycle/suspend', { method: 'POST' });
-      setNotification('Organization suspended. Access is now revoked.');
-    } catch (err) {
-      setActionError(err?.message || 'Organization could not be suspended.');
-    }
+  const handleSuspend = () => {
+    setConfirmConfig({
+      title: 'Suspend Enterprise Organization',
+      message: 'Are you sure you want to suspend this enterprise organization? All members, teams, and service accounts will immediately lose access until reactivated by a platform administrator.',
+      confirmLabel: 'Suspend Organization',
+      variant: 'danger',
+      onConfirm: async () => {
+        setConfirmConfig(null);
+        setActionError(null);
+        try {
+          await request('/api/enterprise/lifecycle/suspend', { method: 'POST' });
+          setNotification('Organization suspended. Access is now revoked.');
+        } catch (err) {
+          setActionError(err?.message || 'Organization could not be suspended.');
+        }
+      }
+    });
   };
 
   return (
@@ -299,6 +317,20 @@ export default function EnterpriseSettingsTab({ tenant }) {
           </div>
         </div>
       </DataState>
+
+      {confirmConfig && (
+        <EnterpriseConfirmModal
+          isOpen={!!confirmConfig}
+          title={confirmConfig.title}
+          message={confirmConfig.message}
+          confirmLabel={confirmConfig.confirmLabel}
+          cancelLabel={confirmConfig.cancelLabel}
+          variant={confirmConfig.variant}
+          busy={busy || exporting}
+          onConfirm={confirmConfig.onConfirm}
+          onClose={() => setConfirmConfig(null)}
+        />
+      )}
     </div>
   );
 }

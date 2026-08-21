@@ -4,6 +4,7 @@ import {
 } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 import HelpTooltip from './HelpTooltip';
+import EnterpriseConfirmModal from './EnterpriseConfirmModal';
 
 const SCOPE_OPTIONS = ['resource.read', 'resource.create', 'resource.update', 'ai.use'];
 
@@ -13,6 +14,7 @@ function DurableJobsCard({ focused = false }) {
   const { request, hasPermission } = useTenantApi();
   const [statusFilter, setStatusFilter] = useState('ALL');
   const cardRef = useRef(null);
+  const [confirmConfig, setConfirmConfig] = useState(null);
 
   // Cross-module deep link (?focus=jobs): Overview's DLQ recommendation and
   // the command palette land directly on this panel.
@@ -32,18 +34,26 @@ function DurableJobsCard({ focused = false }) {
   const canReplay = hasPermission('tenant.settings.write');
   const engine = queueStatus?.data?.queue || {};
 
-  const handleReplay = async (jobId) => {
-    if (!window.confirm('Replay this dead-letter job back into the durable queue with a fresh attempt budget?')) return;
-    setBusyId(jobId);
-    setActionError(null);
-    try {
-      await request('/api/enterprise/queue/replay', { method: 'POST', body: { jobId } });
-      refreshJobs();
-    } catch (err) {
-      setActionError(err?.message || 'Job could not be replayed.');
-    } finally {
-      setBusyId(null);
-    }
+  const handleReplay = (jobId) => {
+    setConfirmConfig({
+      title: 'Replay Dead-Letter Job',
+      message: 'Replay this dead-letter job back into the durable queue with a fresh attempt budget?',
+      confirmLabel: 'Replay Job',
+      variant: 'primary',
+      onConfirm: async () => {
+        setConfirmConfig(null);
+        setBusyId(jobId);
+        setActionError(null);
+        try {
+          await request('/api/enterprise/queue/replay', { method: 'POST', body: { jobId } });
+          refreshJobs();
+        } catch (err) {
+          setActionError(err?.message || 'Job could not be replayed.');
+        } finally {
+          setBusyId(null);
+        }
+      }
+    });
   };
 
   return (
@@ -130,6 +140,20 @@ function DurableJobsCard({ focused = false }) {
           </div>
         )}
       </DataState>
+
+      {confirmConfig && (
+        <EnterpriseConfirmModal
+          isOpen={!!confirmConfig}
+          title={confirmConfig.title}
+          message={confirmConfig.message}
+          confirmLabel={confirmConfig.confirmLabel}
+          cancelLabel={confirmConfig.cancelLabel}
+          variant={confirmConfig.variant}
+          busy={!!busyId}
+          onConfirm={confirmConfig.onConfirm}
+          onClose={() => setConfirmConfig(null)}
+        />
+      )}
     </div>
   );
 }
@@ -152,6 +176,7 @@ export default function EnterpriseSecurityTab({ initialParams = null }) {
   const [copied, setCopied] = useState(false);
   const [actionError, setActionError] = useState(null);
   const [notification, setNotification] = useState(null);
+  const [confirmConfig, setConfirmConfig] = useState(null);
 
   const serviceAccounts = useMemo(() => (Array.isArray(data?.serviceAccounts) ? data.serviceAccounts : []), [data]);
   const canManageServiceAccounts = hasPermission('tenant.security.manage');
@@ -204,32 +229,48 @@ export default function EnterpriseSecurityTab({ initialParams = null }) {
     }
   };
 
-  const handleRevoke = async (id) => {
-    if (!window.confirm('Revoke this service account API key immediately? Existing tokens stop working on the next request.')) return;
-    setActionError(null);
-    try {
-      await request(`/api/enterprise/service-accounts/${id}/revoke`, { method: 'POST' });
-      notify('Service account API key revoked.');
-      refreshAccounts();
-    } catch (err) {
-      setActionError(err?.message || 'Service account could not be revoked.');
-    }
+  const handleRevoke = (id) => {
+    setConfirmConfig({
+      title: 'Revoke Service Account API Key',
+      message: 'Revoke this service account API key immediately? Existing tokens stop working on the next request and cannot be un-revoked.',
+      confirmLabel: 'Revoke Key',
+      variant: 'danger',
+      onConfirm: async () => {
+        setConfirmConfig(null);
+        setActionError(null);
+        try {
+          await request(`/api/enterprise/service-accounts/${id}/revoke`, { method: 'POST' });
+          notify('Service account API key revoked.');
+          refreshAccounts();
+        } catch (err) {
+          setActionError(err?.message || 'Service account could not be revoked.');
+        }
+      }
+    });
   };
 
-  const handleRotate = async (account) => {
-    if (!window.confirm(`Rotate the API key for "${account.displayName}"? The current key stops working immediately and a replacement is shown exactly once.`)) return;
-    setRotatingId(account.id);
-    setActionError(null);
-    try {
-      const rotated = await request(`/api/enterprise/service-accounts/${encodeURIComponent(account.id)}/rotate`, { method: 'POST' });
-      setGeneratedKey({ plaintext: rotated.apiKey, name: `${rotated.serviceAccount.displayName} (rotated)` });
-      notify(`API key rotated for "${rotated.serviceAccount.displayName}". The previous key is now invalid.`);
-      refreshAccounts();
-    } catch (err) {
-      setActionError(err?.message || 'Service account key could not be rotated.');
-    } finally {
-      setRotatingId(null);
-    }
+  const handleRotate = (account) => {
+    setConfirmConfig({
+      title: 'Rotate Service Account Key',
+      message: `Rotate the API key for "${account.displayName}"? The current key stops working immediately and a replacement is revealed exactly once.`,
+      confirmLabel: 'Rotate & Generate New Key',
+      variant: 'warning',
+      onConfirm: async () => {
+        setConfirmConfig(null);
+        setRotatingId(account.id);
+        setActionError(null);
+        try {
+          const rotated = await request(`/api/enterprise/service-accounts/${encodeURIComponent(account.id)}/rotate`, { method: 'POST' });
+          setGeneratedKey({ plaintext: rotated.apiKey, name: `${rotated.serviceAccount.displayName} (rotated)` });
+          notify(`API key rotated for "${rotated.serviceAccount.displayName}". The previous key is now invalid.`);
+          refreshAccounts();
+        } catch (err) {
+          setActionError(err?.message || 'Service account key could not be rotated.');
+        } finally {
+          setRotatingId(null);
+        }
+      }
+    });
   };
 
   const handleCopy = async () => {
@@ -522,6 +563,20 @@ export default function EnterpriseSecurityTab({ initialParams = null }) {
       )}
 
       <DurableJobsCard focused={initialParams?.get?.('focus') === 'jobs'} />
+
+      {confirmConfig && (
+        <EnterpriseConfirmModal
+          isOpen={!!confirmConfig}
+          title={confirmConfig.title}
+          message={confirmConfig.message}
+          confirmLabel={confirmConfig.confirmLabel}
+          cancelLabel={confirmConfig.cancelLabel}
+          variant={confirmConfig.variant}
+          busy={busy || !!rotatingId}
+          onConfirm={confirmConfig.onConfirm}
+          onClose={() => setConfirmConfig(null)}
+        />
+      )}
     </div>
   );
 }

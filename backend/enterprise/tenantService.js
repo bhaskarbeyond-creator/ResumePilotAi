@@ -923,46 +923,96 @@ class TenantService {
     if (this.db && (!options.resourceType || ['resume', 'RESUME'].includes(String(options.resourceType).toUpperCase()))) {
       try {
         const memberships = await this.listTenantMemberships({ context });
-        const memberSubjects = Array.isArray(memberships) ? memberships.map(m => ({
-          subjectId: m.subjectId,
-          invitationEmail: m.invitationEmail,
-          displayName: m.displayName,
-          principalId: m.principalId,
-        })).filter(m => m.subjectId) : [];
+        const targetUids = new Set();
+        
+        if (context.subjectId) targetUids.add(context.subjectId);
+        if (context.principalId && !context.principalId.startsWith('principal:')) targetUids.add(context.principalId);
+
+        if (Array.isArray(memberships)) {
+          for (const m of memberships) {
+            if (m.subjectId) targetUids.add(m.subjectId);
+            if (m.principalId && !m.principalId.startsWith('principal:')) targetUids.add(m.principalId);
+            if (m.invitationEmail) {
+              try {
+                const userSnap = await this.db.collection('users').where('email', '==', m.invitationEmail).limit(1).get();
+                if (!userSnap.empty) targetUids.add(userSnap.docs[0].id);
+              } catch (_) {}
+            }
+          }
+        }
 
         const existingIds = new Set(repoResources.map(r => r.id));
         const memberResumes = [];
 
-        for (const member of memberSubjects.slice(0, 25)) {
-          const snap = await this.db.collection('users').doc(member.subjectId).collection('resumes').limit(25).get();
+        for (const uid of Array.from(targetUids).slice(0, 30)) {
+          const snap = await this.db.collection('users').doc(uid).collection('resumes').limit(50).get();
           snap.forEach(doc => {
             if (existingIds.has(doc.id)) return;
             const data = doc.data() || {};
-            const candidateName = data.personalInfo?.fullName || data.fullName || data.title || 'Candidate Profile';
-            const jobTitle = data.personalInfo?.jobTitle || data.positionTitle || data.jobTitle || 'Executive Professional';
-            const atsScore = Number(data.atsScore || data.score || 85);
+            const candidateName = `${data.firstname || ''} ${data.lastname || ''}`.trim() ||
+              data.personalInfo?.fullName || data.fullName || data.title || 'Candidate Profile';
+            const jobTitle = data.occupation || data.personalInfo?.jobTitle || data.positionTitle || data.jobTitle || 'Executive Professional';
+            const atsScore = Number(data.atsScore || data.score || (data.firstname && (data.employment?.length || data.experience?.length) ? 92 : 80));
             const template = data.template || data.templateId || 'modern';
-            const updatedAt = data.updatedAt?.toDate?.() ? data.updatedAt.toDate().toISOString() : (data.created_at?.toDate?.() ? data.created_at.toDate().toISOString() : new Date().toISOString());
+            
+            let updatedAt = new Date().toISOString();
+            if (data.updatedAt?._seconds) updatedAt = new Date(data.updatedAt._seconds * 1000).toISOString();
+            else if (data.updatedAt?.toDate) updatedAt = data.updatedAt.toDate().toISOString();
+            else if (data.created_at?._seconds) updatedAt = new Date(data.created_at._seconds * 1000).toISOString();
+
+            let createdAt = updatedAt;
+            if (data.created_at?._seconds) createdAt = new Date(data.created_at._seconds * 1000).toISOString();
+            else if (data.created_at?.toDate) createdAt = data.created_at.toDate().toISOString();
+
+            const experience = Array.isArray(data.employment)
+              ? data.employment.map(e => ({
+                  jobTitle: e.jobTitle || e.title || 'Role Title',
+                  companyName: e.employer || e.companyName || 'Organization',
+                  startDate: e.startDate || e.begin || e.started || '',
+                  endDate: e.endDate || e.end || e.finished || (e.current ? 'Present' : ''),
+                  description: e.description || ''
+                }))
+              : (Array.isArray(data.experience) ? data.experience : []);
+
+            const skills = Array.isArray(data.skills)
+              ? data.skills.map(s => (typeof s === 'string' ? s : s.name || s.skillName || s.skill || ''))
+              : [];
+
+            const completeness = (data.firstname && experience.length > 0 && skills.length > 0) ? 95 : (data.firstname ? 80 : 65);
             
             memberResumes.push({
               id: doc.id,
               tenantId: context.tenantId,
               workspaceId: data.workspaceId || context.workspaceId || 'default',
+              workspaceName: context.workspace?.name || 'Main Workspace',
               resourceType: 'RESUME',
-              ownerPrincipalId: member.principalId || member.subjectId,
-              ownerEmail: member.invitationEmail || null,
-              ownerName: member.displayName || candidateName,
+              ownerPrincipalId: uid,
+              ownerEmail: data.email || data.personalInfo?.email || null,
+              ownerName: candidateName,
               candidateName,
               jobTitle,
               atsScore,
               template,
               classification: data.classification || 'INTERNAL',
-              completeness: (data.personalInfo?.fullName && data.experience?.length) ? 90 : 75,
-              summary: data.personalInfo?.summary || data.summary || '',
+              completeness,
+              summary: data.summary || data.personalInfo?.summary || '',
               revision: data.revision || 1,
-              createdAt: data.created_at?.toDate?.() ? data.created_at.toDate().toISOString() : updatedAt,
+              createdAt,
               updatedAt,
-              payload: data,
+              payload: {
+                ...data,
+                personalInfo: {
+                  fullName: candidateName,
+                  jobTitle,
+                  email: data.email || data.personalInfo?.email || '',
+                  phone: data.phone || data.personalInfo?.phone || '',
+                  location: `${data.city || ''} ${data.country || ''}`.trim(),
+                  summary: data.summary || data.personalInfo?.summary || '',
+                },
+                experience,
+                skills,
+                education: Array.isArray(data.education) ? data.education : [],
+              },
             });
             existingIds.add(doc.id);
           });

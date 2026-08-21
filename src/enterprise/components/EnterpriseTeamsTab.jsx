@@ -5,6 +5,7 @@ import {
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 import { useEnterpriseTenant } from '../EnterpriseContext';
 import HelpTooltip from './HelpTooltip';
+import EnterpriseConfirmModal from './EnterpriseConfirmModal';
 import { formatMemberIdentity, formatRoleLabel } from '../enterpriseHelpers';
 
 function TeamMembersDrawer({ team, onClose }) {
@@ -19,6 +20,7 @@ function TeamMembersDrawer({ team, onClose }) {
   const [selectedPrincipal, setSelectedPrincipal] = useState('');
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState(null);
+  const [confirmConfig, setConfirmConfig] = useState(null);
 
   const members = useMemo(() => (Array.isArray(membersState.data?.members) ? membersState.data.members : []), [membersState]);
   const candidates = useMemo(() => {
@@ -46,15 +48,23 @@ function TeamMembersDrawer({ team, onClose }) {
     }
   };
 
-  const handleRemove = async (principalId) => {
-    if (!window.confirm(`Remove ${principalId} from team "${team.name}"?`)) return;
-    setActionError(null);
-    try {
-      await request(`/api/enterprise/teams/${encodeURIComponent(team.id)}/members/${encodeURIComponent(principalId)}`, { method: 'DELETE' });
-      refreshMembers();
-    } catch (err) {
-      setActionError(err?.message || 'Team member could not be removed.');
-    }
+  const handleRemove = (principalId) => {
+    setConfirmConfig({
+      title: 'Remove Member from Team',
+      message: `Remove ${principalId} from team "${team.name}"?`,
+      confirmLabel: 'Remove Member',
+      variant: 'danger',
+      onConfirm: async () => {
+        setConfirmConfig(null);
+        setActionError(null);
+        try {
+          await request(`/api/enterprise/teams/${encodeURIComponent(team.id)}/members/${encodeURIComponent(principalId)}`, { method: 'DELETE' });
+          refreshMembers();
+        } catch (err) {
+          setActionError(err?.message || 'Team member could not be removed.');
+        }
+      }
+    });
   };
 
   return (
@@ -151,7 +161,7 @@ function TeamMembersDrawer({ team, onClose }) {
 
 export default function EnterpriseTeamsTab({ initialParams = null }) {
   const { request, workspaceId, hasPermission } = useTenantApi();
-  const { workspaces } = useEnterpriseTenant();
+  const { workspaces, user } = useEnterpriseTenant();
   const [teamsState, refreshTeams] = useAsyncResource(() => request('/api/enterprise/teams'), [request]);
   const { loading, error, data } = teamsState;
   // Deep link (?create=1) opens the creation dialog directly.
@@ -166,11 +176,10 @@ export default function EnterpriseTeamsTab({ initialParams = null }) {
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState(null);
   const [notification, setNotification] = useState(null);
+  const [confirmConfig, setConfirmConfig] = useState(null);
 
   const canManageTeams = hasPermission('workspace.manage') || hasPermission('tenant.workspaces.manage');
 
-  // Archived teams are served only to workspace administrators so they can be
-  // inspected and restored — the same lifecycle contract as workspaces.
   const [archivedState, refreshArchived] = useAsyncResource(
     () => (canManageTeams ? request('/api/enterprise/teams?includeArchived=1') : Promise.resolve({ teams: [] })),
     [request, canManageTeams],
@@ -270,17 +279,25 @@ export default function EnterpriseTeamsTab({ initialParams = null }) {
     }
   };
 
-  const handleArchive = async (team) => {
-    if (!window.confirm(`Archive team "${team.name}"? The team is removed from the active roster and can be restored later; its history stays in the audit log.`)) return;
-    setActionError(null);
-    try {
-      await request(`/api/enterprise/teams/${encodeURIComponent(team.id)}/archive`, { method: 'POST' });
-      notify(`Team "${team.name}" archived.`);
-      refreshTeams();
-      refreshArchived();
-    } catch (err) {
-      setActionError(err?.message || 'Team could not be archived.');
-    }
+  const handleArchive = (team) => {
+    setConfirmConfig({
+      title: 'Archive Team',
+      message: `Archive team "${team.name}"? The team is removed from the active roster and can be restored later; its history stays in the audit log.`,
+      confirmLabel: 'Archive Team',
+      variant: 'warning',
+      onConfirm: async () => {
+        setConfirmConfig(null);
+        setActionError(null);
+        try {
+          await request(`/api/enterprise/teams/${encodeURIComponent(team.id)}/archive`, { method: 'POST' });
+          notify(`Team "${team.name}" archived.`);
+          refreshTeams();
+          refreshArchived();
+        } catch (err) {
+          setActionError(err?.message || 'Team could not be archived.');
+        }
+      }
+    });
   };
 
   const handleRestore = async (team) => {
@@ -558,6 +575,20 @@ export default function EnterpriseTeamsTab({ initialParams = null }) {
 
       {membersTarget && (
         <TeamMembersDrawer team={membersTarget} onClose={() => setMembersTarget(null)} />
+      )}
+
+      {confirmConfig && (
+        <EnterpriseConfirmModal
+          isOpen={!!confirmConfig}
+          title={confirmConfig.title}
+          message={confirmConfig.message}
+          confirmLabel={confirmConfig.confirmLabel}
+          cancelLabel={confirmConfig.cancelLabel}
+          variant={confirmConfig.variant}
+          busy={busy}
+          onConfirm={confirmConfig.onConfirm}
+          onClose={() => setConfirmConfig(null)}
+        />
       )}
     </div>
   );

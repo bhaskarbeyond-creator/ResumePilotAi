@@ -462,7 +462,7 @@ export default function EnterpriseRolesTab({ onNavigate = null }) {
               return (
                 <div
                   key={role.id}
-                  className={`enterprise-role-card ${isSelected ? 'highlighted' : ''}`}
+                  className={`enterprise-role-card ${role.custom ? 'enterprise-role-card-custom' : ''} ${isSelected ? 'highlighted' : ''}`}
                   onClick={() => setHighlightedRoleId(isSelected ? null : role.id)}
                   style={{ cursor: 'pointer' }}
                   title={`Click to highlight ${role.id} column in the matrix`}

@@ -5,6 +5,7 @@ import {
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 import { useEnterpriseTenant } from '../EnterpriseContext';
 import HelpTooltip from './HelpTooltip';
+import EnterpriseConfirmModal from './EnterpriseConfirmModal';
 import { formatMemberIdentity, formatRoleLabel } from '../enterpriseHelpers';
 
 function WorkspaceMembersDrawer({ workspace, onClose }) {
@@ -19,6 +20,7 @@ function WorkspaceMembersDrawer({ workspace, onClose }) {
   const [selectedPrincipal, setSelectedPrincipal] = useState('');
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState(null);
+  const [confirmConfig, setConfirmConfig] = useState(null);
 
   const members = useMemo(() => (Array.isArray(membersState.data?.members) ? membersState.data.members : []), [membersState]);
   const candidates = useMemo(() => {
@@ -29,9 +31,9 @@ function WorkspaceMembersDrawer({ workspace, onClose }) {
 
   const handleAdd = async (event) => {
     event.preventDefault();
-    if (!selectedPrincipal || busy) return;
-    setBusy(true);
+    if (!selectedPrincipal) return;
     setActionError(null);
+    setBusy(true);
     try {
       await request(`/api/enterprise/workspaces/${encodeURIComponent(workspace.id)}/members`, {
         method: 'POST',
@@ -46,19 +48,33 @@ function WorkspaceMembersDrawer({ workspace, onClose }) {
     }
   };
 
-  const handleRemove = async (principalId) => {
-    if (!window.confirm(`Remove ${principalId} from workspace "${workspace.name}"?`)) return;
-    setActionError(null);
-    try {
-      await request(`/api/enterprise/workspaces/${encodeURIComponent(workspace.id)}/members/${encodeURIComponent(principalId)}`, { method: 'DELETE' });
-      refreshMembers();
-    } catch (err) {
-      setActionError(err?.message || 'Workspace member could not be removed.');
-    }
+  const handleRemove = (principalId) => {
+    setConfirmConfig({
+      title: 'Remove Member from Workspace',
+      message: `Remove ${principalId} from workspace "${workspace.name}"?`,
+      confirmLabel: 'Remove Member',
+      variant: 'danger',
+      onConfirm: async () => {
+        setConfirmConfig(null);
+        setActionError(null);
+        try {
+          await request(`/api/enterprise/workspaces/${encodeURIComponent(workspace.id)}/members/${encodeURIComponent(principalId)}`, { method: 'DELETE' });
+          refreshMembers();
+        } catch (err) {
+          setActionError(err?.message || 'Workspace member could not be removed.');
+        }
+      }
+    });
   };
 
   return (
     <div className="enterprise-modal-backdrop" role="presentation" onClick={onClose}>
+      {confirmConfig && (
+        <EnterpriseConfirmModal
+          {...confirmConfig}
+          onCancel={() => setConfirmConfig(null)}
+        />
+      )}
       <div className="enterprise-modal enterprise-modal-lg" role="dialog" aria-modal="true" aria-label={`Members of ${workspace.name}`} onClick={(e) => e.stopPropagation()}>
         <div className="enterprise-modal-header">
           <h3><FiUsers aria-hidden="true" /> Workspace Members — {workspace.name}</h3>
@@ -168,6 +184,7 @@ export default function EnterpriseWorkspacesTab({
   const [busy, setBusy] = useState(false);
   const [notification, setNotification] = useState(null);
   const [error, setError] = useState(null);
+  const [confirmConfig, setConfirmConfig] = useState(null);
 
   // Archived workspaces are served only to workspace administrators.
   const [archivedState, refreshArchived] = useAsyncResource(
@@ -224,17 +241,25 @@ export default function EnterpriseWorkspacesTab({
     }
   };
 
-  const handleArchive = async (workspace) => {
-    if (!window.confirm(`Archive workspace "${workspace.name}"? Members lose access until it is restored. The default workspace cannot be archived.`)) return;
-    setError(null);
-    try {
-      await request(`/api/enterprise/workspaces/${encodeURIComponent(workspace.id)}/archive`, { method: 'POST' });
-      notify(`Workspace "${workspace.name}" archived.`);
-      await reload();
-      refreshArchived();
-    } catch (err) {
-      setError(err?.message || 'Workspace could not be archived.');
-    }
+  const handleArchive = (workspace) => {
+    setConfirmConfig({
+      title: 'Archive Workspace',
+      message: `Archive workspace "${workspace.name}"? Members lose access until it is restored. The default workspace cannot be archived.`,
+      confirmLabel: 'Archive Workspace',
+      variant: 'warning',
+      onConfirm: async () => {
+        setConfirmConfig(null);
+        setError(null);
+        try {
+          await request(`/api/enterprise/workspaces/${encodeURIComponent(workspace.id)}/archive`, { method: 'POST' });
+          notify(`Workspace "${workspace.name}" archived.`);
+          await reload();
+          refreshArchived();
+        } catch (err) {
+          setError(err?.message || 'Workspace could not be archived.');
+        }
+      }
+    });
   };
 
   const handleRestore = async (workspace) => {
@@ -514,6 +539,20 @@ export default function EnterpriseWorkspacesTab({
 
       {membersTarget && (
         <WorkspaceMembersDrawer workspace={membersTarget} onClose={() => setMembersTarget(null)} />
+      )}
+
+      {confirmConfig && (
+        <EnterpriseConfirmModal
+          isOpen={!!confirmConfig}
+          title={confirmConfig.title}
+          message={confirmConfig.message}
+          confirmLabel={confirmConfig.confirmLabel}
+          cancelLabel={confirmConfig.cancelLabel}
+          variant={confirmConfig.variant}
+          busy={busy}
+          onConfirm={confirmConfig.onConfirm}
+          onClose={() => setConfirmConfig(null)}
+        />
       )}
     </div>
   );

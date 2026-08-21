@@ -7,6 +7,7 @@ import {
 } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 import HelpTooltip from './HelpTooltip';
+import EnterpriseConfirmModal from './EnterpriseConfirmModal';
 
 function getCandidateName(resource) {
   return resource?.candidateName ||
@@ -71,6 +72,7 @@ export default function EnterpriseResumesTab() {
   const [notification, setNotification] = useState(null);
   const [selectedRows, setSelectedRows] = useState(new Set());
   const [previewResource, setPreviewResource] = useState(null);
+  const [confirmConfig, setConfirmConfig] = useState(null);
 
   const resources = useMemo(() => (Array.isArray(data?.resources) ? data.resources : []), [data]);
   const canCreate = hasPermission('resource.create');
@@ -151,86 +153,102 @@ export default function EnterpriseResumesTab() {
     }
   };
 
-  const handleDelete = async (resource) => {
+  const handleDelete = (resource) => {
     const candidate = getCandidateName(resource);
-    if (!window.confirm(`Remove candidate resume "${candidate}" from enterprise repository? This cannot be undone.`)) return;
-    setActionError(null);
-    try {
-      await request(`/api/enterprise/resources/${resource.id}`, { method: 'DELETE' });
-      notify(`Removed "${candidate}" from enterprise talent repository.`);
-      setSelectedRows(prev => { const next = new Set(prev); next.delete(resource.id); return next; });
-      refreshResumes();
-    } catch (err) {
-      setActionError(err?.message || 'Resume could not be deleted.');
-    }
+    setConfirmConfig({
+      title: 'Remove Candidate Resume',
+      message: `Are you sure you want to remove "${candidate}" from the enterprise talent repository? This action cannot be undone.`,
+      confirmLabel: 'Remove Resume',
+      variant: 'danger',
+      onConfirm: async () => {
+        setConfirmConfig(null);
+        setActionError(null);
+        try {
+          await request(`/api/enterprise/resources/${resource.id}`, { method: 'DELETE' });
+          notify(`Removed "${candidate}" from enterprise talent repository.`);
+          setSelectedRows(prev => { const next = new Set(prev); next.delete(resource.id); return next; });
+          refreshResumes();
+        } catch (err) {
+          setActionError(err?.message || 'Resume could not be deleted.');
+        }
+      }
+    });
   };
 
-  const handleBulkAction = async (action) => {
+  const handleBulkAction = (action) => {
     if (!selectedRows.size) return;
-    if (action === 'delete' && !window.confirm(`Delete ${selectedRows.size} selected resume(s)? This cannot be undone.`)) return;
     
-    setActionError(null);
-    setBusy(true);
-    let successCount = 0;
-    
-    try {
-      if (action === 'export-json') {
-        const selectedDocs = filtered.filter(r => selectedRows.has(r.id));
-        const json = JSON.stringify(selectedDocs, null, 2);
-        const blob = new Blob([json], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `enterprise-talent-export-${Date.now()}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        notify(`Exported ${selectedDocs.length} candidate profile(s) in JSON.`);
-        return;
-      }
-      
-      if (action === 'export-csv') {
-        const selectedDocs = filtered.filter(r => selectedRows.has(r.id));
-        const headers = ['ID', 'Candidate Name', 'Target Role', 'ATS Score', 'Completeness', 'Owner Email', 'Workspace', 'Last Updated'];
-        const rows = selectedDocs.map(r => [
-          r.id,
-          `"${getCandidateName(r).replace(/"/g, '""')}"`,
-          `"${getJobTitle(r).replace(/"/g, '""')}"`,
-          getAtsScore(r),
-          `${getCompleteness(r)}%`,
-          `"${(r.ownerEmail || '').replace(/"/g, '""')}"`,
-          `"${(r.workspaceName || workspace?.name || 'Default').replace(/"/g, '""')}"`,
-          `"${r.updatedAt || ''}"`
-        ]);
-        const csv = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `enterprise-talent-export-${Date.now()}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        notify(`Exported ${selectedDocs.length} candidate profile(s) in CSV.`);
-        return;
-      }
-      
-      for (const id of selectedRows) {
-        if (action === 'delete') {
-          await request(`/api/enterprise/resources/${id}`, { method: 'DELETE' });
+    if (action === 'delete') {
+      setConfirmConfig({
+        title: 'Bulk Remove Candidate Resumes',
+        message: `Are you sure you want to delete ${selectedRows.size} selected candidate resume(s)? This cannot be undone.`,
+        confirmLabel: `Delete ${selectedRows.size} Resume(s)`,
+        variant: 'danger',
+        onConfirm: async () => {
+          setConfirmConfig(null);
+          setActionError(null);
+          setBusy(true);
+          let successCount = 0;
+          try {
+            for (const id of selectedRows) {
+              await request(`/api/enterprise/resources/${id}`, { method: 'DELETE' });
+              successCount++;
+            }
+            notify(`Successfully removed ${successCount} candidate resume(s).`);
+            setSelectedRows(new Set());
+            refreshResumes();
+          } catch (err) {
+            setActionError(err?.message || `Bulk action failed after processing ${successCount} resume(s).`);
+            refreshResumes();
+          } finally {
+            setBusy(false);
+          }
         }
-        successCount++;
-      }
-      notify(`Successfully removed ${successCount} candidate resume(s).`);
-      setSelectedRows(new Set());
-      refreshResumes();
-    } catch (err) {
-      setActionError(err?.message || `Bulk action failed after processing ${successCount} resume(s).`);
-      refreshResumes();
-    } finally {
-      setBusy(false);
+      });
+      return;
+    }
+
+    if (action === 'export-json') {
+      const selectedDocs = filtered.filter(r => selectedRows.has(r.id));
+      const json = JSON.stringify(selectedDocs, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `enterprise-talent-export-${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      notify(`Exported ${selectedDocs.length} candidate profile(s) in JSON.`);
+      return;
+    }
+    
+    if (action === 'export-csv') {
+      const selectedDocs = filtered.filter(r => selectedRows.has(r.id));
+      const headers = ['ID', 'Candidate Name', 'Target Role', 'ATS Score', 'Completeness', 'Owner Email', 'Workspace', 'Last Updated'];
+      const rows = selectedDocs.map(r => [
+        r.id,
+        `"${getCandidateName(r).replace(/"/g, '""')}"`,
+        `"${getJobTitle(r).replace(/"/g, '""')}"`,
+        getAtsScore(r),
+        `${getCompleteness(r)}%`,
+        `"${(r.ownerEmail || '').replace(/"/g, '""')}"`,
+        `"${(r.workspaceName || workspace?.name || 'Default').replace(/"/g, '""')}"`,
+        `"${r.updatedAt || ''}"`
+      ]);
+      const csv = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `enterprise-talent-export-${Date.now()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      notify(`Exported ${selectedDocs.length} candidate profile(s) in CSV.`);
+      return;
     }
   };
 
@@ -672,6 +690,20 @@ export default function EnterpriseResumesTab() {
             </div>
           </div>
         </div>
+      )}
+
+      {confirmConfig && (
+        <EnterpriseConfirmModal
+          isOpen={!!confirmConfig}
+          title={confirmConfig.title}
+          message={confirmConfig.message}
+          confirmLabel={confirmConfig.confirmLabel}
+          cancelLabel={confirmConfig.cancelLabel}
+          variant={confirmConfig.variant}
+          busy={busy}
+          onConfirm={confirmConfig.onConfirm}
+          onClose={() => setConfirmConfig(null)}
+        />
       )}
     </div>
   );

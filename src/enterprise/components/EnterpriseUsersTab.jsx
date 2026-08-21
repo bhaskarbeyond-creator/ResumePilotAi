@@ -6,6 +6,7 @@ import {
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 import { useEnterpriseTenant } from '../EnterpriseContext';
 import HelpTooltip from './HelpTooltip';
+import EnterpriseConfirmModal from './EnterpriseConfirmModal';
 import { ROLE_HIERARCHY, ALL_STANDARD_ROLES, formatRoleLabel, formatMemberIdentity, getRoleLevel } from '../enterpriseHelpers';
 
 export { ROLE_HIERARCHY, formatRoleLabel };
@@ -42,6 +43,7 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
   const [actionError, setActionError] = useState(null);
   const [notification, setNotification] = useState(null);
   const [selectedRows, setSelectedRows] = useState(new Set());
+  const [confirmConfig, setConfirmConfig] = useState(null);
 
   const members = useMemo(() => (Array.isArray(data?.memberships) ? data.memberships : []), [data]);
 
@@ -182,6 +184,27 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
     }
   };
 
+  const handleResendInvitation = async (member) => {
+    setActionError(null);
+    setBusyAction(`resend:${member.principalId}`);
+    try {
+      const res = await request(`/api/enterprise/memberships/${encodeURIComponent(member.principalId)}/invitation-resend`, {
+        method: 'POST',
+      });
+      const state = res?.membership?.lastDeliveryState || 'DELIVERED';
+      if (state === 'DELIVERED') {
+        notify(`✓ Invitation email dispatched to ${member.invitationEmail || member.principalId}!`);
+      } else {
+        notify(`Invitation dispatch attempted for ${member.invitationEmail || member.principalId} (${state}).`);
+      }
+      refreshMembers();
+    } catch (err) {
+      setActionError(err?.message || 'Invitation could not be resent.');
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
   const handleToggleStatus = async (member) => {
     const next = member.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
     setActionError(null);
@@ -200,71 +223,77 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
     }
   };
 
-  const handleRemove = async (principalId) => {
-    if (!window.confirm(`Remove ${principalId} from this enterprise? This revokes all enterprise access.`)) return;
-    setActionError(null);
-    setBusyAction(`remove:${principalId}`);
-    try {
-      await request(`/api/enterprise/memberships/${encodeURIComponent(principalId)}`, { method: 'DELETE' });
-      notify(`Removed ${principalId} from the enterprise.`);
-      setSelectedRows(prev => { const next = new Set(prev); next.delete(principalId); return next; });
-      refreshMembers();
-    } catch (err) {
-      setActionError(err?.message || 'Membership could not be removed.');
-    } finally {
-      setBusyAction(null);
-    }
-  };
-
-  const handleBulkAction = async (action) => {
-    if (!selectedRows.size) return;
-    if (action === 'remove' && !window.confirm(`Remove ${selectedRows.size} members from the enterprise? This cannot be undone.`)) return;
-    
-    setActionError(null);
-    setBusyAction('bulk');
-    setBusy(true);
-    let successCount = 0;
-    
-    try {
-      // Execute serially to respect limits/quotas and prevent overwhelming the API
-      for (const principalId of selectedRows) {
-        if (principalId === currentPrincipalId && action !== 'activate') continue; // Prevent self-harm
-        
-        if (action === 'remove') {
+  const handleRemove = (principalId) => {
+    setConfirmConfig({
+      title: 'Remove Member Access',
+      message: `Are you sure you want to remove ${principalId} from this enterprise organization? This immediately revokes all enterprise workspace access and permissions.`,
+      confirmLabel: 'Remove Access',
+      variant: 'danger',
+      onConfirm: async () => {
+        setConfirmConfig(null);
+        setActionError(null);
+        setBusyAction(`remove:${principalId}`);
+        try {
           await request(`/api/enterprise/memberships/${encodeURIComponent(principalId)}`, { method: 'DELETE' });
-        } else if (action === 'suspend' || action === 'activate') {
-          const next = action === 'activate' ? 'ACTIVE' : 'SUSPENDED';
-          await request(`/api/enterprise/memberships/${encodeURIComponent(principalId)}`, {
-            method: 'PATCH',
-            body: { status: next },
-          });
+          notify(`Removed ${principalId} from the enterprise.`);
+          setSelectedRows(prev => { const next = new Set(prev); next.delete(principalId); return next; });
+          refreshMembers();
+        } catch (err) {
+          setActionError(err?.message || 'Membership could not be removed.');
+        } finally {
+          setBusyAction(null);
         }
-        successCount++;
       }
-      notify(`Successfully applied bulk action to ${successCount} member(s).`);
-      setSelectedRows(new Set());
-      refreshMembers();
-    } catch (err) {
-      setActionError(err?.message || `Bulk action failed after processing ${successCount} member(s).`);
-      refreshMembers(); // Refresh to show partial success
-    } finally {
-      setBusyAction(null);
-      setBusy(false);
-    }
+    });
   };
 
-  const handleResendInvitation = async (member) => {
-    setActionError(null);
-    setBusyAction(`resend:${member.principalId}`);
-    try {
-      const result = await request(`/api/enterprise/memberships/${encodeURIComponent(member.principalId)}/invitation-resend`, { method: 'POST' });
-      const delivery = result?.membership?.lastDeliveryState || 'unknown';
-      notify(`Invitation re-sent to ${member.invitationEmail || member.principalId} (${delivery.toLowerCase().replace(/_/g, ' ')}).`);
-      refreshMembers();
-    } catch (err) {
-      setActionError(err?.message || 'Invitation could not be resent.');
-    } finally {
-      setBusyAction(null);
+  const handleBulkAction = (action) => {
+    if (!selectedRows.size) return;
+    
+    const executeBulk = async () => {
+      setConfirmConfig(null);
+      setActionError(null);
+      setBusyAction('bulk');
+      setBusy(true);
+      let successCount = 0;
+      
+      try {
+        for (const principalId of selectedRows) {
+          if (principalId === currentPrincipalId && action !== 'activate') continue; // Prevent self-harm
+          
+          if (action === 'remove') {
+            await request(`/api/enterprise/memberships/${encodeURIComponent(principalId)}`, { method: 'DELETE' });
+          } else if (action === 'suspend' || action === 'activate') {
+            const next = action === 'activate' ? 'ACTIVE' : 'SUSPENDED';
+            await request(`/api/enterprise/memberships/${encodeURIComponent(principalId)}`, {
+              method: 'PATCH',
+              body: { status: next },
+            });
+          }
+          successCount++;
+        }
+        notify(`Successfully applied bulk action to ${successCount} member(s).`);
+        setSelectedRows(new Set());
+        refreshMembers();
+      } catch (err) {
+        setActionError(err?.message || `Bulk action failed after processing ${successCount} member(s).`);
+        refreshMembers();
+      } finally {
+        setBusyAction(null);
+        setBusy(false);
+      }
+    };
+
+    if (action === 'remove') {
+      setConfirmConfig({
+        title: 'Bulk Remove Members',
+        message: `Are you sure you want to remove ${selectedRows.size} selected member(s) from the enterprise? This cannot be undone.`,
+        confirmLabel: `Remove ${selectedRows.size} Member(s)`,
+        variant: 'danger',
+        onConfirm: executeBulk
+      });
+    } else {
+      executeBulk();
     }
   };
 
@@ -314,7 +343,7 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
   return (
     <div className="enterprise-tab-content">
       {notification && (
-        <div className="enterprise-toast enterprise-toast-success">
+        <div className="enterprise-toast enterprise-toast-success" role="status">
           <FiCheck aria-hidden="true" /> {notification}
         </div>
       )}
@@ -475,11 +504,11 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
                     const isCurrent = member.principalId === currentPrincipalId;
                     const isOwner = (member.roles || []).includes('TENANT_OWNER');
                     const displayName = isCurrent
-                      ? (currentUser?.displayName || currentUser?.email || member.invitationEmail || 'Signed-in Administrator')
-                      : (member.invitationEmail || member.displayName || `Member ${member.principalId.slice(0, 8)}…`);
+                      ? (currentUser?.displayName || currentUser?.email || member.displayName || member.invitationEmail || member.principalId || 'Signed-in Administrator')
+                      : (member.displayName || member.invitationEmail || member.principalId || 'Member');
                     const subText = isCurrent
-                      ? (currentUser?.displayName && currentUser?.email ? `${currentUser.email} · You` : `Principal: ${member.principalId.slice(0, 10)}… · You`)
-                      : (member.invitationEmail ? `Principal: ${member.principalId.slice(0, 10)}…` : `Principal: ${member.principalId.slice(0, 10)}…`);
+                      ? (currentUser?.displayName && currentUser?.email ? `${currentUser.email} · You` : `Principal: ${member.principalId} · You`)
+                      : `Principal: ${member.principalId}`;
 
                     return (
                       <tr key={`${member.tenantId}:${member.principalId}`} className={selectedRows.has(member.principalId) ? 'selected' : ''}>
@@ -542,10 +571,29 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
                         </td>
                         <td>
                           {invited ? (
-                            <small className="text-muted">
-                              <FiMail aria-hidden="true" /> {member.invitationEmail || 'no address'}
-                              {member.invitationDeliveryState ? ` · ${String(member.invitationDeliveryState).toLowerCase().replace(/_/g, ' ')}` : ''}
-                            </small>
+                            <div>
+                              <small className="text-muted" style={{ display: 'block', marginBottom: '3px' }}>
+                                <FiMail aria-hidden="true" /> {member.invitationEmail || 'no address'}
+                              </small>
+                              {member.invitationDeliveryState === 'DELIVERED' ? (
+                                <span className="enterprise-pill enterprise-pill-success" style={{ fontSize: '0.72rem', padding: '2px 6px' }}>
+                                  ✓ Sent
+                                </span>
+                              ) : member.invitationDeliveryState === 'DELIVERY_FAILED' ? (
+                                <span
+                                  className="enterprise-pill enterprise-pill-danger"
+                                  style={{ fontSize: '0.72rem', padding: '2px 6px', cursor: 'pointer' }}
+                                  title="Click to retry invitation dispatch"
+                                  onClick={() => handleResendInvitation(member)}
+                                >
+                                  ⚠ Delivery Failed · Retry
+                                </span>
+                              ) : member.invitationDeliveryState ? (
+                                <span className="enterprise-pill enterprise-pill-secondary" style={{ fontSize: '0.72rem', padding: '2px 6px' }}>
+                                  {String(member.invitationDeliveryState).toLowerCase().replace(/_/g, ' ')}
+                                </span>
+                              ) : null}
+                            </div>
                           ) : (
                             <small className="text-muted">{member.acceptedAt ? 'accepted' : '—'}</small>
                           )}
@@ -897,6 +945,20 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
             </div>
           </div>
         </div>
+      )}
+
+      {confirmConfig && (
+        <EnterpriseConfirmModal
+          isOpen={!!confirmConfig}
+          title={confirmConfig.title}
+          message={confirmConfig.message}
+          confirmLabel={confirmConfig.confirmLabel}
+          cancelLabel={confirmConfig.cancelLabel}
+          variant={confirmConfig.variant}
+          busy={busy}
+          onConfirm={confirmConfig.onConfirm}
+          onClose={() => setConfirmConfig(null)}
+        />
       )}
     </div>
   );

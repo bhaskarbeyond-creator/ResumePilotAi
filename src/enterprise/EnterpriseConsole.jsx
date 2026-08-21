@@ -300,7 +300,7 @@ function UserIdentityMenu({ user, roles, platformAdmin }) {
   const initial = String(displayName).slice(0, 1).toUpperCase();
 
   return (
-    <div className="enterprise-identity-container" ref={menuRef}>
+    <div className="enterprise-identity-container enterprise-identity" ref={menuRef}>
       <button
         type="button"
         className="enterprise-identity-trigger"

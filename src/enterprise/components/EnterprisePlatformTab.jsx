@@ -4,6 +4,7 @@ import {
 } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 import HelpTooltip from './HelpTooltip';
+import EnterpriseConfirmModal from './EnterpriseConfirmModal';
 
 /**
  * Platform administration console.
@@ -26,17 +27,19 @@ export default function EnterprisePlatformTab() {
   const [busyTenant, setBusyTenant] = useState(null);
   const [actionError, setActionError] = useState(null);
   const [notification, setNotification] = useState(null);
+  const [confirmConfig, setConfirmConfig] = useState(null);
 
   const tenants = useMemo(() => {
-    const rows = Array.isArray(data?.tenants) ? data.tenants : [];
-    const query = searchQuery.trim().toLowerCase();
-    if (!query) return rows;
-    return rows.filter(tenant => `${tenant.displayName} ${tenant.slug} ${tenant.id}`.toLowerCase().includes(query));
+    const list = Array.isArray(data?.tenants) ? data.tenants : [];
+    if (!searchQuery) return list;
+    const q = searchQuery.toLowerCase();
+    return list.filter(t => (t.displayName || '').toLowerCase().includes(q) || (t.slug || '').toLowerCase().includes(q));
   }, [data, searchQuery]);
 
   const stateCounts = useMemo(() => {
-    const counts = { ACTIVE: 0, SUSPENDED: 0, OTHER: 0 };
-    for (const tenant of (Array.isArray(data?.tenants) ? data.tenants : [])) {
+    const list = Array.isArray(data?.tenants) ? data.tenants : [];
+    const counts = { TOTAL: list.length, ACTIVE: 0, SUSPENDED: 0, OTHER: 0 };
+    for (const tenant of list) {
       if (tenant.lifecycleState === 'ACTIVE') counts.ACTIVE += 1;
       else if (tenant.lifecycleState === 'SUSPENDED') counts.SUSPENDED += 1;
       else counts.OTHER += 1;
@@ -49,20 +52,28 @@ export default function EnterprisePlatformTab() {
     setTimeout(() => setNotification(null), 4000);
   };
 
-  const handleLifecycle = async (tenant, nextState) => {
+  const handleLifecycle = (tenant, nextState) => {
     const verb = nextState === 'SUSPENDED' ? 'Suspend' : 'Reactivate';
-    if (!window.confirm(`${verb} tenant "${tenant.displayName}" (${tenant.slug})? ${nextState === 'SUSPENDED' ? 'All members and service accounts of this tenant immediately lose access.' : 'Members regain access immediately.'}`)) return;
-    setBusyTenant(`${tenant.id}:${nextState}`);
-    setActionError(null);
-    try {
-      await request(`/api/enterprise/platform/tenants/${encodeURIComponent(tenant.id)}/${nextState === 'SUSPENDED' ? 'suspend' : 'reactivate'}`, { method: 'POST' });
-      notify(`Tenant "${tenant.displayName}" is now ${nextState.toLowerCase()}.`);
-      refreshTenants();
-    } catch (err) {
-      setActionError(err?.message || `Tenant could not be ${verb.toLowerCase()}d.`);
-    } finally {
-      setBusyTenant(null);
-    }
+    setConfirmConfig({
+      title: `${verb} Tenant`,
+      message: `${verb} tenant "${tenant.displayName}" (${tenant.slug})? ${nextState === 'SUSPENDED' ? 'All members and service accounts of this tenant immediately lose access.' : 'Members regain access immediately.'}`,
+      confirmLabel: `${verb} Tenant`,
+      variant: nextState === 'SUSPENDED' ? 'danger' : 'primary',
+      onConfirm: async () => {
+        setConfirmConfig(null);
+        setBusyTenant(`${tenant.id}:${nextState}`);
+        setActionError(null);
+        try {
+          await request(`/api/enterprise/platform/tenants/${encodeURIComponent(tenant.id)}/${nextState === 'SUSPENDED' ? 'suspend' : 'reactivate'}`, { method: 'POST' });
+          notify(`Tenant "${tenant.displayName}" is now ${nextState.toLowerCase()}.`);
+          refreshTenants();
+        } catch (err) {
+          setActionError(err?.message || `Tenant could not be ${verb.toLowerCase()}d.`);
+        } finally {
+          setBusyTenant(null);
+        }
+      }
+    });
   };
 
   const handleProvision = async (e) => {
@@ -294,6 +305,20 @@ export default function EnterprisePlatformTab() {
             </form>
           </div>
         </div>
+      )}
+
+      {confirmConfig && (
+        <EnterpriseConfirmModal
+          isOpen={!!confirmConfig}
+          title={confirmConfig.title}
+          message={confirmConfig.message}
+          confirmLabel={confirmConfig.confirmLabel}
+          cancelLabel={confirmConfig.cancelLabel}
+          variant={confirmConfig.variant}
+          busy={busy || !!busyTenant}
+          onConfirm={confirmConfig.onConfirm}
+          onClose={() => setConfirmConfig(null)}
+        />
       )}
     </div>
   );

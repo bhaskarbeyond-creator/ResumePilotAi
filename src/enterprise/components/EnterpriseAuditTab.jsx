@@ -96,17 +96,17 @@ export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = n
         return { name: 'System Service', sub: 'Internal Automated Worker', isSystem: true, initial: '⚙' };
       }
       if (currentUid && actorId === currentUid) {
-        return { name: `${currentDisplayName || 'Babu M'} (You)`, sub: `Principal: ${actorId.slice(0, 8)}…`, isCurrent: true, initial: (currentDisplayName || 'B').charAt(0).toUpperCase() };
+        return { name: `${currentDisplayName || 'Babu M'} (You)`, sub: `Principal: ${actorId}`, isCurrent: true, initial: (currentDisplayName || 'B').charAt(0).toUpperCase() };
       }
       const member = memberMap.get(actorId);
       if (member) {
-        const name = member.displayName || member.email?.split('@')[0] || member.email || 'Enterprise Member';
-        return { name, sub: member.email || `Principal: ${actorId.slice(0, 8)}…`, isCurrent: false, initial: name.charAt(0).toUpperCase() };
+        const name = member.displayName || member.email?.split('@')[0] || member.invitationEmail || member.principalId || actorId;
+        return { name, sub: member.email || `Principal: ${actorId}`, isCurrent: false, initial: name.charAt(0).toUpperCase() };
       }
       if (actorId.startsWith('sa_') || actorId.startsWith('svc_')) {
-        return { name: `Service Account (${actorId.slice(0, 10)})`, sub: 'M2M API Token', isService: true, initial: '🔑' };
+        return { name: `Service Account (${actorId})`, sub: 'M2M API Token', isService: true, initial: '🔑' };
       }
-      return { name: `Principal: ${actorId.slice(0, 8)}…`, sub: actorId, isCurrent: false, initial: '👤' };
+      return { name: actorId, sub: `Principal: ${actorId}`, isCurrent: false, initial: '👤' };
     };
   }, [currentUid, currentDisplayName, memberMap]);
 

@@ -72,10 +72,10 @@ async function bootConsole(page, { seed = null, tab = 'overview', extraParams = 
 test('shell renders grouped navigation, breadcrumbs, and the signed-in identity', async ({ page }) => {
   const { pageErrors } = await bootConsole(page);
 
-  // All 13 modules for a tenant owner with platform capability.
-  await expect(page.locator('.enterprise-nav-item')).toHaveCount(13);
+  // All 14 modules for a tenant owner with platform capability.
+  await expect(page.locator('.enterprise-nav-item')).toHaveCount(14);
   for (const label of ['Overview', 'Talent & Resumes', 'Users & IAM', 'Teams', 'Workspaces',
-    'Roles & permissions', 'AI workspace', 'Security & M2M', 'Usage & Quotas', 'Audit logs',
+    'Roles & permissions', 'AI workspace', 'Email & Notifications', 'Security & M2M', 'Usage & Quotas', 'Audit logs',
     'Support access', 'Organization settings', 'Platform administration']) {
     await expect(page.locator(`.enterprise-nav-item:has-text("${label}")`).first()).toBeVisible();
   }
@@ -101,12 +101,13 @@ test('every module renders its real heading with real tenant data', async ({ pag
   await bootConsole(page);
   const modules = [
     ['overview', 'Northwind Careers'],
-    ['resumes', 'Enterprise Document Library'],
+    ['resumes', 'Talent & Resumes'],
     ['members', 'Users & IAM'],
     ['teams', 'Teams Management'],
     ['workspaces', 'Workspaces'],
     ['access', 'Roles & Access Control Matrix'],
     ['ai', 'Enterprise AI Policy & Quota Console'],
+    ['email', 'Enterprise Notification Gateway'],
     ['security', 'Security Posture'],
     ['usage', 'Usage & Quota Analytics'],
     ['audit', 'Immutable Audit Trail'],
@@ -208,7 +209,8 @@ test('users module supports invite, role change, suspend/reactivate, and resend'
   // Role change through the row select issues a real PATCH.
   const roleSelect = page.locator('tr:has-text("mia.johnson") select.enterprise-role-select');
   await roleSelect.selectOption('WORKSPACE_MANAGER');
-  await expect(page.locator('tr:has-text("mia.johnson")')).toContainText('WORKSPACE_MANAGER');
+  await expect(roleSelect).toHaveValue('WORKSPACE_MANAGER');
+  await expect(page.locator('tr:has-text("mia.johnson")')).toContainText('Workspace Manager');
 
   // Resend a pending invitation.
   await page.locator('tr:has-text("grace.lee") button[title*="Resend"]').first().click();
@@ -231,8 +233,11 @@ test('workspace lifecycle: create → rename → archive → restore, plus membe
   await page.locator('.enterprise-modal button:has-text("Save Name")').click();
   await expect(page.locator('.enterprise-main')).toContainText('APAC & Japan');
 
-  page.once('dialog', dialog => dialog.accept());
   await page.locator('button[title="Archive APAC & Japan"]').click();
+  const archiveConfirmBtn = page.locator('.enterprise-modal button:has-text("Archive")');
+  if (await archiveConfirmBtn.isVisible().catch(() => false)) {
+    await archiveConfirmBtn.click();
+  }
   await expect(page.locator('.enterprise-workspace-card.archived, .enterprise-pill:has-text("Archived")').first()).toBeVisible();
   await page.locator('button:has-text("Restore")').first().click();
   await expect(page.locator('.enterprise-workspace-card:not(.archived) >> text=APAC & Japan').first()).toBeVisible();
@@ -282,8 +287,11 @@ test('security center: posture states, service-account create/rotate, DLQ replay
   await expect(page.locator('.enterprise-main')).toContainText('etl-exporter');
 
   // Replay the dead-letter job — the fixture state genuinely changes.
-  page.once('dialog', dialog => dialog.accept());
   await page.locator('#durable-jobs button:has-text("Replay")').first().click();
+  const dlqConfirmBtn = page.locator('.enterprise-modal button:has-text("Replay")');
+  if (await dlqConfirmBtn.isVisible().catch(() => false)) {
+    await dlqConfirmBtn.click();
+  }
   await expect.poll(() => state.jobs.filter(job => job.status === 'DEAD_LETTER').length, { timeout: 10_000 }).toBe(0);
 });
 
@@ -333,8 +341,11 @@ test('platform administration: registry metrics and tenant suspend/reactivate', 
   await expect(page.locator('.enterprise-main')).toContainText('Total Tenants');
   await expect(page.locator('.enterprise-main')).toContainText('globex-talent');
 
-  page.once('dialog', dialog => dialog.accept());
   await page.locator('tr:has-text("Globex Talent") button:has-text("Suspend")').click();
+  const suspendModalBtn = page.locator('.enterprise-modal button:has-text("Suspend")');
+  if (await suspendModalBtn.isVisible().catch(() => false)) {
+    await suspendModalBtn.click();
+  }
   await expect(page.locator('tr:has-text("Globex Talent")')).toContainText('SUSPENDED', { timeout: 15_000 });
 });
 

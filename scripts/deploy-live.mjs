@@ -20,26 +20,26 @@ if (!fs.existsSync('dist/index.html')) {
 }
 
 console.log('=== Step 1: Remote Pre-Deployment Backup ===');
-execSync('ssh airesume "mkdir -p backups && tar -czf backups/pre-deploy-$(date +%s).tar.gz backend/index.js backend/routes backend/enterprise 2>/dev/null || true"', { stdio: 'inherit' });
+execSync('ssh -o BatchMode=yes airesume "mkdir -p backups && tar -czf backups/pre-deploy-$(date +%s).tar.gz backend/index.js backend/routes backend/enterprise 2>/dev/null || true"', { stdio: 'inherit' });
 console.log('Remote backup complete.');
 
 console.log('\n=== Step 2: Deploying Backend Files ===');
 execSync('tar -czf backend-bundle.tar.gz -C backend COMMIT_SHA index.js package.json routes services security enterprise', { stdio: 'inherit' });
-execSync('ssh airesume "mkdir -p backend/enterprise"', { stdio: 'inherit' });
-execSync('scp backend-bundle.tar.gz airesume:backend-bundle.tar.gz', { stdio: 'inherit' });
-execSync('ssh airesume "tar -xzf backend-bundle.tar.gz -C backend && rm backend-bundle.tar.gz"', { stdio: 'inherit' });
-fs.unlinkSync('backend-bundle.tar.gz');
+execSync('ssh -o BatchMode=yes airesume "mkdir -p backend/enterprise"', { stdio: 'inherit' });
+execSync('scp -o BatchMode=yes backend-bundle.tar.gz airesume:backend-bundle.tar.gz', { stdio: 'inherit' });
+execSync('ssh -o BatchMode=yes airesume "tar -xzf backend-bundle.tar.gz -C backend && rm backend-bundle.tar.gz"', { stdio: 'inherit' });
+if (fs.existsSync('backend-bundle.tar.gz')) fs.unlinkSync('backend-bundle.tar.gz');
 console.log('Backend files deployed.');
 
 console.log('\n=== Step 3: Deploying Frontend Bundle ===');
 execSync('tar -czf dist-bundle.tar.gz -C dist .', { stdio: 'inherit' });
-execSync('scp dist-bundle.tar.gz airesume:dist-bundle.tar.gz', { stdio: 'inherit' });
-execSync('ssh airesume "tar -xzf dist-bundle.tar.gz -C domains/airesume.projectdemo.guru/public_html && rm dist-bundle.tar.gz"', { stdio: 'inherit' });
-fs.unlinkSync('dist-bundle.tar.gz');
+execSync('scp -o BatchMode=yes dist-bundle.tar.gz airesume:dist-bundle.tar.gz', { stdio: 'inherit' });
+execSync('ssh -o BatchMode=yes airesume "tar -xzf dist-bundle.tar.gz -C domains/airesume.projectdemo.guru/public_html && rm dist-bundle.tar.gz"', { stdio: 'inherit' });
+if (fs.existsSync('dist-bundle.tar.gz')) fs.unlinkSync('dist-bundle.tar.gz');
 console.log('Frontend bundle deployed.');
 
 console.log('\n=== Step 4: Restarting Backend via PM2 ===');
-execSync('ssh airesume "export PATH=/opt/alt/alt-nodejs20/root/usr/bin:/home/u727965524/.local/bin:/usr/local/bin:/usr/bin:/bin:$PATH; ~/.local/bin/pm2 restart airesume-backend --update-env"', { stdio: 'inherit' });
+execSync('ssh -o BatchMode=yes airesume "export PATH=/opt/alt/alt-nodejs20/root/usr/bin:/home/u727965524/.local/bin:/usr/local/bin:/usr/bin:/bin:$PATH; ~/.local/bin/pm2 restart airesume-backend --update-env"', { stdio: 'inherit' });
 console.log('PM2 restarted.');
 
 console.log('\n=== Step 5: Verifying Live Production Endpoints ===');
