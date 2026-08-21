@@ -13,6 +13,46 @@ function csvEscape(value) {
   return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
+function SyntaxHighlightedJson({ obj }) {
+  if (!obj) return null;
+  const json = JSON.stringify(obj, null, 2);
+  const lines = json.split('\n');
+  return (
+    <pre style={{ 
+      background: 'var(--enterprise-surface)', 
+      border: '1px solid var(--enterprise-border)', 
+      borderRadius: 'var(--enterprise-radius-md)', 
+      padding: '16px 0', 
+      overflow: 'auto', 
+      margin: 0, 
+      fontFamily: 'monospace', 
+      fontSize: '0.875rem', 
+      lineHeight: 1.5,
+      color: 'var(--enterprise-ink)' 
+    }}>
+      {lines.map((line, i) => {
+        const parts = line.split(/(".*?"\s*:|".*?"|\btrue\b|\bfalse\b|\bnull\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g);
+        return (
+          <div key={i} style={{ display: 'table-row' }}>
+            <span style={{ display: 'table-cell', textAlign: 'right', paddingRight: '12px', userSelect: 'none', color: 'var(--enterprise-text)', opacity: 0.5, borderRight: '1px solid var(--enterprise-border)', width: '40px' }}>{i + 1}</span>
+            <span style={{ display: 'table-cell', paddingLeft: '12px' }}>
+              {parts.map((part, j) => {
+                if (!part) return null;
+                if (/^".*?"\s*:$/.test(part)) return <span key={j} style={{ color: 'var(--enterprise-ink)', fontWeight: 600 }}>{part}</span>;
+                if (/^".*?"$/.test(part)) return <span key={j} style={{ color: 'var(--enterprise-success)' }}>{part}</span>;
+                if (/\b(true|false)\b/.test(part)) return <span key={j} style={{ color: 'var(--enterprise-primary-active)' }}>{part}</span>;
+                if (/\bnull\b/.test(part)) return <span key={j} style={{ color: 'var(--enterprise-danger)' }}>{part}</span>;
+                if (/^-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?$/.test(part)) return <span key={j} style={{ color: 'var(--enterprise-warning)' }}>{part}</span>;
+                return <span key={j} style={{ color: 'var(--enterprise-text)' }}>{part}</span>;
+              })}
+            </span>
+          </div>
+        );
+      })}
+    </pre>
+  );
+}
+
 export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = null }) {
   const { request } = useTenantApi();
   const [searchQuery, setSearchQuery] = useState('');
@@ -110,8 +150,8 @@ export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = n
 
   return (
     <div className="enterprise-tab-content">
-      <div className="enterprise-card">
-        <div className="enterprise-card-header-flex">
+      <div className="enterprise-card" style={{ padding: '24px' }}>
+        <div className="enterprise-card-header-flex" style={{ marginBottom: '20px' }}>
           <div>
             <h2 className="enterprise-tab-title">Immutable Audit Trail</h2>
             <p className="enterprise-tab-subtitle">
@@ -138,7 +178,7 @@ export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = n
           </div>
         </div>
 
-        <div className="enterprise-filter-bar" style={{ flexWrap: 'wrap', gap: '0.5rem' }}>
+        <div className="enterprise-filter-bar" style={{ flexWrap: 'wrap', gap: '8px', padding: '16px', background: 'var(--enterprise-surface)', borderRadius: 'var(--enterprise-radius-md)', border: '1px solid var(--enterprise-border)', marginBottom: '24px' }}>
           <div className="enterprise-search-wrapper">
             <FiSearch className="enterprise-search-icon" aria-hidden="true" />
             <input
@@ -307,10 +347,8 @@ export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = n
                 <FiX />
               </button>
             </div>
-            <div className="enterprise-modal-body">
-              <pre className="enterprise-json-preview">
-                {JSON.stringify(inspectEvent, null, 2)}
-              </pre>
+            <div className="enterprise-modal-body" style={{ padding: '0 24px' }}>
+              <SyntaxHighlightedJson obj={inspectEvent} />
             </div>
             <div className="enterprise-modal-footer">
               <button type="button" className="enterprise-button enterprise-button-secondary" onClick={() => setInspectEvent(null)}>

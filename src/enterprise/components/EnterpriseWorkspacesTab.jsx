@@ -272,70 +272,107 @@ export default function EnterpriseWorkspacesTab({
           )}
         </div>
 
-        <div className="enterprise-workspaces-list">
-          {(workspaces || []).map(ws => (
-            <div
-              key={ws.id}
-              className={`enterprise-workspace-card ${ws.id === activeWorkspace?.id ? 'active' : ''}`}
-            >
-              <div className="enterprise-workspace-card-header">
-                <div>
-                  <div className="enterprise-workspace-title-row">
-                    <h3>{ws.name}</h3>
-                    {ws.isDefault && (
-                      <span className="enterprise-pill enterprise-pill-template">Default</span>
-                    )}
-                    {ws.id === activeWorkspace?.id && (
-                      <span className="enterprise-pill enterprise-pill-success">Active Context</span>
-                    )}
+        <div className="enterprise-workspaces-hierarchy">
+          {activeWorkspace && (
+            <div className="enterprise-workspace-group" style={{ marginBottom: '32px' }}>
+              <h3 className="enterprise-hierarchy-group-title" style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--enterprise-primary-active)', marginBottom: '16px', borderBottom: '2px solid var(--enterprise-primary-soft)', paddingBottom: '8px' }}>
+                Currently Active Context
+              </h3>
+              <div className="enterprise-workspaces-list">
+                <div className="enterprise-workspace-card active">
+                  <div className="enterprise-workspace-card-header">
+                    <div>
+                      <div className="enterprise-workspace-title-row">
+                        <h3>{activeWorkspace.name}</h3>
+                        {activeWorkspace.isDefault && (
+                          <span className="enterprise-pill enterprise-pill-template">Default</span>
+                        )}
+                        <span className="enterprise-pill enterprise-pill-success">Active Context</span>
+                      </div>
+                      <p className="enterprise-workspace-desc">
+                        Scoped access boundary for documents, team members, and templates
+                      </p>
+                    </div>
+                    <div className="enterprise-workspace-actions">
+                      {canSeeMembers && (
+                        <button
+                          type="button"
+                          className="enterprise-button enterprise-button-secondary enterprise-button-sm"
+                          onClick={() => setMembersTarget(activeWorkspace)}
+                        >
+                          <FiUsers aria-hidden="true" /> Members
+                        </button>
+                      )}
+                      {canManageWorkspaces && (
+                        <button
+                          type="button"
+                          className="enterprise-button-icon"
+                          title={`Rename ${activeWorkspace.name}`}
+                          onClick={() => { setRenameTarget(activeWorkspace); setRenameValue(activeWorkspace.name); }}
+                        >
+                          <FiEdit2 />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <p className="enterprise-workspace-desc">
-                    Scoped access boundary for documents, team members, and templates
-                  </p>
-                </div>
-                <div className="enterprise-workspace-actions">
-                  {ws.id !== activeWorkspace?.id && (
-                    <button
-                      type="button"
-                      className="enterprise-button enterprise-button-secondary enterprise-button-sm"
-                      onClick={() => onSelectWorkspace(ws.id)}
-                    >
-                      Switch to Workspace
-                    </button>
-                  )}
-                  {canSeeMembers && (
-                    <button
-                      type="button"
-                      className="enterprise-button enterprise-button-secondary enterprise-button-sm"
-                      onClick={() => setMembersTarget(ws)}
-                    >
-                      <FiUsers aria-hidden="true" /> Members
-                    </button>
-                  )}
-                  {canManageWorkspaces && (
-                    <button
-                      type="button"
-                      className="enterprise-button-icon"
-                      title={`Rename ${ws.name}`}
-                      onClick={() => { setRenameTarget(ws); setRenameValue(ws.name); }}
-                    >
-                      <FiEdit2 />
-                    </button>
-                  )}
-                  {canAdministerLifecycle && !ws.isDefault && (
-                    <button
-                      type="button"
-                      className="enterprise-button-icon text-danger"
-                      title={`Archive ${ws.name}`}
-                      onClick={() => handleArchive(ws)}
-                    >
-                      <FiArchive />
-                    </button>
-                  )}
                 </div>
               </div>
             </div>
-          ))}
+          )}
+
+          {workspaces && workspaces.length > 1 && (
+            <div className="enterprise-workspace-group">
+              <h3 className="enterprise-hierarchy-group-title" style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--enterprise-ink)', marginBottom: '16px', borderBottom: '1px solid var(--enterprise-border)', paddingBottom: '8px' }}>
+                Other Available Workspaces
+              </h3>
+              <div className="enterprise-workspaces-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
+                {workspaces.filter(ws => ws.id !== activeWorkspace?.id).map(ws => (
+                  <div key={ws.id} className="enterprise-workspace-card enterprise-card">
+                    <div className="enterprise-workspace-card-header" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                      <div style={{ flex: 1 }}>
+                        <div className="enterprise-workspace-title-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                          <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{ws.name}</h3>
+                          {ws.isDefault && (
+                            <span className="enterprise-pill enterprise-pill-template">Default</span>
+                          )}
+                        </div>
+                        <p className="enterprise-workspace-desc text-muted" style={{ fontSize: '0.875rem', marginBottom: '16px' }}>
+                          Scoped access boundary for documents, team members, and templates
+                        </p>
+                      </div>
+                      <div className="enterprise-workspace-actions" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--enterprise-border)', paddingTop: '12px', marginTop: 'auto' }}>
+                        <button
+                          type="button"
+                          className="enterprise-button enterprise-button-secondary enterprise-button-sm"
+                          onClick={() => onSelectWorkspace(ws.id)}
+                        >
+                          Switch Context
+                        </button>
+                        <div className="enterprise-inline-actions" style={{ gap: '4px' }}>
+                          {canSeeMembers && (
+                            <button type="button" className="enterprise-button-icon" title="Manage Members" onClick={() => setMembersTarget(ws)}>
+                              <FiUsers />
+                            </button>
+                          )}
+                          {canManageWorkspaces && (
+                            <button type="button" className="enterprise-button-icon" title={`Rename ${ws.name}`} onClick={() => { setRenameTarget(ws); setRenameValue(ws.name); }}>
+                              <FiEdit2 />
+                            </button>
+                          )}
+                          {canAdministerLifecycle && !ws.isDefault && (
+                            <button type="button" className="enterprise-button-icon text-danger" title={`Archive ${ws.name}`} onClick={() => handleArchive(ws)}>
+                              <FiArchive />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
           {!(workspaces || []).length && (
             <p className="enterprise-empty">No workspaces are available. Create one to partition your organization.</p>
           )}

@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import {
-  FiUsers, FiPlus, FiCheck, FiX, FiEdit2, FiArchive, FiRotateCcw, FiUserPlus, FiSearch, FiAward, FiTrash2
+  FiUsers, FiPlus, FiMoreVertical, FiCheck, FiX, FiRefreshCw, FiArchive, FiEdit2, FiRotateCcw, FiUserPlus, FiSearch, FiAward, FiTrash2
 } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
+import { useEnterpriseTenant } from '../EnterpriseContext';
 
 function TeamMembersDrawer({ team, onClose }) {
   const { request, hasPermission } = useTenantApi();
@@ -143,6 +144,7 @@ function TeamMembersDrawer({ team, onClose }) {
 
 export default function EnterpriseTeamsTab() {
   const { request, workspaceId, hasPermission } = useTenantApi();
+  const { workspaces } = useEnterpriseTenant();
   const [teamsState, refreshTeams] = useAsyncResource(() => request('/api/enterprise/teams'), [request]);
   const { loading, error, data } = teamsState;
   const [showModal, setShowModal] = useState(false);
@@ -176,12 +178,25 @@ export default function EnterpriseTeamsTab() {
     [tenantMembersState],
   );
 
-  const teams = useMemo(() => {
+  const teamsByWorkspace = useMemo(() => {
     const active = Array.isArray(data?.teams) ? data.teams : [];
     const query = searchQuery.trim().toLowerCase();
-    if (!query) return active;
-    return active.filter(team => `${team.name} ${team.leadPrincipalId || ''}`.toLowerCase().includes(query));
+    const filtered = query ? active.filter(team => `${team.name} ${team.leadPrincipalId || ''}`.toLowerCase().includes(query)) : active;
+    
+    const groups = { unassigned: [] };
+    filtered.forEach(team => {
+      const wid = team.workspaceId || 'unassigned';
+      if (!groups[wid]) groups[wid] = [];
+      groups[wid].push(team);
+    });
+    return groups;
   }, [data, searchQuery]);
+  
+  const getWorkspaceName = (id) => {
+    if (id === 'unassigned') return 'Tenant-wide Teams (No Workspace)';
+    const ws = (workspaces || []).find(w => w.id === id);
+    return ws ? `Workspace: ${ws.name}` : `Workspace: ${id.slice(0, 8)}…`;
+  };
 
   const notify = (message) => {
     setNotification(message);
@@ -322,67 +337,53 @@ export default function EnterpriseTeamsTab() {
         </div>
 
         <DataState loading={loading} error={error} onRetry={refreshTeams}>
-          {teams.length === 0 ? (
+          {Object.keys(teamsByWorkspace).length === 1 && teamsByWorkspace.unassigned.length === 0 ? (
             <p className="enterprise-empty">{searchQuery ? 'No teams match this search.' : 'No teams exist in this workspace yet. Create a team to group members.'}</p>
           ) : (
-            <div className="enterprise-teams-grid">
-              {teams.map(team => (
-                <div key={team.id} className="enterprise-team-card">
-                  <div className="enterprise-team-header">
-                    <div>
-                      <h3 className="enterprise-team-name">{team.name}</h3>
-                      <span className="enterprise-pill enterprise-pill-secondary">
-                        {team.workspaceId ? `ws ${String(team.workspaceId).slice(0, 8)}` : 'Tenant-wide'}
-                      </span>
-                      {team.leadPrincipalId && (
-                        <span className="enterprise-pill enterprise-pill-template" style={{ marginLeft: '0.35rem' }} title={`Team lead: ${team.leadPrincipalId}`}>
-                          <FiAward aria-hidden="true" /> {String(team.leadPrincipalId).slice(0, 10)}…
-                        </span>
-                      )}
+            <div className="enterprise-teams-hierarchy">
+              {Object.keys(teamsByWorkspace).map(wid => {
+                const groupTeams = teamsByWorkspace[wid];
+                if (groupTeams.length === 0) return null;
+                return (
+                  <div key={wid} className="enterprise-hierarchy-group" style={{ marginBottom: '24px' }}>
+                    <div className="enterprise-hierarchy-header" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px', padding: '10px 16px', background: 'var(--enterprise-surface-hover)', borderRadius: 'var(--enterprise-radius-sm)', border: '1px solid var(--enterprise-border)' }}>
+                      <span style={{ fontWeight: 600, color: 'var(--enterprise-ink)' }}>{getWorkspaceName(wid)}</span>
+                      <span className="enterprise-pill enterprise-pill-secondary">{groupTeams.length} {groupTeams.length === 1 ? 'team' : 'teams'}</span>
                     </div>
-                    {canManageTeams && (
-                      <div className="enterprise-inline-actions" style={{ gap: '0.25rem' }}>
-                        <button
-                          type="button"
-                          className="enterprise-button-icon"
-                          title="Set team lead"
-                          onClick={() => { setLeadTarget(team); setLeadValue(team.leadPrincipalId || ''); }}
-                        >
-                          <FiAward />
-                        </button>
-                        <button
-                          type="button"
-                          className="enterprise-button-icon"
-                          title={`Rename ${team.name}`}
-                          onClick={() => { setRenameTarget(team); setRenameValue(team.name); }}
-                        >
-                          <FiEdit2 />
-                        </button>
-                        <button
-                          type="button"
-                          className="enterprise-button-icon text-danger"
-                          title={`Archive ${team.name}`}
-                          onClick={() => handleArchive(team)}
-                        >
-                          <FiArchive />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  <div className="enterprise-team-footer">
-                    <div className="enterprise-team-meta">
-                      <FiUsers aria-hidden="true" /> Scoped workspace team
+                    <div className="enterprise-teams-grid" style={{ paddingLeft: '16px', borderLeft: '2px solid var(--enterprise-border)', marginLeft: '8px' }}>
+                      {groupTeams.map(team => (
+                        <div key={team.id} className="enterprise-team-card enterprise-card">
+                          <div className="enterprise-team-header" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                            <div>
+                              <h3 className="enterprise-team-name" style={{ margin: '0 0 6px', fontSize: '1.05rem', color: 'var(--enterprise-ink)' }}>{team.name}</h3>
+                              {team.leadPrincipalId && (
+                                <span className="enterprise-pill enterprise-pill-template" title={`Team lead: ${team.leadPrincipalId}`}>
+                                  <FiAward aria-hidden="true" /> Lead: {String(team.leadPrincipalId).slice(0, 10)}…
+                                </span>
+                              )}
+                            </div>
+                            {canManageTeams && (
+                              <div className="enterprise-inline-actions" style={{ gap: '4px' }}>
+                                <button type="button" className="enterprise-button-icon" title="Set team lead" onClick={() => { setLeadTarget(team); setLeadValue(team.leadPrincipalId || ''); }}><FiAward /></button>
+                                <button type="button" className="enterprise-button-icon" title={`Rename ${team.name}`} onClick={() => { setRenameTarget(team); setRenameValue(team.name); }}><FiEdit2 /></button>
+                                <button type="button" className="enterprise-button-icon text-danger" title={`Archive ${team.name}`} onClick={() => handleArchive(team)}><FiArchive /></button>
+                              </div>
+                            )}
+                          </div>
+                          <div className="enterprise-team-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--enterprise-border)' }}>
+                            <div className="enterprise-team-meta text-muted" style={{ fontSize: '0.8125rem' }}>
+                              <FiUsers aria-hidden="true" /> Scoped team
+                            </div>
+                            <button type="button" className="enterprise-button enterprise-button-secondary enterprise-button-sm" onClick={() => setMembersTarget(team)}>
+                              <FiUsers aria-hidden="true" /> Manage Members
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <button
-                      type="button"
-                      className="enterprise-button enterprise-button-secondary enterprise-button-sm"
-                      onClick={() => setMembersTarget(team)}
-                    >
-                      <FiUsers aria-hidden="true" /> Manage Members
-                    </button>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </DataState>

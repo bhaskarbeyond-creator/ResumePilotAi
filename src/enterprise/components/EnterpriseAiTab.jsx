@@ -210,22 +210,26 @@ export default function EnterpriseAiTab() {
             <h3 className="enterprise-card-title" style={{ marginTop: '1.5rem' }}>Approved Provider Allowlist</h3>
             <p className="enterprise-card-subtitle">Only providers enabled below receive tenant generation requests. An empty allowlist denies all providers (fail closed).</p>
 
-            <div className="enterprise-provider-grid">
-              {PROVIDERS.map(provider => (
-                <label key={provider.key} className={`enterprise-provider-card ${allowed.has(provider.key) ? 'active' : ''}`}>
-                  <input
-                    type="checkbox"
-                    checked={allowed.has(provider.key)}
-                    onChange={() => toggleProvider(provider.key)}
-                  />
-                  <div className="enterprise-provider-content">
-                    <div className="enterprise-provider-header">
-                      <strong>{provider.label}</strong>
-                      <span className="enterprise-pill enterprise-pill-secondary">{provider.blurb}</span>
+            <div className="enterprise-provider-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+              {PROVIDERS.map(provider => {
+                const isActive = allowed.has(provider.key);
+                return (
+                  <label key={provider.key} className={`enterprise-provider-card enterprise-card ${isActive ? 'active' : ''}`} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', cursor: 'pointer', border: isActive ? '2px solid var(--enterprise-primary-active)' : '1px solid var(--enterprise-border)', background: isActive ? 'var(--enterprise-primary-soft)' : 'var(--enterprise-surface)', transition: 'all 0.2s ease', margin: 0, padding: '16px' }}>
+                    <input
+                      type="checkbox"
+                      checked={isActive}
+                      onChange={() => toggleProvider(provider.key)}
+                      style={{ marginTop: '4px', cursor: 'pointer', width: '18px', height: '18px', accentColor: 'var(--enterprise-primary-active)' }}
+                    />
+                    <div className="enterprise-provider-content" style={{ flex: 1 }}>
+                      <div className="enterprise-provider-header" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <strong style={{ fontSize: '1.05rem', color: isActive ? 'var(--enterprise-primary-active)' : 'var(--enterprise-ink)' }}>{provider.label}</strong>
+                        <span className={`enterprise-pill ${isActive ? 'enterprise-pill-primary' : 'enterprise-pill-secondary'}`} style={{ alignSelf: 'flex-start' }}>{provider.blurb}</span>
+                      </div>
                     </div>
-                  </div>
-                </label>
-              ))}
+                  </label>
+                );
+              })}
             </div>
 
             <h3 className="enterprise-card-title" style={{ marginTop: '1.75rem' }}><FiCpu aria-hidden="true" /> Model Allowlist</h3>

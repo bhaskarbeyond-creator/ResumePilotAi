@@ -169,9 +169,15 @@ export default function EnterpriseSupportTab() {
                           <tr key={grant.id}>
                             <td><strong>{grant.supportSubjectId || '—'}</strong></td>
                             <td><em>"{grant.reason}"</em></td>
-                            <td><span className="enterprise-pill enterprise-pill-secondary">{(grant.scopes || []).join(', ')}</span></td>
+                            <td>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                {(grant.scopes || []).map(scope => (
+                                  <span key={scope} className="enterprise-pill enterprise-pill-secondary" style={{ fontSize: '0.7rem', padding: '2px 6px' }}>{scope}</span>
+                                ))}
+                              </div>
+                            </td>
                             <td><small className="text-muted">{grant.requestedBySubjectId || '—'}</small></td>
-                            <td><small><FiClock /> {new Date(grant.expiresAt).toLocaleString()}</small></td>
+                            <td><small><FiClock aria-hidden="true" style={{ verticalAlign: 'middle', marginRight: '4px' }} /> {new Date(grant.expiresAt).toLocaleString()}</small></td>
                             <td>
                               <span className={`enterprise-pill enterprise-pill-${grant.status === 'ACTIVE' && !expired ? 'success' : grant.status === 'REVOKED' ? 'secondary' : 'warning'}`}>
                                 {expired ? 'EXPIRED' : grant.status}

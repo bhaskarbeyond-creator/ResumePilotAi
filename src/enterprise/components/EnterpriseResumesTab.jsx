@@ -21,6 +21,7 @@ export default function EnterpriseResumesTab() {
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState(null);
   const [notification, setNotification] = useState(null);
+  const [selectedRows, setSelectedRows] = useState(new Set());
 
   const resources = useMemo(() => (Array.isArray(data?.resources) ? data.resources : []), [data]);
   const canCreate = hasPermission('resource.create');
@@ -28,6 +29,21 @@ export default function EnterpriseResumesTab() {
   const filtered = resources.filter(resource =>
     `${resourceTitle(resource)} ${resource.ownerPrincipalId || ''}`.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const toggleSelectAll = () => {
+    if (selectedRows.size === filtered.length && filtered.length > 0) {
+      setSelectedRows(new Set());
+    } else {
+      setSelectedRows(new Set(filtered.map(r => r.id)));
+    }
+  };
+
+  const toggleSelectRow = (id) => {
+    const next = new Set(selectedRows);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedRows(next);
+  };
 
   const notify = (message) => {
     setNotification(message);
@@ -58,9 +74,53 @@ export default function EnterpriseResumesTab() {
     try {
       await request(`/api/enterprise/resources/${resource.id}`, { method: 'DELETE' });
       notify('Document removed from enterprise workspace.');
+      setSelectedRows(prev => { const next = new Set(prev); next.delete(resource.id); return next; });
       refreshResumes();
     } catch (err) {
       setActionError(err?.message || 'Document could not be deleted.');
+    }
+  };
+
+  const handleBulkAction = async (action) => {
+    if (!selectedRows.size) return;
+    if (action === 'delete' && !window.confirm(`Delete ${selectedRows.size} document(s)? This cannot be undone.`)) return;
+    
+    setActionError(null);
+    setBusy(true);
+    let successCount = 0;
+    
+    try {
+      if (action === 'export') {
+        const selectedDocs = filtered.filter(r => selectedRows.has(r.id));
+        const json = JSON.stringify(selectedDocs, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `enterprise-documents-${Date.now()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        notify(`Exported ${selectedDocs.length} document(s).`);
+        return;
+      }
+      
+      // Execute serially to respect limits/quotas
+      for (const id of selectedRows) {
+        if (action === 'delete') {
+          await request(`/api/enterprise/resources/${id}`, { method: 'DELETE' });
+        }
+        successCount++;
+      }
+      notify(`Successfully applied bulk action to ${successCount} document(s).`);
+      setSelectedRows(new Set());
+      refreshResumes();
+    } catch (err) {
+      setActionError(err?.message || `Bulk action failed after processing ${successCount} document(s).`);
+      refreshResumes(); // Refresh to show partial success
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -111,6 +171,24 @@ export default function EnterpriseResumesTab() {
           </div>
         </div>
 
+        {selectedRows.size > 0 && (
+          <div className="enterprise-bulk-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--enterprise-primary-soft)', borderRadius: 'var(--enterprise-radius-sm)', marginBottom: '16px' }}>
+            <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--enterprise-primary-active)' }}>
+              {selectedRows.size} document{selectedRows.size === 1 ? '' : 's'} selected
+            </span>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button type="button" className="enterprise-button enterprise-button-secondary enterprise-button-sm" onClick={() => handleBulkAction('export')} disabled={busy}>
+                <FiFileText aria-hidden="true" /> Export JSON
+              </button>
+              {canUpdate && (
+                <button type="button" className="enterprise-button enterprise-button-danger enterprise-button-sm" onClick={() => handleBulkAction('delete')} disabled={busy}>
+                  <FiTrash2 aria-hidden="true" /> Delete
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         <DataState loading={loading} error={error} onRetry={refreshResumes}>
           {filtered.length === 0 ? (
             <p className="enterprise-empty">
@@ -121,6 +199,15 @@ export default function EnterpriseResumesTab() {
               <table className="enterprise-table">
                 <thead>
                   <tr>
+                    <th style={{ width: '40px' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedRows.size === filtered.length && filtered.length > 0}
+                        ref={input => { if (input) input.indeterminate = selectedRows.size > 0 && selectedRows.size < filtered.length; }}
+                        onChange={toggleSelectAll}
+                        aria-label="Select all documents"
+                      />
+                    </th>
                     <th>Document</th>
                     <th>Owner</th>
                     <th>Classification</th>
@@ -130,7 +217,15 @@ export default function EnterpriseResumesTab() {
                 </thead>
                 <tbody>
                   {filtered.map(resource => (
-                    <tr key={resource.id}>
+                    <tr key={resource.id} className={selectedRows.has(resource.id) ? 'selected' : ''}>
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={selectedRows.has(resource.id)}
+                          onChange={() => toggleSelectRow(resource.id)}
+                          aria-label={`Select ${resourceTitle(resource)}`}
+                        />
+                      </td>
                       <td>
                         <div className="enterprise-user-cell">
                           <div className="enterprise-avatar enterprise-avatar-doc">

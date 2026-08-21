@@ -22,6 +22,7 @@ export default function EnterpriseUsersTab({ currentPrincipalId, onInspectActivi
   const { loading, error, data } = membersState;
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [roleFilter, setRoleFilter] = useState('ALL');
   const [detailMember, setDetailMember] = useState(null);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteMode, setInviteMode] = useState('INVITE');
@@ -33,6 +34,7 @@ export default function EnterpriseUsersTab({ currentPrincipalId, onInspectActivi
   const [busyAction, setBusyAction] = useState(null);
   const [actionError, setActionError] = useState(null);
   const [notification, setNotification] = useState(null);
+  const [selectedRows, setSelectedRows] = useState(new Set());
 
   const members = useMemo(() => (Array.isArray(data?.memberships) ? data.memberships : []), [data]);
 
@@ -50,11 +52,27 @@ export default function EnterpriseUsersTab({ currentPrincipalId, onInspectActivi
 
   const filtered = members.filter(member => {
     if (statusFilter !== 'ALL' && String(member.status || '').toUpperCase() !== statusFilter) return false;
+    if (roleFilter !== 'ALL' && !(member.roles || []).includes(roleFilter)) return false;
     const query = searchQuery.trim().toLowerCase();
     if (!query) return true;
     return `${member.principalId} ${(member.roles || []).join(' ')} ${member.status} ${member.invitationEmail || ''}`.toLowerCase().includes(query);
   });
   const canManageMembers = hasPermission('tenant.members.manage');
+
+  const toggleSelectAll = () => {
+    if (selectedRows.size === filtered.length && filtered.length > 0) {
+      setSelectedRows(new Set());
+    } else {
+      setSelectedRows(new Set(filtered.map(m => m.principalId)));
+    }
+  };
+
+  const toggleSelectRow = (principalId) => {
+    const next = new Set(selectedRows);
+    if (next.has(principalId)) next.delete(principalId);
+    else next.add(principalId);
+    setSelectedRows(next);
+  };
 
   const notify = (message) => {
     setNotification(message);
@@ -157,11 +175,49 @@ export default function EnterpriseUsersTab({ currentPrincipalId, onInspectActivi
     try {
       await request(`/api/enterprise/memberships/${encodeURIComponent(principalId)}`, { method: 'DELETE' });
       notify(`Removed ${principalId} from the enterprise.`);
+      setSelectedRows(prev => { const next = new Set(prev); next.delete(principalId); return next; });
       refreshMembers();
     } catch (err) {
       setActionError(err?.message || 'Membership could not be removed.');
     } finally {
       setBusyAction(null);
+    }
+  };
+
+  const handleBulkAction = async (action) => {
+    if (!selectedRows.size) return;
+    if (action === 'remove' && !window.confirm(`Remove ${selectedRows.size} members from the enterprise? This cannot be undone.`)) return;
+    
+    setActionError(null);
+    setBusyAction('bulk');
+    setBusy(true);
+    let successCount = 0;
+    
+    try {
+      // Execute serially to respect limits/quotas and prevent overwhelming the API
+      for (const principalId of selectedRows) {
+        if (principalId === currentPrincipalId && action !== 'activate') continue; // Prevent self-harm
+        
+        if (action === 'remove') {
+          await request(`/api/enterprise/memberships/${encodeURIComponent(principalId)}`, { method: 'DELETE' });
+        } else if (action === 'suspend' || action === 'activate') {
+          const next = action === 'activate' ? 'ACTIVE' : 'SUSPENDED';
+          await request(`/api/enterprise/memberships/${encodeURIComponent(principalId)}`, {
+            method: 'PATCH',
+            body: { status: next },
+          });
+        }
+        successCount++;
+      }
+      notify(`Successfully applied bulk action to ${successCount} member(s).`);
+      setSelectedRows(new Set());
+      refreshMembers();
+    } catch (err) {
+      setActionError(err?.message || `Bulk action failed after processing ${successCount} member(s).`);
+      refreshMembers(); // Refresh to show partial success
+    } finally {
+      setBusyAction(null);
+      setBusy(false);
     }
   };
 
@@ -290,6 +346,17 @@ export default function EnterpriseUsersTab({ currentPrincipalId, onInspectActivi
           </div>
           <div className="enterprise-select-group">
             <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              className="enterprise-select"
+              aria-label="Filter members by role"
+            >
+              <option value="ALL">All roles</option>
+              {roleOptions.map(role => (
+                <option key={role} value={role}>{role}</option>
+              ))}
+            </select>
+            <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="enterprise-select"
@@ -302,6 +369,25 @@ export default function EnterpriseUsersTab({ currentPrincipalId, onInspectActivi
           </div>
         </div>
 
+        {selectedRows.size > 0 && canManageMembers && (
+          <div className="enterprise-bulk-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--enterprise-primary-soft)', borderRadius: 'var(--enterprise-radius-sm)', marginBottom: '16px' }}>
+            <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--enterprise-primary-active)' }}>
+              {selectedRows.size} member{selectedRows.size === 1 ? '' : 's'} selected
+            </span>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button type="button" className="enterprise-button enterprise-button-secondary enterprise-button-sm" onClick={() => handleBulkAction('activate')} disabled={busy}>
+                <FiShield aria-hidden="true" /> Activate
+              </button>
+              <button type="button" className="enterprise-button enterprise-button-secondary enterprise-button-sm" onClick={() => handleBulkAction('suspend')} disabled={busy}>
+                <FiShieldOff aria-hidden="true" /> Suspend
+              </button>
+              <button type="button" className="enterprise-button enterprise-button-danger enterprise-button-sm" onClick={() => handleBulkAction('remove')} disabled={busy}>
+                <FiTrash2 aria-hidden="true" /> Remove
+              </button>
+            </div>
+          </div>
+        )}
+
         <DataState loading={loading} error={error} onRetry={refreshMembers}>
           {filtered.length === 0 ? (
             <p className="enterprise-empty">No enterprise members match this view. Invite a teammate to begin.</p>
@@ -310,6 +396,17 @@ export default function EnterpriseUsersTab({ currentPrincipalId, onInspectActivi
               <table className="enterprise-table">
                 <thead>
                   <tr>
+                    {canManageMembers && (
+                      <th style={{ width: '40px' }}>
+                        <input
+                          type="checkbox"
+                          checked={selectedRows.size === filtered.length && filtered.length > 0}
+                          ref={input => { if (input) input.indeterminate = selectedRows.size > 0 && selectedRows.size < filtered.length; }}
+                          onChange={toggleSelectAll}
+                          aria-label="Select all members"
+                        />
+                      </th>
+                    )}
                     <th>Principal</th>
                     <th>Roles</th>
                     <th>Status</th>
@@ -321,7 +418,17 @@ export default function EnterpriseUsersTab({ currentPrincipalId, onInspectActivi
                   {filtered.map(member => {
                     const invited = String(member.status || '').toUpperCase() === 'INVITED';
                     return (
-                      <tr key={`${member.tenantId}:${member.principalId}`}>
+                      <tr key={`${member.tenantId}:${member.principalId}`} className={selectedRows.has(member.principalId) ? 'selected' : ''}>
+                        {canManageMembers && (
+                          <td>
+                            <input
+                              type="checkbox"
+                              checked={selectedRows.has(member.principalId)}
+                              onChange={() => toggleSelectRow(member.principalId)}
+                              aria-label={`Select ${member.principalId}`}
+                            />
+                          </td>
+                        )}
                         <td>
                           <div className="enterprise-user-cell">
                             <div className="enterprise-avatar"><FiUsers /></div>

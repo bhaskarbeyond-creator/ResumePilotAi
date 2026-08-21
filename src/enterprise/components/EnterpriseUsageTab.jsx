@@ -27,10 +27,12 @@ function QuotaBar({ label, used, limit, hint }) {
   const percent = Number(limit) > 0 ? Math.min(100, Math.round((Number(used) / Number(limit)) * 100)) : 0;
   const tone = percent >= 90 ? 'danger' : percent >= 75 ? 'warning' : 'success';
   return (
-    <div className="enterprise-usage-card">
-      <div className="enterprise-usage-header">
-        <div className="enterprise-usage-title"><FiZap /> <strong>{label}</strong></div>
-        <span><strong>{percent}%</strong></span>
+    <div className="enterprise-card" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div className="enterprise-usage-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+        <div className="enterprise-usage-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--enterprise-ink)' }}>
+          <FiZap style={{ color: 'var(--enterprise-primary-active)' }} /> <strong>{label}</strong>
+        </div>
+        <span style={{ fontSize: '1.25rem', fontWeight: 'bold', color: tone === 'danger' ? 'var(--enterprise-danger)' : tone === 'warning' ? 'var(--enterprise-warning)' : 'var(--enterprise-success)' }}>{percent}%</span>
       </div>
       <div
         role="progressbar"
@@ -38,11 +40,11 @@ function QuotaBar({ label, used, limit, hint }) {
         aria-valuenow={percent}
         aria-valuemin={0}
         aria-valuemax={100}
-        style={{ height: '8px', borderRadius: '4px', background: 'rgba(148,163,184,0.25)', overflow: 'hidden', margin: '0.5rem 0' }}
+        style={{ height: '10px', borderRadius: '5px', background: 'var(--enterprise-surface-hover)', overflow: 'hidden', margin: '12px 0' }}
       >
-        <div style={{ height: '100%', width: `${percent}%`, background: tone === 'danger' ? '#ef4444' : tone === 'warning' ? '#f59e0b' : '#10b981' }} />
+        <div style={{ height: '100%', width: `${percent}%`, background: tone === 'danger' ? 'var(--enterprise-danger)' : tone === 'warning' ? 'var(--enterprise-warning)' : 'var(--enterprise-success)', transition: 'width 0.5s ease-out' }} />
       </div>
-      <small className="text-muted">{hint}</small>
+      <small className="text-muted" style={{ marginTop: 'auto' }}>{hint}</small>
     </div>
   );
 }
@@ -99,34 +101,34 @@ export default function EnterpriseUsageTab() {
         </div>
 
         <DataState loading={loading} error={error} onRetry={() => { refreshMetrics(); refreshUsage(); }}>
-          <div className="enterprise-usage-bars-grid">
-            <div className="enterprise-usage-card">
-              <div className="enterprise-usage-header">
-                <div className="enterprise-usage-title"><FiZap /> <strong>AI Requests</strong></div>
-                <span><strong>{formatNumber(windowRequests)}</strong></span>
+          <div className="enterprise-usage-bars-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+            <div className="enterprise-card" style={{ display: 'flex', flexDirection: 'column' }}>
+              <div className="enterprise-usage-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <div className="enterprise-usage-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><FiZap className="text-primary" /> <strong>AI Requests</strong></div>
+                <span style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>{formatNumber(windowRequests)}</span>
               </div>
-              <small className="text-muted">Recorded in the durable tenant usage ledger ({formatNumber(todayRequests)} today)</small>
+              <small className="text-muted" style={{ marginTop: 'auto' }}>Recorded in the durable tenant usage ledger ({formatNumber(todayRequests)} today)</small>
             </div>
-            <div className="enterprise-usage-card">
-              <div className="enterprise-usage-header">
-                <div className="enterprise-usage-title"><FiHash /> <strong>Token Accounting</strong></div>
-                <span><strong>{formatNumber(usageData?.inputTokens)} in / {formatNumber(usageData?.outputTokens)} out</strong></span>
+            <div className="enterprise-card" style={{ display: 'flex', flexDirection: 'column' }}>
+              <div className="enterprise-usage-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <div className="enterprise-usage-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><FiHash className="text-primary" /> <strong>Tokens</strong></div>
+                <span style={{ fontSize: '1rem', fontWeight: 'bold' }}>{formatNumber(usageData?.inputTokens)} / {formatNumber(usageData?.outputTokens)}</span>
               </div>
-              <small className="text-muted">Estimated cost {formatCost(usageData?.estimatedCostMicros)}</small>
+              <small className="text-muted" style={{ marginTop: 'auto' }}>Estimated cost {formatCost(usageData?.estimatedCostMicros)}</small>
             </div>
-            <div className="enterprise-usage-card">
-              <div className="enterprise-usage-header">
-                <div className="enterprise-usage-title"><FiActivity /> <strong>p50 / p95 / p99 Latency</strong></div>
-                <span><strong>{formatDuration(m.p50)} / {formatDuration(m.p95)} / {formatDuration(m.p99)}</strong></span>
+            <div className="enterprise-card" style={{ display: 'flex', flexDirection: 'column' }}>
+              <div className="enterprise-usage-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <div className="enterprise-usage-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><FiActivity className="text-primary" /> <strong>Latency</strong></div>
+                <span style={{ fontSize: '1rem', fontWeight: 'bold' }}>{formatDuration(m.p95)} (p95)</span>
               </div>
-              <small className="text-muted">Enterprise request latency percentiles</small>
+              <small className="text-muted" style={{ marginTop: 'auto' }}>p50: {formatDuration(m.p50)} / p99: {formatDuration(m.p99)}</small>
             </div>
-            <div className="enterprise-usage-card">
-              <div className="enterprise-usage-header">
-                <div className="enterprise-usage-title"><FiAlertTriangle /> <strong>Observed Errors</strong></div>
-                <span><strong>{formatNumber((errors.serverErrors || 0) + (errors.clientErrors || 0))}</strong></span>
+            <div className="enterprise-card" style={{ display: 'flex', flexDirection: 'column' }}>
+              <div className="enterprise-usage-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <div className="enterprise-usage-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><FiAlertTriangle className="text-danger" /> <strong>Errors</strong></div>
+                <span style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>{formatNumber((errors.serverErrors || 0) + (errors.clientErrors || 0))}</span>
               </div>
-              <small className="text-muted">{errors.serverErrors || 0} server · {errors.clientErrors || 0} client</small>
+              <small className="text-muted" style={{ marginTop: 'auto' }}>{errors.serverErrors || 0} server · {errors.clientErrors || 0} client</small>
             </div>
           </div>
         </DataState>
@@ -145,7 +147,7 @@ export default function EnterpriseUsageTab() {
         </div>
         <DataState loading={configState.loading} error={configState.error} onRetry={refreshConfig}>
           {quotaPolicy ? (
-            <div className="enterprise-usage-bars-grid">
+            <div className="enterprise-usage-bars-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
               <QuotaBar
                 label="Daily AI allowance"
                 used={todayRequests}
@@ -158,12 +160,17 @@ export default function EnterpriseUsageTab() {
                 limit={Number(dailyLimit) * daysWindow}
                 hint={`${formatNumber(windowRequests)} requests over ${daysWindow} days vs a ${formatNumber(Number(dailyLimit) * daysWindow)} request allowance`}
               />
-              <div className="enterprise-usage-card">
-                <div className="enterprise-usage-header">
-                  <div className="enterprise-usage-title"><FiZap /> <strong>Rate limit</strong></div>
-                  <span><strong>{formatNumber(quotaPolicy.aiRequestsPerMinute)}/min</strong></span>
+              <div className="enterprise-card" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                <div className="enterprise-usage-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <div className="enterprise-usage-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--enterprise-ink)' }}>
+                    <FiZap style={{ color: 'var(--enterprise-primary-active)' }} /> <strong>Rate limit</strong>
+                  </div>
+                  <span style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>{formatNumber(quotaPolicy.aiRequestsPerMinute)}/min</span>
                 </div>
-                <small className="text-muted">Per principal, enforced through durable atomic counters before any provider call.</small>
+                <div style={{ padding: '8px 0', borderBottom: '1px solid var(--enterprise-border)', marginBottom: '8px' }}>
+                  <span className="enterprise-pill enterprise-pill-success">Active</span>
+                </div>
+                <small className="text-muted" style={{ marginTop: 'auto' }}>Per principal, enforced through durable atomic counters before any provider call.</small>
               </div>
             </div>
           ) : (
@@ -217,46 +224,46 @@ export default function EnterpriseUsageTab() {
         </DataState>
       </div>
 
-      <div className="enterprise-usage-bars-grid" style={{ marginTop: '1.5rem' }}>
+      <div className="enterprise-usage-bars-grid" style={{ marginTop: '1.5rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
         <div className="enterprise-card">
-          <h3 className="enterprise-card-title"><FiCpu aria-hidden="true" /> By Workspace</h3>
+          <h3 className="enterprise-card-title" style={{ marginBottom: '12px' }}><FiCpu aria-hidden="true" /> By Workspace</h3>
           {workspaceRows.length === 0 ? (
             <p className="enterprise-empty">No workspace usage recorded yet.</p>
           ) : workspaceRows.map(([workspaceId, value]) => (
-            <div key={workspaceId} className="enterprise-usage-header" style={{ padding: '0.35rem 0' }}>
+            <div key={workspaceId} className="enterprise-usage-header" style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--enterprise-surface-hover)' }}>
               <span className="text-muted" title={workspaceId}>{`ws ${String(workspaceId).slice(0, 8)}…`}</span>
-              <span><strong>{formatNumber(value.requests)}</strong> req · {formatNumber(value.inputTokens)} in</span>
+              <span style={{ fontSize: '0.875rem' }}><strong>{formatNumber(value.requests)}</strong> req · {formatNumber(value.inputTokens)} in</span>
             </div>
           ))}
         </div>
         <div className="enterprise-card">
-          <h3 className="enterprise-card-title"><FiUser aria-hidden="true" /> By User</h3>
+          <h3 className="enterprise-card-title" style={{ marginBottom: '12px' }}><FiUser aria-hidden="true" /> By User</h3>
           {userRows.length === 0 ? (
             <p className="enterprise-empty">No per-user usage recorded yet.</p>
           ) : userRows.map(([principalId, value]) => (
-            <div key={principalId} className="enterprise-usage-header" style={{ padding: '0.35rem 0' }}>
+            <div key={principalId} className="enterprise-usage-header" style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--enterprise-surface-hover)' }}>
               <span className="text-muted" title={principalId}>{String(principalId).slice(0, 14)}…</span>
-              <span><strong>{formatNumber(value.requests)}</strong> req · {formatNumber(value.inputTokens + value.outputTokens)} tokens</span>
+              <span style={{ fontSize: '0.875rem' }}><strong>{formatNumber(value.requests)}</strong> req · {formatNumber(value.inputTokens + value.outputTokens)} tok</span>
             </div>
           ))}
         </div>
         <div className="enterprise-card">
-          <h3 className="enterprise-card-title">By Provider</h3>
+          <h3 className="enterprise-card-title" style={{ marginBottom: '12px' }}>By Provider</h3>
           {providerRows.length === 0 ? (
             <p className="enterprise-empty">No provider usage recorded yet.</p>
           ) : providerRows.map(([provider, count]) => (
-            <div key={provider} className="enterprise-usage-header" style={{ padding: '0.35rem 0' }}>
+            <div key={provider} className="enterprise-usage-header" style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--enterprise-surface-hover)' }}>
               <span>{provider}</span>
               <span><strong>{formatNumber(count)}</strong> req</span>
             </div>
           ))}
         </div>
         <div className="enterprise-card">
-          <h3 className="enterprise-card-title">By Model</h3>
+          <h3 className="enterprise-card-title" style={{ marginBottom: '12px' }}>By Model</h3>
           {modelRows.length === 0 ? (
             <p className="enterprise-empty">No model usage recorded yet.</p>
           ) : modelRows.map(([model, count]) => (
-            <div key={model} className="enterprise-usage-header" style={{ padding: '0.35rem 0' }}>
+            <div key={model} className="enterprise-usage-header" style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--enterprise-surface-hover)' }}>
               <span>{model}</span>
               <span><strong>{formatNumber(count)}</strong> req</span>
             </div>

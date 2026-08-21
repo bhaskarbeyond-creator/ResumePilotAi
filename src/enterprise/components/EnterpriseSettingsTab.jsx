@@ -252,15 +252,15 @@ export default function EnterpriseSettingsTab({ tenant }) {
           </form>
         </div>
 
-        <div className="enterprise-card" style={{ marginTop: '1.5rem' }}>
+        <div className="enterprise-card" style={{ marginTop: '24px' }}>
           <h3 className="enterprise-card-title"><FiDownload aria-hidden="true" /> Data Export</h3>
           <p className="enterprise-card-subtitle">
             Download a checksum-verified snapshot of this organization&apos;s enterprise data (tenant registry, configuration, memberships, workspaces, teams, resources, audit events, and usage ledger).
           </p>
-          <div className="enterprise-danger-row">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', padding: '16px', background: 'var(--enterprise-surface)', border: '1px solid var(--enterprise-border)', borderRadius: 'var(--enterprise-radius-md)', flexWrap: 'wrap', gap: '16px' }}>
             <div>
-              <strong>Organization data snapshot</strong>
-              <p>The export is integrity-verified before download and recorded as a HIGH severity audit event.</p>
+              <strong style={{ color: 'var(--enterprise-ink)' }}>Organization data snapshot</strong>
+              <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--enterprise-text)', marginTop: '4px' }}>The export is integrity-verified before download and recorded as a HIGH severity audit event.</p>
             </div>
             <button
               type="button"
@@ -268,27 +268,29 @@ export default function EnterpriseSettingsTab({ tenant }) {
               onClick={handleExport}
               disabled={exporting}
             >
-              {exporting ? 'Exporting…' : 'Export Snapshot'}
+              <FiDownload aria-hidden="true" /> {exporting ? 'Exporting…' : 'Export Snapshot'}
             </button>
           </div>
         </div>
 
-        <div className="enterprise-card enterprise-card-danger" style={{ marginTop: '1.5rem' }}>
-          <h3 className="enterprise-card-title text-danger">Tenant Lifecycle & Danger Zone</h3>
-          <p className="enterprise-card-subtitle">
+        <div className="enterprise-card" style={{ marginTop: '24px', border: '1px solid var(--enterprise-danger)', background: 'rgba(239,68,68,0.05)' }}>
+          <h3 className="enterprise-card-title" style={{ color: 'var(--enterprise-danger)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <FiAlertTriangle aria-hidden="true" /> Tenant Lifecycle & Danger Zone
+          </h3>
+          <p className="enterprise-card-subtitle" style={{ color: 'var(--enterprise-danger)' }}>
             Suspending a tenant prevents all members and M2M service accounts from resolving context. Reactivation requires a platform administrator.
           </p>
-          <div className="enterprise-danger-row">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', padding: '16px', background: 'var(--enterprise-surface)', border: '1px solid var(--enterprise-danger)', borderRadius: 'var(--enterprise-radius-md)', flexWrap: 'wrap', gap: '16px' }}>
             <div>
-              <strong>Temporary Organization Suspension</strong>
-              <p>Freeze all member access and active jobs while preserving data integrity.</p>
+              <strong style={{ color: 'var(--enterprise-ink)' }}>Temporary Organization Suspension</strong>
+              <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--enterprise-text)', marginTop: '4px' }}>Freeze all member access and active jobs while preserving data integrity.</p>
             </div>
             <button
               type="button"
               className="enterprise-button enterprise-button-danger"
               onClick={handleSuspend}
             >
-              <FiAlertTriangle aria-hidden="true" /> Suspend Organization
+              Suspend Organization
             </button>
           </div>
         </div>

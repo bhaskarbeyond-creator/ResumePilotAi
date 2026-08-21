@@ -250,18 +250,22 @@ export default function EnterpriseSecurityTab() {
       )}
 
       {generatedKey && (
-        <div className="enterprise-card" role="alert">
+        <div className="enterprise-card" role="alert" style={{ border: '2px solid var(--enterprise-primary-active)', background: 'var(--enterprise-primary-soft)' }}>
           <h3 className="enterprise-card-title">API Key Generated — Save It Now</h3>
-          <p className="enterprise-card-subtitle">The plaintext secret is shown exactly once and is never stored. Copy it before closing.</p>
-          <div className="enterprise-inline-actions" style={{ flexWrap: 'wrap' }}>
-            <code className="enterprise-json-preview" style={{ display: 'inline-block', padding: '0.5rem 0.75rem', wordBreak: 'break-all' }}>{generatedKey.plaintext}</code>
-            <button type="button" className="enterprise-button enterprise-button-secondary" onClick={handleCopy}>
-              <FiCopy aria-hidden="true" /> {copied ? 'Copied' : 'Copy Secret'}
-            </button>
-            <button type="button" className="enterprise-button enterprise-button-secondary" onClick={() => setGeneratedKey(null)}>
-              <FiX aria-hidden="true" /> Dismiss
+          <p className="enterprise-card-subtitle" style={{ color: 'var(--enterprise-ink)' }}>
+            The plaintext secret for <strong>{generatedKey.name}</strong> is shown exactly once and is never stored. Copy it before closing this panel.
+          </p>
+          <div style={{ display: 'flex', alignItems: 'center', background: 'var(--enterprise-surface)', border: '1px solid var(--enterprise-border)', borderRadius: 'var(--enterprise-radius-md)', padding: '16px', marginTop: '16px', marginBottom: '20px' }}>
+            <code style={{ flex: 1, fontSize: '1.1rem', color: 'var(--enterprise-ink)', fontFamily: 'monospace', wordBreak: 'break-all', userSelect: 'all' }}>
+              {generatedKey.plaintext}
+            </code>
+            <button type="button" className={`enterprise-button ${copied ? 'enterprise-button-success' : 'enterprise-button-primary'}`} onClick={handleCopy} style={{ marginLeft: '16px', whiteSpace: 'nowrap' }} title="Copy API key to clipboard">
+              {copied ? <FiCheck aria-hidden="true" /> : <FiCopy aria-hidden="true" />} {copied ? 'Copied to Clipboard' : 'Copy Secret'}
             </button>
           </div>
+          <button type="button" className="enterprise-button enterprise-button-secondary" onClick={() => setGeneratedKey(null)}>
+            <FiX aria-hidden="true" /> I have saved the key securely
+          </button>
         </div>
       )}
 
@@ -398,9 +402,13 @@ export default function EnterpriseSecurityTab() {
                         <td><small>{account.workspaceId ? String(account.workspaceId).slice(0, 8) : '—'}</small></td>
                         <td>{Array.isArray(account.scopes) ? account.scopes.map(s => <span key={s} className="enterprise-pill enterprise-pill-secondary">{s}</span>) : <small>—</small>}</td>
                         <td>
-                          <small className="text-muted" title={account.apiKeyId || ''}>
-                            {account.apiKeyPrefix ? `${account.apiKeyPrefix}…` : '—'}
-                          </small>
+                          <code 
+                            className="text-muted" 
+                            title={account.apiKeyId ? `Key ID: ${account.apiKeyId}` : 'No Key ID'}
+                            style={{ background: 'var(--enterprise-surface-hover)', padding: '4px 8px', borderRadius: '4px', cursor: 'help', display: 'inline-block', border: '1px solid var(--enterprise-border)' }}
+                          >
+                            {account.apiKeyPrefix ? `${account.apiKeyPrefix}••••••••••••••••` : '—'}
+                          </code>
                           <br />
                           {expired ? (
                             <span className="enterprise-pill enterprise-pill-danger">expired</span>

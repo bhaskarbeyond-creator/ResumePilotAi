@@ -119,7 +119,7 @@ export default function EnterprisePlatformTab() {
           </div>
         </div>
 
-        <div className="enterprise-metrics-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
+        <div className="enterprise-metrics-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '16px', margin: '24px 0' }}>
           <div className="enterprise-card enterprise-metric-box">
             <div className="enterprise-metric-header"><span>Total Tenants</span><FiServer className="enterprise-metric-icon" aria-hidden="true" /></div>
             <div className="enterprise-metric-value">{loading ? '…' : (tenantsState.data?.tenants?.length ?? 0)}</div>
@@ -142,8 +142,8 @@ export default function EnterprisePlatformTab() {
           </div>
         </div>
 
-        <div className="enterprise-filter-bar">
-          <div className="enterprise-search-wrapper">
+        <div className="enterprise-filter-bar" style={{ marginBottom: '16px' }}>
+          <div className="enterprise-search-wrapper" style={{ flex: 1 }}>
             <FiSearch className="enterprise-search-icon" aria-hidden="true" />
             <input
               type="text"
@@ -201,7 +201,7 @@ export default function EnterprisePlatformTab() {
                               disabled={busyTenant === `${tenant.id}:SUSPENDED`}
                               onClick={() => handleLifecycle(tenant, 'SUSPENDED')}
                             >
-                              {busyTenant === `${tenant.id}:SUSPENDED` ? 'Suspending…' : 'Suspend'}
+                              <FiShieldOff aria-hidden="true" /> {busyTenant === `${tenant.id}:SUSPENDED` ? 'Suspending…' : 'Suspend'}
                             </button>
                           ) : tenant.lifecycleState === 'SUSPENDED' ? (
                             <button

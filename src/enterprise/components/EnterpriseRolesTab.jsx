@@ -279,16 +279,16 @@ export default function EnterpriseRolesTab() {
         </div>
 
         <DataState loading={loading} error={error} onRetry={refreshRoles}>
-          <div className="enterprise-roles-summary-grid">
+          <div className="enterprise-roles-summary-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px', marginBottom: '24px' }}>
             {roleEntries.map(role => (
-              <div key={role.id} className={`enterprise-role-card ${role.custom ? 'enterprise-role-card-custom' : ''}`}>
-                <div className="enterprise-role-header">
+              <div key={role.id} className={`enterprise-role-card enterprise-card ${role.custom ? 'enterprise-role-card-custom' : ''}`} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                <div className="enterprise-role-header" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
                   <span className={`enterprise-pill ${role.custom ? 'enterprise-pill-template' : 'enterprise-pill-secondary'}`}>
                     {(role.custom ? role.label : roleLabel(role.id)).toUpperCase()}
                   </span>
-                  <strong>{role.id}</strong>
+                  <strong style={{ fontSize: '1.05rem', color: 'var(--enterprise-ink)' }}>{role.id}</strong>
                   {canManageRoles && role.custom && (
-                    <span className="enterprise-inline-actions" style={{ gap: '0.25rem', marginLeft: 'auto' }}>
+                    <span className="enterprise-inline-actions" style={{ gap: '4px', marginLeft: 'auto' }}>
                       <button
                         type="button"
                         className="enterprise-button-icon"
@@ -308,8 +308,10 @@ export default function EnterpriseRolesTab() {
                     </span>
                   )}
                 </div>
-                <p>{role.custom ? `Tenant-defined bundle: ${role.permissions.map(p => capabilityLabel(p)).slice(0, 3).join(', ')}${role.permissions.length > 3 ? ` +${role.permissions.length - 3} more` : ''}` : roleSummary(role.id)}</p>
-                <small className="text-muted"><FiUsers aria-hidden="true" /> {memberCountByRole[role.id] || 0} assigned member{(memberCountByRole[role.id] || 0) === 1 ? '' : 's'}</small>
+                <p style={{ color: 'var(--enterprise-text)', fontSize: '0.9375rem', lineHeight: 1.5, marginBottom: '16px', flex: 1 }}>{role.custom ? `Tenant-defined bundle: ${role.permissions.map(p => capabilityLabel(p)).slice(0, 3).join(', ')}${role.permissions.length > 3 ? ` +${role.permissions.length - 3} more` : ''}` : roleSummary(role.id)}</p>
+                <div style={{ borderTop: '1px solid var(--enterprise-border)', paddingTop: '12px', marginTop: 'auto' }}>
+                  <small className="text-muted" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8125rem' }}><FiUsers aria-hidden="true" /> {memberCountByRole[role.id] || 0} assigned member{(memberCountByRole[role.id] || 0) === 1 ? '' : 's'}</small>
+                </div>
               </div>
             ))}
           </div>
