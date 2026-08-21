@@ -13,6 +13,8 @@
 | G7 | DLQ retry / announcement delete / operator assign / maintenance enable had no confirm | Destructive UX incomplete | `window.confirm` on those mutations |
 | G8 | ADMIN saw enabled DLQ replay buttons that always 403 | Dead control | Buttons disabled + “Super Admin only” |
 | G9 | Operator / maintenance / decommission audit severity was MEDIUM | Generic POST rule | `deriveSeverity` HIGH; `deriveAction` for operators |
+| G10 | `PATCH /api/admin/users/:uid` could demote SUPER_ADMIN | Users API allowed ADMIN/USER without protecting existing SUPER_ADMIN claims | Fail closed with `SUPER_ADMIN_PROTECTED` |
+| G11 | Platform mutations did not retry after reauth | `platformFetch` ignored `RECENT_AUTH_REQUIRED` | Wired to `fetchAdminWithReauth` + refreshed Bearer token |
 
 ## Still not implemented (by design)
 

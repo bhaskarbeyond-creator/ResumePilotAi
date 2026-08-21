@@ -4221,6 +4221,7 @@ app.patch('/api/admin/users/:uid', async (req, res) => {
         if (req.body.role !== undefined) {
             if (!allowed('users.roles.manage')) return res.status(403).json({ success: false, error: 'Insufficient permission.' });
             if (!['ADMIN', 'USER'].includes(req.body.role)) return res.status(400).json({ success: false, error: 'Invalid role.' });
+            if (currentRole === 'SUPER_ADMIN') return res.status(403).json({ success: false, code: 'SUPER_ADMIN_PROTECTED', error: 'SUPER_ADMIN claims cannot be changed from this API.' });
             if (uid === req.user.uid && req.body.role !== 'ADMIN') return res.status(400).json({ success: false, error: 'Self-demotion is prohibited.' });
             await admin.auth().setCustomUserClaims(uid, { ...(target.customClaims || {}), role: req.body.role });
             await admin.auth().revokeRefreshTokens(uid);

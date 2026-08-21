@@ -8,6 +8,8 @@ export default function PlatformSecurity() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selected, setSelected] = useState(null);
+  const [query, setQuery] = useState('');
+  const [severity, setSeverity] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -25,6 +27,12 @@ export default function PlatformSecurity() {
   useEffect(() => { load(); }, [load]);
 
   const highCount = events.filter(event => ['HIGH', 'CRITICAL'].includes(String(event.severity || '').toUpperCase())).length;
+  const visible = events.filter(event => {
+    const hay = `${event.action || ''} ${event.actorEmail || ''} ${event.actorUid || ''} ${event.tenantId || ''}`.toLowerCase();
+    if (query && !hay.includes(query.trim().toLowerCase())) return false;
+    if (severity && String(event.severity || '').toUpperCase() !== severity) return false;
+    return true;
+  });
 
   return (
     <div className="space-y-6">
@@ -57,6 +65,16 @@ export default function PlatformSecurity() {
         </Link>
       </div>
 
+      <div className="flex flex-wrap gap-2">
+        <input className="flex-1 min-w-[200px] rounded-xl border border-slate-200 px-3 py-2 text-xs" placeholder="Filter inspected events by action, actor, or tenant…" value={query} onChange={e => setQuery(e.target.value)} />
+        <select className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold" value={severity} onChange={e => setSeverity(e.target.value)}>
+          <option value="">All severities</option>
+          <option value="HIGH">High / Critical</option>
+          <option value="MEDIUM">Medium</option>
+          <option value="INFO">Info</option>
+        </select>
+      </div>
+
       {error && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-800 flex items-center justify-between" role="alert">
           <span className="flex items-center gap-2"><FiAlertTriangle /> {error}</span>
@@ -67,8 +85,8 @@ export default function PlatformSecurity() {
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
         {loading ? (
           <div className="p-12 text-center text-sm text-slate-500">Loading security events…</div>
-        ) : events.length === 0 ? (
-          <div className="p-12 text-center text-sm text-slate-500">No security audit records were returned.</div>
+        ) : visible.length === 0 ? (
+          <div className="p-12 text-center text-sm text-slate-500">No security audit records match this inspected sample.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
@@ -82,7 +100,7 @@ export default function PlatformSecurity() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {events.map(event => (
+                {visible.map(event => (
                   <tr key={event.id} className="hover:bg-slate-50 cursor-pointer" onClick={() => setSelected(event)}>
                     <td className="py-3 px-4 font-mono text-[11px] text-slate-500 whitespace-nowrap">{event.createdAt ? new Date(event.createdAt).toLocaleString() : '—'}</td>
                     <td className="py-3 px-4 font-mono font-bold text-slate-800">{event.action}</td>

@@ -1,4 +1,5 @@
 import fire from '../conf/fire';
+import { fetchAdminWithReauth } from './adminReauth';
 
 async function authHeaders(extra = {}) {
   const user = fire.auth().currentUser;
@@ -10,12 +11,11 @@ async function authHeaders(extra = {}) {
 export async function platformFetch(path, options = {}) {
   const headers = await authHeaders(options.headers || {});
   if (options.body && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
-  const response = await fetch(path, { ...options, headers });
-  const data = await response.json().catch(() => ({}));
+  const { response, data } = await fetchAdminWithReauth(path, { ...options, headers });
   if (!response.ok) {
     const error = new Error(data.error?.message || data.message || `HTTP ${response.status}`);
     error.status = response.status;
-    error.code = data.error?.code;
+    error.code = data.error?.code || data.code;
     error.body = data;
     throw error;
   }

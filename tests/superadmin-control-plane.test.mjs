@@ -60,4 +60,11 @@ test('platform operations and security modules wire to existing data planes', as
   assert.match(api, /\/api\/platform\/command-center/);
   assert.match(api, /\/api\/platform\/attention/);
   assert.match(api, /\/api\/platform\/operators/);
+  assert.match(ops, /Save changes/);
+});
+
+test('users PATCH cannot change SUPER_ADMIN claims', async () => {
+  const source = await fs.readFile('backend/index.js', 'utf8');
+  assert.match(source, /SUPER_ADMIN_PROTECTED/);
+  assert.match(source, /SUPER_ADMIN claims cannot be changed from this API/);
 });

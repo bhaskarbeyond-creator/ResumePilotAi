@@ -205,7 +205,7 @@ See `docs/SUPER_ADMIN_SWOT.md`.
 | No P0 | PASS (known P0 URL bug fixed) |
 | No P1 | **NO** — unverified E2E/production remain P1 process gaps |
 
-### Evidence-based score: **8.2 / 10**
+### Evidence-based score: **8.4 / 10**
 
 **NO-GO for declaring 10/10 live production certification.**
 

@@ -29,6 +29,7 @@ export default function PlatformOperations() {
   const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState({ title: '', message: '', severity: 'INFO' });
   const [confirmAction, setConfirmAction] = useState(null);
+  const [editing, setEditing] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -136,6 +137,22 @@ export default function PlatformOperations() {
     });
   };
 
+  const saveEdit = async (event) => {
+    event.preventDefault();
+    if (!isSuperAdmin || !editing) return;
+    setSaving(true);
+    try {
+      await updateAnnouncement(editing.id, { title: editing.title, message: editing.message, severity: editing.severity });
+      setEditing(null);
+      setNotice('Announcement updated.');
+      load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const enc = encryption?.encryption || {};
   const metrics = observability?.metrics || {};
 
@@ -198,6 +215,23 @@ export default function PlatformOperations() {
         </section>
       </div>
 
+      {editing && (
+        <form onSubmit={saveEdit} className="bg-white border border-indigo-200 rounded-2xl p-4 grid gap-2 sm:grid-cols-2 text-xs">
+          <h2 className="sm:col-span-2 font-bold text-slate-900">Edit announcement</h2>
+          <input required className="rounded-xl border border-slate-200 px-3 py-2" value={editing.title} onChange={e => setEditing(current => ({ ...current, title: e.target.value }))} />
+          <select className="rounded-xl border border-slate-200 px-3 py-2" value={editing.severity} onChange={e => setEditing(current => ({ ...current, severity: e.target.value }))}>
+            <option value="INFO">Info</option>
+            <option value="MEDIUM">Medium</option>
+            <option value="HIGH">High</option>
+          </select>
+          <textarea required className="sm:col-span-2 rounded-xl border border-slate-200 px-3 py-2" rows={2} value={editing.message} onChange={e => setEditing(current => ({ ...current, message: e.target.value }))} />
+          <div className="sm:col-span-2 flex justify-end gap-2">
+            <button type="button" onClick={() => setEditing(null)} className="px-3 py-2 rounded-xl border border-slate-200 font-bold">Cancel</button>
+            <button type="submit" disabled={saving} className="px-3 py-2 rounded-xl bg-indigo-600 text-white font-bold">Save changes</button>
+          </div>
+        </form>
+      )}
+
       <section className="bg-white rounded-2xl border border-slate-200 p-4">
         <h2 className="font-bold text-slate-900">Platform announcements</h2>
         <p className="text-xs text-slate-500 mt-1">Operator-visible notices stored in `platform_announcements`. Super Admin publish/disable only.</p>
@@ -222,6 +256,7 @@ export default function PlatformOperations() {
               </div>
               {isSuperAdmin && (
                 <div className="flex gap-2">
+                  <button type="button" onClick={() => setEditing(item)} className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white font-bold">Edit</button>
                   <button type="button" onClick={() => toggleAnnouncement(item)} className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white font-bold">{item.enabled ? 'Disable' : 'Enable'}</button>
                   <button type="button" onClick={() => confirmDeleteAnnouncement(item)} className="px-2.5 py-1 rounded-lg border border-red-200 bg-white text-red-700 font-bold">Delete</button>
                 </div>

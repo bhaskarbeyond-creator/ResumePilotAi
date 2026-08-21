@@ -81,6 +81,8 @@ const Dashboard = () => {
               <Link to="/adm/queues" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700"><FiActivity className="text-emerald-600" /> Queue Monitor</Link>
               <Link to="/adm/tenants" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700"><FaServer className="text-violet-600" /> Tenants</Link>
               <Link to="/adm/security" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700"><FiLock className="text-rose-600" /> Security</Link>
+              <Link to="/adm/attention" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700">Attention</Link>
+              <Link to="/adm/operations" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700">Operations</Link>
             </div>
           </div>
 
