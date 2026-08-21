@@ -224,10 +224,18 @@ test('platform administration tab is server-gated and exposes the tenant registr
 
 test('overview exposes team and quota intelligence derived from live endpoints', async () => {
   const view = await fs.readFile('src/enterprise/components/EnterpriseOverviewTab.jsx', 'utf8');
-  assert.match(view, /usage\/ai\?days=1/);
+  // The overview consumes the 30-day durable ledger so the trend sparkline and
+  // today's quota consumption come from the same real dataset.
+  assert.match(view, /usage\/ai\?days=30/);
+  assert.match(view, /TrendSparkline/);
+  assert.match(view, /usage\.byDay/);
   assert.match(view, /quotaRatio/);
   assert.match(view, /AI quota is nearing its limit/);
   assert.match(view, /pendingInvitations/);
+  // Recommendations deep-link into pre-filtered module state.
+  assert.match(view, /params: \{ status: 'SUSPENDED' \}/);
+  assert.match(view, /params: \{ status: 'INVITED' \}/);
+  assert.match(view, /params: \{ focus: 'jobs' \}/);
 });
 
 test('support view exposes server-enforced scope governance and grant lifecycle visibility', async () => {

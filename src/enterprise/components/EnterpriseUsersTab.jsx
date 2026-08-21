@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   FiUsers, FiUserPlus, FiSearch, FiShield, FiCheck, FiX, FiTrash2, FiEye, FiDownload,
   FiMail, FiRefreshCw, FiActivity, FiShieldOff
@@ -14,17 +14,21 @@ function csvEscape(value) {
   return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
-export default function EnterpriseUsersTab({ currentPrincipalId, onInspectActivity = null }) {
+export default function EnterpriseUsersTab({ currentPrincipalId, onInspectActivity = null, initialParams = null }) {
   const { request, hasPermission } = useTenantApi();
   const { workspaces } = useEnterpriseTenant();
   const [membersState, refreshMembers] = useAsyncResource(() => request('/api/enterprise/memberships'), [request]);
   const [rolesState] = useAsyncResource(() => request('/api/enterprise/roles-matrix'), [request]);
   const { loading, error, data } = membersState;
+  // Deep-linkable module state: ?status=INVITED pre-applies the status filter
+  // and ?invite=1 opens the invite dialog (used by Overview recommendations
+  // and the command palette; refresh-safe).
+  const urlStatus = String(initialParams?.get?.('status') || '').toUpperCase();
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState(STATUS_FILTERS.includes(urlStatus) ? urlStatus : 'ALL');
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [detailMember, setDetailMember] = useState(null);
-  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(initialParams?.get?.('invite') === '1');
   const [inviteMode, setInviteMode] = useState('INVITE');
   const [invitePrincipalId, setInvitePrincipalId] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
@@ -37,6 +41,23 @@ export default function EnterpriseUsersTab({ currentPrincipalId, onInspectActivi
   const [selectedRows, setSelectedRows] = useState(new Set());
 
   const members = useMemo(() => (Array.isArray(data?.memberships) ? data.memberships : []), [data]);
+
+  // Keep URL-driven state applied when navigating here from another module
+  // while already mounted (Overview recommendation → filtered member list).
+  useEffect(() => {
+    const nextStatus = String(initialParams?.get?.('status') || '').toUpperCase();
+    if (STATUS_FILTERS.includes(nextStatus)) setStatusFilter(nextStatus);
+    if (initialParams?.get?.('invite') === '1') setShowInviteModal(true);
+  }, [initialParams]);
+
+  const statusCounts = useMemo(() => {
+    const counts = { ALL: members.length, ACTIVE: 0, SUSPENDED: 0, INVITED: 0 };
+    for (const member of members) {
+      const status = String(member.status || '').toUpperCase();
+      if (counts[status] !== undefined) counts[status] += 1;
+    }
+    return counts;
+  }, [members]);
 
   // Live role catalogue: platform roles plus tenant-defined custom roles.
   const roleEntries = useMemo(() => {
@@ -333,6 +354,22 @@ export default function EnterpriseUsersTab({ currentPrincipalId, onInspectActivi
           </div>
         </div>
 
+        {/* Status summary chips double as one-click filters (deep-linkable). */}
+        <div className="enterprise-chip-row" role="group" aria-label="Filter members by status">
+          {STATUS_FILTERS.map(status => (
+            <button
+              key={status}
+              type="button"
+              className={`enterprise-chip ${statusFilter === status ? 'active' : ''}`}
+              aria-pressed={statusFilter === status}
+              onClick={() => setStatusFilter(status)}
+            >
+              {status === 'ALL' ? 'All members' : status.charAt(0) + status.slice(1).toLowerCase()}
+              <span className="enterprise-chip-count">{loading ? '…' : statusCounts[status] ?? 0}</span>
+            </button>
+          ))}
+        </div>
+
         <div className="enterprise-filter-bar">
           <div className="enterprise-search-wrapper">
             <FiSearch className="enterprise-search-icon" aria-hidden="true" />
@@ -440,7 +477,7 @@ export default function EnterpriseUsersTab({ currentPrincipalId, onInspectActivi
                         </td>
                         <td>
                           <select
-                            className="enterprise-select"
+                            className="enterprise-select enterprise-role-select"
                             value={(member.roles && member.roles[0]) || 'MEMBER'}
                             disabled={!canManageMembers || busyAction === `role:${member.principalId}` || (member.principalId === currentPrincipalId && (member.roles || []).includes('TENANT_OWNER'))}
                             onChange={(e) => handleRoleChange(member.principalId, e.target.value)}

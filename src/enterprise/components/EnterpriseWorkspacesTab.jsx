@@ -141,6 +141,7 @@ export default function EnterpriseWorkspacesTab({
   workspaces,
   activeWorkspace,
   onSelectWorkspace,
+  initialParams = null,
 }) {
   const { request, hasPermission } = useTenantApi();
   const { reload } = useEnterpriseTenant();
@@ -148,7 +149,9 @@ export default function EnterpriseWorkspacesTab({
   const canAdministerLifecycle = hasPermission('tenant.workspaces.manage');
   const canSeeMembers = hasPermission('workspace.members.manage') || hasPermission('tenant.members.read');
 
-  const [showModal, setShowModal] = useState(false);
+  // Deep link (?create=1): Overview quick actions and the command palette
+  // open the creation dialog directly.
+  const [showModal, setShowModal] = useState(initialParams?.get?.('create') === '1');
   const [workspaceName, setWorkspaceName] = useState('');
   const [renameTarget, setRenameTarget] = useState(null);
   const [renameValue, setRenameValue] = useState('');

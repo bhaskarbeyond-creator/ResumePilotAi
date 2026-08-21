@@ -17,6 +17,33 @@ function formatDuration(ms) {
   return `${Math.round(value)} ms`;
 }
 
+/**
+ * Inline SVG sparkline fed exclusively by the durable AI usage ledger
+ * (usage.byDay). Renders nothing when there is no real data.
+ */
+function TrendSparkline({ points = [], width = 560, height = 96 }) {
+  if (!Array.isArray(points) || points.length < 2) return null;
+  const max = Math.max(...points.map(point => point.requests), 1);
+  const stepX = width / (points.length - 1);
+  const coords = points.map((point, index) => [index * stepX, height - (point.requests / max) * (height - 8) - 2]);
+  const line = coords.map(([x, y], index) => `${index === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const area = `${line} L${width},${height} L0,${height} Z`;
+  const peak = points.reduce((best, point) => (point.requests > best.requests ? point : best), points[0]);
+  return (
+    <div className="enterprise-trend" role="img" aria-label={`AI requests per day for the last ${points.length} days; peak ${peak.requests} on ${peak.day}`}>
+      <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-hidden="true">
+        <path d={area} fill="var(--enterprise-primary-soft)" />
+        <path d={line} fill="none" stroke="var(--enterprise-primary)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+      </svg>
+      <div className="enterprise-trend-meta">
+        <span>{points[0]?.day}</span>
+        <span>Peak {peak.requests.toLocaleString()} req · {peak.day}</span>
+        <span>{points[points.length - 1]?.day}</span>
+      </div>
+    </div>
+  );
+}
+
 export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
   const { request, tenant, workspace, workspaceId, context } = useTenantApi();
 
@@ -29,7 +56,7 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
     [request],
   );
   const [usage] = useAsyncResource(
-    () => request('/api/enterprise/usage/ai?days=1'),
+    () => request('/api/enterprise/usage/ai?days=30'),
     [request],
   );
   const [config] = useAsyncResource(
@@ -71,7 +98,8 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
   const queueDlq = queueState?.deadLetterCount || 0;
 
   const dailyAiLimit = Number(config?.data?.configuration?.quotaPolicy?.aiRequestsPerDay || 0);
-  const todayAiRequests = Number(usage?.data?.usage?.requests || 0);
+  const usageByDay = useMemo(() => (Array.isArray(usage?.data?.usage?.byDay) ? usage.data.usage.byDay : []), [usage]);
+  const todayAiRequests = Number(usageByDay.length ? usageByDay[usageByDay.length - 1]?.requests || 0 : usage?.data?.usage?.requests || 0);
   const quotaRatio = dailyAiLimit > 0 ? todayAiRequests / dailyAiLimit : 0;
 
   // Actionable recommendations derived exclusively from real, already-loaded
@@ -82,10 +110,10 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
     const suspendedCount = membershipRows.filter(member => member.status === 'SUSPENDED').length;
     const pendingInvitations = membershipRows.filter(member => member.status === 'INVITED').length;
     if (queueDlq > 0) {
-      items.push({ id: 'dlq', tone: 'warning', label: `${queueDlq} dead-letter job${queueDlq === 1 ? '' : 's'} awaiting replay`, hint: 'Inspect and replay failed jobs from the Security & M2M console.', target: 'security' });
+      items.push({ id: 'dlq', tone: 'warning', label: `${queueDlq} dead-letter job${queueDlq === 1 ? '' : 's'} awaiting replay`, hint: 'Inspect and replay failed jobs from the Security & M2M console.', target: 'security', params: { focus: 'jobs' } });
     }
     if (!queue.loading && queueState && queueState.configured === false) {
-      items.push({ id: 'queue-config', tone: 'warning', label: 'Durable job queue is not configured', hint: 'Background jobs cannot be processed until the Firestore outbox is configured.', target: 'security' });
+      items.push({ id: 'queue-config', tone: 'warning', label: 'Durable job queue is not configured', hint: 'Background jobs cannot be processed until the Firestore outbox is configured.', target: 'security', params: { focus: 'jobs' } });
     }
     if (!dataPlane.loading && planeState && !planeOk) {
       items.push({ id: 'plane', tone: 'danger', label: 'Data plane is reporting unavailable', hint: 'Enterprise documents and audit writes will fail until Firestore connectivity is restored.', target: 'overview' });
@@ -99,13 +127,13 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
         : `AI quota is nearing its limit (${Math.round(quotaRatio * 100)}% of today's allowance used)`, hint: 'Raise the allowance or review the heaviest users in Usage & Quotas.', target: 'usage' });
     }
     if (suspendedCount > 0) {
-      items.push({ id: 'suspended', tone: 'warning', label: `${suspendedCount} suspended member${suspendedCount === 1 ? '' : 's'} affecting workspace access`, hint: 'Review whether these members should be reactivated or removed.', target: 'members' });
+      items.push({ id: 'suspended', tone: 'warning', label: `${suspendedCount} suspended member${suspendedCount === 1 ? '' : 's'} affecting workspace access`, hint: 'Review whether these members should be reactivated or removed.', target: 'members', params: { status: 'SUSPENDED' } });
     }
     if (pendingInvitations > 0) {
-      items.push({ id: 'invitations', tone: 'info', label: `${pendingInvitations} pending invitation${pendingInvitations === 1 ? '' : 's'} not yet accepted`, hint: 'Resend or cancel pending invitations from Users & IAM.', target: 'members' });
+      items.push({ id: 'invitations', tone: 'info', label: `${pendingInvitations} pending invitation${pendingInvitations === 1 ? '' : 's'} not yet accepted`, hint: 'Resend or cancel pending invitations from Users & IAM.', target: 'members', params: { status: 'INVITED' } });
     }
     if (!members.loading && membershipRows.length <= 1) {
-      items.push({ id: 'invite', tone: 'info', label: 'You are the only member of this organization', hint: 'Invite teammates from Users & IAM.', target: 'members' });
+      items.push({ id: 'invite', tone: 'info', label: 'You are the only member of this organization', hint: 'Invite teammates from Users & IAM.', target: 'members', params: { invite: '1' } });
     }
     if (!metrics.loading && errorTotal > 0) {
       items.push({ id: 'errors', tone: 'info', label: `${errorTotal} API error${errorTotal === 1 ? '' : 's'} observed in the current window`, hint: 'Check the audit trail for denied or failed operations.', target: 'audit' });
@@ -185,6 +213,19 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
             <FiZap className="enterprise-metric-icon" aria-hidden="true" />
           </div>
           <div className="enterprise-metric-value">{usage.loading ? '…' : formatNumber(todayAiRequests)}</div>
+          {dailyAiLimit > 0 && !usage.loading && (
+            <div
+              className={`enterprise-progress ${quotaRatio >= 1 ? 'danger' : quotaRatio >= 0.8 ? 'warning' : ''}`}
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={dailyAiLimit}
+              aria-valuenow={Math.min(todayAiRequests, dailyAiLimit)}
+              aria-label="Daily AI quota consumption"
+              style={{ margin: '8px 0 6px' }}
+            >
+              <span style={{ width: `${Math.min(100, Math.round(quotaRatio * 100))}%` }} />
+            </div>
+          )}
           <div className="enterprise-metric-footer">
             {dailyAiLimit > 0 ? `${formatNumber(todayAiRequests)} of ${formatNumber(dailyAiLimit)} daily allowance` : 'No daily allowance configured'}
           </div>
@@ -213,6 +254,26 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
         </div>
       </div>
 
+      {/* Operational trend: real durable-ledger data, deep links into Usage */}
+      {usageByDay.length >= 2 && (
+        <div className="enterprise-card" style={{ marginTop: '1.5rem' }}>
+          <div className="enterprise-card-header-flex">
+            <div>
+              <h3 className="enterprise-card-title"><FiTrendingUp aria-hidden="true" /> AI Activity — last {usageByDay.length} days</h3>
+              <p className="enterprise-card-subtitle">Requests per day from the durable usage ledger</p>
+            </div>
+            <button
+              type="button"
+              className="enterprise-button enterprise-button-secondary enterprise-button-sm"
+              onClick={() => onNavigate('usage', { days: '30' })}
+            >
+              Open Usage Analytics
+            </button>
+          </div>
+          <TrendSparkline points={usageByDay} />
+        </div>
+      )}
+
       {recommendations.length > 0 && (
         <div className="enterprise-card" style={{ marginTop: '1.5rem' }}>
           <h3 className="enterprise-card-title"><FiAlertTriangle aria-hidden="true" /> Recommended Actions</h3>
@@ -228,7 +289,7 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
                 <button
                   type="button"
                   className="enterprise-button enterprise-button-secondary enterprise-button-sm"
-                  onClick={() => onNavigate(item.target)}
+                  onClick={() => onNavigate(item.target, item.params || null)}
                 >
                   Review
                 </button>

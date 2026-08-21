@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   FiShield, FiLock, FiKey, FiPlus, FiTrash2, FiCopy, FiCheck, FiX, FiRotateCcw, FiLayers, FiRefreshCw
 } from 'react-icons/fi';
@@ -8,9 +8,18 @@ const SCOPE_OPTIONS = ['resource.read', 'resource.create', 'resource.update', 'a
 
 const JOB_STATUS_FILTERS = ['ALL', 'QUEUED', 'RETRYING', 'DEAD_LETTER', 'REJECTED', 'COMPLETED'];
 
-function DurableJobsCard() {
+function DurableJobsCard({ focused = false }) {
   const { request, hasPermission } = useTenantApi();
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const cardRef = useRef(null);
+
+  // Cross-module deep link (?focus=jobs): Overview's DLQ recommendation and
+  // the command palette land directly on this panel.
+  useEffect(() => {
+    if (focused && cardRef.current) {
+      cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [focused]);
   const [jobsState, refreshJobs] = useAsyncResource(
     () => request(`/api/enterprise/queue/jobs${statusFilter !== 'ALL' ? `?status=${statusFilter}` : ''}`),
     [request, statusFilter],
@@ -37,7 +46,7 @@ function DurableJobsCard() {
   };
 
   return (
-    <div className="enterprise-card" style={{ marginTop: '1.5rem' }}>
+    <div ref={cardRef} className={`enterprise-card ${focused ? 'enterprise-focus-target' : ''}`} style={{ marginTop: '1.5rem' }} id="durable-jobs">
       <div className="enterprise-card-header-flex">
         <div>
           <h2 className="enterprise-tab-title"><FiLayers aria-hidden="true" /> Durable Jobs & Dead Letters</h2>
@@ -124,7 +133,7 @@ function DurableJobsCard() {
   );
 }
 
-export default function EnterpriseSecurityTab() {
+export default function EnterpriseSecurityTab({ initialParams = null }) {
   const { request, hasPermission } = useTenantApi();
   const [accountsState, refreshAccounts] = useAsyncResource(
     () => request('/api/enterprise/service-accounts'),
@@ -133,7 +142,7 @@ export default function EnterpriseSecurityTab() {
   const [configState] = useAsyncResource(() => request('/api/enterprise/configuration'), [request]);
   const [planeState] = useAsyncResource(() => request('/api/enterprise/data-plane/status'), [request]);
   const { loading, error, data } = accountsState;
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(initialParams?.get?.('create') === '1');
   const [saName, setSaName] = useState('');
   const [saScopes, setSaScopes] = useState(['resource.read']);
   const [busy, setBusy] = useState(false);
@@ -505,7 +514,7 @@ export default function EnterpriseSecurityTab() {
         </div>
       )}
 
-      <DurableJobsCard />
+      <DurableJobsCard focused={initialParams?.get?.('focus') === 'jobs'} />
     </div>
   );
 }

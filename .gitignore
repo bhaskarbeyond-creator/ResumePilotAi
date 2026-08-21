@@ -64,3 +64,4 @@ template-lab/pdf-evidence.json
 # Regenerable DOCX forensic binaries and generated matrices
 artifacts/
 scratch/
+test-results/

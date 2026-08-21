@@ -263,7 +263,12 @@ function makeMockJwt(payload = {}) {
 async function main() {
   let browser = null;
   try {
-    browser = await chromium.launch({ args: ['--no-sandbox', '--no-zygote', '--disable-gpu', '--disable-dev-shm-usage'] });
+    browser = await chromium.launch({
+      // Sandboxes without access to the Playwright CDN can point this at any
+      // compatible Chromium binary (e.g. @sparticuz/chromium).
+      executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined,
+      args: ['--no-sandbox', '--no-zygote', '--disable-gpu', '--disable-dev-shm-usage'],
+    });
   } catch (error) {
     console.log(`[Enterprise Browser Test] SKIPPED — Playwright chromium is unavailable in this environment (${error.message.split('\n')[0]}).`);
     console.log('[Enterprise Browser Test] Run locally with `npx playwright install chromium` to execute the full enterprise browser workflow.');
@@ -273,7 +278,19 @@ async function main() {
   const vite = await createServer({
     server: { port: 0, host: '127.0.0.1', strictPort: false },
     logLevel: 'error',
-    define: { 'import.meta.env.VITE_ENTERPRISE_TENANCY_ENABLED': JSON.stringify(process.env.VITE_ENTERPRISE_TENANCY_ENABLED || 'true') },
+    define: {
+      'import.meta.env.VITE_ENTERPRISE_TENANCY_ENABLED': JSON.stringify(process.env.VITE_ENTERPRISE_TENANCY_ENABLED || 'true'),
+      // Self-contained fixture Firebase config: environments without a real
+      // .env (CI sandboxes) still boot the app; every network call the SDK
+      // would make is intercepted by page.route below.
+      'import.meta.env.VITE_FIREBASE_KEY': JSON.stringify(API_KEY),
+      'import.meta.env.VITE_FIREBASE_DOMAIN': JSON.stringify('fixture.firebaseapp.com'),
+      'import.meta.env.VITE_FIREBASE_DATABASE_URL': JSON.stringify('https://fixture-default-rtdb.firebaseio.com'),
+      'import.meta.env.VITE_FIREBASE_PROJECT_ID': JSON.stringify('fixture-project'),
+      'import.meta.env.VITE_FIREBASE_STORAGE_BUCKET': JSON.stringify('fixture.appspot.com'),
+      'import.meta.env.VITE_FIREBASE_SENDER_ID': JSON.stringify('000000000000'),
+      'import.meta.env.VITE_FIREBASE_APP_ID': JSON.stringify('1:000000000000:web:fixture'),
+    },
   });
   const server = await vite.listen();
   const base = `http://127.0.0.1:${server.config.server.port}`;

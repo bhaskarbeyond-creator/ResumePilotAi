@@ -53,19 +53,23 @@ function SyntaxHighlightedJson({ obj }) {
   );
 }
 
-export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = null }) {
+export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = null, initialParams = null }) {
   const { request } = useTenantApi();
+  // Deep-linkable investigation state: ?actor=…&action=…&outcome=… reproduce
+  // an exact server-side filtered view after refresh or link sharing.
+  const urlParam = (name) => String(initialParams?.get?.(name) || '').trim();
   const [searchQuery, setSearchQuery] = useState('');
-  const [outcomeFilter, setOutcomeFilter] = useState('ALL');
-  const [severityFilter, setSeverityFilter] = useState('ALL');
-  const [actionFilter, setActionFilter] = useState('');
-  const [actorFilter, setActorFilter] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
+  const [outcomeFilter, setOutcomeFilter] = useState(() => (['SUCCESS', 'FAILURE', 'DENIED'].includes(urlParam('outcome').toUpperCase()) ? urlParam('outcome').toUpperCase() : 'ALL'));
+  const [severityFilter, setSeverityFilter] = useState(() => (urlParam('severity') ? urlParam('severity').toUpperCase() : 'ALL'));
+  const [actionFilter, setActionFilter] = useState(() => urlParam('action'));
+  const [actorFilter, setActorFilter] = useState(() => urlParam('actor'));
+  const [categoryFilter, setCategoryFilter] = useState(() => urlParam('category'));
   const [sinceDate, setSinceDate] = useState('');
   const [untilDate, setUntilDate] = useState('');
   const [inspectEvent, setInspectEvent] = useState(null);
   const [cursor, setCursor] = useState(null);
   const [accumulated, setAccumulated] = useState([]);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   // Cross-tab investigation preset (e.g. member activity): applies the actor
   // filter once, then is consumed so manual edits behave normally afterwards.
@@ -102,9 +106,10 @@ export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = n
   );
   const { loading, error, data } = auditState;
 
-  // Reset the accumulated list whenever the filter set itself changes so
-  // pagination never mixes pages from different queries.
-  useEffect(() => { setAccumulated([]); }, [filterSignature]);
+  // Reset the accumulated list AND the pagination cursor whenever the filter
+  // set itself changes — otherwise a stale cursor from "Load more" would ask
+  // the server for a page beyond the newly-filtered result set (empty view).
+  useEffect(() => { setAccumulated([]); setCursor(null); }, [filterSignature]);
 
   useEffect(() => {
     if (data?.events) {
@@ -130,6 +135,25 @@ export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = n
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
+  };
+
+  // Shareable deep link reproducing this exact server-side filter set.
+  const handleCopyDeepLink = async () => {
+    const params = new URLSearchParams();
+    params.set('tab', 'audit');
+    if (outcomeFilter !== 'ALL') params.set('outcome', outcomeFilter);
+    if (severityFilter !== 'ALL') params.set('severity', severityFilter);
+    if (actionFilter.trim()) params.set('action', actionFilter.trim());
+    if (actorFilter.trim()) params.set('actor', actorFilter.trim());
+    if (categoryFilter.trim()) params.set('category', categoryFilter.trim());
+    const url = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2500);
+    } catch {
+      window.prompt('Copy this investigation link:', url);
+    }
   };
 
   const handleExportCsv = () => {
@@ -174,6 +198,14 @@ export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = n
               disabled={filtered.length === 0}
             >
               <FiDownload aria-hidden="true" /> JSON
+            </button>
+            <button
+              type="button"
+              className="enterprise-button enterprise-button-secondary"
+              onClick={handleCopyDeepLink}
+              title="Copy a shareable link that reproduces this filtered view"
+            >
+              {linkCopied ? 'Link copied ✓' : 'Copy link'}
             </button>
           </div>
         </div>

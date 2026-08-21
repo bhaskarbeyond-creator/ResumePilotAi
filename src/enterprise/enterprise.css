@@ -413,6 +413,9 @@
   max-width: 1280px;
   width: 100%;
   box-sizing: border-box;
+  /* Grid items default to min-width:auto — without this, wide tables force
+     the whole console to scroll horizontally instead of scrolling locally. */
+  min-width: 0;
 }
 
 /* Cards & UI Panels */
@@ -1630,5 +1633,263 @@
 @media (max-width: 640px) {
   .enterprise-input-affix {
     flex-wrap: wrap;
+  }
+}
+
+/* ============================================================
+   2026 modernization layer: grouped navigation, identity footer,
+   breadcrumbs, action-aware command palette, insight charts,
+   deep-link chips — added by the enterprise UX review.
+   ============================================================ */
+
+/* Grouped sidebar navigation */
+.enterprise-nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.enterprise-nav-group + .enterprise-nav-group {
+  margin-top: 14px;
+}
+.enterprise-nav-group-label {
+  margin: 0 0 4px;
+  padding: 0 14px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--enterprise-muted);
+}
+.enterprise-nav-item {
+  text-align: left;
+}
+.enterprise-nav-item span {
+  min-width: 0;
+}
+
+/* Signed-in identity footer (WHO AM I) */
+.enterprise-identity {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 10px;
+  border-top: 1px solid var(--enterprise-border);
+}
+.enterprise-identity-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.enterprise-identity-copy strong {
+  font-size: 0.78rem;
+  color: var(--enterprise-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.enterprise-identity-copy small {
+  font-size: 0.68rem;
+  color: var(--enterprise-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Context breadcrumbs (WHERE AM I) */
+.enterprise-breadcrumbs {
+  margin: 0 0 18px;
+}
+.enterprise-breadcrumbs ol {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  flex-wrap: wrap;
+}
+.enterprise-breadcrumbs li {
+  display: flex;
+  align-items: center;
+  color: var(--enterprise-muted);
+  font-size: 0.78rem;
+}
+.enterprise-breadcrumbs li button {
+  border: 0;
+  background: transparent;
+  padding: 2px 4px;
+  border-radius: 6px;
+  color: var(--enterprise-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.enterprise-breadcrumbs li button:hover {
+  color: var(--enterprise-primary);
+  background: var(--enterprise-primary-soft);
+}
+.enterprise-breadcrumbs li[aria-current="page"] span {
+  color: var(--enterprise-ink);
+  font-weight: 700;
+}
+
+/* Command palette result-kind badges */
+.enterprise-command-results .enterprise-command-kind {
+  margin-left: auto;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--enterprise-muted);
+  border: 1px solid var(--enterprise-border);
+  border-radius: var(--enterprise-radius-full);
+  padding: 2px 8px;
+}
+
+/* Workspace switcher never overflows narrow topbars */
+.enterprise-workspace-name {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  vertical-align: bottom;
+}
+
+/* Status summary chips (clickable filters, deep-linkable) */
+.enterprise-chip-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0 0 16px;
+}
+.enterprise-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--enterprise-border);
+  background: var(--enterprise-surface);
+  color: var(--enterprise-ink);
+  border-radius: var(--enterprise-radius-full);
+  padding: 5px 12px;
+  font-size: 0.75rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+.enterprise-chip:hover {
+  border-color: var(--enterprise-primary);
+  color: var(--enterprise-primary);
+}
+.enterprise-chip.active {
+  background: var(--enterprise-primary-soft);
+  border-color: var(--enterprise-primary);
+  color: var(--enterprise-primary);
+}
+.enterprise-chip .enterprise-chip-count {
+  background: var(--enterprise-surface-hover);
+  border-radius: var(--enterprise-radius-full);
+  padding: 1px 7px;
+  font-size: 0.68rem;
+}
+.enterprise-chip.active .enterprise-chip-count {
+  background: #fff;
+}
+
+/* Inline SVG trend charts (real ledger data only) */
+.enterprise-trend {
+  width: 100%;
+}
+.enterprise-trend svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.enterprise-trend-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  font-size: 0.72rem;
+  color: var(--enterprise-muted);
+}
+
+/* Quota progress */
+.enterprise-progress {
+  height: 8px;
+  border-radius: var(--enterprise-radius-full);
+  background: var(--enterprise-surface-hover);
+  overflow: hidden;
+}
+.enterprise-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--enterprise-primary);
+  transition: width 0.3s ease;
+}
+.enterprise-progress.warning > span { background: var(--enterprise-warning); }
+.enterprise-progress.danger > span { background: var(--enterprise-danger); }
+
+/* Collapsible data ledger (progressive disclosure for dense tables) */
+details.enterprise-disclosure > summary {
+  cursor: pointer;
+  font-weight: 650;
+  font-size: 0.82rem;
+  color: var(--enterprise-primary);
+  padding: 8px 0;
+  list-style: none;
+}
+details.enterprise-disclosure > summary::-webkit-details-marker { display: none; }
+details.enterprise-disclosure > summary::before {
+  content: '▸ ';
+}
+details.enterprise-disclosure[open] > summary::before {
+  content: '▾ ';
+}
+
+/* Role select never truncates its value invisibly */
+.enterprise-table select.enterprise-role-select {
+  min-width: 168px;
+  max-width: 100%;
+}
+
+/* Focus highlight for cross-module deep links (?focus=…) */
+.enterprise-focus-target {
+  animation: enterprise-focus-pulse 1.6s ease 1;
+  scroll-margin-top: 84px;
+}
+@keyframes enterprise-focus-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--enterprise-primary) 45%, transparent); }
+  100% { box-shadow: 0 0 0 12px transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .enterprise-focus-target { animation: none; }
+}
+
+@media (max-width: 1024px) {
+  .enterprise-nav-group-label {
+    display: none;
+  }
+  .enterprise-identity-copy {
+    display: none;
+  }
+  .enterprise-identity {
+    justify-content: center;
+  }
+}
+@media (max-width: 768px) {
+  .enterprise-sidebar.mobile-open .enterprise-nav-group-label {
+    display: block;
+  }
+  .enterprise-sidebar.mobile-open .enterprise-identity-copy {
+    display: flex;
+  }
+  .enterprise-workspace-name {
+    max-width: 96px;
+  }
+  .enterprise-breadcrumbs {
+    margin-bottom: 12px;
   }
 }

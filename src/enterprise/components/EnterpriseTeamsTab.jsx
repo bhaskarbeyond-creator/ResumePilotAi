@@ -142,12 +142,13 @@ function TeamMembersDrawer({ team, onClose }) {
   );
 }
 
-export default function EnterpriseTeamsTab() {
+export default function EnterpriseTeamsTab({ initialParams = null }) {
   const { request, workspaceId, hasPermission } = useTenantApi();
   const { workspaces } = useEnterpriseTenant();
   const [teamsState, refreshTeams] = useAsyncResource(() => request('/api/enterprise/teams'), [request]);
   const { loading, error, data } = teamsState;
-  const [showModal, setShowModal] = useState(false);
+  // Deep link (?create=1) opens the creation dialog directly.
+  const [showModal, setShowModal] = useState(initialParams?.get?.('create') === '1');
   const [teamName, setTeamName] = useState('');
   const [renameTarget, setRenameTarget] = useState(null);
   const [renameValue, setRenameValue] = useState('');

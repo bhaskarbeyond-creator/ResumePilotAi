@@ -1,8 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   FiBarChart2, FiZap, FiActivity, FiAlertTriangle, FiCheckCircle, FiCpu, FiHash, FiUser
 } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
+import { useEnterpriseTenant } from '../EnterpriseContext';
 
 const DAY_WINDOWS = [7, 30, 90, 365];
 
@@ -49,9 +50,45 @@ function QuotaBar({ label, used, limit, hint }) {
   );
 }
 
-export default function EnterpriseUsageTab() {
+/** Inline SVG trend chart over the durable per-day ledger (no synthesized data). */
+function UsageTrendChart({ points = [], width = 720, height = 160 }) {
+  if (!Array.isArray(points) || points.length < 2) return null;
+  const max = Math.max(...points.map(point => Number(point.requests || 0)), 1);
+  const stepX = width / (points.length - 1);
+  const coords = points.map((point, index) => [index * stepX, height - (Number(point.requests || 0) / max) * (height - 14) - 4]);
+  const line = coords.map(([x, y], index) => `${index === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const area = `${line} L${width},${height} L0,${height} Z`;
+  const peak = points.reduce((best, point) => (Number(point.requests || 0) > Number(best.requests || 0) ? point : best), points[0]);
+  return (
+    <div className="enterprise-trend" role="img" aria-label={`AI requests per day; peak ${peak.requests} on ${peak.day}`}>
+      <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-hidden="true">
+        <path d={area} fill="var(--enterprise-primary-soft)" />
+        <path d={line} fill="none" stroke="var(--enterprise-primary)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+      </svg>
+      <div className="enterprise-trend-meta">
+        <span>{points[0]?.day}</span>
+        <span>Peak {Number(peak.requests || 0).toLocaleString()} req · {peak.day}</span>
+        <span>{points[points.length - 1]?.day}</span>
+      </div>
+    </div>
+  );
+}
+
+export default function EnterpriseUsageTab({ initialParams = null, onNavigate = null }) {
   const { request } = useTenantApi();
-  const [daysWindow, setDaysWindow] = useState(30);
+  const { workspaces } = useEnterpriseTenant();
+  // Deep-linkable window: ?days=7|30|90|365 (Overview trend links here).
+  const urlDays = Number(initialParams?.get?.('days') || 0);
+  const [daysWindow, setDaysWindow] = useState(DAY_WINDOWS.includes(urlDays) ? urlDays : 30);
+  useEffect(() => {
+    const next = Number(initialParams?.get?.('days') || 0);
+    if (DAY_WINDOWS.includes(next)) setDaysWindow(next);
+  }, [initialParams]);
+  const workspaceNames = useMemo(() => {
+    const map = {};
+    for (const workspace of (Array.isArray(workspaces) ? workspaces : [])) map[workspace.id] = workspace.name;
+    return map;
+  }, [workspaces]);
   const [metrics, refreshMetrics] = useAsyncResource(() => request('/api/enterprise/observability/metrics'), [request]);
   const [usage, refreshUsage] = useAsyncResource(() => request(`/api/enterprise/usage/ai?days=${daysWindow}`), [request, daysWindow]);
   const [events, refreshEvents] = useAsyncResource(() => request('/api/enterprise/usage/ai/events'), [request]);
@@ -190,36 +227,44 @@ export default function EnterpriseUsageTab() {
           {byDay.length === 0 ? (
             <p className="enterprise-empty">No AI usage recorded for this tenant yet. Generations appear here the moment they are metered.</p>
           ) : (
-            <div className="enterprise-table-wrap" role="region" aria-label="Daily AI usage">
-              <table className="enterprise-table">
-                <thead>
-                  <tr>
-                    <th scope="col">Day</th>
-                    <th scope="col">Requests</th>
-                    <th scope="col">Input tokens</th>
-                    <th scope="col">Output tokens</th>
-                    <th scope="col">Volume</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {byDay.map(day => (
-                    <tr key={day.day}>
-                      <td>{day.day}</td>
-                      <td>{formatNumber(day.requests)}</td>
-                      <td>{formatNumber(day.inputTokens)}</td>
-                      <td>{formatNumber(day.outputTokens)}</td>
-                      <td style={{ minWidth: '140px' }}>
-                        <span
-                          role="img"
-                          aria-label={`${day.requests} requests`}
-                          style={{ display: 'inline-block', height: '8px', width: `${Math.max(4, Math.round((Number(day.requests || 0) / maxDayRequests) * 100))}%`, background: 'linear-gradient(90deg,#4f7cff,#7aa2ff)', borderRadius: '4px' }}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <>
+              {/* Primary visualization: the trend chart. The full per-day
+                  ledger table stays available through progressive disclosure. */}
+              <UsageTrendChart points={byDay} />
+              <details className="enterprise-disclosure" style={{ marginTop: '12px' }}>
+                <summary>View the per-day ledger table ({byDay.length} days)</summary>
+                <div className="enterprise-table-wrap" role="region" aria-label="Daily AI usage">
+                  <table className="enterprise-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">Day</th>
+                        <th scope="col">Requests</th>
+                        <th scope="col">Input tokens</th>
+                        <th scope="col">Output tokens</th>
+                        <th scope="col">Volume</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {byDay.map(day => (
+                        <tr key={day.day}>
+                          <td>{day.day}</td>
+                          <td>{formatNumber(day.requests)}</td>
+                          <td>{formatNumber(day.inputTokens)}</td>
+                          <td>{formatNumber(day.outputTokens)}</td>
+                          <td style={{ minWidth: '140px' }}>
+                            <span
+                              role="img"
+                              aria-label={`${day.requests} requests`}
+                              style={{ display: 'inline-block', height: '8px', width: `${Math.max(4, Math.round((Number(day.requests || 0) / maxDayRequests) * 100))}%`, background: 'linear-gradient(90deg,#4f7cff,#7aa2ff)', borderRadius: '4px' }}
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+            </>
           )}
         </DataState>
       </div>
@@ -230,8 +275,8 @@ export default function EnterpriseUsageTab() {
           {workspaceRows.length === 0 ? (
             <p className="enterprise-empty">No workspace usage recorded yet.</p>
           ) : workspaceRows.map(([workspaceId, value]) => (
-            <div key={workspaceId} className="enterprise-usage-header" style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--enterprise-surface-hover)' }}>
-              <span className="text-muted" title={workspaceId}>{`ws ${String(workspaceId).slice(0, 8)}…`}</span>
+            <div key={workspaceId} className="enterprise-usage-header" style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', padding: '0.5rem 0', borderBottom: '1px solid var(--enterprise-surface-hover)' }}>
+              <span className="text-muted" title={workspaceId}>{workspaceNames[workspaceId] || `ws ${String(workspaceId).slice(0, 8)}…`}</span>
               <span style={{ fontSize: '0.875rem' }}><strong>{formatNumber(value.requests)}</strong> req · {formatNumber(value.inputTokens)} in</span>
             </div>
           ))}
@@ -241,8 +286,20 @@ export default function EnterpriseUsageTab() {
           {userRows.length === 0 ? (
             <p className="enterprise-empty">No per-user usage recorded yet.</p>
           ) : userRows.map(([principalId, value]) => (
-            <div key={principalId} className="enterprise-usage-header" style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--enterprise-surface-hover)' }}>
-              <span className="text-muted" title={principalId}>{String(principalId).slice(0, 14)}…</span>
+            <div key={principalId} className="enterprise-usage-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', padding: '0.5rem 0', borderBottom: '1px solid var(--enterprise-surface-hover)' }}>
+              {typeof onNavigate === 'function' ? (
+                <button
+                  type="button"
+                  className="enterprise-link-button"
+                  style={{ border: 0, background: 'transparent', padding: 0, cursor: 'pointer', color: 'var(--enterprise-primary)', fontSize: 'inherit' }}
+                  title={`Inspect audit activity for ${principalId}`}
+                  onClick={() => onNavigate('audit', { actor: principalId })}
+                >
+                  {String(principalId).length > 14 ? `${String(principalId).slice(0, 14)}…` : principalId}
+                </button>
+              ) : (
+                <span className="text-muted" title={principalId}>{String(principalId).slice(0, 14)}…</span>
+              )}
               <span style={{ fontSize: '0.875rem' }}><strong>{formatNumber(value.requests)}</strong> req · {formatNumber(value.inputTokens + value.outputTokens)} tok</span>
             </div>
           ))}
@@ -252,7 +309,7 @@ export default function EnterpriseUsageTab() {
           {providerRows.length === 0 ? (
             <p className="enterprise-empty">No provider usage recorded yet.</p>
           ) : providerRows.map(([provider, count]) => (
-            <div key={provider} className="enterprise-usage-header" style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--enterprise-surface-hover)' }}>
+            <div key={provider} className="enterprise-usage-header" style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', padding: '0.5rem 0', borderBottom: '1px solid var(--enterprise-surface-hover)' }}>
               <span>{provider}</span>
               <span><strong>{formatNumber(count)}</strong> req</span>
             </div>
@@ -263,7 +320,7 @@ export default function EnterpriseUsageTab() {
           {modelRows.length === 0 ? (
             <p className="enterprise-empty">No model usage recorded yet.</p>
           ) : modelRows.map(([model, count]) => (
-            <div key={model} className="enterprise-usage-header" style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--enterprise-surface-hover)' }}>
+            <div key={model} className="enterprise-usage-header" style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', padding: '0.5rem 0', borderBottom: '1px solid var(--enterprise-surface-hover)' }}>
               <span>{model}</span>
               <span><strong>{formatNumber(count)}</strong> req</span>
             </div>
