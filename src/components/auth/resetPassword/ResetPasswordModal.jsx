@@ -95,9 +95,15 @@ const ResetPasswordModal = ({ oobCode, initialEmail, onClose }) => {
                 console.warn('[Auto Login Note]:', loginErr.message);
             }
 
-            setTimeout(() => {
+            setTimeout(async () => {
                 if (onClose) onClose();
-                window.location.href = '/dashboard';
+                try {
+                    const { getPostLoginRedirectPath } = await import('../../../utils/safeInternalPath');
+                    const targetPath = getPostLoginRedirectPath(window.location.search);
+                    window.location.href = targetPath || '/dashboard';
+                } catch (_) {
+                    window.location.href = '/dashboard';
+                }
             }, 2000);
         } catch (err) {
             console.error('[Confirm Password Reset Error]:', err);

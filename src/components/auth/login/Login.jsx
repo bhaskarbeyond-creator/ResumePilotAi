@@ -204,6 +204,12 @@ class Login extends Component {
     // ─── Post-OAuth shared logic ───────────────────────────────────────────────
     async _handleRedirect(uid) {
         try {
+            const { getPostLoginRedirectPath } = await import('../../../utils/safeInternalPath');
+            const targetPath = getPostLoginRedirectPath(window.location.search);
+            if (targetPath) {
+                window.location.href = targetPath;
+                return;
+            }
             const { checkIfAdmin } = await import('../../../firestore/dbOperations');
             const isAdmin = await checkIfAdmin(uid);
             if (isAdmin) {
@@ -212,6 +218,14 @@ class Login extends Component {
                 window.location.href = '/dashboard';
             }
         } catch (err) {
+            try {
+                const { getPostLoginRedirectPath } = await import('../../../utils/safeInternalPath');
+                const targetPath = getPostLoginRedirectPath(window.location.search);
+                if (targetPath) {
+                    window.location.href = targetPath;
+                    return;
+                }
+            } catch (_) {}
             if (!window.location.pathname.startsWith('/dashboard') && !window.location.pathname.startsWith('/build')) {
                 window.location.href = '/dashboard';
             }

@@ -837,17 +837,17 @@ router.post('/test-email', resolveTenantContext, requireTenantPermission('tenant
     const emailRoute = require('./email');
     const { db } = outboxRuntime(req);
       const tabMap = {
-        'invitation': 'overview',
-        'enterprise-invitation': 'overview',
-        'enterprise_invitation': 'overview',
+        'invitation': 'members',
+        'enterprise-invitation': 'members',
+        'enterprise_invitation': 'members',
         'role_change': 'access',
         'enterprise_role_update': 'access',
         'role_update': 'access',
         'team_assignment': 'teams',
-        'enterprise_workspace_assignment': 'teams',
-        'workspace_assignment': 'teams',
-        'security_alert': 'audit',
-        'enterprise_security_alert': 'audit',
+        'enterprise_workspace_assignment': 'workspaces',
+        'workspace_assignment': 'workspaces',
+        'security_alert': 'security',
+        'enterprise_security_alert': 'security',
         'quota_warning': 'usage',
         'quota_alert': 'usage',
         'enterprise_quota_alert': 'usage',
@@ -856,8 +856,8 @@ router.post('/test-email', resolveTenantContext, requireTenantPermission('tenant
       const { enterpriseConsoleUrl, sanitizeAbsoluteHttpUrl } = require('../services/publicAppUrl');
       const actionUrl = sanitizeAbsoluteHttpUrl(req.body?.vars?.action_url) || enterpriseConsoleUrl({
         tab: targetTab,
-        tenantId: req.tenant?.id || '',
-        workspaceId: req.workspace?.id || '',
+        tenantId: req.tenant?.id || req.tenantContext?.tenantId || '',
+        workspaceId: req.workspace?.id || req.tenantContext?.workspaceId || '',
       });
 
       const result = await emailRoute.dispatchNotification(db, {

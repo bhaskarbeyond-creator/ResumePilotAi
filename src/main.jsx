@@ -104,7 +104,7 @@ function PostLoginRedirect({ user }) {
     const location = useLocation();
     const navigate = useNavigate();
     useEffect(() => {
-        if (!user || location.pathname !== '/login') return;
+        if (!user || (location.pathname !== '/login' && location.pathname !== '/')) return;
         const next = new URLSearchParams(location.search).get('next');
         if (next && isSafeInternalPath(next)) {
             navigate(next, { replace: true });

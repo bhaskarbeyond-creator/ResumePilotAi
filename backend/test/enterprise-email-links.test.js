@@ -80,3 +80,41 @@ test('custom invitation body turns the raw URL into a working CTA plus fallback 
     assert.doesNotMatch(html, /href="#"/);
   });
 });
+
+test('enterprise role update, workspace assignment, security alert, quota alert, and password reset render actionable CTA and fallback text links', () => {
+  withEnv({
+    NODE_ENV: 'production',
+    PROTOCOL: 'https',
+    WEBSITE_NAME: 'app.resumepilot.app',
+  }, () => {
+    const actionUrl = `https://app.resumepilot.app/enterprise?tab=access&tenant=${TENANT}`;
+    const roleRes = renderEmailTemplate('enterprise_role_update', {
+      candidate_name: 'Jordan Lee',
+      organization_name: 'Northwind',
+      role_title: 'Enterprise Administrator',
+      action_url: actionUrl,
+      site_url: 'https://app.resumepilot.app',
+    });
+    assert.match(roleRes.html, /href="https:\/\/app\.resumepilot\.app\/enterprise\?tab=access&amp;tenant=/);
+    assert.match(roleRes.html, /If the button does not work/);
+
+    const wsUrl = `https://app.resumepilot.app/enterprise?tab=teams&tenant=${TENANT}`;
+    const wsRes = renderEmailTemplate('enterprise_workspace_assignment', {
+      candidate_name: 'Jordan Lee',
+      workspace_name: 'Engineering',
+      action_url: wsUrl,
+      site_url: 'https://app.resumepilot.app',
+    });
+    assert.match(wsRes.html, /href="https:\/\/app\.resumepilot\.app\/enterprise\?tab=teams&amp;tenant=/);
+    assert.match(wsRes.html, /If the button does not work/);
+
+    const resetRes = renderEmailTemplate('password_reset', {
+      candidate_name: 'Jordan Lee',
+      reset_link: 'https://app.resumepilot.app/login?mode=reset&oobCode=12345',
+      site_url: 'https://app.resumepilot.app',
+    });
+    assert.match(resetRes.html, /href="https:\/\/app\.resumepilot\.app\/login\?mode=reset&amp;oobCode=12345"/);
+    assert.match(resetRes.html, /Or copy and paste this link/);
+  });
+});
+

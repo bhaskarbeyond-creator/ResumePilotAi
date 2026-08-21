@@ -827,8 +827,8 @@ class TenantService {
       const EmailNotifier = emailNotifierMod?.EmailNotifier || emailNotifierMod?.default || emailNotifierMod;
       const { enterpriseConsoleUrl } = require('../services/publicAppUrl');
       const actionUrl = enterpriseConsoleUrl({
-        tab: 'overview',
-        tenantId: context?.tenant?.id || '',
+        tab: 'members',
+        tenantId: context?.tenant?.id || context?.tenantId || '',
         workspaceId: membership.workspaceId || context?.workspaceId || '',
       });
       const result = await EmailNotifier.notifyEnterpriseInvitation(this.db, {

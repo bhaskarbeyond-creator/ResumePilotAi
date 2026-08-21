@@ -602,10 +602,10 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
                 </div>
 
                 <div style="text-align: center; margin: 28px 0;">
-                    <a href="${vars.reset_link || siteUrl + '/reset-password'}" style="background-color: #dc2626; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 14px; display: inline-block; box-shadow: 0 10px 20px -5px rgba(220,38,38,0.3);">Reset Password Now &rarr;</a>
+                    <a href="${vars.reset_link}" target="_blank" rel="noopener noreferrer" style="background-color: #dc2626; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 14px; display: inline-block; box-shadow: 0 10px 20px -5px rgba(220,38,38,0.3);">Reset Password Now &rarr;</a>
                 </div>
-
-                <p style="font-size: 12px; color: #94a3b8; text-align: center;">If you did not request this change, please secure your email account immediately. This link expires in 30 minutes.</p>`
+                <p style="font-size: 12px; color: #64748b; line-height: 1.5; margin-top: 16px; text-align: center; word-break: break-all;">Or copy and paste this link into your browser:<br/><a href="${vars.reset_link}" style="color: #dc2626;">${escapeEmailHtml(rawResetLink)}</a></p>
+                <p style="font-size: 12px; color: #94a3b8; text-align: center; margin-top: 16px;">If you did not request this change, please secure your email account immediately. This link expires in 30 minutes.</p>`
             );
             break;
 
@@ -976,8 +976,9 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
                     <p style="margin: 0; font-size: 14px; color: #3730a3; font-weight: 700;">New Access Role: ${vars.role_title || 'Updated Role'}</p>
                 </div>
                 <div style="text-align: center; margin: 26px 0;">
-                    <a href="${vars.action_url || `${siteUrl}/enterprise`}" style="background-color: #4f46e5; color: #ffffff; padding: 13px 30px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 13px; display: inline-block;">Open Enterprise Console &rarr;</a>
-                </div>`
+                    <a href="${vars.action_url}" target="_blank" rel="noopener noreferrer" style="background-color: #4f46e5; color: #ffffff; padding: 13px 30px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 13px; display: inline-block; box-shadow: 0 10px 20px -5px rgba(79,70,229,0.4);">Open Enterprise Console &rarr;</a>
+                </div>
+                <p style="font-size: 12px; color: #94a3b8; margin-top: 8px; text-align: center; word-break: break-all;">If the button does not work, copy this link:<br/><a href="${vars.action_url}" style="color: #4f46e5;">${escapeEmailHtml(rawActionUrl)}</a></p>`
             );
             break;
 
@@ -991,8 +992,9 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
                 <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">Hi ${candidateName},</h2>
                 <p style="font-size: 14px; color: #475569; line-height: 1.6;">You've been assigned to workspace <strong>${vars.workspace_name || 'Workspace'}</strong> ${vars.team_name ? `and team <strong>${vars.team_name}</strong>` : ''} in ${vars.organization_name || 'ResumePilot Enterprise'}.</p>
                 <div style="text-align: center; margin: 26px 0;">
-                    <a href="${vars.action_url || `${siteUrl}/enterprise`}" style="background-color: #4f46e5; color: #ffffff; padding: 13px 30px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 13px; display: inline-block;">Open Team Workspace &rarr;</a>
-                </div>`
+                    <a href="${vars.action_url}" target="_blank" rel="noopener noreferrer" style="background-color: #4f46e5; color: #ffffff; padding: 13px 30px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 13px; display: inline-block; box-shadow: 0 10px 20px -5px rgba(79,70,229,0.4);">Open Team Workspace &rarr;</a>
+                </div>
+                <p style="font-size: 12px; color: #94a3b8; margin-top: 8px; text-align: center; word-break: break-all;">If the button does not work, copy this link:<br/><a href="${vars.action_url}" style="color: #4f46e5;">${escapeEmailHtml(rawActionUrl)}</a></p>`
             );
             break;
 
@@ -1012,8 +1014,9 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
                     <p style="margin: 0;"><strong>Valid Until:</strong> ${vars.expires_at || 'In 4 hours'}</p>
                 </div>
                 <div style="text-align: center; margin: 26px 0;">
-                    <a href="${vars.action_url || `${siteUrl}/enterprise?tab=audit`}" style="background-color: #dc2626; color: #ffffff; padding: 13px 30px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 13px; display: inline-block;">Review Audit Log &rarr;</a>
-                </div>`
+                    <a href="${vars.action_url}" target="_blank" rel="noopener noreferrer" style="background-color: #dc2626; color: #ffffff; padding: 13px 30px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 13px; display: inline-block; box-shadow: 0 10px 20px -5px rgba(220,38,38,0.4);">Review Audit Log &rarr;</a>
+                </div>
+                <p style="font-size: 12px; color: #94a3b8; margin-top: 8px; text-align: center; word-break: break-all;">If the button does not work, copy this link:<br/><a href="${vars.action_url}" style="color: #dc2626;">${escapeEmailHtml(rawActionUrl)}</a></p>`
             );
             break;
 
@@ -1029,8 +1032,9 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
                     <p style="color: #b45309; margin: 0; font-size: 13px; line-height: 1.5;">Your organization has consumed <strong>${vars.usage_percent || '85'}%</strong> of its monthly AI token allocation (${vars.consumed_tokens || '850,000'} / ${vars.quota_limit || '1,000,000'} tokens).</p>
                 </div>
                 <div style="text-align: center; margin: 26px 0;">
-                    <a href="${vars.action_url || `${siteUrl}/enterprise?tab=usage`}" style="background-color: #d97706; color: #ffffff; padding: 13px 30px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 13px; display: inline-block;">Inspect Token Usage &rarr;</a>
-                </div>`
+                    <a href="${vars.action_url}" target="_blank" rel="noopener noreferrer" style="background-color: #d97706; color: #ffffff; padding: 13px 30px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 13px; display: inline-block; box-shadow: 0 10px 20px -5px rgba(217,119,6,0.4);">Inspect Token Usage &rarr;</a>
+                </div>
+                <p style="font-size: 12px; color: #94a3b8; margin-top: 8px; text-align: center; word-break: break-all;">If the button does not work, copy this link:<br/><a href="${vars.action_url}" style="color: #d97706;">${escapeEmailHtml(rawActionUrl)}</a></p>`
             );
             break;
 

@@ -4,15 +4,34 @@
  * email or query string cannot bounce the browser off-site after sign-in.
  */
 export function isSafeInternalPath(value) {
-  const next = String(value || '');
+  const next = String(value || '').trim();
   if (!next.startsWith('/') || next.startsWith('//')) return false;
   if (next.includes('\\') || next.includes('://')) return false;
   if (/[\u0000-\u001f\u007f]/.test(next)) return false;
   if (next.length > 1024) return false;
+  try {
+    const decoded = decodeURIComponent(next);
+    if (!decoded.startsWith('/') || decoded.startsWith('//')) return false;
+    if (decoded.includes('\\') || decoded.includes('://')) return false;
+    if (/[\u0000-\u001f\u007f]/.test(decoded)) return false;
+  } catch (_) {
+    return false;
+  }
   return true;
 }
 
 export function loginPathWithNext(nextPath) {
   if (!isSafeInternalPath(nextPath)) return '/login';
   return `/login?next=${encodeURIComponent(nextPath)}`;
+}
+
+export function getPostLoginRedirectPath(search = (typeof window !== 'undefined' ? window.location.search : '')) {
+  try {
+    const params = new URLSearchParams(search);
+    const next = params.get('next');
+    if (next && isSafeInternalPath(next)) {
+      return next;
+    }
+  } catch (_) {}
+  return null;
 }

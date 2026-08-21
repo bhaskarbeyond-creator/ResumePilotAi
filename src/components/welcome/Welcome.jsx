@@ -145,7 +145,7 @@ class Welcome extends Component {
             fullFields: 0,
             isMobileTogglerShowed: true,
             isMenuShowed: false,
-            isAuthShowed: false,
+            isAuthShowed: typeof window !== 'undefined' && (window.location.pathname === '/login' || window.location.pathname === '/login/'),
             language: 'en',
             stepIndex: 0,
             currentStep: 'Introduction',
@@ -492,6 +492,7 @@ class Welcome extends Component {
             this.setState({
                 currentStep: 'Introduction',
                 stepIndex: 0,
+                isAuthShowed: pathname === '/login',
             });
             return;
         }
