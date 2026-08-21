@@ -262,12 +262,110 @@ function safeEmailUrl(value, fallback = '#') {
     } catch (_) { return fallback; }
 }
 
+/**
+ * Universal Variable Replacement Engine
+ * Replaces {{key}} and {key} tokens while cleanly eliminating unparsed tags.
+ */
+function replaceEmailVariables(templateText, vars = {}) {
+    if (!templateText || typeof templateText !== 'string') return '';
+    let result = templateText;
+    const entries = Object.entries(vars || {});
+    for (const [key, val] of entries) {
+        if (val !== undefined && val !== null) {
+            const regex = new RegExp(`\\{\\{${key}\\}\\}|\\{${key}\\}`, 'gi');
+            result = result.replace(regex, String(val));
+        }
+    }
+    // Clean up any remaining unresolved shortcodes gracefully
+    return result.replace(/\{\{[a-z0-9_]+\}\}/gi, '').replace(/\{[a-z0-9_]+\}/gi, '');
+}
+
+// Shared Header/Footer Layout Wrapper for 10/10 Aesthetic Consistency & Anti-Spam
+function buildEmailWrapper(title, badgeText, contentHtml, brandName = 'ResumePilot AI', siteUrl = 'https://airesume.projectdemo.guru', supportEmail = 'support@airesume.projectdemo.guru') {
+    return `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>${escapeEmailHtml(title || brandName)}</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #090d16; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #1e293b;">
+    <div style="background-color: #090d16; padding: 40px 15px;">
+        <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1);">
+            <!-- Top Gradient Brand Accent -->
+            <div style="height: 6px; background: linear-gradient(90deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);"></div>
+            
+            <!-- Dark Brand Header -->
+            <div style="background-color: #0f172a; padding: 32px 30px; text-align: center;">
+                <div style="display: inline-block; padding: 6px 14px; background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 9999px; margin-bottom: 12px;">
+                    <span style="font-size: 11px; font-weight: 700; color: #818cf8; letter-spacing: 0.5px; text-transform: uppercase;">${badgeText || brandName}</span>
+                </div>
+                <h1 style="margin: 0; font-size: 22px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">${escapeEmailHtml(brandName)}</h1>
+            </div>
+
+            <!-- Main Body Content -->
+            <div style="padding: 36px 32px; background: #ffffff;">
+                ${contentHtml}
+            </div>
+
+            <!-- Footer -->
+            <div style="background-color: #f8fafc; padding: 24px 32px; border-top: 1px solid #f1f5f9; text-align: center; font-size: 12px; color: #64748b;">
+                <p style="margin: 0 0 8px 0; font-weight: 600; color: #475569;">© ${new Date().getFullYear()} ${escapeEmailHtml(brandName)}. All rights reserved.</p>
+                <p style="margin: 0;">Need support? Email us at <a href="mailto:${supportEmail}" style="color: #4f46e5; text-decoration: none; font-weight: 600;">${supportEmail}</a> or visit <a href="${siteUrl}" style="color: #4f46e5; text-decoration: none; font-weight: 600;">${siteUrl}</a></p>
+                <p style="margin: 8px 0 0 0; font-size: 11px; color: #94a3b8;">This is an authenticated enterprise communication. To manage notification preferences, visit your account console.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>`;
+}
+
+/**
+ * Converts custom text / shortcode bodies into high-fidelity HTML email blocks.
+ */
+function formatCustomEmailBody(customBody, vars = {}, brandName = 'ResumePilot AI', siteUrl = 'https://airesume.projectdemo.guru', supportEmail = 'support@airesume.projectdemo.guru') {
+    const rawReplaced = replaceEmailVariables(customBody, vars);
+    
+    // Split into paragraphs / lines
+    const paragraphs = rawReplaced
+        .split(/\n\s*\n/)
+        .map(p => p.trim())
+        .filter(Boolean);
+
+    let contentHtml = '';
+    for (const p of paragraphs) {
+        // If line contains action URL or button link
+        if (vars.action_url && (p.includes(vars.action_url) || p.startsWith('http'))) {
+            contentHtml += `
+                <div style="text-align: center; margin: 28px 0;">
+                    <a href="${vars.action_url}" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 14px; display: inline-block; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);">
+                        Open Enterprise Console &rarr;
+                    </a>
+                </div>
+            `;
+        } else if (p.toLowerCase().includes('assigned access level:') || p.toLowerCase().includes('new access role:')) {
+            contentHtml += `
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 18px 0; font-size: 13px; color: #334155;">
+                    ${escapeEmailHtml(p)}
+                </div>
+            `;
+        } else if (p.startsWith('Hello ') || p.startsWith('Hi ') || p.startsWith('Dear ')) {
+            contentHtml += `<h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0; margin-bottom: 16px;">${escapeEmailHtml(p)}</h2>`;
+        } else {
+            contentHtml += `<p style="font-size: 14px; color: #475569; line-height: 1.65; margin: 12px 0;">${escapeEmailHtml(p).replace(/\n/g, '<br/>')}</p>`;
+        }
+    }
+
+    return buildEmailWrapper('Enterprise Notification', 'ENTERPRISE SYSTEM', contentHtml, brandName, siteUrl, supportEmail);
+}
+
 // Enterprise Dynamic HTML Template Generator
 function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
     const rawVars = vars || {};
     vars = Object.fromEntries(Object.entries(rawVars).map(([key, value]) => [
         key,
-        ['site_url', 'reset_link', 'retry_url'].includes(key) ? safeEmailUrl(value) : escapeEmailHtml(value)
+        ['site_url', 'reset_link', 'retry_url', 'action_url'].includes(key) ? safeEmailUrl(value) : escapeEmailHtml(value)
     ]));
     const brandName = vars.brand_name || escapeEmailHtml(process.env.SMTP_SENDER_NAME || 'ResumePilot AI');
     const siteUrl = vars.site_url || `${process.env.PROTOCOL || 'https'}://${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}`;
@@ -313,43 +411,6 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
 
         return { subject, html };
     }
-
-    // Shared Header/Footer Layout Wrapper for 10/10 Aesthetic Consistency
-    const buildEmailWrapper = (title, badgeText, contentHtml) => `
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    </head>
-    <body style="margin: 0; padding: 0; background-color: #090d16; font-family: 'Segoe UI', Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #1e293b;">
-        <div style="background-color: #090d16; padding: 40px 15px;">
-            <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1);">
-                <!-- Top Gradient Brand Accent -->
-                <div style="height: 6px; background: linear-gradient(90deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);"></div>
-                
-                <!-- Dark Brand Header -->
-                <div style="background-color: #0f172a; padding: 32px 30px; text-align: center;">
-                    <div style="display: inline-block; padding: 6px 14px; background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 9999px; margin-bottom: 12px;">
-                        <span style="font-size: 11px; font-weight: 700; color: #818cf8; letter-spacing: 0.5px; text-transform: uppercase;">${badgeText || brandName}</span>
-                    </div>
-                    <h1 style="margin: 0; font-size: 22px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">${brandName}</h1>
-                </div>
-
-                <!-- Main Body Content -->
-                <div style="padding: 36px 32px; background: #ffffff;">
-                    ${contentHtml}
-                </div>
-
-                <!-- Footer -->
-                <div style="background-color: #f8fafc; padding: 24px 32px; border-top: 1px solid #f1f5f9; text-align: center; font-size: 12px; color: #64748b;">
-                    <p style="margin: 0 0 8px 0; font-weight: 600; color: #475569;">© ${new Date().getFullYear()} ${brandName}. All rights reserved.</p>
-                    <p style="margin: 0;">Need support? Email us at <a href="mailto:${supportEmail}" style="color: #4f46e5; text-decoration: none; font-weight: 600;">${supportEmail}</a> or visit <a href="${siteUrl}" style="color: #4f46e5; text-decoration: none; font-weight: 600;">${siteUrl}</a></p>
-                </div>
-            </div>
-        </div>
-    </body>
-    </html>`;
 
     let bodyHtml = '';
     let subject = '';
@@ -1542,14 +1603,71 @@ async function dispatchNotification(db, { to, templateType, vars = {}, customSub
             return { success: true, skipped: true };
         }
 
-        const rendered = renderEmailTemplate(templateType || 'default', { ...vars, subject: customSubject, body: customBody }, customTemplatesStore);
+        const brandName = config.smtp?.senderName || 'ResumePilot AI';
+        const siteUrl = `${process.env.PROTOCOL || 'https'}://${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}`;
+        const supportEmail = config.smtp?.replyTo || `support@${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}`;
+
+        const mergedVars = {
+            brand_name: brandName,
+            site_url: siteUrl,
+            support_email: supportEmail,
+            candidate_name: vars.user_name || vars.candidate_name || 'Enterprise User',
+            user_name: vars.user_name || vars.candidate_name || 'Enterprise User',
+            organization_name: vars.organization_name || 'ResumePilot Enterprise',
+            inviter_name: vars.inviter_name || 'Enterprise Administrator',
+            role_title: vars.role_title || 'Administrator (TENANT_ADMIN)',
+            workspace_name: vars.workspace_name || 'Main Workspace',
+            team_name: vars.team_name || 'Core Engineering',
+            updater_name: vars.updater_name || 'Security Operations',
+            granted_by: vars.granted_by || 'Enterprise Administrator',
+            support_agent: vars.support_agent || 'support-tier3@resumepilot.ai',
+            reason: vars.reason || 'Technical operational review',
+            expires_at: vars.expires_at || new Date(Date.now() + 4 * 3600 * 1000).toLocaleString(),
+            usage_percent: vars.usage_percent || '85',
+            consumed_tokens: vars.consumed_tokens || '850,000',
+            quota_limit: vars.quota_limit || '1,000,000',
+            reset_date: vars.reset_date || '1st of next month',
+            expires_in: vars.expires_in || '7 days',
+            action_url: vars.action_url || `${siteUrl}/enterprise`,
+            date: vars.date || new Date().toLocaleDateString('en-IN', { dateStyle: 'medium' }),
+            ...vars
+        };
+
+        const rendered = renderEmailTemplate(templateType || 'default', mergedVars, customTemplatesStore);
+        const resolvedSubject = replaceEmailVariables(customSubject || rendered.subject, mergedVars);
+        const resolvedHtml = customBody
+            ? formatCustomEmailBody(customBody, mergedVars, brandName, siteUrl, supportEmail)
+            : rendered.html;
+
+        const textFallback = customBody
+            ? replaceEmailVariables(customBody, mergedVars)
+            : (rendered.html || '')
+                .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+                .replace(/<[^>]+>/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+
+        const senderDomain = config.smtp?.username?.includes('@')
+            ? config.smtp.username.split('@')[1]
+            : (process.env.WEBSITE_NAME || 'airesume.projectdemo.guru');
+        const messageId = `<${Date.now()}.${Math.random().toString(36).substring(2, 11)}@${senderDomain}>`;
 
         const mailOptions = {
-            from: `"${config.smtp.senderName}" <${config.smtp.username}>`,
-            replyTo: config.smtp.replyTo || config.smtp.username,
+            from: `"${config.smtp?.senderName || 'ResumePilot Enterprise'}" <${config.smtp?.username}>`,
+            replyTo: config.smtp?.replyTo || config.smtp?.username,
             to,
-            subject: customSubject || rendered.subject,
-            html: customBody ? `<div style="font-family: Arial; padding: 20px;">${customBody}</div>` : rendered.html
+            subject: resolvedSubject,
+            html: resolvedHtml,
+            text: textFallback,
+            messageId,
+            headers: {
+                'X-Mailer': 'ResumePilot Enterprise Mail Gateway/2.0',
+                'X-Priority': '3',
+                'Precedence': 'bulk',
+                'List-Unsubscribe': `<mailto:${supportEmail}?subject=unsubscribe>, <${siteUrl}/unsubscribe>`,
+                'Auto-Submitted': 'auto-generated',
+                'X-Auto-Response-Suppress': 'OOF, AutoReply',
+            }
         };
 
         const result = await dispatchMailWithFallback(config, mailOptions);
@@ -1558,6 +1676,7 @@ async function dispatchNotification(db, { to, templateType, vars = {}, customSub
             subject: mailOptions.subject,
             templateType: templateType || 'custom',
             status: 'SENT',
+            html: resolvedHtml,
             messageId: result.messageId,
             transport: result.transport
         });
