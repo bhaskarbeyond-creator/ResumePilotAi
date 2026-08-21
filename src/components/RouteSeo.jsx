@@ -21,8 +21,8 @@ const PUBLIC_PAGES = {
 // All route prefixes that are private (authenticated or sensitive) — must not be indexed.
 const PRIVATE_PREFIXES = [
   '/dashboard', '/dashboard2', '/build-resume', '/create-resume',
-  '/adm', '/blog-editor', '/portfolio/builder', '/portfolio/builder',
-  '/export', '/shared', '/coverletter', '/resume', '/front',
+  '/adm', '/blog-editor', '/portfolio/builder',
+  '/export', '/shared', '/coverletter', '/resume', '/front', '/enterprise',
 ];
 
 // Private page titles — shown in browser tab but never indexed.
@@ -39,6 +39,7 @@ const PRIVATE_TITLES = {
   '/export': `Export — ${SITE_NAME}`,
   '/shared': `Shared Resume — ${SITE_NAME}`,
   '/front': `${SITE_NAME}`,
+  '/enterprise': `Enterprise Console — ${SITE_NAME}`,
 };
 
 export default function RouteSeo() {

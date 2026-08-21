@@ -358,6 +358,13 @@ function EnterpriseConsoleInner() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
+  useEffect(() => {
+    const currentNav = NAVIGATION.find(item => item.id === activeTab);
+    const tabLabel = currentNav ? currentNav.label : 'Console';
+    const tenantName = tenant?.displayName ? `${tenant.displayName} — ` : '';
+    document.title = `${tabLabel} — ${tenantName}Enterprise Console — ResumePilot AI`;
+  }, [activeTab, tenant?.displayName]);
+
   if (!enabled && !loading) {
     return (
       <main className="enterprise-empty-state" role="main">

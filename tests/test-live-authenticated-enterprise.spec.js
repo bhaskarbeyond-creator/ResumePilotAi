@@ -39,7 +39,7 @@ test.describe('Live Authenticated Enterprise E2E Audit', () => {
       email: testEmail,
       password: testPassword,
       emailVerified: true,
-      displayName: 'E2E Enterprise Admin'
+      displayName: 'Enterprise Administrator'
     });
     testUid = userRecord.uid;
 
@@ -50,7 +50,7 @@ test.describe('Live Authenticated Enterprise E2E Audit', () => {
     // 4. Ensure tenant and default workspace in Firestore so context resolves instantly
     const db = getFirestore();
     const registry = new FirestoreTenantRegistry({ db, admin: { firestore: { FieldValue } } });
-    const ensured = await registry.ensurePersonalTenant(testUid, { displayName: 'E2E Enterprise Admin' });
+    const ensured = await registry.ensurePersonalTenant(testUid, { displayName: 'Enterprise Administrator' });
     tenantId = ensured.tenantId;
     console.log(`Ensured tenant ${tenantId} for test user.`);
   });
