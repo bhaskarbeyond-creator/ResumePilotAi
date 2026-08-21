@@ -9,6 +9,47 @@
  * Resolve the admin email from Firestore SMTP settings.
  * Falls back to a series of env vars if DB is unavailable.
  */
+function humanizeName(raw, fallback = 'Team Member') {
+    if (!raw || typeof raw !== 'string') return fallback;
+    let name = raw.trim();
+    if (name.includes('@')) {
+        name = name.split('@')[0];
+    }
+    name = name.replace(/\d+$/, '');
+    name = name.replace(/[._\-+]/g, ' ').trim();
+    if (!name || name.toLowerCase() === 'user' || name.toLowerCase() === 'candidate') return fallback;
+    return name.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+}
+
+function humanizeRole(role, fallback = 'Enterprise Team Member') {
+    if (!role || typeof role !== 'string') return fallback;
+    const r = role.trim().toUpperCase();
+    const map = {
+        'TENANT_OWNER': 'Workspace Owner & Administrator',
+        'OWNER': 'Workspace Owner & Administrator',
+        'TENANT_ADMIN': 'Enterprise Administrator',
+        'ADMIN': 'Enterprise Administrator',
+        'TENANT_MEMBER': 'Enterprise Team Member',
+        'MEMBER': 'Enterprise Team Member',
+        'TENANT_BILLING': 'Billing & Financial Manager',
+        'BILLING': 'Billing & Financial Manager',
+        'TENANT_SECURITY': 'Security & Compliance Officer',
+        'SECURITY': 'Security & Compliance Officer',
+        'TENANT_AUDITOR': 'Compliance Auditor (Read-Only)',
+        'AUDITOR': 'Compliance Auditor (Read-Only)'
+    };
+    if (map[r]) return map[r];
+    if (r.startsWith('CUSTOM_')) {
+        return humanizeName(r.replace(/^CUSTOM_/, '')) + ' (Custom Role)';
+    }
+    return humanizeName(r, fallback);
+}
+
+function humanizeOrgName(name, fallback = 'your enterprise workspace') {
+    if (!name || typeof name !== 'string' || name === 'an enterprise organization') return fallback;
+    return name.trim();
+}
+
 async function getAdminEmail(db) {
     // Priority 1: Unified Email Config via backend/routes/email.js (reads local JSON + Firestore data/system_settings)
     try {
@@ -74,15 +115,15 @@ class EmailNotifier {
      */
     static async notifyUserRegistration(db, { userEmail, userName = 'Valued User' }) {
         if (!userEmail) return;
-
+        const name = humanizeName(userName || userEmail, 'Valued Member');
         const userDelivery = await sendNotification(db, {
             to: userEmail,
             templateType: 'welcome',
-            vars: { candidate_name: userName, site_url: `${process.env.PROTOCOL || 'https'}://${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}` }
+            vars: { candidate_name: name, user_name: name, site_url: `${process.env.PROTOCOL || 'https'}://${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}` }
         });
         const adminEmail = await getAdminEmail(db);
         const adminDelivery = adminEmail
-            ? await sendNotification(db, { to: adminEmail, templateType: 'account_created_admin', vars: { candidate_name: `${userName} (${userEmail})`, date: new Date().toLocaleDateString('en-IN') } })
+            ? await sendNotification(db, { to: adminEmail, templateType: 'account_created_admin', vars: { candidate_name: `${name} (${userEmail})`, date: new Date().toLocaleDateString('en-IN') } })
             : { success: false, deliveryState: 'DELIVERY_FAILED', error: 'Admin recipient unavailable' };
         return { userDelivery, adminDelivery };
     }
@@ -92,10 +133,11 @@ class EmailNotifier {
      */
     static async notifyPasswordReset(db, { userEmail, userName = 'User', resetLink }) {
         if (!userEmail) return;
+        const name = humanizeName(userName || userEmail, 'User');
         return sendNotification(db, {
             to: userEmail,
             templateType: 'password_reset',
-            vars: { candidate_name: userName, reset_link: resetLink }
+            vars: { candidate_name: name, user_name: name, reset_link: resetLink }
         });
     }
 
@@ -314,32 +356,40 @@ class EmailNotifier {
         if (!userEmail) return { success: false, deliveryState: 'DELIVERY_FAILED', error: 'Invitation recipient unavailable' };
         const siteUrl = `${process.env.PROTOCOL || 'https'}://${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}`;
         const url = actionUrl || `${siteUrl}/enterprise`;
+        const humanName = humanizeName(userEmail, 'Team Member');
+        const humanInviter = humanizeName(inviterEmail, 'Your team administrator');
+        const humanOrg = humanizeOrgName(organizationName, 'your enterprise workspace');
+        const humanRoleTitle = humanizeRole(roleTitle, 'Enterprise Team Member');
+
         return sendNotification(db, {
             to: userEmail,
             templateType: 'enterprise-invitation',
             vars: {
-                user_name: userEmail.split('@')[0],
-                inviter_name: inviterEmail || 'Enterprise Administrator',
-                organization_name: organizationName,
-                role_title: roleTitle,
+                user_name: humanName,
+                candidate_name: humanName,
+                inviter_name: humanInviter,
+                organization_name: humanOrg,
+                role_title: humanRoleTitle,
                 action_url: url,
                 expires_in: '7 days',
             },
-            customSubject: `You have been invited to join ${organizationName} on ResumePilot Enterprise`,
+            customSubject: `You're invited to join ${humanOrg} on ResumePilot Enterprise`,
             customBody: [
-                `Hello {{user_name}},`,
+                `Hi ${humanName},`,
                 ``,
-                `{{inviter_name}} has invited you to join the enterprise workspace for {{organization_name}} on ResumePilot AI.`,
+                `${humanInviter} has invited you to join the **${humanOrg}** team workspace on ResumePilot AI.`,
                 ``,
-                `Your assigned access level: {{role_title}}`,
+                `**Your Assigned Role:** ${humanRoleTitle}`,
                 ``,
-                `Click the link below to accept your invitation and access your enterprise tools, collaborative resume workspace, and AI features:`,
-                `{{action_url}}`,
+                `As part of this workspace, you'll have full access to our collaborative resume builders, AI-assisted content generators, team templates, and candidate evaluation tools.`,
                 ``,
-                `This invitation link will expire in {{expires_in}}. If you did not expect this invitation, you can safely ignore this email.`,
+                `To activate your workspace access and get started, simply click the link below:`,
+                `${url}`,
                 ``,
-                `Best regards,`,
-                `The {{organization_name}} Team`,
+                `*Note: For your security, this invitation remains active for 7 days. If you weren't expecting this invitation, feel free to ignore this email or reach out to ${humanInviter}.*`,
+                ``,
+                `Warm regards,`,
+                `The ${humanOrg} Team`,
             ].join('\n'),
         });
     }

@@ -13,50 +13,50 @@ const DEFAULT_TEMPLATES = [
     name: 'Member Invitation & Onboarding',
     category: 'Access & IAM',
     icon: FiUserPlus,
-    subject: 'You have been invited to join {{organization_name}} on ResumePilot Enterprise',
+    subject: 'You\'re invited to join {{organization_name}} on ResumePilot Enterprise',
     description: 'Sent when an administrator invites a new teammate or provisions access to the enterprise workspace.',
     variables: ['{{organization_name}}', '{{inviter_name}}', '{{user_name}}', '{{role_title}}', '{{action_url}}', '{{expires_in}}'],
-    body: `Hello {{user_name}},\n\n{{inviter_name}} has invited you to join the enterprise workspace for {{organization_name}} on ResumePilot AI.\n\nYour assigned access level: {{role_title}}\n\nClick the button below to accept your invitation and access your enterprise tools, collaborative resume workspace, and AI features:\n\n{{action_url}}\n\nThis invitation link will expire in {{expires_in}}. If you did not expect this invitation, you can safely ignore this email.\n\nBest regards,\nThe {{organization_name}} Team`
+    body: `Hi {{user_name}},\n\n{{inviter_name}} has invited you to join the **{{organization_name}}** team workspace on ResumePilot AI.\n\n**Your Assigned Role:** {{role_title}}\n\nAs part of this workspace, you'll have full access to our collaborative resume builders, AI-assisted content tools, team templates, and candidate evaluation pipelines.\n\nTo activate your workspace access and get started, click the link below:\n\n{{action_url}}\n\n*Note: For your security, this invitation remains active for {{expires_in}}. If you weren't expecting this invitation, feel free to ignore this email or reach out to {{inviter_name}}.*\n\nWarm regards,\nThe {{organization_name}} Team`
   },
   {
     id: 'role_change',
     name: 'Access Level & Role Update',
     category: 'Access & IAM',
     icon: FiShield,
-    subject: 'Your access level in {{organization_name}} has been updated to {{role_title}}',
+    subject: 'Access Role Updated: {{role_title}} — {{organization_name}}',
     description: 'Sent immediately when an administrator upgrades or downgrades a member’s role in the enterprise console.',
     variables: ['{{organization_name}}', '{{user_name}}', '{{updater_name}}', '{{role_title}}', '{{action_url}}'],
-    body: `Hello {{user_name}},\n\nYour access privileges in {{organization_name}} have been updated by {{updater_name}}.\n\nYour new role: {{role_title}}\n\nThis change takes effect immediately across all enterprise resources, document libraries, and AI workspaces.\n\nTo view your updated permissions, sign in to your enterprise console:\n{{action_url}}\n\nBest regards,\nResumePilot Enterprise Security`
+    body: `Hi {{user_name}},\n\nWe're letting you know that {{updater_name}} has updated your access permissions for **{{organization_name}}**.\n\n**Your Updated Role:** {{role_title}}\n\nThis update is already active, giving you immediate access to your updated team permissions, shared templates, and workspace tools.\n\nYou can view your updated workspace here:\n{{action_url}}\n\nIf you have any questions about this change, please feel free to connect with {{updater_name}} or your organization administrator.\n\nBest regards,\nThe {{organization_name}} Team`
   },
   {
     id: 'team_assignment',
     name: 'Workspace / Team Assignment',
     category: 'Collaboration',
     icon: FiSliders,
-    subject: 'You have been added to the {{team_name}} team in {{organization_name}}',
+    subject: 'You\'ve been added to the {{team_name}} team in {{organization_name}}',
     description: 'Sent when a member is assigned to a functional squad or departmental workspace.',
     variables: ['{{organization_name}}', '{{user_name}}', '{{team_name}}', '{{workspace_name}}', '{{action_url}}'],
-    body: `Hello {{user_name}},\n\nYou have been added to the {{team_name}} team within the {{workspace_name}} workspace in {{organization_name}}.\n\nYou now have access to shared team documents, custom templates, and collaboration channels.\n\nAccess your team dashboard here:\n{{action_url}}\n\nHappy collaborating!\nThe {{organization_name}} Team`
+    body: `Hi {{user_name}},\n\nGreat news! You've been added to the **{{team_name}}** team within the **{{workspace_name}}** workspace in **{{organization_name}}**.\n\nYou can now collaborate with teammates, share live resume reviews, and access team-specific templates and AI workflows.\n\nJump into your new workspace here:\n{{action_url}}\n\nWe're excited to have you collaborating with the team!\n\nWarmly,\nThe {{organization_name}} Team`
   },
   {
     id: 'security_alert',
     name: 'Security & Break-Glass Support Access Alert',
     category: 'Security & Governance',
     icon: FiLock,
-    subject: '🚨 Security Notice: Break-Glass Diagnostic Access Granted for {{organization_name}}',
+    subject: '🚨 Security Notice: Emergency Diagnostic Support Access for {{organization_name}}',
     description: 'High-priority notification sent to all Tenant Administrators whenever time-bound emergency support access is activated.',
     variables: ['{{organization_name}}', '{{granted_by}}', '{{support_agent}}', '{{reason}}', '{{expires_at}}', '{{action_url}}'],
-    body: `ATTENTION: Enterprise Administrator,\n\nA time-bound break-glass diagnostic grant has been issued for your organization:\n\nOrganization: {{organization_name}}\nAuthorized By: {{granted_by}}\nSupport Subject: {{support_agent}}\nReason: {{reason}}\nValid Until: {{expires_at}}\n\nAll diagnostic interactions are cryptographically recorded in your immutable audit trail.\n\nInspect or revoke this grant at any time in the Security Console:\n{{action_url}}\n\nResumePilot Sovereign Security Engine`
+    body: `Hello Enterprise Administrator,\n\nThis is an automated security notice informing you that time-bound emergency diagnostic support was authorized for **{{organization_name}}**.\n\n• **Authorized By:** {{granted_by}}\n• **Support Engineer:** {{support_agent}}\n• **Purpose:** {{reason}}\n• **Valid Until:** {{expires_at}}\n\nEvery diagnostic interaction is cryptographically signed and recorded to your organization's tamper-evident audit ledger.\n\nYou can inspect live diagnostic activity or revoke this grant at any time in your Security Center:\n{{action_url}}\n\nResumePilot Enterprise Security Team`
   },
   {
     id: 'quota_warning',
     name: 'AI Token Quota Velocity Alert',
     category: 'Usage & Billing',
     icon: FiAlertTriangle,
-    subject: '⚠️ Quota Alert: {{organization_name}} has reached {{usage_percent}}% of monthly AI capacity',
+    subject: '⚠️ AI Quota Notice: {{organization_name}} has reached {{usage_percent}}% of monthly allocation',
     description: 'Proactive alert sent to Billing Administrators and Owners when token consumption approaches plan limits.',
     variables: ['{{organization_name}}', '{{usage_percent}}', '{{consumed_tokens}}', '{{quota_limit}}', '{{reset_date}}', '{{action_url}}'],
-    body: `Hello Billing Administrator,\n\nYour organization {{organization_name}} has consumed {{consumed_tokens}} of {{quota_limit}} AI tokens ({{usage_percent}}% of monthly capacity).\n\nYour quota cycle resets on {{reset_date}}.\n\nTo prevent interruption to AI resume generation, interview coaching, or ATS scanning, consider upgrading your enterprise compute tier or adjusting per-user daily rate limits:\n\n{{action_url}}\n\nResumePilot Enterprise Billing`
+    body: `Hi Billing Administrator,\n\nWe wanted to give you a quick heads-up: **{{organization_name}}** has consumed **{{consumed_tokens}}** of its **{{quota_limit}}** monthly AI token allocation (**{{usage_percent}}%** of total capacity).\n\nYour organization's usage counter will reset on **{{reset_date}}**.\n\nTo ensure uninterrupted access to AI resume drafting, interview simulations, and ATS optimization for your teammates, you can review consumption trends or upgrade compute capacity here:\n\n{{action_url}}\n\nWarm regards,\nResumePilot Enterprise Billing Team`
   }
 ];
 
@@ -85,14 +85,14 @@ export default function EnterpriseEmailTab() {
 
   const renderSamplePreview = (text) => {
     if (!text) return '';
-    const org = tenant?.displayName || 'Acme Corp';
+    const org = tenant?.displayName || 'Babu M\'s Personal Workspace';
     const userName = user?.displayName || 'Alex Morgan';
     return text
       .replace(/{{organization_name}}/g, org)
       .replace(/{{inviter_name}}/g, `${user?.displayName || 'Babu M'} (Admin)`)
       .replace(/{{user_name}}/g, userName)
-      .replace(/{{role_title}}/g, 'Administrator (TENANT_ADMIN)')
-      .replace(/{{team_name}}/g, 'Executive Engineering')
+      .replace(/{{role_title}}/g, 'Enterprise Administrator')
+      .replace(/{{team_name}}/g, 'Core Engineering')
       .replace(/{{workspace_name}}/g, 'North America Hub')
       .replace(/{{updater_name}}/g, 'Security Operations')
       .replace(/{{granted_by}}/g, 'Babu M (Tenant Owner)')

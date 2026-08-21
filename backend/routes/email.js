@@ -262,6 +262,55 @@ function safeEmailUrl(value, fallback = '#') {
     } catch (_) { return fallback; }
 }
 
+function humanizeName(raw, fallback = 'Team Member') {
+    if (!raw || typeof raw !== 'string') return fallback;
+    let name = raw.trim();
+    if (name.includes('@')) {
+        name = name.split('@')[0];
+    }
+    name = name.replace(/\d+$/, '');
+    name = name.replace(/[._\-+]/g, ' ').trim();
+    if (!name || name.toLowerCase() === 'user' || name.toLowerCase() === 'candidate') return fallback;
+    return name.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+}
+
+function humanizeRole(role, fallback = 'Enterprise Team Member') {
+    if (!role || typeof role !== 'string') return fallback;
+    const r = role.trim().toUpperCase();
+    const map = {
+        'TENANT_OWNER': 'Workspace Owner & Administrator',
+        'OWNER': 'Workspace Owner & Administrator',
+        'TENANT_ADMIN': 'Enterprise Administrator',
+        'ADMIN': 'Enterprise Administrator',
+        'TENANT_MEMBER': 'Enterprise Team Member',
+        'MEMBER': 'Enterprise Team Member',
+        'TENANT_BILLING': 'Billing & Financial Manager',
+        'BILLING': 'Billing & Financial Manager',
+        'TENANT_SECURITY': 'Security & Compliance Officer',
+        'SECURITY': 'Security & Compliance Officer',
+        'TENANT_AUDITOR': 'Compliance Auditor (Read-Only)',
+        'AUDITOR': 'Compliance Auditor (Read-Only)'
+    };
+    if (map[r]) return map[r];
+    if (r.startsWith('CUSTOM_')) {
+        return humanizeName(r.replace(/^CUSTOM_/, '')) + ' (Custom Role)';
+    }
+    return humanizeName(r, fallback);
+}
+
+function humanizeOrgName(name, fallback = 'your enterprise workspace') {
+    if (!name || typeof name !== 'string' || name === 'an enterprise organization') return fallback;
+    return name.trim();
+}
+
+function formatInlineMarkdown(text) {
+    if (!text) return '';
+    let escaped = escapeEmailHtml(text);
+    escaped = escaped.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    escaped = escaped.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    return escaped;
+}
+
 /**
  * Universal Variable Replacement Engine
  * Replaces {{key}} and {key} tokens while cleanly eliminating unparsed tags.
@@ -337,23 +386,48 @@ function formatCustomEmailBody(customBody, vars = {}, brandName = 'ResumePilot A
     for (const p of paragraphs) {
         // If line contains action URL or button link
         if (vars.action_url && (p.includes(vars.action_url) || p.startsWith('http'))) {
+            let btnLabel = 'Open Enterprise Console &rarr;';
+            const lower = (customBody || '').toLowerCase();
+            if (lower.includes('invit') || lower.includes('join')) {
+                btnLabel = 'Accept Invitation &rarr;';
+            } else if (lower.includes('workspace') || lower.includes('team')) {
+                btnLabel = 'Open Team Workspace &rarr;';
+            } else if (lower.includes('audit') || lower.includes('security') || lower.includes('break-glass')) {
+                btnLabel = 'Review Security Audit Log &rarr;';
+            } else if (lower.includes('quota') || lower.includes('token') || lower.includes('usage')) {
+                btnLabel = 'Inspect Token Usage &rarr;';
+            }
+
             contentHtml += `
                 <div style="text-align: center; margin: 28px 0;">
-                    <a href="${vars.action_url}" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 14px; display: inline-block; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);">
-                        Open Enterprise Console &rarr;
+                    <a href="${vars.action_url}" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 14px; display: inline-block; box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4);">
+                        ${btnLabel}
                     </a>
                 </div>
             `;
-        } else if (p.toLowerCase().includes('assigned access level:') || p.toLowerCase().includes('new access role:')) {
+        } else if (p.toLowerCase().includes('assigned access level:') || p.toLowerCase().includes('assigned role:') || p.toLowerCase().includes('new access role:')) {
             contentHtml += `
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 18px 0; font-size: 13px; color: #334155;">
-                    ${escapeEmailHtml(p)}
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #4f46e5; border-radius: 8px; padding: 16px 20px; margin: 20px 0; font-size: 14px; color: #1e293b; font-weight: 600;">
+                    ${formatInlineMarkdown(p)}
                 </div>
             `;
         } else if (p.startsWith('Hello ') || p.startsWith('Hi ') || p.startsWith('Dear ')) {
-            contentHtml += `<h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0; margin-bottom: 16px;">${escapeEmailHtml(p)}</h2>`;
+            contentHtml += `<h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0; margin-bottom: 16px;">${formatInlineMarkdown(p)}</h2>`;
+        } else if (p.startsWith('•') || p.startsWith('-') || p.startsWith('* ')) {
+            const items = p.split('\n').map(item => item.replace(/^[•\-\*]\s*/, '').trim()).filter(Boolean);
+            contentHtml += `
+                <ul style="margin: 16px 0; padding-left: 24px; font-size: 14px; color: #475569; line-height: 1.75;">
+                    ${items.map(item => `<li>${formatInlineMarkdown(item)}</li>`).join('')}
+                </ul>
+            `;
+        } else if (p.toLowerCase().startsWith('note:') || p.toLowerCase().startsWith('*note:')) {
+            contentHtml += `
+                <div style="background: #f1f5f9; border-radius: 8px; padding: 12px 16px; margin: 16px 0; font-size: 12px; color: #64748b; line-height: 1.5;">
+                    ${formatInlineMarkdown(p)}
+                </div>
+            `;
         } else {
-            contentHtml += `<p style="font-size: 14px; color: #475569; line-height: 1.65; margin: 12px 0;">${escapeEmailHtml(p).replace(/\n/g, '<br/>')}</p>`;
+            contentHtml += `<p style="font-size: 14px; color: #475569; line-height: 1.65; margin: 14px 0;">${formatInlineMarkdown(p).replace(/\n/g, '<br/>')}</p>`;
         }
     }
 
@@ -839,89 +913,92 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
         case 'enterprise-invitation':
         case 'enterprise_invitation':
         case 'invitation':
-            subject = vars.subject || `You have been invited to join ${vars.organization_name || 'Acme Corp'} on ResumePilot Enterprise`;
+            subject = vars.subject || `You're invited to join ${vars.organization_name || 'your enterprise workspace'} on ResumePilot Enterprise`;
             bodyHtml = buildEmailWrapper(
                 'Enterprise Workspace Invitation',
                 'ENTERPRISE INVITATION 🏢',
                 `
-                <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">Hello ${candidateName},</h2>
-                <p style="font-size: 14px; color: #475569; line-height: 1.6;">${vars.inviter_name || 'An administrator'} has invited you to join the enterprise organization <strong>${vars.organization_name || 'Enterprise Organization'}</strong> on ResumePilot AI.</p>
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; margin: 20px 0;">
-                    <p style="margin: 0 0 8px; font-size: 13px; color: #334155;"><strong>Assigned Access Level:</strong> ${vars.role_title || 'Enterprise Member (MEMBER)'}</p>
-                    <p style="margin: 0; font-size: 13px; color: #64748b;">Accept your invitation to access collaborative workspaces, resume drafting tools, and enterprise AI quotas.</p>
+                <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">Hi ${candidateName}, 👋</h2>
+                <p style="font-size: 14px; color: #475569; line-height: 1.6;">${vars.inviter_name || 'Your team administrator'} has invited you to join the <strong>${vars.organization_name || 'enterprise'}</strong> workspace on ResumePilot AI.</p>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #4f46e5; border-radius: 8px; padding: 18px 20px; margin: 20px 0;">
+                    <p style="margin: 0 0 6px; font-size: 14px; color: #1e293b; font-weight: 700;">Assigned Role: ${vars.role_title || 'Enterprise Team Member'}</p>
+                    <p style="margin: 0; font-size: 13px; color: #64748b; line-height: 1.5;">You'll have access to collaborative resume builders, AI content optimization, team templates, and candidate evaluation tools.</p>
                 </div>
-                <div style="text-align: center; margin-top: 26px;">
-                    <a href="${vars.action_url || `${siteUrl}/enterprise`}" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 14px; display: inline-block;">Accept Enterprise Invitation &rarr;</a>
+                <div style="text-align: center; margin: 28px 0;">
+                    <a href="${vars.action_url || `${siteUrl}/enterprise`}" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 14px; display: inline-block; box-shadow: 0 10px 20px -5px rgba(79,70,229,0.4);">Accept Your Invitation &rarr;</a>
                 </div>
-                <p style="font-size: 12px; color: #94a3b8; margin-top: 24px; text-align: center;">This invitation link will expire in 7 days. If you did not expect this invitation, you can safely ignore this email.</p>`
+                <p style="font-size: 12px; color: #94a3b8; margin-top: 24px; text-align: center;">This invitation link remains active for ${vars.expires_in || '7 days'}. If you did not expect this invitation, you can safely ignore this email.</p>`
             );
             break;
 
         case 'enterprise_role_update':
         case 'role_update':
-            subject = vars.subject || `Access Level Updated: ${vars.role_title || 'New Role'} — ${vars.organization_name || brandName}`;
+            subject = vars.subject || `Access Role Updated: ${vars.role_title || 'Updated Role'} — ${vars.organization_name || brandName}`;
             bodyHtml = buildEmailWrapper(
                 'Access Level Update Notice',
                 'ACCESS & IAM UPDATE 🛡️',
                 `
-                <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">Hello ${candidateName},</h2>
-                <p style="font-size: 14px; color: #475569; line-height: 1.6;">Your access permissions for <strong>${vars.organization_name || 'your enterprise organization'}</strong> have been updated by ${vars.updater_name || 'an administrator'}.</p>
-                <div style="background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 12px; padding: 18px; margin: 20px 0;">
+                <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">Hi ${candidateName},</h2>
+                <p style="font-size: 14px; color: #475569; line-height: 1.6;">Your workspace permissions for <strong>${vars.organization_name || 'your enterprise organization'}</strong> have been updated by ${vars.updater_name || 'an administrator'}.</p>
+                <div style="background: #eef2ff; border: 1px solid #c7d2fe; border-left: 4px solid #6366f1; border-radius: 8px; padding: 18px 20px; margin: 20px 0;">
                     <p style="margin: 0; font-size: 14px; color: #3730a3; font-weight: 700;">New Access Role: ${vars.role_title || 'Updated Role'}</p>
                 </div>
-                <div style="text-align: center; margin-top: 24px;">
-                    <a href="${vars.action_url || `${siteUrl}/enterprise`}" style="background-color: #4f46e5; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 13px; display: inline-block;">Open Enterprise Console &rarr;</a>
+                <div style="text-align: center; margin: 26px 0;">
+                    <a href="${vars.action_url || `${siteUrl}/enterprise`}" style="background-color: #4f46e5; color: #ffffff; padding: 13px 30px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 13px; display: inline-block;">Open Enterprise Console &rarr;</a>
                 </div>`
             );
             break;
 
         case 'enterprise_workspace_assignment':
         case 'workspace_assignment':
-            subject = vars.subject || `Assigned to ${vars.workspace_name || 'Workspace'} — ${vars.organization_name || brandName}`;
+            subject = vars.subject || `Added to ${vars.workspace_name || 'Workspace'} — ${vars.organization_name || brandName}`;
             bodyHtml = buildEmailWrapper(
                 'Workspace Assignment',
                 'COLLABORATION UPDATE 🗂️',
                 `
-                <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">Hello ${candidateName},</h2>
-                <p style="font-size: 14px; color: #475569; line-height: 1.6;">You have been assigned to workspace <strong>${vars.workspace_name || 'Workspace'}</strong> ${vars.team_name ? `and team <strong>${vars.team_name}</strong>` : ''} in ${vars.organization_name || 'ResumePilot Enterprise'}.</p>
-                <div style="text-align: center; margin-top: 24px;">
-                    <a href="${vars.action_url || `${siteUrl}/enterprise`}" style="background-color: #4f46e5; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 13px; display: inline-block;">Go to Workspace &rarr;</a>
+                <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">Hi ${candidateName},</h2>
+                <p style="font-size: 14px; color: #475569; line-height: 1.6;">You've been assigned to workspace <strong>${vars.workspace_name || 'Workspace'}</strong> ${vars.team_name ? `and team <strong>${vars.team_name}</strong>` : ''} in ${vars.organization_name || 'ResumePilot Enterprise'}.</p>
+                <div style="text-align: center; margin: 26px 0;">
+                    <a href="${vars.action_url || `${siteUrl}/enterprise`}" style="background-color: #4f46e5; color: #ffffff; padding: 13px 30px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 13px; display: inline-block;">Open Team Workspace &rarr;</a>
                 </div>`
             );
             break;
 
         case 'enterprise_security_alert':
         case 'security_alert':
-            subject = vars.subject || `🚨 Security Alert: Break-Glass Support Access — ${vars.organization_name || brandName}`;
+            subject = vars.subject || `🚨 Security Notice: Emergency Diagnostic Support Access for ${vars.organization_name || brandName}`;
             bodyHtml = buildEmailWrapper(
                 'Enterprise Security Alert',
                 'SECURITY ALERT 🚨',
                 `
                 <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-                    <h3 style="color: #991b1b; margin: 0 0 6px 0; font-size: 16px; font-weight: 800;">Emergency Break-Glass Access Granted</h3>
-                    <p style="color: #7f1d1d; margin: 0; font-size: 13px; line-height: 1.5;">A time-bound support grant was authorized for support engineer <strong>${vars.support_agent || 'Support Engineer'}</strong>.</p>
+                    <h3 style="color: #991b1b; margin: 0 0 6px 0; font-size: 16px; font-weight: 800;">Emergency Break-Glass Access Authorized</h3>
+                    <p style="color: #7f1d1d; margin: 0; font-size: 13px; line-height: 1.5;">A time-bound diagnostic grant was issued for support engineer <strong>${vars.support_agent || 'Support Engineer'}</strong>.</p>
                 </div>
-                <p style="font-size: 13px; color: #475569;"><strong>Reason:</strong> ${vars.reason || 'Technical investigation'}</p>
-                <p style="font-size: 13px; color: #475569;"><strong>Expires:</strong> ${vars.expires_at || 'In 4 hours'}</p>
-                <div style="text-align: center; margin-top: 24px;">
-                    <a href="${vars.action_url || `${siteUrl}/enterprise?tab=audit`}" style="background-color: #dc2626; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 13px; display: inline-block;">Review Audit Log &rarr;</a>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin: 16px 0; font-size: 13px; color: #334155; line-height: 1.6;">
+                    <p style="margin: 0 0 6px;"><strong>Authorized By:</strong> ${vars.granted_by || 'Enterprise Administrator'}</p>
+                    <p style="margin: 0 0 6px;"><strong>Reason:</strong> ${vars.reason || 'Technical investigation'}</p>
+                    <p style="margin: 0;"><strong>Valid Until:</strong> ${vars.expires_at || 'In 4 hours'}</p>
+                </div>
+                <div style="text-align: center; margin: 26px 0;">
+                    <a href="${vars.action_url || `${siteUrl}/enterprise?tab=audit`}" style="background-color: #dc2626; color: #ffffff; padding: 13px 30px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 13px; display: inline-block;">Review Audit Log &rarr;</a>
                 </div>`
             );
             break;
 
         case 'enterprise_quota_alert':
         case 'quota_alert':
-            subject = vars.subject || `⚠️ AI Quota Alert: ${vars.usage_percent || '80'}% Consumed — ${vars.organization_name || brandName}`;
+            subject = vars.subject || `⚠️ AI Quota Notice: ${vars.usage_percent || '80'}% of Monthly Allocation Used — ${vars.organization_name || brandName}`;
             bodyHtml = buildEmailWrapper(
                 'AI Quota Alert',
                 'QUOTA WARNING ⚡',
                 `
                 <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-                    <h3 style="color: #92400e; margin: 0 0 6px 0; font-size: 16px; font-weight: 800;">Token Consumption Velocity Alert</h3>
+                    <h3 style="color: #92400e; margin: 0 0 6px 0; font-size: 16px; font-weight: 800;">Token Allocation Velocity Notice</h3>
                     <p style="color: #b45309; margin: 0; font-size: 13px; line-height: 1.5;">Your organization has consumed <strong>${vars.usage_percent || '85'}%</strong> of its monthly AI token allocation (${vars.consumed_tokens || '850,000'} / ${vars.quota_limit || '1,000,000'} tokens).</p>
                 </div>
-                <div style="text-align: center; margin-top: 24px;">
-                    <a href="${vars.action_url || `${siteUrl}/enterprise?tab=usage`}" style="background-color: #d97706; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 13px; display: inline-block;">Inspect Token Usage &rarr;</a>
+                <div style="text-align: center; margin: 26px 0;">
+                    <a href="${vars.action_url || `${siteUrl}/enterprise?tab=usage`}" style="background-color: #d97706; color: #ffffff; padding: 13px 30px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 13px; display: inline-block;">Inspect Token Usage &rarr;</a>
                 </div>`
             );
             break;
@@ -1607,19 +1684,27 @@ async function dispatchNotification(db, { to, templateType, vars = {}, customSub
         const siteUrl = `${process.env.PROTOCOL || 'https'}://${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}`;
         const supportEmail = config.smtp?.replyTo || `support@${process.env.WEBSITE_NAME || 'airesume.projectdemo.guru'}`;
 
+        const rawCandidate = vars.user_name || vars.candidate_name || to;
+        const candidateName = humanizeName(rawCandidate, 'Team Member');
+        const inviterName = humanizeName(vars.inviter_name, 'Your team administrator');
+        const orgName = humanizeOrgName(vars.organization_name, 'your enterprise workspace');
+        const roleTitle = humanizeRole(vars.role_title, 'Enterprise Team Member');
+        const updaterName = humanizeName(vars.updater_name, 'an administrator');
+        const grantedBy = humanizeName(vars.granted_by, 'an administrator');
+
         const mergedVars = {
             brand_name: brandName,
             site_url: siteUrl,
             support_email: supportEmail,
-            candidate_name: vars.user_name || vars.candidate_name || 'Enterprise User',
-            user_name: vars.user_name || vars.candidate_name || 'Enterprise User',
-            organization_name: vars.organization_name || 'ResumePilot Enterprise',
-            inviter_name: vars.inviter_name || 'Enterprise Administrator',
-            role_title: vars.role_title || 'Administrator (TENANT_ADMIN)',
+            candidate_name: candidateName,
+            user_name: candidateName,
+            organization_name: orgName,
+            inviter_name: inviterName,
+            role_title: roleTitle,
             workspace_name: vars.workspace_name || 'Main Workspace',
-            team_name: vars.team_name || 'Core Engineering',
-            updater_name: vars.updater_name || 'Security Operations',
-            granted_by: vars.granted_by || 'Enterprise Administrator',
+            team_name: vars.team_name || 'Core Team',
+            updater_name: updaterName,
+            granted_by: grantedBy,
             support_agent: vars.support_agent || 'support-tier3@resumepilot.ai',
             reason: vars.reason || 'Technical operational review',
             expires_at: vars.expires_at || new Date(Date.now() + 4 * 3600 * 1000).toLocaleString(),
@@ -1630,7 +1715,13 @@ async function dispatchNotification(db, { to, templateType, vars = {}, customSub
             expires_in: vars.expires_in || '7 days',
             action_url: vars.action_url || `${siteUrl}/enterprise`,
             date: vars.date || new Date().toLocaleDateString('en-IN', { dateStyle: 'medium' }),
-            ...vars
+            ...vars,
+            // Override with normalized humanized strings
+            candidate_name: candidateName,
+            user_name: candidateName,
+            inviter_name: inviterName,
+            organization_name: orgName,
+            role_title: roleTitle,
         };
 
         const rendered = renderEmailTemplate(templateType || 'default', mergedVars, customTemplatesStore);
