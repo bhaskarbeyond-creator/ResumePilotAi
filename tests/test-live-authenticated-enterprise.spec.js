@@ -230,8 +230,10 @@ test.describe('Live Authenticated Enterprise E2E Audit', () => {
     await expect(page.locator('.enterprise-sidebar.mobile-open')).toBeVisible();
     await mobileToggle.click();
 
-    // Reset Viewport
+    // Reset Viewport & Switch back to Users & IAM to capture the updated clean user identity view
     await page.setViewportSize({ width: 1440, height: 900 });
+    await page.locator('button.enterprise-nav-item').filter({ hasText: 'Users & IAM' }).click();
+    await page.waitForTimeout(1000);
 
     // Capture Evidence Screenshot
     console.log('Capturing Live E2E Screenshot...');
