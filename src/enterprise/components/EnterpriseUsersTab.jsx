@@ -6,23 +6,10 @@ import {
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 import { useEnterpriseTenant } from '../EnterpriseContext';
 import HelpTooltip from './HelpTooltip';
+import { ROLE_HIERARCHY, ALL_STANDARD_ROLES, formatRoleLabel, formatMemberIdentity, getRoleLevel } from '../enterpriseHelpers';
 
-export const ROLE_LABELS = {
-  TENANT_OWNER: { title: 'Tenant Owner', desc: 'Full root access to all organizations, billing, security, and policies', badge: 'Owner' },
-  TENANT_ADMIN: { title: 'Administrator', desc: 'Manage users, teams, security keys, workspaces, and AI settings', badge: 'Admin' },
-  WORKSPACE_MANAGER: { title: 'Workspace Manager', desc: 'Manage departmental workspaces, team members, and document resources', badge: 'Manager' },
-  BILLING_ADMIN: { title: 'Billing Administrator', desc: 'Manage subscriptions, invoices, and token quota allocations', badge: 'Billing' },
-  MEMBER: { title: 'Enterprise Member', desc: 'Standard access to create, edit, share resumes and use AI engine', badge: 'Member' },
-  VIEWER: { title: 'Read-Only Viewer', desc: 'View-only access to published documents and workspaces', badge: 'Viewer' }
-};
+export { ROLE_HIERARCHY, formatRoleLabel };
 
-export function formatRoleLabel(role) {
-  if (ROLE_LABELS[role]) return ROLE_LABELS[role].title;
-  if (role && role.startsWith('CUSTOM_')) return `Custom: ${role.replace(/^CUSTOM_/, '').replace(/_/g, ' ')}`;
-  return role || 'Member';
-}
-
-const ALL_STANDARD_ROLES = ['TENANT_ADMIN', 'WORKSPACE_MANAGER', 'MEMBER', 'VIEWER', 'BILLING_ADMIN'];
 const STATUS_FILTERS = ['ALL', 'ACTIVE', 'SUSPENDED', 'INVITED'];
 
 function csvEscape(value) {
@@ -82,16 +69,17 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
     return { builtin, custom, all: [...builtin, ...custom] };
   }, [rolesState]);
 
-  // Comprehensive role list: guaranteed to include all standard assignable roles + any custom roles
+  // Comprehensive role list: ordered by hierarchy level (Level 5 down to Level 0)
   const roleOptions = useMemo(() => {
     const builtinFromApi = Object.keys(rolesState.data?.roles || {});
     const customFromApi = Object.keys(rolesState.data?.customRoles || {});
     const combined = new Set([
+      'TENANT_OWNER',
       ...ALL_STANDARD_ROLES,
-      ...builtinFromApi.filter(r => r !== 'TENANT_OWNER'),
+      ...builtinFromApi,
       ...customFromApi
     ]);
-    return [...combined];
+    return [...combined].sort((a, b) => getRoleLevel(b) - getRoleLevel(a));
   }, [rolesState]);
 
   const filtered = members.filter(member => {
@@ -516,13 +504,16 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
                         </td>
                         <td>
                           {isCurrent && isOwner ? (
-                            <span
-                              className="enterprise-pill enterprise-pill-template"
-                              title="Owner role is locked on your active session to prevent accidental lockout"
-                              style={{ display: 'inline-flex', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 650 }}
-                            >
-                              Tenant Owner (TENANT_OWNER)
-                            </span>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                              <span
+                                className="enterprise-pill enterprise-pill-template"
+                                title="Root Owner Authority: sovereign control over tenant lifecycle and policies"
+                                style={{ display: 'inline-flex', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 650 }}
+                              >
+                                ⭐ Level 5 · Tenant Owner
+                              </span>
+                              <HelpTooltip text="You are the Sovereign Tenant Owner. To transfer ownership or assign co-owners, change any member's role to Tenant Owner." />
+                            </div>
                           ) : (
                             <select
                               className="enterprise-select enterprise-role-select"
@@ -530,13 +521,16 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
                               disabled={!canManageMembers || busyAction === `role:${member.principalId}`}
                               onChange={(e) => handleRoleChange(member.principalId, e.target.value)}
                               aria-label={`Role for ${displayName}`}
-                              title={`Change role for ${displayName}`}
+                              title={`Change access level for ${displayName}`}
                             >
-                              {roleOptions.map(role => (
-                                <option key={role} value={role}>
-                                  {formatRoleLabel(role)} ({role})
-                                </option>
-                              ))}
+                              {roleOptions.map(role => {
+                                const level = getRoleLevel(role);
+                                return (
+                                  <option key={role} value={role}>
+                                    Level {level} · {formatRoleLabel(role)}
+                                  </option>
+                                );
+                              })}
                             </select>
                           )}
                         </td>
@@ -762,16 +756,28 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
                   />
                 </div>
               </div>
-              <div className="enterprise-form-group">
-                <label htmlFor="detail-role">Assigned Role</label>
-                {detailMember.principalId === currentPrincipalId ? (
-                  <div className="enterprise-inline-actions">
-                    <span className="enterprise-pill enterprise-pill-template" style={{ display: 'inline-flex', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 650 }}>
-                      Tenant Owner (TENANT_OWNER) · Active Session Lock
-                    </span>
+
+              <div className="enterprise-card" style={{ padding: '16px', background: 'var(--ep-slate-25)', border: '1px solid var(--enterprise-border)', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <label htmlFor="detail-role" style={{ margin: 0, fontWeight: 700, fontSize: '0.86rem', color: 'var(--enterprise-ink)' }}>
+                    Access Level & Role Management
+                  </label>
+                  <span className={`enterprise-pill ${ROLE_HIERARCHY[detailMember.roles?.[0]]?.badgeClass || 'enterprise-pill-secondary'}`}>
+                    Level {getRoleLevel(detailMember.roles?.[0])} · {formatRoleLabel(detailMember.roles?.[0])}
+                  </span>
+                </div>
+
+                {detailMember.principalId === currentPrincipalId && (detailMember.roles || []).includes('TENANT_OWNER') ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '10px 14px', borderRadius: '8px', fontSize: '0.8rem', color: '#065f46' }}>
+                      <strong>⭐ Sovereign Root Authority (Level 5)</strong>
+                      <p style={{ margin: '4px 0 0', lineHeight: 1.45 }}>
+                        You currently hold the master tenant key. Root ownership cannot be revoked directly to prevent accidental organization lockout. To transfer ownership or assign co-owners, select any Administrator from the Users table and grant them the Tenant Owner role.
+                      </p>
+                    </div>
                   </div>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     <select
                       id="detail-role"
                       className="enterprise-select"
@@ -783,14 +789,20 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
                         setDetailMember(prev => ({ ...prev, roles: [newRole] }));
                       }}
                     >
-                      {roleOptions.map(role => (
-                        <option key={role} value={role}>
-                          {formatRoleLabel(role)} ({role})
-                        </option>
-                      ))}
+                      {roleOptions.map(role => {
+                        const lvl = getRoleLevel(role);
+                        const isCurrentRole = (detailMember.roles || []).includes(role);
+                        const curLvl = getRoleLevel(detailMember.roles?.[0]);
+                        const direction = lvl > curLvl ? '⬆ Upgrade to' : (lvl < curLvl ? '⬇ Downgrade to' : 'Current:');
+                        return (
+                          <option key={role} value={role}>
+                            Level {lvl} · {direction} {formatRoleLabel(role)} ({role})
+                          </option>
+                        );
+                      })}
                     </select>
-                    <small className="text-muted">
-                      {ROLE_LABELS[detailMember.roles?.[0]]?.desc || 'Live capability set applied across all tenant resources.'}
+                    <small className="text-muted" style={{ fontSize: '0.78rem' }}>
+                      {ROLE_HIERARCHY[detailMember.roles?.[0]]?.desc || 'Live capability set applied across all tenant resources.'}
                     </small>
                   </div>
                 )}

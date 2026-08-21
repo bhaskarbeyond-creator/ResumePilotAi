@@ -138,6 +138,16 @@ test.describe('Live Authenticated Enterprise E2E Audit', () => {
       await page.locator('.enterprise-modal-header button.enterprise-button-icon').click();
     }
 
+    // Inspect first user row details modal
+    const inspectBtn = page.locator('button[title*="membership details"]').first();
+    if (await inspectBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await inspectBtn.click();
+      await page.waitForTimeout(600);
+      await page.screenshot({ path: path.resolve('enterprise_live_users_modal.png'), fullPage: true });
+      // Close details modal
+      await page.locator('.enterprise-modal-header button.enterprise-button-icon').click();
+    }
+
     // Verify AppSwitcher and Sign Out topbar buttons
     await expect(page.locator('button.enterprise-app-switcher-btn')).toBeVisible();
     await expect(page.locator('button.enterprise-exit-link')).toBeVisible();
@@ -157,6 +167,15 @@ test.describe('Live Authenticated Enterprise E2E Audit', () => {
       await page.locator('input[placeholder*="Engineering"]').fill(`QA Team ${Date.now()}`);
       await page.locator('.enterprise-modal-footer button.enterprise-button-primary').click();
       await page.waitForTimeout(1500);
+    }
+
+    // Open Team Members drawer
+    const teamMembersBtn = page.locator('button').filter({ hasText: 'Members' }).first();
+    if (await teamMembersBtn.isVisible()) {
+      await teamMembersBtn.click();
+      await page.waitForTimeout(500);
+      await page.screenshot({ path: path.resolve('enterprise_live_teams_drawer.png'), fullPage: true });
+      await page.locator('.enterprise-modal-header button.enterprise-button-icon').click();
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -204,6 +223,14 @@ test.describe('Live Authenticated Enterprise E2E Audit', () => {
     console.log('Testing Module 9: Usage & Quotas...');
     await page.locator('button.enterprise-nav-item').filter({ hasText: 'Usage & Quotas' }).click();
     await expect(page.locator('h2.enterprise-tab-title').filter({ hasText: 'Usage & Quota Analytics' })).toBeVisible();
+
+    // ─────────────────────────────────────────────────────────────
+    // Module: Email & Notifications
+    // ─────────────────────────────────────────────────────────────
+    console.log('Testing Module: Email & Notifications...');
+    await page.locator('button.enterprise-nav-item').filter({ hasText: 'Email & Notifications' }).click();
+    await expect(page.locator('h2.enterprise-tab-title').filter({ hasText: 'Email & Notification Templates' })).toBeVisible();
+    await page.screenshot({ path: path.resolve('enterprise_live_email_templates.png'), fullPage: true });
 
     // ─────────────────────────────────────────────────────────────
     // Module 10: Audit Logs

@@ -98,11 +98,12 @@ export function EnterpriseTenantProvider({ children }) {
 
   const value = useMemo(() => ({
     ...state,
+    user,
     enabled,
     reload: load,
     selectTenant,
     selectWorkspace,
-  }), [enabled, load, selectTenant, selectWorkspace, state]);
+  }), [enabled, load, selectTenant, selectWorkspace, state, user]);
 
   return <EnterpriseTenantContext.Provider value={value}>{children}</EnterpriseTenantContext.Provider>;
 }

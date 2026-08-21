@@ -18,6 +18,7 @@ import EnterpriseAiTab from './components/EnterpriseAiTab';
 import EnterpriseUsageTab from './components/EnterpriseUsageTab';
 import EnterpriseSecurityTab from './components/EnterpriseSecurityTab';
 import EnterpriseAuditTab from './components/EnterpriseAuditTab';
+import EnterpriseEmailTab from './components/EnterpriseEmailTab';
 import EnterpriseSettingsTab from './components/EnterpriseSettingsTab';
 import EnterpriseSupportTab from './components/EnterpriseSupportTab';
 import EnterprisePlatformTab from './components/EnterprisePlatformTab';
@@ -36,6 +37,7 @@ const NAVIGATION = [
   { id: 'ai', label: 'AI workspace', icon: FiZap, permission: 'tenant.ai.manage', group: 'Governance', description: 'Configure LLM provider models, token quota limits, and AI governance', keywords: 'models providers llm policy quota' },
   { id: 'security', label: 'Security & M2M', icon: FiLock, permission: 'tenant.security.read', group: 'Governance', description: 'Manage service accounts, secret key rotation, DLQ, and security posture', keywords: 'service accounts api keys mfa posture jobs dlq' },
   { id: 'usage', label: 'Usage & Quotas', icon: FiBarChart2, permission: 'tenant.usage.read', group: 'Governance', description: 'Track token consumption, compute credits, and plan capacity limits', keywords: 'analytics consumption tokens cost' },
+  { id: 'email', label: 'Email & Notifications', icon: FiFileText, permission: 'tenant.settings.write', group: 'Governance', description: 'Enterprise invitation templates, access change alerts, and notification branding', keywords: 'email templates invitations notifications alerts' },
   { id: 'audit', label: 'Audit logs', icon: FiFileText, permission: 'tenant.audit.read', group: 'Governance', description: 'Immutable forensic event trail, actor actions, and compliance records', keywords: 'trail events investigation forensics' },
   { id: 'support', label: 'Support access', icon: FiHelpCircle, permission: 'tenant.settings.write', group: 'Administration', description: 'Time-bound break-glass support grants and authorization audit', keywords: 'break-glass grants' },
   { id: 'settings', label: 'Organization settings', icon: FiSettings, permission: 'tenant.settings.write', group: 'Administration', description: 'Manage tenant identity policy, SSO configuration, and data retention', keywords: 'configuration retention identity sso danger' },
@@ -749,6 +751,10 @@ function EnterpriseConsoleInner() {
               initialParams={searchParams}
               onNavigate={selectTab}
             />
+          )}
+
+          {activeTab === 'email' && (
+            <EnterpriseEmailTab />
           )}
 
           {activeTab === 'audit' && (

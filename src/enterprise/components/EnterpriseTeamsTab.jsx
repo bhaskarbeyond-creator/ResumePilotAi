@@ -5,9 +5,11 @@ import {
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 import { useEnterpriseTenant } from '../EnterpriseContext';
 import HelpTooltip from './HelpTooltip';
+import { formatMemberIdentity, formatRoleLabel } from '../enterpriseHelpers';
 
 function TeamMembersDrawer({ team, onClose }) {
   const { request, hasPermission } = useTenantApi();
+  const { user } = useEnterpriseTenant();
   const canManage = hasPermission('workspace.members.manage') || hasPermission('tenant.members.manage');
   const [membersState, refreshMembers] = useAsyncResource(
     () => request(`/api/enterprise/teams/${encodeURIComponent(team.id)}/members`),
@@ -83,7 +85,7 @@ function TeamMembersDrawer({ team, onClose }) {
                 <option value="">Select a tenant member to add…</option>
                 {candidates.map(candidate => (
                   <option key={candidate.principalId} value={candidate.principalId}>
-                    {candidate.principalId} ({(candidate.roles || []).join(', ')})
+                    {formatMemberIdentity(candidate, user)} — {formatRoleLabel(candidate.roles?.[0])}
                   </option>
                 ))}
               </select>
@@ -100,35 +102,39 @@ function TeamMembersDrawer({ team, onClose }) {
                 <table className="enterprise-table">
                   <thead>
                     <tr>
-                      <th>Principal</th>
+                      <th>Team Member</th>
                       <th>Status</th>
                       {canManage && <th className="text-right">Actions</th>}
                     </tr>
                   </thead>
                   <tbody>
-                    {members.map(member => (
-                      <tr key={member.id}>
-                        <td>
-                          <strong>{member.principalId}</strong>
-                          {team.leadPrincipalId && team.leadPrincipalId === member.principalId && (
-                            <span className="enterprise-pill enterprise-pill-template" style={{ marginLeft: '0.5rem' }}>Lead</span>
-                          )}
-                        </td>
-                        <td><span className="enterprise-pill enterprise-pill-success">{member.status}</span></td>
-                        {canManage && (
-                          <td className="text-right">
-                            <button
-                              type="button"
-                              className="enterprise-button-icon text-danger"
-                              title={`Remove ${member.principalId} from team`}
-                              onClick={() => handleRemove(member.principalId)}
-                            >
-                              <FiTrash2 />
-                            </button>
+                    {members.map(member => {
+                      const label = formatMemberIdentity(member.principalId, user, tenantMembersState.data?.memberships);
+                      return (
+                        <tr key={member.id}>
+                          <td>
+                            <strong>{label}</strong>
+                            {team.leadPrincipalId && team.leadPrincipalId === member.principalId && (
+                              <span className="enterprise-pill enterprise-pill-template" style={{ marginLeft: '0.5rem' }}>Lead</span>
+                            )}
+                            <br /><small className="text-muted">Principal ID: {String(member.principalId).slice(0, 12)}…</small>
                           </td>
-                        )}
-                      </tr>
-                    ))}
+                          <td><span className="enterprise-pill enterprise-pill-success">{member.status}</span></td>
+                          {canManage && (
+                            <td className="text-right">
+                              <button
+                                type="button"
+                                className="enterprise-button-icon text-danger"
+                                title={`Remove member from team`}
+                                onClick={() => handleRemove(member.principalId)}
+                              >
+                                <FiTrash2 />
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -363,7 +369,7 @@ export default function EnterpriseTeamsTab({ initialParams = null }) {
                               <h3 className="enterprise-team-name" style={{ margin: '0 0 6px', fontSize: '1.05rem', color: 'var(--enterprise-ink)' }}>{team.name}</h3>
                               {team.leadPrincipalId && (
                                 <span className="enterprise-pill enterprise-pill-template" title={`Team lead: ${team.leadPrincipalId}`}>
-                                  <FiAward aria-hidden="true" /> Lead: {String(team.leadPrincipalId).slice(0, 10)}…
+                                  <FiAward aria-hidden="true" /> Lead: {formatMemberIdentity(team.leadPrincipalId, user, activeMemberOptions)}
                                 </span>
                               )}
                             </div>
@@ -532,7 +538,7 @@ export default function EnterpriseTeamsTab({ initialParams = null }) {
                     <option value="">No lead</option>
                     {activeMemberOptions.map(member => (
                       <option key={member.principalId} value={member.principalId}>
-                        {member.principalId} ({(member.roles || []).join(', ')})
+                        {formatMemberIdentity(member, user)} — {formatRoleLabel(member.roles?.[0])}
                       </option>
                     ))}
                   </select>

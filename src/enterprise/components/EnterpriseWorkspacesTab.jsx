@@ -5,9 +5,11 @@ import {
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 import { useEnterpriseTenant } from '../EnterpriseContext';
 import HelpTooltip from './HelpTooltip';
+import { formatMemberIdentity, formatRoleLabel } from '../enterpriseHelpers';
 
 function WorkspaceMembersDrawer({ workspace, onClose }) {
   const { request, hasPermission } = useTenantApi();
+  const { user } = useEnterpriseTenant();
   const canManage = hasPermission('workspace.members.manage') || hasPermission('tenant.members.manage');
   const [membersState, refreshMembers] = useAsyncResource(
     () => request(`/api/enterprise/workspaces/${encodeURIComponent(workspace.id)}/members`),
@@ -83,7 +85,7 @@ function WorkspaceMembersDrawer({ workspace, onClose }) {
                 <option value="">Select a tenant member to add…</option>
                 {candidates.map(candidate => (
                   <option key={candidate.principalId} value={candidate.principalId}>
-                    {candidate.principalId} ({(candidate.roles || []).join(', ')})
+                    {formatMemberIdentity(candidate, user)} — {formatRoleLabel(candidate.roles?.[0])}
                   </option>
                 ))}
               </select>
@@ -100,30 +102,36 @@ function WorkspaceMembersDrawer({ workspace, onClose }) {
                 <table className="enterprise-table">
                   <thead>
                     <tr>
-                      <th>Principal</th>
+                      <th>Workspace Member</th>
                       <th>Status</th>
                       {canManage && <th className="text-right">Actions</th>}
                     </tr>
                   </thead>
                   <tbody>
-                    {members.map(member => (
-                      <tr key={member.id}>
-                        <td><strong>{member.principalId}</strong></td>
-                        <td><span className="enterprise-pill enterprise-pill-success">{member.status}</span></td>
-                        {canManage && (
-                          <td className="text-right">
-                            <button
-                              type="button"
-                              className="enterprise-button-icon text-danger"
-                              title={`Remove ${member.principalId} from workspace`}
-                              onClick={() => handleRemove(member.principalId)}
-                            >
-                              <FiTrash2 />
-                            </button>
+                    {members.map(member => {
+                      const label = formatMemberIdentity(member.principalId, user, tenantMembersState.data?.memberships);
+                      return (
+                        <tr key={member.id}>
+                          <td>
+                            <strong>{label}</strong>
+                            <br /><small className="text-muted">Principal ID: {String(member.principalId).slice(0, 12)}…</small>
                           </td>
-                        )}
-                      </tr>
-                    ))}
+                          <td><span className="enterprise-pill enterprise-pill-success">{member.status}</span></td>
+                          {canManage && (
+                            <td className="text-right">
+                              <button
+                                type="button"
+                                className="enterprise-button-icon text-danger"
+                                title={`Remove member from workspace`}
+                                onClick={() => handleRemove(member.principalId)}
+                              >
+                                <FiTrash2 />
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
