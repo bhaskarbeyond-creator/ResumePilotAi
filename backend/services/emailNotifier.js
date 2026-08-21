@@ -370,3 +370,6 @@ class EmailNotifier {
 }
 
 module.exports = EmailNotifier;
+module.exports.EmailNotifier = EmailNotifier;
+module.exports.default = EmailNotifier;
+

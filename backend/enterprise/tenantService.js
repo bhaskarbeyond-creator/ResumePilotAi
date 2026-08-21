@@ -823,14 +823,17 @@ class TenantService {
     if (!membership?.invitationEmail || !this.db) return null;
     let deliveryState = 'DELIVERY_SKIPPED';
     try {
-      const { EmailNotifier } = require('../services/emailNotifier');
+      const emailNotifierMod = require('../services/emailNotifier');
+      const EmailNotifier = emailNotifierMod?.EmailNotifier || emailNotifierMod?.default || emailNotifierMod;
       const result = await EmailNotifier.notifyEnterpriseInvitation(this.db, {
         userEmail: membership.invitationEmail,
         organizationName: context?.tenant?.displayName || 'an enterprise organization',
         inviterEmail: context?.subjectId || '',
+        roleTitle: (membership.roles || []).join(', ') || 'Enterprise Member',
       });
       deliveryState = result?.success ? 'DELIVERED' : String(result?.deliveryState || 'DELIVERY_FAILED').toUpperCase();
-    } catch {
+    } catch (err) {
+      console.error('[TenantService deliverInvitationEmail error]:', err?.message || err);
       deliveryState = 'DELIVERY_FAILED';
     }
     try {
