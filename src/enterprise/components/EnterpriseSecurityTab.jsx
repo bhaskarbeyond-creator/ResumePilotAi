@@ -230,9 +230,11 @@ export default function EnterpriseSecurityTab({ initialParams = null }) {
   };
 
   const handleRevoke = (id) => {
+    const account = (accounts || []).find(a => a.id === id);
+    const saTitle = account?.displayName || (id.length > 12 ? `${id.slice(0, 10)}…` : id);
     setConfirmConfig({
       title: 'Revoke Service Account API Key',
-      message: 'Revoke this service account API key immediately? Existing tokens stop working on the next request and cannot be un-revoked.',
+      message: `Revoke the API key for service account "${saTitle}" immediately? Existing machine integrations using this credential will stop working on their next request.`,
       confirmLabel: 'Revoke Key',
       variant: 'danger',
       onConfirm: async () => {
@@ -240,7 +242,7 @@ export default function EnterpriseSecurityTab({ initialParams = null }) {
         setActionError(null);
         try {
           await request(`/api/enterprise/service-accounts/${id}/revoke`, { method: 'POST' });
-          notify('Service account API key revoked.');
+          notify(`API key revoked for "${saTitle}".`);
           refreshAccounts();
         } catch (err) {
           setActionError(err?.message || 'Service account could not be revoked.');

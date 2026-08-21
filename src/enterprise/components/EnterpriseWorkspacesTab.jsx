@@ -49,9 +49,12 @@ function WorkspaceMembersDrawer({ workspace, onClose }) {
   };
 
   const handleRemove = (principalId) => {
+    const memberObj = (members || []).find(m => m.principalId === principalId) ||
+                      (tenantMembersState?.data?.memberships || []).find(m => m.principalId === principalId);
+    const humanName = memberObj?.displayName || memberObj?.invitationEmail || memberObj?.email || (principalId.includes('@') ? principalId : `Member (${principalId.slice(0, 8)}…)`);
     setConfirmConfig({
       title: 'Remove Member from Workspace',
-      message: `Remove ${principalId} from workspace "${workspace.name}"?`,
+      message: `Remove ${humanName} from workspace "${workspace.name}"?`,
       confirmLabel: 'Remove Member',
       variant: 'danger',
       onConfirm: async () => {

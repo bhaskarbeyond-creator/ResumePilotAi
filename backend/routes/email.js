@@ -341,17 +341,57 @@ function replaceEmailVariables(templateText, vars = {}) {
     return result.replace(/\{\{[a-z0-9_]+\}\}/gi, '').replace(/\{[a-z0-9_]+\}/gi, '');
 }
 
+function htmlToPlainText(html, actionUrl = '') {
+    if (!html) return '';
+    let text = html
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+        .replace(/<a[^>]*href=["']([^"']*)["'][^>]*>(.*?)<\/a>/gi, '$2 ($1)')
+        .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '\n\n=== $1 ===\n\n')
+        .replace(/<li[^>]*>(.*?)<\/li>/gi, '\n• $1')
+        .replace(/<p[^>]*>(.*?)<\/p>/gi, '\n\n$1\n')
+        .replace(/<br\s*[\/]?>/gi, '\n')
+        .replace(/<hr\s*[\/]?>/gi, '\n----------------------------------------\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&amp;/gi, '&')
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .replace(/&quot;/gi, '"')
+        .replace(/&#39;/gi, "'")
+        .replace(/\n\s*\n\s*\n+/g, '\n\n')
+        .trim();
+
+    if (actionUrl && !text.includes(actionUrl)) {
+        text += `\n\nDirect Link: ${actionUrl}`;
+    }
+    return text;
+}
+
 // Shared Header/Footer Layout Wrapper for 10/10 Aesthetic Consistency & Anti-Spam
 function buildEmailWrapper(title, badgeText, contentHtml, brandName = 'ResumePilot AI', siteUrl = '', supportEmail = '') {
-    return `<!DOCTYPE html>
-<html>
+    const preheader = (contentHtml || '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 150);
+
+    return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="supported-color-schemes" content="light dark" />
     <title>${escapeEmailHtml(title || brandName)}</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #090d16; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #1e293b;">
+    <!-- Hidden Preheader Preview for Inboxes -->
+    <div style="display: none; max-height: 0px; overflow: hidden; mso-hide: all; font-size: 1px; line-height: 1px; color: #090d16; opacity: 0;">
+        ${escapeEmailHtml(preheader)}
+    </div>
+
     <div style="background-color: #090d16; padding: 40px 15px;">
         <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1);">
             <!-- Top Gradient Brand Accent -->
@@ -373,8 +413,8 @@ function buildEmailWrapper(title, badgeText, contentHtml, brandName = 'ResumePil
             <!-- Footer -->
             <div style="background-color: #f8fafc; padding: 24px 32px; border-top: 1px solid #f1f5f9; text-align: center; font-size: 12px; color: #64748b;">
                 <p style="margin: 0 0 8px 0; font-weight: 600; color: #475569;">© ${new Date().getFullYear()} ${escapeEmailHtml(brandName)}. All rights reserved.</p>
-                <p style="margin: 0;">Need support? Email us at <a href="mailto:${escapeEmailHtml(supportEmail)}" style="color: #4f46e5; text-decoration: none; font-weight: 600;">${escapeEmailHtml(supportEmail)}</a> or visit <a href="${hrefAttr(siteUrl)}" style="color: #4f46e5; text-decoration: none; font-weight: 600;">${escapeEmailHtml(siteUrl)}</a></p>
-                <p style="margin: 8px 0 0 0; font-size: 11px; color: #94a3b8;">This is an authenticated enterprise communication. To manage notification preferences, visit your account console.</p>
+                <p style="margin: 0;">Need assistance? Contact our team at <a href="mailto:${escapeEmailHtml(supportEmail)}" style="color: #4f46e5; text-decoration: none; font-weight: 600;">${escapeEmailHtml(supportEmail)}</a> or visit <a href="${hrefAttr(siteUrl)}" style="color: #4f46e5; text-decoration: none; font-weight: 600;">${escapeEmailHtml(siteUrl)}</a></p>
+                <p style="margin: 8px 0 0 0; font-size: 11px; color: #94a3b8;">This is an authentic operational communication sent securely from ResumePilot AI.</p>
             </div>
         </div>
     </div>
@@ -1111,6 +1151,17 @@ async function dispatchMailWithFallback(config, mailOptions) {
     const allowedEncryption = new Set(['ssl', 'tls', 'starttls']);
     let primaryTarget = null;
     let fallbackTarget = null;
+
+    if (!mailOptions.text && mailOptions.html) {
+        mailOptions.text = htmlToPlainText(mailOptions.html);
+    }
+    if (!mailOptions.headers) {
+        mailOptions.headers = {};
+    }
+    mailOptions.headers['X-Mailer'] = mailOptions.headers['X-Mailer'] || 'ResumePilot Enterprise Mail Gateway/2.0';
+    mailOptions.headers['Auto-Submitted'] = mailOptions.headers['Auto-Submitted'] || 'auto-generated';
+    mailOptions.headers['X-Auto-Response-Suppress'] = 'OOF, AutoReply';
+    delete mailOptions.headers['Precedence']; // Do not set bulk precedence on transactional mail
     if (config.smtp?.host) {
         if (!allowedEncryption.has(String(config.smtp.encryption || '').toLowerCase())) throw new Error('Encrypted SMTP transport is required');
         primaryTarget = await assertPublicNetworkTarget(config.smtp.host);
@@ -1785,15 +1836,11 @@ async function dispatchNotification(db, { to, templateType, vars = {}, customSub
 
         const textFallback = customBody
             ? replaceEmailVariables(customBody, mergedVars)
-            : (rendered.html || '')
-                .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-                .replace(/<[^>]+>/g, ' ')
-                .replace(/\s+/g, ' ')
-                .trim();
+            : htmlToPlainText(rendered.html, finalActionUrl);
 
         const senderDomain = config.smtp?.username?.includes('@')
             ? config.smtp.username.split('@')[1]
-            : new URL(siteUrl).hostname;
+            : (new URL(siteUrl).hostname || 'airesume.projectdemo.guru');
         const messageId = `<${Date.now()}.${Math.random().toString(36).substring(2, 11)}@${senderDomain}>`;
 
         const mailOptions = {
@@ -1806,9 +1853,7 @@ async function dispatchNotification(db, { to, templateType, vars = {}, customSub
             messageId,
             headers: {
                 'X-Mailer': 'ResumePilot Enterprise Mail Gateway/2.0',
-                'X-Priority': '3',
-                'Precedence': 'bulk',
-                'List-Unsubscribe': `<mailto:${supportEmail}?subject=unsubscribe>, <${siteUrl}/unsubscribe>`,
+                'X-Entity-Ref-ID': `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
                 'Auto-Submitted': 'auto-generated',
                 'X-Auto-Response-Suppress': 'OOF, AutoReply',
             }

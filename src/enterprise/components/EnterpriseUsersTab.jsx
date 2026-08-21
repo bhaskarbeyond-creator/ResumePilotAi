@@ -209,12 +209,13 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
     const next = member.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
     setActionError(null);
     setBusyAction(`status:${member.principalId}`);
+    const humanName = member.displayName || member.invitationEmail || member.email || (member.principalId.includes('@') ? member.principalId : `Member (${member.principalId.slice(0, 8)}…)`);
     try {
       await request(`/api/enterprise/memberships/${encodeURIComponent(member.principalId)}`, {
         method: 'PATCH',
         body: { status: next },
       });
-      notify(`${member.principalId} ${next.toLowerCase()}.`);
+      notify(`${humanName} is now ${next.toLowerCase()}.`);
       refreshMembers();
     } catch (err) {
       setActionError(err?.message || 'Membership status could not be updated.');
@@ -224,9 +225,11 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
   };
 
   const handleRemove = (principalId) => {
+    const memberObj = members.find(m => m.principalId === principalId);
+    const humanName = memberObj?.displayName || memberObj?.invitationEmail || memberObj?.email || (principalId.includes('@') ? principalId : `Member (${principalId.slice(0, 8)}…)`);
     setConfirmConfig({
       title: 'Remove Member Access',
-      message: `Are you sure you want to remove ${principalId} from this enterprise organization? This immediately revokes all enterprise workspace access and permissions.`,
+      message: `Are you sure you want to remove ${humanName} from this enterprise organization? This immediately revokes all enterprise workspace access and permissions.`,
       confirmLabel: 'Remove Access',
       variant: 'danger',
       onConfirm: async () => {
@@ -235,7 +238,7 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
         setBusyAction(`remove:${principalId}`);
         try {
           await request(`/api/enterprise/memberships/${encodeURIComponent(principalId)}`, { method: 'DELETE' });
-          notify(`Removed ${principalId} from the enterprise.`);
+          notify(`Removed ${humanName} from the enterprise.`);
           setSelectedRows(prev => { const next = new Set(prev); next.delete(principalId); return next; });
           refreshMembers();
         } catch (err) {
@@ -505,10 +508,12 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
                     const isOwner = (member.roles || []).includes('TENANT_OWNER');
                     const displayName = isCurrent
                       ? (currentUser?.displayName || currentUser?.email || member.displayName || member.invitationEmail || member.principalId || 'Signed-in Administrator')
-                      : (member.displayName || member.invitationEmail || member.principalId || 'Member');
+                      : (member.displayName || member.invitationEmail || member.email || (member.principalId?.includes('@') ? member.principalId : `Member (${member.principalId.slice(0, 8)}…)`));
                     const subText = isCurrent
-                      ? (currentUser?.displayName && currentUser?.email ? `${currentUser.email} · You` : `Principal: ${member.principalId} · You`)
-                      : `Principal: ${member.principalId}`;
+                      ? (currentUser?.displayName && currentUser?.email ? `${currentUser.email} · You` : `You (${currentUser?.email || member.principalId})`)
+                      : (member.displayName && (member.email || member.invitationEmail)
+                          ? `${member.email || member.invitationEmail}`
+                          : (invited ? `Invited teammate (${member.principalId.slice(0, 8)}…)` : `Enterprise Member (${member.principalId.slice(0, 8)}…)`));
 
                     return (
                       <tr key={`${member.tenantId}:${member.principalId}`} className={selectedRows.has(member.principalId) ? 'selected' : ''}>
@@ -518,7 +523,7 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
                               type="checkbox"
                               checked={selectedRows.has(member.principalId)}
                               onChange={() => toggleSelectRow(member.principalId)}
-                              aria-label={`Select ${member.principalId}`}
+                              aria-label={`Select ${displayName}`}
                             />
                           </td>
                         )}

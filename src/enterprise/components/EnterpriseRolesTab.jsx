@@ -717,10 +717,10 @@ export default function EnterpriseRolesTab({ onNavigate = null }) {
       )}
 
       {deleteTarget && (
-        <div className="enterprise-modal-backdrop" role="presentation" onClick={() => setDeleteTarget(null)}>
+        <div className="enterprise-modal-backdrop enterprise-modal-overlay" role="presentation" onClick={() => setDeleteTarget(null)}>
           <div className="enterprise-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
             <div className="enterprise-modal-header">
-              <h3>Delete custom role {deleteTarget}?</h3>
+              <h3>Delete custom role &quot;{customRoles[deleteTarget]?.label || deleteTarget.replace(/^CUSTOM_/, '').replace(/_/g, ' ')}&quot;?</h3>
               <button type="button" className="enterprise-button-icon" onClick={() => setDeleteTarget(null)}>
                 <FiX />
               </button>

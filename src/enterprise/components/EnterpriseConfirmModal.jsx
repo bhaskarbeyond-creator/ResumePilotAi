@@ -47,7 +47,7 @@ export default function EnterpriseConfirmModal({
 
   return (
     <div
-      className="enterprise-modal-overlay"
+      className="enterprise-modal-backdrop enterprise-modal-overlay"
       role="dialog"
       aria-modal="true"
       aria-labelledby="confirm-dialog-title"
@@ -58,7 +58,7 @@ export default function EnterpriseConfirmModal({
       <div
         className="enterprise-modal"
         onClick={e => e.stopPropagation()}
-        style={{ maxWidth: '480px', width: '100%', borderRadius: '16px', overflow: 'hidden' }}
+        style={{ maxWidth: '480px', width: '100%', borderRadius: '16px', overflow: 'hidden', margin: 'auto' }}
       >
         <div className="enterprise-modal-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid var(--ep-slate-200)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -85,8 +85,8 @@ export default function EnterpriseConfirmModal({
           </button>
         </div>
 
-        <div className="enterprise-modal-body" style={{ padding: '20px 24px', fontSize: '0.92rem', color: 'var(--ep-slate-600)', lineHeight: 1.55 }}>
-          {typeof message === 'string' ? <p style={{ margin: 0 }}>{message}</p> : message}
+        <div className="enterprise-modal-body" style={{ padding: '20px 24px', fontSize: '0.92rem', color: 'var(--ep-slate-600)', lineHeight: 1.6, wordBreak: 'break-word', overflowWrap: 'break-word', textAlign: 'left' }}>
+          {typeof message === 'string' ? <p style={{ margin: 0, wordBreak: 'break-word', overflowWrap: 'break-word', textAlign: 'left' }}>{message}</p> : message}
         </div>
 
         <div className="enterprise-modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', padding: '16px 24px', background: 'var(--ep-slate-50)', borderTop: '1px solid var(--ep-slate-200)' }}>

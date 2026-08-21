@@ -49,9 +49,12 @@ function TeamMembersDrawer({ team, onClose }) {
   };
 
   const handleRemove = (principalId) => {
+    const memberObj = (members || []).find(m => m.principalId === principalId) ||
+                      (tenantMembersState?.data?.memberships || []).find(m => m.principalId === principalId);
+    const humanName = memberObj?.displayName || memberObj?.invitationEmail || memberObj?.email || (principalId.includes('@') ? principalId : `Member (${principalId.slice(0, 8)}…)`);
     setConfirmConfig({
       title: 'Remove Member from Team',
-      message: `Remove ${principalId} from team "${team.name}"?`,
+      message: `Remove ${humanName} from team "${team.name}"?`,
       confirmLabel: 'Remove Member',
       variant: 'danger',
       onConfirm: async () => {
@@ -268,7 +271,9 @@ export default function EnterpriseTeamsTab({ initialParams = null }) {
         method: 'PATCH',
         body: { leadPrincipalId: leadValue },
       });
-      notify(leadValue ? `Team lead set to ${leadValue}.` : 'Team lead cleared.');
+      const leadMember = (tenantMembersState?.data?.memberships || []).find(m => m.principalId === leadValue);
+      const leadName = leadMember?.displayName || leadMember?.invitationEmail || leadMember?.email || (leadValue ? `Member (${leadValue.slice(0, 8)}…)` : '');
+      notify(leadValue ? `Team lead set to ${leadName}.` : 'Team lead cleared.');
       setLeadTarget(null);
       setLeadValue('');
       refreshTeams();
