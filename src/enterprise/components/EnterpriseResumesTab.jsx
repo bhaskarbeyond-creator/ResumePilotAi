@@ -1135,7 +1135,6 @@ export default function EnterpriseResumesTab() {
         isOpen={!!previewResource}
         resume={previewResource}
         onClose={() => setPreviewResource(null)}
-        onEdit={(id) => navigate(`/build-resume?id=${id}`)}
       />
 
       {confirmConfig && (

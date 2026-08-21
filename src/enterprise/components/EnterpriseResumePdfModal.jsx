@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
-  FiX, FiPrinter, FiDownload, FiEdit3, FiZoomIn, FiZoomOut,
+  FiX, FiPrinter, FiDownload, FiZoomIn, FiZoomOut,
   FiMaximize2, FiStar, FiFileText, FiCheck, FiLayers, FiExternalLink
 } from 'react-icons/fi';
 import TemplateRenderer from '../../components/TemplateRenderer';
@@ -112,8 +112,7 @@ export function normalizeResumeValues(resource) {
 export default function EnterpriseResumePdfModal({
   isOpen,
   resume,
-  onClose,
-  onEdit
+  onClose
 }) {
   const [zoom, setZoom] = useState(0.72);
   const [selectedTemplate, setSelectedTemplate] = useState('Cv1');
@@ -461,31 +460,6 @@ export default function EnterpriseResumePdfModal({
               <FiDownload aria-hidden="true" />
               <span>{downloadingDocx ? 'Exporting…' : 'Word (.docx)'}</span>
             </button>
-
-            {/* Edit in Composer */}
-            {typeof onEdit === 'function' && (
-              <button
-                type="button"
-                onClick={() => onEdit(resume.id)}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  color: '#ffffff',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  padding: '7px 12px',
-                  borderRadius: '8px',
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  cursor: 'pointer'
-                }}
-                title="Open resume in Smart Composer"
-              >
-                <FiEdit3 aria-hidden="true" />
-                <span>Edit</span>
-              </button>
-            )}
 
             {/* Close Button */}
             <button
