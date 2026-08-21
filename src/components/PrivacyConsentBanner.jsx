@@ -48,33 +48,30 @@ export default function PrivacyConsentBanner() {
 
     if (!configLoaded || !config.enableCookieBanner) return null;
 
-    // Inside active dashboard, resume builder, or editing workspaces, completely suppress the banner so it never obstructs the resume
-    const isAppWorkspace = /^\/(dashboard|dashboard2|build-resume|create-resume|export|shared|admin|adm|interview|job-tracker|portfolio|coverletter|cover-letter|billing|pricing)/i.test(location.pathname);
+    // Inside active dashboard, resume builder, or enterprise workspaces, completely suppress the banner so it never obstructs work
+    const isAppWorkspace = /^\/(dashboard|dashboard2|build-resume|create-resume|export|shared|admin|adm|interview|job-tracker|portfolio|coverletter|cover-letter|billing|pricing|enterprise)/i.test(location.pathname);
     if (isAppWorkspace) return null;
 
+    // When the user has already made their privacy choice, completely hide the banner (do not show a floating button)
     if (!showChoices) {
-        return (
-            <button type="button" onClick={() => setShowChoices(true)} className="fixed bottom-3 left-3 z-[9998] rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-md hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
-                Privacy choices
-            </button>
-        );
+        return null;
     }
 
     return (
-        <section role="dialog" aria-modal="false" aria-labelledby="privacy-consent-title" className="fixed inset-x-3 bottom-3 z-[9999] mx-auto max-w-3xl rounded-xl border border-slate-200 bg-white p-4 shadow-2xl sm:p-5">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="max-w-xl">
+        <section role="dialog" aria-modal="false" aria-labelledby="privacy-consent-title" className="fixed right-4 bottom-4 z-[9999] max-w-lg rounded-xl border border-slate-200 bg-white p-4 shadow-2xl sm:p-5">
+            <div className="flex flex-col gap-4">
+                <div>
                     <h2 id="privacy-consent-title" className="text-sm font-semibold text-slate-900">Optional analytics</h2>
                     <p className="mt-1 text-xs leading-5 text-slate-600">{config.cookieMessage}</p>
                     <p className="mt-1 text-xs text-slate-500">Your choice is currently: <strong>{consent}</strong>. Essential authentication and security storage are unaffected.</p>
                     <a href={sanitizeUrl(config.privacyPolicyUrl) || DEFAULTS.privacyPolicyUrl} className="mt-1 inline-block text-xs font-medium text-indigo-700 hover:underline">Privacy policy</a>
                 </div>
-                <div className="flex flex-col gap-2 sm:min-w-40">
-                    <button type="button" onClick={() => choose('granted')} className="rounded-md bg-indigo-700 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-700">
+                <div className="flex flex-row items-center gap-2">
+                    <button type="button" onClick={() => choose('granted')} className="flex-1 rounded-md bg-indigo-700 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-700">
                         {config.buttonText || DEFAULTS.buttonText}
                     </button>
-                    <button type="button" onClick={() => choose('denied')} className="rounded-md border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-700">
-                        Reject optional analytics
+                    <button type="button" onClick={() => choose('denied')} className="flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-700">
+                        Reject
                     </button>
                 </div>
             </div>

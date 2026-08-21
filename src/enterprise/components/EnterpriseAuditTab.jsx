@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  FiSearch, FiDownload, FiEye, FiX, FiChevronRight
+  FiSearch, FiDownload, FiEye, FiX, FiChevronRight, FiLink, FiCheck, FiUser, FiCpu, FiShield
 } from 'react-icons/fi';
+import fire from '../../conf/fire';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 
 const OUTCOMES = ['ALL', 'SUCCESS', 'DENIED', 'FAILURE'];
@@ -70,6 +71,43 @@ export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = n
   const [cursor, setCursor] = useState(null);
   const [accumulated, setAccumulated] = useState([]);
   const [linkCopied, setLinkCopied] = useState(false);
+
+  // Load tenant memberships to resolve raw UIDs into human identities
+  const [membersState] = useAsyncResource(() => request('/api/enterprise/memberships'), [request]);
+
+  const memberMap = useMemo(() => {
+    const map = new Map();
+    const list = Array.isArray(membersState.data?.memberships) ? membersState.data.memberships : [];
+    for (const m of list) {
+      if (m.subjectId) map.set(m.subjectId, m);
+      if (m.principalId) map.set(m.principalId, m);
+      if (m.id) map.set(m.id, m);
+    }
+    return map;
+  }, [membersState]);
+
+  const currentUid = fire.auth()?.currentUser?.uid || '';
+  const currentDisplayName = fire.auth()?.currentUser?.displayName || fire.auth()?.currentUser?.email?.split('@')[0] || '';
+
+  const formatActor = useMemo(() => {
+    return (actorId) => {
+      if (!actorId || actorId === 'system' || actorId === 'automated') {
+        return { name: 'System Service', sub: 'Internal Automated Worker', isSystem: true, initial: '⚙' };
+      }
+      if (currentUid && actorId === currentUid) {
+        return { name: `${currentDisplayName || 'Babu M'} (You)`, sub: `Principal: ${actorId.slice(0, 8)}…`, isCurrent: true, initial: (currentDisplayName || 'B').charAt(0).toUpperCase() };
+      }
+      const member = memberMap.get(actorId);
+      if (member) {
+        const name = member.displayName || member.email?.split('@')[0] || member.email || 'Enterprise Member';
+        return { name, sub: member.email || `Principal: ${actorId.slice(0, 8)}…`, isCurrent: false, initial: name.charAt(0).toUpperCase() };
+      }
+      if (actorId.startsWith('sa_') || actorId.startsWith('svc_')) {
+        return { name: `Service Account (${actorId.slice(0, 10)})`, sub: 'M2M API Token', isService: true, initial: '🔑' };
+      }
+      return { name: `Principal: ${actorId.slice(0, 8)}…`, sub: actorId, isCurrent: false, initial: '👤' };
+    };
+  }, [currentUid, currentDisplayName, memberMap]);
 
   // Cross-tab investigation preset (e.g. member activity): applies the actor
   // filter once, then is consumed so manual edits behave normally afterwards.
@@ -177,9 +215,17 @@ export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = n
       <div className="enterprise-card" style={{ padding: '24px' }}>
         <div className="enterprise-card-header-flex" style={{ marginBottom: '20px' }}>
           <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <span className="enterprise-pill enterprise-pill-success">
+                <FiShield aria-hidden="true" /> Immutable Ledger
+              </span>
+              <span className="enterprise-pill enterprise-pill-secondary">
+                {filtered.length} Events Loaded
+              </span>
+            </div>
             <h2 className="enterprise-tab-title">Immutable Audit Trail</h2>
             <p className="enterprise-tab-subtitle">
-              Server-recorded events of user actions, AI generations, security modifications, and exports
+              Server-recorded forensic trail of administrator actions, identity mutations, AI generations, and security events.
             </p>
           </div>
           <div className="enterprise-inline-actions" style={{ gap: '0.5rem' }}>
@@ -188,6 +234,8 @@ export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = n
               className="enterprise-button enterprise-button-secondary"
               onClick={handleExportCsv}
               disabled={filtered.length === 0}
+              title="Export filtered audit events as CSV"
+              data-tooltip="Export CSV"
             >
               <FiDownload aria-hidden="true" /> CSV
             </button>
@@ -196,6 +244,8 @@ export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = n
               className="enterprise-button enterprise-button-secondary"
               onClick={handleExportJson}
               disabled={filtered.length === 0}
+              title="Export filtered audit events as JSON"
+              data-tooltip="Export JSON"
             >
               <FiDownload aria-hidden="true" /> JSON
             </button>
@@ -203,44 +253,46 @@ export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = n
               type="button"
               className="enterprise-button enterprise-button-secondary"
               onClick={handleCopyDeepLink}
-              title="Copy a shareable link that reproduces this filtered view"
+              title="Copy shareable link with current filter parameters"
+              data-tooltip={linkCopied ? 'Copied!' : 'Copy Link'}
             >
-              {linkCopied ? 'Link copied ✓' : 'Copy link'}
+              {linkCopied ? <FiCheck className="text-success" aria-hidden="true" /> : <FiLink aria-hidden="true" />}
+              {linkCopied ? 'Copied!' : 'Copy link'}
             </button>
           </div>
         </div>
 
-        <div className="enterprise-filter-bar" style={{ flexWrap: 'wrap', gap: '8px', padding: '16px', background: 'var(--enterprise-surface)', borderRadius: 'var(--enterprise-radius-md)', border: '1px solid var(--enterprise-border)', marginBottom: '24px' }}>
-          <div className="enterprise-search-wrapper">
+        <div className="enterprise-filter-bar" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+          <div className="enterprise-search-wrapper" style={{ flex: '1 1 200px' }}>
             <FiSearch className="enterprise-search-icon" aria-hidden="true" />
             <input
               type="text"
-              placeholder="Search this result set…"
+              placeholder="Search actions, resources, categories…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="enterprise-input"
+              aria-label="Search within loaded audit events"
+              title="Search within loaded audit trail"
             />
           </div>
-          <div className="enterprise-select-group">
+          <div className="enterprise-select-group" style={{ display: 'flex', gap: '8px' }}>
             <select
               value={outcomeFilter}
               onChange={(e) => setOutcomeFilter(e.target.value)}
               className="enterprise-select"
               aria-label="Filter by outcome"
+              title="Filter by event execution outcome"
             >
               {OUTCOMES.map(outcome => (
-                <option key={outcome} value={outcome}>
-                  {outcome === 'ALL' ? 'All Outcomes' : outcome === 'DENIED' ? 'Denied / Blocked' : outcome === 'FAILURE' ? 'Failure' : 'Success Only'}
-                </option>
+                <option key={outcome} value={outcome}>{outcome === 'ALL' ? 'All Outcomes' : outcome}</option>
               ))}
             </select>
-          </div>
-          <div className="enterprise-select-group">
             <select
               value={severityFilter}
               onChange={(e) => setSeverityFilter(e.target.value)}
               className="enterprise-select"
               aria-label="Filter by severity"
+              title="Filter by severity level"
             >
               {SEVERITIES.map(severity => (
                 <option key={severity} value={severity}>{severity === 'ALL' ? 'All Severities' : severity}</option>
@@ -310,54 +362,109 @@ export default function EnterpriseAuditTab({ preset = null, onPresetConsumed = n
             )
           ) : (
             <>
-              <div className="enterprise-table-wrapper">
+              <div className="enterprise-table-wrapper" style={{ marginTop: '16px', borderRadius: '10px', overflow: 'hidden' }}>
                 <table className="enterprise-table">
                   <thead>
                     <tr>
-                      <th>Timestamp (UTC)</th>
-                      <th>Actor</th>
-                      <th>Action</th>
-                      <th>Category</th>
-                      <th>Severity</th>
-                      <th>Resource</th>
-                      <th>Outcome</th>
-                      <th className="text-right">Details</th>
+                      <th style={{ minWidth: '150px' }} title="UTC Timestamp of event">Timestamp (UTC)</th>
+                      <th style={{ minWidth: '180px' }} title="User, team member, or service performing the action">Actor</th>
+                      <th title="System action executed">Action</th>
+                      <th title="Domain category">Category</th>
+                      <th title="Event severity rating">Severity</th>
+                      <th title="Target resource identifier">Resource</th>
+                      <th title="Execution outcome">Outcome</th>
+                      <th className="text-right" title="Inspect full event JSON payload">Details</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map(event => (
-                      <tr key={event.id}>
-                        <td><small className="text-muted">{new Date(event.occurredAt || event.createdAt || Date.now()).toISOString()}</small></td>
-                        <td><strong>{event.actorSubjectId || event.subjectId || event.principalId || 'system'}</strong></td>
-                        <td><code>{event.action}</code></td>
-                        <td><small>{event.category || '—'}</small></td>
-                        <td>
-                          <span className={`enterprise-pill ${(event.severity === 'HIGH' || event.severity === 'CRITICAL') ? 'enterprise-pill-danger' : 'enterprise-pill-secondary'}`}>
-                            {event.severity || '—'}
-                          </span>
-                        </td>
-                        <td><small>{event.resourceType ? `${event.resourceType}:${String(event.resourceId || '').slice(0, 8)}` : '—'}</small></td>
-                        <td>
-                          <span className={`enterprise-pill enterprise-pill-${event.outcome === 'SUCCESS' ? 'success' : (event.outcome === 'DENIED' ? 'warning' : 'danger')}`}>
-                            {event.outcome || '—'}
-                          </span>
-                        </td>
-                        <td className="text-right">
-                          <button
-                            type="button"
-                            className="enterprise-button-icon"
-                            title="Inspect Event Payload"
-                            onClick={() => setInspectEvent(event)}
-                          >
-                            <FiEye />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                    {filtered.map(event => {
+                      const actorId = event.actorSubjectId || event.subjectId || event.principalId || '';
+                      const actor = formatActor(actorId);
+
+                      return (
+                        <tr key={event.id}>
+                          <td>
+                            <div style={{ fontSize: '0.78rem', color: 'var(--ep-slate-700)', fontWeight: 500 }}>
+                              {new Date(event.occurredAt || event.createdAt || Date.now()).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </div>
+                            <small className="text-muted" style={{ fontFamily: 'monospace', fontSize: '0.7rem' }}>
+                              {new Date(event.occurredAt || event.createdAt || Date.now()).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })} UTC
+                            </small>
+                          </td>
+
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <div style={{
+                                width: '28px',
+                                height: '28px',
+                                borderRadius: '6px',
+                                background: actor.isSystem ? '#f1f5f9' : (actor.isCurrent ? '#eef2ff' : '#f8fafc'),
+                                color: actor.isCurrent ? '#4f46e5' : '#475569',
+                                border: `1px solid ${actor.isCurrent ? '#c7d2fe' : '#e2e8f0'}`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontWeight: 700,
+                                fontSize: '0.75rem',
+                                flexShrink: 0
+                              }}>
+                                {actor.initial}
+                              </div>
+                              <div>
+                                <strong style={{ fontSize: '0.84rem', color: 'var(--enterprise-ink)', display: 'block' }}>{actor.name}</strong>
+                                <small className="text-muted" style={{ fontSize: '0.7rem', display: 'block' }}>{actor.sub}</small>
+                              </div>
+                            </div>
+                          </td>
+
+                          <td>
+                            <code style={{ fontSize: '0.75rem', fontWeight: 600, background: 'var(--ep-slate-50)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--ep-slate-200)' }}>
+                              {event.action}
+                            </code>
+                          </td>
+
+                          <td>
+                            <span style={{ fontSize: '0.76rem', color: 'var(--ep-slate-600)' }}>
+                              {event.category || '—'}
+                            </span>
+                          </td>
+
+                          <td>
+                            <span className={`enterprise-pill ${(event.severity === 'HIGH' || event.severity === 'CRITICAL') ? 'enterprise-pill-danger' : 'enterprise-pill-secondary'}`} style={{ fontSize: '0.7rem' }}>
+                              {event.severity || '—'}
+                            </span>
+                          </td>
+
+                          <td>
+                            <small className="text-muted" style={{ fontFamily: 'monospace', fontSize: '0.74rem' }}>
+                              {event.resourceType ? `${event.resourceType}:${String(event.resourceId || '').slice(0, 8)}` : '—'}
+                            </small>
+                          </td>
+
+                          <td>
+                            <span className={`enterprise-pill enterprise-pill-${event.outcome === 'SUCCESS' ? 'success' : (event.outcome === 'DENIED' ? 'warning' : 'danger')}`} style={{ fontSize: '0.72rem' }}>
+                              {event.outcome || '—'}
+                            </span>
+                          </td>
+
+                          <td className="text-right">
+                            <button
+                              type="button"
+                              className="enterprise-button-icon"
+                              title="Inspect Event Payload"
+                              data-tooltip="View Details"
+                              onClick={() => setInspectEvent(event)}
+                            >
+                              <FiEye />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
-              <div className="enterprise-inline-actions" style={{ justifyContent: 'center', marginTop: '0.75rem' }}>
+              <div className="enterprise-inline-actions" style={{ justifyContent: 'center', marginTop: '1rem' }}>
                 {nextCursor && (
                   <button
                     type="button"
