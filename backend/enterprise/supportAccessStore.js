@@ -23,11 +23,13 @@ function normalizeExpiry(value, now = Date.now()) {
   return new Date(now + minutes * 60_000).toISOString();
 }
 
-function createSupportGrant({ tenantId, workspaceId, supportSubjectId, requestedBySubjectId, reason, expiresInMinutes, scopes = ['tenant.audit.read'], now = Date.now() }) {
+function createSupportGrant({ tenantId, workspaceId = null, supportSubjectId, requestedBySubjectId, reason, expiresInMinutes, scopes = ['tenant.audit.read'], now = Date.now() }) {
   return Object.freeze({
     id: crypto.randomUUID(),
     tenantId: assertUuid(tenantId, 'Tenant identifier'),
-    workspaceId: assertUuid(workspaceId, 'Workspace identifier'),
+    // null ⇒ tenant-scoped (break-glass across the tenant); UUID ⇒ limited to
+    // exactly that workspace.
+    workspaceId: workspaceId ? assertUuid(workspaceId, 'Workspace identifier') : null,
     supportSubjectId: assertPrincipalId(supportSubjectId),
     requestedBySubjectId: assertPrincipalId(requestedBySubjectId),
     reason: normalizeReason(reason),
@@ -40,7 +42,11 @@ function createSupportGrant({ tenantId, workspaceId, supportSubjectId, requested
 
 function activeGrant(grant, { supportSubjectId, tenantId, workspaceId, now = Date.now() }) {
   if (!grant || grant.status !== 'ACTIVE') return false;
-  if (grant.supportSubjectId !== supportSubjectId || grant.tenantId !== tenantId || grant.workspaceId !== workspaceId) return false;
+  if (grant.supportSubjectId !== supportSubjectId || grant.tenantId !== tenantId) return false;
+  // Workspace-scoped grants must match the requested workspace exactly.
+  // Tenant-scoped grants (workspaceId null) allow any workspace within the
+  // tenant; the service layer validates workspace existence and narrowing.
+  if (grant.workspaceId && grant.workspaceId !== workspaceId) return false;
   return new Date(grant.expiresAt).getTime() > now;
 }
 

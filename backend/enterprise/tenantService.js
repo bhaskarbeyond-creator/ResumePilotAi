@@ -172,9 +172,25 @@ class TenantService {
       throw Object.assign(new Error('Support access store is unavailable'), { code: 'SUPPORT_ACCESS_UNAVAILABLE', status: 503 });
     }
     const tenantId = tenantScopedRequest ? context.tenantId : assertUuid(input?.tenantId, 'Tenant identifier');
-    const workspaceId = tenantScopedRequest
-      ? (context.workspaceScope === 'TENANT' && input?.workspaceId ? assertUuid(input.workspaceId, 'Workspace identifier') : assertUuid(context.workspaceId, 'Workspace identifier'))
-      : assertUuid(input?.workspaceId, 'Workspace identifier');
+    // Grant scope: WORKSPACE (default) anchors the session to one workspace;
+    // TENANT allows tenant-wide diagnostics and can only be issued by a
+    // TENANT-scoped caller. Scopes remain policy-gated either way.
+    const requestedGrantScope = String(input?.scope || 'WORKSPACE').trim().toUpperCase();
+    if (!['TENANT', 'WORKSPACE'].includes(requestedGrantScope)) {
+      throw Object.assign(new Error('Support grant scope must be TENANT or WORKSPACE'), { code: 'INVALID_SUPPORT_SCOPE', status: 400 });
+    }
+    if (requestedGrantScope === 'TENANT' && tenantScopedRequest && context.workspaceScope !== 'TENANT') {
+      throw Object.assign(new Error('Only tenant administrators can create tenant-scoped support grants'), { code: 'WORKSPACE_FORBIDDEN', status: 403 });
+    }
+    let workspaceId = null;
+    if (requestedGrantScope === 'WORKSPACE') {
+      workspaceId = tenantScopedRequest
+        ? (context.workspaceScope === 'TENANT' && input?.workspaceId ? assertUuid(input.workspaceId, 'Workspace identifier') : assertUuid(context.workspaceId, 'Workspace identifier'))
+        : assertUuid(input?.workspaceId, 'Workspace identifier');
+    } else if (tenantScopedRequest ? context.workspaceScope === 'TENANT' && input?.workspaceId : input?.workspaceId) {
+      // A tenant-scoped grant may still be narrowed to a specific workspace.
+      workspaceId = assertUuid(input.workspaceId, 'Workspace identifier');
+    }
     const supportSubjectId = String(input?.supportSubjectId || '');
     if (this.admin?.auth) {
       try {
@@ -187,11 +203,9 @@ class TenantService {
         throw Object.assign(new Error('Support identity was not found'), { code: 'SUPPORT_IDENTITY_NOT_FOUND', status: 404 });
       }
     }
-    const [tenant, workspace] = await Promise.all([
-      this.registry.getTenant(tenantId),
-      this.registry.getWorkspace(workspaceId, tenantId),
-    ]);
-    if (tenantScopedRequest && context.workspaceScope !== 'TENANT' && workspace.id !== context.workspaceId) {
+    const tenant = await this.registry.getTenant(tenantId);
+    const workspace = workspaceId ? await this.registry.getWorkspace(workspaceId, tenantId) : null;
+    if (workspace && tenantScopedRequest && context.workspaceScope !== 'TENANT' && workspace.id !== context.workspaceId) {
       throw Object.assign(new Error('Support grant workspace is not permitted'), { code: 'WORKSPACE_FORBIDDEN', status: 403 });
     }
     if (tenant.lifecycleState !== 'ACTIVE') {
@@ -208,7 +222,7 @@ class TenantService {
     const scopes = assertSupportScopes(input?.scopes && Array.isArray(input.scopes) && input.scopes.length ? input.scopes : ['tenant.audit.read'], { allowRepair });
     const grant = await this.supportGrantStore.create({
       tenantId,
-      workspaceId: workspace.id,
+      workspaceId: workspace?.id || null,
       supportSubjectId,
       requestedBySubjectId: user.uid,
       reason: input?.reason,
@@ -217,7 +231,8 @@ class TenantService {
     });
     if (this.db && this.admin) {
       await this.db.collection('security_audit_logs').doc().set({
-        action: 'SUPPORT_GRANT_CREATED', actorUid: user.uid, tenantId, workspaceId: workspace.id,
+        action: 'SUPPORT_GRANT_CREATED', actorUid: user.uid, tenantId, workspaceId: workspace?.id || null,
+        grantScope: workspace?.id ? 'WORKSPACE' : 'TENANT',
         supportSubjectId: grant.supportSubjectId, supportGrantId: grant.id, reason: grant.reason,
         requestId: requestId || null, expiresAt: grant.expiresAt,
         createdAt: this.admin.firestore.FieldValue.serverTimestamp(),
@@ -258,16 +273,43 @@ class TenantService {
       throw Object.assign(new Error('Support access store is unavailable'), { code: 'SUPPORT_ACCESS_UNAVAILABLE', status: 503 });
     }
     const tenantId = assertUuid(requestedTenantId, 'Tenant identifier');
-    const workspaceId = assertUuid(requestedWorkspaceId, 'Workspace identifier');
+    const workspaceId = requestedWorkspaceId ? assertUuid(requestedWorkspaceId, 'Workspace identifier') : null;
+    // Store validation binds grant → support engineer → tenant and enforces
+    // expiry/revocation. Workspace binding rules are applied below so both
+    // workspace-scoped and tenant-scoped grants fail closed.
     const grant = await this.supportGrantStore.validate({ grantId, supportSubjectId: user.uid, tenantId, workspaceId });
     if (!grant) {
       throw Object.assign(new Error('Support grant is invalid, expired, or unavailable in this tenant'), { code: 'SUPPORT_GRANT_DENIED', status: 403 });
     }
-    const [tenant, workspace, configuration] = await Promise.all([
+    let workspace = null;
+    let workspaceScope;
+    if (grant.workspaceId) {
+      // Workspace-scoped grant: the requested workspace must be exactly the
+      // grant's anchor workspace. No lateral movement.
+      if (workspaceId !== grant.workspaceId) {
+        throw Object.assign(new Error('Support grant is limited to a different workspace'), { code: 'SUPPORT_GRANT_DENIED', status: 403 });
+      }
+      workspaceScope = 'WORKSPACE';
+    } else {
+      // Tenant-scoped grant: tenant-wide diagnostics, optionally narrowed to a
+      // specific ACTIVE workspace inside the same tenant (validated server-side).
+      workspaceScope = 'TENANT';
+      if (workspaceId) {
+        try {
+          workspace = await this.registry.getWorkspace(workspaceId, tenantId);
+          workspaceScope = 'WORKSPACE';
+        } catch {
+          throw Object.assign(new Error('Support grant workspace was not found in this tenant'), { code: 'SUPPORT_GRANT_DENIED', status: 403 });
+        }
+      }
+    }
+    const [tenant, configuration] = await Promise.all([
       this.registry.getTenant(tenantId),
-      this.registry.getWorkspace(workspaceId, tenantId),
       this.registry.getTenantConfiguration(tenantId),
     ]);
+    if (!workspace && grant.workspaceId) {
+      workspace = await this.registry.getWorkspace(grant.workspaceId, tenantId);
+    }
     if (tenant.lifecycleState !== 'ACTIVE') {
       throw Object.assign(new Error('Tenant is not active'), { code: 'TENANT_INACTIVE', status: 403 });
     }
@@ -280,11 +322,11 @@ class TenantService {
       actorType: 'support',
       supportGrantId: grant.id,
       tenantId,
-      workspaceId,
+      workspaceId: workspace?.id || null,
       tenant: { ...tenant, configuration, aiPolicy: configuration.aiPolicy },
       membership: { id: `support:${grant.id}`, status: 'ACTIVE', roles: [] },
       permissions: grant.scopes,
-      workspaceScope: 'WORKSPACE',
+      workspaceScope,
       dataPlane: tenant.dataPlane,
     });
     return { context, tenant: { ...tenant, configuration, aiPolicy: configuration.aiPolicy }, workspace, grant };
@@ -294,13 +336,28 @@ class TenantService {
     if (!this.serviceAccountStore) {
       throw Object.assign(new Error('Service account store is unavailable'), { code: 'SERVICE_ACCOUNT_STORE_UNAVAILABLE', status: 503 });
     }
-    const workspaceId = input?.workspaceId || context.workspaceId;
-    if (context.workspaceScope !== 'TENANT' && workspaceId !== context.workspaceId) {
-      throw Object.assign(new Error('Service account workspace is not permitted'), { code: 'WORKSPACE_FORBIDDEN', status: 403 });
+    // Service accounts are either pinned to exactly one workspace (default) or
+    // tenant-scoped. Creating a tenant-scoped account is itself a tenant-wide
+    // privilege: only TENANT-scoped callers (owners/admins) may do so.
+    const requestedScope = String(input?.scope || 'WORKSPACE').trim().toUpperCase();
+    if (!['TENANT', 'WORKSPACE'].includes(requestedScope)) {
+      throw Object.assign(new Error('Service account scope must be TENANT or WORKSPACE'), { code: 'INVALID_SERVICE_ACCOUNT_SCOPE', status: 400 });
+    }
+    let workspaceId;
+    if (requestedScope === 'TENANT') {
+      if (context.workspaceScope !== 'TENANT') {
+        throw Object.assign(new Error('Only tenant administrators can create tenant-scoped service accounts'), { code: 'WORKSPACE_FORBIDDEN', status: 403 });
+      }
+      workspaceId = null;
+    } else {
+      workspaceId = input?.workspaceId || context.workspaceId;
+      if (context.workspaceScope !== 'TENANT' && workspaceId !== context.workspaceId) {
+        throw Object.assign(new Error('Service account workspace is not permitted'), { code: 'WORKSPACE_FORBIDDEN', status: 403 });
+      }
     }
     const created = await this.serviceAccountStore.create({
       tenantId: context.tenantId,
-      workspaceId: assertUuid(workspaceId, 'Workspace identifier'),
+      workspaceId: workspaceId ? assertUuid(workspaceId, 'Workspace identifier') : null,
       displayName: input?.displayName,
       scopes: input?.scopes,
     });
@@ -311,7 +368,7 @@ class TenantService {
         category: 'tenant.security',
         severity: 'HIGH',
         resource: { type: 'service_account', id: created.account.id },
-        metadata: { scopes: created.material.record.scopes.join(',') },
+        metadata: { scopes: created.material.record.scopes.join(','), accountScope: requestedScope },
       });
       await writeTenantAuditEvent(this.db, this.admin, event);
     }
@@ -411,20 +468,33 @@ class TenantService {
       throw Object.assign(new Error('Service API key is invalid'), { code: 'INVALID_SERVICE_API_KEY', status: 401 });
     }
     const { account, key } = authenticated;
+    // Client-supplied tenant/workspace identifiers can only RESTRICT the key's
+    // own binding; they can never expand it or point at another tenant.
     if (requestedTenantId && assertUuid(requestedTenantId, 'Tenant identifier') !== account.tenantId) {
       throw Object.assign(new Error('Service API key is unavailable in this tenant'), { code: 'SERVICE_TENANT_NOT_FOUND', status: 404 });
     }
-    if (requestedWorkspaceId && assertUuid(requestedWorkspaceId, 'Workspace identifier') !== account.workspaceId) {
+    if (account.workspaceId && requestedWorkspaceId && assertUuid(requestedWorkspaceId, 'Workspace identifier') !== account.workspaceId) {
       throw Object.assign(new Error('Service API key is unavailable in this workspace'), { code: 'SERVICE_WORKSPACE_NOT_FOUND', status: 404 });
     }
-    const [tenant, workspace, configuration] = await Promise.all([
-      this.registry.getTenant(account.tenantId),
-      this.registry.getWorkspace(account.workspaceId, account.tenantId),
-      this.registry.getTenantConfiguration(account.tenantId),
-    ]);
+    const tenant = await this.registry.getTenant(account.tenantId);
     if (tenant.lifecycleState !== 'ACTIVE') {
       throw Object.assign(new Error('Tenant is not active'), { code: 'TENANT_INACTIVE', status: 403 });
     }
+    const configuration = await this.registry.getTenantConfiguration(account.tenantId);
+    // Workspace resolution: a workspace-scoped account is pinned to its own
+    // workspace. A tenant-scoped account may optionally narrow itself to one
+    // ACTIVE workspace of its own tenant (validated server-side); selecting a
+    // workspace narrows the context scope to WORKSPACE for that request.
+    let workspace = null;
+    let workspaceScope = 'TENANT';
+    if (account.workspaceId) {
+      workspace = await this.registry.getWorkspace(account.workspaceId, account.tenantId);
+      workspaceScope = 'WORKSPACE';
+    } else if (requestedWorkspaceId) {
+      workspace = await this.registry.getWorkspace(assertUuid(requestedWorkspaceId, 'Workspace identifier'), account.tenantId);
+      workspaceScope = 'WORKSPACE';
+    }
+    const tenantView = { ...tenant, configuration, aiPolicy: configuration.aiPolicy };
     const context = freezeContext({
       requestId,
       correlationId: requestId,
@@ -433,14 +503,14 @@ class TenantService {
       identityIssuer: 'service',
       actorType: 'service',
       tenantId: tenant.id,
-      workspaceId: workspace.id,
-      tenant: { ...tenant, configuration, aiPolicy: configuration.aiPolicy },
+      workspaceId: workspace?.id || null,
+      tenant: tenantView,
       membership: { id: `service:${account.id}`, status: 'ACTIVE', roles: [] },
       permissions: key.scopes,
-      workspaceScope: 'WORKSPACE',
+      workspaceScope,
       dataPlane: tenant.dataPlane,
     });
-    return { context, tenant: { ...tenant, configuration, aiPolicy: configuration.aiPolicy }, workspace, account, key };
+    return { context, tenant: tenantView, workspace, account, key };
   }
 
   async authorizeOutboxEvent(event) {
@@ -575,6 +645,14 @@ class TenantService {
   }
 
   async listWorkspaces({ context }) {
+    // Non-human principals are not members: a service key sees its own workspace
+    // (or all tenant workspaces when tenant-scoped); a support session sees the
+    // grant's blast radius. Membership lookup never applies to them.
+    if (context.actorType === 'service' || context.actorType === 'support') {
+      const all = await this.registry.listWorkspaces(context.tenantId, {});
+      if (context.workspaceScope === 'TENANT') return all;
+      return all.filter(workspace => workspace.id === context.workspaceId);
+    }
     // Registry membership records are keyed by the verified external identity
     // subject; data-plane documents use the canonical UUID principal.
     return this.registry.listAccessibleWorkspaces({ tenantId: context.tenantId, principalId: context.subjectId, roles: context.roles });

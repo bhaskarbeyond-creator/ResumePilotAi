@@ -23,6 +23,11 @@ export default defineConfig({
     launchOptions: {
       executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined,
       args: ['--no-sandbox', '--no-zygote', '--disable-gpu', '--disable-dev-shm-usage'],
+      // Sandboxes without the Playwright browser CDN may ship a chromium whose
+      // NSS/NSPR stack lives outside the default linker path.
+      ...(process.env.PLAYWRIGHT_CHROMIUM_LD_LIBRARY_PATH
+        ? { env: { ...process.env, LD_LIBRARY_PATH: process.env.PLAYWRIGHT_CHROMIUM_LD_LIBRARY_PATH } }
+        : {}),
     },
   },
   projects: [

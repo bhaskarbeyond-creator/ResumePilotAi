@@ -1,11 +1,13 @@
 'use strict';
 
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const { normalizeRequestedTenantId, normalizeRequestedWorkspaceId } = require('../enterprise/tenantContext');
 const { hasTenantPermission, requireAnyTenantPermission, requireTenantPermission } = require('../enterprise/tenantPolicy');
 const { applyTenantAiPolicy, assertNoClientAuthority, buildTenantAiOperation } = require('../enterprise/tenantAi');
 const { buildLegacyPrompt, generateWithProviders, loadProviderConfiguration, parseAiResponse } = require('../services/aiRuntime');
 const { enterpriseFeatureEnabled } = require('../enterprise/featureFlags');
+const { M2M_ALLOWED_ENDPOINTS, SUPPORT_ALLOWED_ENDPOINTS, endpointAllowed } = require('../enterprise/enterpriseAuth');
 
 const router = express.Router();
 
@@ -31,14 +33,46 @@ router.use((req, res, next) => {
   return next();
 });
 
-// The global API boundary already verifies Firebase bearer tokens. Enterprise context
-// creation additionally requires a verified human identity; service-account support is
-// introduced through a separate authenticated principal flow rather than this browser route.
+// The global API boundary already verified the credential (Firebase bearer token or
+// x-api-key service key). Human principals additionally require a verified email;
+// service principals carry no email and are bounded by their key's scopes instead.
 router.use((req, res, next) => {
+  if (req.serviceContext) return next();
   if (!req.user?.emailVerified) {
     return res.status(403).json({ error: { code: 'EMAIL_VERIFICATION_REQUIRED', message: 'A verified email address is required', requestId: res.locals?.requestId } });
   }
   return next();
+});
+
+// Fail-closed reachability policy for non-human principals. M2M service keys and
+// support elevations can only ever reach the explicitly allowlisted endpoints;
+// every other route responds 403 before any handler executes. Route-level RBAC
+// then enforces the granted scopes, so a missing scope still fails with 403.
+router.use((req, res, next) => {
+  if (req.serviceContext && !endpointAllowed(M2M_ALLOWED_ENDPOINTS, req.method, req.path)) {
+    return res.status(403).json({ error: { code: 'M2M_OPERATION_NOT_PERMITTED', message: 'Service accounts cannot access this operation', requestId: res.locals?.requestId } });
+  }
+  if (req.pendingSupportGrantId && !endpointAllowed(SUPPORT_ALLOWED_ENDPOINTS, req.method, req.path)) {
+    return res.status(403).json({ error: { code: 'SUPPORT_OPERATION_NOT_PERMITTED', message: 'Support access cannot be used for this operation', requestId: res.locals?.requestId } });
+  }
+  return next();
+});
+
+// Per-service-account request budget. Keys live in CI systems, so the bucket is
+// keyed by the authenticated service principal (never the raw key) and sits in
+// addition to the tenant AI quotas, which M2M shares with humans by design.
+const m2mAccountLimiter = rateLimit({
+  windowMs: 60_000,
+  limit: Number(process.env.ENTERPRISE_M2M_KEY_RPM || 300),
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: req => `ent-m2m:${req.serviceContext?.principalId || 'unknown'}`,
+  message: { error: { code: 'M2M_RATE_LIMITED', message: 'Service account request budget exhausted', requestId: undefined } },
+  validate: { trustProxy: false, keyGeneratorIpFallback: false },
+});
+router.use((req, res, next) => {
+  if (!req.serviceContext) return next();
+  return m2mAccountLimiter(req, res, next);
 });
 
 // Real request telemetry: latencies and error classes are computed from actual
@@ -84,6 +118,35 @@ function requestedContext(req) {
 
 async function resolveTenantContext(req, res, next) {
   try {
+    // M2M service principal: context was fully resolved server-side from the key
+    // record (tenant, workspace, scopes). Client headers can only restrict, never
+    // expand, and body-supplied identity is never consulted.
+    if (req.serviceContext) {
+      req.tenantContext = req.serviceContext;
+      req.tenant = req.serviceAuth.tenant;
+      req.tenantMembership = req.serviceAuth.account;
+      req.workspace = req.serviceAuth.workspace;
+      res.setHeader('X-Tenant-Context', req.serviceContext.tenantId);
+      res.setHeader('X-Tenant-Routing-Version', String(req.serviceContext.dataPlane.routingVersion));
+      return next();
+    }
+    // Support (break-glass) elevation: the validated grant replaces membership
+    // resolution for this request only.
+    if (req.pendingSupportGrantId) {
+      const result = await enterpriseService(req).resolveSupportContext({
+        user: req.user,
+        grantId: req.pendingSupportGrantId,
+        requestedTenantId: normalizeRequestedTenantId(req.get('x-tenant-id') || req.query?.tenantId),
+        requestedWorkspaceId: normalizeRequestedWorkspaceId(req.get('x-workspace-id') || req.query?.workspaceId),
+        requestId: res.locals?.requestId,
+      });
+      req.tenantContext = result.context;
+      req.tenant = result.tenant;
+      req.tenantMembership = result.context.membership;
+      req.workspace = result.workspace;
+      res.setHeader('X-Tenant-Context', result.context.tenantId);
+      return next();
+    }
     const result = await enterpriseService(req).resolveContext({
       user: req.user,
       requestId: res.locals?.requestId,
@@ -97,10 +160,14 @@ async function resolveTenantContext(req, res, next) {
     res.setHeader('X-Tenant-Routing-Version', String(result.context.dataPlane.routingVersion));
     return next();
   } catch (error) {
-    return res.status(error.status || 503).json({
+    const status = [401, 403, 404].includes(error.status) ? error.status : 503;
+    return res.status(status).json({
       error: {
         code: error.code || 'TENANT_CONTEXT_UNAVAILABLE',
-        message: error.status === 404 ? 'Tenant context was not found' : 'Tenant context is unavailable',
+        message: error.status === 404 ? 'Tenant context was not found'
+          : error.status === 403 ? 'Tenant context is not permitted'
+            : error.status === 401 ? 'Tenant context requires reauthentication'
+              : 'Tenant context is unavailable',
         requestId: res.locals?.requestId,
       }
     });
@@ -335,7 +402,7 @@ router.post('/service-accounts', resolveTenantContext, requireTenantPermission('
     // The plaintext key is deliberately returned exactly once. Persistence/logging
     // contains only the one-way hash and safe prefix.
     return res.status(201).json({
-      serviceAccount: { id: created.account.id, tenantId: created.account.tenantId, workspaceId: created.account.workspaceId, displayName: created.account.displayName, status: created.account.status },
+      serviceAccount: { id: created.account.id, tenantId: created.account.tenantId, workspaceId: created.account.workspaceId, scope: created.account.workspaceId ? 'WORKSPACE' : 'TENANT', displayName: created.account.displayName, status: created.account.status },
       apiKey: created.material.plaintext,
       apiKeyId: created.material.record.id,
       apiKeyPrefix: created.material.record.prefix,
@@ -350,7 +417,7 @@ router.post('/service-accounts', resolveTenantContext, requireTenantPermission('
 router.get('/service-accounts', resolveTenantContext, requireTenantPermission('tenant.security.read'), async (req, res) => {
   try {
     const accounts = await enterpriseService(req).listServiceAccounts({ context: req.tenantContext });
-    return res.json({ serviceAccounts: accounts.map(account => ({ id: account.id, tenantId: account.tenantId, workspaceId: account.workspaceId, displayName: account.displayName, status: account.status, createdAt: account.createdAt || null, scopes: Array.isArray(account.scopes) ? account.scopes : [], apiKeyId: account.apiKeyId || null, apiKeyPrefix: account.apiKeyPrefix || null, expiresAt: account.expiresAt || null })) });
+    return res.json({ serviceAccounts: accounts.map(account => ({ id: account.id, tenantId: account.tenantId, workspaceId: account.workspaceId || null, scope: account.scope || (account.workspaceId ? 'WORKSPACE' : 'TENANT'), displayName: account.displayName, status: account.status, createdAt: account.createdAt || null, scopes: Array.isArray(account.scopes) ? account.scopes : [], apiKeyId: account.apiKeyId || null, apiKeyPrefix: account.apiKeyPrefix || null, expiresAt: account.expiresAt || null })) });
   } catch (error) {
     return res.status(error.status || 503).json({ error: { code: error.code || 'SERVICE_ACCOUNT_LIST_FAILED', message: 'Service accounts are unavailable', requestId: res.locals?.requestId } });
   }
@@ -371,7 +438,7 @@ router.post('/service-accounts/:serviceAccountId/rotate', resolveTenantContext, 
     // The plaintext key is deliberately returned exactly once, exactly like
     // creation. Persistence and logs contain only the hash and safe prefix.
     return res.json({
-      serviceAccount: { id: rotated.account.id, tenantId: rotated.account.tenantId, workspaceId: rotated.account.workspaceId, displayName: rotated.account.displayName, status: rotated.account.status },
+      serviceAccount: { id: rotated.account.id, tenantId: rotated.account.tenantId, workspaceId: rotated.account.workspaceId || null, scope: rotated.account.workspaceId ? 'WORKSPACE' : 'TENANT', displayName: rotated.account.displayName, status: rotated.account.status },
       apiKey: rotated.material.plaintext,
       apiKeyId: rotated.material.record.id,
       apiKeyPrefix: rotated.material.record.prefix,
@@ -598,6 +665,13 @@ router.post('/ai/generate-content', resolveTenantContext, requireTenantPermissio
       context: req.tenantContext,
       input: { provider: generated.provider, model: generated.model, operation, inputTokens: 0, outputTokens: 0, estimatedCostMicros: 0 },
     });
+    // Every tenant AI generation is attributable in the audit trail, including
+    // machine (M2M) and support actors — not just interactive humans.
+    await enterpriseService(req).writeAudit(req.tenantContext, {
+      action: 'TENANT_AI_GENERATED', category: 'tenant.ai', severity: 'INFO',
+      resource: { type: 'ai_operation', id: aiOperation.correlationId },
+      metadata: { operation, provider: generated.provider, model: generated.model, actorType: req.tenantContext.actorType },
+    }).catch(() => { /* usage ledger already recorded; audit failure must not fail the request */ });
     res.setHeader('X-AI-Provider', generated.provider);
     res.setHeader('X-AI-Model', generated.model);
     return res.json({ data, context: { tenantId: req.tenantContext.tenantId, workspaceId: req.tenantContext.workspaceId, correlationId: req.tenantContext.correlationId, policyVersion: aiOperation.policyVersion } });

@@ -7,7 +7,7 @@ import HelpTooltip from './HelpTooltip';
 import EnterpriseConfirmModal from './EnterpriseConfirmModal';
 
 export default function EnterpriseSupportTab() {
-  const { request } = useTenantApi();
+  const { request, context } = useTenantApi();
   const [grantsState, refreshGrants] = useAsyncResource(() => request('/api/enterprise/support-grants'), [request]);
   const [configState] = useAsyncResource(() => request('/api/enterprise/configuration'), [request]);
   const { loading, error, data } = grantsState;
@@ -17,10 +17,27 @@ export default function EnterpriseSupportTab() {
   const [duration, setDuration] = useState('240');
   const [supportSubjectId, setSupportSubjectId] = useState('');
   const [scopes, setScopes] = useState(['tenant.audit.read']);
+  const [grantScope, setGrantScope] = useState('WORKSPACE');
+  const canCreateTenantScoped = context?.workspaceScope === 'TENANT';
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState(null);
   const [notification, setNotification] = useState(null);
   const [confirmConfig, setConfirmConfig] = useState(null);
+  // Ticking clock so live grants show a real remaining-time countdown.
+  const [, setTick] = useState(0);
+  React.useEffect(() => {
+    const timer = setInterval(() => setTick(t => t + 1), 30_000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const remainingLabel = (expiresAt) => {
+    const ms = new Date(expiresAt).getTime() - Date.now();
+    if (ms <= 0) return 'expired';
+    const minutes = Math.ceil(ms / 60_000);
+    if (minutes < 60) return `${minutes}m left`;
+    const hours = Math.floor(minutes / 60);
+    return `${hours}h ${minutes % 60}m left`;
+  };
 
   // Server-enforced scope governance: while the tenant keeps the default
   // support policy, only diagnostic scopes are permitted.
@@ -59,12 +76,14 @@ export default function EnterpriseSupportTab() {
           reason: reason.trim(),
           expiresInMinutes: Number(duration),
           scopes,
+          scope: grantScope,
         },
       });
       setShowModal(false);
       setReason('');
       setSupportSubjectId('');
       setScopes(['tenant.audit.read']);
+      setGrantScope('WORKSPACE');
       notify('Temporary support access granted with full audit recording.');
       refreshGrants();
     } catch (err) {
@@ -171,6 +190,7 @@ export default function EnterpriseSupportTab() {
                         <th>Reason</th>
                         <th>Scope</th>
                         <th>Requested By</th>
+                        <th>Blast Radius</th>
                         <th>Expires At</th>
                         <th>Status</th>
                         <th className="text-right">Actions</th>
@@ -182,7 +202,7 @@ export default function EnterpriseSupportTab() {
                         return (
                           <tr key={grant.id}>
                             <td><strong>{grant.supportSubjectId || '—'}</strong></td>
-                            <td><em>"{grant.reason}"</em></td>
+                            <td><em>&quot;{grant.reason}&quot;</em></td>
                             <td>
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                                 {(grant.scopes || []).map(scope => (
@@ -191,7 +211,15 @@ export default function EnterpriseSupportTab() {
                               </div>
                             </td>
                             <td><small className="text-muted">{grant.requestedBySubjectId || '—'}</small></td>
-                            <td><small><FiClock aria-hidden="true" style={{ verticalAlign: 'middle', marginRight: '4px' }} /> {new Date(grant.expiresAt).toLocaleString()}</small></td>
+                            <td>
+                              <span className={`enterprise-pill ${grant.workspaceId ? 'enterprise-pill-secondary' : 'enterprise-pill-warning'}`} title={grant.workspaceId ? 'Workspace-scoped grant' : 'Tenant-scoped grant'}>
+                                {grant.workspaceId ? 'WORKSPACE' : 'TENANT'}
+                              </span>
+                            </td>
+                            <td>
+                              <small><FiClock aria-hidden="true" style={{ verticalAlign: 'middle', marginRight: '4px' }} /> {new Date(grant.expiresAt).toLocaleString()}</small>
+                              {grant.status === 'ACTIVE' && !expired && <><br /><small className="text-muted">{remainingLabel(grant.expiresAt)}</small></>}
+                            </td>
                             <td>
                               <span className={`enterprise-pill enterprise-pill-${grant.status === 'ACTIVE' && !expired ? 'success' : grant.status === 'REVOKED' ? 'secondary' : 'warning'}`}>
                                 {expired ? 'EXPIRED' : grant.status}
@@ -232,17 +260,38 @@ export default function EnterpriseSupportTab() {
             <form onSubmit={handleGrant}>
               <div className="enterprise-modal-body">
                 <div className="enterprise-form-group">
-                  <label htmlFor="grant-subject">Support Engineer Principal</label>
+                  <label htmlFor="grant-subject">Support Engineer Identity Code</label>
                   <input
                     id="grant-subject"
                     type="text"
                     required
-                    placeholder="Verified support engineer principal id"
+                    pattern="[A-Za-z0-9:_-]{1,128}"
+                    title="The identity code is provided by the support engineer during the support session"
+                    placeholder="Paste the identity code the support engineer shared with you"
                     value={supportSubjectId}
                     onChange={(e) => setSupportSubjectId(e.target.value)}
                     className="enterprise-input"
+                    style={{ fontFamily: 'monospace' }}
                     autoFocus
                   />
+                  <small className="text-muted">
+                    The on-call support engineer shares their identity code with you in the support ticket or call.
+                    The platform verifies it against the identity directory before the grant is issued — an unknown or
+                    ineligible identity is rejected.
+                  </small>
+                </div>
+                <div className="enterprise-form-group">
+                  <label>Grant Blast Radius</label>
+                  <div className="enterprise-checkbox-list">
+                    <label className="enterprise-checkbox">
+                      <input type="radio" name="grant-scope" checked={grantScope === 'WORKSPACE'} onChange={() => setGrantScope('WORKSPACE')} />
+                      <span><strong>Single workspace</strong> <small className="text-muted">· access limited to the active workspace (recommended)</small></span>
+                    </label>
+                    <label className="enterprise-checkbox" style={{ opacity: canCreateTenantScoped ? 1 : 0.55 }}>
+                      <input type="radio" name="grant-scope" checked={grantScope === 'TENANT'} onChange={() => canCreateTenantScoped && setGrantScope('TENANT')} disabled={!canCreateTenantScoped} />
+                      <span><strong>Entire tenant</strong> <small className="text-muted">· tenant-wide diagnostics{canCreateTenantScoped ? '' : ' (tenant administrators only)'}</small></span>
+                    </label>
+                  </div>
                 </div>
                 <div className="enterprise-form-group">
                   <label htmlFor="grant-reason">Mandatory Diagnostic Reason</label>
@@ -264,6 +313,7 @@ export default function EnterpriseSupportTab() {
                     onChange={(e) => setDuration(e.target.value)}
                     className="enterprise-select"
                   >
+                    <option value="15">15 Minutes (Emergency Peek)</option>
                     <option value="60">1 Hour (Quick Diagnosis)</option>
                     <option value="240">4 Hours (Standard Investigation)</option>
                     <option value="480">8 Hours (Complex Migration Support)</option>

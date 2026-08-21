@@ -19,6 +19,9 @@ export default defineConfig({
     launchOptions: {
       executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined,
       args: ['--no-sandbox', '--disable-dev-shm-usage'],
+      ...(process.env.PLAYWRIGHT_CHROMIUM_LD_LIBRARY_PATH
+        ? { env: { ...process.env, LD_LIBRARY_PATH: process.env.PLAYWRIGHT_CHROMIUM_LD_LIBRARY_PATH } }
+        : {}),
     },
   },
   projects: [{ name: 'chromium-live', use: { ...devices['Desktop Chrome'] } }],

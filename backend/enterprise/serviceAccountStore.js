@@ -22,13 +22,15 @@ class InMemoryServiceAccountStore {
 
   async create({ tenantId, workspaceId, displayName, scopes, now = new Date() }) {
     tenantId = assertUuid(tenantId, 'Tenant identifier');
-    workspaceId = assertUuid(workspaceId, 'Workspace identifier');
+    // workspaceId null ⇒ tenant-scoped service account.
+    workspaceId = workspaceId ? assertUuid(workspaceId, 'Workspace identifier') : null;
     const id = crypto.randomUUID();
     const material = createApiKeyMaterial({ tenantId, workspaceId, serviceAccountId: id, scopes, now });
     const account = {
       id,
       tenantId,
       workspaceId,
+      scope: workspaceId ? 'WORKSPACE' : 'TENANT',
       displayName: normalizeName(displayName),
       status: 'ACTIVE',
       createdAt: new Date(now).toISOString(),
@@ -119,13 +121,15 @@ class FirestoreServiceAccountStore {
   async create({ tenantId, workspaceId, displayName, scopes, now = new Date() }) {
     this.assertAvailable();
     tenantId = assertUuid(tenantId, 'Tenant identifier');
-    workspaceId = assertUuid(workspaceId, 'Workspace identifier');
+    // workspaceId null ⇒ tenant-scoped service account.
+    workspaceId = workspaceId ? assertUuid(workspaceId, 'Workspace identifier') : null;
     const id = crypto.randomUUID();
     const material = createApiKeyMaterial({ tenantId, workspaceId, serviceAccountId: id, scopes, now });
     const account = {
       id,
       tenantId,
       workspaceId,
+      scope: workspaceId ? 'WORKSPACE' : 'TENANT',
       displayName: normalizeName(displayName),
       status: 'ACTIVE',
       createdAt: new Date(now).toISOString(),

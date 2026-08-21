@@ -28,7 +28,7 @@ const vite = await createServer({ server: { port: 0, host: '127.0.0.1', strictPo
 const server = await vite.listen();
 const base = `http://127.0.0.1:${server.config.server.port}`;
 
-const browser = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined, args: ['--no-sandbox', '--no-zygote', '--disable-gpu', '--disable-dev-shm-usage'] });
+const browser = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined, args: ['--no-sandbox', '--no-zygote', '--disable-gpu', '--disable-dev-shm-usage'], ...(process.env.PLAYWRIGHT_CHROMIUM_LD_LIBRARY_PATH ? { env: { ...process.env, LD_LIBRARY_PATH: process.env.PLAYWRIGHT_CHROMIUM_LD_LIBRARY_PATH } } : {}) });
 
 const consoleIssues = [];
 for (const vpName of SELECTED_VIEWPORTS) {

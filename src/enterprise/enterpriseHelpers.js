@@ -113,7 +113,9 @@ export function formatMemberIdentity(member, currentUser = null, allMemberships 
       if (match) return formatMemberIdentity(match, currentUser);
     }
 
-    return `Member (${principalId.slice(0, 10)}…)`;
+    // Full principal identifier: administrators must be able to read and verify
+    // the exact identity; opaque truncation hides who holds access.
+    return `Member (${principalId})`;
   }
 
   const isCurrent = currentUser && (member.principalId === currentUser.uid || member.principalId === currentUser.email);
@@ -123,7 +125,7 @@ export function formatMemberIdentity(member, currentUser = null, allMemberships 
       return `${currentUser.displayName} (${currentUser.email}) · You`;
     }
     if (currentUser.email) return `${currentUser.email} · You`;
-    return `You (${member.principalId.slice(0, 8)}…)`;
+    return `You (${member.principalId})`;
   }
 
   if (member.displayName && (member.email || member.invitationEmail)) {
@@ -142,5 +144,5 @@ export function formatMemberIdentity(member, currentUser = null, allMemberships 
     return member.displayName;
   }
 
-  return `Member (${String(member.principalId).slice(0, 10)}…)`;
+  return `Member (${String(member.principalId)})`;
 }

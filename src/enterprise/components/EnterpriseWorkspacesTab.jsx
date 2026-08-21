@@ -51,7 +51,7 @@ function WorkspaceMembersDrawer({ workspace, onClose }) {
   const handleRemove = (principalId) => {
     const memberObj = (members || []).find(m => m.principalId === principalId) ||
                       (tenantMembersState?.data?.memberships || []).find(m => m.principalId === principalId);
-    const humanName = memberObj?.displayName || memberObj?.invitationEmail || memberObj?.email || (principalId.includes('@') ? principalId : `Member (${principalId.slice(0, 8)}…)`);
+    const humanName = memberObj?.displayName || memberObj?.invitationEmail || memberObj?.email || (principalId.includes('@') ? principalId : `Member (${principalId})`);
     setConfirmConfig({
       title: 'Remove Member from Workspace',
       message: `Remove ${humanName} from workspace "${workspace.name}"?`,
@@ -133,7 +133,7 @@ function WorkspaceMembersDrawer({ workspace, onClose }) {
                         <tr key={member.id}>
                           <td>
                             <strong>{label}</strong>
-                            <br /><small className="text-muted">Principal ID: {String(member.principalId).slice(0, 12)}…</small>
+                            <br /><small className="text-muted">Principal ID: {String(member.principalId)}</small>
                           </td>
                           <td><span className="enterprise-pill enterprise-pill-success">{member.status}</span></td>
                           {canManage && (

@@ -847,6 +847,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 20px;
+  flex-wrap: wrap;
 }
 
 .enterprise-actions-row {
@@ -2316,6 +2317,20 @@ details.enterprise-disclosure[open] > summary::before { content: '▾ '; }
 .enterprise-mobile-sidebar-header,
 .enterprise-mobile-context-bar {
   display: none;
+}
+
+/* Narrow desktops: compress the top bar so the shell never overflows (1280×800). */
+@media (max-width: 1360px) {
+  .enterprise-topbar { padding: 0 16px; }
+  .enterprise-topbar-right { gap: 8px; }
+  .enterprise-command-trigger { min-width: 0; }
+  .enterprise-command-trigger span { display: none; }
+}
+
+/* Two-column analytical grids need breathing room; stack them before the
+   content would force horizontal overflow on 1280-class desktops. */
+@media (max-width: 1400px) {
+  .enterprise-two-column-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 1024px) {

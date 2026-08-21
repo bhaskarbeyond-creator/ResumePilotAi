@@ -51,7 +51,7 @@ function TeamMembersDrawer({ team, onClose }) {
   const handleRemove = (principalId) => {
     const memberObj = (members || []).find(m => m.principalId === principalId) ||
                       (tenantMembersState?.data?.memberships || []).find(m => m.principalId === principalId);
-    const humanName = memberObj?.displayName || memberObj?.invitationEmail || memberObj?.email || (principalId.includes('@') ? principalId : `Member (${principalId.slice(0, 8)}…)`);
+    const humanName = memberObj?.displayName || memberObj?.invitationEmail || memberObj?.email || (principalId.includes('@') ? principalId : `Member (${principalId})`);
     setConfirmConfig({
       title: 'Remove Member from Team',
       message: `Remove ${humanName} from team "${team.name}"?`,
@@ -130,7 +130,7 @@ function TeamMembersDrawer({ team, onClose }) {
                             {team.leadPrincipalId && team.leadPrincipalId === member.principalId && (
                               <span className="enterprise-pill enterprise-pill-template" style={{ marginLeft: '0.5rem' }}>Lead</span>
                             )}
-                            <br /><small className="text-muted">Principal ID: {String(member.principalId).slice(0, 12)}…</small>
+                            <br /><small className="text-muted">Principal ID: {String(member.principalId)}</small>
                           </td>
                           <td><span className="enterprise-pill enterprise-pill-success">{member.status}</span></td>
                           {canManage && (

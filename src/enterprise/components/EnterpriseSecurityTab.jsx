@@ -6,7 +6,20 @@ import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 import HelpTooltip from './HelpTooltip';
 import EnterpriseConfirmModal from './EnterpriseConfirmModal';
 
-const SCOPE_OPTIONS = ['resource.read', 'resource.create', 'resource.update', 'ai.use'];
+// Scopes a tenant admin can grant to M2M keys. The server re-validates every
+// scope against its allowlist; anything unknown is dropped at creation time.
+const DATA_PLANE_SCOPES = [
+  { id: 'resource.read', hint: 'List and read resumes/resources' },
+  { id: 'resource.create', hint: 'Create resumes/resources' },
+  { id: 'resource.update', hint: 'Update and delete resources' },
+  { id: 'ai.use', hint: 'Tenant AI generation (shares tenant quota)' },
+];
+const READONLY_GOVERNANCE_SCOPES = [
+  { id: 'workspace.read', hint: 'List workspaces/teams' },
+  { id: 'tenant.read', hint: 'Tenant profile, configuration, queue and metrics reads' },
+  { id: 'tenant.usage.read', hint: 'AI usage dashboards and history' },
+  { id: 'tenant.audit.read', hint: 'Audit trail reads' },
+];
 
 const JOB_STATUS_FILTERS = ['ALL', 'QUEUED', 'RETRYING', 'DEAD_LETTER', 'REJECTED', 'COMPLETED'];
 
@@ -159,7 +172,7 @@ function DurableJobsCard({ focused = false }) {
 }
 
 export default function EnterpriseSecurityTab({ initialParams = null }) {
-  const { request, hasPermission } = useTenantApi();
+  const { request, hasPermission, context } = useTenantApi();
   const [accountsState, refreshAccounts] = useAsyncResource(
     () => request('/api/enterprise/service-accounts'),
     [request],
@@ -170,6 +183,8 @@ export default function EnterpriseSecurityTab({ initialParams = null }) {
   const [showCreateModal, setShowCreateModal] = useState(initialParams?.get?.('create') === '1');
   const [saName, setSaName] = useState('');
   const [saScopes, setSaScopes] = useState(['resource.read']);
+  const [saScope, setSaScope] = useState('WORKSPACE');
+  const canCreateTenantScoped = context?.workspaceScope === 'TENANT';
   const [busy, setBusy] = useState(false);
   const [rotatingId, setRotatingId] = useState(null);
   const [generatedKey, setGeneratedKey] = useState(null);
@@ -215,12 +230,13 @@ export default function EnterpriseSecurityTab({ initialParams = null }) {
     try {
       const created = await request('/api/enterprise/service-accounts', {
         method: 'POST',
-        body: { displayName: saName.trim(), scopes: saScopes },
+        body: { displayName: saName.trim(), scopes: saScopes, scope: saScope },
       });
       setShowCreateModal(false);
       setGeneratedKey({ plaintext: created.apiKey, name: created.serviceAccount.displayName });
       setSaName('');
       setSaScopes(['resource.read']);
+      setSaScope('WORKSPACE');
       refreshAccounts();
     } catch (err) {
       setActionError(err?.message || 'Service account could not be created.');
@@ -230,7 +246,7 @@ export default function EnterpriseSecurityTab({ initialParams = null }) {
   };
 
   const handleRevoke = (id) => {
-    const account = (accounts || []).find(a => a.id === id);
+    const account = serviceAccounts.find(a => a.id === id);
     const saTitle = account?.displayName || (id.length > 12 ? `${id.slice(0, 10)}…` : id);
     setConfirmConfig({
       title: 'Revoke Service Account API Key',
@@ -403,8 +419,8 @@ export default function EnterpriseSecurityTab({ initialParams = null }) {
           <div className="enterprise-card enterprise-sec-item">
             <div className="enterprise-sec-icon text-success"><FiLock /></div>
             <div>
-              <strong>Scoped API Keys</strong>
-              <p>Service account keys carry explicit scopes and can be revoked instantly. Plaintext secrets are returned exactly once.</p>
+              <strong>First-Class M2M Authentication</strong>
+              <p>Service keys authenticate the operational APIs directly via <code>x-api-key</code> — resources, AI, usage and audit — with server-side scopes, per-key rate limiting, instant rotation/revocation. Plaintext secrets are returned exactly once.</p>
             </div>
           </div>
           <div className="enterprise-card enterprise-sec-item">
@@ -458,7 +474,12 @@ export default function EnterpriseSecurityTab({ initialParams = null }) {
                     return (
                       <tr key={account.id}>
                         <td><strong>{account.displayName}</strong><br /><small>{String(account.id).slice(0, 12)}…</small></td>
-                        <td><small>{account.workspaceId ? String(account.workspaceId).slice(0, 8) : '—'}</small></td>
+                        <td>
+                          <span className={`enterprise-pill ${account.scope === 'TENANT' ? 'enterprise-pill-warning' : 'enterprise-pill-secondary'}`} title={account.scope === 'TENANT' ? 'Tenant-scoped: spans all workspaces' : 'Pinned to a single workspace'}>
+                            {account.scope === 'TENANT' ? 'TENANT' : 'WORKSPACE'}
+                          </span>
+                          <br /><small className="text-muted">{account.workspaceId ? String(account.workspaceId).slice(0, 8) : 'all workspaces'}</small>
+                        </td>
                         <td>{Array.isArray(account.scopes) ? account.scopes.map(s => <span key={s} className="enterprise-pill enterprise-pill-secondary">{s}</span>) : <small>—</small>}</td>
                         <td>
                           <code 
@@ -538,16 +559,39 @@ export default function EnterpriseSecurityTab({ initialParams = null }) {
                   />
                 </div>
                 <div className="enterprise-form-group">
-                  <label>Scopes</label>
+                  <label>Account Scope</label>
                   <div className="enterprise-checkbox-list">
-                    {SCOPE_OPTIONS.map(scope => (
-                      <label key={scope} className="enterprise-checkbox">
+                    <label className="enterprise-checkbox">
+                      <input type="radio" name="sa-scope" checked={saScope === 'WORKSPACE'} onChange={() => setSaScope('WORKSPACE')} />
+                      <span><strong>Workspace-scoped</strong> <small className="text-muted">· key is pinned to one workspace (recommended, least privilege)</small></span>
+                    </label>
+                    <label className="enterprise-checkbox" style={{ opacity: canCreateTenantScoped ? 1 : 0.55 }}>
+                      <input type="radio" name="sa-scope" checked={saScope === 'TENANT'} onChange={() => canCreateTenantScoped && setSaScope('TENANT')} disabled={!canCreateTenantScoped} />
+                      <span><strong>Tenant-scoped</strong> <small className="text-muted">· key spans every workspace in the tenant{canCreateTenantScoped ? '' : ' (tenant administrators only)'}</small></span>
+                    </label>
+                  </div>
+                </div>
+                <div className="enterprise-form-group">
+                  <label>API Scopes <small className="text-muted">(server-enforced; unknown scopes are rejected)</small></label>
+                  <div className="enterprise-checkbox-list">
+                    {DATA_PLANE_SCOPES.map(scope => (
+                      <label key={scope.id} className="enterprise-checkbox">
                         <input
                           type="checkbox"
-                          checked={saScopes.includes(scope)}
-                          onChange={() => toggleScope(scope)}
+                          checked={saScopes.includes(scope.id)}
+                          onChange={() => toggleScope(scope.id)}
                         />
-                        <span>{scope}</span>
+                        <span><code>{scope.id}</code> <small className="text-muted">· {scope.hint}</small></span>
+                      </label>
+                    ))}
+                    {READONLY_GOVERNANCE_SCOPES.map(scope => (
+                      <label key={scope.id} className="enterprise-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={saScopes.includes(scope.id)}
+                          onChange={() => toggleScope(scope.id)}
+                        />
+                        <span><code>{scope.id}</code> <small className="text-muted">· {scope.hint}</small></span>
                       </label>
                     ))}
                   </div>
@@ -563,6 +607,30 @@ export default function EnterpriseSecurityTab({ initialParams = null }) {
           </div>
         </div>
       )}
+
+      <div className="enterprise-card" style={{ marginTop: '1.5rem' }}>
+        <h3 className="enterprise-card-title">
+          <FiKey aria-hidden="true" /> M2M Integration Quick Reference
+          <HelpTooltip text="Exact request shape for machine clients. Tenant and workspace are resolved from the key server-side; client-supplied identifiers can only restrict, never expand." />
+        </h3>
+        <p className="enterprise-card-subtitle">Send exactly one credential per request — an <code>x-api-key</code> header, without a bearer token</p>
+        <pre style={{ background: 'var(--enterprise-surface)', border: '1px solid var(--enterprise-border)', borderRadius: 'var(--enterprise-radius-md)', padding: '14px 16px', overflowX: 'auto', fontSize: '0.82rem', lineHeight: 1.5 }} aria-label="M2M request example">
+{`curl -H "x-api-key: rpa_your_key_here" \\
+     "${typeof window !== 'undefined' ? window.location.origin : ''}/api/enterprise/resources"
+
+# Verified endpoints for service keys (scope-gated):
+#   GET/POST        /api/enterprise/resources          resource.read / resource.create
+#   GET/PATCH/DEL   /api/enterprise/resources/:id      resource.read / resource.update
+#   POST            /api/enterprise/ai/generate-content ai.use
+#   GET             /api/enterprise/usage/ai           tenant.usage.read
+#   GET             /api/enterprise/audit              tenant.audit.read
+#   GET             /api/enterprise/workspaces         workspace.read
+#   GET             /api/enterprise/m2m/context        (any valid key)`}
+        </pre>
+        <p className="text-muted" style={{ fontSize: '0.82rem', marginTop: '0.5rem' }}>
+          Invalid, revoked or rotated keys return <code>401</code>; missing scopes return <code>403</code>; control-plane endpoints always return <code>403 M2M_OPERATION_NOT_PERMITTED</code> for service keys. Requests are rate-limited per service account.
+        </p>
+      </div>
 
       <DurableJobsCard focused={initialParams?.get?.('focus') === 'jobs'} />
 

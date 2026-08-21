@@ -27,6 +27,7 @@ const cors = require('cors');
 const cryptoRandom = require('crypto');
 const { requireAuth, requirePermission, permissionsFor } = require('./security/auth');
 const { enforceApiPolicy } = require('./security/policy');
+const { createEnterpriseAuthMiddleware } = require('./enterprise/enterpriseAuth');
 const {
     assertInternalOrder,
     validateStripePaymentIntent,
@@ -247,17 +248,24 @@ app.use('/api/auth', authLimiter);
 // public protocol endpoints. Route handlers must still enforce their own role/ownership policy.
 const publicApiPaths = new Set([
     '/healthz', '/readyz', '/health',
-    '/enterprise/m2m/context',
     '/stripe-webhook', '/public-export', '/export-render-data', '/contact', '/auth/custom-password-reset',
     '/auth/verify-email-token', '/auth/set-user-password', '/auth/linkedin', '/auth/linkedin/callback',
     '/auth/github', '/auth/github/callback', '/auth/oauth/exchange'
 ]);
+// Enterprise API authentication accepts exactly one credential kind per request:
+// a Firebase bearer token (tenant member or support elevation) or an x-api-key
+// service credential (M2M). Ambiguous requests are rejected outright.
+const requireEnterpriseAuth = createEnterpriseAuthMiddleware({ requireAuth });
 app.use('/api', (req, res, next) => {
     if (publicApiPaths.has(req.path)) return next();
+    if (req.path.startsWith('/enterprise/')) return requireEnterpriseAuth(req, res, next);
     return requireAuth(req, res, next);
 });
 app.use('/api', (req, res, next) => {
     if (publicApiPaths.has(req.path)) return next();
+    // Service principals and pending support elevations are governed by the
+    // enterprise router's own fail-closed allowlists and RBAC.
+    if (req.serviceContext || req.pendingSupportGrantId) return next();
     return enforceApiPolicy(req, res, next);
 });
 
@@ -1767,9 +1775,10 @@ app.use('/api', emailRoutes);
 app.use('/api/email', emailRoutes);
 
 // Enterprise tenancy APIs are feature-gated at the client, server-authorized, and
-// deliberately isolated from existing certified UID-scoped module routes. The M2M
-// context route is explicitly exempted from Firebase bearer auth above and performs
-// its own hashed API-key verification; every other enterprise route remains bearer-authenticated.
+// deliberately isolated from existing certified UID-scoped module routes. The
+// enterprise API boundary (installed above) accepts either a Firebase bearer token
+// or an x-api-key service credential; the router enforces fail-closed endpoint
+// allowlists and RBAC for each principal kind.
 app.use('/api/enterprise/m2m', enterpriseM2mRouter);
 app.use('/api/enterprise', enterpriseRouter);
 

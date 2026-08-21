@@ -6,7 +6,7 @@ const net = require('net');
 const fs = require('fs');
 const path = require('path');
 const { assertPublicNetworkTarget } = require('../security/network');
-const { enterpriseConsoleUrl, resolvePublicAppOrigin, sanitizeAbsoluteHttpUrl } = require('../services/publicAppUrl');
+const { enterpriseConsoleUrl, resolvePublicAppOrigin, sanitizeAbsoluteHttpUrl, assertNoForbiddenEmailHost } = require('../services/publicAppUrl');
 
 // In-memory Outbox Log Store (persisted to DB if available)
 let emailLogsStore = [];
@@ -1800,7 +1800,15 @@ async function dispatchNotification(db, { to, templateType, vars = {}, customSub
             tenantId: vars.tenant_id || vars.tenantId || '',
             workspaceId: vars.workspace_id || vars.workspaceId || '',
         });
-        const finalActionUrl = sanitizeAbsoluteHttpUrl(vars.action_url) || defaultActionUrl;
+        let finalActionUrl = sanitizeAbsoluteHttpUrl(vars.action_url) || defaultActionUrl;
+        // Production email CTAs fail closed: a supplied action URL that is not
+        // https or that points at a placeholder/loopback host is replaced by the
+        // server-derived enterprise console URL. No localhost/staging CTA is ever mailed.
+        try {
+            assertNoForbiddenEmailHost(finalActionUrl);
+        } catch {
+            finalActionUrl = defaultActionUrl;
+        }
 
         const mergedVars = {
             brand_name: brandName,

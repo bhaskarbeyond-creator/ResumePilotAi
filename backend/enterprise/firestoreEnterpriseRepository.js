@@ -155,6 +155,8 @@ class FirestoreEnterpriseRepository {
       principalId: context.principalId,
       subjectId: context.subjectId || null,
       actorType: context.actorType || 'user',
+      identityIssuer: context.identityIssuer || 'firebase',
+      supportGrantId: context.supportGrantId || null,
       action: compactText(action, 120),
       category: compactText(category, 80),
       severity: ['INFO', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].includes(String(severity || '').toUpperCase()) ? String(severity).toUpperCase() : 'INFO',

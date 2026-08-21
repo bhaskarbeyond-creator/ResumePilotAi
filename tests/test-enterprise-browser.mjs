@@ -268,6 +268,9 @@ async function main() {
       // compatible Chromium binary (e.g. @sparticuz/chromium).
       executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined,
       args: ['--no-sandbox', '--no-zygote', '--disable-gpu', '--disable-dev-shm-usage'],
+      ...(process.env.PLAYWRIGHT_CHROMIUM_LD_LIBRARY_PATH
+        ? { env: { ...process.env, LD_LIBRARY_PATH: process.env.PLAYWRIGHT_CHROMIUM_LD_LIBRARY_PATH } }
+        : {}),
     });
   } catch (error) {
     console.log(`[Enterprise Browser Test] SKIPPED — Playwright chromium is unavailable in this environment (${error.message.split('\n')[0]}).`);
@@ -414,10 +417,13 @@ async function main() {
     await page.waitForSelector('text=APAC & Japan Operations', { timeout: 10_000 });
     check('workspace rename is reflected in the list', (await page.locator('text=APAC & Japan Operations').count()) > 0);
 
-    // Workspace archive → archived panel → restore.
+    // Workspace archive → archived panel → restore. The current UI confirms via
+    // the shared React confirm modal (a11y-friendly) rather than window.confirm.
     await page.waitForSelector('button[title="Archive APAC & Japan Operations"]', { timeout: 10_000 });
     page.once('dialog', dialog => dialog.accept());
     await page.click('button[title="Archive APAC & Japan Operations"]');
+    // The shared confirm modal renders a beat after the click; wait for it.
+    await page.locator('.enterprise-modal button:has-text("Archive Workspace")').click({ timeout: 10_000 });
     await page.waitForSelector('.enterprise-pill:has-text("Archived")', { timeout: 10_000 });
     check('archived workspace appears in the archived panel', (await page.locator('.enterprise-pill:has-text("Archived")').count()) > 0);
     const restoreButton = page.locator('button', { hasText: 'Restore' }).first();

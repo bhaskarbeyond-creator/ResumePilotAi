@@ -209,7 +209,7 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
     const next = member.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
     setActionError(null);
     setBusyAction(`status:${member.principalId}`);
-    const humanName = member.displayName || member.invitationEmail || member.email || (member.principalId.includes('@') ? member.principalId : `Member (${member.principalId.slice(0, 8)}…)`);
+    const humanName = member.displayName || member.invitationEmail || member.email || (member.principalId.includes('@') ? member.principalId : `Member (${member.principalId})`);
     try {
       await request(`/api/enterprise/memberships/${encodeURIComponent(member.principalId)}`, {
         method: 'PATCH',
@@ -226,7 +226,7 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
 
   const handleRemove = (principalId) => {
     const memberObj = members.find(m => m.principalId === principalId);
-    const humanName = memberObj?.displayName || memberObj?.invitationEmail || memberObj?.email || (principalId.includes('@') ? principalId : `Member (${principalId.slice(0, 8)}…)`);
+    const humanName = memberObj?.displayName || memberObj?.invitationEmail || memberObj?.email || (principalId.includes('@') ? principalId : `Member (${principalId})`);
     setConfirmConfig({
       title: 'Remove Member Access',
       message: `Are you sure you want to remove ${humanName} from this enterprise organization? This immediately revokes all enterprise workspace access and permissions.`,
@@ -506,14 +506,18 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
                     const invited = String(member.status || '').toUpperCase() === 'INVITED';
                     const isCurrent = member.principalId === currentPrincipalId;
                     const isOwner = (member.roles || []).includes('TENANT_OWNER');
+                    // Always surface the full principal identifier in the row
+                    // subtext so administrators can read, search and verify the
+                    // exact identity behind every membership (no opaque truncation).
+                    const principalLabel = String(member.principalId || '');
                     const displayName = isCurrent
-                      ? (currentUser?.displayName || currentUser?.email || member.displayName || member.invitationEmail || member.principalId || 'Signed-in Administrator')
-                      : (member.displayName || member.invitationEmail || member.email || (member.principalId?.includes('@') ? member.principalId : `Member (${member.principalId.slice(0, 8)}…)`));
+                      ? (currentUser?.displayName || currentUser?.email || member.displayName || member.invitationEmail || principalLabel || 'Signed-in Administrator')
+                      : (member.displayName || member.invitationEmail || member.email || (principalLabel.includes('@') ? principalLabel : `Member (${principalLabel})`));
                     const subText = isCurrent
-                      ? (currentUser?.displayName && currentUser?.email ? `${currentUser.email} · You` : `You (${currentUser?.email || member.principalId})`)
+                      ? (currentUser?.displayName && currentUser?.email ? `${currentUser.email} · You` : `You (${currentUser?.email || principalLabel})`)
                       : (member.displayName && (member.email || member.invitationEmail)
-                          ? `${member.email || member.invitationEmail}`
-                          : (invited ? `Invited teammate (${member.principalId.slice(0, 8)}…)` : `Enterprise Member (${member.principalId.slice(0, 8)}…)`));
+                          ? `${member.email || member.invitationEmail} · ${principalLabel}`
+                          : (invited ? `Invited teammate (${principalLabel})` : `Enterprise Member (${principalLabel})`));
 
                     return (
                       <tr key={`${member.tenantId}:${member.principalId}`} className={selectedRows.has(member.principalId) ? 'selected' : ''}>
@@ -809,7 +813,7 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
                     type="text"
                     value={detailMember.principalId === currentPrincipalId
                       ? (currentUser?.email || currentUser?.displayName || 'Active Administrator (You)')
-                      : (detailMember.invitationEmail || `Member (${detailMember.principalId.slice(0, 12)}…)`)}
+                      : (detailMember.invitationEmail || `Member (${detailMember.principalId})`)}
                     disabled
                     className="enterprise-input enterprise-input-disabled"
                   />
