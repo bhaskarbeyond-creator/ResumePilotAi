@@ -116,7 +116,7 @@ class Login extends Component {
             : (firebase?.auth?.Auth?.Persistence?.SESSION || 'session');
 
         const executeLogin = () => {
-            return fire.auth().signInWithEmailAndPassword(email, password).then((u) => {
+            return fire.auth().signInWithEmailAndPassword(email, password).then(async (u) => {
                 if (this.state.rememberMe) {
                     try { localStorage.setItem('remember_email', email); } catch(e) {}
                 } else {
@@ -125,10 +125,17 @@ class Login extends Component {
                 if (this.props.throwSuccess) {
                     this.props.throwSuccess(`Welcome back, ${u.user.displayName || email.split('@')[0]}!`);
                 }
+                const { getPostLoginRedirectPath, clearPostLoginRedirectPath, isSafeInternalPath } = await import('../../../utils/safeInternalPath');
+                const targetPath = getPostLoginRedirectPath(window.location.search);
                 setTimeout(() => {
                     if (this.props.closeModal) this.props.closeModal();
-                    this._handleRedirect(u.user.uid);
-                }, 1000);
+                    if (targetPath && isSafeInternalPath(targetPath)) {
+                        clearPostLoginRedirectPath();
+                        window.location.href = targetPath;
+                    } else {
+                        this._handleRedirect(u.user.uid);
+                    }
+                }, 400);
             });
         };
 
@@ -204,29 +211,48 @@ class Login extends Component {
     // ─── Post-OAuth shared logic ───────────────────────────────────────────────
     async _handleRedirect(uid) {
         try {
-            const { getPostLoginRedirectPath } = await import('../../../utils/safeInternalPath');
+            const { getPostLoginRedirectPath, clearPostLoginRedirectPath, isSafeInternalPath } = await import('../../../utils/safeInternalPath');
             const targetPath = getPostLoginRedirectPath(window.location.search);
-            if (targetPath) {
+            if (targetPath && isSafeInternalPath(targetPath)) {
+                clearPostLoginRedirectPath();
                 window.location.href = targetPath;
+                return;
+            }
+            const currentPath = window.location.pathname;
+            if (
+                currentPath.startsWith('/enterprise') ||
+                currentPath.startsWith('/dashboard') ||
+                currentPath.startsWith('/build') ||
+                currentPath.startsWith('/portfolio') ||
+                currentPath.startsWith('/adm')
+            ) {
                 return;
             }
             const { checkIfAdmin } = await import('../../../firestore/dbOperations');
             const isAdmin = await checkIfAdmin(uid);
             if (isAdmin) {
                 window.location.href = '/adm/dashboard';
-            } else if (!window.location.pathname.startsWith('/dashboard') && !window.location.pathname.startsWith('/build')) {
+            } else {
                 window.location.href = '/dashboard';
             }
         } catch (err) {
             try {
-                const { getPostLoginRedirectPath } = await import('../../../utils/safeInternalPath');
+                const { getPostLoginRedirectPath, clearPostLoginRedirectPath, isSafeInternalPath } = await import('../../../utils/safeInternalPath');
                 const targetPath = getPostLoginRedirectPath(window.location.search);
-                if (targetPath) {
+                if (targetPath && isSafeInternalPath(targetPath)) {
+                    clearPostLoginRedirectPath();
                     window.location.href = targetPath;
                     return;
                 }
             } catch (_) {}
-            if (!window.location.pathname.startsWith('/dashboard') && !window.location.pathname.startsWith('/build')) {
+            const currentPath = window.location.pathname;
+            if (
+                !currentPath.startsWith('/enterprise') &&
+                !currentPath.startsWith('/dashboard') &&
+                !currentPath.startsWith('/build') &&
+                !currentPath.startsWith('/portfolio') &&
+                !currentPath.startsWith('/adm')
+            ) {
                 window.location.href = '/dashboard';
             }
         }

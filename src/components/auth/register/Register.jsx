@@ -81,29 +81,48 @@ class Register extends Component {
     // ─── Post-OAuth shared logic ───────────────────────────────────────────────
     async _handleRedirect(uid) {
         try {
-            const { getPostLoginRedirectPath } = await import('../../../utils/safeInternalPath');
+            const { getPostLoginRedirectPath, clearPostLoginRedirectPath, isSafeInternalPath } = await import('../../../utils/safeInternalPath');
             const targetPath = getPostLoginRedirectPath(window.location.search);
-            if (targetPath) {
+            if (targetPath && isSafeInternalPath(targetPath)) {
+                clearPostLoginRedirectPath();
                 window.location.href = targetPath;
+                return;
+            }
+            const currentPath = window.location.pathname;
+            if (
+                currentPath.startsWith('/enterprise') ||
+                currentPath.startsWith('/dashboard') ||
+                currentPath.startsWith('/build') ||
+                currentPath.startsWith('/portfolio') ||
+                currentPath.startsWith('/adm')
+            ) {
                 return;
             }
             const { checkIfAdmin } = await import('../../../firestore/dbOperations');
             const isAdmin = await checkIfAdmin(uid);
             if (isAdmin) {
                 window.location.href = '/adm/dashboard';
-            } else if (!window.location.pathname.startsWith('/dashboard') && !window.location.pathname.startsWith('/build')) {
+            } else {
                 window.location.href = '/dashboard';
             }
         } catch (err) {
             try {
-                const { getPostLoginRedirectPath } = await import('../../../utils/safeInternalPath');
+                const { getPostLoginRedirectPath, clearPostLoginRedirectPath, isSafeInternalPath } = await import('../../../utils/safeInternalPath');
                 const targetPath = getPostLoginRedirectPath(window.location.search);
-                if (targetPath) {
+                if (targetPath && isSafeInternalPath(targetPath)) {
+                    clearPostLoginRedirectPath();
                     window.location.href = targetPath;
                     return;
                 }
             } catch (_) {}
-            if (!window.location.pathname.startsWith('/dashboard') && !window.location.pathname.startsWith('/build')) {
+            const currentPath = window.location.pathname;
+            if (
+                !currentPath.startsWith('/enterprise') &&
+                !currentPath.startsWith('/dashboard') &&
+                !currentPath.startsWith('/build') &&
+                !currentPath.startsWith('/portfolio') &&
+                !currentPath.startsWith('/adm')
+            ) {
                 window.location.href = '/dashboard';
             }
         }

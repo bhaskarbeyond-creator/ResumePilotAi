@@ -890,7 +890,7 @@ router.post('/test-email', resolveTenantContext, requireTenantPermission('tenant
     if (!result?.success && result?.error) {
       return res.status(502).json({ error: { code: 'EMAIL_DISPATCH_FAILED', message: result.error, requestId: res.locals?.requestId } });
     }
-    return res.json({ success: true, messageId: result?.result?.messageId || 'SENT', recipient });
+    return res.json({ success: true, messageId: result?.result?.messageId || 'SENT', recipient, actionUrl, templateId });
   } catch (error) {
     return res.status(503).json({ error: { code: error.code || 'EMAIL_SERVICE_UNAVAILABLE', message: error.message || 'Email delivery service is unavailable', requestId: res.locals?.requestId } });
   }

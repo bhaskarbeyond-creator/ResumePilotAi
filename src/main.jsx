@@ -2,7 +2,7 @@ import './bootstrap';
 import React, { Suspense, lazy, useState, useEffect, useRef, createContext } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { isSafeInternalPath, loginPathWithNext } from './utils/safeInternalPath';
+import { isSafeInternalPath, loginPathWithNext, getPostLoginRedirectPath, clearPostLoginRedirectPath } from './utils/safeInternalPath';
 import './tailwind.css';
 import './index.scss';
 import './cv-templates/css/globalTemplateEnhancements.css';
@@ -104,10 +104,11 @@ function PostLoginRedirect({ user }) {
     const location = useLocation();
     const navigate = useNavigate();
     useEffect(() => {
-        if (!user || (location.pathname !== '/login' && location.pathname !== '/')) return;
-        const next = new URLSearchParams(location.search).get('next');
-        if (next && isSafeInternalPath(next)) {
-            navigate(next, { replace: true });
+        if (!user) return;
+        const target = getPostLoginRedirectPath(location.search);
+        if (target && isSafeInternalPath(target)) {
+            clearPostLoginRedirectPath();
+            navigate(target, { replace: true });
         }
     }, [user, location.pathname, location.search, navigate]);
     return null;

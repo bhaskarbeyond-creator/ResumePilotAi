@@ -98,9 +98,24 @@ const ResetPasswordModal = ({ oobCode, initialEmail, onClose }) => {
             setTimeout(async () => {
                 if (onClose) onClose();
                 try {
-                    const { getPostLoginRedirectPath } = await import('../../../utils/safeInternalPath');
+                    const { getPostLoginRedirectPath, clearPostLoginRedirectPath, isSafeInternalPath } = await import('../../../utils/safeInternalPath');
                     const targetPath = getPostLoginRedirectPath(window.location.search);
-                    window.location.href = targetPath || '/dashboard';
+                    if (targetPath && isSafeInternalPath(targetPath)) {
+                        clearPostLoginRedirectPath();
+                        window.location.href = targetPath;
+                        return;
+                    }
+                    const currentPath = window.location.pathname;
+                    if (
+                        currentPath.startsWith('/enterprise') ||
+                        currentPath.startsWith('/dashboard') ||
+                        currentPath.startsWith('/build') ||
+                        currentPath.startsWith('/portfolio') ||
+                        currentPath.startsWith('/adm')
+                    ) {
+                        return;
+                    }
+                    window.location.href = '/dashboard';
                 } catch (_) {
                     window.location.href = '/dashboard';
                 }

@@ -30,8 +30,29 @@ export function getPostLoginRedirectPath(search = (typeof window !== 'undefined'
     const params = new URLSearchParams(search);
     const next = params.get('next');
     if (next && isSafeInternalPath(next)) {
+      try {
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem('post_login_redirect', next);
+        }
+      } catch (_) {}
       return next;
     }
   } catch (_) {}
+  try {
+    if (typeof sessionStorage !== 'undefined') {
+      const stored = sessionStorage.getItem('post_login_redirect');
+      if (stored && isSafeInternalPath(stored)) {
+        return stored;
+      }
+    }
+  } catch (_) {}
   return null;
+}
+
+export function clearPostLoginRedirectPath() {
+  try {
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem('post_login_redirect');
+    }
+  } catch (_) {}
 }
