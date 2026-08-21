@@ -278,8 +278,8 @@ class FirestoreEnterpriseRepository {
     const boundedLimit = Math.max(1, Math.min(Number(limit) || 50, 100));
     let query = this.applyWorkspaceScope(context, this.tenantCollection(context, 'resources'));
     if (resourceType) query = query.where('resourceType', '==', normalizedResourceType(resourceType));
-    query = query.orderBy('id', 'desc');
     if (cursor) {
+      query = query.orderBy('id', 'desc');
       const cursorSnapshot = await this.tenantCollection(context, 'resources').doc(assertUuid(cursor, 'Resource cursor')).get();
       if (cursorSnapshot.exists) query = query.startAfter(cursorSnapshot);
     }
@@ -288,7 +288,8 @@ class FirestoreEnterpriseRepository {
       .map(document => this.mapResource(document.data()))
       .filter(resource => {
         try { assertResourceInScope(context, resource); return true; } catch { return false; }
-      });
+      })
+      .sort((a, b) => String(b.id || '').localeCompare(String(a.id || '')));
   }
 
   async updateResource(context, resourceId, { expectedRevision, payload, classification }) {
