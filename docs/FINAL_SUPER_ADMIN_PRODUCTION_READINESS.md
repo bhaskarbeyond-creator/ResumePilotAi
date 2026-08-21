@@ -129,7 +129,9 @@ See `docs/SUPER_ADMIN_SWOT.md`.
 | Suite | Result |
 |---|---|
 | `backend/test/superadmin-platform.test.js` | **PASS** 14/14 (LOCAL / INTEGRATION against Express + test token verifier; not live) |
-| `tests/superadmin-control-plane.test.mjs` | **PASS** 4/4 (STATIC / FIXTURE source assertions; not live) |
+| `tests/superadmin-control-plane.test.mjs` | **PASS** 5/5 (STATIC / FIXTURE source assertions; not live) |
+| `tests/admin-workflow.test.mjs` | **PASS** 14/14 (STATIC consumer-admin contract) |
+| `backend/test/security.test.js` | **PASS** 10/10 (LOCAL policy/auth) |
 | ESLint on changed `/adm` files | **PASS** |
 | `npm run test:security` (full, from repo root) | **UNVERIFIED** (root cannot resolve `supertest` unless run from `backend/`) |
 | `npm run test:enterprise` | **UNVERIFIED** this turn (frozen; not required for `/adm` delta) |
