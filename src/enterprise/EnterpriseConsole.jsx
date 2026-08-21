@@ -518,6 +518,7 @@ function EnterpriseConsoleInner() {
           {activeTab === 'members' && (
             <EnterpriseUsersTab
               currentPrincipalId={user?.uid}
+              currentUser={user}
               initialParams={searchParams}
               onInspectActivity={(principalId) => {
                 setAuditPreset({ actor: String(principalId || '').trim() });

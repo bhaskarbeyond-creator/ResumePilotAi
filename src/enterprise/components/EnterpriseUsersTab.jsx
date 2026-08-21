@@ -14,7 +14,7 @@ function csvEscape(value) {
   return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
-export default function EnterpriseUsersTab({ currentPrincipalId, onInspectActivity = null, initialParams = null }) {
+export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = null, onInspectActivity = null, initialParams = null }) {
   const { request, hasPermission } = useTenantApi();
   const { workspaces } = useEnterpriseTenant();
   const [membersState, refreshMembers] = useAsyncResource(() => request('/api/enterprise/memberships'), [request]);
@@ -454,6 +454,15 @@ export default function EnterpriseUsersTab({ currentPrincipalId, onInspectActivi
                 <tbody>
                   {filtered.map(member => {
                     const invited = String(member.status || '').toUpperCase() === 'INVITED';
+                    const isCurrent = member.principalId === currentPrincipalId;
+                    const isOwner = (member.roles || []).includes('TENANT_OWNER');
+                    const displayName = isCurrent
+                      ? (currentUser?.displayName || currentUser?.email || member.invitationEmail || 'Signed-in Administrator')
+                      : (member.invitationEmail || member.displayName || `Member ${member.principalId.slice(0, 8)}…`);
+                    const subText = isCurrent
+                      ? (currentUser?.displayName && currentUser?.email ? `${currentUser.email} · You` : `Principal: ${member.principalId.slice(0, 10)}… · You`)
+                      : (member.invitationEmail ? `Principal: ${member.principalId.slice(0, 10)}…` : `Principal: ${member.principalId.slice(0, 10)}…`);
+
                     return (
                       <tr key={`${member.tenantId}:${member.principalId}`} className={selectedRows.has(member.principalId) ? 'selected' : ''}>
                         {canManageMembers && (
@@ -470,21 +479,31 @@ export default function EnterpriseUsersTab({ currentPrincipalId, onInspectActivi
                           <div className="enterprise-user-cell">
                             <div className="enterprise-avatar"><FiUsers /></div>
                             <div>
-                              <strong>{member.principalId}</strong>
-                              <small>{member.invitationEmail || member.id}</small>
+                              <strong>{displayName}</strong>
+                              <small>{subText}</small>
                             </div>
                           </div>
                         </td>
                         <td>
-                          <select
-                            className="enterprise-select enterprise-role-select"
-                            value={(member.roles && member.roles[0]) || 'MEMBER'}
-                            disabled={!canManageMembers || busyAction === `role:${member.principalId}` || (member.principalId === currentPrincipalId && (member.roles || []).includes('TENANT_OWNER'))}
-                            onChange={(e) => handleRoleChange(member.principalId, e.target.value)}
-                            aria-label={`Role for ${member.principalId}`}
-                          >
-                            {roleOptions.map(role => <option key={role} value={role}>{role}</option>)}
-                          </select>
+                          {isCurrent && isOwner ? (
+                            <span
+                              className="enterprise-pill enterprise-pill-template"
+                              title="Owner role is locked on your active session to prevent accidental lockout"
+                              style={{ display: 'inline-flex', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 650 }}
+                            >
+                              TENANT_OWNER (Owner)
+                            </span>
+                          ) : (
+                            <select
+                              className="enterprise-select enterprise-role-select"
+                              value={(member.roles && member.roles[0]) || 'MEMBER'}
+                              disabled={!canManageMembers || busyAction === `role:${member.principalId}`}
+                              onChange={(e) => handleRoleChange(member.principalId, e.target.value)}
+                              aria-label={`Role for ${member.principalId}`}
+                            >
+                              {roleOptions.map(role => <option key={role} value={role}>{role}</option>)}
+                            </select>
+                          )}
                         </td>
                         <td>
                           <span className={`enterprise-pill enterprise-pill-${member.status === 'ACTIVE' ? 'success' : (member.status === 'SUSPENDED' ? 'warning' : 'secondary')}`}>
@@ -690,8 +709,15 @@ export default function EnterpriseUsersTab({ currentPrincipalId, onInspectActivi
                   <input type="text" value={detailMember.principalId} disabled className="enterprise-input enterprise-input-disabled" />
                 </div>
                 <div className="enterprise-form-group">
-                  <label>Membership Record</label>
-                  <input type="text" value={detailMember.id} disabled className="enterprise-input enterprise-input-disabled" />
+                  <label>Account / Identity</label>
+                  <input
+                    type="text"
+                    value={detailMember.principalId === currentPrincipalId
+                      ? (currentUser?.email || currentUser?.displayName || 'Active Administrator (You)')
+                      : (detailMember.invitationEmail || `Member (${detailMember.principalId.slice(0, 12)}…)`)}
+                    disabled
+                    className="enterprise-input enterprise-input-disabled"
+                  />
                 </div>
               </div>
               <div className="enterprise-form-group">
