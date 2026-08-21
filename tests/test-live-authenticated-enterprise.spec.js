@@ -230,10 +230,16 @@ test.describe('Live Authenticated Enterprise E2E Audit', () => {
     await expect(page.locator('.enterprise-sidebar.mobile-open')).toBeVisible();
     await mobileToggle.click();
 
-    // Reset Viewport & Switch back to Users & IAM to capture the updated clean user identity view
+    // Reset Viewport & Switch to Roles & permissions to verify full canvas expansion and document.title
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.locator('button.enterprise-nav-item').filter({ hasText: 'Users & IAM' }).click();
+    await page.locator('button.enterprise-nav-item').filter({ hasText: 'Roles & permissions' }).click();
     await page.waitForTimeout(1000);
+
+    // Verify document.title does NOT contain Page Not Found
+    const docTitle = await page.title();
+    console.log('Live Document Title:', docTitle);
+    expect(docTitle).toContain('Enterprise Console');
+    expect(docTitle).not.toContain('Page Not Found');
 
     // Capture Evidence Screenshot
     console.log('Capturing Live E2E Screenshot...');
