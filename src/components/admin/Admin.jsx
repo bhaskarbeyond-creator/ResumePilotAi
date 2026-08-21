@@ -111,7 +111,7 @@ const AdminHeader = ({ userEmail, isSuperAdminUser, onLogout, onOpenCommandPalet
 };
 
 const Admin = () => {
-    const [authState, setAuthState] = useState({ checking: true, allowed: false, isSuperAdmin: false, user: null });
+    const [authState, setAuthState] = useState({ checking: true, allowed: false, isSuperAdmin: false, hasMfa: false, user: null });
     const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -131,16 +131,18 @@ const Admin = () => {
 
     useEffect(() => fire.auth().onAuthStateChanged(async user => {
         if (!user) {
-            setAuthState({ checking: false, allowed: false, isSuperAdmin: false, user: null });
+            setAuthState({ checking: false, allowed: false, isSuperAdmin: false, hasMfa: false, user: null });
             return;
         }
         const allowed = await checkIfAdmin(user.uid);
         let isSuperAdminUser = false;
+        let hasMfa = false;
         try {
             const token = await user.getIdTokenResult();
             isSuperAdminUser = String(token.claims?.role || '').toUpperCase() === 'SUPER_ADMIN' || token.claims?.permissions?.includes('*');
+            hasMfa = Boolean(token.claims?.firebase?.sign_in_second_factor || token.claims?.sign_in_second_factor || user.multiFactor?.enrolledFactors?.length);
         } catch { /* ignore */ }
-        setAuthState({ checking: false, allowed, isSuperAdmin: isSuperAdminUser, user });
+        setAuthState({ checking: false, allowed, isSuperAdmin: isSuperAdminUser, hasMfa, user });
     }), []);
 
     const handleLogout = async () => {
@@ -151,7 +153,7 @@ const Admin = () => {
     if (!authState.allowed) return <Navigate to="/" replace />;
 
     return (
-        <AdminProvider value={{ isSuperAdmin: authState.isSuperAdmin, userEmail: authState.user?.email || '', uid: authState.user?.uid || '' }}>
+        <AdminProvider value={{ isSuperAdmin: authState.isSuperAdmin, userEmail: authState.user?.email || '', uid: authState.user?.uid || '', hasMfa: authState.hasMfa === true }}>
         <div className="admin min-h-screen bg-slate-50 font-sans text-slate-900">
             <div className="admin__left">
                 <Sidebar
@@ -172,6 +174,14 @@ const Admin = () => {
                 />
                 <AdminReauthPrompt />
                 <AdminCommandPalette isOpen={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
+                {authState.isSuperAdmin && !authState.hasMfa && (
+                    <div role="status" className="mx-auto w-full max-w-7xl px-3 pt-3 sm:px-6">
+                        <div className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs text-amber-950">
+                            Super Admin destructive operations require TOTP MFA in production. Enroll a second factor in{' '}
+                            <a className="font-extrabold underline" href="/dashboard/settings">account settings</a>, then sign in again.
+                        </div>
+                    </div>
+                )}
                 <main className="mx-auto w-full max-w-7xl flex-1 p-3 sm:p-6">
                     <Routes>
                         <Route path="/" element={<Navigate to="dashboard" replace />} />

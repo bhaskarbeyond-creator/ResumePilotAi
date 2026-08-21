@@ -12,7 +12,7 @@ const {
   sanitizeAuditValue,
   recordAdminAuditLog,
 } = require('../security/adminAudit');
-const { isSuperAdmin, setTokenVerifierForTests } = require('../security/auth');
+const { isSuperAdmin, hasSecondFactor, superAdminMfaEnforced, setTokenVerifierForTests } = require('../security/auth');
 
 setTokenVerifierForTests(async token => {
   const now = Math.floor(Date.now() / 1000);
@@ -90,6 +90,8 @@ test('Super Admin & Platform Module: isSuperAdmin correctly identifies role & wi
   assert.equal(isSuperAdmin(adminUser), false);
   assert.equal(isSuperAdmin(regularUser), false);
   assert.equal(isSuperAdmin(null), false);
+  assert.equal(hasSecondFactor({ claims: { firebase: { sign_in_second_factor: 'totp' } } }), true);
+  assert.equal(hasSecondFactor(superAdminUser), false);
 });
 
 test('Super Admin & Platform Module: recordAdminAuditLog mock execution succeeds', async () => {
@@ -249,4 +251,16 @@ test('Platform API: search rejects empty queries and accepts admin search', asyn
   const res = await request(app).get('/api/platform/search?q=acme').set(bearer('admin'));
   assert.equal(res.status, 200);
   assert.ok(Array.isArray(res.body.tenants));
+});
+
+test('Platform API: Super Admin mutations require MFA when SUPER_ADMIN_MFA_REQUIRED=true', async () => {
+  process.env.SUPER_ADMIN_MFA_REQUIRED = 'true';
+  try {
+    assert.equal(superAdminMfaEnforced(), true);
+    const res = await request(app).post('/api/platform/maintenance').set(bearer('super-admin')).send({ enabled: false });
+    assert.equal(res.status, 403);
+    assert.equal(res.body.error.code, 'SUPER_ADMIN_MFA_REQUIRED');
+  } finally {
+    delete process.env.SUPER_ADMIN_MFA_REQUIRED;
+  }
 });

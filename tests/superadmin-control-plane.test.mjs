@@ -68,3 +68,11 @@ test('users PATCH cannot change SUPER_ADMIN claims', async () => {
   assert.match(source, /SUPER_ADMIN_PROTECTED/);
   assert.match(source, /SUPER_ADMIN claims cannot be changed from this API/);
 });
+
+test('Super Admin destructive routes require MFA in production', async () => {
+  const auth = await fs.readFile('backend/security/auth.js', 'utf8');
+  const admin = await fs.readFile('src/components/admin/Admin.jsx', 'utf8');
+  assert.match(auth, /SUPER_ADMIN_MFA_REQUIRED/);
+  assert.match(auth, /sign_in_second_factor/);
+  assert.match(admin, /account settings/);
+});

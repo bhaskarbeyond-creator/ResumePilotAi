@@ -29,7 +29,8 @@ class EnterpriseObservability {
     if (this.durableDb) return;
     this.durableDb = db;
     this.admin = admin;
-    setInterval(() => this.flushToDurableStore(), 1000 * 60 * 15); // Flush every 15 minutes
+    const timer = setInterval(() => this.flushToDurableStore(), 1000 * 60 * 15);
+    timer.unref?.();
   }
 
   async flushToDurableStore() {

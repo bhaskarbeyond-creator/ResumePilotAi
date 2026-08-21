@@ -40,6 +40,12 @@ async function safeQuery(label, fn) {
   }
 }
 
+function countFrom(result) {
+  if (!result?.ok || !result.value || typeof result.value.data !== 'function') return { ok: false, value: null };
+  const n = Number(result.value.data()?.count);
+  return Number.isFinite(n) ? { ok: true, value: n } : { ok: false, value: null };
+}
+
 async function inspectOutbox(db) {
   const stats = { active: 0, deadLetter: 0, completed: 0, status: 'HEALTHY', inspected: 0 };
   if (!db) return stats;
@@ -346,15 +352,15 @@ router.get('/command-center', async (req, res) => {
   const announcementsResult = db ? await safeQuery('announcements', () => db.collection('platform_announcements').limit(20).get()) : { ok: false };
   const maintenanceResult = db ? await safeQuery('maintenance', () => db.collection('settings').doc('maintenance').get()) : { ok: false };
 
-  // True platform counts for accurate metrics
-  const [paymentsFailCnt, securityHighCnt, suspendedTenantsCnt, activeTenantsCnt, activePaymentsCnt, pendingPaymentsCnt] = db ? await Promise.all([
+  const [paymentsFailCnt, securityHighCnt, suspendedTenantsCnt, activeTenantsCnt, tenantsTotalCnt, activePaymentsCnt, pendingPaymentsCnt] = db ? await Promise.all([
     safeQuery('payments-failed-count', () => db.collection('payment_orders').where('status', 'in', ['FAILED', 'CANCELLED', 'DECLINED']).count().get()),
     safeQuery('security-high-count', () => db.collection('security_audit_logs').where('severity', 'in', ['HIGH', 'CRITICAL']).count().get()),
     safeQuery('tenants-suspended-count', () => db.collection('enterprise_tenants').where('lifecycleState', '==', 'SUSPENDED').count().get()),
     safeQuery('tenants-active-count', () => db.collection('enterprise_tenants').where('lifecycleState', '==', 'ACTIVE').count().get()),
+    safeQuery('tenants-total-count', () => db.collection('enterprise_tenants').count().get()),
     safeQuery('payments-active-count', () => db.collection('payment_orders').where('status', '==', 'ACTIVE').count().get()),
     safeQuery('payments-pending-count', () => db.collection('payment_orders').where('status', 'in', ['PENDING', 'PENDING_PAYMENT', 'PAYMENT_CREATED', 'REFUND_PENDING']).count().get()),
-  ]) : [{}, {}, {}, {}, {}, {}];
+  ]) : [{}, {}, {}, {}, {}, {}, {}];
 
   sources.stats = statsResult.ok ? 'ok' : 'unavailable';
   sources.earnings = earningsResult.ok ? 'ok' : 'unavailable';
@@ -380,19 +386,20 @@ router.get('/command-center', async (req, res) => {
     });
   }
 
-  let paymentFailed = paymentsFailCnt.ok && paymentsFailCnt.value ? (paymentsFailCnt.value.data().count || 0) : 0;
-  let paymentPending = pendingPaymentsCnt.ok && pendingPaymentsCnt.value ? (pendingPaymentsCnt.value.data().count || 0) : 0;
-  let paymentActive = activePaymentsCnt.ok && activePaymentsCnt.value ? (activePaymentsCnt.value.data().count || 0) : 0;
-  let paymentInspected = -1; // -1 indicates full count used instead of sample inspection
+  const paymentFailedAgg = countFrom(paymentsFailCnt);
+  const paymentPendingAgg = countFrom(pendingPaymentsCnt);
+  const paymentActiveAgg = countFrom(activePaymentsCnt);
+  const highSecurityAgg = countFrom(securityHighCnt);
+  const suspendedAgg = countFrom(suspendedTenantsCnt);
+  const activeTenantAgg = countFrom(activeTenantsCnt);
+  const tenantTotalAgg = countFrom(tenantsTotalCnt);
 
-  if (paymentsResult.ok) {
-    paymentsResult.value.forEach(doc => {
-      // Just for sampling inspection if needed, counts are accurate now
-    });
-  }
+  const paymentFailed = paymentFailedAgg.ok ? paymentFailedAgg.value : null;
+  const paymentPending = paymentPendingAgg.ok ? paymentPendingAgg.value : null;
+  const paymentActive = paymentActiveAgg.ok ? paymentActiveAgg.value : null;
+  const highSecurity = highSecurityAgg.ok ? highSecurityAgg.value : null;
 
   const recentSecurity = [];
-  let highSecurity = securityHighCnt.ok && securityHighCnt.value ? (securityHighCnt.value.data().count || 0) : 0;
   if (securityResult.ok) {
     securityResult.value.forEach(doc => {
       const data = doc.data() || {};
@@ -444,12 +451,16 @@ router.get('/command-center', async (req, res) => {
   const runtime = tenantService?.describeRuntime?.() || { encryption: { provider: 'none' } };
   const encryption = runtime.encryption || { provider: 'none', configured: false };
 
+  const suspendedSample = tenants.filter(t => t.lifecycleState === 'SUSPENDED');
+  const suspendedCount = suspendedAgg.ok ? suspendedAgg.value : suspendedSample.length;
+  const suspendedMode = suspendedAgg.ok ? 'AGGREGATED' : tenantsResult.ok ? 'SAMPLED' : 'UNAVAILABLE';
+
   let riskScore = 0;
   if (health.subsystems.database.status !== 'HEALTHY') riskScore += 40;
   if (health.subsystems.queue.deadLetterJobs > 0) riskScore += Math.min(25, health.subsystems.queue.deadLetterJobs * 5);
   if (paymentFailed > 0) riskScore += Math.min(20, paymentFailed * 4);
   if (highSecurity > 0) riskScore += Math.min(20, highSecurity * 5);
-  if (tenants.filter(t => t.lifecycleState === 'SUSPENDED').length > 0) riskScore += 10;
+  if (suspendedCount > 0) riskScore += 10;
   if (maintenance.enabled) riskScore += 15;
   if (encryption.provider === 'none' || encryption.configured === false) riskScore += 5;
   riskScore = Math.max(0, Math.min(100, riskScore));
@@ -458,17 +469,20 @@ router.get('/command-center', async (req, res) => {
     recommendations.push({ id: 'db-down', severity: 'HIGH', title: 'Firestore ping failed', detail: 'Platform data plane did not acknowledge the health write.', href: '/adm/operations' });
   }
   if (health.subsystems.queue.deadLetterJobs > 0) {
-    recommendations.push({ id: 'dlq', severity: 'HIGH', title: `${health.subsystems.queue.deadLetterJobs} dead-letter notification(s)`, detail: 'Replay or inspect failed email/outbox jobs.', href: '/adm/queues' });
+    recommendations.push({ id: 'dlq', severity: 'HIGH', title: `${health.subsystems.queue.deadLetterJobs} dead-letter notification(s)`, detail: 'Replay or inspect failed email/outbox jobs. Queue counts are from the latest inspected outbox sample.', href: '/adm/queues' });
   }
   if (paymentFailed > 0) {
-    recommendations.push({ id: 'payments', severity: 'MEDIUM', title: `${paymentFailed} failed payment order(s) in latest sample`, detail: 'Review the payment ledger. Counts are from the most recent inspected orders only.', href: '/adm/settings?tab=ordersManagement' });
+    recommendations.push({ id: 'payments', severity: 'MEDIUM', title: `${paymentFailed} failed payment order(s)`, detail: 'Review the payment ledger. This is an aggregated Firestore count, not a sample.', href: '/adm/settings?tab=ordersManagement' });
+  } else if (!paymentFailedAgg.ok) {
+    recommendations.push({ id: 'payments-unavailable', severity: 'INFO', title: 'Payment ledger count unavailable', detail: 'Failed-payment aggregation could not be read. Not treated as zero.', href: '/adm/settings?tab=ordersManagement' });
   }
   if (highSecurity > 0) {
-    recommendations.push({ id: 'security', severity: 'HIGH', title: `${highSecurity} high-severity security event(s)`, detail: 'Inspect the security event stream for denied or destructive operations.', href: '/adm/security' });
+    recommendations.push({ id: 'security', severity: 'HIGH', title: `${highSecurity} high-severity security event(s)`, detail: 'Inspect the security event stream for denied or destructive operations. This is an aggregated count.', href: '/adm/security' });
+  } else if (!highSecurityAgg.ok) {
+    recommendations.push({ id: 'security-unavailable', severity: 'INFO', title: 'High-severity security count unavailable', detail: 'Aggregation could not be read. Not treated as zero.', href: '/adm/security' });
   }
-  const suspended = tenants.filter(t => t.lifecycleState === 'SUSPENDED');
-  if (suspended.length > 0) {
-    recommendations.push({ id: 'suspended-tenants', severity: 'MEDIUM', title: `${suspended.length} suspended tenant(s)`, detail: 'Confirm whether suspension is still required.', href: '/adm/tenants' });
+  if (suspendedCount > 0) {
+    recommendations.push({ id: 'suspended-tenants', severity: 'MEDIUM', title: `${suspendedCount} suspended tenant(s)`, detail: suspendedMode === 'AGGREGATED' ? 'Confirm whether suspension is still required.' : 'Count is from the inspected tenant sample, not a full scan.', href: '/adm/tenants' });
   }
   if (maintenance.enabled) {
     recommendations.push({ id: 'maintenance', severity: 'HIGH', title: 'Maintenance mode is enabled', detail: maintenance.message || 'Public product routes are blocked for non-admins.', href: '/adm/operations' });
@@ -491,26 +505,28 @@ router.get('/command-center', async (req, res) => {
       totalEarnings: earningsData.amount ?? earningsData.total ?? null,
       currency: earningsData.currency || 'USD',
       tenants: {
-        total: tenants.length,
-        active: tenants.filter(t => t.lifecycleState === 'ACTIVE').length,
-        suspended: suspended.length,
+        total: tenantTotalAgg.ok ? tenantTotalAgg.value : tenants.length,
+        active: activeTenantAgg.ok ? activeTenantAgg.value : tenants.filter(t => t.lifecycleState === 'ACTIVE').length,
+        suspended: suspendedCount,
+        mode: tenantTotalAgg.ok ? 'AGGREGATED' : tenantsResult.ok ? 'SAMPLED' : 'UNAVAILABLE',
       },
     },
     signals: {
       database: { status: health.subsystems.database.status, latencyMs: health.subsystems.database.latencyMs },
-      queue: { status: health.subsystems.queue.status, deadLetter: health.subsystems.queue.deadLetterJobs, pending: health.subsystems.queue.activeJobs },
-      email: { status: health.subsystems.queue.status, deadLetter: health.subsystems.queue.deadLetterJobs, pending: health.subsystems.queue.activeJobs },
+      queue: { status: health.subsystems.queue.status, deadLetter: health.subsystems.queue.deadLetterJobs, pending: health.subsystems.queue.activeJobs, mode: 'SAMPLED' },
+      email: { status: health.subsystems.queue.status, deadLetter: health.subsystems.queue.deadLetterJobs, pending: health.subsystems.queue.activeJobs, mode: 'SAMPLED' },
       payments: {
-        status: !paymentsResult.ok ? 'UNAVAILABLE' : paymentFailed > 0 ? 'DEGRADED' : 'HEALTHY',
+        status: !paymentFailedAgg.ok ? 'UNAVAILABLE' : paymentFailed > 0 ? 'DEGRADED' : 'HEALTHY',
         failed: paymentFailed,
         pending: paymentPending,
         active: paymentActive,
-        inspected: paymentInspected,
+        mode: paymentFailedAgg.ok ? 'AGGREGATED' : 'UNAVAILABLE',
       },
       security: {
-        status: !securityResult.ok ? 'UNAVAILABLE' : highSecurity > 0 ? 'ATTENTION' : 'HEALTHY',
+        status: !highSecurityAgg.ok ? 'UNAVAILABLE' : highSecurity > 0 ? 'ATTENTION' : 'HEALTHY',
         highSeverity: highSecurity,
         recentCount: recentSecurity.length,
+        mode: highSecurityAgg.ok ? 'AGGREGATED' : 'UNAVAILABLE',
       },
       encryption: {
         status: encryption.provider && encryption.provider !== 'none' ? 'CONFIGURED' : 'UNAVAILABLE',
@@ -841,7 +857,7 @@ function attentionItemsFromSignals(health, extras = {}) {
     items.push({ id: 'platform-health', severity: health.status === 'UNHEALTHY' ? 'HIGH' : 'MEDIUM', title: `Platform status ${health.status}`, href: '/adm/dashboard', kind: 'health' });
   }
   if (extras.paymentFailed > 0) {
-    items.push({ id: 'payments', severity: 'MEDIUM', title: `${extras.paymentFailed} failed payment order(s) in latest sample`, href: '/adm/settings?tab=ordersManagement', kind: 'payments' });
+    items.push({ id: 'payments', severity: 'MEDIUM', title: `${extras.paymentFailed} failed payment order(s)`, href: '/adm/settings?tab=ordersManagement', kind: 'payments' });
   }
   if (extras.highSecurity > 0) {
     items.push({ id: 'security', severity: 'HIGH', title: `${extras.highSecurity} high-severity security event(s)`, href: '/adm/security', kind: 'security' });

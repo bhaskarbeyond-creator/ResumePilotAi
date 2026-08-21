@@ -63,14 +63,45 @@ function isSuperAdmin(user) {
   return role === 'SUPER_ADMIN' || permissions.has('*');
 }
 
+function hasSecondFactor(user) {
+  const claims = user?.claims || {};
+  return Boolean(claims.firebase?.sign_in_second_factor || claims.sign_in_second_factor);
+}
+
+function superAdminMfaEnforced() {
+  if (process.env.SUPER_ADMIN_MFA_REQUIRED === 'false') return false;
+  if (process.env.SUPER_ADMIN_MFA_REQUIRED === 'true') return true;
+  return process.env.NODE_ENV === 'production';
+}
+
 function requireSuperAdmin(req, res, next) {
   if (!isSuperAdmin(req.user)) {
     return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Super admin permission required', requestId: res.locals?.requestId } });
+  }
+  if (superAdminMfaEnforced() && !hasSecondFactor(req.user)) {
+    return res.status(403).json({
+      error: {
+        code: 'SUPER_ADMIN_MFA_REQUIRED',
+        message: 'Super Admin destructive operations require a second authentication factor. Enroll TOTP MFA and sign in again.',
+        requestId: res.locals?.requestId,
+      },
+    });
   }
   return next();
 }
 
 const requireAdmin = requirePermission('system.config.write');
-module.exports = { requireAuth, requireVerifiedEmail, requirePermission, requireAdmin, requireSuperAdmin, isSuperAdmin, permissionsFor, setTokenVerifierForTests };
+module.exports = {
+  requireAuth,
+  requireVerifiedEmail,
+  requirePermission,
+  requireAdmin,
+  requireSuperAdmin,
+  isSuperAdmin,
+  hasSecondFactor,
+  superAdminMfaEnforced,
+  permissionsFor,
+  setTokenVerifierForTests,
+};
 
 

@@ -4,6 +4,7 @@ const AdminContext = createContext({
   isSuperAdmin: false,
   userEmail: '',
   uid: '',
+  hasMfa: false,
 });
 
 export function AdminProvider({ value, children }) {

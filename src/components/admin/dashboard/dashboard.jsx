@@ -88,9 +88,9 @@ const Dashboard = () => {
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-4 pt-4 border-t border-slate-100 text-xs">
             <Signal label="Database" ok={center.signals?.database?.status === 'HEALTHY'} text={center.signals?.database?.status === 'HEALTHY' ? 'Firestore Active' : 'Unavailable'} />
-            <Signal label="Queue & DLQ" ok={!center.signals?.queue?.deadLetter} text={center.signals?.queue?.deadLetter ? `${center.signals.queue.deadLetter} DLQ items` : 'Outbox Healthy'} />
-            <Signal label="Payments" ok={center.signals?.payments?.status === 'HEALTHY'} text={center.signals?.payments?.status === 'UNAVAILABLE' ? 'Sample unavailable' : `${center.signals?.payments?.failed || 0} failed`} />
-            <Signal label="Security" ok={center.signals?.security?.status === 'HEALTHY'} text={center.signals?.security?.status === 'UNAVAILABLE' ? 'Unavailable' : `${center.signals?.security?.highSeverity || 0} high`} />
+            <Signal label="Queue & DLQ" ok={!center.signals?.queue?.deadLetter} text={center.signals?.queue?.deadLetter ? `${center.signals.queue.deadLetter} DLQ (sampled)` : 'Outbox sample healthy'} />
+            <Signal label="Payments" ok={center.signals?.payments?.status === 'HEALTHY'} text={center.signals?.payments?.status === 'UNAVAILABLE' ? 'Count unavailable' : `${center.signals?.payments?.failed ?? '—'} failed`} />
+            <Signal label="Security" ok={center.signals?.security?.status === 'HEALTHY'} text={center.signals?.security?.status === 'UNAVAILABLE' ? 'Count unavailable' : `${center.signals?.security?.highSeverity ?? '—'} high`} />
             <Signal label="Encryption" ok={center.signals?.encryption?.status === 'CONFIGURED'} text={center.signals?.encryption?.provider || 'none'} />
             <Signal label="Runtime" ok icon={<FiCpu className="text-slate-500 h-3.5 w-3.5" />} text={center.subsystems?.runtime?.nodeVersion || '—'} />
           </div>
