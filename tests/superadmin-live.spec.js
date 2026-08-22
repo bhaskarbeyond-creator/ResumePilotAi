@@ -5,6 +5,7 @@ import { getAuth } from 'firebase-admin/auth';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'node:fs';
 
 // Load production backend env to get Firebase credentials
 dotenv.config({ path: path.resolve('backend/.env') });
@@ -68,7 +69,8 @@ test.describe('Live Authenticated Super Admin E2E', () => {
 
     // Wait for Super Admin shell
     await expect(page.getByRole('heading', { name: 'Super Admin Command Center' })).toBeVisible({ timeout: 20000 });
-    await expect(page.getByText('SHA: bc28474')).toBeVisible({ timeout: 5000 }); // check live SHA prefix
+    const currentSha = fs.readFileSync(path.resolve('backend/COMMIT_SHA'), 'utf8').trim().substring(0, 7);
+    await expect(page.getByText(`SHA: ${currentSha}`)).toBeVisible({ timeout: 5000 }); // check live SHA prefix
 
     console.log('Testing grouped navigation...');
     const modules = [

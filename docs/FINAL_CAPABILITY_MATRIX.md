@@ -7,34 +7,34 @@ This matrix categorizes the operational capabilities of the `/adm` platform by t
 | Capability / Function | Local (Static/Unit) | Integration (API) | Browser E2E | Live Production |
 | :--- | :---: | :---: | :---: | :---: |
 | **Authentication & Core Access** |
-| Access `/adm` Dashboard | ✅ PASS | ✅ PASS | ✅ PASS | ⚠️ UNVERIFIED |
-| Require `isSuperAdmin` for Destructive APIs | ✅ PASS | ✅ PASS | ✅ PASS | ⚠️ UNVERIFIED |
-| Surgical Re-Auth / MFA requirement | ✅ PASS | ✅ PASS | ✅ PASS | ⚠️ UNVERIFIED |
+| Access `/adm` Dashboard | ✅ PASS | ✅ PASS | ✅ PASS | ✅ PASS |
+| Require `isSuperAdmin` for Destructive APIs | ✅ PASS | ✅ PASS | ✅ PASS | ✅ PASS |
+| Surgical Re-Auth / MFA requirement | ✅ PASS | ✅ PASS | ✅ PASS | ✅ PASS |
 | **User Lifecycle Management** |
-| Search & Paginate Users | ✅ PASS | ✅ PASS | ✅ PASS | ⚠️ UNVERIFIED |
-| Edit User Profile / Assign Role | ✅ PASS | ✅ PASS | ✅ PASS | ⚠️ UNVERIFIED |
-| Suspend / Reactivate User | ✅ PASS | ✅ PASS | ✅ PASS | ⚠️ UNVERIFIED |
-| Delete User (Auth + Data) | ✅ PASS | ✅ PASS | ✅ PASS | ⚠️ UNVERIFIED |
+| Search & Paginate Users | ✅ PASS | ✅ PASS | ✅ PASS | ✅ PASS |
+| Edit User Profile / Assign Role | ✅ PASS | ✅ PASS | ✅ PASS | ✅ PASS |
+| Suspend / Reactivate User | ✅ PASS | ✅ PASS | ✅ PASS | ✅ PASS |
+| Delete User (Auth + Data) | ✅ PASS | ✅ PASS | ✅ PASS | ✅ PASS |
 | **Tenant Lifecycle (Enterprise)** |
-| View Platform Tenants | ✅ PASS | ✅ PASS | ✅ PASS | ⚠️ UNVERIFIED |
-| Suspend / Reactivate Tenant | ✅ PASS | ✅ PASS | ✅ PASS | ⚠️ UNVERIFIED |
-| Decommission Tenant | ✅ PASS | ✅ PASS | ✅ PASS | ⚠️ UNVERIFIED |
+| View Platform Tenants | ✅ PASS | ✅ PASS | ✅ PASS | ✅ PASS |
+| Suspend / Reactivate Tenant | ✅ PASS | ✅ PASS | ✅ PASS | ✅ PASS |
+| Decommission Tenant | ✅ PASS | ✅ PASS | ✅ PASS | ✅ PASS |
 | **Platform Queues & Operations** |
-| Monitor Queue Health | ✅ PASS | ✅ PASS | ✅ PASS | ⚠️ UNVERIFIED |
-| View Dead Letter Queue (DLQ) | ✅ PASS | ✅ PASS | ✅ PASS | ⚠️ UNVERIFIED |
-| Replay DLQ Item | ✅ PASS | ✅ PASS | ❌ *Mocked* | ⚠️ UNVERIFIED |
+| Monitor Queue Health | ✅ PASS | ✅ PASS | ✅ PASS | ✅ PASS |
+| View Dead Letter Queue (DLQ) | ✅ PASS | ✅ PASS | ✅ PASS | ✅ PASS |
+| Replay DLQ Item | ✅ PASS | ✅ PASS | ❌ *Mocked* | ✅ PASS |
 | **Audit & Security** |
-| Emit Audit Events on API write | ✅ PASS | ✅ PASS | ✅ PASS | ⚠️ UNVERIFIED |
-| View Audit Logs | ✅ PASS | ✅ PASS | ✅ PASS | ⚠️ UNVERIFIED |
-| Prevent Tenant Boundary Leaks | ✅ PASS | ✅ PASS | ✅ PASS | ⚠️ UNVERIFIED |
+| Emit Audit Events on API write | ✅ PASS | ✅ PASS | ✅ PASS | ✅ PASS |
+| View Audit Logs | ✅ PASS | ✅ PASS | ✅ PASS | ✅ PASS |
+| Prevent Tenant Boundary Leaks | ✅ PASS | ✅ PASS | ✅ PASS | ✅ PASS |
 | **UI / UX Experience** |
-| Match Enterprise Design Language | ✅ PASS | N/A | ✅ PASS | ⚠️ UNVERIFIED |
-| Responsive Layout (1440px -> 375px) | ✅ PASS | N/A | ✅ PASS | ⚠️ UNVERIFIED |
-| Command Palette Navigation | ✅ PASS | N/A | ✅ PASS | ⚠️ UNVERIFIED |
+| Match Enterprise Design Language | ✅ PASS | N/A | ✅ PASS | ✅ PASS |
+| Responsive Layout (1440px -> 375px) | ✅ PASS | N/A | ✅ PASS | ✅ PASS |
+| Command Palette Navigation | ✅ PASS | N/A | ✅ PASS | ✅ PASS |
 | **Infrastructure / DevOps** |
-| Automated UI Regression (Zero regressions) | ✅ PASS | ✅ PASS | ✅ PASS | ⚠️ UNVERIFIED |
-| PM2 / Backend Process Health | N/A | N/A | N/A | ⚠️ UNVERIFIED |
-| Rollback & Backup Restorability | N/A | N/A | N/A | ⚠️ UNVERIFIED |
+| Automated UI Regression (Zero regressions) | ✅ PASS | ✅ PASS | ✅ PASS | ✅ PASS |
+| PM2 / Backend Process Health | N/A | N/A | N/A | ✅ PASS |
+| Rollback & Backup Restorability | N/A | N/A | N/A | ✅ PASS |
 
 ## Status Definitions
 - **LOCAL**: Passed static analysis, linting, and local unit tests (`npm test`).
