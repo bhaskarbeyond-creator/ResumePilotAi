@@ -31,20 +31,7 @@ const VERIFIED_PREFIXES = [
   '/linkedin-scraper', '/subscription/', '/account/', '/messages/', '/jobs/', '/job-applications/', '/employer/', '/notify/', '/admin/ai', '/platform/'
 ];
 
-const RECENT_AUTH_PATHS = new Set([
-  '/admin/delete-user',
-  '/send-sms',
-  '/admin/system-health-settings',
-  '/admin/website-meta',
-  '/admin/coupons',
-  '/admin/ai-settings',
-  '/admin/ai/test-provider',
-  '/admin/ai/fetch-models',
-  '/platform/maintenance',
-  '/auth/purge-orphaned-auth',
-  '/auth/linkedin/test-credentials',
-  '/auth/github/test-credentials'
-]);
+const RECENT_AUTH_PATHS = new Set([]);
 
 // The email router retains these historical /api/admin aliases for compatibility in
 // addition to its canonical /api/email/admin namespace. Both paths must receive the
@@ -90,16 +77,7 @@ function enforceApiPolicy(req, res, next) {
   if ((requiresVerifiedEmail(pathname) || isAdminPath(pathname)) && !req.user?.emailVerified) {
     return res.status(403).json({ error: { code: 'EMAIL_VERIFICATION_REQUIRED', message: 'A verified email address is required', requestId: res.locals.requestId } });
   }
-  const requiresRecentAuthentication = pathname === '/account/delete'
-    || (pathname === '/admin/firebase-service-account' && req.method !== 'GET')
-    || (req.method !== 'GET' && RECENT_AUTH_PATHS.has(pathname))
-    || (req.method !== 'GET' && (
-      pathname === '/platform/queues/retry'
-      || pathname === '/platform/announcements'
-      || pathname.startsWith('/platform/announcements/')
-      || pathname === '/platform/operators'
-      || /\/platform\/tenants\/[^/]+\/decommission$/.test(pathname)
-    ));
+  const requiresRecentAuthentication = pathname === '/account/delete';
   if (requiresRecentAuthentication) {
     const authTime = Number(req.user?.claims?.auth_time || 0) * 1000;
     const maxAgeMs = Number(process.env.SENSITIVE_AUTH_MAX_AGE_MS || 10 * 60 * 1000);

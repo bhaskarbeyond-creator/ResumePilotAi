@@ -232,16 +232,17 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
                     ) : (
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
-                                {/* Brand Name - changed from Nolito SVG to text */}
-                                <Link to="/" className="flex items-center gap-2 group">
-                                    <span className="font-semibold text-lg text-gray-900 group-hover:text-purple-700 transition-colors">ResumePilot Admin</span>
+                                {/* Brand Name aligned with Enterprise Console */}
+                                <Link to="/" className="flex items-center gap-2.5 group">
+                                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white shadow-sm shadow-indigo-600/20">R</span>
+                                    <span className="font-bold text-[0.95rem] text-slate-900 group-hover:text-indigo-700 transition-colors tracking-tight">ResumePilot <span className="font-normal opacity-75">Admin</span></span>
                                 </Link>
 
                                 <button
                                     onClick={toggleSidebar}
-                                    className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors duration-200"
+                                    className="w-8 h-8 bg-slate-50 hover:bg-slate-100 rounded-lg flex items-center justify-center transition-colors duration-200 border border-slate-200/60"
                                     aria-label="Collapse sidebar">
-                                    <GoSidebarExpand className="w-4 h-4 text-gray-600" />
+                                    <GoSidebarExpand className="w-4 h-4 text-slate-500" />
                                 </button>
                             </div>
                             
@@ -273,10 +274,14 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
 
                     <div className="px-3">
                         <Link to={homeItem.path} onClick={onCloseMobile}>
-                            <div className={`flex items-center text-sm transition-all duration-200 rounded-lg mb-1 ${
-                                location.pathname === homeItem.path ? 'bg-purple-100 text-purple-700 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700'
-                            } ${sidebarCollapsed ? 'p-3 justify-center' : 'p-3'}`}>
-                                <homeItem.icon className={`text-lg min-w-[20px] ${sidebarCollapsed ? 'mr-0' : 'mr-3'}`} />
+                            <div className={`group relative flex items-center text-[0.82rem] transition-all duration-200 rounded-lg mb-1 ${
+                                location.pathname === homeItem.path
+                                    ? 'bg-indigo-50/60 text-indigo-700 font-bold before:absolute before:inset-y-1.5 before:left-0 before:w-[3px] before:rounded-r-[3px] before:bg-indigo-600 before:shadow-[0_0_6px_rgba(79,70,229,0.4)]'
+                                    : 'text-slate-600 font-medium hover:bg-slate-100 hover:text-slate-900'
+                            } ${sidebarCollapsed ? 'p-[10px] justify-center' : 'py-2.5 px-3.5'}`}>
+                                <homeItem.icon className={`text-[1.1rem] min-w-[20px] transition-colors ${
+                                    location.pathname === homeItem.path ? 'text-indigo-600' : 'text-slate-400 group-hover:text-slate-600'
+                                } ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
                                 {!sidebarCollapsed && <span className="flex-1">{homeItem.label}</span>}
                             </div>
                         </Link>
@@ -293,13 +298,15 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
                                         if (!isSettingsPage) navigate('/adm/settings?tab=modulesSettings');
                                     }
                                 }}
-                                className={`flex items-center text-sm transition-all duration-200 rounded-lg cursor-pointer ${
+                                className={`group relative flex items-center text-[0.82rem] transition-all duration-200 rounded-lg cursor-pointer ${
                                     isSettingsPage
-                                        ? 'bg-purple-100 text-purple-700 font-medium'
-                                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700'
-                                } ${sidebarCollapsed ? 'p-3 justify-center' : 'p-3'}`}
+                                        ? 'bg-indigo-50/60 text-indigo-700 font-bold before:absolute before:inset-y-1.5 before:left-0 before:w-[3px] before:rounded-r-[3px] before:bg-indigo-600 before:shadow-[0_0_6px_rgba(79,70,229,0.4)]'
+                                        : 'text-slate-600 font-medium hover:bg-slate-100 hover:text-slate-900'
+                                } ${sidebarCollapsed ? 'p-[10px] justify-center' : 'py-2.5 px-3.5'}`}
                             >
-                                <FiSettings className={`text-lg min-w-[20px] ${sidebarCollapsed ? 'mr-0' : 'mr-3'}`} />
+                                <FiSettings className={`text-[1.1rem] min-w-[20px] transition-colors ${
+                                    isSettingsPage ? 'text-indigo-600' : 'text-slate-400 group-hover:text-slate-600'
+                                } ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
                                 {!sidebarCollapsed && (
                                     <>
                                         <span className="flex-1">Settings</span>
@@ -363,12 +370,16 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
                                 {!sidebarCollapsed && <p className="px-3 pt-3 pb-1 text-[9px] font-extrabold uppercase tracking-widest text-slate-400">{group.label}</p>}
                                 {group.items.map(item => (
                                     <Link to={item.path} key={item.path} onClick={onCloseMobile}>
-                                        <div className={`flex items-center text-sm transition-all duration-200 rounded-lg mb-1 ${
-                                            location.pathname === item.path || location.pathname.startsWith(item.path)
-                                                ? 'bg-purple-100 text-purple-700 font-medium'
-                                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700'
-                                        } ${sidebarCollapsed ? 'p-3 justify-center' : 'p-3'}`}>
-                                            <item.icon className={`text-lg min-w-[20px] ${sidebarCollapsed ? 'mr-0' : 'mr-3'}`} />
+                                        <div
+                                            className={`group relative flex items-center text-[0.82rem] transition-all duration-200 rounded-lg mb-1 cursor-pointer ${
+                                                location.pathname === item.path || location.pathname.startsWith(item.path)
+                                                    ? 'bg-indigo-50/60 text-indigo-700 font-bold before:absolute before:inset-y-1.5 before:left-0 before:w-[3px] before:rounded-r-[3px] before:bg-indigo-600 before:shadow-[0_0_6px_rgba(79,70,229,0.4)]'
+                                                    : 'text-slate-600 font-medium hover:bg-slate-100 hover:text-slate-900'
+                                            } ${sidebarCollapsed ? 'p-[10px] justify-center' : 'py-2 px-3.5'}`}
+                                        >
+                                            <item.icon className={`text-[1.1rem] min-w-[20px] transition-colors ${
+                                                location.pathname === item.path || location.pathname.startsWith(item.path) ? 'text-indigo-600' : 'text-slate-400 group-hover:text-slate-600'
+                                            } ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
                                             {!sidebarCollapsed && <span className="flex-1">{item.label}</span>}
                                         </div>
                                     </Link>
@@ -379,8 +390,8 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
                         {/* Logout */}
                         <div
                             onClick={handleLogout}
-                            className={`flex items-center text-sm transition-all duration-200 rounded-lg mb-1 cursor-pointer text-gray-600 hover:bg-red-50 hover:text-red-700 ${sidebarCollapsed ? 'p-3 justify-center' : 'p-3'}`}>
-                            <FiLogOut className={`text-lg min-w-[20px] ${sidebarCollapsed ? 'mr-0' : 'mr-3'}`} />
+                            className={`group flex items-center text-[0.82rem] font-medium transition-all duration-200 rounded-lg mb-1 cursor-pointer text-slate-600 hover:bg-red-50 hover:text-red-700 ${sidebarCollapsed ? 'p-[10px] justify-center' : 'py-2.5 px-3.5'}`}>
+                            <FiLogOut className={`text-[1.1rem] min-w-[20px] transition-colors text-slate-400 group-hover:text-red-600 ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
                             {!sidebarCollapsed && <span className="flex-1">Logout</span>}
                         </div>
                     </div>

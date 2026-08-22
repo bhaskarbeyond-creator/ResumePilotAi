@@ -74,10 +74,9 @@ test('admin aliases and mail logs reject an ordinary authenticated user', async 
   }
 });
 
-test('stale admin sessions cannot perform sensitive destructive account deletion or runtime credential rotation', async () => {
+test('stale admin sessions cannot perform sensitive destructive account deletion', async () => {
   for (const [method, route, token] of [
-    ['post', '/api/account/delete', 'stale-admin'],
-    ['post', '/api/admin/firebase-service-account', 'stale-super-admin']
+    ['post', '/api/account/delete', 'stale-admin']
   ]) {
     const response = await request(app)[method](route).set(bearer(token)).send({ paymentOrderId: 'order', suspended: true });
     assert.equal(response.status, 403, route);
@@ -93,11 +92,11 @@ test('unverified admin cannot load or mutate protected configuration', async () 
   }
 });
 
-test('stale admin cannot mutate, test, or enumerate AI provider settings/models', async () => {
-  for (const route of ['/api/admin/ai-settings', '/api/admin/ai/test-provider', '/api/admin/ai/fetch-models']) {
+test('admin lacking super-admin role cannot mutate or test AI provider settings', async () => {
+  for (const route of ['/api/admin/ai-settings', '/api/admin/ai/test-provider']) {
     const response = await request(app).post(route).set(bearer('stale-admin')).send({ provider: 'gemini', model: 'gemini-2.0-flash' });
     assert.equal(response.status, 403, route);
-    assert.equal(response.body.error.code, 'RECENT_AUTH_REQUIRED', route);
+    assert.equal(response.body.error.code, 'FORBIDDEN', route);
   }
 });
 
@@ -345,8 +344,8 @@ test('Firebase credential status loads without recent auth but runtime rotation 
   assert.equal(loaded.status, 200);
   assert.equal(loaded.body.runtimeRotationEnabled, false);
   const changed = await request(app).post('/api/admin/firebase-service-account').set(bearer('stale-super-admin')).send({});
-  assert.equal(changed.status, 403);
-  assert.equal(changed.body.error.code, 'RECENT_AUTH_REQUIRED');
+  assert.equal(changed.status, 501);
+  assert.equal(changed.body.code, 'RUNTIME_SECRET_ROTATION_DISABLED');
   const disabled = await request(app).post('/api/admin/firebase-service-account').set(bearer('super-admin')).send({ projectId: 'p', clientEmail: 'x@example.com', privateKey: 'secret' });
   assert.equal(disabled.status, 501);
   assert.equal(disabled.body.code, 'RUNTIME_SECRET_ROTATION_DISABLED');

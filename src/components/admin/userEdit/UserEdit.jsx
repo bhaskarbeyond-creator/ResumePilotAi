@@ -31,7 +31,7 @@ class UserEdit extends Component {
                (this.state.email && this.state.email.toLowerCase().trim() === currentAuthUser.email?.toLowerCase().trim());
     }
 
-    editSelectedUser(userId, email, membership, membershipsEnds, isA, suspended) {
+    async editSelectedUser(userId, email, membership, membershipsEnds, isA, suspended) {
         // Enforce self protection
         if (this.isSelfAccount()) {
             isA = true;
@@ -39,7 +39,7 @@ class UserEdit extends Component {
         }
         this.setState({ isLoading: true, errorMessage: '', successMessage: '' });
         try {
-            editUser(userId, email, membership, membershipsEnds, isA, suspended);
+            await editUser(userId, email, membership, membershipsEnds, isA, suspended);
             this.setState({
                 isLoading: false,
                 successMessage: 'User account updated successfully!',
@@ -51,7 +51,7 @@ class UserEdit extends Component {
         } catch (error) {
             this.setState({
                 isLoading: false,
-                errorMessage: 'Error occurred while saving changes. Please check the entered fields!',
+                errorMessage: error.message || 'Error occurred while saving changes. Please check the entered fields!',
                 successMessage: '',
             });
         }
