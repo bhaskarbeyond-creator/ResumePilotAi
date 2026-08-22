@@ -433,21 +433,6 @@ export async function get7Users() {
     }
 }
 
-// Get All Users
-export async function getAllUsers() {
-    const db = fire.firestore();
-    const snapshot = await db.collection('users').get();
-    if (!snapshot.empty) {
-        const users = [];
-        snapshot.forEach((doc) => {
-            const data = doc.data() || {};
-            users.push({ id: doc.id, ...data, userId: data.userId || doc.id });
-        });
-        return users;
-    }
-    return [];
-}
-
 // Get all subscriptions
 export async function getAllSubscriptions() {
     const db = fire.firestore();
@@ -466,7 +451,8 @@ export async function checkIfAdmin(uid) {
     if (!authUser || authUser.uid !== uid) return false;
     try {
         const token = await authUser.getIdTokenResult();
-        return ['ADMIN', 'SUPER_ADMIN'].includes(String(token.claims.role || '').toUpperCase());
+        return ['ADMIN', 'SUPER_ADMIN'].includes(String(token.claims.role || '').toUpperCase())
+            || token.claims?.permissions?.includes('*') === true;
     } catch (error) {
         console.warn('Unable to verify admin claim:', error.message);
         return false;
@@ -526,13 +512,12 @@ export function addUser(userId, firstname, lastname, email) {
     }).catch(() => {});
 }
 async function updateUserByAdminApi(userId, changes) {
-    const response = await fetch(`/api/admin/users/${encodeURIComponent(userId)}`, {
+    const { response, data: result } = await fetchAdminWithReauth(`/api/admin/users/${encodeURIComponent(userId)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(changes)
     });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(result.error || 'Administrative user update failed.');
+    if (!response.ok) throw new Error(result.error?.message || result.error || 'Administrative user update failed.');
     return result;
 }
 
@@ -580,61 +565,13 @@ export async function setUserAdminStatus(userId, isAdmin, expectedIsAdmin = unde
     }
 }
 
-export async function makeUserAdminByEmail(email) {
-    const db = fire.firestore();
-    try {
-        const query = await db.collection('users').where('email', '==', email.trim().toLowerCase()).limit(1).get();
-        if (query.empty) return { success: false, error: `User with email ${email} not found.` };
-        return setUserAdminStatus(query.docs[0].id, true);
-    } catch (error) {
-        return { success: false, error: error.message };
-    }
-}
-
-export async function mergeUserAccounts() {
-    return { success: false, error: 'Account merging is disabled until a provider-aware, transactional server workflow is configured.' };
-}
-
-// Bulk merge all duplicate accounts across the system with safe backup snapshots
-export async function bulkMergeDuplicateUsers() {
-    return { success: false, totalMerged: 0, error: 'Bulk account merging is disabled to prevent identity and entitlement corruption.' };
-}
-
-// Fetch all merged/deleted account backups for safe restore inspection
-export async function getMergedUserBackups() {
-    const db = fire.firestore();
-    try {
-        const snapshot = await db.collection('merged_user_backups').get();
-        const backups = [];
-        snapshot.forEach((doc) => {
-            backups.push({ id: doc.id, ...doc.data() });
-        });
-        // Sort newest first
-        backups.sort((a, b) => {
-            const tA = a.mergedAt?.toDate ? a.mergedAt.toDate().getTime() : 0;
-            const tB = b.mergedAt?.toDate ? b.mergedAt.toDate().getTime() : 0;
-            return tB - tA;
-        });
-        return backups;
-    } catch (error) {
-        console.error('Error fetching merged backups:', error);
-        return [];
-    }
-}
-
-// Restore a previously merged/deleted user account from backup
-export async function restoreMergedUserAccount() {
-    return { success: false, error: 'Identity restore is disabled; use the documented disaster-recovery procedure.' };
-}
-
 // Administrative deletion executes atomically on the trusted backend and fails closed.
 export async function deleteUserByAdmin(userId, email = null) {
     try {
-        const response = await fetch('/api/admin/delete-user', {
+        const { response, data: result } = await fetchAdminWithReauth('/api/admin/delete-user', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ uid: userId, email })
         });
-        const result = await response.json().catch(() => ({}));
         if (!response.ok || !result.success) throw new Error(result.error || 'Unable to delete user.');
         return result;
     } catch (error) {
@@ -4200,14 +4137,17 @@ export async function addCategoryToData(categoryName) {
 }
 // get all categories
 
+// Public phrase suggestions are served by the curated backend projection.
+// Client Firestore rules intentionally deny direct access to the CMS collection.
 export async function getAllCategories() {
-    const db = fire.firestore();
-    const categoriesRef = await db.collection('categories').get();
-    var categories = [];
-    categoriesRef.forEach((category) => {
-        categories.push(category.data());
-    });
-    return categories;
+    try {
+        const response = await fetch('/public/phrases.json', { cache: 'no-store' });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.success) return [];
+        return Array.isArray(result.categories) ? result.categories : [];
+    } catch {
+        return [];
+    }
 }
 
 // ================== REALTIME DATABASE MESSAGING FUNCTIONS ==================

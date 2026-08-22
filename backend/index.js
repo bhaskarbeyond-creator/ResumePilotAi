@@ -3811,6 +3811,182 @@ app.get('/public/custom-pages.json', async (_req, res) => {
     return res.json({ success: true, pages });
 });
 
+// Phrase categories are managed only by this trusted Admin API. The legacy
+// browser-to-Firestore implementation was unreachable under deny-by-default
+// rules and could report false success. These routes provide revision-safe,
+// audited CRUD for the /adm Phrases module.
+function normalizePhraseCategoryName(value) {
+    const name = String(value || '').replace(/\p{Cc}/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 80);
+    const id = name.toLocaleLowerCase('en').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
+    if (!name || !id) {
+        const error = new Error('A category name using letters or numbers is required.');
+        error.code = 'INVALID_PHRASE_CATEGORY';
+        error.status = 400;
+        throw error;
+    }
+    return { id, name };
+}
+
+function normalizePhrase(value) {
+    const phrase = String(value || '').replace(/\p{Cc}/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 300);
+    if (!phrase) {
+        const error = new Error('A phrase is required.');
+        error.code = 'INVALID_PHRASE';
+        error.status = 400;
+        throw error;
+    }
+    return phrase;
+}
+
+function phraseApiError(res, error, fallback = 'Phrase management is unavailable.') {
+    const status = [400, 404, 409, 503].includes(Number(error?.status)) ? Number(error.status) : 503;
+    return res.status(status).json({ success: false, code: error?.code || 'PHRASE_OPERATION_FAILED', error: status < 500 ? error.message : fallback, requestId: res.locals.requestId });
+}
+
+app.get('/public/phrases.json', async (req, res) => {
+    const requestDb = req.app.get('db');
+    if (!requestDb) return res.status(503).json({ success: false, categories: [] });
+    try {
+        const snapshot = await requestDb.collection('categories').get();
+        const categories = snapshot.docs.map(document => {
+            const value = document.data() || {};
+            return {
+                id: document.id,
+                name: String(value.name || document.id).slice(0, 80),
+                phrases: Array.isArray(value.phrases) ? value.phrases.map(item => String(item).slice(0, 300)).filter(Boolean) : [],
+            };
+        }).sort((left, right) => left.name.localeCompare(right.name));
+        res.setHeader('Cache-Control', 'no-store');
+        return res.json({ success: true, categories });
+    } catch {
+        return res.status(503).json({ success: false, categories: [] });
+    }
+});
+
+app.get('/api/admin/phrases', async (req, res) => {
+    const requestDb = req.app.get('db');
+    if (!requestDb) return res.status(503).json({ success: false, code: 'PHRASE_STORE_UNAVAILABLE', error: 'Phrase storage is unavailable.', requestId: res.locals.requestId });
+    try {
+        const snapshot = await requestDb.collection('categories').get();
+        const categories = snapshot.docs.map(document => {
+            const value = document.data() || {};
+            return {
+                id: document.id,
+                name: String(value.name || document.id).slice(0, 80),
+                phrases: Array.isArray(value.phrases) ? value.phrases.map(item => String(item).slice(0, 300)).filter(Boolean) : [],
+                revision: Number(value.revision || 0),
+            };
+        }).sort((left, right) => left.name.localeCompare(right.name));
+        return res.json({ success: true, categories });
+    } catch (error) {
+        return phraseApiError(res, error);
+    }
+});
+
+app.post('/api/admin/phrases', async (req, res) => {
+    const requestDb = req.app.get('db');
+    const requestAdmin = req.app.get('firebaseAdmin') || admin;
+    if (!requestDb || !requestAdmin?.firestore?.FieldValue) return res.status(503).json({ success: false, code: 'PHRASE_STORE_UNAVAILABLE', error: 'Phrase storage is unavailable.', requestId: res.locals.requestId });
+    try {
+        const category = normalizePhraseCategoryName(req.body?.name);
+        const reference = requestDb.collection('categories').doc(category.id);
+        await reference.create({
+            name: category.name,
+            phrases: [],
+            revision: 1,
+            createdAt: requestAdmin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: requestAdmin.firestore.FieldValue.serverTimestamp(),
+        });
+        return res.status(201).json({ success: true, category: { ...category, phrases: [], revision: 1 } });
+    } catch (error) {
+        if (error.code === 6 || error.code === 'already-exists') {
+            error.code = 'PHRASE_CATEGORY_EXISTS';
+            error.status = 409;
+            error.message = 'A category with this name already exists.';
+        }
+        return phraseApiError(res, error);
+    }
+});
+
+app.delete('/api/admin/phrases/:categoryId', async (req, res) => {
+    const requestDb = req.app.get('db');
+    const requestAdmin = req.app.get('firebaseAdmin') || admin;
+    const categoryId = String(req.params.categoryId || '');
+    const expectedRevision = Number(req.body?.expectedRevision);
+    if (!requestDb || !requestAdmin?.firestore?.FieldValue || !categoryId || categoryId.length > 80 || categoryId.includes('/') || !Number.isInteger(expectedRevision) || expectedRevision < 0) {
+        return res.status(400).json({ success: false, code: 'INVALID_PHRASE_CATEGORY', error: 'A valid category and revision are required.', requestId: res.locals.requestId });
+    }
+    try {
+        await requestDb.runTransaction(async transaction => {
+            const reference = requestDb.collection('categories').doc(categoryId);
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists) throw Object.assign(new Error('Phrase category was not found.'), { code: 'PHRASE_CATEGORY_NOT_FOUND', status: 404 });
+            if (Number(snapshot.data()?.revision || 0) !== expectedRevision) throw Object.assign(new Error('This category changed after the page loaded. Refresh before deleting it.'), { code: 'PHRASE_CATEGORY_CONFLICT', status: 409 });
+            transaction.delete(reference);
+        });
+        return res.json({ success: true });
+    } catch (error) {
+        return phraseApiError(res, error);
+    }
+});
+
+app.post('/api/admin/phrases/:categoryId/entries', async (req, res) => {
+    const requestDb = req.app.get('db');
+    const requestAdmin = req.app.get('firebaseAdmin') || admin;
+    const categoryId = String(req.params.categoryId || '');
+    const expectedRevision = Number(req.body?.expectedRevision);
+    if (!requestDb || !requestAdmin?.firestore?.FieldValue || !categoryId || categoryId.length > 80 || categoryId.includes('/') || !Number.isInteger(expectedRevision) || expectedRevision < 0) {
+        return res.status(400).json({ success: false, code: 'INVALID_PHRASE_CATEGORY', error: 'A valid category and revision are required.', requestId: res.locals.requestId });
+    }
+    try {
+        const phrase = normalizePhrase(req.body?.phrase);
+        let category;
+        await requestDb.runTransaction(async transaction => {
+            const reference = requestDb.collection('categories').doc(categoryId);
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists) throw Object.assign(new Error('Phrase category was not found.'), { code: 'PHRASE_CATEGORY_NOT_FOUND', status: 404 });
+            const current = snapshot.data() || {};
+            if (Number(current.revision || 0) !== expectedRevision) throw Object.assign(new Error('This category changed after the page loaded. Refresh before saving.'), { code: 'PHRASE_CATEGORY_CONFLICT', status: 409 });
+            const phrases = Array.isArray(current.phrases) ? current.phrases.map(item => String(item)) : [];
+            if (phrases.some(item => item.toLocaleLowerCase('en') === phrase.toLocaleLowerCase('en'))) throw Object.assign(new Error('That phrase already exists in this category.'), { code: 'PHRASE_EXISTS', status: 409 });
+            category = { id: categoryId, name: String(current.name || categoryId), phrases: [...phrases, phrase], revision: Number(current.revision || 0) + 1 };
+            transaction.update(reference, { phrases: category.phrases, revision: category.revision, updatedAt: requestAdmin.firestore.FieldValue.serverTimestamp() });
+        });
+        return res.status(201).json({ success: true, category });
+    } catch (error) {
+        return phraseApiError(res, error);
+    }
+});
+
+app.delete('/api/admin/phrases/:categoryId/entries', async (req, res) => {
+    const requestDb = req.app.get('db');
+    const requestAdmin = req.app.get('firebaseAdmin') || admin;
+    const categoryId = String(req.params.categoryId || '');
+    const expectedRevision = Number(req.body?.expectedRevision);
+    if (!requestDb || !requestAdmin?.firestore?.FieldValue || !categoryId || categoryId.length > 80 || categoryId.includes('/') || !Number.isInteger(expectedRevision) || expectedRevision < 0) {
+        return res.status(400).json({ success: false, code: 'INVALID_PHRASE_CATEGORY', error: 'A valid category and revision are required.', requestId: res.locals.requestId });
+    }
+    try {
+        const phrase = normalizePhrase(req.body?.phrase);
+        let category;
+        await requestDb.runTransaction(async transaction => {
+            const reference = requestDb.collection('categories').doc(categoryId);
+            const snapshot = await transaction.get(reference);
+            if (!snapshot.exists) throw Object.assign(new Error('Phrase category was not found.'), { code: 'PHRASE_CATEGORY_NOT_FOUND', status: 404 });
+            const current = snapshot.data() || {};
+            if (Number(current.revision || 0) !== expectedRevision) throw Object.assign(new Error('This category changed after the page loaded. Refresh before deleting.'), { code: 'PHRASE_CATEGORY_CONFLICT', status: 409 });
+            const phrases = Array.isArray(current.phrases) ? current.phrases.map(item => String(item)) : [];
+            const nextPhrases = phrases.filter(item => item !== phrase);
+            if (nextPhrases.length === phrases.length) throw Object.assign(new Error('Phrase was not found in this category.'), { code: 'PHRASE_NOT_FOUND', status: 404 });
+            category = { id: categoryId, name: String(current.name || categoryId), phrases: nextPhrases, revision: Number(current.revision || 0) + 1 };
+            transaction.update(reference, { phrases: category.phrases, revision: category.revision, updatedAt: requestAdmin.firestore.FieldValue.serverTimestamp() });
+        });
+        return res.json({ success: true, category });
+    } catch (error) {
+        return phraseApiError(res, error);
+    }
+});
+
 app.get('/api/admin/pages', async (req, res) => {
     const requestDb = req.app.get('db');
     if (!requestDb) return res.status(503).json({ success: false, error: 'Page service unavailable.' });
@@ -4165,11 +4341,89 @@ app.delete('/api/admin/jobs/:jobId', async (req, res) => {
     }
 });
 
+// Curated global user directory. It returns only roster fields required by
+// /adm and keeps identity/entitlement mutations on their dedicated audited
+// endpoint below. Pagination is server-owned so the browser no longer reads an
+// unbounded user collection merely to render an Admin table.
+app.get('/api/admin/users', async (req, res) => {
+    const requestDb = req.app.get('db');
+    const requestAdmin = req.app.get('firebaseAdmin') || admin;
+    if (!requestDb) return res.status(503).json({ success: false, code: 'USER_DIRECTORY_UNAVAILABLE', error: 'User directory is unavailable.', requestId: res.locals.requestId });
+    const query = String(req.query?.q || '').replace(/\p{Cc}/gu, ' ').trim().toLocaleLowerCase('en').slice(0, 120);
+    const status = String(req.query?.status || 'all').toLowerCase();
+    const role = String(req.query?.role || 'all').toUpperCase();
+    const membership = String(req.query?.membership || 'all');
+    const requestedPage = Math.max(1, Math.min(Number(req.query?.page) || 1, 10_000));
+    const pageSize = Math.max(1, Math.min(Number(req.query?.limit) || 25, 100));
+    if (!['all', 'active', 'suspended'].includes(status) || !['ALL', 'USER', 'ADMIN', 'SUPER_ADMIN'].includes(role) || !['all', 'Basic', 'Premium'].includes(membership)) {
+        return res.status(400).json({ success: false, code: 'INVALID_USER_DIRECTORY_FILTER', error: 'One or more user directory filters are invalid.', requestId: res.locals.requestId });
+    }
+    try {
+        // The existing legacy roster has no query indexes or normalized search
+        // field. Read a bounded operational window and filter server-side; this
+        // is intentionally safer than an unrestricted browser Firestore read.
+        const snapshot = await requestDb.collection('users').limit(1000).get();
+        const authByUid = new Map();
+        if (requestAdmin?.auth) {
+            try {
+                // One bounded directory lookup keeps role/disabled display in
+                // sync with Firebase custom claims without N+1 identity calls.
+                const authPage = await requestAdmin.auth().listUsers(1000);
+                for (const identity of authPage.users || []) authByUid.set(identity.uid, identity);
+            } catch (error) {
+                console.warn('[Admin user directory] Auth enrichment unavailable:', error?.code || error?.message || 'unknown');
+            }
+        }
+        let users = snapshot.docs.map(document => {
+            const value = document.data() || {};
+            const identity = authByUid.get(document.id) || authByUid.get(String(value.userId || '')) || null;
+            const claimRole = String(identity?.customClaims?.role || '').toUpperCase();
+            const resolvedRole = claimRole || String(value.role || (value.isA ? 'ADMIN' : 'USER')).toUpperCase();
+            const createdAtValue = value.createdAt?.toDate?.() || value.createdAt || null;
+            const updatedAtValue = value.updatedAt?.toDate?.() || value.updatedAt || createdAtValue;
+            return {
+                id: document.id,
+                userId: value.userId || document.id,
+                email: String(identity?.email || value.email || ''),
+                displayName: String(identity?.displayName || value.displayName || `${value.firstname || ''} ${value.lastname || ''}`.trim() || ''),
+                membership: value.membership === 'Premium' ? 'Premium' : 'Basic',
+                suspended: identity ? identity.disabled === true : value.suspended === true,
+                role: ['USER', 'ADMIN', 'SUPER_ADMIN'].includes(resolvedRole) ? resolvedRole : 'USER',
+                membershipEnds: value.membershipEnds?.toDate?.() ? value.membershipEnds.toDate().toISOString() : value.membershipEnds || null,
+                createdAt: createdAtValue instanceof Date ? createdAtValue.toISOString() : null,
+                updatedAt: updatedAtValue instanceof Date ? updatedAtValue.toISOString() : null,
+            };
+        });
+        // Firebase custom claims/disabled state are preferred when the bounded
+        // identity directory is available. Every mutation route independently
+        // re-reads Firebase Auth, so a stale display row cannot bypass the
+        // server-side SUPER_ADMIN guard.
+        users = users.filter(user => {
+            const matchesSearch = !query || [user.id, user.userId, user.email, user.displayName].some(value => String(value || '').toLocaleLowerCase('en').includes(query));
+            const matchesStatus = status === 'all' || (status === 'suspended' ? user.suspended : !user.suspended);
+            const matchesRole = role === 'ALL' || user.role === role;
+            const matchesMembership = membership === 'all' || user.membership === membership;
+            return matchesSearch && matchesStatus && matchesRole && matchesMembership;
+        });
+        users.sort((left, right) => String(right.updatedAt || right.createdAt || '').localeCompare(String(left.updatedAt || left.createdAt || '')) || left.id.localeCompare(right.id));
+        const total = users.length;
+        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+        const page = Math.min(requestedPage, totalPages);
+        const start = (page - 1) * pageSize;
+        return res.json({ success: true, users: users.slice(start, start + pageSize), pagination: { page, pageSize, total, totalPages, hasNextPage: page < totalPages, hasPreviousPage: page > 1, boundedSource: snapshot.size >= 1000 } });
+    } catch (error) {
+        console.error('[Admin user directory]', error.message);
+        return res.status(503).json({ success: false, code: 'USER_DIRECTORY_UNAVAILABLE', error: 'User directory is unavailable.', requestId: res.locals.requestId });
+    }
+});
+
 // Audited server-authoritative user administration. Firestore rules never permit these
 // identity/entitlement fields to be changed directly by a browser.
 app.patch('/api/admin/users/:uid', async (req, res) => {
     const uid = String(req.params.uid || '');
-    if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid) || !db || !admin?.auth) {
+    const requestDb = req.app.get('db');
+    const requestAdmin = req.app.get('firebaseAdmin') || admin;
+    if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid) || !requestDb || !requestAdmin?.auth) {
         return res.status(400).json({ success: false, error: 'Valid user UID and Firebase services are required.' });
     }
     const callerPermissions = permissionsFor(req.user);
@@ -4178,11 +4432,19 @@ app.patch('/api/admin/users/:uid', async (req, res) => {
     const auditChanges = [];
     try {
         const [target, userSnapshot] = await Promise.all([
-            admin.auth().getUser(uid), db.collection('users').doc(uid).get(),
+            requestAdmin.auth().getUser(uid), requestDb.collection('users').doc(uid).get(),
         ]);
         const userData = userSnapshot.data() || {};
         const currentRole = String(target.customClaims?.role || userData.role || 'USER').toUpperCase();
         const currentMembership = String(userData.membership || 'Basic');
+        // Generic user administration must never become a path to suspend,
+        // demote, alter entitlements for, or otherwise mutate a SUPER_ADMIN.
+        // A separate, out-of-band break-glass process is required for that
+        // identity class; even another SUPER_ADMIN cannot do it accidentally
+        // through a table row or forged browser request.
+        if (currentRole === 'SUPER_ADMIN') {
+            return res.status(403).json({ success: false, code: 'SUPER_ADMIN_TARGET_PROTECTED', error: 'SUPER_ADMIN accounts are protected from generic user mutations.' });
+        }
         if (Object.hasOwn(req.body, 'expectedSuspended') && typeof req.body.expectedSuspended !== 'boolean') return res.status(400).json({ success: false, error: 'Invalid expected suspension state.' });
         if (Object.hasOwn(req.body, 'expectedRole') && !['ADMIN', 'USER'].includes(req.body.expectedRole)) return res.status(400).json({ success: false, error: 'Invalid expected role.' });
         if (Object.hasOwn(req.body, 'expectedMembership') && !['Basic', 'Premium'].includes(req.body.expectedMembership)) return res.status(400).json({ success: false, error: 'Invalid expected membership.' });
@@ -4196,8 +4458,8 @@ app.patch('/api/admin/users/:uid', async (req, res) => {
         if (typeof req.body.suspended === 'boolean') {
             if (!allowed('users.update')) return res.status(403).json({ success: false, error: 'Insufficient permission.' });
             if (uid === req.user.uid && req.body.suspended) return res.status(400).json({ success: false, error: 'Self-suspension is prohibited.' });
-            await admin.auth().updateUser(uid, { disabled: req.body.suspended });
-            if (req.body.suspended) await admin.auth().revokeRefreshTokens(uid);
+            await requestAdmin.auth().updateUser(uid, { disabled: req.body.suspended });
+            if (req.body.suspended) await requestAdmin.auth().revokeRefreshTokens(uid);
             updates.suspended = req.body.suspended;
             auditChanges.push('suspended');
         }
@@ -4222,19 +4484,19 @@ app.patch('/api/admin/users/:uid', async (req, res) => {
             if (!allowed('users.roles.manage')) return res.status(403).json({ success: false, error: 'Insufficient permission.' });
             if (!['ADMIN', 'USER'].includes(req.body.role)) return res.status(400).json({ success: false, error: 'Invalid role.' });
             if (uid === req.user.uid && req.body.role !== 'ADMIN') return res.status(400).json({ success: false, error: 'Self-demotion is prohibited.' });
-            await admin.auth().setCustomUserClaims(uid, { ...(target.customClaims || {}), role: req.body.role });
-            await admin.auth().revokeRefreshTokens(uid);
+            await requestAdmin.auth().setCustomUserClaims(uid, { ...(target.customClaims || {}), role: req.body.role });
+            await requestAdmin.auth().revokeRefreshTokens(uid);
             updates.role = req.body.role;
             auditChanges.push('role');
         }
         if (!auditChanges.length) return res.status(400).json({ success: false, error: 'No supported changes supplied.' });
-        updates.updatedAt = admin.firestore.FieldValue.serverTimestamp();
-        const batch = db.batch();
-        batch.set(db.collection('users').doc(uid), updates, { merge: true });
-        batch.set(db.collection('security_audit_logs').doc(), {
+        updates.updatedAt = requestAdmin.firestore.FieldValue.serverTimestamp();
+        const batch = requestDb.batch();
+        batch.set(requestDb.collection('users').doc(uid), updates, { merge: true });
+        batch.set(requestDb.collection('security_audit_logs').doc(), {
             action: 'USER_ADMIN_UPDATE', actorUid: req.user.uid, targetUid: uid,
             changedFields: auditChanges, requestId: res.locals.requestId,
-            createdAt: admin.firestore.FieldValue.serverTimestamp()
+            createdAt: requestAdmin.firestore.FieldValue.serverTimestamp()
         });
         await batch.commit();
         return res.json({ success: true, uid, changedFields: auditChanges });
@@ -4364,8 +4626,11 @@ app.post(['/api/admin/delete-user', '/api/auth/purge-orphaned-auth'], async (req
             return res.status(400).json({ success: false, error: 'UID/email identity mismatch.' });
         }
         const targetRole = String(target?.customClaims?.role || profileData.role || '').toUpperCase();
-        if (targetRole === 'SUPER_ADMIN' && !permissionsFor(req.user).has('*')) {
-            return res.status(403).json({ success: false, error: 'Only SUPER_ADMIN can delete another SUPER_ADMIN.' });
+        // Never allow deletion of a SUPER_ADMIN through the everyday account
+        // cleanup endpoint. This protects the last platform owner as well as
+        // preventing an accidental self/peer lockout by a privileged operator.
+        if (targetRole === 'SUPER_ADMIN') {
+            return res.status(403).json({ success: false, code: 'SUPER_ADMIN_TARGET_PROTECTED', error: 'SUPER_ADMIN accounts require the documented break-glass retirement procedure.' });
         }
         if (target) await admin.auth().deleteUser(targetUid);
 

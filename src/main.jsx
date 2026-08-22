@@ -386,6 +386,8 @@ const AuthWrapper = () => {
                             <Route path="/portfolio/:slug" element={<PublicPortfolio />} />
                             <Route path="/portfolios" element={<PortfolioGallery key={user?.uid || 'guest'} />} />
                             <Route path="/adm/*" element={<RequireAuthenticated user={user}><Admin key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
+                            {/* Legacy admin deep links are migrated rather than silently falling through to the public shell. */}
+                            <Route path="/admin/*" element={<Navigate to="/adm/dashboard" replace />} />
                             <Route path="/front" element={<Front />} />
                             <Route path="/features" element={<Features user={user} />} />
                             <Route path="/jobs" element={<JobsLanding />} />

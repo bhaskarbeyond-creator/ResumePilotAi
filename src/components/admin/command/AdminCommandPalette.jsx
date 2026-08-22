@@ -13,10 +13,11 @@ const COMMAND_ITEMS = [
   { id: 'nav-users', label: 'Users Manager', category: 'Navigation', icon: FiUsers, path: '/adm/users' },
   { id: 'nav-audit', label: 'Admin Audit Logs', category: 'Navigation', icon: FiShield, path: '/adm/audit-logs' },
   { id: 'nav-queues', label: 'Queue & DLQ Monitor', category: 'Navigation', icon: FiActivity, path: '/adm/queues' },
-  { id: 'nav-tenants', label: 'Enterprise Tenants Registry', category: 'Navigation', icon: FiServer, path: '/adm/tenants' },
+  { id: 'nav-tenants', label: 'Enterprise Tenants Registry', category: 'Navigation', icon: FiServer, path: '/adm/tenants', superAdminOnly: true },
   { id: 'nav-employers', label: 'Employer Applications', category: 'Navigation', icon: FiBriefcase, path: '/adm/employer-applications' },
   { id: 'nav-jobs', label: 'Jobs Manager', category: 'Navigation', icon: FiLayers, path: '/adm/jobs-manager' },
   { id: 'nav-blog', label: 'Blog Engine', category: 'Navigation', icon: FiFileText, path: '/adm/blog-management' },
+  { id: 'nav-phrases', label: 'Phrase Library', category: 'Navigation', icon: FiFileText, path: '/adm/phrases' },
   { id: 'nav-messages', label: 'Contact Messages', category: 'Navigation', icon: FiMail, path: '/adm/messages' },
 
   // Settings Tabs
@@ -31,7 +32,7 @@ const COMMAND_ITEMS = [
   { id: 'set-brand', label: 'Brand Identity & Meta', category: 'Settings', icon: FiSettings, path: '/adm/settings?tab=websiteSettings' },
 ];
 
-export default function AdminCommandPalette({ isOpen, onClose }) {
+export default function AdminCommandPalette({ isOpen, onClose, isSuperAdmin = false }) {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef(null);
@@ -46,13 +47,14 @@ export default function AdminCommandPalette({ isOpen, onClose }) {
   }, [isOpen]);
 
   const filteredItems = useMemo(() => {
-    if (!query.trim()) return COMMAND_ITEMS;
+    const permitted = COMMAND_ITEMS.filter(item => !item.superAdminOnly || isSuperAdmin);
+    if (!query.trim()) return permitted;
     const q = query.toLowerCase();
-    return COMMAND_ITEMS.filter(item =>
+    return permitted.filter(item =>
       item.label.toLowerCase().includes(q) ||
       item.category.toLowerCase().includes(q)
     );
-  }, [query]);
+  }, [isSuperAdmin, query]);
 
   const handleSelect = (item) => {
     onClose();

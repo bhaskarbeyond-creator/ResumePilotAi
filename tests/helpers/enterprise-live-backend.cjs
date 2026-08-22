@@ -25,6 +25,7 @@ const backendRoot = path.resolve(__dirname, '..', '..', 'backend');
 
 const USERS = {
   'browser-owner': { uid: 'browser-owner', email: 'owner@northwind.example', email_verified: true, role: 'ADMIN', name: 'Northwind Owner' },
+  'browser-superadmin': { uid: 'browser-superadmin', email: 'superadmin@northwind.example', email_verified: true, role: 'SUPER_ADMIN', name: 'Platform Super Admin' },
   'support-engineer': { uid: 'support-engineer', email: 'support.engineer@resumepilot.example', email_verified: true, role: 'SUPPORT', name: 'Support Engineer' },
   'member-user': { uid: 'member-user', email: 'member@northwind.example', email_verified: true, role: 'USER', name: 'Member User' },
 };

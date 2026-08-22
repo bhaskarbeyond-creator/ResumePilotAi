@@ -597,6 +597,33 @@ class TenantService {
     }));
   }
 
+  async getPlatformTenant({ user, tenantId }) {
+    if (!isPlatformTenantProvisioner(user)) {
+      throw Object.assign(new Error('Platform tenant registry permission is required'), { code: 'FORBIDDEN', status: 403 });
+    }
+    return this.registry.getTenant(tenantId);
+  }
+
+  // This is intentionally a platform-only adapter around the shared registry.
+  // It does not resolve tenant context or grant a tenant administrator global
+  // authority; callers are authorized by the /adm platform route first.
+  async updateTenantProfileAsPlatform({ user, tenantId, displayName, requestId }) {
+    if (!isPlatformTenantProvisioner(user)) {
+      throw Object.assign(new Error('Platform tenant profile permission is required'), { code: 'FORBIDDEN', status: 403 });
+    }
+    const tenant = await this.registry.updateTenantProfile({ tenantId, displayName });
+    if (this.db && this.admin?.firestore?.FieldValue) {
+      await this.db.collection('security_audit_logs').doc().set({
+        action: 'PLATFORM_TENANT_PROFILE_UPDATED',
+        actorUid: user.uid,
+        tenantId: tenant.id,
+        requestId: requestId || null,
+        createdAt: this.admin.firestore.FieldValue.serverTimestamp(),
+      });
+    }
+    return tenant;
+  }
+
   async updateTenantConfiguration({ context, input, expectedRevision }) {
     const configuration = await this.registry.updateTenantConfiguration({ tenantId: context.tenantId, input, expectedRevision });
     if (this.db && this.admin) {

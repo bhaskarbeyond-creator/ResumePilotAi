@@ -13,11 +13,16 @@ const {
   recordAdminAuditLog,
 } = require('../security/adminAudit');
 const { isSuperAdmin, setTokenVerifierForTests } = require('../security/auth');
+const { InMemoryTenantRegistry } = require('../enterprise/tenantRegistry');
+const { TenantService } = require('../enterprise/tenantService');
+const { MemoryFirestore, createMemoryAdmin } = require('./helpers/memoryFirestore');
 
 setTokenVerifierForTests(async token => {
   const now = Math.floor(Date.now() / 1000);
   if (token === 'user') return { uid: 'user-1', email: 'user@example.com', email_verified: true, role: 'USER', auth_time: now };
   if (token === 'admin') return { uid: 'admin-1', email: 'admin@example.com', email_verified: true, role: 'ADMIN', auth_time: now };
+  if (token === 'support') return { uid: 'support-1', email: 'support@example.com', email_verified: true, role: 'SUPPORT', auth_time: now };
+  if (token === 'stale-admin') return { uid: 'admin-1', email: 'admin@example.com', email_verified: true, role: 'ADMIN', auth_time: now - 3600 };
   if (token === 'super-admin') return { uid: 'super-1', email: 'super@example.com', email_verified: true, role: 'SUPER_ADMIN', auth_time: now };
   throw new Error('invalid token');
 });
@@ -167,4 +172,255 @@ test('Platform API: /api/platform/maintenance status is readable by Admin and ed
     .send({ enabled: true });
   assert.equal(adminToggle.status, 403);
   assert.equal(adminToggle.body.error.code, 'FORBIDDEN');
+});
+
+test('server user directory paginates and filters the curated roster without exposing raw profile payloads', async () => {
+  const originalDb = app.get('db');
+  const originalAdmin = app.get('firebaseAdmin');
+  const db = new MemoryFirestore();
+  const firebaseAdmin = createMemoryAdmin({ db });
+  firebaseAdmin.auth = () => ({
+    async listUsers() {
+      return { users: [
+        { uid: 'user-a', email: 'alex@example.test', displayName: 'Alex', disabled: false, customClaims: { role: 'USER' } },
+        { uid: 'user-b', email: 'bea@example.test', displayName: 'Bea', disabled: true, customClaims: { role: 'ADMIN' } },
+      ] };
+    },
+  });
+  app.set('db', db);
+  app.set('firebaseAdmin', firebaseAdmin);
+  try {
+    await db.collection('users').doc('user-a').set({ userId: 'user-a', email: 'alex@example.test', displayName: 'Alex', membership: 'Basic', role: 'USER', privateNote: 'must never be returned', updatedAt: new Date('2026-01-01') });
+    await db.collection('users').doc('user-b').set({ userId: 'user-b', email: 'bea@example.test', displayName: 'Bea', membership: 'Premium', role: 'ADMIN', suspended: true, updatedAt: new Date('2026-02-01') });
+    const denied = await request(app).get('/api/admin/users').set(bearer('user'));
+    assert.equal(denied.status, 403);
+    const filtered = await request(app).get('/api/admin/users?membership=Premium&status=suspended&limit=1').set(bearer('admin'));
+    assert.equal(filtered.status, 200);
+    assert.equal(filtered.body.pagination.total, 1);
+    assert.equal(filtered.body.users.length, 1);
+    assert.equal(filtered.body.users[0].id, 'user-b');
+    assert.equal(Object.hasOwn(filtered.body.users[0], 'privateNote'), false);
+    const searched = await request(app).get('/api/admin/users?q=alex&limit=1').set(bearer('admin'));
+    assert.equal(searched.status, 200);
+    assert.equal(searched.body.users[0].id, 'user-a');
+  } finally {
+    app.set('db', originalDb);
+    app.set('firebaseAdmin', originalAdmin);
+  }
+});
+
+test('generic user administration protects SUPER_ADMIN identities and enforces role boundaries server-side', async () => {
+  const originalDb = app.get('db');
+  const originalAdmin = app.get('firebaseAdmin');
+  const db = new MemoryFirestore();
+  const firebaseAdmin = createMemoryAdmin({ db });
+  const identities = new Map([
+    ['super-target', { uid: 'super-target', disabled: false, customClaims: { role: 'SUPER_ADMIN' }, email: 'target-super@example.test' }],
+    ['ordinary-target', { uid: 'ordinary-target', disabled: false, customClaims: { role: 'USER' }, email: 'ordinary@example.test' }],
+  ]);
+  firebaseAdmin.auth = () => ({
+    async getUser(uid) {
+      const user = identities.get(uid);
+      if (!user) { const error = new Error('missing'); error.code = 'auth/user-not-found'; throw error; }
+      return { ...user, customClaims: { ...user.customClaims } };
+    },
+    async updateUser(uid, update) { identities.set(uid, { ...identities.get(uid), ...(Object.hasOwn(update, 'disabled') ? { disabled: update.disabled } : {}) }); },
+    async revokeRefreshTokens() {},
+    async setCustomUserClaims(uid, claims) { identities.set(uid, { ...identities.get(uid), customClaims: { ...claims } }); },
+  });
+  app.set('db', db);
+  app.set('firebaseAdmin', firebaseAdmin);
+  try {
+    await db.collection('users').doc('super-target').set({ role: 'SUPER_ADMIN', membership: 'Premium', suspended: false });
+    await db.collection('users').doc('ordinary-target').set({ role: 'USER', membership: 'Basic', suspended: false });
+
+    for (const token of ['user', 'support', 'admin']) {
+      const protectedAttempt = await request(app).patch('/api/admin/users/super-target').set(bearer(token)).send({ suspended: true, expectedSuspended: false });
+      assert.equal(protectedAttempt.status, token === 'admin' ? 403 : 403, token);
+      assert.equal(identities.get('super-target').disabled, false, token);
+    }
+
+    const staleUserMutation = await request(app).patch('/api/admin/users/ordinary-target').set(bearer('stale-admin')).send({ suspended: true, expectedSuspended: false });
+    assert.equal(staleUserMutation.status, 403);
+    assert.equal(staleUserMutation.body.error.code, 'RECENT_AUTH_REQUIRED');
+
+    const adminRoleAttempt = await request(app).patch('/api/admin/users/ordinary-target').set(bearer('admin')).send({ role: 'ADMIN', expectedRole: 'USER' });
+    assert.equal(adminRoleAttempt.status, 403);
+
+    const adminSuspendsOrdinary = await request(app).patch('/api/admin/users/ordinary-target').set(bearer('admin')).send({ suspended: true, expectedSuspended: false });
+    assert.equal(adminSuspendsOrdinary.status, 200);
+    assert.equal(identities.get('ordinary-target').disabled, true);
+
+    const superGrantsRole = await request(app).patch('/api/admin/users/ordinary-target').set(bearer('super-admin')).send({ role: 'ADMIN', expectedRole: 'USER' });
+    assert.equal(superGrantsRole.status, 200);
+    assert.equal(identities.get('ordinary-target').customClaims.role, 'ADMIN');
+  } finally {
+    app.set('db', originalDb);
+    app.set('firebaseAdmin', originalAdmin);
+  }
+});
+
+test('Admin audit API supports filtered keyset pagination', async () => {
+  const originalDb = app.get('db');
+  const originalAdmin = app.get('firebaseAdmin');
+  const db = new MemoryFirestore();
+  app.set('db', db);
+  app.set('firebaseAdmin', createMemoryAdmin({ db }));
+  try {
+    const emptyStats = await request(app).get('/api/admin/audit-logs/stats').set(bearer('admin'));
+    assert.equal(emptyStats.status, 200);
+    assert.equal(emptyStats.body.successRate, null);
+    for (let index = 0; index < 3; index += 1) {
+      await db.collection('admin_audit_logs').doc(`event-${index}`).set({
+        action: 'PLATFORM_TENANT_SUSPENDED', category: 'platform.control-plane', severity: 'HIGH', outcome: 'SUCCESS',
+        actorUid: 'super-1', metadata: { source: 'test' }, createdAt: new Date(Date.now() + index),
+      });
+    }
+    const first = await request(app).get('/api/admin/audit-logs?limit=2&category=platform.control-plane').set(bearer('admin'));
+    assert.equal(first.status, 200);
+    assert.equal(first.body.logs.length, 2);
+    assert.equal(first.body.hasMore, true);
+    const second = await request(app).get(`/api/admin/audit-logs?limit=2&category=platform.control-plane&startAfterDocId=${first.body.logs.at(-1).id}`).set(bearer('admin'));
+    assert.equal(second.status, 200);
+    assert.equal(second.body.logs.length, 1);
+    assert.notEqual(second.body.logs[0].id, first.body.logs[0].id);
+  } finally {
+    app.set('db', originalDb);
+    app.set('firebaseAdmin', originalAdmin);
+  }
+});
+
+test('Phrase administration is real backend CRUD, revision-safe, and unavailable to regular users', async () => {
+  const originalDb = app.get('db');
+  const originalAdmin = app.get('firebaseAdmin');
+  const db = new MemoryFirestore();
+  app.set('db', db);
+  app.set('firebaseAdmin', createMemoryAdmin({ db }));
+  try {
+    const denied = await request(app).get('/api/admin/phrases').set(bearer('user'));
+    assert.equal(denied.status, 403);
+
+    const created = await request(app).post('/api/admin/phrases').set(bearer('admin')).send({ name: 'Achievement Statements' });
+    assert.equal(created.status, 201);
+    assert.equal(created.body.category.id, 'achievement-statements');
+
+    const categoryId = created.body.category.id;
+    const added = await request(app).post(`/api/admin/phrases/${categoryId}/entries`).set(bearer('admin')).send({ phrase: 'Reduced delivery cycle time by 35%.', expectedRevision: 1 });
+    assert.equal(added.status, 201);
+    const publicProjection = await request(app).get('/public/phrases.json');
+    assert.equal(publicProjection.status, 200);
+    assert.deepEqual(publicProjection.body.categories.find(category => category.id === categoryId)?.phrases, ['Reduced delivery cycle time by 35%.']);
+    assert.equal(added.body.category.revision, 2);
+
+    const stale = await request(app).delete(`/api/admin/phrases/${categoryId}/entries`).set(bearer('admin')).send({ phrase: 'Reduced delivery cycle time by 35%.', expectedRevision: 1 });
+    assert.equal(stale.status, 409);
+
+    const removed = await request(app).delete(`/api/admin/phrases/${categoryId}/entries`).set(bearer('admin')).send({ phrase: 'Reduced delivery cycle time by 35%.', expectedRevision: 2 });
+    assert.equal(removed.status, 200);
+    const categoryDeleted = await request(app).delete(`/api/admin/phrases/${categoryId}`).set(bearer('admin')).send({ expectedRevision: 3 });
+    assert.equal(categoryDeleted.status, 200);
+  } finally {
+    app.set('db', originalDb);
+    app.set('firebaseAdmin', originalAdmin);
+  }
+});
+
+test('Platform queue replay only requeues confirmed dead-letter records for SUPER_ADMIN', async () => {
+  const originalDb = app.get('db');
+  const originalAdmin = app.get('firebaseAdmin');
+  const db = new MemoryFirestore();
+  const firebaseAdmin = createMemoryAdmin({ db });
+  app.set('db', db);
+  app.set('firebaseAdmin', firebaseAdmin);
+  try {
+    await db.collection('notification_outbox').doc('dead-job').set({
+      state: 'DEAD_LETTER', attemptCount: 5, recipient: 'person@example.test', templateType: 'audit', createdAt: new Date(),
+    });
+    await db.collection('notification_outbox').doc('active-job').set({
+      state: 'NOTIFICATION_QUEUED', attemptCount: 0, recipient: 'person@example.test', templateType: 'audit', createdAt: new Date(),
+    });
+
+    const listed = await request(app).get('/api/platform/queues').set(bearer('super-admin'));
+    assert.equal(listed.status, 200);
+    assert.equal(listed.body.summary.deadLetterCount, 1);
+
+    const missing = await request(app).post('/api/platform/queues/retry').set(bearer('super-admin')).send({ jobId: 'dead-job' });
+    assert.equal(missing.status, 422);
+    assert.equal(missing.body.error.code, 'CONFIRMATION_REQUIRED');
+
+    const active = await request(app).post('/api/platform/queues/retry').set(bearer('super-admin')).send({ jobId: 'active-job', confirmation: 'REPLAY active-job' });
+    assert.equal(active.status, 409);
+    assert.equal(active.body.error.code, 'JOB_NOT_DEAD_LETTER');
+
+    const replayed = await request(app).post('/api/platform/queues/retry').set(bearer('super-admin')).send({ jobId: 'dead-job', confirmation: 'REPLAY dead-job' });
+    assert.equal(replayed.status, 200);
+    assert.equal(replayed.body.retriedCount, 1);
+    const after = await db.collection('notification_outbox').doc('dead-job').get();
+    assert.equal(after.data().state, 'NOTIFICATION_QUEUED');
+    assert.equal(after.data().attemptCount, 0);
+
+    const denied = await request(app).post('/api/platform/queues/retry').set(bearer('admin')).send({ jobId: 'dead-job', confirmation: 'REPLAY dead-job' });
+    assert.equal(denied.status, 403);
+  } finally {
+    app.set('db', originalDb);
+    app.set('firebaseAdmin', originalAdmin);
+  }
+});
+
+test('Platform tenant registry is independent of the feature-gated enterprise route and protects lifecycle actions', async () => {
+  const originalService = app.get('tenantService');
+  const registry = new InMemoryTenantRegistry();
+  app.set('tenantService', new TenantService({ registry }));
+  try {
+    const regularAdmin = await request(app).get('/api/platform/tenants').set(bearer('admin'));
+    assert.equal(regularAdmin.status, 403, 'ADMIN cannot enumerate the Super Admin tenant registry');
+
+    const created = await request(app)
+      .post('/api/platform/tenants')
+      .set(bearer('super-admin'))
+      .send({ displayName: 'QA Control Plane Tenant', slug: 'qa-control-plane', isolationTier: 'STANDARD' });
+    assert.equal(created.status, 201);
+    assert.equal(created.body.tenant.slug, 'qa-control-plane');
+    const tenantId = created.body.tenant.id;
+
+    const listed = await request(app).get('/api/platform/tenants').set(bearer('super-admin'));
+    assert.equal(listed.status, 200);
+    assert.ok(listed.body.tenants.some(tenant => tenant.id === tenantId));
+
+    const profile = await request(app)
+      .patch(`/api/platform/tenants/${tenantId}`)
+      .set(bearer('super-admin'))
+      .send({ displayName: 'QA Control Plane Tenant Renamed' });
+    assert.equal(profile.status, 200);
+    assert.equal(profile.body.tenant.displayName, 'QA Control Plane Tenant Renamed');
+
+    const missingConfirmation = await request(app)
+      .post(`/api/platform/tenants/${tenantId}/suspend`)
+      .set(bearer('super-admin'))
+      .send({});
+    assert.equal(missingConfirmation.status, 422);
+    assert.equal(missingConfirmation.body.error.code, 'CONFIRMATION_REQUIRED');
+
+    const suspended = await request(app)
+      .post(`/api/platform/tenants/${tenantId}/suspend`)
+      .set(bearer('super-admin'))
+      .send({ confirmation: 'SUSPEND qa-control-plane' });
+    assert.equal(suspended.status, 200);
+    assert.equal(suspended.body.tenant.lifecycleState, 'SUSPENDED');
+
+    const adminMutation = await request(app)
+      .post(`/api/platform/tenants/${tenantId}/reactivate`)
+      .set(bearer('admin'))
+      .send({ confirmation: 'REACTIVATE qa-control-plane' });
+    assert.equal(adminMutation.status, 403);
+
+    const decommissioned = await request(app)
+      .post(`/api/platform/tenants/${tenantId}/decommission`)
+      .set(bearer('super-admin'))
+      .send({ confirmation: 'DECOMMISSION qa-control-plane' });
+    assert.equal(decommissioned.status, 200);
+    assert.equal(decommissioned.body.tenant.lifecycleState, 'DELETING');
+  } finally {
+    app.set('tenantService', originalService);
+  }
 });

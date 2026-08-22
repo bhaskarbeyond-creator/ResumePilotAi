@@ -11,6 +11,7 @@ const JobsLandingStats = () => {
         successRate: '',
         featuredJobs: ''
     });
+    const [status, setStatus] = useState(null);
 
     useEffect(() => {
         const fetchStats = async () => {
@@ -30,13 +31,14 @@ const JobsLandingStats = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        await setStats(stats);
-        alert('Stats updated successfully!');
+        const result = await setStats(stats);
+        setStatus(result?.success ? { type: 'success', text: 'Stats updated successfully.' } : { type: 'error', text: result?.message || 'Stats could not be updated.' });
     };
 
     return (
         <div className="jobs-landing-stats">
             <h2>Edit Jobs Landing Stats</h2>
+            {status && <p role={status.type === 'success' ? 'status' : 'alert'} className={status.type === 'success' ? 'text-emerald-700' : 'text-red-700'}>{status.text}</p>}
             <form onSubmit={handleSubmit}>
                 {Object.keys(stats).map((key) => (
                     <div key={key}>

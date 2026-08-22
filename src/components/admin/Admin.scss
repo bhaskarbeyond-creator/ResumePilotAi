@@ -81,3 +81,46 @@
         }
     }
 }
+
+// The desktop rail becomes an explicit modal drawer on tablet and mobile. This
+// prevents a fixed 280px navigation column from covering the primary controls
+// on small viewports while preserving the desktop collapse preference.
+.admin-mobile-backdrop {
+    display: none;
+}
+
+@media (max-width: 1023px) {
+    .admin {
+        .admin__right,
+        .admin__right.admin__right--sidebar-collapsed {
+            padding-left: 0;
+        }
+
+        .admin__left {
+            width: 280px;
+            max-width: min(280px, calc(100vw - 2.5rem));
+            transform: translateX(-110%);
+            transition: transform 0.24s ease;
+            z-index: 80;
+
+            &.admin__left--mobile-open {
+                transform: translateX(0);
+            }
+
+            > div.fixed {
+                width: 280px !important;
+                min-width: 0 !important;
+            }
+        }
+    }
+
+    .admin-mobile-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 70;
+        border: 0;
+        background: rgba(15, 23, 42, 0.55);
+        cursor: default;
+    }
+}

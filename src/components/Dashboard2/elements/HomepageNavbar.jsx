@@ -478,7 +478,7 @@ const HomepageNavbar = ({ authBtnHandler, user, logout }) => {
                                 <>
                                     {user && isAdmin && (
                                         <Link
-                                            to="/admin"
+                                            to="/adm/dashboard"
                                             className="flex items-center justify-center w-full px-4 py-2.5 text-gray-700 hover:text-purple-600 font-medium transition-colors duration-300 rounded-lg hover:bg-purple-50/70">
                                             {t('selectionAction.admin', 'Admin')}
                                         </Link>

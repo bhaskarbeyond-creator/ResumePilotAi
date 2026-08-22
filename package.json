@@ -28,6 +28,9 @@
     "test:enterprise": "npm --prefix backend run test:enterprise && node --test tests/enterprise-ui.test.mjs",
     "test:enterprise:browser": "node tests/test-enterprise-browser.mjs",
     "test:enterprise:e2e": "playwright test",
+    "test:admin:e2e": "playwright test tests/super-admin-live-backend.spec.js",
+    "test:admin:contract": "node --test tests/super-admin-contract.test.mjs backend/test/superadmin-platform.test.js",
+    "verify:super-admin:live": "node scripts/verify-super-admin-live.mjs",
     "test:enterprise:visuals": "node tests/capture-enterprise-visuals.mjs",
     "test:enterprise:all": "npm run test:enterprise && npm run test:interview && npm run test:security && npm run test:product"
   },

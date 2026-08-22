@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { addPages, getAdminPages, removePageByName } from '../../../firestore/dbOperations';
 import { FaCheck, FaTimes, FaFile, FaTrash, FaPlus, FaEdit, FaEye, FaGlobe } from 'react-icons/fa';
+import AdminDialog from '../shared/AdminDialog';
 // import ReactQuill from 'react-quill'; // ES6
 // import 'react-quill/dist/quill.snow.css'; // ES6
 
@@ -13,11 +14,14 @@ class PagesSettings extends Component {
             isSuccesShowed: false,
             error: '', saving: false, editingRevision: 0, status: 'draft',
             pages: null,
+            deletePage: null,
+            deleteConfirmation: '',
         };
         this.handleChange = this.handleChange.bind(this);
         this.saveNewPage = this.saveNewPage.bind(this);
         this.handleTextChange = this.handleTextChange.bind(this);
         this.removePageHandler = this.removePageHandler.bind(this);
+        this.confirmPageDelete = this.confirmPageDelete.bind(this);
         this.getPages = this.getPages.bind(this);
     }
     componentDidMount() {
@@ -52,11 +56,23 @@ class PagesSettings extends Component {
         try { this.setState({ pages: await getAdminPages(), error: '' }); }
         catch (error) { this.setState({ pages: [], error: error.message }); }
     }
-    async removePageHandler(page) {
-        if (!window.confirm(`Delete “${page.id}”? This cannot be undone.`)) return;
-        const result = await removePageByName(page.id, page.revision);
-        if (!result.success) { this.setState({ error: result.error }); return; }
-        await this.getPages();
+    removePageHandler(page) {
+        this.setState({ deletePage: page, deleteConfirmation: '' });
+    }
+    async confirmPageDelete() {
+        const page = this.state.deletePage;
+        if (!page || this.state.deleteConfirmation !== page.id) return;
+        this.setState({ saving: true, error: '' });
+        try {
+            const result = await removePageByName(page.id, page.revision);
+            if (!result.success) throw new Error(result.error || 'Page could not be deleted.');
+            this.setState({ deletePage: null, deleteConfirmation: '' });
+            await this.getPages();
+        } catch (error) {
+            this.setState({ error: error.message || 'Page could not be deleted.' });
+        } finally {
+            this.setState({ saving: false });
+        }
     }
     render() {
         const totalPages = this.state.pages ? this.state.pages.length : 0;
@@ -256,6 +272,14 @@ class PagesSettings extends Component {
                         </button>
                     </div>
                 </div>
+                <AdminDialog open={Boolean(this.state.deletePage)} onClose={() => !this.state.saving && this.setState({ deletePage: null, deleteConfirmation: '' })} dismissible={!this.state.saving} title="Delete custom page" description="This permanently removes the selected page from the managed website page registry." className="max-w-lg">
+                    <div className="space-y-4 p-5">
+                        <label className="block text-sm font-bold text-slate-800">Type <span className="font-mono text-rose-700">{this.state.deletePage?.id}</span> to confirm
+                            <input autoComplete="off" value={this.state.deleteConfirmation} onChange={event => this.setState({ deleteConfirmation: event.target.value })} className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-sm" />
+                        </label>
+                        <div className="flex justify-end gap-3 border-t border-slate-100 pt-4"><button type="button" disabled={this.state.saving} onClick={() => this.setState({ deletePage: null, deleteConfirmation: '' })} className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700">Cancel</button><button type="button" disabled={this.state.saving || this.state.deleteConfirmation !== this.state.deletePage?.id} onClick={this.confirmPageDelete} className="rounded-xl bg-rose-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">{this.state.saving ? 'Deleting…' : 'Confirm delete'}</button></div>
+                    </div>
+                </AdminDialog>
             </div>
         );
     }

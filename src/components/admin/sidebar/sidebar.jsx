@@ -89,7 +89,7 @@ const SETTINGS_GROUPS = [
     ]},
 ];
 
-const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: notifyParentOfToggle, onOpenCommandPalette }) => {
+const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: notifyParentOfToggle, onOpenCommandPalette, isSuperAdmin = false, onMobileClose }) => {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
         const stored = readSidebarPreference();
         return stored === null ? Boolean(initialSidebarCollapsed) : stored === 'true';
@@ -124,10 +124,15 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
 
     const handleSettingsTabClick = (tabKey) => {
         navigate(`/adm/settings?tab=${tabKey}`);
+        handleNavigation();
     };
 
     const handleLogout = () => {
+        onMobileClose?.();
         fire.auth().signOut().catch((error) => console.error('Sign out error', error));
+    };
+    const handleNavigation = () => {
+        if (typeof window !== 'undefined' && window.matchMedia('(max-width: 1023px)').matches) onMobileClose?.();
     };
 
     const navItems = [
@@ -135,17 +140,19 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
         { path: '/adm/dashboard', icon: FiGrid, label: 'Dashboard' },
         { path: '/adm/audit-logs', icon: FiShield, label: 'Admin Audit Trail' },
         { path: '/adm/queues', icon: FiActivity, label: 'Queue & DLQ Monitor' },
-        { path: '/adm/tenants', icon: FaServer, label: 'Tenants Registry' },
+        { path: '/adm/tenants', icon: FaServer, label: 'Tenants Registry', superAdminOnly: true },
         { path: '/adm/users', icon: FiUsers, label: 'Users Manager' },
         { path: '/adm/employer-applications', icon: FiBriefcase, label: 'Employer Applications' },
         { path: '/adm/jobs-manager', icon: FiLayers, label: 'Jobs Manager' },
         { path: '/adm/company-management', icon: FaRegBuilding, label: 'Company Management' },
         { path: '/adm/blog-management', icon: FiFileText, label: 'Blog Management' },
         { path: '/adm/landing-pages', icon: FiGlobe, label: 'Landing Pages' },
+        { path: '/adm/phrases', icon: FiFileText, label: 'Phrase Library' },
         { path: '/adm/reviews', icon: MdOutlineReviews, label: 'Reviews' },
         { path: '/adm/trustedby', icon: FiShield, label: 'Trusted by' },
         { path: '/adm/messages', icon: FiMail, label: 'Messages' },
     ];
+    const visibleNavItems = navItems.filter(item => !item.superAdminOnly || isSuperAdmin);
 
     return (
         <>
@@ -252,8 +259,8 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
 
                     <div className="px-3">
                         {/* Home & Dashboard */}
-                        {navItems.slice(0, 2).map((item) => (
-                            <Link to={item.path} key={item.path}>
+                        {visibleNavItems.slice(0, 2).map((item) => (
+                            <Link to={item.path} key={item.path} onClick={handleNavigation}>
                                 <div className={`flex items-center text-sm transition-all duration-200 rounded-lg mb-1 ${
                                     location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path))
                                         ? 'bg-purple-100 text-purple-700 font-medium'
@@ -343,8 +350,8 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
                         </div>
 
                         {/* Rest of nav items */}
-                        {navItems.slice(2).map((item) => (
-                            <Link to={item.path} key={item.path}>
+                        {visibleNavItems.slice(2).map((item) => (
+                            <Link to={item.path} key={item.path} onClick={handleNavigation}>
                                 <div className={`flex items-center text-sm transition-all duration-200 rounded-lg mb-1 ${
                                     location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path))
                                         ? 'bg-purple-100 text-purple-700 font-medium'

@@ -1,67 +1,73 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import fire from '../../../conf/fire';
+import { useSearchParams } from 'react-router-dom';
+import { fetchAdminWithReauth } from '../../../services/adminReauth';
+import AdminDialog from '../shared/AdminDialog';
 import {
-  FiShield, FiFilter, FiRefreshCw, FiSearch, FiCheckCircle,
-  FiAlertTriangle, FiXCircle, FiDownload, FiEye, FiClock, FiUser, FiActivity
+  FiShield, FiRefreshCw, FiSearch, FiCheckCircle,
+  FiAlertTriangle, FiXCircle, FiDownload, FiEye, FiActivity
 } from 'react-icons/fi';
 
 export default function AdminAuditLogs() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [logs, setLogs] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedLog, setSelectedLog] = useState(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  // Filter States
-  const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
-  const [severityFilter, setSeverityFilter] = useState('');
-  const [outcomeFilter, setOutcomeFilter] = useState('');
+  // Filter state is URL-backed so an investigation can be refreshed/shared.
+  const [searchQuery, setSearchQuery] = useState(() => searchParams.get('q') || '');
+  const [categoryFilter, setCategoryFilter] = useState(() => searchParams.get('category') || '');
+  const [severityFilter, setSeverityFilter] = useState(() => searchParams.get('severity') || '');
+  const [outcomeFilter, setOutcomeFilter] = useState(() => searchParams.get('outcome') || '');
 
-  const fetchLogs = useCallback(async () => {
-    setLoading(true);
+  const fetchLogs = useCallback(async ({ append = false, startAfterDocId = '' } = {}) => {
+    if (append) setLoadingMore(true); else setLoading(true);
     setError(null);
     try {
-      const user = fire.auth().currentUser;
-      if (!user) throw new Error('Authentication required');
-      const token = await user.getIdToken();
-
       const params = new URLSearchParams();
       params.set('limit', '100');
       if (categoryFilter) params.set('category', categoryFilter);
       if (severityFilter) params.set('severity', severityFilter);
       if (outcomeFilter) params.set('outcome', outcomeFilter);
-
-      const [logsRes, statsRes] = await Promise.all([
-        fetch(`/api/admin/audit-logs?${params.toString()}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        }),
-        fetch('/api/admin/audit-logs/stats', {
-          headers: { Authorization: `Bearer ${token}` }
-        })
-      ]);
-
-      if (!logsRes.ok) {
-        const data = await logsRes.json().catch(() => ({}));
-        throw new Error(data.error?.message || `HTTP ${logsRes.status}`);
-      }
-
-      const logsData = await logsRes.json();
-      const statsData = statsRes.ok ? await statsRes.json() : null;
-
-      setLogs(logsData.logs || []);
-      setStats(statsData);
+      if (startAfterDocId) params.set('startAfterDocId', startAfterDocId);
+      const logsRequest = fetchAdminWithReauth(`/api/admin/audit-logs?${params.toString()}`, { cache: 'no-store' });
+      const statsRequest = append ? null : fetchAdminWithReauth('/api/admin/audit-logs/stats', { cache: 'no-store' });
+      const [{ response: logsRes, data: logsData }, statsResult] = await Promise.all([logsRequest, statsRequest]);
+      if (!logsRes.ok) throw new Error(logsData.error?.message || logsData.error || `HTTP ${logsRes.status}`);
+      const nextLogs = Array.isArray(logsData.logs) ? logsData.logs : [];
+      setLogs(current => append ? [...current, ...nextLogs.filter(log => !current.some(existing => existing.id === log.id))] : nextLogs);
+      setHasMore(logsData.hasMore === true);
+      if (statsResult?.response?.ok) setStats(statsResult.data);
     } catch (err) {
       console.error('[AdminAuditLogs] Error fetching logs:', err);
       setError(err.message || 'Failed to load audit logs');
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   }, [categoryFilter, severityFilter, outcomeFilter]);
 
   useEffect(() => {
+    setHasMore(false);
     fetchLogs();
   }, [fetchLogs]);
+
+  useEffect(() => {
+    const next = new URLSearchParams();
+    if (searchQuery) next.set('q', searchQuery);
+    if (categoryFilter) next.set('category', categoryFilter);
+    if (severityFilter) next.set('severity', severityFilter);
+    if (outcomeFilter) next.set('outcome', outcomeFilter);
+    setSearchParams(next, { replace: true });
+  }, [categoryFilter, outcomeFilter, searchQuery, setSearchParams, severityFilter]);
+
+  const loadMore = () => {
+    const cursor = logs[logs.length - 1]?.id;
+    if (cursor && !loadingMore) fetchLogs({ append: true, startAfterDocId: cursor });
+  };
 
   const filteredLogs = logs.filter(log => {
     if (!searchQuery) return true;
@@ -169,7 +175,8 @@ export default function AdminAuditLogs() {
           <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
             <div>
               <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Success Rate</p>
-              <p className="text-2xl font-extrabold text-emerald-600 mt-1">{stats.successRate}%</p>
+              <p className="text-2xl font-extrabold text-emerald-600 mt-1">{stats.successRate === null || stats.successRate === undefined ? '—' : `${stats.successRate}%`}</p>
+              {(stats.successRate === null || stats.successRate === undefined) && <p className="mt-1 text-[10px] font-medium text-slate-500">No observed sample</p>}
             </div>
             <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
               <FiCheckCircle className="h-5 w-5" />
@@ -316,66 +323,31 @@ export default function AdminAuditLogs() {
             </table>
           </div>
         )}
+        {!loading && logs.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 bg-slate-50 px-4 py-3 text-xs text-slate-600">
+            <span>{logs.length} loaded record{logs.length === 1 ? '' : 's'}{hasMore ? '; more records are available.' : '; end of available result set.'}</span>
+            {hasMore && <button type="button" onClick={loadMore} disabled={loadingMore} className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50">{loadingMore && <FiRefreshCw className="animate-spin" />} {loadingMore ? 'Loading…' : 'Load more'}</button>}
+          </div>
+        )}
       </div>
 
-      {/* Detail Modal */}
-      {selectedLog && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
-          onClick={() => setSelectedLog(null)}
-        >
-          <div
-            className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh]"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-              <div>
-                <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                  <FiShield className="text-indigo-600" /> {selectedLog.action}
-                </h3>
-                <p className="text-xs text-slate-500 font-mono mt-0.5">{selectedLog.id}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedLog(null)}
-                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-200"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="p-4 overflow-y-auto space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                <div><span className="text-slate-400 font-bold uppercase text-[10px]">Actor:</span> <span className="font-semibold text-slate-800">{selectedLog.actorEmail || selectedLog.actorUid}</span></div>
-                <div><span className="text-slate-400 font-bold uppercase text-[10px]">Role:</span> <span className="font-semibold text-slate-800">{selectedLog.actorRole || 'ADMIN'}</span></div>
-                <div><span className="text-slate-400 font-bold uppercase text-[10px]">Method:</span> <span className="font-mono font-bold text-slate-800">{selectedLog.method}</span></div>
-                <div><span className="text-slate-400 font-bold uppercase text-[10px]">Path:</span> <span className="font-mono text-slate-800">{selectedLog.pathname}</span></div>
-                <div><span className="text-slate-400 font-bold uppercase text-[10px]">Duration:</span> <span className="font-semibold text-slate-800">{selectedLog.durationMs} ms</span></div>
-                <div><span className="text-slate-400 font-bold uppercase text-[10px]">IP:</span> <span className="font-mono text-slate-800">{selectedLog.ipAddress || 'internal'}</span></div>
-                <div><span className="text-slate-400 font-bold uppercase text-[10px]">Status:</span> <span className="font-semibold text-slate-800">{selectedLog.statusCode}</span></div>
-                <div><span className="text-slate-400 font-bold uppercase text-[10px]">Time:</span> <span className="font-semibold text-slate-800">{selectedLog.createdAt ? new Date(selectedLog.createdAt).toLocaleString() : '—'}</span></div>
-              </div>
-
-              <div>
-                <p className="font-bold text-slate-700 uppercase tracking-wider text-[10px] mb-1">Sanitized Metadata & Parameters</p>
-                <pre className="p-3 bg-slate-900 text-slate-100 rounded-xl overflow-x-auto text-[11px] font-mono">
-                  {JSON.stringify(selectedLog.metadata || {}, null, 2)}
-                </pre>
-              </div>
-            </div>
-
-            <div className="p-3 border-t border-slate-100 bg-slate-50 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setSelectedLog(null)}
-                className="px-4 py-1.5 rounded-xl bg-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-300 transition"
-              >
-                Close
-              </button>
-            </div>
+      {/* Detail modal: shared primitive retains focus and restores it on close. */}
+      <AdminDialog open={Boolean(selectedLog)} onClose={() => setSelectedLog(null)} title={selectedLog ? `${selectedLog.action} audit detail` : ''} description={selectedLog ? `Audit record ${selectedLog.id}` : ''} className="max-w-2xl">
+        {selectedLog && <div className="space-y-4 p-5 text-xs">
+          <div className="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:grid-cols-2">
+            <div><span className="font-bold uppercase text-[10px] text-slate-400">Actor:</span> <span className="font-semibold text-slate-800">{selectedLog.actorEmail || selectedLog.actorUid}</span></div>
+            <div><span className="font-bold uppercase text-[10px] text-slate-400">Role:</span> <span className="font-semibold text-slate-800">{selectedLog.actorRole || 'ADMIN'}</span></div>
+            <div><span className="font-bold uppercase text-[10px] text-slate-400">Method:</span> <span className="font-mono font-bold text-slate-800">{selectedLog.method}</span></div>
+            <div><span className="font-bold uppercase text-[10px] text-slate-400">Path:</span> <span className="break-all font-mono text-slate-800">{selectedLog.pathname}</span></div>
+            <div><span className="font-bold uppercase text-[10px] text-slate-400">Duration:</span> <span className="font-semibold text-slate-800">{selectedLog.durationMs} ms</span></div>
+            <div><span className="font-bold uppercase text-[10px] text-slate-400">IP:</span> <span className="font-mono text-slate-800">{selectedLog.ipAddress || 'internal'}</span></div>
+            <div><span className="font-bold uppercase text-[10px] text-slate-400">Status:</span> <span className="font-semibold text-slate-800">{selectedLog.statusCode}</span></div>
+            <div><span className="font-bold uppercase text-[10px] text-slate-400">Time:</span> <span className="font-semibold text-slate-800">{selectedLog.createdAt ? new Date(selectedLog.createdAt).toLocaleString() : '—'}</span></div>
           </div>
-        </div>
-      )}
+          <div><p className="mb-1 font-bold uppercase tracking-wider text-[10px] text-slate-700">Sanitized metadata & parameters</p><pre className="max-h-72 overflow-auto rounded-xl bg-slate-900 p-3 font-mono text-[11px] text-slate-100">{JSON.stringify(selectedLog.metadata || {}, null, 2)}</pre></div>
+          <div className="flex justify-end border-t border-slate-100 pt-4"><button type="button" onClick={() => setSelectedLog(null)} className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-200">Close</button></div>
+        </div>}
+      </AdminDialog>
     </div>
   );
 }

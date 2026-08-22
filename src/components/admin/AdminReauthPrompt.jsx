@@ -16,6 +16,8 @@ export default function AdminReauthPrompt() {
   const [errorMessage, setErrorMessage] = useState('');
   const [working, setWorking] = useState(false);
   const waiters = useRef([]);
+  const dialogRef = useRef(null);
+  const previousFocus = useRef(null);
   const currentUser = fire.auth().currentUser;
   const usesPassword = currentUser?.providerData?.some(item => item.providerId === 'password') === true;
 
@@ -65,9 +67,30 @@ export default function AdminReauthPrompt() {
     }
   };
 
+  useEffect(() => {
+    if (!open) return undefined;
+    previousFocus.current = document.activeElement;
+    const frame = window.requestAnimationFrame(() => dialogRef.current?.querySelector('input, button:not([disabled])')?.focus());
+    const onKeyDown = event => {
+      if (event.key !== 'Tab') return;
+      const controls = Array.from(dialogRef.current?.querySelectorAll('input:not([disabled]), button:not([disabled])') || []);
+      if (!controls.length) return;
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener('keydown', onKeyDown);
+      previousFocus.current?.focus?.();
+    };
+  }, [open]);
+
   if (!open) return null;
   return <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 p-4" role="presentation" onKeyDown={event => { if (event.key === 'Escape' && !working) cancel(); }}>
-    <div role="dialog" aria-modal="true" aria-labelledby="admin-reauth-title" aria-describedby="admin-reauth-description" className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
+    <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="admin-reauth-title" aria-describedby="admin-reauth-description" className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
       <h2 id="admin-reauth-title" className="text-lg font-bold text-slate-900">Reauthenticate administrator</h2>
       <p id="admin-reauth-description" className="mt-2 text-sm text-slate-600">This sensitive settings change requires a recent verified sign-in. The pending operation will retry only after successful reauthentication.</p>
       <form onSubmit={confirm}>
