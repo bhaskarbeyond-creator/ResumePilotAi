@@ -7,7 +7,7 @@ import firebase from 'firebase/compat/app';
 import fire, { googleProvider, facebookProvider } from '../../../conf/fire';
 import addUser from '../../../firestore/auth'
 import { withTranslation } from 'react-i18next';
-import { resolveOAuthSettings } from '../../../utils/oauthResolver';
+import { resolveOAuthSettings, fetchOAuthAvailability, applyOAuthAvailability } from '../../../utils/oauthResolver';
 import { getTotpSignInResolver, completeTotpSignIn } from '../../../services/mfaService';
 
 // LinkedIn & GitHub SVG icons (inline — no extra dependencies)
@@ -70,6 +70,10 @@ class Login extends Component {
         this.setState({ rememberMe: e.target.checked });
     }
 
+    componentWillUnmount() {
+        this._unmounted = true;
+    }
+
     componentDidMount() {
         import('../../../firestore/dbOperations').then(({ getSystemSettings }) => {
             getSystemSettings().then(settings => {
@@ -77,13 +81,16 @@ class Login extends Component {
                     localStorage.setItem('system_settings', JSON.stringify(settings));
                 } catch (e) {}
 
-                const { enableGoogle, enableFacebook, enableLinkedIn, enableGitHub } = resolveOAuthSettings(settings);
+                const configured = resolveOAuthSettings(settings);
 
-                this.setState({
-                    enableGoogle,
-                    enableFacebook,
-                    enableLinkedIn,
-                    enableGitHub
+                this.setState(configured);
+
+                // Intersect the configured toggles with what the backend can
+                // actually serve, so a provider whose route would 404 or 502 is
+                // never presented as a working sign-in option.
+                fetchOAuthAvailability().then(({ status, auth }) => {
+                    if (this._unmounted) return;
+                    this.setState(applyOAuthAvailability(configured, auth, status));
                 });
             }).catch(() => {});
         }).catch(() => {});

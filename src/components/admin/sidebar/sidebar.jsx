@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
     FiHome, FiGrid, FiSettings, FiUsers, FiFileText,
@@ -17,8 +17,13 @@ import {
 import { GoSidebarCollapse, GoSidebarExpand } from 'react-icons/go';
 import { MdOutlineReviews } from 'react-icons/md';
 import fire from '../../../conf/fire';
+import { getHealthIndicator } from '../../../services/platformApi';
+import { INDICATOR_TONE } from '../../../utils/healthPresentation';
 
-// Navigation dots indicate selection only; provider and service health is shown by verified API views.
+// Selection state uses the left rail marker. The only status dot in this
+// navigation is the Platform Health indicator, and it is driven exclusively by
+// the backend operational-status collector — never by a local assumption.
+const HEALTH_POLL_MS = 120_000;
 const readSidebarPreference = () => {
     try { return localStorage.getItem('adminSidebarCollapsed'); } catch { return null; }
 };
@@ -100,6 +105,34 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
     );
     const location = useLocation();
     const navigate = useNavigate();
+    const [healthIndicator, setHealthIndicator] = useState({ state: 'loading', indicator: null, overall: null, attentionCount: null });
+
+    const loadHealthIndicator = useCallback(async () => {
+        try {
+            const data = await getHealthIndicator();
+            setHealthIndicator({ state: 'ready', indicator: data.indicator, overall: data.overall, attentionCount: data.attentionCount });
+        } catch {
+            // An unreachable collector is reported as unknown, never as green.
+            setHealthIndicator({ state: 'unavailable', indicator: null, overall: null, attentionCount: null });
+        }
+    }, []);
+
+    useEffect(() => {
+        loadHealthIndicator();
+        const timer = setInterval(loadHealthIndicator, HEALTH_POLL_MS);
+        return () => clearInterval(timer);
+    }, [loadHealthIndicator]);
+
+    const healthDotClass = healthIndicator.state === 'ready'
+        ? (INDICATOR_TONE[healthIndicator.indicator] || 'bg-slate-300')
+        : healthIndicator.state === 'unavailable' ? 'bg-slate-400' : 'bg-slate-200 animate-pulse';
+    const healthDotLabel = healthIndicator.state === 'ready'
+        ? (healthIndicator.overall === 'OPERATIONAL'
+            ? 'All critical services operational'
+            : healthIndicator.overall === 'CRITICAL'
+                ? 'A critical platform service is unavailable'
+                : `${healthIndicator.attentionCount} service(s) need attention`)
+        : healthIndicator.state === 'unavailable' ? 'Platform health status unavailable' : 'Checking platform health';
 
     const isSettingsPage = location.pathname.startsWith('/adm/settings');
     const searchParams = new URLSearchParams(location.search);
@@ -141,6 +174,7 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
                 { path: '/adm/queues', icon: FiActivity, label: 'Queue & DLQ Monitor' },
                 { path: '/adm/operations', icon: FiTool, label: 'Platform Operations' },
                 { path: '/adm/attention', icon: FiAlertTriangle, label: 'Attention' },
+                { path: '/adm/health', icon: FaHeartbeat, label: 'Platform Health', healthIndicator: true },
             ],
         },
         {
@@ -381,6 +415,16 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
                                                 location.pathname === item.path || location.pathname.startsWith(item.path) ? 'text-indigo-600' : 'text-slate-400 group-hover:text-slate-600'
                                             } ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
                                             {!sidebarCollapsed && <span className="flex-1">{item.label}</span>}
+                                            {item.healthIndicator && (
+                                                <span
+                                                    className={`flex-none rounded-full ${healthDotClass} ${sidebarCollapsed ? 'absolute right-1.5 top-1.5 h-1.5 w-1.5' : 'h-2 w-2'}`}
+                                                    role="img"
+                                                    aria-label={healthDotLabel}
+                                                    title={healthDotLabel}
+                                                    data-testid="sidebar-health-indicator"
+                                                    data-indicator={healthIndicator.state === 'ready' ? healthIndicator.indicator : healthIndicator.state}
+                                                />
+                                            )}
                                         </div>
                                     </Link>
                                 ))}

@@ -250,7 +250,7 @@ app.use('/api/auth', authLimiter);
 // Zero-trust API boundary. Requests are authenticated unless they are explicitly
 // public protocol endpoints. Route handlers must still enforce their own role/ownership policy.
 const publicApiPaths = new Set([
-    '/healthz', '/readyz', '/health',
+    '/healthz', '/readyz', '/health', '/service-availability',
     '/stripe-webhook', '/public-export', '/export-render-data', '/contact', '/auth/custom-password-reset',
     '/auth/verify-email-token', '/auth/set-user-password', '/auth/linkedin', '/auth/linkedin/callback',
     '/auth/github', '/auth/github/callback', '/auth/oauth/exchange'
@@ -3111,6 +3111,23 @@ app.post('/api/jobs/naukri', async (_req, res) => {
         code: 'SCRAPER_NOT_CONFIGURED',
         error: 'Naukri ingestion is not configured. No demo or fabricated listings are returned.',
     });
+});
+
+// Public, secret-free capability projection. The browser uses this to hide
+// controls whose provider is disabled or unconfigured, so a user can never
+// click a button that is guaranteed to return 404/503. It exposes booleans
+// only: no hostname, key, credential, or provider error detail.
+app.get('/api/service-availability', async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    try {
+        const { getServiceAvailability } = require('./services/platformHealth');
+        return res.json({ success: true, ...(await getServiceAvailability(req.app)) });
+    } catch (error) {
+        console.error('[Service availability]', error?.message || error);
+        // Availability is unknown, not "everything works". The client keeps its
+        // last known state rather than optimistically enabling controls.
+        return res.status(503).json({ success: false, error: { code: 'AVAILABILITY_UNAVAILABLE', message: 'Service availability could not be determined' } });
+    }
 });
 
 app.get('/healthz', (req, res) => {

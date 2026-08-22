@@ -8,7 +8,7 @@ import addUser, { updateUserOnLogin } from '../../../firestore/auth';
 import fire, { googleProvider, facebookProvider } from '../../../conf/fire';
 import Toast from '../../Toasts/Toats';
 import { withTranslation } from 'react-i18next';
-import { resolveOAuthSettings } from '../../../utils/oauthResolver';
+import { resolveOAuthSettings, fetchOAuthAvailability, applyOAuthAvailability } from '../../../utils/oauthResolver';
 
 // LinkedIn & GitHub SVG icons (inline — no extra dependencies)
 const LinkedInIcon = () => (
@@ -59,6 +59,10 @@ class Register extends Component {
         this._handleRedirect = this._handleRedirect.bind(this);
     }
 
+    componentWillUnmount() {
+        this._unmounted = true;
+    }
+
     componentDidMount() {
         import('../../../firestore/dbOperations').then(({ getSystemSettings }) => {
             getSystemSettings().then((settings) => {
@@ -66,13 +70,16 @@ class Register extends Component {
                     localStorage.setItem('system_settings', JSON.stringify(settings));
                 } catch (e) {}
 
-                const { enableGoogle, enableFacebook, enableLinkedIn, enableGitHub } = resolveOAuthSettings(settings);
+                const configured = resolveOAuthSettings(settings);
 
-                this.setState({
-                    enableGoogle,
-                    enableFacebook,
-                    enableLinkedIn,
-                    enableGitHub
+                this.setState(configured);
+
+                // Intersect the configured toggles with what the backend can
+                // actually serve, so a provider whose route would 404 or 502 is
+                // never presented as a working sign-in option.
+                fetchOAuthAvailability().then(({ status, auth }) => {
+                    if (this._unmounted) return;
+                    this.setState(applyOAuthAvailability(configured, auth, status));
                 });
             }).catch(() => {});
         }).catch(() => {});

@@ -14,6 +14,7 @@ import signOutUser from '../../../utils/signOut';
 import NotificationPanel from './NotificationPanel';
 import { useUnreadMessages } from '../../../hooks/useUnreadMessages';
 import { useUnreadNotifications } from '../../../hooks/useUnreadNotifications';
+import { useServiceAvailability } from '../../../hooks/useServiceAvailability';
 
 const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapsed }) => {
     const { t } = useTranslation('common');
@@ -105,7 +106,13 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
     const userMembershipTier = isAdmin ? 'Admin Tier' : (profile?.membership || 'Basic');
     // Enterprise tenancy is opt-in and dark by default, preserving the certified
     // personal dashboard until the server-side data-plane gates are approved.
-    const enterpriseEnabled = import.meta.env?.VITE_ENTERPRISE_TENANCY_ENABLED === 'true';
+    // The build-time flag alone is not sufficient: if the client is built with
+    // tenancy on but the backend has it dark, this link produces a 404. We
+    // therefore require the backend to confirm tenancy is actually served.
+    const buildTimeEnterpriseFlag = import.meta.env?.VITE_ENTERPRISE_TENANCY_ENABLED === 'true';
+    const { availability: platformAvailability, status: availabilityStatus } = useServiceAvailability();
+    const enterpriseEnabled = buildTimeEnterpriseFlag
+        && (availabilityStatus !== 'ready' || platformAvailability?.enterpriseTenancy === true);
 
     // Check system modules settings
     useEffect(() => {

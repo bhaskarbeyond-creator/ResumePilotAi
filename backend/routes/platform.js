@@ -4,8 +4,15 @@ const express = require('express');
 const os = require('os');
 const fs = require('fs');
 const path = require('path');
-const { requirePermission, requireSuperAdmin } = require('../security/auth');
+const { requirePermission, requireSuperAdmin, isSuperAdmin } = require('../security/auth');
 const { recordAdminAuditLog } = require('../security/adminAudit');
+const {
+  getHealthSnapshot,
+  resetHealthCache,
+  runServiceTest,
+  TESTABLE_SERVICES,
+  STATE: HEALTH_STATE,
+} = require('../services/platformHealth');
 
 const router = express.Router();
 
@@ -136,6 +143,186 @@ router.use(requirePermission('system.config.read'));
 
 router.get('/health', async (req, res) => {
   return res.json(await buildHealthPayload(req));
+});
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Operational status (Platform Health console)
+   Every value below is produced by platformHealth.js from a live probe or a
+   live configuration read. Secrets never cross this boundary.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/** Super Admins additionally see runtime diagnostics; Admins see operational state. */
+function projectSnapshotForRole(snapshot, elevated) {
+  if (elevated) return snapshot;
+  const services = snapshot.services.map(item => {
+    const metrics = { ...(item.metrics || {}) };
+    // Host, path, pid and load figures are diagnostic detail, not operational state.
+    for (const key of ['host', 'pid', 'loadAverage1m', 'systemFreeMemMb', 'systemTotalMemMb', 'rssMb', 'heapUsedMb', 'heapTotalMb', 'executablePathConfigured']) {
+      delete metrics[key];
+    }
+    return { ...item, metrics };
+  });
+  return { ...snapshot, services, elevated: false };
+}
+
+router.get('/operational-status', async (req, res) => {
+  try {
+    const elevated = isSuperAdmin(req.user);
+    const force = String(req.query.force || '') === 'true';
+    const snapshot = await getHealthSnapshot(req.app, { force });
+    return res.json({ ...projectSnapshotForRole(snapshot, elevated), elevated });
+  } catch (error) {
+    console.error('[PlatformHealth] snapshot failed:', error?.message || error);
+    return res.status(503).json({
+      error: {
+        code: 'HEALTH_SNAPSHOT_UNAVAILABLE',
+        message: 'Operational status could not be collected. No status is inferred when the collector fails.',
+        requestId: res.locals?.requestId,
+      },
+    });
+  }
+});
+
+router.get('/operational-status/api-matrix', async (req, res) => {
+  try {
+    const snapshot = await getHealthSnapshot(req.app);
+    return res.json({ checkedAt: snapshot.checkedAt, ...snapshot.apiMatrix });
+  } catch (error) {
+    console.error('[PlatformHealth] api matrix failed:', error?.message || error);
+    return res.status(503).json({
+      error: { code: 'API_MATRIX_UNAVAILABLE', message: 'The API health matrix could not be collected.', requestId: res.locals?.requestId },
+    });
+  }
+});
+
+router.get('/operational-status/:serviceId', async (req, res) => {
+  const serviceId = String(req.params.serviceId || '');
+  if (!/^[a-z0-9-]{1,64}$/.test(serviceId)) {
+    return res.status(400).json({ error: { code: 'INVALID_SERVICE_ID', message: 'Invalid service identifier', requestId: res.locals?.requestId } });
+  }
+  try {
+    const elevated = isSuperAdmin(req.user);
+    const snapshot = projectSnapshotForRole(await getHealthSnapshot(req.app), elevated);
+    const detail = snapshot.services.find(item => item.id === serviceId);
+    if (!detail) {
+      return res.status(404).json({ error: { code: 'SERVICE_NOT_FOUND', message: 'No such monitored service', requestId: res.locals?.requestId } });
+    }
+    const relatedEndpoints = snapshot.apiMatrix.endpoints.filter(endpoint => endpoint.dependencyId === serviceId);
+
+    // Related audit events are best-effort: an unreadable trail is reported as such.
+    let auditEvents = [];
+    let auditSource = 'unavailable';
+    const db = req.app?.get('db');
+    if (db) {
+      const query = await safeQuery('service-audit', () => db.collection('admin_audit_logs').orderBy('createdAt', 'desc').limit(50).get());
+      if (query.ok) {
+        auditSource = 'ok';
+        const needle = serviceId.replace(/-/g, '');
+        query.value.forEach(doc => {
+          const data = doc.data() || {};
+          const haystack = `${data.action || ''} ${data.category || ''} ${data.pathname || ''}`.toLowerCase().replace(/[^a-z0-9]/g, '');
+          if (haystack.includes(needle) || relatedEndpoints.some(endpoint => String(data.pathname || '').startsWith(endpoint.path.split(':')[0]))) {
+            auditEvents.push({
+              id: doc.id,
+              action: data.action || 'UNKNOWN',
+              actorEmail: data.actorEmail || null,
+              severity: data.severity || 'INFO',
+              outcome: data.outcome || null,
+              statusCode: data.statusCode ?? null,
+              pathname: data.pathname || null,
+              createdAt: isoFrom(data.createdAt),
+            });
+          }
+        });
+        auditEvents = auditEvents.slice(0, 10);
+      }
+    }
+
+    return res.json({
+      service: detail,
+      checkedAt: snapshot.checkedAt,
+      relatedEndpoints,
+      auditEvents,
+      auditSource,
+      elevated,
+    });
+  } catch (error) {
+    console.error('[PlatformHealth] service detail failed:', error?.message || error);
+    return res.status(503).json({
+      error: { code: 'SERVICE_DETAIL_UNAVAILABLE', message: 'Service detail could not be collected.', requestId: res.locals?.requestId },
+    });
+  }
+});
+
+/**
+ * Operator-initiated provider test. This is a mutation of operational intent
+ * (it contacts a provider), so it requires SUPER_ADMIN and is always audited.
+ */
+router.post('/operational-status/:serviceId/test', requireSuperAdmin, async (req, res) => {
+  const serviceId = String(req.params.serviceId || '');
+  if (!TESTABLE_SERVICES.includes(serviceId)) {
+    return res.status(400).json({
+      error: { code: 'SERVICE_TEST_UNSUPPORTED', message: 'This service does not expose a safe operator test', requestId: res.locals?.requestId },
+    });
+  }
+  const db = req.app?.get('db');
+  const admin = req.app?.get('firebaseAdmin');
+  try {
+    const result = await runServiceTest(req.app, serviceId);
+    resetHealthCache();
+    if (db && admin?.firestore?.FieldValue) {
+      await recordAdminAuditLog(db, admin, {
+        actorUid: req.user?.uid,
+        actorEmail: req.user?.email,
+        actorRole: 'SUPER_ADMIN',
+        action: 'TEST_PLATFORM_INTEGRATION',
+        category: 'platform.health',
+        severity: result.passed ? 'INFO' : 'MEDIUM',
+        outcome: result.passed ? 'SUCCESS' : 'FAILURE',
+        method: 'POST',
+        pathname: req.originalUrl,
+        statusCode: 200,
+        metadata: { serviceId, passed: result.passed, errorCategory: result.errorCategory },
+      }).catch(() => { /* the test result is still authoritative if the trail write fails */ });
+    }
+    return res.json({ ...result, checkedAt: new Date().toISOString() });
+  } catch (error) {
+    return res.status(error.status || 503).json({
+      error: { code: error.code || 'SERVICE_TEST_FAILED', message: 'The provider test could not be executed.', requestId: res.locals?.requestId },
+    });
+  }
+});
+
+/** Explicit operator refresh. Audited because it is a deliberate operational action. */
+router.post('/operational-status/refresh', requirePermission('system.config.write'), async (req, res) => {
+  const db = req.app?.get('db');
+  const admin = req.app?.get('firebaseAdmin');
+  try {
+    resetHealthCache();
+    const elevated = isSuperAdmin(req.user);
+    const snapshot = await getHealthSnapshot(req.app, { force: true });
+    if (db && admin?.firestore?.FieldValue) {
+      await recordAdminAuditLog(db, admin, {
+        actorUid: req.user?.uid,
+        actorEmail: req.user?.email,
+        actorRole: elevated ? 'SUPER_ADMIN' : 'ADMIN',
+        action: 'RUN_PLATFORM_HEALTH_CHECK',
+        category: 'platform.health',
+        severity: 'INFO',
+        outcome: 'SUCCESS',
+        method: 'POST',
+        pathname: req.originalUrl,
+        statusCode: 200,
+        metadata: { overall: snapshot.summary.overall },
+      }).catch(() => { /* non-fatal */ });
+    }
+    return res.json({ ...projectSnapshotForRole(snapshot, elevated), elevated });
+  } catch (error) {
+    console.error('[PlatformHealth] manual refresh failed:', error?.message || error);
+    return res.status(503).json({
+      error: { code: 'HEALTH_REFRESH_FAILED', message: 'The health check could not be re-run.', requestId: res.locals?.requestId },
+    });
+  }
 });
 
 router.get('/overview', async (req, res) => {
@@ -487,6 +674,36 @@ router.get('/command-center', async (req, res) => {
   if (maintenance.enabled) {
     recommendations.push({ id: 'maintenance', severity: 'HIGH', title: 'Maintenance mode is enabled', detail: maintenance.message || 'Public product routes are blocked for non-admins.', href: '/adm/operations' });
   }
+  // Operational health is folded into the command center so the Attention list
+  // and the Platform Health console can never disagree about the same fact.
+  let operationalStatus = null;
+  try {
+    const snapshot = await getHealthSnapshot(req.app);
+    sources.operationalStatus = 'ok';
+    operationalStatus = {
+      overall: snapshot.summary.overall,
+      indicator: snapshot.summary.indicator,
+      counts: snapshot.summary.counts,
+      checkedAt: snapshot.checkedAt,
+      apiMatrix: {
+        total: snapshot.apiMatrix.total,
+        operationalOrExpected: snapshot.apiMatrix.operationalOrExpected,
+        degraded: snapshot.apiMatrix.degraded,
+        unavailable: snapshot.apiMatrix.unavailable,
+      },
+      attention: snapshot.services
+        .filter(item => [HEALTH_STATE.UNAVAILABLE, HEALTH_STATE.DEGRADED, HEALTH_STATE.UNKNOWN].includes(item.state))
+        .map(item => ({ id: item.id, name: item.name, state: item.state, reason: item.reason, critical: item.critical })),
+    };
+    for (const item of attentionItemsFromOperationalStatus(snapshot)) {
+      if (item.severity === 'INFO') continue;
+      if (recommendations.some(existing => existing.id === item.id)) continue;
+      recommendations.push({ id: item.id, severity: item.severity, title: item.title, detail: item.detail, href: item.href });
+    }
+  } catch (_) {
+    sources.operationalStatus = 'unavailable';
+  }
+
   if (!recommendations.length) {
     recommendations.push({ id: 'healthy', severity: 'INFO', title: 'No urgent platform actions from inspected sources', detail: 'Continue monitoring health, audit, and tenant lifecycle.', href: '/adm/audit-logs' });
   }
@@ -540,6 +757,7 @@ router.get('/command-center', async (req, res) => {
       },
     },
     recommendations,
+    operationalStatus,
     attentionTenants: tenants.filter(t => t.lifecycleState !== 'ACTIVE').slice(0, 8),
     recentAudit,
     recentSecurity: recentSecurity.slice(0, 6),
@@ -871,15 +1089,112 @@ function attentionItemsFromSignals(health, extras = {}) {
   return items;
 }
 
+/**
+ * Attention items derived from the operational status snapshot. Disabled
+ * integrations are surfaced as informational context ("payment option hidden"),
+ * never as failures, and degraded services carry their real impact count.
+ */
+function attentionItemsFromOperationalStatus(snapshot) {
+  if (!snapshot) return [];
+  const items = [];
+  const endpointsFor = id => snapshot.apiMatrix.endpoints.filter(endpoint => endpoint.dependencyId === id).length;
+
+  for (const item of snapshot.services) {
+    const affectedEndpoints = endpointsFor(item.id);
+    const href = `/adm/health?service=${encodeURIComponent(item.id)}`;
+    if (item.state === HEALTH_STATE.UNAVAILABLE) {
+      items.push({
+        id: `health-${item.id}`,
+        severity: item.critical ? 'HIGH' : 'MEDIUM',
+        title: `${item.name} unavailable`,
+        detail: affectedEndpoints > 0 ? `${item.reason} ${affectedEndpoints} endpoint(s) affected.` : item.reason,
+        href,
+        kind: 'health',
+      });
+    } else if (item.state === HEALTH_STATE.DEGRADED) {
+      items.push({
+        id: `health-${item.id}`,
+        severity: item.critical ? 'HIGH' : 'MEDIUM',
+        title: `${item.name} degraded`,
+        detail: affectedEndpoints > 0 ? `${item.reason} ${affectedEndpoints} endpoint(s) affected.` : item.reason,
+        href,
+        kind: 'health',
+      });
+    } else if (item.state === HEALTH_STATE.UNKNOWN) {
+      items.push({
+        id: `health-${item.id}`,
+        severity: 'MEDIUM',
+        title: `${item.name} state unknown`,
+        detail: item.reason,
+        href,
+        kind: 'health',
+      });
+    } else if (item.state === HEALTH_STATE.DISABLED && item.group === 'integrations') {
+      items.push({
+        id: `health-${item.id}`,
+        severity: 'INFO',
+        title: `${item.name} disabled`,
+        detail: `${item.reason} The corresponding option is hidden from the product UI.`,
+        href,
+        kind: 'configuration',
+      });
+    }
+  }
+  return items;
+}
+
 router.get('/attention', async (req, res) => {
   const health = await buildHealthPayload(req);
   const extras = await inspectAttentionSignals(req);
+  let operational = null;
+  let operationalSource = 'unavailable';
+  try {
+    operational = await getHealthSnapshot(req.app);
+    operationalSource = 'ok';
+  } catch (_) { /* the signal-derived items below remain valid */ }
+
+  const items = [...attentionItemsFromSignals(health, extras), ...attentionItemsFromOperationalStatus(operational)];
+  const deduped = [];
+  const seen = new Set();
+  for (const item of items) {
+    if (seen.has(item.id)) continue;
+    seen.add(item.id);
+    deduped.push(item);
+  }
+
   return res.json({
-    items: attentionItemsFromSignals(health, extras),
+    items: deduped,
     healthScore: health.healthScore,
     status: health.status,
-    note: 'Attention items are derived from inspected platform signals. This is not a ticket system.',
+    operationalStatus: operational
+      ? { overall: operational.summary.overall, indicator: operational.summary.indicator, counts: operational.summary.counts, checkedAt: operational.checkedAt }
+      : null,
+    operationalSource,
+    note: 'Attention items are derived from inspected platform signals and live operational health. This is not a ticket system.',
   });
+});
+
+/**
+ * Lightweight indicator for the Admin navigation dot. Kept separate from the
+ * full snapshot so the nav can poll it cheaply.
+ */
+router.get('/health-indicator', async (req, res) => {
+  try {
+    const snapshot = await getHealthSnapshot(req.app);
+    const attention = snapshot.services.filter(item =>
+      item.state === HEALTH_STATE.UNAVAILABLE || item.state === HEALTH_STATE.DEGRADED || item.state === HEALTH_STATE.UNKNOWN);
+    return res.json({
+      indicator: snapshot.summary.indicator,
+      overall: snapshot.summary.overall,
+      counts: snapshot.summary.counts,
+      attentionCount: attention.length,
+      checkedAt: snapshot.checkedAt,
+    });
+  } catch (_) {
+    return res.status(503).json({
+      error: { code: 'HEALTH_INDICATOR_UNAVAILABLE', message: 'Health indicator data is unavailable.', requestId: res.locals?.requestId },
+    });
+  }
 });
 
 router.get('/enterprise-queue', async (req, res) => {
