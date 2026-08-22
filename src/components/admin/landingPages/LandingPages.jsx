@@ -71,7 +71,7 @@ const LandingPages = () => {
     };
 
     const handlePreview = () => {
-        window.open('/jobs-landing', '_blank');
+        window.open('/jobs', '_blank', 'noopener,noreferrer');
     };
 
     if (loading) {
@@ -104,16 +104,7 @@ const LandingPages = () => {
                     >
                         Jobs Landing Page
                     </button>
-                    <button
-                        onClick={() => setActiveTab('resume')}
-                        className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
-                            activeTab === 'resume'
-                                ? 'border-blue-500 text-blue-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                        }`}
-                    >
-                        Resume Builder (Coming Soon)
-                    </button>
+
                 </nav>
             </div>
 
@@ -238,16 +229,6 @@ const LandingPages = () => {
                                 />
                             </div>
                         </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Resume Builder Tab (Placeholder) */}
-            {activeTab === 'resume' && (
-                <div className="bg-white rounded-lg shadow-md p-6">
-                    <div className="text-center py-12">
-                        <h2 className="text-xl font-semibold text-gray-900 mb-2">Resume Builder Landing Page</h2>
-                        <p className="text-gray-600">This section will be available in a future update.</p>
                     </div>
                 </div>
             )}

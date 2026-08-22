@@ -319,7 +319,7 @@ const FirebaseSettings = () => {
                                 <FaLock className="text-amber-600 shrink-0" />
                                 <span>Google &amp; Facebook Sign-In toggles are managed under <strong>Addon Modules Manager</strong>.</span>
                             </div>
-                            <a href="/admin/settings?tab=modules" className="text-amber-700 hover:text-amber-900 font-bold underline shrink-0 ml-2">
+                            <a href="/adm/settings?tab=modulesSettings" className="text-amber-700 hover:text-amber-900 font-bold underline shrink-0 ml-2">
                                 Manage Modules &rarr;
                             </a>
                         </div>

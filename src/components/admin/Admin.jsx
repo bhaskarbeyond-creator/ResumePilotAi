@@ -23,10 +23,10 @@ import PlatformQueues from './queues/PlatformQueues';
 import PlatformTenants from './tenants/PlatformTenants';
 import AdminCommandPalette from './command/AdminCommandPalette';
 import { FaCircle, FaExternalLinkAlt, FaSignOutAlt, FaChevronRight, FaSyncAlt, FaCrown } from 'react-icons/fa';
-import { FiSearch, FiCommand } from 'react-icons/fi';
+import { FiMenu, FiSearch } from 'react-icons/fi';
 import AdminReauthPrompt from './AdminReauthPrompt';
 
-const AdminHeader = ({ userEmail, isSuperAdminUser, onLogout, onOpenCommandPalette }) => {
+const AdminHeader = ({ userEmail, isSuperAdminUser, onLogout, onOpenCommandPalette, onOpenMobileMenu }) => {
     const location = useLocation();
     const pathSegments = location.pathname.split('/').filter(Boolean);
     const currentTab = new URLSearchParams(location.search).get('tab');
@@ -49,7 +49,9 @@ const AdminHeader = ({ userEmail, isSuperAdminUser, onLogout, onOpenCommandPalet
 
     return (
         <header className="sticky top-0 z-40 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-4 py-3 shadow-2xs backdrop-blur-md sm:px-6">
-            <div className="min-w-0">
+            <div className="flex min-w-0 items-start gap-2">
+                <button type="button" onClick={onOpenMobileMenu} className="mt-0.5 inline-flex rounded-lg border border-slate-300 bg-white p-2 text-slate-700 hover:bg-slate-50 lg:hidden" aria-label="Open admin navigation"><FiMenu aria-hidden="true" /></button>
+                <div className="min-w-0">
                 <nav aria-label="Admin breadcrumbs" className="flex min-w-0 items-center gap-2 text-xs font-semibold text-slate-500">
                     <Link to="/adm/dashboard" className="font-bold hover:text-indigo-600">Admin Console</Link>
                     {pathSegments.slice(1).map((segment, index) => (
@@ -63,6 +65,7 @@ const AdminHeader = ({ userEmail, isSuperAdminUser, onLogout, onOpenCommandPalet
                     {health.loading ? <FaSyncAlt className="animate-spin" aria-hidden="true" /> : <FaCircle className="h-1.5 w-1.5" aria-hidden="true" />}
                     {statusLabel}
                 </button>
+                </div>
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3">
@@ -105,6 +108,7 @@ const AdminHeader = ({ userEmail, isSuperAdminUser, onLogout, onOpenCommandPalet
 const Admin = () => {
     const [authState, setAuthState] = useState({ checking: true, allowed: false, isSuperAdmin: false, user: null });
     const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+    const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
         try { return localStorage.getItem('adminSidebarCollapsed') === 'true'; } catch { return false; }
     });
@@ -143,11 +147,15 @@ const Admin = () => {
 
     return (
         <div className="admin min-h-screen bg-slate-50 font-sans text-slate-900">
-            <div className="admin__left">
+            {mobileNavigationOpen && <button type="button" className="admin-mobile-backdrop" aria-label="Close admin navigation" onClick={() => setMobileNavigationOpen(false)} />}
+            <div className={`admin__left ${mobileNavigationOpen ? 'admin__left--mobile-open' : ''}`}>
                 <Sidebar
                     onSidebarToggle={setSidebarCollapsed}
                     sidebarCollapsed={sidebarCollapsed}
-                    onOpenCommandPalette={() => setCommandPaletteOpen(true)}
+                    isSuperAdmin={authState.isSuperAdmin}
+                    mobileOpen={mobileNavigationOpen}
+                    onMobileClose={() => setMobileNavigationOpen(false)}
+                    onOpenCommandPalette={() => { setMobileNavigationOpen(false); setCommandPaletteOpen(true); }}
                 />
             </div>
             <div className={`admin__right ${sidebarCollapsed ? 'admin__right--sidebar-collapsed' : ''} flex min-h-screen flex-col bg-slate-50`}>
@@ -155,17 +163,18 @@ const Admin = () => {
                     userEmail={authState.user?.email}
                     isSuperAdminUser={authState.isSuperAdmin}
                     onLogout={handleLogout}
+                    onOpenMobileMenu={() => setMobileNavigationOpen(true)}
                     onOpenCommandPalette={() => setCommandPaletteOpen(true)}
                 />
                 <AdminReauthPrompt />
-                <AdminCommandPalette isOpen={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
+                <AdminCommandPalette isOpen={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} isSuperAdmin={authState.isSuperAdmin} />
                 <main className="mx-auto w-full max-w-7xl flex-1 p-3 sm:p-6">
                     <Routes>
                         <Route path="/" element={<Navigate to="dashboard" replace />} />
-                        <Route path="dashboard" element={<Dashboard />} />
+                        <Route path="dashboard" element={<Dashboard isSuperAdmin={authState.isSuperAdmin} />} />
                         <Route path="audit-logs" element={<AdminAuditLogs />} />
-                        <Route path="queues" element={<PlatformQueues />} />
-                        <Route path="tenants" element={<PlatformTenants />} />
+                        <Route path="queues" element={<PlatformQueues isSuperAdmin={authState.isSuperAdmin} />} />
+                        <Route path="tenants" element={<PlatformTenants isSuperAdmin={authState.isSuperAdmin} />} />
                         <Route path="settings" element={<Settings />} />
                         <Route path="user/ss" element={<UserEdit />} />
                         <Route path="users" element={<UsersManager />} />

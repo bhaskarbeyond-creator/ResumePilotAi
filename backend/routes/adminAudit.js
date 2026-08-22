@@ -78,7 +78,9 @@ router.get('/audit-logs/stats', async (req, res) => {
       sampleSize: totalRecent,
       highSeverityCount,
       failureCount,
-      successRate: totalRecent > 0 ? Math.round(((totalRecent - failureCount) / totalRecent) * 100) : 100,
+      // No records is not a 100% success rate; it is an unavailable rate with
+      // a zero-sized observed sample.
+      successRate: totalRecent > 0 ? Math.round(((totalRecent - failureCount) / totalRecent) * 100) : null,
       categoryCounts,
       topActors: Object.entries(actorCounts).map(([actor, count]) => ({ actor, count })).slice(0, 10),
     });

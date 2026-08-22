@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { reauthenticateUser } from '../../../firestore/dbOperations';
 import { loadAdminAiSettings, saveAdminAiSettings, testAdminAiProvider, fetchAdminAiModels, loadQuotaStats, saveQuotaLimits, resetQuota } from '../../../services/adminAiSettings';
 import fire from '../../../conf/fire';
+import AdminDialog from '../shared/AdminDialog';
 import {
     FaRobot, FaCheck, FaTimes, FaSpinner, FaKey, FaSlidersH,
     FaEye, FaEyeSlash, FaServer, FaBolt, FaGlobe, FaBrain,
@@ -81,6 +82,8 @@ const AiSettings = () => {
     const [quotaResetting, setQuotaResetting] = useState(null);
     const [quotaMessage, setQuotaMessage] = useState(null);
     const [resetTargetUid, setResetTargetUid] = useState('');
+    const [pendingQuotaReset, setPendingQuotaReset] = useState(null);
+    const [quotaResetConfirmation, setQuotaResetConfirmation] = useState('');
 
     // Refs for clearing timeouts
     const messageTimeouts = useRef({});
@@ -187,9 +190,15 @@ const AiSettings = () => {
         }
     };
 
-    const handleResetQuota = async (targetUid) => {
-        const label = targetUid ? `user ${targetUid.slice(0, 12)}...` : 'ALL users';
-        if (!window.confirm(`Reset AI quota for ${label}? This will restore their daily count to 0.`)) return;
+    const handleResetQuota = (targetUid) => {
+        setQuotaResetConfirmation('');
+        setPendingQuotaReset(targetUid || '__all__');
+    };
+
+    const executeQuotaReset = async () => {
+        const targetUid = pendingQuotaReset === '__all__' ? null : pendingQuotaReset;
+        const confirmationPhrase = targetUid ? `RESET ${targetUid}` : 'RESET ALL AI QUOTAS';
+        if (quotaResetConfirmation !== confirmationPhrase) return;
         setQuotaResetting(targetUid || '__all__');
         setQuotaMessage(null);
         try {
@@ -204,6 +213,8 @@ const AiSettings = () => {
         } finally {
             setQuotaResetting(null);
             setResetTargetUid('');
+            setPendingQuotaReset(null);
+            setQuotaResetConfirmation('');
             setTimeout(() => setQuotaMessage(null), 6000);
         }
     };
@@ -1419,6 +1430,25 @@ const AiSettings = () => {
                     )}
                 </div>
             </div>
+
+            <AdminDialog
+                open={pendingQuotaReset !== null}
+                onClose={() => quotaResetting === null && setPendingQuotaReset(null)}
+                dismissible={quotaResetting === null}
+                title="Reset AI quota"
+                description={pendingQuotaReset === '__all__' ? 'This resets daily AI usage counters for every account. Provider quotas and historical records are not deleted.' : 'This resets the selected account’s daily AI usage counter.'}
+                className="max-w-lg"
+            >
+                <div className="space-y-4 p-5">
+                    <label className="block text-sm font-bold text-slate-800">Type <span className="font-mono text-red-700">{pendingQuotaReset === '__all__' ? 'RESET ALL AI QUOTAS' : `RESET ${pendingQuotaReset || ''}`}</span> to confirm
+                        <input autoComplete="off" value={quotaResetConfirmation} onChange={event => setQuotaResetConfirmation(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-sm" />
+                    </label>
+                    <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
+                        <button type="button" disabled={quotaResetting !== null} onClick={() => setPendingQuotaReset(null)} className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700">Cancel</button>
+                        <button type="button" disabled={quotaResetting !== null || quotaResetConfirmation !== (pendingQuotaReset === '__all__' ? 'RESET ALL AI QUOTAS' : `RESET ${pendingQuotaReset || ''}`)} onClick={executeQuotaReset} className="inline-flex items-center gap-2 rounded-xl bg-red-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">{quotaResetting && <FaSpinner className="animate-spin" />}{quotaResetting ? 'Resetting…' : 'Confirm reset'}</button>
+                    </div>
+                </div>
+            </AdminDialog>
 
             {/* Save Button */}
             <div className="flex items-center justify-end pt-2">

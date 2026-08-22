@@ -12,7 +12,7 @@ import { FiActivity, FiRotateCw, FiCommand, FiClock, FiCpu } from 'react-icons/f
 
 const EMPTY_METRICS = normalizeAdminMetrics(null, null);
 
-const Dashboard = () => {
+const Dashboard = ({ isSuperAdmin = false }) => {
     const [metrics, setMetrics] = useState(EMPTY_METRICS);
     const [rows, setRows] = useState([]);
     const [platformHealth, setPlatformHealth] = useState(null);
@@ -76,8 +76,11 @@ const Dashboard = () => {
         { label: 'Downloads', value: metrics.downloads ?? 'Unavailable', icon: <FaDownload className="h-5 w-5 text-white" aria-hidden="true" />, tone: 'bg-orange-500' },
     ];
 
-    const healthScore = platformHealth?.healthScore ?? 100;
-    const isDegraded = platformHealth?.status === 'DEGRADED' || (platformHealth?.subsystems?.queue?.deadLetterJobs > 0);
+    const healthScore = Number.isFinite(platformHealth?.healthScore) ? platformHealth.healthScore : null;
+    const platformStatus = platformHealth?.status || 'UNAVAILABLE';
+    const databaseStatus = platformHealth?.subsystems?.database?.status || 'UNAVAILABLE';
+    const queueStatus = platformHealth?.subsystems?.queue?.status || 'UNAVAILABLE';
+    const tenancyRuntime = platformHealth?.subsystems?.tenancy || null;
 
     return (
         <div className="min-h-screen bg-slate-50 px-2 py-4 sm:px-4 sm:py-6 space-y-6">
@@ -85,7 +88,7 @@ const Dashboard = () => {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                        Super Admin Command Center
+                        {isSuperAdmin ? 'Super Admin Command Center' : 'Administrator Command Center'}
                     </h1>
                     <p className="mt-1 text-xs text-slate-500">
                         {loading ? 'Loading stored operational aggregates…' : loadedAt ? `Last refreshed ${loadedAt.toLocaleTimeString()} • SHA: ${platformHealth?.commitSha || 'production'}` : 'Not loaded'}
@@ -117,22 +120,23 @@ const Dashboard = () => {
                     <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
                         <div className="flex items-center gap-4">
                             <div className={`relative flex items-center justify-center h-16 w-16 rounded-2xl shrink-0 font-black text-xl text-white shadow-md ${
+                                healthScore === null ? 'bg-gradient-to-tr from-slate-600 to-slate-400' :
                                 healthScore >= 80 ? 'bg-gradient-to-tr from-emerald-600 to-teal-400' :
                                 healthScore >= 50 ? 'bg-gradient-to-tr from-amber-600 to-yellow-400' :
                                 'bg-gradient-to-tr from-red-600 to-rose-400'
                             }`}>
-                                {healthScore}
-                                <span className="text-[10px] absolute bottom-1 font-semibold opacity-80">/ 100</span>
+                                {healthScore ?? '—'}
+                                {healthScore !== null && <span className="text-[10px] absolute bottom-1 font-semibold opacity-80">/ 100</span>}
                             </div>
                             <div>
                                 <div className="flex items-center gap-2">
                                     <h2 className="text-base font-extrabold text-slate-900">Platform Health Index</h2>
                                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
-                                        platformHealth.status === 'HEALTHY' ? 'bg-emerald-100 text-emerald-800' :
-                                        platformHealth.status === 'DEGRADED' ? 'bg-amber-100 text-amber-800' :
-                                        'bg-red-100 text-red-800'
+                                        platformStatus === 'HEALTHY' ? 'bg-emerald-100 text-emerald-800' :
+                                        platformStatus === 'DEGRADED' ? 'bg-amber-100 text-amber-800' :
+                                        platformStatus === 'UNAVAILABLE' ? 'bg-slate-200 text-slate-700' : 'bg-red-100 text-red-800'
                                     }`}>
-                                        {platformHealth.status}
+                                        {platformStatus}
                                     </span>
                                 </div>
                                 <p className="text-xs text-slate-500 mt-1">
@@ -149,9 +153,9 @@ const Dashboard = () => {
                             <Link to="/adm/queues" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 transition">
                                 <FiActivity className="text-emerald-600" /> Queue Monitor
                             </Link>
-                            <Link to="/adm/tenants" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 transition">
+                            {isSuperAdmin && <Link to="/adm/tenants" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 transition">
                                 <FaServer className="text-violet-600" /> Tenants Directory
-                            </Link>
+                            </Link>}
                         </div>
                     </div>
 
@@ -160,29 +164,25 @@ const Dashboard = () => {
                         <div className="p-3 bg-slate-50 rounded-xl">
                             <span className="text-slate-400 uppercase text-[10px] font-extrabold">Database</span>
                             <div className="flex items-center gap-1.5 font-bold text-slate-800 mt-1">
-                                <FaCheckCircle className="text-emerald-500 h-3.5 w-3.5" /> Firestore Active
+                                {databaseStatus === 'HEALTHY' ? <FaCheckCircle className="text-emerald-500 h-3.5 w-3.5" /> : <FaExclamationCircle className="text-amber-500 h-3.5 w-3.5" />} {databaseStatus}
                             </div>
                         </div>
                         <div className="p-3 bg-slate-50 rounded-xl">
                             <span className="text-slate-400 uppercase text-[10px] font-extrabold">Queue & DLQ</span>
                             <div className="flex items-center gap-1.5 font-bold text-slate-800 mt-1">
-                                {platformHealth.subsystems?.queue?.deadLetterJobs > 0 ? (
-                                    <><FaExclamationCircle className="text-amber-500 h-3.5 w-3.5" /> {platformHealth.subsystems.queue.deadLetterJobs} DLQ items</>
-                                ) : (
-                                    <><FaCheckCircle className="text-emerald-500 h-3.5 w-3.5" /> Outbox Healthy</>
-                                )}
+                                {queueStatus === 'HEALTHY' ? <FaCheckCircle className="text-emerald-500 h-3.5 w-3.5" /> : <FaExclamationCircle className="text-amber-500 h-3.5 w-3.5" />} {queueStatus === 'UNAVAILABLE' ? 'Telemetry unavailable' : platformHealth.subsystems?.queue?.deadLetterJobs > 0 ? `${platformHealth.subsystems.queue.deadLetterJobs} DLQ items` : queueStatus}
                             </div>
                         </div>
                         <div className="p-3 bg-slate-50 rounded-xl">
                             <span className="text-slate-400 uppercase text-[10px] font-extrabold">Tenancy Runtime</span>
                             <div className="flex items-center gap-1.5 font-bold text-slate-800 mt-1">
-                                <FaServer className="text-indigo-500 h-3.5 w-3.5" /> Multi-Tenant Active
+                                <FaServer className="text-indigo-500 h-3.5 w-3.5" /> {tenancyRuntime?.dataPlaneConfigured === true ? `Configured (${tenancyRuntime.dataProvider || 'provider'})` : 'Unavailable'}
                             </div>
                         </div>
                         <div className="p-3 bg-slate-50 rounded-xl">
                             <span className="text-slate-400 uppercase text-[10px] font-extrabold">Node Runtime</span>
                             <div className="flex items-center gap-1.5 font-bold text-slate-800 mt-1">
-                                <FiCpu className="text-slate-500 h-3.5 w-3.5" /> {platformHealth.subsystems?.runtime?.nodeVersion} ({platformHealth.subsystems?.runtime?.platform})
+                                <FiCpu className="text-slate-500 h-3.5 w-3.5" /> {platformHealth.subsystems?.runtime?.nodeVersion || 'Unavailable'} {platformHealth.subsystems?.runtime?.platform ? `(${platformHealth.subsystems.runtime.platform})` : ''}
                             </div>
                         </div>
                     </div>

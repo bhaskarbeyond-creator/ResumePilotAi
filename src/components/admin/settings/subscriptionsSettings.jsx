@@ -566,7 +566,7 @@ class SubscriptionSetting extends Component {
         if (!inv) return;
         const printWindow = window.open('', '_blank');
         if (!printWindow) {
-            alert('Please allow popups to download/print your PDF tax invoice.');
+            this.setState({ orderErrorToast: 'Please allow popups to download or print this tax invoice.' });
             return;
         }
 
@@ -945,7 +945,7 @@ class SubscriptionSetting extends Component {
     handleExportGSTR1CSV() {
         const invoices = this.state.adminInvoicesList || [];
         if (invoices.length === 0) {
-            alert('No invoices found to export.');
+            this.setState({ orderErrorToast: 'No verified invoice records are available to export.' });
             return;
         }
 
@@ -1021,7 +1021,7 @@ class SubscriptionSetting extends Component {
     handlePrintInvoicePDF(inv) {
         const win = window.open('', '_blank');
         if (!win) {
-            alert('Please allow popups to view & print the PDF Tax Invoice.');
+            this.setState({ orderErrorToast: 'Please allow popups to view and print this tax invoice.' });
             return;
         }
 

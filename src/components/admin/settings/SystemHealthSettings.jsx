@@ -15,8 +15,7 @@ const SystemHealthSettings = () => {
     const loadSummary = async ({ diagnostics = false } = {}) => {
         if (diagnostics) setRunningDiagnostics(true); else setLoading(true);
         try {
-            const response = await fetch('/api/admin/health-summary', { cache: 'no-store' });
-            const result = await response.json().catch(() => ({}));
+            const { response, data: result } = await fetchAdminWithReauth('/api/admin/health-summary', { cache: 'no-store' });
             if (!response.ok || !result.success) throw new Error(result.error || 'Health summary unavailable.');
             setHealthConfig(current => ({ ...current, ...(result.settings || {}) }));
             setDiagnosticsResult(result);

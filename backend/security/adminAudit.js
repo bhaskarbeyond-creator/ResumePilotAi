@@ -181,6 +181,10 @@ function createAdminAuditMiddleware() {
       const isSensitiveRead = req.path.includes('/audit-logs') || req.path.includes('/firebase-service-account');
 
       if (isMutation || isSensitiveRead) {
+        // A route may synchronously write a richer domain audit record before
+        // responding. Do not duplicate that success record with a generic
+        // middleware event; denied/failed requests still flow through here.
+        if (res.locals?.adminAuditRecorded === true) return;
         const db = req.app?.get('db');
         const admin = req.app?.get('firebaseAdmin');
         const durationMs = Date.now() - startTime;

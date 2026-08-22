@@ -18,6 +18,7 @@ import {
     FiTag,
     FiBookOpen
 } from 'react-icons/fi';
+import AdminDialog from '../shared/AdminDialog';
 
 const BlogSettings = () => {
     const [settings, setSettings] = useState({
@@ -46,6 +47,8 @@ const BlogSettings = () => {
         description: '',
         color: '#6366f1'
     });
+    const [deleteCategoryTarget, setDeleteCategoryTarget] = useState(null);
+    const [deleteConfirmation, setDeleteConfirmation] = useState('');
 
     useEffect(() => {
         loadData();
@@ -152,20 +155,20 @@ const BlogSettings = () => {
         setShowCategoryForm(true);
     };
 
-    const handleCategoryDelete = async (categoryId, revision) => {
-        if (!window.confirm('Are you sure you want to delete this category? This action cannot be undone.')) {
-            return;
-        }
+    const handleCategoryDelete = (category) => {
+        setDeleteConfirmation('');
+        setDeleteCategoryTarget(category);
+    };
 
+    const executeCategoryDelete = async () => {
+        if (!deleteCategoryTarget || deleteConfirmation !== deleteCategoryTarget.name) return;
         setSaving(true);
-        
         try {
-            const result = await deleteBlogCategory(categoryId, revision);
-            
+            const result = await deleteBlogCategory(deleteCategoryTarget.id, deleteCategoryTarget.revision);
             if (result.success) {
                 showNotification('Category deleted successfully!');
-                
-                // Refresh categories
+                setDeleteCategoryTarget(null);
+                setDeleteConfirmation('');
                 const categoriesData = await listBlogCategories();
                 setCategories(categoriesData);
             } else {
@@ -453,7 +456,7 @@ const BlogSettings = () => {
                                                 <FiEdit3 className="w-4 h-4" />
                                             </button>
                                             <button
-                                                onClick={() => handleCategoryDelete(category.id, category.revision)}
+                                                onClick={() => handleCategoryDelete(category)}
                                                 className="p-2 text-gray-400 hover:text-red-600 transition-colors duration-200"
                                             >
                                                 <FiTrash2 className="w-4 h-4" />
@@ -522,6 +525,14 @@ const BlogSettings = () => {
                     </button>
                 </div>
             )}
+            <AdminDialog open={Boolean(deleteCategoryTarget)} onClose={() => !saving && setDeleteCategoryTarget(null)} dismissible={!saving} title="Delete blog category" description="This permanently removes the category only when no posts reference it." className="max-w-lg">
+                <div className="space-y-4 p-5">
+                    <label className="block text-sm font-bold text-slate-800">Type <span className="font-mono text-rose-700">{deleteCategoryTarget?.name}</span> to confirm
+                        <input autoComplete="off" value={deleteConfirmation} onChange={event => setDeleteConfirmation(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-sm" />
+                    </label>
+                    <div className="flex justify-end gap-3 border-t border-slate-100 pt-4"><button type="button" disabled={saving} onClick={() => setDeleteCategoryTarget(null)} className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700">Cancel</button><button type="button" disabled={saving || deleteConfirmation !== deleteCategoryTarget?.name} onClick={executeCategoryDelete} className="inline-flex items-center gap-2 rounded-xl bg-rose-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">{saving ? 'Deleting…' : 'Confirm delete'}</button></div>
+                </div>
+            </AdminDialog>
         </div>
     );
 };

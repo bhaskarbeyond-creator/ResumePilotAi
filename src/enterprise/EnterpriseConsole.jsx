@@ -249,7 +249,7 @@ function AppSwitcher({ platformAdmin }) {
             </Link>
 
             {platformAdmin && (
-              <Link to="/admin" className="enterprise-app-item" role="menuitem" onClick={() => setOpen(false)}>
+              <Link to="/adm/dashboard" className="enterprise-app-item" role="menuitem" onClick={() => setOpen(false)}>
                 <div className="enterprise-app-item-icon enterprise-app-admin-icon"><FiShield /></div>
                 <div>
                   <strong>Platform Admin Portal</strong>
@@ -345,7 +345,7 @@ function UserIdentityMenu({ user, roles, platformAdmin }) {
               <FiFileText /> <span>Resume Builder</span>
             </Link>
             {platformAdmin && (
-              <Link to="/admin" className="enterprise-identity-popover-item" role="menuitem" onClick={() => setOpen(false)}>
+              <Link to="/adm/dashboard" className="enterprise-identity-popover-item" role="menuitem" onClick={() => setOpen(false)}>
                 <FiShield /> <span>Platform Admin Panel</span>
               </Link>
             )}

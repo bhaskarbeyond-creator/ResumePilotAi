@@ -1,1090 +1,182 @@
-import React, { Component } from 'react';
-import { getAllUsers, getUserById, setUserAdminStatus, makeUserAdminByEmail, deleteUserByAdmin, updateUserSubscription, toggleUserSuspension, mergeUserAccounts, bulkMergeDuplicateUsers, getMergedUserBackups, restoreMergedUserAccount } from '../../../firestore/dbOperations';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  FaBan, FaCheck, FaChevronLeft, FaChevronRight, FaCrown, FaDownload,
+  FaEdit, FaEnvelope, FaExclamationTriangle, FaLock, FaSearch, FaShieldAlt,
+  FaSpinner, FaTrashAlt, FaUser, FaUsers,
+} from 'react-icons/fa';
 import fire from '../../../conf/fire';
-import { Navigate } from 'react-router-dom';
-import { FaUsers, FaSearch, FaCrown, FaUser, FaEnvelope, FaCheck, FaShieldAlt, FaUserPlus, FaSpinner, FaTimes, FaTrashAlt, FaEdit, FaBan, FaCheckCircle, FaLock, FaExclamationTriangle, FaLink, FaHistory, FaUndo, FaLayerGroup } from 'react-icons/fa';
+import {
+  deleteUserByAdmin,
+  setUserAdminStatus,
+  toggleUserSuspension,
+  updateUserSubscription,
+} from '../../../firestore/dbOperations';
+import { fetchAdminWithReauth } from '../../../services/adminReauth';
+import AdminDialog from '../shared/AdminDialog';
 
-class UsersManager extends Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            showUsers: false,
-            loadingUsers: false,
-            rows: null,
-            isRedirectToUser: false,
-            enteredUser: '',
-            newAdminEmail: '',
-            isAddingAdmin: false,
-            statusMessage: null,
-            userToDelete: null, // confirmation modal target
-            pendingUserAction: null,
-            isUserActionRunning: false,
-            isDeleting: false,
-            mergeTarget: null, // { keepId, deleteId, email } for merge modal
-            isMerging: false,
-            // Bulk merge & Backup restore state
-            showBulkMergeModal: false,
-            isBulkMerging: false,
-            showBackupsModal: false,
-            backupsList: [],
-            isLoadingBackups: false,
-            restoringBackupId: null,
-            /// Selected User data for edit redirect
-            selectedId: null,
-            selectedEmail: null,
-            selectedSubscription: null,
-            selectedSubscriptionEnd: null,
-            selectedIsA: false,
-            selectedSuspended: false,
-        };
-        this.createData = this.createData.bind(this);
-        this.showTable = this.showTable.bind(this);
-        this.redirectToUser = this.redirectToUser.bind(this);
-        this.findUserById = this.findUserById.bind(this);
-        this.handleInput = this.handleInput.bind(this);
-        this.handleToggleAdmin = this.handleToggleAdmin.bind(this);
-        this.handleAddAdminByEmail = this.handleAddAdminByEmail.bind(this);
-        this.handleTogglePlan = this.handleTogglePlan.bind(this);
-        this.handleToggleSuspension = this.handleToggleSuspension.bind(this);
-        this.handleConfirmDelete = this.handleConfirmDelete.bind(this);
-        this.isSelfAccount = this.isSelfAccount.bind(this);
-    }
+const PAGE_SIZE = 25;
 
-    exportUsersToCsv() {
-        if (!this.state.rows || this.state.rows.length === 0) {
-            this.setState({ statusMessage: { type: 'error', text: 'No user data is available for export.' } });
-            return;
-        }
-        const csvCell = value => {
-            let text = String(value ?? '').replaceAll('"', '""');
-            if (/^[=+\-@]/.test(text)) text = `'${text}`;
-            return `"${text}"`;
-        };
-        let csv = 'User ID,Email,Membership Plan,Is Admin,Suspended\n';
-        this.state.rows.forEach(row => {
-            csv += [row.id, row.email, row.subscription, row.isA, row.suspended].map(csvCell).join(',') + '\n';
-        });
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement('a');
-        anchor.href = url; anchor.download = 'admin-users-report.csv'; anchor.click();
-        URL.revokeObjectURL(url);
-    }
-
-    isSelfAccount(userId, email) {
-        const currentAuthUser = fire.auth().currentUser;
-        if (!currentAuthUser) return false;
-        return (userId && userId === currentAuthUser.uid) || (email && email.toLowerCase().trim() === currentAuthUser.email?.toLowerCase().trim());
-    }
-
-    createData(id, email, subscription, isA, suspended, rawElement) {
-        return { id, email, subscription, isA, suspended: Boolean(suspended), rawElement };
-    }
-
-    // Load users without mutating identities as a side effect.
-    async showTable() {
-        this.setState({ loadingUsers: true });
-        try {
-            const value = await getAllUsers();
-            const rows = (value || []).map((element) => this.createData(
-                element.userId || element.id,
-                element.email !== undefined ? element.email : 'Not Provided',
-                element.membership !== undefined ? element.membership : 'Basic',
-                Boolean(element.isA || ['ADMIN', 'SUPER_ADMIN'].includes(String(element.role || '').toUpperCase())),
-                Boolean(element.suspended),
-                element
-            ));
-            // Duplicate accounts require an explicit, provider-aware server operation.
-            // Never mutate or delete identities automatically while rendering a table.
-            this.setState({ rows, showUsers: true });
-        } catch (error) {
-            console.error('Error fetching users:', error);
-            this.setState({ statusMessage: { type: 'error', text: 'Unable to load users. Retry when the data service is available.' } });
-        } finally {
-            this.setState({ loadingUsers: false });
-        }
-    }
-
-    // Redirect to user edit page
-    redirectToUser(id, email, subscription, subscriptionEnd, isA, suspended) {
-        this.setState({
-            isRedirectToUser: true,
-            selectedId: id,
-            selectedEmail: email,
-            selectedSubscription: subscription,
-            selectedSubscriptionEnd: subscriptionEnd,
-            selectedIsA: isA,
-            selectedSuspended: suspended,
-        });
-    }
-
-    /// Find user by email or ID
-    findUserById() {
-        if (!this.state.enteredUser || !this.state.enteredUser.trim()) {
-            this.showTable();
-            return;
-        }
-        getUserById(this.state.enteredUser.trim()).then((element) => {
-            if (element === false || !element) {
-                this.setState({
-                    statusMessage: { type: 'error', text: `User "${this.state.enteredUser}" not found. Please verify the email address!` }
-                });
-            } else {
-                var Rows = [
-                    this.createData(
-                        element.userId,
-                        element.email !== undefined ? element.email : 'Not Provided',
-                        element.membership || 'Basic',
-                        Boolean(element.isA || ['ADMIN', 'SUPER_ADMIN'].includes(String(element.role || '').toUpperCase())),
-                        Boolean(element.suspended),
-                        element
-                    )
-                ];
-                this.setState({ showUsers: true, rows: Rows });
-            }
-        });
-    }
-
-    handleInput(inputName, value) {
-        this.setState({ [inputName]: value });
-    }
-
-    async handleToggleAdmin(userId, email, currentIsA, confirmed = false) {
-        const newIsA = !currentIsA;
-        if (!newIsA && this.isSelfAccount(userId, email)) {
-            this.setState({ statusMessage: { type: 'error', text: 'You cannot revoke your own Admin status to ensure one admin remains active.' } });
-            setTimeout(() => this.setState({ statusMessage: null }), 4000);
-            return;
-        }
-        if (!confirmed) {
-            this.setState({ pendingUserAction: {
-                title: newIsA ? 'Grant administrator access?' : 'Revoke administrator access?',
-                message: `${email} will ${newIsA ? 'receive privileged administrative access' : 'lose administrative access'}. The current target state will be verified before applying this change.`,
-                confirmLabel: newIsA ? 'Grant access' : 'Revoke access',
-                onConfirm: () => this.handleToggleAdmin(userId, email, currentIsA, true),
-            } });
-            return;
-        }
-        this.setState({ isUserActionRunning: true });
-        try {
-            const res = await setUserAdminStatus(userId, newIsA, currentIsA);
-            if (res.success) {
-                this.setState({
-                    statusMessage: { type: 'success', text: `Successfully ${newIsA ? 'granted' : 'revoked'} Admin access!` }
-                });
-                this.showTable();
-            } else {
-                this.setState({ statusMessage: { type: 'error', text: res.error } });
-            }
-        } catch (err) {
-            this.setState({ statusMessage: { type: 'error', text: err.message } });
-        } finally {
-            this.setState({ isUserActionRunning: false, pendingUserAction: null });
-            setTimeout(() => this.setState({ statusMessage: null }), 4000);
-        }
-    }
-
-    async handleToggleSuspension(userId, email, currentSuspended, confirmed = false) {
-        const newSuspended = !currentSuspended;
-        if (newSuspended && this.isSelfAccount(userId, email)) {
-            this.setState({
-                statusMessage: { type: 'error', text: 'Self admin account cannot be suspended to ensure at least one active administrator.' }
-            });
-            setTimeout(() => this.setState({ statusMessage: null }), 4000);
-            return;
-        }
-        if (!confirmed) {
-            this.setState({ pendingUserAction: {
-                title: newSuspended ? 'Suspend user account?' : 'Reactivate user account?',
-                message: `${email} will be ${newSuspended ? 'disabled and signed out of active sessions' : 'allowed to authenticate again'}. The current target state will be verified first.`,
-                confirmLabel: newSuspended ? 'Suspend account' : 'Reactivate account',
-                onConfirm: () => this.handleToggleSuspension(userId, email, currentSuspended, true),
-            } });
-            return;
-        }
-        this.setState({ isUserActionRunning: true });
-        try {
-            const res = await toggleUserSuspension(userId, newSuspended, currentSuspended);
-            if (res.success) {
-                this.setState({
-                    statusMessage: { type: 'success', text: res.message }
-                });
-                this.showTable();
-            } else {
-                this.setState({ statusMessage: { type: 'error', text: res.error } });
-            }
-        } catch (err) {
-            this.setState({ statusMessage: { type: 'error', text: err.message } });
-        } finally {
-            this.setState({ isUserActionRunning: false, pendingUserAction: null });
-            setTimeout(() => this.setState({ statusMessage: null }), 4000);
-        }
-    }
-
-    async handleTogglePlan(userId, email, currentPlan, confirmed = false) {
-        const newPlan = currentPlan === 'Premium' ? 'Basic' : 'Premium';
-        if (!confirmed) {
-            this.setState({ pendingUserAction: {
-                title: `Change membership to ${newPlan}?`,
-                message: `${email} will be changed from ${currentPlan} to ${newPlan}. Premium grants default to 12 months and this administrative entitlement change is audited.`,
-                confirmLabel: `Change to ${newPlan}`,
-                onConfirm: () => this.handleTogglePlan(userId, email, currentPlan, true),
-            } });
-            return;
-        }
-        this.setState({ isUserActionRunning: true });
-        try {
-            const res = await updateUserSubscription(userId, newPlan, currentPlan);
-            if (res.success) {
-                this.setState({
-                    statusMessage: { type: 'success', text: res.message }
-                });
-                this.showTable();
-            } else {
-                this.setState({ statusMessage: { type: 'error', text: res.error } });
-            }
-        } catch (err) {
-            this.setState({ statusMessage: { type: 'error', text: err.message } });
-        } finally {
-            this.setState({ isUserActionRunning: false, pendingUserAction: null });
-            setTimeout(() => this.setState({ statusMessage: null }), 4000);
-        }
-    }
-
-    async handleAddAdminByEmail(e, confirmed = false) {
-        e?.preventDefault?.();
-        const email = this.state.newAdminEmail.trim();
-        if (!email) return;
-        if (!confirmed) {
-            this.setState({ pendingUserAction: {
-                title: 'Grant administrator access?',
-                message: `${email} will receive privileged administrative access. The backend requires role-management permission and audits the change.`,
-                confirmLabel: 'Grant access',
-                onConfirm: () => this.handleAddAdminByEmail(null, true),
-            } });
-            return;
-        }
-        this.setState({ isAddingAdmin: true, isUserActionRunning: true, statusMessage: null });
-        try {
-            const res = await makeUserAdminByEmail(email);
-            if (res.success) {
-                this.setState({
-                    statusMessage: { type: 'success', text: res.message },
-                    newAdminEmail: ''
-                });
-                this.showTable();
-            } else {
-                this.setState({ statusMessage: { type: 'error', text: res.error } });
-            }
-        } catch (err) {
-            this.setState({ statusMessage: { type: 'error', text: err.message } });
-        } finally {
-            this.setState({ isAddingAdmin: false, isUserActionRunning: false, pendingUserAction: null });
-            setTimeout(() => this.setState({ statusMessage: null }), 5000);
-        }
-    }
-
-    async handleConfirmDelete() {
-        if (!this.state.userToDelete) return;
-        if (this.isSelfAccount(this.state.userToDelete.id, this.state.userToDelete.email)) {
-            this.setState({
-                statusMessage: { type: 'error', text: 'You cannot delete your own active admin account.' },
-                userToDelete: null
-            });
-            setTimeout(() => this.setState({ statusMessage: null }), 4000);
-            return;
-        }
-        this.setState({ isDeleting: true });
-        try {
-            const res = await deleteUserByAdmin(this.state.userToDelete.id, this.state.userToDelete.email);
-            if (res.success) {
-                this.setState({
-                    statusMessage: { type: 'success', text: res.message || `User ${this.state.userToDelete.email} deleted successfully.` },
-                    userToDelete: null
-                });
-                this.showTable();
-            } else {
-                this.setState({ statusMessage: { type: 'error', text: res.error }, userToDelete: null });
-            }
-        } catch (err) {
-            this.setState({ statusMessage: { type: 'error', text: err.message }, userToDelete: null });
-        } finally {
-            this.setState({ isDeleting: false });
-            setTimeout(() => this.setState({ statusMessage: null }), 4000);
-        }
-    }
-
-    // Compute duplicate emails from current rows
-    getDuplicateEmails() {
-        if (!this.state.rows) return new Set();
-        const emailCount = {};
-        this.state.rows.forEach(row => {
-            if (row.email && row.email !== 'Not Provided') {
-                const key = row.email.toLowerCase().trim();
-                emailCount[key] = (emailCount[key] || 0) + 1;
-            }
-        });
-        return new Set(Object.keys(emailCount).filter(e => emailCount[e] > 1));
-    }
-
-    // Handle merge: keep the account with higher-tier membership, delete the other
-    async handleMergeAccounts() {
-        if (!this.state.mergeTarget) return;
-        const { keepId, deleteId } = this.state.mergeTarget;
-        this.setState({ isMerging: true });
-        try {
-            const res = await mergeUserAccounts(keepId, deleteId);
-            if (res.success) {
-                this.setState({
-                    statusMessage: { type: 'success', text: res.message },
-                    mergeTarget: null,
-                });
-                this.showTable();
-            } else {
-                this.setState({ statusMessage: { type: 'error', text: res.error }, mergeTarget: null });
-            }
-        } catch (err) {
-            this.setState({ statusMessage: { type: 'error', text: err.message }, mergeTarget: null });
-        } finally {
-            this.setState({ isMerging: false });
-            setTimeout(() => this.setState({ statusMessage: null }), 5000);
-        }
-    }
-
-    // Fetch merged account backups for restore history
-    async loadBackups() {
-        this.setState({ isLoadingBackups: true });
-        try {
-            const backups = await getMergedUserBackups();
-            this.setState({ backupsList: backups });
-        } catch (e) {
-            console.error('Error loading backups:', e);
-        } finally {
-            this.setState({ isLoadingBackups: false });
-        }
-    }
-
-    // Execute bulk merge of all duplicate accounts
-    async handleExecuteBulkMerge() {
-        this.setState({ isBulkMerging: true, statusMessage: null });
-        try {
-            const res = await bulkMergeDuplicateUsers();
-            if (res.success) {
-                this.setState({
-                    statusMessage: { type: 'success', text: res.message },
-                    showBulkMergeModal: false,
-                });
-                this.showTable();
-                this.loadBackups();
-            } else {
-                this.setState({ statusMessage: { type: 'error', text: res.error }, showBulkMergeModal: false });
-            }
-        } catch (err) {
-            this.setState({ statusMessage: { type: 'error', text: err.message }, showBulkMergeModal: false });
-        } finally {
-            this.setState({ isBulkMerging: false });
-            setTimeout(() => this.setState({ statusMessage: null }), 6000);
-        }
-    }
-
-    // Restore a merged account from backup
-    async handleRestoreAccount(backupId) {
-        this.setState({ restoringBackupId: backupId });
-        try {
-            const res = await restoreMergedUserAccount(backupId);
-            if (res.success) {
-                this.setState({ statusMessage: { type: 'success', text: res.message } });
-                this.showTable();
-                this.loadBackups();
-            } else {
-                this.setState({ statusMessage: { type: 'error', text: res.error } });
-            }
-        } catch (err) {
-            this.setState({ statusMessage: { type: 'error', text: err.message } });
-        } finally {
-            this.setState({ restoringBackupId: null });
-            setTimeout(() => this.setState({ statusMessage: null }), 5000);
-        }
-    }
-
-    componentDidMount() {
-        this.showTable();
-        this.loadBackups();
-    }
-
-    render() {
-        return (
-            <div className="min-h-screen bg-slate-50 p-4 sm:p-6">
-                {this.state.isRedirectToUser && (
-                    <Navigate
-                        to="/adm/user/ss"
-                        state={{
-                            userId: this.state.selectedId,
-                            email: this.state.selectedEmail,
-                            membership: this.state.selectedSubscription,
-                            membershipEnd: this.state.selectedSubscriptionEnd,
-                            isA: this.state.selectedIsA,
-                            suspended: this.state.selectedSuspended,
-                        }}
-                        replace
-                    />
-                )}
-
-                {this.state.pendingUserAction && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm" role="presentation" onKeyDown={event => { if (event.key === 'Escape' && !this.state.isUserActionRunning) this.setState({ pendingUserAction: null }); }}>
-                        <div role="alertdialog" aria-modal="true" aria-labelledby="user-action-title" aria-describedby="user-action-message" className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-2xl">
-                            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 text-amber-700"><FaExclamationTriangle aria-hidden="true" /></div>
-                            <h2 id="user-action-title" className="text-center text-lg font-bold text-slate-900">{this.state.pendingUserAction.title}</h2>
-                            <p id="user-action-message" className="mt-2 text-center text-sm text-slate-600">{this.state.pendingUserAction.message}</p>
-                            <div className="mt-6 flex gap-3">
-                                <button type="button" autoFocus onClick={() => this.setState({ pendingUserAction: null })} disabled={this.state.isUserActionRunning} className="flex-1 rounded-lg bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-700 disabled:opacity-50">Cancel</button>
-                                <button type="button" onClick={this.state.pendingUserAction.onConfirm} disabled={this.state.isUserActionRunning} className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-amber-700 px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50">
-                                    {this.state.isUserActionRunning && <FaSpinner className="animate-spin" aria-hidden="true" />}{this.state.pendingUserAction.confirmLabel}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Delete Confirmation Modal */}
-                {this.state.userToDelete && (
-                    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="presentation" onKeyDown={event => { if (event.key === 'Escape' && !this.state.isDeleting) this.setState({ userToDelete: null }); }}>
-                        <div role="alertdialog" aria-modal="true" aria-labelledby="delete-user-title" aria-describedby="delete-user-message" className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in duration-200">
-                            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600 mb-4 mx-auto">
-                                <FaTrashAlt className="w-6 h-6" />
-                            </div>
-                            <h3 id="delete-user-title" className="text-lg font-bold text-slate-900 text-center mb-2">Delete User Account</h3>
-                            <p id="delete-user-message" className="text-sm text-slate-500 text-center mb-6">
-                                Are you sure you want to permanently delete account <strong className="text-slate-800">{this.state.userToDelete.email}</strong>? This action cannot be undone.
-                            </p>
-                            <div className="flex items-center space-x-3">
-                                <button
-                                    type="button"
-                                    autoFocus
-                                    onClick={() => this.setState({ userToDelete: null })}
-                                    className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-lg transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={this.handleConfirmDelete}
-                                    disabled={this.state.isDeleting}
-                                    className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center space-x-2"
-                                >
-                                    {this.state.isDeleting ? <FaSpinner className="w-4 h-4 animate-spin" /> : <FaTrashAlt className="w-4 h-4" />}
-                                    <span>Delete Account</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Merge Confirmation Modal */}
-                {this.state.mergeTarget && (
-                    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
-                            <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 mb-4 mx-auto">
-                                <FaLink className="w-6 h-6" />
-                            </div>
-                            <h3 className="text-lg font-bold text-slate-900 text-center mb-2">Merge Duplicate Accounts</h3>
-                            <p className="text-sm text-slate-500 text-center mb-4">
-                                Two accounts found for <strong className="text-slate-800">{this.state.mergeTarget.keepEmail}</strong>. The merge will combine membership data and delete the duplicate.
-                            </p>
-                            <div className="grid grid-cols-2 gap-3 mb-6">
-                                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-center">
-                                    <div className="text-[10px] font-bold text-emerald-700 uppercase mb-1">✅ Keeping</div>
-                                    <div className="text-xs font-mono text-slate-600 mb-1">{this.state.mergeTarget.keepId?.slice(0, 12)}...</div>
-                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${this.state.mergeTarget.keepPlan === 'Premium' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}`}>
-                                        {this.state.mergeTarget.keepPlan} {this.state.mergeTarget.keepIsA ? '+ Admin' : ''}
-                                    </span>
-                                </div>
-                                <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
-                                    <div className="text-[10px] font-bold text-red-700 uppercase mb-1">🗑️ Deleting</div>
-                                    <div className="text-xs font-mono text-slate-600 mb-1">{this.state.mergeTarget.deleteId?.slice(0, 12)}...</div>
-                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${this.state.mergeTarget.deletePlan === 'Premium' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}`}>
-                                        {this.state.mergeTarget.deletePlan} {this.state.mergeTarget.deleteIsA ? '+ Admin' : ''}
-                                    </span>
-                                </div>
-                            </div>
-                            <p className="text-[11px] text-slate-400 text-center mb-4">
-                                Admin status, premium membership, and expiry dates will be merged into the kept account.
-                            </p>
-                            <div className="flex items-center space-x-3">
-                                <button
-                                    type="button"
-                                    onClick={() => this.setState({ mergeTarget: null })}
-                                    className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-lg transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => this.handleMergeAccounts()}
-                                    disabled={this.state.isMerging}
-                                    className="flex-1 px-4 py-2.5 bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center space-x-2"
-                                >
-                                    {this.state.isMerging ? <FaSpinner className="w-4 h-4 animate-spin" /> : <FaLink className="w-4 h-4" />}
-                                    <span>Merge Accounts</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Bulk Merge Confirmation Modal */}
-                {this.state.showBulkMergeModal && (
-                    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in duration-200">
-                            <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 mb-4 mx-auto">
-                                <FaLayerGroup className="w-6 h-6" />
-                            </div>
-                            <h3 className="text-lg font-bold text-slate-900 text-center mb-2">Bulk Merge All Duplicates</h3>
-                            <p className="text-sm text-slate-500 text-center mb-4">
-                                Found <strong className="text-orange-600 font-bold">{this.getDuplicateEmails().size} email address(es)</strong> with duplicate accounts.
-                            </p>
-                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800 mb-6 space-y-1">
-                                <p className="font-semibold">🛡️ Safe Restore System:</p>
-                                <ul className="list-disc list-inside space-y-0.5 text-amber-700">
-                                    <li>Primary accounts (Premium/Admin) are automatically preserved.</li>
-                                    <li>Complete backup snapshots are saved before deletion.</li>
-                                    <li>You can view & restore merged accounts anytime from <strong>Backup History</strong>.</li>
-                                </ul>
-                            </div>
-                            <div className="flex items-center space-x-3">
-                                <button
-                                    type="button"
-                                    onClick={() => this.setState({ showBulkMergeModal: false })}
-                                    className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-lg transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => this.handleExecuteBulkMerge()}
-                                    disabled={this.state.isBulkMerging}
-                                    className="flex-1 px-4 py-2.5 bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center space-x-2 shadow-sm"
-                                >
-                                    {this.state.isBulkMerging ? <FaSpinner className="w-4 h-4 animate-spin" /> : <FaLayerGroup className="w-4 h-4" />}
-                                    <span>Start Bulk Merge</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Backup & Restore History Modal */}
-                {this.state.showBackupsModal && (
-                    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-xl max-w-3xl w-full p-6 shadow-2xl border border-slate-200 max-h-[85vh] flex flex-col animate-in fade-in zoom-in duration-200">
-                            <div className="flex items-center justify-between border-b border-slate-200 pb-4 mb-4">
-                                <div className="flex items-center space-x-3">
-                                    <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600">
-                                        <FaHistory className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-lg font-bold text-slate-900">Merged Account Backup &amp; Restore History</h3>
-                                        <p className="text-xs text-slate-500">Safely restore any user account that was previously merged or deleted</p>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => this.setState({ showBackupsModal: false })}
-                                    className="p-2 text-slate-400 hover:text-slate-600 rounded-lg"
-                                >
-                                    <FaTimes className="w-5 h-5" />
-                                </button>
-                            </div>
-
-                            <div className="overflow-y-auto flex-1 pr-1">
-                                {this.state.isLoadingBackups ? (
-                                    <div className="text-center py-12 text-slate-400">
-                                        <FaSpinner className="w-6 h-6 animate-spin mx-auto mb-2 text-indigo-600" />
-                                        <p className="text-sm">Loading backup snapshots...</p>
-                                    </div>
-                                ) : this.state.backupsList.length === 0 ? (
-                                    <div className="text-center py-12 text-slate-400">
-                                        <FaHistory className="w-10 h-10 mx-auto mb-2 text-slate-300" />
-                                        <p className="text-sm font-medium text-slate-600">No Merged Backups Found</p>
-                                        <p className="text-xs text-slate-400">When duplicate accounts are merged, backup snapshots will appear here for safe restore.</p>
-                                    </div>
-                                ) : (
-                                    <table className="min-w-full divide-y divide-slate-200 text-xs">
-                                        <thead className="bg-slate-50">
-                                            <tr>
-                                                <th scope="col" className="px-3 py-2 text-left font-semibold text-slate-500">Email</th>
-                                                <th scope="col" className="px-3 py-2 text-left font-semibold text-slate-500">Original UID</th>
-                                                <th scope="col" className="px-3 py-2 text-center font-semibold text-slate-500">Reason</th>
-                                                <th scope="col" className="px-3 py-2 text-center font-semibold text-slate-500">Plan</th>
-                                                <th scope="col" className="px-3 py-2 text-center font-semibold text-slate-500">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-100 bg-white">
-                                            {this.state.backupsList.map((backup) => (
-                                                <tr key={backup.id} className="hover:bg-slate-50 transition-colors">
-                                                    <td className="px-3 py-3 font-medium text-slate-900">{backup.email || '—'}</td>
-                                                    <td className="px-3 py-3 font-mono text-slate-500">{backup.originalUserId ? `${backup.originalUserId.slice(0, 10)}...` : '—'}</td>
-                                                    <td className="px-3 py-3 text-center">
-                                                        <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${backup.status === 'deleted' ? 'bg-rose-100 text-rose-800' : 'bg-orange-100 text-orange-800'}`}>
-                                                            {backup.status === 'deleted' ? '🗑️ DELETED' : '⚡ MERGED'}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-3 py-3 text-center">
-                                                        <span className={`px-2 py-0.5 rounded-full font-semibold text-[10px] ${backup.membership === 'Premium' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700'}`}>
-                                                            {backup.membership || 'Basic'}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-3 py-3 text-center">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => this.handleRestoreAccount(backup.id)}
-                                                            disabled={this.state.restoringBackupId === backup.id}
-                                                            className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-lg border border-indigo-200 transition-colors flex items-center justify-center space-x-1 mx-auto"
-                                                            title="Restore this account back to active users list"
-                                                        >
-                                                            {this.state.restoringBackupId === backup.id ? <FaSpinner className="w-3 h-3 animate-spin" /> : <FaUndo className="w-3 h-3 text-indigo-600" />}
-                                                            <span>Restore</span>
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                )}
-                            </div>
-
-                            <div className="pt-4 border-t border-slate-200 mt-4 flex justify-between items-center text-xs text-slate-400">
-                                <span>Total Backups: {this.state.backupsList.length}</span>
-                                <button
-                                    onClick={() => this.setState({ showBackupsModal: false })}
-                                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg"
-                                >
-                                    Close
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Header Section */}
-                <div className="bg-white border border-slate-200 rounded-lg p-6 mb-6">
-                    <div className="flex items-center justify-between space-x-3 mb-4">
-                        <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                                <FaUsers className="w-5 h-5 text-blue-600" />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl font-bold text-slate-900">Users & Admin Manager</h1>
-                                <p className="text-sm text-slate-500">Manage user accounts, roles, subscription plans, suspension, and permissions</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <button
-                                onClick={() => {
-                                    this.loadBackups();
-                                    this.setState({ showBackupsModal: true });
-                                }}
-                                className="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold rounded-lg shadow-xs transition-colors flex items-center space-x-1.5"
-                            >
-                                <FaHistory className="w-3.5 h-3.5 text-indigo-600" />
-                                <span>Backup History</span>
-                                {this.state.backupsList.length > 0 && (
-                                    <span className="px-1.5 py-0.2 bg-indigo-600 text-white rounded-full text-[10px] font-bold">
-                                        {this.state.backupsList.length}
-                                    </span>
-                                )}
-                            </button>
-                            <button
-                                onClick={() => this.exportUsersToCsv()}
-                                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors">
-                                Export CSV Report
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Quick Stats */}
-                    <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
-                        <div className="bg-slate-50 rounded-lg p-4">
-                            <div className="flex items-center space-x-2">
-                                <FaUser className="w-4 h-4 text-slate-600" />
-                                <span className="text-sm text-slate-600">Total Users</span>
-                            </div>
-                            <p className="text-lg font-semibold text-slate-900">{this.state.rows ? this.state.rows.length : '—'}</p>
-                        </div>
-                        <div className="bg-slate-50 rounded-lg p-4">
-                            <div className="flex items-center space-x-2">
-                                <FaShieldAlt className="w-4 h-4 text-red-600" />
-                                <span className="text-sm text-slate-600">Administrators</span>
-                            </div>
-                            <p className="text-lg font-semibold text-slate-900">
-                                {this.state.rows ? this.state.rows.filter(row => row.isA).length : '—'}
-                            </p>
-                        </div>
-                        <div className="bg-slate-50 rounded-lg p-4">
-                            <div className="flex items-center space-x-2">
-                                <FaCrown className="w-4 h-4 text-amber-500" />
-                                <span className="text-sm text-slate-600">Premium Users</span>
-                            </div>
-                            <p className="text-lg font-semibold text-slate-900">
-                                {this.state.rows ? this.state.rows.filter(row => row.subscription === 'Premium').length : '—'}
-                            </p>
-                        </div>
-                        <div className="bg-slate-50 rounded-lg p-4">
-                            <div className="flex items-center space-x-2">
-                                <FaBan className="w-4 h-4 text-rose-600" />
-                                <span className="text-sm text-slate-600">Suspended Users</span>
-                            </div>
-                            <p className="text-lg font-semibold text-rose-700">
-                                {this.state.rows ? this.state.rows.filter(row => row.suspended).length : '—'}
-                            </p>
-                        </div>
-                        <div className={`rounded-lg p-4 transition-all ${this.getDuplicateEmails().size > 0 ? 'bg-orange-50/80 border border-orange-200' : 'bg-slate-50'}`}>
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center space-x-2">
-                                    <FaExclamationTriangle className={`w-4 h-4 ${this.getDuplicateEmails().size > 0 ? 'text-orange-500' : 'text-emerald-500'}`} />
-                                    <span className="text-sm text-slate-600">Duplicates</span>
-                                </div>
-                                {this.getDuplicateEmails().size > 0 && (
-                                    <button
-                                        onClick={() => this.setState({ showBulkMergeModal: true })}
-                                        className="px-2 py-0.5 text-[10px] font-bold bg-orange-600 hover:bg-orange-700 text-white rounded transition-colors flex items-center space-x-1 shadow-xs"
-                                        title="Bulk merge all duplicate accounts safely"
-                                    >
-                                        <FaLayerGroup className="w-2.5 h-2.5" />
-                                        <span>Bulk Merge</span>
-                                    </button>
-                                )}
-                            </div>
-                            <p className={`text-lg font-semibold mt-1 ${this.getDuplicateEmails().size > 0 ? 'text-orange-700' : 'text-slate-900'}`}>
-                                {this.getDuplicateEmails().size > 0 ? `${this.getDuplicateEmails().size} email(s)` : 'None'}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Status Message */}
-                {this.state.statusMessage && (
-                    <div role={this.state.statusMessage.type === 'success' ? 'status' : 'alert'} aria-live="polite" className={`p-4 rounded-lg flex items-center justify-between text-sm mb-6 ${
-                        this.state.statusMessage.type === 'success' ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-red-50 border border-red-200 text-red-800'
-                    }`}>
-                        <div className="flex items-center space-x-2">
-                            {this.state.statusMessage.type === 'success' ? <FaCheck className="text-emerald-600" /> : <FaTimes className="text-red-600" />}
-                            <span>{this.state.statusMessage.text}</span>
-                        </div>
-                    </div>
-                )}
-
-                {/* Grant New Admin Section */}
-                <div className="bg-white border border-red-200 rounded-lg p-6 mb-6">
-                    <div className="flex items-center space-x-3 mb-4">
-                        <div className="w-8 h-8 bg-red-50 rounded-lg flex items-center justify-center">
-                            <FaUserPlus className="w-4 h-4 text-red-600" />
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-semibold text-slate-900">Grant Admin Privileges</h3>
-                            <p className="text-sm text-slate-500">Enter a user's email address to assign them Administrator access</p>
-                        </div>
-                    </div>
-
-                    <form onSubmit={this.handleAddAdminByEmail} className="flex flex-col sm:flex-row gap-3">
-                        <div className="flex-1 relative">
-                            <FaEnvelope className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-                            <input
-                                type="email"
-                                value={this.state.newAdminEmail}
-                                onChange={(e) => this.handleInput('newAdminEmail', e.target.value)}
-                                placeholder="Enter user email (e.g. bhaskar.beyond@gmail.com)"
-                                className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
-                                required
-                            />
-                        </div>
-                        <button
-                            type="submit"
-                            disabled={this.state.isAddingAdmin}
-                            className="flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200 shadow-sm"
-                        >
-                            {this.state.isAddingAdmin ? <FaSpinner className="w-4 h-4 animate-spin" /> : <FaShieldAlt className="w-4 h-4" />}
-                            <span>Make Admin</span>
-                        </button>
-                    </form>
-                </div>
-
-                {/* Search Section */}
-                <div className="bg-white border border-slate-200 rounded-lg p-6 mb-6">
-                    <div className="flex items-center space-x-3 mb-4">
-                        <div className="w-8 h-8 bg-slate-50 rounded-lg flex items-center justify-center">
-                            <FaSearch className="w-4 h-4 text-slate-600" />
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-semibold text-slate-900">Find User</h3>
-                            <p className="text-sm text-slate-500">Search for a specific user by email or user ID</p>
-                        </div>
-                    </div>
-                    
-                    <div className="flex flex-col sm:flex-row gap-3">
-                        <div className="flex-1 relative">
-                            <FaEnvelope className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-                            <input
-                                type="search"
-                                aria-label="User email or UID"
-                                value={this.state.enteredUser}
-                                onChange={(event) => this.handleInput('enteredUser', event.target.value)}
-                                placeholder="Enter exact user email or UID"
-                                className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                            />
-                        </div>
-                        <button
-                            onClick={() => this.findUserById()}
-                            className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200">
-                            <FaSearch className="w-4 h-4" />
-                            <span>Search User</span>
-                        </button>
-                    </div>
-                </div>
-
-                {/* Users Table Section */}
-                <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
-                    <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-                        <div>
-                            <h3 className="text-lg font-semibold text-slate-900">Registered Users</h3>
-                            <p className="text-sm text-slate-500">Perform user edits, plan upgrades, account suspension/activation, or account deletion</p>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => this.showTable()}
-                            disabled={this.state.loadingUsers}
-                            className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors flex items-center space-x-1 disabled:opacity-50"
-                        >
-                            {this.state.loadingUsers ? <FaSpinner className="w-4 h-4 animate-spin" aria-hidden="true" /> : <FaUsers className="w-4 h-4" aria-hidden="true" />}
-                            <span>{this.state.loadingUsers ? 'Refreshing…' : 'Refresh Users'}</span>
-                        </button>
-                    </div>
-
-                    {this.state.loadingUsers && !this.state.showUsers ? (
-                        <div className="py-12 text-center text-sm text-slate-500" role="status"><FaSpinner className="mx-auto mb-3 animate-spin" aria-hidden="true" />Loading users…</div>
-                    ) : !this.state.showUsers ? (
-                        <div className="text-center py-12">
-                            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <FaUsers className="w-8 h-8 text-slate-400" />
-                            </div>
-                            <h4 className="text-lg font-medium text-slate-900 mb-2">Load User Data</h4>
-                            <p className="text-sm text-slate-500 mb-6">Click the button below to fetch and display all users</p>
-                            <button
-                                onClick={() => this.showTable()}
-                                className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200 mx-auto">
-                                <FaUsers className="w-4 h-4" />
-                                <span>Load All Users</span>
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full">
-                                <thead className="bg-slate-50">
-                                    <tr>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">User ID</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Email</th>
-                                        <th scope="col" className="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                                        <th scope="col" className="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Role</th>
-                                        <th scope="col" className="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Subscription</th>
-                                        <th scope="col" className="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-slate-200">
-                                    {this.state.rows?.length === 0 && <tr><td colSpan="6" className="px-6 py-10 text-center text-sm text-slate-500">No users matched this view.</td></tr>}
-                                    {this.state.rows?.map((row, index) => {
-                                        const isSelf = this.isSelfAccount(row.id, row.email);
-                                        const isDuplicate = row.email && row.email !== 'Not Provided' && this.getDuplicateEmails().has(row.email.toLowerCase().trim());
-                                        return (
-                                            <tr key={row.id || index} className={`hover:bg-slate-50 transition-colors duration-150 ${row.suspended ? 'bg-rose-50/30' : ''} ${isDuplicate ? 'bg-orange-50/60 border-l-4 border-l-orange-400' : ''}`}>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="flex items-center">
-                                                        <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center mr-3">
-                                                            <FaUser className="w-3 h-3 text-slate-600" />
-                                                        </div>
-                                                        <div className="text-sm font-medium text-slate-900 font-mono">
-                                                            {row.id ? (row.id.length > 12 ? row.id.slice(0, 10) + '...' : row.id) : '—'}
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-slate-900 font-medium flex items-center space-x-2 flex-wrap gap-1">
-                                                        <span>{row.email}</span>
-                                                        {isSelf && (
-                                                            <span className="px-2 py-0.5 text-[10px] bg-blue-100 text-blue-700 font-semibold rounded-md border border-blue-200">
-                                                                (You)
-                                                            </span>
-                                                        )}
-                                                        {isDuplicate && (
-                                                            <span className="px-2 py-0.5 text-[10px] bg-orange-100 text-orange-700 font-bold rounded-md border border-orange-300 flex items-center gap-0.5">
-                                                                <FaExclamationTriangle className="w-2.5 h-2.5" /> DUPLICATE
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                                                        row.suspended ? 'bg-rose-100 text-rose-800 border border-rose-200' : 'bg-emerald-100 text-emerald-800'
-                                                    }`}>
-                                                        {row.suspended ? <FaBan className="w-3 h-3 mr-1 text-rose-600" /> : <FaCheck className="w-3 h-3 mr-1 text-emerald-600" />}
-                                                        {row.suspended ? 'Suspended' : 'Active'}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                                                        row.isA ? 'bg-red-100 text-red-800' : 'bg-slate-100 text-slate-700'
-                                                    }`}>
-                                                        {row.isA ? <FaShieldAlt className="w-3 h-3 mr-1 text-red-600" /> : <FaUser className="w-3 h-3 mr-1 text-slate-500" />}
-                                                        {row.isA ? 'Admin' : 'User'}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                                                        row.subscription === 'Premium'
-                                                            ? 'bg-amber-100 text-amber-800'
-                                                            : 'bg-blue-100 text-blue-800'
-                                                    }`}>
-                                                        {row.subscription === 'Premium' && <FaCrown className="w-3 h-3 mr-1" />}
-                                                        {row.subscription}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                    <div className="flex items-center justify-center space-x-2">
-                                                        {/* Toggle Suspension Action (Protected for Self) */}
-                                                        {isSelf ? (
-                                                            <span
-                                                                className="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-slate-100 text-slate-400 cursor-not-allowed flex items-center space-x-1 border border-slate-200"
-                                                                title="Self admin account cannot be suspended"
-                                                            >
-                                                                <FaLock className="w-3 h-3 text-slate-400" />
-                                                                <span>Suspend</span>
-                                                            </span>
-                                                        ) : (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => this.handleToggleSuspension(row.id, row.email, row.suspended)}
-                                                                className={`px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center space-x-1 ${
-                                                                    row.suspended ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200' : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'
-                                                                }`}
-                                                                title={row.suspended ? "Reactivate user account" : "Suspend user account temporarily"}
-                                                            >
-                                                                {row.suspended ? <FaCheckCircle className="w-3 h-3 text-emerald-600" /> : <FaBan className="w-3 h-3 text-rose-600" />}
-                                                                <span>{row.suspended ? 'Activate' : 'Suspend'}</span>
-                                                            </button>
-                                                        )}
-
-                                                        {/* Toggle Admin Role Action (Protected for Self) */}
-                                                        {isSelf ? (
-                                                            <span
-                                                                className="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-slate-100 text-slate-400 cursor-not-allowed flex items-center space-x-1 border border-slate-200"
-                                                                title="Self admin privileges cannot be revoked"
-                                                            >
-                                                                <FaLock className="w-3 h-3 text-slate-400" />
-                                                                <span>Revoke Admin</span>
-                                                            </span>
-                                                        ) : (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => this.handleToggleAdmin(row.id, row.email, row.isA)}
-                                                                className={`px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center space-x-1 ${
-                                                                    row.isA ? 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                                                                }`}
-                                                                title={row.isA ? "Revoke Admin Status" : "Grant Admin Status"}
-                                                            >
-                                                                <FaShieldAlt className="w-3 h-3" />
-                                                                <span>{row.isA ? 'Revoke Admin' : 'Make Admin'}</span>
-                                                            </button>
-                                                        )}
-
-                                                        {/* Toggle Plan Action */}
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => this.handleTogglePlan(row.id, row.email, row.subscription)}
-                                                            className={`px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center space-x-1 ${
-                                                                row.subscription === 'Premium'
-                                                                    ? 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'
-                                                                    : 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200'
-                                                            }`}
-                                                            title={row.subscription === 'Premium' ? 'Downgrade to Basic' : 'Upgrade to Premium'}
-                                                        >
-                                                            <FaCrown className="w-3 h-3" />
-                                                            <span>{row.subscription === 'Premium' ? 'Set Basic' : 'Set Premium'}</span>
-                                                        </button>
-
-                                                        {/* Merge Duplicate Action */}
-                                                        {isDuplicate && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    // Find the other account with the same email
-                                                                    const duplicates = this.state.rows.filter(r => r.email && r.email.toLowerCase().trim() === row.email.toLowerCase().trim());
-                                                                    if (duplicates.length === 2) {
-                                                                        // Determine which to keep: prefer Premium, then admin
-                                                                        const tierRank = (r) => (r.subscription === 'Premium' ? 10 : 0) + (r.isA ? 5 : 0);
-                                                                        const sorted = [...duplicates].sort((a, b) => tierRank(b) - tierRank(a));
-                                                                        this.setState({
-                                                                            mergeTarget: {
-                                                                                keepId: sorted[0].id,
-                                                                                deleteId: sorted[1].id,
-                                                                                keepEmail: sorted[0].email,
-                                                                                keepPlan: sorted[0].subscription,
-                                                                                keepIsA: sorted[0].isA,
-                                                                                deletePlan: sorted[1].subscription,
-                                                                                deleteIsA: sorted[1].isA,
-                                                                            }
-                                                                        });
-                                                                    }
-                                                                }}
-                                                                className="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-orange-50 text-orange-700 hover:bg-orange-100 border border-orange-300 transition-colors flex items-center space-x-1"
-                                                                title="Merge this duplicate account"
-                                                            >
-                                                                <FaLink className="w-3 h-3 text-orange-600" />
-                                                                <span>Merge</span>
-                                                            </button>
-                                                        )}
-
-                                                        {/* Edit Action */}
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => this.redirectToUser(row.id, row.email, row.subscription, row.rawElement?.membershipsEnds, row.isA, row.suspended)}
-                                                            className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg transition-colors flex items-center space-x-1"
-                                                            title="Edit full user details"
-                                                        >
-                                                            <FaEdit className="w-3 h-3 text-slate-600" />
-                                                            <span>Edit</span>
-                                                        </button>
-
-                                                        {/* Delete Action (Protected for Self) */}
-                                                        {isSelf ? (
-                                                            <span
-                                                                className="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-slate-100 text-slate-400 cursor-not-allowed flex items-center space-x-1 border border-slate-200"
-                                                                title="Self admin account cannot be deleted"
-                                                            >
-                                                                <FaLock className="w-3 h-3 text-slate-400" />
-                                                                <span>Delete</span>
-                                                            </span>
-                                                        ) : (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => this.setState({ userToDelete: row })}
-                                                                className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-medium rounded-lg transition-colors flex items-center space-x-1 border border-red-200"
-                                                                title="Delete user account"
-                                                            >
-                                                                <FaTrashAlt className="w-3 h-3 text-red-600" />
-                                                                <span>Delete</span>
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </div>
-            </div>
-        );
-    }
+function messageFor(response, data, fallback) {
+  return data?.error?.message || data?.error || data?.message || `${fallback}${response?.status ? ` (HTTP ${response.status})` : ''}`;
 }
 
-export default UsersManager;
+function csvCell(value) {
+  let text = String(value ?? '').replaceAll('"', '""');
+  if (/^[=+\-@]/.test(text)) text = `'${text}`;
+  return `"${text}"`;
+}
+
+function userRole(user) {
+  return String(user?.role || 'USER').toUpperCase();
+}
+
+export default function UsersManager() {
+  const navigate = useNavigate();
+  const [users, setUsers] = useState([]);
+  const [pagination, setPagination] = useState({ page: 1, pageSize: PAGE_SIZE, total: 0, totalPages: 1, hasNextPage: false, hasPreviousPage: false, boundedSource: false });
+  const [query, setQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [roleFilter, setRoleFilter] = useState('ALL');
+  const [membershipFilter, setMembershipFilter] = useState('all');
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState(null);
+  const [canManageRoles, setCanManageRoles] = useState(false);
+  const [action, setAction] = useState(null);
+  const [confirmation, setConfirmation] = useState('');
+  const [running, setRunning] = useState(false);
+
+  const loadUsers = useCallback(async (page = 1) => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE), status: statusFilter, role: roleFilter, membership: membershipFilter });
+      if (query.trim()) params.set('q', query.trim());
+      const { response, data } = await fetchAdminWithReauth(`/api/admin/users?${params.toString()}`, { cache: 'no-store' });
+      if (!response.ok || !data.success) throw new Error(messageFor(response, data, 'Unable to load the user directory.'));
+      setUsers(Array.isArray(data.users) ? data.users : []);
+      setPagination(data.pagination || { page, pageSize: PAGE_SIZE, total: 0, totalPages: 1 });
+    } catch (error) {
+      setUsers([]);
+      setMessage({ type: 'error', text: error.message || 'Unable to load the user directory.' });
+    } finally {
+      setLoading(false);
+    }
+  }, [membershipFilter, query, roleFilter, statusFilter]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => { loadUsers(1); }, 200);
+    return () => clearTimeout(timer);
+  }, [loadUsers]);
+
+  useEffect(() => {
+    let active = true;
+    fire.auth().currentUser?.getIdTokenResult()
+      .then(token => {
+        if (!active) return;
+        setCanManageRoles(String(token.claims?.role || '').toUpperCase() === 'SUPER_ADMIN' || token.claims?.permissions?.includes('*') === true);
+      })
+      .catch(() => { if (active) setCanManageRoles(false); });
+    return () => { active = false; };
+  }, []);
+
+  const summary = useMemo(() => ({
+    loaded: users.length,
+    suspended: users.filter(user => user.suspended).length,
+    admins: users.filter(user => ['ADMIN', 'SUPER_ADMIN'].includes(userRole(user))).length,
+    premium: users.filter(user => user.membership === 'Premium').length,
+  }), [users]);
+
+  const isSelf = user => {
+    const current = fire.auth().currentUser;
+    return Boolean(current && (current.uid === user.id || (user.email && current.email?.toLowerCase() === user.email.toLowerCase())));
+  };
+
+  const openAction = (type, user) => {
+    const role = userRole(user);
+    if (role === 'SUPER_ADMIN') {
+      setMessage({ type: 'error', text: 'SUPER_ADMIN identities require the documented break-glass retirement procedure and cannot be changed from generic user management.' });
+      return;
+    }
+    if (type === 'role' && !canManageRoles) {
+      setMessage({ type: 'error', text: 'Only a SUPER_ADMIN can change administrator roles.' });
+      return;
+    }
+    if (isSelf(user) && (type === 'suspension' || (type === 'role' && user.role === 'ADMIN'))) {
+      setMessage({ type: 'error', text: 'Your active administrative identity cannot be suspended or self-demoted here.' });
+      return;
+    }
+    setConfirmation('');
+    setAction({ type, user });
+  };
+
+  const actionDetails = action ? (() => {
+    const { type, user } = action;
+    if (type === 'suspension') return { title: user.suspended ? 'Reactivate user access' : 'Suspend user access', impact: user.suspended ? 'The account can authenticate again.' : 'Firebase sign-in is disabled and refresh tokens are revoked.', confirmation: user.email || user.id, button: user.suspended ? 'Reactivate' : 'Suspend' };
+    if (type === 'membership') return { title: user.membership === 'Premium' ? 'Set Basic membership' : 'Grant Premium membership', impact: user.membership === 'Premium' ? 'Premium entitlement will be removed.' : 'A server-authoritative Premium entitlement will be granted for the default term.', confirmation: user.email || user.id, button: user.membership === 'Premium' ? 'Set Basic' : 'Grant Premium' };
+    if (type === 'role') return { title: userRole(user) === 'ADMIN' ? 'Revoke administrator role' : 'Grant administrator role', impact: userRole(user) === 'ADMIN' ? 'The identity loses ADMIN access after token refresh.' : 'The identity receives ADMIN access after token refresh.', confirmation: user.email || user.id, button: userRole(user) === 'ADMIN' ? 'Revoke Admin' : 'Grant Admin' };
+    return { title: 'Delete user account', impact: 'The identity and eligible owned product data will be permanently deleted. Retained legal/billing records follow server policy.', confirmation: user.email || user.id, button: 'Delete account' };
+  })() : null;
+
+  const executeAction = async () => {
+    if (!action || !actionDetails || confirmation !== actionDetails.confirmation) return;
+    const { type, user } = action;
+    setRunning(true);
+    setMessage(null);
+    try {
+      let result;
+      if (type === 'suspension') result = await toggleUserSuspension(user.id, !user.suspended, user.suspended);
+      else if (type === 'membership') result = await updateUserSubscription(user.id, user.membership === 'Premium' ? 'Basic' : 'Premium', user.membership);
+      else if (type === 'role') result = await setUserAdminStatus(user.id, userRole(user) !== 'ADMIN', userRole(user) === 'ADMIN');
+      else result = await deleteUserByAdmin(user.id, user.email || null);
+      if (!result?.success) throw new Error(result?.error || 'The requested user operation failed.');
+      setAction(null);
+      setConfirmation('');
+      setMessage({ type: 'success', text: `${actionDetails.button} succeeded. The roster was refreshed from the server.` });
+      await loadUsers(pagination.page);
+    } catch (error) {
+      setMessage({ type: 'error', text: error.message || 'The requested user operation failed.' });
+      await loadUsers(pagination.page);
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  const exportUsersToCsv = () => {
+    if (!users.length) {
+      setMessage({ type: 'error', text: 'No loaded user records are available for export.' });
+      return;
+    }
+    const rows = ['User ID,Email,Display Name,Role,Membership,Suspended'];
+    users.forEach(user => rows.push([user.id, user.email, user.displayName, userRole(user), user.membership, user.suspended].map(csvCell).join(',')));
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `admin-users-page-${pagination.page}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <main className="mx-auto max-w-7xl space-y-6">
+      <header className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs sm:flex-row sm:items-start sm:justify-between sm:p-6">
+        <div><p className="text-xs font-extrabold uppercase tracking-[0.16em] text-indigo-600">Identity & access</p><h1 className="mt-1 text-2xl font-extrabold text-slate-900">Users manager</h1><p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">A server-paginated global directory. Each account mutation is a single, stale-state-checked, audited server transition.</p></div>
+        <div className="flex flex-wrap gap-2"><button type="button" onClick={() => loadUsers(pagination.page)} disabled={loading || running} className="rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50">{loading ? <FaSpinner className="inline animate-spin" /> : <FaUsers className="inline" />} Refresh</button><button type="button" onClick={exportUsersToCsv} disabled={!users.length} className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-bold text-white hover:bg-slate-800 disabled:opacity-50"><FaDownload />Export current page</button></div>
+      </header>
+
+      {message && <div role={message.type === 'success' ? 'status' : 'alert'} aria-live="polite" className={`flex gap-2 rounded-2xl border p-4 text-sm ${message.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-red-200 bg-red-50 text-red-900'}`}>{message.type === 'success' ? <FaCheck className="mt-0.5 shrink-0 text-emerald-600" /> : <FaExclamationTriangle className="mt-0.5 shrink-0 text-red-600" />}<span>{message.text}</span></div>}
+      {pagination.boundedSource && <div role="status" className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">The current server directory window reached its 1,000-record safety bound. Refine the search/filter before treating the result as a complete platform census.</div>}
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{[['Loaded', summary.loaded, 'text-slate-900'], ['Administrators', summary.admins, 'text-indigo-700'], ['Premium', summary.premium, 'text-amber-700'], ['Suspended', summary.suspended, 'text-rose-700']].map(([label, value, tone]) => <section key={label} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs"><p className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</p><p className={`mt-1 text-2xl font-extrabold ${tone}`}>{loading ? '—' : value}</p></section>)}</div>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs"><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"><label className="relative"><span className="sr-only">Search users</span><FaSearch className="absolute left-3 top-3 text-slate-400" /><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search email, name, or user ID" className="w-full rounded-xl border border-slate-300 bg-slate-50 py-2 pl-9 pr-3 text-sm" /></label><label className="text-xs font-bold text-slate-600">Access<select value={statusFilter} onChange={event => setStatusFilter(event.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-800"><option value="all">All access states</option><option value="active">Active</option><option value="suspended">Suspended</option></select></label><label className="text-xs font-bold text-slate-600">Role<select value={roleFilter} onChange={event => setRoleFilter(event.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-800"><option value="ALL">All roles</option><option value="USER">User</option><option value="ADMIN">Admin</option><option value="SUPER_ADMIN">Super Admin</option></select></label><label className="text-xs font-bold text-slate-600">Membership<select value={membershipFilter} onChange={event => setMembershipFilter(event.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-800"><option value="all">All plans</option><option value="Basic">Basic</option><option value="Premium">Premium</option></select></label></div></section>
+
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xs" aria-label="User directory results">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-slate-50 px-4 py-3"><div><h2 className="text-sm font-extrabold text-slate-900">Platform user directory</h2><p className="mt-0.5 text-xs text-slate-500">{pagination.total} matching user{pagination.total === 1 ? '' : 's'} across server filters.</p></div><span className="text-xs font-semibold text-slate-500">Page {pagination.page} of {pagination.totalPages}</span></div>
+        {loading ? <div className="flex min-h-56 items-center justify-center gap-2 text-sm text-slate-600" role="status"><FaSpinner className="animate-spin text-indigo-600" />Loading users…</div> : users.length === 0 ? <div className="p-10 text-center text-sm text-slate-600">No users match the selected directory filters.</div> : <><div className="overflow-x-auto"><table className="min-w-full text-left text-sm"><thead className="border-b border-slate-200 bg-slate-50/60 text-[11px] font-extrabold uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3">Identity</th><th className="px-4 py-3">Access</th><th className="px-4 py-3">Role</th><th className="px-4 py-3">Plan</th><th className="px-4 py-3 text-right">Actions</th></tr></thead><tbody className="divide-y divide-slate-100">{users.map(user => { const role = userRole(user); const protectedTarget = role === 'SUPER_ADMIN'; const self = isSelf(user); return <tr key={user.id} className="hover:bg-slate-50/70"><td className="px-4 py-3"><p className="font-bold text-slate-900">{user.displayName || user.email || 'Unnamed user'} {self && <span className="ml-1 rounded bg-indigo-100 px-1.5 py-0.5 text-[10px] text-indigo-800">You</span>}</p><p className="max-w-64 truncate text-xs text-slate-600" title={user.email}>{user.email || 'No email recorded'}</p><p className="mt-0.5 max-w-64 truncate font-mono text-[10px] text-slate-400" title={user.id}>{user.id}</p></td><td className="px-4 py-3"><span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-extrabold ${user.suspended ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}`}>{user.suspended ? 'SUSPENDED' : 'ACTIVE'}</span></td><td className="px-4 py-3"><span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-extrabold ${protectedTarget ? 'bg-purple-100 text-purple-800' : role === 'ADMIN' ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-100 text-slate-700'}`}>{protectedTarget || role === 'ADMIN' ? <FaShieldAlt /> : <FaUser />}{role}</span></td><td className="px-4 py-3"><span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-extrabold ${user.membership === 'Premium' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700'}`}>{user.membership === 'Premium' && <FaCrown />}{user.membership}</span></td><td className="px-4 py-3"><div className="flex justify-end gap-1">{protectedTarget ? <span className="rounded-lg p-2 text-slate-400" title="SUPER_ADMIN target protected"><FaLock /></span> : <><button type="button" onClick={() => openAction('suspension', user)} className={`rounded-lg p-2 ${user.suspended ? 'text-emerald-700 hover:bg-emerald-50' : 'text-rose-700 hover:bg-rose-50'}`} title={user.suspended ? 'Reactivate access' : 'Suspend access'}>{user.suspended ? <FaCheck /> : <FaBan />}</button>{canManageRoles && <button type="button" onClick={() => openAction('role', user)} className="rounded-lg p-2 text-indigo-700 hover:bg-indigo-50" title={role === 'ADMIN' ? 'Revoke Admin' : 'Grant Admin'}><FaShieldAlt /></button>}<button type="button" onClick={() => openAction('membership', user)} className="rounded-lg p-2 text-amber-700 hover:bg-amber-50" title={user.membership === 'Premium' ? 'Set Basic' : 'Grant Premium'}><FaCrown /></button><button type="button" onClick={() => navigate('/adm/user/ss', { state: { userId: user.id, email: user.email, membership: user.membership, membershipEnd: user.membershipEnds, isA: role === 'ADMIN', suspended: user.suspended } })} className="rounded-lg p-2 text-slate-600 hover:bg-slate-100" title="Open controlled editor"><FaEdit /></button>{!self && <button type="button" onClick={() => openAction('delete', user)} className="rounded-lg p-2 text-rose-700 hover:bg-rose-50" title="Delete user"><FaTrashAlt /></button>}</>}</div></td></tr>; })}</tbody></table></div><footer className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-4 py-3 text-xs text-slate-600"><span>Showing {users.length ? (pagination.page - 1) * pagination.pageSize + 1 : 0}–{(pagination.page - 1) * pagination.pageSize + users.length} of {pagination.total}</span><div className="flex items-center gap-2"><button type="button" onClick={() => loadUsers(pagination.page - 1)} disabled={!pagination.hasPreviousPage || loading} className="rounded-lg border border-slate-300 p-1.5 disabled:opacity-40" aria-label="Previous user page"><FaChevronLeft /></button><button type="button" onClick={() => loadUsers(pagination.page + 1)} disabled={!pagination.hasNextPage || loading} className="rounded-lg border border-slate-300 p-1.5 disabled:opacity-40" aria-label="Next user page"><FaChevronRight /></button></div></footer></>}
+      </section>
+
+      <AdminDialog open={Boolean(action)} onClose={() => !running && setAction(null)} dismissible={!running} title={actionDetails?.title || 'Confirm user action'} description="The current target state will be verified by the server before the action is applied." className="max-w-lg"><div role="alertdialog" aria-label="Confirm user action" className="space-y-4 p-5"><div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm"><p><strong>Target:</strong> {action?.user.email || action?.user.id}</p><p className="mt-1"><strong>Impact:</strong> {actionDetails?.impact}</p></div><label className="block text-sm font-bold text-slate-800">Type <span className="font-mono text-rose-700">{actionDetails?.confirmation}</span> to confirm<input autoComplete="off" value={confirmation} onChange={event => setConfirmation(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-sm" /></label><div className="flex justify-end gap-3 border-t border-slate-100 pt-4"><button type="button" disabled={running} onClick={() => setAction(null)} className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700">Cancel</button><button type="button" disabled={running || confirmation !== actionDetails?.confirmation} onClick={executeAction} className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold text-white disabled:opacity-50 ${action?.type === 'delete' ? 'bg-rose-700' : 'bg-indigo-600'}`}>{running && <FaSpinner className="animate-spin" />}{running ? 'Applying…' : actionDetails?.button}</button></div></div></AdminDialog>
+    </main>
+  );
+}
