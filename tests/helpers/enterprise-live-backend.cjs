@@ -54,6 +54,33 @@ async function startLiveEnterpriseBackend() {
 
   const db = new MemoryFirestore();
   const admin = createMemoryAdmin({ db });
+  // Browser `/adm` tests exercise identity provisioning as well as the
+  // enterprise control plane. This remains a Firebase Admin-shaped in-memory
+  // directory; real production authentication is never replaced outside test.
+  const identities = new Map(Object.values(USERS).map(user => [user.uid, { ...user, disabled: false, emailVerified: true, customClaims: { role: user.role } }]));
+  admin.auth = () => ({
+    async getUser(uid) {
+      const user = identities.get(uid);
+      if (!user) { const error = new Error('User not found'); error.code = 'auth/user-not-found'; throw error; }
+      return { ...user, customClaims: { ...(user.customClaims || {}) } };
+    },
+    async listUsers() {
+      return {
+        users: [...identities.values()].map(user => ({ ...user, customClaims: { ...(user.customClaims || {}) } })),
+      };
+    },
+    async createUser(input) {
+      if ([...identities.values()].some(user => user.email === input.email)) { const error = new Error('Email exists'); error.code = 'auth/email-already-exists'; throw error; }
+      const uid = `fixture-user-${crypto.randomUUID()}`;
+      const user = { uid, email: input.email, displayName: input.displayName || '', disabled: input.disabled === true, emailVerified: input.emailVerified === true, customClaims: {} };
+      identities.set(uid, user);
+      return { ...user, customClaims: {} };
+    },
+    async deleteUser(uid) { identities.delete(uid); },
+    async updateUser(uid, patch) { const user = await this.getUser(uid); identities.set(uid, { ...user, ...patch }); },
+    async revokeRefreshTokens() {},
+    async setCustomUserClaims(uid, claims) { const user = await this.getUser(uid); identities.set(uid, { ...user, customClaims: { ...claims } }); },
+  });
   const encryptionProvider = new ServerKeyEncryptionProvider({ keys: new Map([['v1', crypto.randomBytes(32)]]) });
   const service = new TenantService({
     registry: new FirestoreTenantRegistry({ db, admin }),

@@ -43,6 +43,7 @@ const RECENT_AUTH_PATHS = new Set([
   '/platform/maintenance',
   '/platform/queues/retry',
   '/platform/tenants',
+  '/admin/users',
   '/auth/purge-orphaned-auth',
   '/auth/linkedin/test-credentials',
   '/auth/github/test-credentials'
@@ -85,6 +86,13 @@ function enforceApiPolicy(req, res, next) {
       : (pathname.startsWith('/admin/employer-applications/') ? 'users.update' : null));
   if (elevatedPermission && !hasPermission(req, elevatedPermission)) {
     return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Insufficient permission', requestId: res.locals.requestId } });
+  }
+  const superAdminOnlyPlatformMutation = (pathname === '/platform/tenants' && req.method !== 'GET')
+    || /^\/platform\/tenants\/[A-Za-z0-9_-]{1,128}(?:\/(?:suspend|reactivate|decommission))?$/.test(pathname)
+    || (pathname === '/platform/queues/retry' && req.method !== 'GET')
+    || (pathname === '/admin/users' && req.method === 'POST');
+  if (superAdminOnlyPlatformMutation && !permissionsFor(req.user).has('*')) {
+    return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Super admin permission required', requestId: res.locals.requestId } });
   }
   if (isAdminPath(pathname) && !hasPermission(req, 'system.config.write')) {
     return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Insufficient permission', requestId: res.locals.requestId } });

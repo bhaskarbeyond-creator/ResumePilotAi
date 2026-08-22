@@ -28,11 +28,11 @@ However, external production probes found a **P0 static SPA outage**: `/adm` ret
 | Gate | Command / probe | Result | Status |
 |---|---|---|---|
 | Install | `npm ci`; `npm --prefix backend ci` | completed | PASS |
-| Backend suite | `npm --prefix backend test` | 187 tests passed in observed run | PASS |
+| Backend suite | `npm --prefix backend test` | 188 tests passed in observed run | PASS |
 | Enterprise suite | `npm run test:enterprise` | 173 backend + 23 UI assertions passed | PASS |
 | Product suite | `npm run test:product` | 301 primary tests + render/template follow-ons passed | PASS |
 | Security suite | `npm run test:security` | security/static + backend suite passed | PASS |
-| Super Admin contract | `npm run test:admin:contract` | 20 assertions/tests passed | PASS |
+| Super Admin contract | `npm run test:admin:contract` | 21 assertions/tests passed | PASS |
 | Production build | `npm run build` | completed | PASS |
 | Full lint | `npm run lint` | exit success; repository has pre-existing warnings | PASS (warnings recorded) |
 | Dependency production audit | `npm run audit:production` | root/backend: 0 vulnerabilities | PASS |
@@ -71,6 +71,7 @@ However, external production probes found a **P0 static SPA outage**: `/adm` ret
 | Tenant final delete/purge | NOT APPLICABLE | no final-purge capability is exposed |
 | Queue health/DLQ/read | PASS local | integration test/build |
 | Replay/retry controlled DLQ work | PASS local | DLQ-only integration test |
+| User create | PASS local | SUPER_ADMIN standard-user provisioning integration test |
 | User directory search/filter/pagination | PASS local | curated `/api/admin/users` integration test |
 | Users suspend/reactivate/membership/ADMIN role | PASS local | server role matrix test |
 | SUPER_ADMIN generic mutation/delete protection | PASS local | server role matrix test |

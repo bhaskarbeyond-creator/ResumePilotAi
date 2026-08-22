@@ -28,7 +28,7 @@ const { platformRouter } = require('./routes/platform');
 const app = express();
 const cors = require('cors');
 const cryptoRandom = require('crypto');
-const { requireAuth, requirePermission, permissionsFor } = require('./security/auth');
+const { requireAuth, requirePermission, requireSuperAdmin, permissionsFor } = require('./security/auth');
 const { enforceApiPolicy } = require('./security/policy');
 const { createEnterpriseAuthMiddleware } = require('./enterprise/enterpriseAuth');
 const {
@@ -4414,6 +4414,60 @@ app.get('/api/admin/users', async (req, res) => {
     } catch (error) {
         console.error('[Admin user directory]', error.message);
         return res.status(503).json({ success: false, code: 'USER_DIRECTORY_UNAVAILABLE', error: 'User directory is unavailable.', requestId: res.locals.requestId });
+    }
+});
+
+// Super Admin user provisioning creates only a standard USER identity. It never
+// accepts client-supplied role, tenant, entitlement, actor, or verification
+// fields, and the temporary password is redacted before any audit persistence.
+app.post('/api/admin/users', requireSuperAdmin, async (req, res) => {
+    const requestDb = req.app.get('db');
+    const requestAdmin = req.app.get('firebaseAdmin') || admin;
+    if (!requestDb || !requestAdmin?.auth || !requestAdmin?.firestore?.FieldValue) {
+        return res.status(503).json({ success: false, code: 'USER_PROVISIONING_UNAVAILABLE', error: 'User provisioning is unavailable.', requestId: res.locals.requestId });
+    }
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const displayName = String(req.body?.displayName || '').replace(/\p{Cc}/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 100);
+    const temporaryPassword = String(req.body?.temporaryPassword || '');
+    if (!/^[^\s@,;<>]{1,64}@[^\s@,;<>]{1,190}$/.test(email) || !displayName) {
+        return res.status(400).json({ success: false, code: 'INVALID_USER_PROVISIONING_INPUT', error: 'A valid email address and display name are required.', requestId: res.locals.requestId });
+    }
+    try {
+        assertPasswordPolicy(email, temporaryPassword);
+    } catch {
+        return res.status(400).json({ success: false, code: 'INVALID_TEMPORARY_PASSWORD', error: 'Use a 12–128 character temporary password that does not contain the email name.', requestId: res.locals.requestId });
+    }
+    let identity;
+    try {
+        identity = await requestAdmin.auth().createUser({ email, displayName, password: temporaryPassword, emailVerified: false, disabled: false });
+        const parts = displayName.split(/\s+/);
+        const batch = requestDb.batch();
+        batch.set(requestDb.collection('users').doc(identity.uid), {
+            userId: identity.uid,
+            email,
+            displayName,
+            firstname: parts[0] || '',
+            lastname: parts.slice(1).join(' '),
+            membership: 'Basic',
+            paymentStatus: 'INACTIVE',
+            suspended: false,
+            role: 'USER',
+            emailVerified: false,
+            createdAt: requestAdmin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: requestAdmin.firestore.FieldValue.serverTimestamp(),
+        }, { merge: false });
+        batch.set(requestDb.collection('security_audit_logs').doc(), {
+            action: 'USER_PROVISIONED_BY_SUPER_ADMIN', actorUid: req.user.uid, targetUid: identity.uid,
+            email, requestId: res.locals.requestId,
+            createdAt: requestAdmin.firestore.FieldValue.serverTimestamp(),
+        });
+        await batch.commit();
+        return res.status(201).json({ success: true, user: { id: identity.uid, email, displayName, role: 'USER', membership: 'Basic', emailVerificationRequired: true } });
+    } catch (error) {
+        // Avoid an orphan Firebase identity when Firestore persistence fails.
+        if (identity?.uid) await requestAdmin.auth().deleteUser(identity.uid).catch(() => {});
+        const status = error.code === 'auth/email-already-exists' ? 409 : 503;
+        return res.status(status).json({ success: false, code: status === 409 ? 'USER_EMAIL_EXISTS' : 'USER_PROVISIONING_FAILED', error: status === 409 ? 'A user with this email already exists.' : 'User provisioning could not be completed.', requestId: res.locals.requestId });
     }
 });
 

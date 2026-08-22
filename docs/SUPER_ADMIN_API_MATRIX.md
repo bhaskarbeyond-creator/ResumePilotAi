@@ -29,6 +29,7 @@ This matrix is generated from the actual route registrations in `backend/index.j
 | Audit trail | GET | `/api/admin/audit-logs/stats` | sampled aggregates, Admin namespace |
 | Audit detail | GET | `/api/admin/audit-logs/:id` | Admin namespace |
 | Users directory | GET | `/api/admin/users` | server filter/page contract; curated roster fields; explicit 1,000-record source bound |
+| User provision | POST | `/api/admin/users` | SUPER_ADMIN + recent auth; standard USER only; password redacted from audit/response |
 | Users | PATCH | `/api/admin/users/:uid` | one field transition; field permission; stale precondition; SUPER_ADMIN target protected |
 | Users | POST | `/api/admin/delete-user` | generic delete; recent auth; SUPER_ADMIN target protected |
 | Employer applications | PATCH | `/api/admin/employer-applications/:uid` | review state + expected status |

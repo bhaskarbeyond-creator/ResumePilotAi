@@ -174,6 +174,48 @@ test('Platform API: /api/platform/maintenance status is readable by Admin and ed
   assert.equal(adminToggle.body.error.code, 'FORBIDDEN');
 });
 
+test('SUPER_ADMIN provisions a standard user without accepting client role or password audit leakage', async () => {
+  const originalDb = app.get('db');
+  const originalAdmin = app.get('firebaseAdmin');
+  const db = new MemoryFirestore();
+  const firebaseAdmin = createMemoryAdmin({ db });
+  const identities = new Map();
+  firebaseAdmin.auth = () => ({
+    async createUser(input) {
+      const uid = `created-${identities.size + 1}`;
+      if ([...identities.values()].some(identity => identity.email === input.email)) { const error = new Error('exists'); error.code = 'auth/email-already-exists'; throw error; }
+      const identity = { uid, email: input.email, displayName: input.displayName, disabled: false, emailVerified: false, customClaims: {} };
+      identities.set(uid, identity);
+      return identity;
+    },
+    async deleteUser(uid) { identities.delete(uid); },
+    async listUsers() { return { users: [...identities.values()] }; },
+  });
+  app.set('db', db);
+  app.set('firebaseAdmin', firebaseAdmin);
+  try {
+    const denied = await request(app).post('/api/admin/users').set(bearer('admin')).send({ email: 'new@example.test', displayName: 'New User', temporaryPassword: 'SafeTemporaryPassword!42' });
+    assert.equal(denied.status, 403);
+    const created = await request(app).post('/api/admin/users').set(bearer('super-admin')).send({
+      email: 'new@example.test', displayName: 'New User', temporaryPassword: 'SafeTemporaryPassword!42', role: 'SUPER_ADMIN', membership: 'Premium',
+    });
+    assert.equal(created.status, 201);
+    assert.equal(created.body.user.role, 'USER');
+    assert.equal(created.body.user.membership, 'Basic');
+    assert.equal(identities.get(created.body.user.id).customClaims.role, undefined);
+    const profile = await db.collection('users').doc(created.body.user.id).get();
+    assert.equal(profile.data().role, 'USER');
+    assert.doesNotMatch(JSON.stringify(profile.data()), /SafeTemporaryPassword/);
+    await new Promise(resolve => setTimeout(resolve, 25));
+    const persisted = JSON.stringify(db.dump());
+    assert.doesNotMatch(persisted, /SafeTemporaryPassword/);
+    assert.match(persisted, /USER_PROVISIONED/);
+  } finally {
+    app.set('db', originalDb);
+    app.set('firebaseAdmin', originalAdmin);
+  }
+});
+
 test('server user directory paginates and filters the curated roster without exposing raw profile payloads', async () => {
   const originalDb = app.get('db');
   const originalAdmin = app.get('firebaseAdmin');

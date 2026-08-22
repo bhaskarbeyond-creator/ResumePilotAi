@@ -511,6 +511,19 @@ export function addUser(userId, firstname, lastname, email) {
         }
     }).catch(() => {});
 }
+export async function provisionUserBySuperAdmin({ email, displayName, temporaryPassword }) {
+    try {
+        const { response, data } = await fetchAdminWithReauth('/api/admin/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, displayName, temporaryPassword }),
+        });
+        return response.ok && data.success ? data : { success: false, error: data.error?.message || data.error || 'User provisioning failed.', code: data.code };
+    } catch (error) {
+        return { success: false, error: error.message || 'User provisioning failed.' };
+    }
+}
+
 async function updateUserByAdminApi(userId, changes) {
     const { response, data: result } = await fetchAdminWithReauth(`/api/admin/users/${encodeURIComponent(userId)}`, {
         method: 'PATCH',

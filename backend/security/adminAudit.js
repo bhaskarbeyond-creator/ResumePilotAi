@@ -54,6 +54,7 @@ function deriveAction(method, pathname, body = {}) {
   if (path.includes('/gdpr-settings')) return 'UPDATE_GDPR_SETTINGS';
   if (path.includes('/twilio-settings')) return `${normMethod}_TWILIO_SETTINGS`;
   if (path.includes('/employer-applications/')) return `${normMethod}_EMPLOYER_APPLICATION`;
+  if (path === '/api/admin/users' && normMethod === 'POST') return 'USER_PROVISIONED';
   if (path.includes('/users/')) return `${normMethod}_USER_PROFILE`;
   if (path.includes('/delete-user') || path.includes('/purge-orphaned-auth')) return 'DELETE_USER_ACCOUNT';
   if (path.includes('/companies/')) return `${normMethod}_COMPANY`;

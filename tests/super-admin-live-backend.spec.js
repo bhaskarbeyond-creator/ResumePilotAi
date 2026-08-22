@@ -50,7 +50,7 @@ test.afterAll(async () => {
   await backend?.close?.();
 });
 
-async function bootSuperAdmin(page, pathName = '/adm/tenants') {
+async function bootSuperAdmin(page, pathName = '/adm/tenants', expectedHeading = 'Tenant registry') {
   const pageErrors = [];
   const consoleErrors = [];
   page.on('pageerror', error => pageErrors.push(String(error)));
@@ -64,7 +64,7 @@ async function bootSuperAdmin(page, pathName = '/adm/tenants') {
     claims: { role: 'SUPER_ADMIN', permissions: ['*'] },
   });
   await page.goto(`${base}${pathName}`, { waitUntil: 'domcontentloaded' });
-  await expect(page.getByRole('heading', { name: 'Tenant registry' })).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByRole('heading', { name: expectedHeading })).toBeVisible({ timeout: 30_000 });
   return { pageErrors, consoleErrors };
 }
 
@@ -113,6 +113,18 @@ test('Super Admin tenant CRUD, lifecycle confirmation, persistence and audit run
   expect(JSON.stringify(auditEvents)).not.toContain('REPLAY ALL DEAD LETTERS');
   expect(diagnostics.pageErrors, diagnostics.pageErrors.join('\n')).toEqual([]);
   expect(diagnostics.consoleErrors.filter(message => !/Download the React DevTools/i.test(message)), diagnostics.consoleErrors.join('\n')).toEqual([]);
+});
+
+test('Super Admin provisions a standard user through the real Admin UI and refreshed roster', async ({ page }) => {
+  await bootSuperAdmin(page, '/adm/users', 'Users manager');
+  await page.getByRole('button', { name: 'Provision standard user' }).click();
+  await page.getByLabel('Display name').fill('QA Browser Standard User');
+  await page.getByLabel('Email').fill('qa-browser-user@example.test');
+  await page.getByLabel('Temporary password').fill('SecureTemporaryPass!42');
+  await page.getByLabel('Confirm temporary password').fill('SecureTemporaryPass!42');
+  await page.getByRole('button', { name: 'Create user' }).click();
+  await expect(page.getByText(/Provisioned qa-browser-user@example.test as a standard USER/i)).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('tr', { hasText: 'qa-browser-user@example.test' }).first()).toBeVisible({ timeout: 20_000 });
 });
 
 test('Super Admin tenant registry has no horizontal overflow at required viewports and opens the mobile drawer', async ({ page }) => {

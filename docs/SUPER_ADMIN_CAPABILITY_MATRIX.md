@@ -51,6 +51,7 @@ Legend: **PASS** = automated local evidence in this checkout; **FAIL** = indepen
 | Queue state | observed outbox query; unavailable state explicit | PASS local |
 | DLQ replay | DLQ-only, confirmation, recent auth, SUPER_ADMIN, bounded 20 | PASS local |
 | Queue retry all | same as replay all dead letters | PASS local |
+| User create | SUPER_ADMIN-only standard USER provisioning with temporary-password validation/redaction | PASS local |
 | User list/search/filter/page | Server-curated `/api/admin/users` directory with bounded filter/page contract; browser proof pending | PASS local; UNVERIFIED browser/live |
 | User activate/deactivate | server-authenticated status mutation | PASS local |
 | User plan grant/revoke | server-authenticated membership mutation | PASS local |

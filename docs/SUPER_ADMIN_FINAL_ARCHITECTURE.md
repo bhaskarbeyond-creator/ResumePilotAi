@@ -130,6 +130,10 @@ Request → Firebase bearer validation (checkRevoked=true)
 
 The last column is intentionally denied even to a Super Admin in the generic user endpoint. This prevents an accidental last-owner lockout through a row action or forged client body.
 
+### Standard user provisioning
+
+`POST /api/admin/users` is a separate **SUPER_ADMIN + recent-auth** workflow. It accepts only email, display name, and a policy-validated temporary password; it creates a standard `USER`/Basic identity and ignores any client role, membership, verification, tenant, or actor fields. The password is never returned and the audit sanitizer redacts it before persistence.
+
 ## 6. Observability truthfulness
 
 `/api/platform/health` performs bounded reads, not a health-check write. It returns:

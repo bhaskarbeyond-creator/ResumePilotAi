@@ -20,6 +20,7 @@ test('Super Admin API contract keeps /adm platform modules independent of featur
   assert.match(platformRoutes, /CONFIRMATION_REQUIRED/);
   assert.match(backend, /app\.use\('\/api\/platform', platformRouter\)/);
   assert.match(backend, /app\.get\('\/api\/admin\/users'/);
+  assert.match(backend, /app\.post\('\/api\/admin\/users', requireSuperAdmin/);
   assert.match(main, /path="\/admin\/\*" element={<Navigate to="\/adm\/dashboard" replace/);
 });
 
