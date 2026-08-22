@@ -22,6 +22,7 @@ class UsersManager extends Component {
             isDeleting: false,
             mergeTarget: null, // { keepId, deleteId, email } for merge modal
             isMerging: false,
+            openActionMenuId: null,
             // Bulk merge & Backup restore state
             showBulkMergeModal: false,
             isBulkMerging: false,
@@ -48,6 +49,13 @@ class UsersManager extends Component {
         this.handleToggleSuspension = this.handleToggleSuspension.bind(this);
         this.handleConfirmDelete = this.handleConfirmDelete.bind(this);
         this.isSelfAccount = this.isSelfAccount.bind(this);
+        this.toggleActionMenu = this.toggleActionMenu.bind(this);
+    }
+
+    toggleActionMenu(id) {
+        this.setState(prevState => ({
+            openActionMenuId: prevState.openActionMenuId === id ? null : id
+        }));
     }
 
     exportUsersToCsv() {
@@ -880,8 +888,7 @@ class UsersManager extends Component {
                             <table className="min-w-full">
                                 <thead className="bg-slate-50">
                                     <tr>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">User ID</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Email</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">User</th>
                                         <th scope="col" className="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
                                         <th scope="col" className="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Role</th>
                                         <th scope="col" className="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Subscription</th>
@@ -889,7 +896,7 @@ class UsersManager extends Component {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-slate-200">
-                                    {this.state.rows?.length === 0 && <tr><td colSpan="6" className="px-6 py-10 text-center text-sm text-slate-500">No users matched this view.</td></tr>}
+                                    {this.state.rows?.length === 0 && <tr><td colSpan="5" className="px-6 py-10 text-center text-sm text-slate-500">No users matched this view.</td></tr>}
                                     {this.state.rows?.map((row, index) => {
                                         const isSelf = this.isSelfAccount(row.id, row.email);
                                         const isDuplicate = row.email && row.email !== 'Not Provided' && this.getDuplicateEmails().has(row.email.toLowerCase().trim());
@@ -897,27 +904,27 @@ class UsersManager extends Component {
                                             <tr key={row.id || index} className={`hover:bg-slate-50 transition-colors duration-150 ${row.suspended ? 'bg-rose-50/30' : ''} ${isDuplicate ? 'bg-orange-50/60 border-l-4 border-l-orange-400' : ''}`}>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="flex items-center">
-                                                        <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center mr-3">
-                                                            <FaUser className="w-3 h-3 text-slate-600" />
+                                                        <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                                                            <FaUser className="w-4 h-4 text-slate-600" />
                                                         </div>
-                                                        <div className="text-sm font-medium text-slate-900 font-mono">
-                                                            {row.id ? (row.id.length > 12 ? row.id.slice(0, 10) + '...' : row.id) : '—'}
+                                                        <div>
+                                                            <div className="text-sm font-bold text-slate-900 flex items-center space-x-2 flex-wrap gap-1">
+                                                                <span>{row.email}</span>
+                                                                {isSelf && (
+                                                                    <span className="px-2 py-0.5 text-[10px] bg-blue-100 text-blue-700 font-bold rounded border border-blue-200">
+                                                                        (You)
+                                                                    </span>
+                                                                )}
+                                                                {isDuplicate && (
+                                                                    <span className="px-2 py-0.5 text-[10px] bg-orange-100 text-orange-700 font-bold rounded border border-orange-300 flex items-center gap-0.5">
+                                                                        <FaExclamationTriangle className="w-2.5 h-2.5" /> DUPLICATE
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="text-xs text-slate-500 font-mono mt-0.5">
+                                                                ID: {row.id ? (row.id.length > 12 ? row.id.slice(0, 10) + '...' : row.id) : '—'}
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-slate-900 font-medium flex items-center space-x-2 flex-wrap gap-1">
-                                                        <span>{row.email}</span>
-                                                        {isSelf && (
-                                                            <span className="px-2 py-0.5 text-[10px] bg-blue-100 text-blue-700 font-semibold rounded-md border border-blue-200">
-                                                                (You)
-                                                            </span>
-                                                        )}
-                                                        {isDuplicate && (
-                                                            <span className="px-2 py-0.5 text-[10px] bg-orange-100 text-orange-700 font-bold rounded-md border border-orange-300 flex items-center gap-0.5">
-                                                                <FaExclamationTriangle className="w-2.5 h-2.5" /> DUPLICATE
-                                                            </span>
-                                                        )}
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -947,130 +954,103 @@ class UsersManager extends Component {
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                    <div className="flex items-center justify-center space-x-2">
-                                                        {/* Toggle Suspension Action (Protected for Self) */}
-                                                        {isSelf ? (
-                                                            <span
-                                                                className="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-slate-100 text-slate-400 cursor-not-allowed flex items-center space-x-1 border border-slate-200"
-                                                                title="Self admin account cannot be suspended"
-                                                            >
-                                                                <FaLock className="w-3 h-3 text-slate-400" />
-                                                                <span>Suspend</span>
-                                                            </span>
-                                                        ) : (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => this.handleToggleSuspension(row.id, row.email, row.suspended)}
-                                                                className={`px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center space-x-1 ${
-                                                                    row.suspended ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200' : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'
-                                                                }`}
-                                                                title={row.suspended ? "Reactivate user account" : "Suspend user account temporarily"}
-                                                            >
-                                                                {row.suspended ? <FaCheckCircle className="w-3 h-3 text-emerald-600" /> : <FaBan className="w-3 h-3 text-rose-600" />}
-                                                                <span>{row.suspended ? 'Activate' : 'Suspend'}</span>
-                                                            </button>
-                                                        )}
-
-                                                        {/* Toggle Admin Role Action (Protected for Self) */}
-                                                        {isSelf ? (
-                                                            <span
-                                                                className="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-slate-100 text-slate-400 cursor-not-allowed flex items-center space-x-1 border border-slate-200"
-                                                                title="Self admin privileges cannot be revoked"
-                                                            >
-                                                                <FaLock className="w-3 h-3 text-slate-400" />
-                                                                <span>Revoke Admin</span>
-                                                            </span>
-                                                        ) : (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => this.handleToggleAdmin(row.id, row.email, row.isA)}
-                                                                className={`px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center space-x-1 ${
-                                                                    row.isA ? 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                                                                }`}
-                                                                title={row.isA ? "Revoke Admin Status" : "Grant Admin Status"}
-                                                            >
-                                                                <FaShieldAlt className="w-3 h-3" />
-                                                                <span>{row.isA ? 'Revoke Admin' : 'Make Admin'}</span>
-                                                            </button>
-                                                        )}
-
-                                                        {/* Toggle Plan Action */}
+                                                    <div className="relative inline-block text-left">
                                                         <button
                                                             type="button"
-                                                            onClick={() => this.handleTogglePlan(row.id, row.email, row.subscription)}
-                                                            className={`px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center space-x-1 ${
-                                                                row.subscription === 'Premium'
-                                                                    ? 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'
-                                                                    : 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200'
-                                                            }`}
-                                                            title={row.subscription === 'Premium' ? 'Downgrade to Basic' : 'Upgrade to Premium'}
+                                                            onClick={(e) => { e.stopPropagation(); this.toggleActionMenu(row.id); }}
+                                                            className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors focus:outline-none"
                                                         >
-                                                            <FaCrown className="w-3 h-3" />
-                                                            <span>{row.subscription === 'Premium' ? 'Set Basic' : 'Set Premium'}</span>
+                                                            <FaLayerGroup className="w-4 h-4" />
                                                         </button>
+                                                        
+                                                        {this.state.openActionMenuId === row.id && (
+                                                            <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-lg shadow-xl z-50 py-1 overflow-hidden" style={{ top: '100%' }}>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => { this.toggleActionMenu(null); this.redirectToUser(row.id, row.email, row.subscription, row.rawElement?.membershipsEnds, row.isA, row.suspended); }}
+                                                                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center space-x-2"
+                                                                >
+                                                                    <FaEdit className="w-3.5 h-3.5 text-slate-400" />
+                                                                    <span>Edit User</span>
+                                                                </button>
+                                                                
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => { this.toggleActionMenu(null); this.handleTogglePlan(row.id, row.email, row.subscription); }}
+                                                                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center space-x-2"
+                                                                >
+                                                                    <FaCrown className={`w-3.5 h-3.5 ${row.subscription === 'Premium' ? 'text-slate-400' : 'text-amber-500'}`} />
+                                                                    <span>{row.subscription === 'Premium' ? 'Downgrade to Basic' : 'Upgrade to Premium'}</span>
+                                                                </button>
 
-                                                        {/* Merge Duplicate Action */}
-                                                        {isDuplicate && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    // Find the other account with the same email
-                                                                    const duplicates = this.state.rows.filter(r => r.email && r.email.toLowerCase().trim() === row.email.toLowerCase().trim());
-                                                                    if (duplicates.length === 2) {
-                                                                        // Determine which to keep: prefer Premium, then admin
-                                                                        const tierRank = (r) => (r.subscription === 'Premium' ? 10 : 0) + (r.isA ? 5 : 0);
-                                                                        const sorted = [...duplicates].sort((a, b) => tierRank(b) - tierRank(a));
-                                                                        this.setState({
-                                                                            mergeTarget: {
-                                                                                keepId: sorted[0].id,
-                                                                                deleteId: sorted[1].id,
-                                                                                keepEmail: sorted[0].email,
-                                                                                keepPlan: sorted[0].subscription,
-                                                                                keepIsA: sorted[0].isA,
-                                                                                deletePlan: sorted[1].subscription,
-                                                                                deleteIsA: sorted[1].isA,
+                                                                {isDuplicate && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            this.toggleActionMenu(null);
+                                                                            const duplicates = this.state.rows.filter(r => r.email && r.email.toLowerCase().trim() === row.email.toLowerCase().trim());
+                                                                            if (duplicates.length === 2) {
+                                                                                const tierRank = (r) => (r.subscription === 'Premium' ? 10 : 0) + (r.isA ? 5 : 0);
+                                                                                const sorted = [...duplicates].sort((a, b) => tierRank(b) - tierRank(a));
+                                                                                this.setState({
+                                                                                    mergeTarget: {
+                                                                                        keepId: sorted[0].id, deleteId: sorted[1].id, keepEmail: sorted[0].email,
+                                                                                        keepPlan: sorted[0].subscription, keepIsA: sorted[0].isA,
+                                                                                        deletePlan: sorted[1].subscription, deleteIsA: sorted[1].isA,
+                                                                                    }
+                                                                                });
                                                                             }
-                                                                        });
-                                                                    }
-                                                                }}
-                                                                className="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-orange-50 text-orange-700 hover:bg-orange-100 border border-orange-300 transition-colors flex items-center space-x-1"
-                                                                title="Merge this duplicate account"
-                                                            >
-                                                                <FaLink className="w-3 h-3 text-orange-600" />
-                                                                <span>Merge</span>
-                                                            </button>
-                                                        )}
+                                                                        }}
+                                                                        className="w-full text-left px-4 py-2 text-sm text-orange-700 hover:bg-orange-50 flex items-center space-x-2"
+                                                                    >
+                                                                        <FaLink className="w-3.5 h-3.5" />
+                                                                        <span>Merge Duplicates</span>
+                                                                    </button>
+                                                                )}
 
-                                                        {/* Edit Action */}
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => this.redirectToUser(row.id, row.email, row.subscription, row.rawElement?.membershipsEnds, row.isA, row.suspended)}
-                                                            className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg transition-colors flex items-center space-x-1"
-                                                            title="Edit full user details"
-                                                        >
-                                                            <FaEdit className="w-3 h-3 text-slate-600" />
-                                                            <span>Edit</span>
-                                                        </button>
+                                                                <div className="border-t border-slate-100 my-1"></div>
 
-                                                        {/* Delete Action (Protected for Self) */}
-                                                        {isSelf ? (
-                                                            <span
-                                                                className="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-slate-100 text-slate-400 cursor-not-allowed flex items-center space-x-1 border border-slate-200"
-                                                                title="Self admin account cannot be deleted"
-                                                            >
-                                                                <FaLock className="w-3 h-3 text-slate-400" />
-                                                                <span>Delete</span>
-                                                            </span>
-                                                        ) : (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => this.setState({ userToDelete: row })}
-                                                                className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-medium rounded-lg transition-colors flex items-center space-x-1 border border-red-200"
-                                                                title="Delete user account"
-                                                            >
-                                                                <FaTrashAlt className="w-3 h-3 text-red-600" />
-                                                                <span>Delete</span>
-                                                            </button>
+                                                                {isSelf ? (
+                                                                    <>
+                                                                        <div className="px-4 py-2 text-sm text-slate-400 flex items-center space-x-2 cursor-not-allowed">
+                                                                            <FaLock className="w-3.5 h-3.5" /> <span>Suspend (Self)</span>
+                                                                        </div>
+                                                                        <div className="px-4 py-2 text-sm text-slate-400 flex items-center space-x-2 cursor-not-allowed">
+                                                                            <FaLock className="w-3.5 h-3.5" /> <span>Revoke Admin (Self)</span>
+                                                                        </div>
+                                                                        <div className="px-4 py-2 text-sm text-slate-400 flex items-center space-x-2 cursor-not-allowed">
+                                                                            <FaLock className="w-3.5 h-3.5" /> <span>Delete (Self)</span>
+                                                                        </div>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => { this.toggleActionMenu(null); this.handleToggleAdmin(row.id, row.email, row.isA); }}
+                                                                            className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center space-x-2"
+                                                                        >
+                                                                            <FaShieldAlt className={`w-3.5 h-3.5 ${row.isA ? 'text-red-500' : 'text-slate-400'}`} />
+                                                                            <span>{row.isA ? 'Revoke Admin' : 'Make Admin'}</span>
+                                                                        </button>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => { this.toggleActionMenu(null); this.handleToggleSuspension(row.id, row.email, row.suspended); }}
+                                                                            className={`w-full text-left px-4 py-2 text-sm flex items-center space-x-2 ${row.suspended ? 'text-emerald-700 hover:bg-emerald-50' : 'text-orange-700 hover:bg-orange-50'}`}
+                                                                        >
+                                                                            {row.suspended ? <FaCheckCircle className="w-3.5 h-3.5" /> : <FaBan className="w-3.5 h-3.5" />}
+                                                                            <span>{row.suspended ? 'Activate User' : 'Suspend User'}</span>
+                                                                        </button>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => { this.toggleActionMenu(null); this.setState({ userToDelete: row }); }}
+                                                                            className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
+                                                                        >
+                                                                            <FaTrashAlt className="w-3.5 h-3.5" />
+                                                                            <span>Delete User</span>
+                                                                        </button>
+                                                                    </>
+                                                                )}
+                                                            </div>
                                                         )}
                                                     </div>
                                                 </td>

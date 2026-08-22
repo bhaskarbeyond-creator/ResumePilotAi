@@ -76,12 +76,11 @@ export async function getAllMessages() {
 // Contact submissions cross the rate-limited server boundary; clients cannot write the
 // moderation collection directly.
 export async function addContactMessage(email, name, message) {
-    const response = await fetch('/api/contact', {
+    const { response, data: result } = await fetchAdminWithReauth('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, name, message, website: '' })
     });
-    const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || 'Unable to submit contact message.');
     return result;
 }
@@ -919,7 +918,7 @@ export async function getAllEmployerApplications() {
 
 async function reviewEmployerApplication(userId, status, reason = '', expectedStatus = undefined) {
     try {
-        const response = await fetch(`/api/admin/employer-applications/${encodeURIComponent(userId)}`, {
+        const response = await fetchAdminWithReauth(`/api/admin/employer-applications/${encodeURIComponent(userId)}`, {
             method: 'PATCH', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status, reason, ...(expectedStatus ? { expectedStatus } : {}) })
         });
@@ -949,7 +948,7 @@ export async function createCompany(employerId, companyData) {
     const user = fire.auth().currentUser;
     if (!user || user.uid !== employerId) return { success: false, error: 'Approved employer sign-in is required.' };
     try {
-        const response = await fetch('/api/employer/companies', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: companyData }) });
+        const response = await fetchAdminWithReauth('/api/employer/companies', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: companyData }) });
         const result = await response.json().catch(() => ({}));
         return response.ok && result.success ? result : { success: false, error: result.error?.message || result.error || 'Unable to create company.', code: result.code };
     } catch (error) { return { success: false, error: error.message }; }
@@ -1042,7 +1041,7 @@ export async function getApprovedEmployerCompanies(employerId) {
 // Update a company
 export async function updateCompany(companyId, companyData, expectedRevision = 0) {
     try {
-        const response = await fetch(`/api/employer/companies/${encodeURIComponent(companyId)}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: companyData, expectedRevision }) });
+        const response = await fetchAdminWithReauth(`/api/employer/companies/${encodeURIComponent(companyId)}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: companyData, expectedRevision }) });
         const result = await response.json().catch(() => ({}));
         return response.ok && result.success ? result : { success: false, error: result.error?.message || result.error || 'Unable to update company.', code: result.code };
     } catch (error) { return { success: false, error: error.message }; }
@@ -1051,7 +1050,7 @@ export async function updateCompany(companyId, companyData, expectedRevision = 0
 // Delete a company only after revision and dependent-job checks.
 export async function deleteCompany(companyId, expectedRevision = 0) {
     try {
-        const response = await fetch(`/api/employer/companies/${encodeURIComponent(companyId)}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expectedRevision }) });
+        const response = await fetchAdminWithReauth(`/api/employer/companies/${encodeURIComponent(companyId)}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expectedRevision }) });
         const result = await response.json().catch(() => ({}));
         return response.ok && result.success ? result : { success: false, error: result.error?.message || result.error || 'Unable to delete company.', code: result.code };
     } catch (error) { return { success: false, error: error.message }; }
@@ -1084,7 +1083,7 @@ export async function getAllCompanies() {
 // Company moderation is server-authoritative, stale-target checked, and audited.
 async function updateCompanyByAdminApi(companyId, changes) {
     try {
-        const response = await fetch(`/api/admin/companies/${encodeURIComponent(companyId)}`, {
+        const response = await fetchAdminWithReauth(`/api/admin/companies/${encodeURIComponent(companyId)}`, {
             method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(changes),
         });
         const result = await response.json().catch(() => ({}));
@@ -1168,7 +1167,7 @@ export async function createJobPosting(employerId, jobData) {
     const user = fire.auth().currentUser;
     if (!user || user.uid !== employerId) return { success: false, error: 'Approved employer sign-in is required.' };
     try {
-        const response = await fetch('/api/employer/jobs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: jobData }) });
+        const response = await fetchAdminWithReauth('/api/employer/jobs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: jobData }) });
         const result = await response.json().catch(() => ({}));
         return response.ok && result.success ? result : { success: false, error: result.error?.message || result.error || 'Unable to create job.', code: result.code };
     } catch (error) { return { success: false, error: error.message }; }
@@ -1349,7 +1348,7 @@ export async function getEmployerJobs(employerId) {
 export async function updateJobPosting(jobId, updateData, expectedRevision = 0) {
     try {
         const statusOnly = Object.keys(updateData || {}).length === 1 && Object.hasOwn(updateData, 'status');
-        const response = await fetch(`/api/employer/jobs/${encodeURIComponent(jobId)}`, {
+        const response = await fetchAdminWithReauth(`/api/employer/jobs/${encodeURIComponent(jobId)}`, {
             method: 'PATCH', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(statusOnly ? { status: updateData.status, expectedRevision } : { data: updateData, expectedRevision }),
         });
@@ -1361,7 +1360,7 @@ export async function updateJobPosting(jobId, updateData, expectedRevision = 0) 
 // Delete an employer-owned job only after revision and application checks.
 export async function deleteJobPosting(jobId, expectedRevision = 0) {
     try {
-        const response = await fetch(`/api/employer/jobs/${encodeURIComponent(jobId)}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expectedRevision }) });
+        const response = await fetchAdminWithReauth(`/api/employer/jobs/${encodeURIComponent(jobId)}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expectedRevision }) });
         const result = await response.json().catch(() => ({}));
         return response.ok && result.success ? result : { success: false, error: result.error?.message || result.error || 'Unable to delete job.', code: result.code };
     } catch (error) { return { success: false, error: error.message }; }
@@ -1370,7 +1369,7 @@ export async function deleteJobPosting(jobId, expectedRevision = 0) {
 // Administrative deletion is server-authoritative, stale-target checked, and audited.
 export async function deleteJobByAdmin(jobId, expected = {}) {
     try {
-        const response = await fetch(`/api/admin/jobs/${encodeURIComponent(jobId)}`, {
+        const response = await fetchAdminWithReauth(`/api/admin/jobs/${encodeURIComponent(jobId)}`, {
             method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(expected),
         });
         const result = await response.json().catch(() => ({}));
@@ -1411,7 +1410,7 @@ export async function submitJobApplication(userId, jobId, applicationData) {
     const currentUser = fire.auth().currentUser;
     if (!currentUser || currentUser.uid !== userId) return { success: false, error: 'Sign in again before applying.' };
     try {
-        const response = await fetch(`/api/jobs/${encodeURIComponent(jobId)}/applications`, {
+        const response = await fetchAdminWithReauth(`/api/jobs/${encodeURIComponent(jobId)}/applications`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1614,7 +1613,7 @@ export async function getUserJobApplications(userId) {
 // Update an application through the employer-owned, revision-safe backend transaction.
 export async function updateApplicationStatus(applicationId, status, notes = '', expected = {}) {
     try {
-        const response = await fetch(`/api/job-applications/${encodeURIComponent(applicationId)}/status`, {
+        const response = await fetchAdminWithReauth(`/api/job-applications/${encodeURIComponent(applicationId)}/status`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1731,7 +1730,7 @@ export async function getAllJobs(page = 1, itemsPerPage = 10, filters = {}) {
 
 async function updateJobByAdminApi(jobId, changes) {
     try {
-        const response = await fetch(`/api/admin/jobs/${encodeURIComponent(jobId)}`, {
+        const response = await fetchAdminWithReauth(`/api/admin/jobs/${encodeURIComponent(jobId)}`, {
             method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(changes),
         });
         const result = await response.json().catch(() => ({}));
@@ -2033,7 +2032,7 @@ export async function getAllInvoicesAdmin() {
 export async function grantProSubscriptionAdmin(userId, _planType = 'yearly', durationMonths = 12) {
     try {
         const normalizedDuration = Number(durationMonths) === 999 ? 600 : Number(durationMonths);
-        const response = await fetch(`/api/admin/users/${encodeURIComponent(userId)}`, {
+        const response = await fetchAdminWithReauth(`/api/admin/users/${encodeURIComponent(userId)}`, {
             method: 'PATCH', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ membership: 'Premium', durationMonths: normalizedDuration })
         });
@@ -2123,7 +2122,7 @@ export async function deleteUserAccountPermanently(currentPassword) {
         await reauthenticateUser(currentPassword);
     }
     const idToken = await user.getIdToken(true);
-    const response = await fetch('/api/account/delete', { 
+    const response = await fetchAdminWithReauth('/api/account/delete', { 
         method: 'POST', 
         headers: { 
             'Content-Type': 'application/json',
@@ -2420,8 +2419,7 @@ export async function getFrontendStats() {
 // Set frontend stats for landing pages
 export async function setFrontendStats(stats, expectedRevision = 0) {
     try {
-        const response = await fetch('/api/admin/landing-content', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: stats, expectedRevision }) });
-        const result = await response.json().catch(() => ({}));
+        const { response, data: result } = await fetchAdminWithReauth('/api/admin/landing-content', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: stats, expectedRevision }) });
         return response.ok && result.success ? result : { success: false, message: result.error || 'Unable to save landing content.', code: result.code };
     } catch (error) { return { success: false, message: error.message }; }
 }
@@ -4096,8 +4094,7 @@ export async function getSkillsOfUser(uid) {
 
 export async function addReview(review) {
     try {
-        const response = await fetch('/api/admin/reviews', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(review) });
-        const result = await response.json().catch(() => ({}));
+        const { response, data: result } = await fetchAdminWithReauth('/api/admin/reviews', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(review) });
         return response.ok && result.success ? result : { success: false, error: result.error || 'Unable to add review.' };
     } catch (error) { return { success: false, error: error.message }; }
 }
@@ -4139,8 +4136,7 @@ export async function updateTrustedBy(id, data, expectedRevision = 0) {
 
 export async function addGlobalRating(rating) {
     try {
-        const response = await fetch('/api/admin/global-rating', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rating }) });
-        const result = await response.json().catch(() => ({}));
+        const { response, data: result } = await fetchAdminWithReauth('/api/admin/global-rating', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rating }) });
         return response.ok && result.success ? result : { success: false, error: result.error || 'Unable to update rating.' };
     } catch (error) { return { success: false, error: error.message }; }
 }
@@ -4171,7 +4167,7 @@ export async function get3Reviews() {
 
 export async function deleteReview(id, expectedRevision = 0) {
     try {
-        const response = await fetch(`/api/admin/reviews/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expectedRevision }) });
+        const response = await fetchAdminWithReauth(`/api/admin/reviews/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expectedRevision }) });
         const result = await response.json().catch(() => ({}));
         return response.ok && result.success ? result : { success: false, error: result.error || 'Unable to delete review.', code: result.code };
     } catch (error) { return { success: false, error: error.message }; }
@@ -4244,7 +4240,7 @@ function safeRealtimeDbOperation(operation, fallbackReturn = null) {
 
 export async function createConversation(applicationId) {
     try {
-        const response = await fetch('/api/messages/conversations', {
+        const response = await fetchAdminWithReauth('/api/messages/conversations', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ applicationId })
         });
@@ -4258,7 +4254,7 @@ export async function createConversation(applicationId) {
 
 export async function getConversationParticipantProfile(conversationId) {
     try {
-        const response = await fetch(`/api/messages/conversations/${encodeURIComponent(conversationId)}/participant-profile`);
+        const response = await fetchAdminWithReauth(`/api/messages/conversations/${encodeURIComponent(conversationId)}/participant-profile`);
         const result = await response.json().catch(() => ({}));
         if (!response.ok || !result.success) throw new Error(result.error || 'Participant profile is unavailable.');
         return result.profile || { name: '', avatar: '' };
@@ -4269,7 +4265,7 @@ export async function getConversationParticipantProfile(conversationId) {
 
 export async function sendMessage(conversationId, _senderId, text) {
     try {
-        const response = await fetch('/api/messages/send', {
+        const response = await fetchAdminWithReauth('/api/messages/send', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ conversationId, text })
         });
@@ -5448,7 +5444,7 @@ export async function getAllAdminTransactions() {
 
 export async function refundOrderTransaction(docId, _transactionId, _userId, reason = 'Customer requested refund') {
     try {
-        const response = await fetch('/api/admin/payments/refund', {
+        const response = await fetchAdminWithReauth('/api/admin/payments/refund', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ paymentOrderId: docId, reason })
         });

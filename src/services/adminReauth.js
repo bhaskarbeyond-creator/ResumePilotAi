@@ -34,7 +34,7 @@ async function refreshAuthorizationHeader(options = {}) {
 }
 
 export async function fetchAdminWithReauth(url, options = {}, { retry = true } = {}) {
-  let requestOptions = options;
+  let requestOptions = await refreshAuthorizationHeader(options);
   const execute = async () => {
     const response = await fetch(url, requestOptions);
     const data = await response.json().catch(() => ({}));
