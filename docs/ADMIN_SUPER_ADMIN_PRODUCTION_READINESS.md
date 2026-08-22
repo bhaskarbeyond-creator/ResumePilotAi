@@ -1,7 +1,7 @@
 # Admin & Super Admin Production Readiness Final Certification
 
 ## Execution Context
-- **Target Git SHA**: `d91bff4a0f6ee1d4f22226f2e812b505fc75d9f8`
+- **Target Git SHA**: `2992158ece379a012b510891a75d3caad9ce7d7a`
 - **Date**: 2026-08-22
 - **Objective**: Final 23-point certification for `/adm` production freeze.
 
