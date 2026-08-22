@@ -51,7 +51,6 @@ export function seedSuperAdminState() {
     encryption: { encryption: { provider: 'server-key', configured: true, securityLevel: 'SERVER_SIDE_MASTER_KEY_ENVELOPE_AES_256_GCM', activeVersion: 'v1' }, dataPlane: { provider: 'firestore', configured: true } },
     observability: { metrics: { sampleCount: 12, p50: 20, p95: 80, p99: 120, errors: { serverErrors: 0 } }, note: 'Fixture telemetry' },
     backup: { capability: { available: true, note: 'Enterprise tenant export' }, lastRecordedExport: null },
-    announcements: [],
     paymentsHealth: { status: 'HEALTHY', counts: { inspected: 5, FAILED: 0, PENDING: 1, ACTIVE: 4 } },
   };
 }
