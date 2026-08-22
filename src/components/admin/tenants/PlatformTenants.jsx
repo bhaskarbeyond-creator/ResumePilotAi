@@ -217,21 +217,25 @@ export default function PlatformTenants() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={fetchTenants}
-            disabled={loading}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-2xs"
-          >
-            <FiRefreshCw className={loading ? 'animate-spin' : ''} /> Refresh
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowProvisionModal(true)}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition shadow-xs"
-          >
-            <FiPlus /> Provision Tenant
-          </button>
+          {error !== 'ENTERPRISE_DISABLED' && (
+            <>
+              <button
+                type="button"
+                onClick={fetchTenants}
+                disabled={loading}
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-2xs"
+              >
+                <FiRefreshCw className={loading ? 'animate-spin' : ''} /> Refresh
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowProvisionModal(true)}
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition shadow-xs"
+              >
+                <FiPlus /> Provision Tenant
+              </button>
+            </>
+          )}
         </div>
       </div>
 
