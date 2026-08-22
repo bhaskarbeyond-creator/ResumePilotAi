@@ -4,7 +4,7 @@ import {
     FiHome, FiGrid, FiSettings, FiUsers, FiFileText,
     FiMail, FiLogOut, FiSearch, FiShield, FiBriefcase,
     FiLayers, FiGlobe, FiChevronDown, FiChevronRight, FiEdit,
-    FiActivity,
+    FiActivity, FiLock, FiTool, FiAlertTriangle, FiType,
 } from 'react-icons/fi';
 import {
     FaRegBuilding, FaCog, FaCreditCard, FaShareAlt, FaChartLine,
@@ -89,7 +89,7 @@ const SETTINGS_GROUPS = [
     ]},
 ];
 
-const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: notifyParentOfToggle, onOpenCommandPalette }) => {
+const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: notifyParentOfToggle, onOpenCommandPalette, mobileOpen = false, onCloseMobile }) => {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
         const stored = readSidebarPreference();
         return stored === null ? Boolean(initialSidebarCollapsed) : stored === 'true';
@@ -130,22 +130,42 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
         fire.auth().signOut().catch((error) => console.error('Sign out error', error));
     };
 
-    const navItems = [
-        { path: '/', icon: FiHome, label: 'Home' },
-        { path: '/adm/dashboard', icon: FiGrid, label: 'Dashboard' },
-        { path: '/adm/audit-logs', icon: FiShield, label: 'Admin Audit Trail' },
-        { path: '/adm/queues', icon: FiActivity, label: 'Queue & DLQ Monitor' },
-        { path: '/adm/tenants', icon: FaServer, label: 'Tenants Registry' },
-        { path: '/adm/users', icon: FiUsers, label: 'Users Manager' },
-        { path: '/adm/employer-applications', icon: FiBriefcase, label: 'Employer Applications' },
-        { path: '/adm/jobs-manager', icon: FiLayers, label: 'Jobs Manager' },
-        { path: '/adm/company-management', icon: FaRegBuilding, label: 'Company Management' },
-        { path: '/adm/blog-management', icon: FiFileText, label: 'Blog Management' },
-        { path: '/adm/landing-pages', icon: FiGlobe, label: 'Landing Pages' },
-        { path: '/adm/reviews', icon: MdOutlineReviews, label: 'Reviews' },
-        { path: '/adm/trustedby', icon: FiShield, label: 'Trusted by' },
-        { path: '/adm/messages', icon: FiMail, label: 'Messages' },
+    const navGroups = [
+        {
+            label: 'Control Plane',
+            items: [
+                { path: '/adm/dashboard', icon: FiGrid, label: 'Command Center' },
+                { path: '/adm/tenants', icon: FaServer, label: 'Tenants Registry' },
+                { path: '/adm/audit-logs', icon: FiShield, label: 'Admin Audit Trail' },
+                { path: '/adm/security', icon: FiLock, label: 'Security Events' },
+                { path: '/adm/queues', icon: FiActivity, label: 'Queue & DLQ Monitor' },
+                { path: '/adm/operations', icon: FiTool, label: 'Platform Operations' },
+                { path: '/adm/attention', icon: FiAlertTriangle, label: 'Attention' },
+            ],
+        },
+        {
+            label: 'Identity',
+            items: [
+                { path: '/adm/users', icon: FiUsers, label: 'Users Manager' },
+                { path: '/adm/operators', icon: FiLock, label: 'Platform Operators' },
+            ],
+        },
+        {
+            label: 'Consumer Product',
+            items: [
+                { path: '/adm/employer-applications', icon: FiBriefcase, label: 'Employer Applications' },
+                { path: '/adm/jobs-manager', icon: FiLayers, label: 'Jobs Manager' },
+                { path: '/adm/company-management', icon: FaRegBuilding, label: 'Company Management' },
+                { path: '/adm/blog-management', icon: FiFileText, label: 'Blog Management' },
+                { path: '/adm/landing-pages', icon: FiGlobe, label: 'Landing Pages' },
+                { path: '/adm/reviews', icon: MdOutlineReviews, label: 'Reviews' },
+                { path: '/adm/trustedby', icon: FiShield, label: 'Trusted by' },
+                { path: '/adm/messages', icon: FiMail, label: 'Messages' },
+                { path: '/adm/phrases', icon: FiType, label: 'Phrases' },
+            ],
+        },
     ];
+    const homeItem = { path: '/', icon: FiHome, label: 'Home' };
 
     return (
         <>
@@ -183,10 +203,11 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
                 }
             `}</style>
 
+            {mobileOpen && <button type="button" className="fixed inset-0 z-40 bg-slate-900/40 lg:hidden" aria-label="Close admin navigation" onClick={onCloseMobile} />}
             <div
                 className={`fixed left-0 top-0 bottom-0 h-screen bg-white border-r border-gray-100 z-50 flex flex-col transition-all duration-300 ease-in-out ${
                     sidebarCollapsed ? 'w-[70px] min-w-[70px]' : 'w-[280px]'
-                }`}>
+                } ${mobileOpen ? 'translate-x-0' : 'max-lg:-translate-x-full lg:translate-x-0'}`}>
                 {/* Top Header Section */}
                 <div className={`transition-all duration-300 ${sidebarCollapsed ? 'p-4' : 'px-6 py-5'}`}>
                     {sidebarCollapsed ? (
@@ -251,19 +272,14 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
                     )}
 
                     <div className="px-3">
-                        {/* Home & Dashboard */}
-                        {navItems.slice(0, 2).map((item) => (
-                            <Link to={item.path} key={item.path}>
-                                <div className={`flex items-center text-sm transition-all duration-200 rounded-lg mb-1 ${
-                                    location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path))
-                                        ? 'bg-purple-100 text-purple-700 font-medium'
-                                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700'
-                                } ${sidebarCollapsed ? 'p-3 justify-center' : 'p-3'}`}>
-                                    <item.icon className={`text-lg min-w-[20px] ${sidebarCollapsed ? 'mr-0' : 'mr-3'}`} />
-                                    {!sidebarCollapsed && <span className="flex-1">{item.label}</span>}
-                                </div>
-                            </Link>
-                        ))}
+                        <Link to={homeItem.path} onClick={onCloseMobile}>
+                            <div className={`flex items-center text-sm transition-all duration-200 rounded-lg mb-1 ${
+                                location.pathname === homeItem.path ? 'bg-purple-100 text-purple-700 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700'
+                            } ${sidebarCollapsed ? 'p-3 justify-center' : 'p-3'}`}>
+                                <homeItem.icon className={`text-lg min-w-[20px] ${sidebarCollapsed ? 'mr-0' : 'mr-3'}`} />
+                                {!sidebarCollapsed && <span className="flex-1">{homeItem.label}</span>}
+                            </div>
+                        </Link>
 
                         {/* ── Settings Accordion ── */}
                         <div className="mb-1">
@@ -342,18 +358,22 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
                             )}
                         </div>
 
-                        {/* Rest of nav items */}
-                        {navItems.slice(2).map((item) => (
-                            <Link to={item.path} key={item.path}>
-                                <div className={`flex items-center text-sm transition-all duration-200 rounded-lg mb-1 ${
-                                    location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path))
-                                        ? 'bg-purple-100 text-purple-700 font-medium'
-                                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700'
-                                } ${sidebarCollapsed ? 'p-3 justify-center' : 'p-3'}`}>
-                                    <item.icon className={`text-lg min-w-[20px] ${sidebarCollapsed ? 'mr-0' : 'mr-3'}`} />
-                                    {!sidebarCollapsed && <span className="flex-1">{item.label}</span>}
-                                </div>
-                            </Link>
+                        {navGroups.map(group => (
+                            <div key={group.label} className="mb-2">
+                                {!sidebarCollapsed && <p className="px-3 pt-3 pb-1 text-[9px] font-extrabold uppercase tracking-widest text-slate-400">{group.label}</p>}
+                                {group.items.map(item => (
+                                    <Link to={item.path} key={item.path} onClick={onCloseMobile}>
+                                        <div className={`flex items-center text-sm transition-all duration-200 rounded-lg mb-1 ${
+                                            location.pathname === item.path || location.pathname.startsWith(item.path)
+                                                ? 'bg-purple-100 text-purple-700 font-medium'
+                                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700'
+                                        } ${sidebarCollapsed ? 'p-3 justify-center' : 'p-3'}`}>
+                                            <item.icon className={`text-lg min-w-[20px] ${sidebarCollapsed ? 'mr-0' : 'mr-3'}`} />
+                                            {!sidebarCollapsed && <span className="flex-1">{item.label}</span>}
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
                         ))}
 
                         {/* Logout */}

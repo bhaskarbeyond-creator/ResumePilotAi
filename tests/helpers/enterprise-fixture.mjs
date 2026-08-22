@@ -587,8 +587,8 @@ export function createEnterpriseFixtureBackend(state = seedEnterpriseState()) {
  * Seeds a believable Firebase compat session and intercepts all Google
  * identity endpoints so the real app boots fully authenticated offline.
  */
-export async function installAuthenticatedSession(page, { uid = 'browser-owner', email = 'owner@northwind.example', displayName = 'Northwind Owner' } = {}) {
-  const mockToken = makeMockJwt({ user_id: uid, sub: uid, email });
+export async function installAuthenticatedSession(page, { uid = 'browser-owner', email = 'owner@northwind.example', displayName = 'Northwind Owner', claims = {} } = {}) {
+  const mockToken = makeMockJwt({ user_id: uid, sub: uid, email, ...claims });
   const authUserKey = `firebase:authUser:${API_KEY}:[DEFAULT]`;
   await page.addInitScript(({ key, apiKey, token, uid: id, email: mail, displayName: name }) => {
     window.__ENTERPRISE_ENABLED__ = true;

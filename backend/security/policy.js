@@ -92,7 +92,14 @@ function enforceApiPolicy(req, res, next) {
   }
   const requiresRecentAuthentication = pathname === '/account/delete'
     || (pathname === '/admin/firebase-service-account' && req.method !== 'GET')
-    || (req.method !== 'GET' && RECENT_AUTH_PATHS.has(pathname));
+    || (req.method !== 'GET' && RECENT_AUTH_PATHS.has(pathname))
+    || (req.method !== 'GET' && (
+      pathname === '/platform/queues/retry'
+      || pathname === '/platform/announcements'
+      || pathname.startsWith('/platform/announcements/')
+      || pathname === '/platform/operators'
+      || /\/platform\/tenants\/[^/]+\/decommission$/.test(pathname)
+    ));
   if (requiresRecentAuthentication) {
     const authTime = Number(req.user?.claims?.auth_time || 0) * 1000;
     const maxAgeMs = Number(process.env.SENSITIVE_AUTH_MAX_AGE_MS || 10 * 60 * 1000);

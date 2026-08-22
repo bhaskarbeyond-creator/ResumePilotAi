@@ -1,16 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import fire from '../../../conf/fire';
+import { useAdminSession } from '../AdminContext';
 import {
   FiActivity, FiRefreshCw, FiAlertTriangle, FiCheckCircle,
   FiRotateCw, FiClock, FiMail, FiLayers, FiAlertCircle
 } from 'react-icons/fi';
 
 export default function PlatformQueues() {
+  const { isSuperAdmin } = useAdminSession();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [retrying, setRetrying] = useState(false);
   const [error, setError] = useState(null);
   const [notification, setNotification] = useState(null);
+  const [confirmAction, setConfirmAction] = useState(null);
 
   const fetchQueues = useCallback(async () => {
     setLoading(true);
@@ -43,6 +46,22 @@ export default function PlatformQueues() {
   }, [fetchQueues]);
 
   const handleRetry = async (jobId = null, all = false) => {
+    if (all && confirmAction?.id !== 'retry-all') {
+      setConfirmAction({
+        id: 'retry-all',
+        title: 'Replay All Dead Letters',
+        message: 'Are you sure you want to replay all dead-letter jobs? This will queue them for immediate delivery attempt.',
+        confirmText: 'Replay All',
+        danger: false,
+        action: () => executeRetry(jobId, all)
+      });
+      return;
+    }
+    await executeRetry(jobId, all);
+  };
+
+  const executeRetry = async (jobId, all) => {
+    setConfirmAction(null);
     setRetrying(true);
     setNotification(null);
     try {
@@ -101,10 +120,11 @@ export default function PlatformQueues() {
             <button
               type="button"
               onClick={() => handleRetry(null, true)}
-              disabled={retrying}
+              disabled={retrying || !isSuperAdmin}
+              title={isSuperAdmin ? 'Replay dead-letter jobs' : 'Super Admin only'}
               className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-600 text-white text-xs font-bold hover:bg-amber-700 transition shadow-xs disabled:opacity-50"
             >
-              <FiRotateCw className={retrying ? 'animate-spin' : ''} /> Replay All Dead Letters ({summary.deadLetterCount})
+              <FiRotateCw className={retrying ? 'animate-spin' : ''} /> {isSuperAdmin ? `Replay All Dead Letters (${summary.deadLetterCount})` : 'Replay Super Admin only'}
             </button>
           )}
         </div>
@@ -232,10 +252,11 @@ export default function PlatformQueues() {
                         <button
                           type="button"
                           onClick={() => handleRetry(job.id, false)}
-                          disabled={retrying}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 font-bold hover:bg-amber-100 text-[11px] transition"
+                          disabled={retrying || !isSuperAdmin}
+                          title={isSuperAdmin ? 'Replay this job' : 'Super Admin only'}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 font-bold hover:bg-amber-100 text-[11px] transition disabled:opacity-50"
                         >
-                          <FiRotateCw /> Retry
+                          <FiRotateCw /> {isSuperAdmin ? 'Retry' : 'Super Admin only'}
                         </button>
                       ) : (
                         <span className="text-slate-400 text-[11px]">—</span>
@@ -248,6 +269,46 @@ export default function PlatformQueues() {
           </div>
         )}
       </div>
+      {/* Confirmation Modal */}
+      {confirmAction && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
+          onClick={() => setConfirmAction(null)}
+        >
+          <div
+            className="w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col transform transition-all"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className={`p-4 border-b border-slate-100 flex items-center gap-3 ${confirmAction.danger ? 'bg-red-50' : 'bg-slate-50'}`}>
+              {confirmAction.danger ? <FiAlertTriangle className="text-red-600 h-5 w-5" /> : <FiRotateCw className="text-amber-600 h-5 w-5" />}
+              <h3 className={`font-bold ${confirmAction.danger ? 'text-red-900' : 'text-slate-900'}`}>
+                {confirmAction.title}
+              </h3>
+            </div>
+            <div className="p-5 text-sm text-slate-600 leading-relaxed">
+              {confirmAction.message}
+            </div>
+            <div className="p-4 pt-2 flex justify-end gap-3 bg-slate-50 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setConfirmAction(null)}
+                className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold hover:bg-slate-50 transition shadow-2xs text-xs"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmAction.action}
+                className={`px-4 py-2 rounded-xl text-white font-bold transition shadow-xs text-xs ${
+                  confirmAction.danger ? 'bg-red-600 hover:bg-red-700' : 'bg-amber-600 hover:bg-amber-700'
+                }`}
+              >
+                {confirmAction.confirmText}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

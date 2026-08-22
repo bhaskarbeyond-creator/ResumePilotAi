@@ -526,12 +526,11 @@ export function addUser(userId, firstname, lastname, email) {
     }).catch(() => {});
 }
 async function updateUserByAdminApi(userId, changes) {
-    const response = await fetch(`/api/admin/users/${encodeURIComponent(userId)}`, {
+    const { response, data: result } = await fetchAdminWithReauth(`/api/admin/users/${encodeURIComponent(userId)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(changes)
     });
-    const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || 'Administrative user update failed.');
     return result;
 }
@@ -630,11 +629,10 @@ export async function restoreMergedUserAccount() {
 // Administrative deletion executes atomically on the trusted backend and fails closed.
 export async function deleteUserByAdmin(userId, email = null) {
     try {
-        const response = await fetch('/api/admin/delete-user', {
+        const { response, data: result } = await fetchAdminWithReauth('/api/admin/delete-user', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ uid: userId, email })
         });
-        const result = await response.json().catch(() => ({}));
         if (!response.ok || !result.success) throw new Error(result.error || 'Unable to delete user.');
         return result;
     } catch (error) {

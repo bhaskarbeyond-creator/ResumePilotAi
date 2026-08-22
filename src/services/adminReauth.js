@@ -1,3 +1,4 @@
+
 let reauthHandler = null;
 
 export function registerAdminReauthHandler(handler) {
@@ -19,9 +20,23 @@ export function apiErrorCode(response, result = {}) {
   return result.code || nested?.code || (response?.status === 401 ? 'AUTH_REQUIRED' : response?.status === 403 ? 'FORBIDDEN' : null);
 }
 
+async function refreshAuthorizationHeader(options = {}) {
+  const user = typeof window !== 'undefined' && window.fire?.auth
+    ? window.fire.auth().currentUser
+    : null;
+  if (!user) return options;
+  const token = await user.getIdToken(true).catch(() => null);
+  if (!token) return options;
+  return {
+    ...options,
+    headers: { ...(options.headers || {}), Authorization: `Bearer ${token}` },
+  };
+}
+
 export async function fetchAdminWithReauth(url, options = {}, { retry = true } = {}) {
+  let requestOptions = options;
   const execute = async () => {
-    const response = await fetch(url, options);
+    const response = await fetch(url, requestOptions);
     const data = await response.json().catch(() => ({}));
     return { response, data };
   };
@@ -29,13 +44,11 @@ export async function fetchAdminWithReauth(url, options = {}, { retry = true } =
   const code = apiErrorCode(result.response, result.data);
   if (retry && code === 'RECENT_AUTH_REQUIRED') {
     await requestAdminReauthentication();
+    requestOptions = await refreshAuthorizationHeader(requestOptions);
     result = await execute();
   } else if (retry && (code === 'AUTH_REQUIRED' || code === 'INVALID_AUTH_TOKEN')) {
-    const user = typeof window !== 'undefined' && window.fire?.auth ? window.fire.auth().currentUser : null;
-    if (user) {
-      await user.getIdToken?.(true).catch(() => null);
-      result = await execute();
-    }
+    requestOptions = await refreshAuthorizationHeader(requestOptions);
+    if (requestOptions !== options) result = await execute();
   }
   return result;
 }
