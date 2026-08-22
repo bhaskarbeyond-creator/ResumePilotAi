@@ -4248,14 +4248,19 @@ app.patch('/api/admin/users/:uid', async (req, res) => {
 
 async function deleteApplicationNotifications(database, applicationIds) {
     for (const applicationId of applicationIds) {
-        const notifications = await database.collectionGroup('userNotifications').where('data.applicationId', '==', applicationId).get();
-        for (const notification of notifications.docs) await database.recursiveDelete(notification.ref);
+        try {
+            const notifications = await database.collectionGroup('userNotifications').where('data.applicationId', '==', applicationId).get();
+            for (const notification of notifications.docs) await database.recursiveDelete(notification.ref);
+        } catch (e) {
+            console.warn(`[deleteApplicationNotifications] Failed to cleanup notifications for app ${applicationId}:`, e.message);
+        }
     }
 }
 
 async function removeDeletedUserFromRealtimeMessaging(uid) {
     if (!admin?.database) throw new Error('Realtime Database is unavailable');
-    const realtime = admin.database();
+    let realtime;
+    try { realtime = admin.database(); } catch (e) { return; }
     const indexSnapshot = await realtime.ref(`user-conversations/${uid}`).get();
     const conversationIds = Object.keys(indexSnapshot.val() || {});
     for (const conversationId of conversationIds) {
