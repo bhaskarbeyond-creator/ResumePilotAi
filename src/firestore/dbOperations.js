@@ -2122,7 +2122,14 @@ export async function deleteUserAccountPermanently(currentPassword) {
     if (!['linkedin', 'github'].includes(token.claims.signInProvider)) {
         await reauthenticateUser(currentPassword);
     }
-    const response = await fetch('/api/account/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+    const idToken = await user.getIdToken(true);
+    const response = await fetch('/api/account/delete', { 
+        method: 'POST', 
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${idToken}`
+        } 
+    });
     const result = await response.json().catch(() => ({}));
     if (!response.ok || !result.success) throw new Error(result.error || 'Unable to delete account.');
     await fire.auth().signOut().catch(() => {});
