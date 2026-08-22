@@ -249,8 +249,14 @@ print("Deployment complete!")
 import urllib.request, urllib.error
 import json
 
-CLOUDFLARE_ZONE_ID = "725f3d648139c27172638441415bf9d2"
-CLOUDFLARE_API_TOKEN = "cfut_Su0qFg1y8DIfMAMbGP9hNM89hW87cVhEBqfdVzeH84cb9675"
+CLOUDFLARE_ZONE_ID = os.environ.get("CLOUDFLARE_ZONE_ID", "")
+CLOUDFLARE_API_TOKEN = os.environ.get("CLOUDFLARE_API_TOKEN", "")
+if not CLOUDFLARE_ZONE_ID or not CLOUDFLARE_API_TOKEN:
+    raise SystemExit(
+        "Refusing to run: set CLOUDFLARE_ZONE_ID and CLOUDFLARE_API_TOKEN in the "
+        "environment. These are deployment credentials and must never be "
+        "committed to the repository."
+    )
 CF_PURGE_URL = f"https://api.cloudflare.com/client/v4/zones/{CLOUDFLARE_ZONE_ID}/purge_cache"
 
 # Purge all edge cached routes & assets worldwide
