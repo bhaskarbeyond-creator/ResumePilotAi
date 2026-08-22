@@ -37,6 +37,11 @@ export default function PlatformTenants() {
       const res = await fetch('/api/enterprise/platform/tenants', {
         headers: { Authorization: `Bearer ${token}` }
       });
+      if (res.status === 404) {
+        setTenants([]);
+        setError('ENTERPRISE_DISABLED');
+        return;
+      }
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error?.message || `HTTP ${res.status}`);
@@ -237,15 +242,28 @@ export default function PlatformTenants() {
         </div>
       )}
 
-      {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-800 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <FiAlertTriangle className="h-4 w-4 text-red-600 shrink-0" />
-            <span>{error}</span>
-          </div>
-          <button type="button" onClick={fetchTenants} className="font-bold underline">Retry</button>
+      {error === 'ENTERPRISE_DISABLED' ? (
+        <div className="bg-slate-50 border border-slate-200 p-12 rounded-3xl text-center shadow-inner mt-8">
+          <FiShieldOff className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-slate-800 mb-2">Enterprise Tenancy Disabled</h2>
+          <p className="text-sm text-slate-500 max-w-lg mx-auto">
+            The enterprise tenant foundation is currently inactive in this environment. 
+            To enable multi-tenancy and organization management, the 
+            <code className="mx-1 px-1.5 py-0.5 bg-slate-200 rounded text-slate-700">ENTERPRISE_TENANCY_ENABLED=true</code>
+            flag must be configured in the server environment.
+          </p>
         </div>
-      )}
+      ) : (
+        <>
+          {error && (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-800 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FiAlertTriangle className="h-4 w-4 text-red-600 shrink-0" />
+                <span>{error}</span>
+              </div>
+              <button type="button" onClick={fetchTenants} className="font-bold underline">Retry</button>
+            </div>
+          )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -531,6 +549,8 @@ export default function PlatformTenants() {
             </div>
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   );
