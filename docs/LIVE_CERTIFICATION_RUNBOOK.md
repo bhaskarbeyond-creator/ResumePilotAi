@@ -2,7 +2,7 @@
 
 This deterministic runbook is intended for the production-capable operator (or CI/CD agent) who possesses SSH/Hostinger credentials and the authority to deploy and test against the live production environment (`https://airesume.projectdemo.guru`).
 
-**Target Release SHA:** `21e7003a5ef2f8164fa2aebbcadfdcb5c53285e7`
+**Target Release SHA:** `1c3b0377fa664fccfb1aac7324a82133dbaad0c6`
 *(Ensure local and remote SHAs match this exactly before proceeding).*
 
 ---
@@ -12,19 +12,19 @@ This deterministic runbook is intended for the production-capable operator (or C
 1. **Verify Exact SHA on Deployment Origin**:
    ```bash
    git rev-parse HEAD
-   # Must output: 21e7003a5ef2f8164fa2aebbcadfdcb5c53285e7
+   # Must output: 1c3b0377fa664fccfb1aac7324a82133dbaad0c6
    ```
 
 2. **Verify `backend/COMMIT_SHA` Match**:
    ```bash
    cat backend/COMMIT_SHA
-   # Must output: 21e7003a5ef2f8164fa2aebbcadfdcb5c53285e7
+   # Must output: 1c3b0377fa664fccfb1aac7324a82133dbaad0c6
    ```
 
 3. **Create Production Database Backup (Firestore)**:
    ```bash
    # From a machine authenticated with gcloud CLI
-   gcloud firestore export gs://ai-resume-builder-424cf.firebasestorage.app/backups/deploy-21e7003a
+   gcloud firestore export gs://ai-resume-builder-424cf.firebasestorage.app/backups/deploy-1c3b0377
    ```
 
 ---
@@ -36,7 +36,7 @@ This deterministic runbook is intended for the production-capable operator (or C
    ssh user@hostinger_ip
    cd /path/to/project
    git pull origin main
-   git checkout 21e7003a5ef2f8164fa2aebbcadfdcb5c53285e7
+   git checkout 1c3b0377fa664fccfb1aac7324a82133dbaad0c6
    npm ci
    npm run build
    cd backend && npm ci
@@ -150,7 +150,7 @@ If *any* gate fails, execute the rollback drill immediately:
 2. Monitor `pm2 logs` and `/api/healthz`.
 3. If database schema was destructively altered (which is extremely rare for the Admin UI), restore the Firestore backup:
    ```bash
-   gcloud firestore import gs://ai-resume-builder-424cf.firebasestorage.app/backups/deploy-21e7003a
+   gcloud firestore import gs://ai-resume-builder-424cf.firebasestorage.app/backups/deploy-1c3b0377
    ```
 
 ### Final Sign-Off
