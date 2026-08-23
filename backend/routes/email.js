@@ -622,16 +622,16 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
             break;
 
         case 'welcome':
-            subject = `Welcome to ${brandName}! Build your ATS Resume Today 🚀`;
+            subject = `Welcome to ${brandName} — Get Started with Your Resume`;
             bodyHtml = buildEmailWrapper(
                 `Welcome aboard, ${candidateName}!`,
-                'WELCOME ABOARD 🚀',
+                'WELCOME ABOARD',
                 `
-                <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">Welcome, ${candidateName}! 👋</h2>
+                <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">Welcome, ${candidateName}!</h2>
                 <p style="font-size: 15px; color: #475569; line-height: 1.6;">You're now ready to craft high-scoring, ATS-optimized resumes that get noticed by top tech & corporate recruiters.</p>
                 
                 <div style="background: #eef2ff; border-left: 4px solid #4f46e5; padding: 18px; border-radius: 8px; margin: 24px 0;">
-                    <p style="margin: 0 0 10px 0; font-weight: 700; color: #312e81; font-size: 14px;">🎯 Quick Start Guide:</p>
+                    <p style="margin: 0 0 10px 0; font-weight: 700; color: #312e81; font-size: 14px;">Quick Start Guide:</p>
                     <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #3730a3; line-height: 1.8;">
                         <li>Choose from 50+ ATS-tested resume templates</li>
                         <li>Use AI to generate custom summary & bullet points</li>
@@ -646,10 +646,10 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
             break;
 
         case 'password_reset':
-            subject = `Security Alert: Reset Your Password — ${brandName}`;
+            subject = `Reset Your ${brandName} Password`;
             bodyHtml = buildEmailWrapper(
                 'Password Reset Request',
-                'SECURITY ALERT 🔒',
+                'SECURITY NOTIFICATION',
                 `
                 <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
                     <h3 style="color: #991b1b; margin: 0 0 6px 0; font-size: 16px; font-weight: 800;">Password Reset Requested</h3>
@@ -667,10 +667,10 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
         case 'email_verification':
             subject = vars.verification_link
                 ? `Confirm Your Email Address — ${brandName}`
-                : `${vars.otp_code || '849204'} is your ${brandName} Verification Code 🔑`;
+                : `${vars.otp_code || '849204'} is your ${brandName} Verification Code`;
             bodyHtml = buildEmailWrapper(
                 'Confirm Your Email Address',
-                'ACCOUNT SECURITY 🔑',
+                'ACCOUNT SECURITY',
                 `
                 <div style="text-align: center;">
                     <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">Confirm Your Email Address</h2>
@@ -698,10 +698,10 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
             break;
 
         case 'payment_failed':
-            subject = `⚠️ Payment Action Required — ${brandName}`;
+            subject = `Payment Action Required — ${brandName}`;
             bodyHtml = buildEmailWrapper(
                 'Payment Processing Issue',
-                'ACTION REQUIRED ⚠️',
+                'ACTION REQUIRED',
                 `
                 <div style="background: #fff1f2; border: 1px solid #ffe4e6; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
                     <h3 style="color: #9f1239; margin: 0 0 6px 0; font-size: 16px; font-weight: 800;">Payment Unsuccessful</h3>
@@ -720,7 +720,7 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
             subject = `Upcoming Subscription Renewal Notice — ${brandName}`;
             bodyHtml = buildEmailWrapper(
                 'Subscription Renewal Notice',
-                'RENEWAL REMINDER 🔄',
+                'RENEWAL REMINDER',
                 `
                 <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">Hi ${candidateName},</h2>
                 <p style="font-size: 14px; color: #475569; line-height: 1.6;">Your <strong>${planName}</strong> subscription is scheduled for auto-renewal on <strong>${dateStr}</strong>.</p>
@@ -746,14 +746,14 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
 
         case 'ai_resume_ready':
             subject = vars.ats_score && vars.ats_score !== 'Not measured'
-                ? `✨ Your AI Resume is Ready! (ATS Score: ${vars.ats_score}/100)`
-                : `✨ Your AI Resume is Ready!`;
+                ? `Your AI Resume is Ready (ATS Score: ${vars.ats_score}/100) — ${brandName}`
+                : `Your AI Resume is Ready — ${brandName}`;
             bodyHtml = buildEmailWrapper(
                 'AI Resume Optimization Complete',
-                'AI COMPLETED ✨',
+                'AI COMPLETED',
                 `
                 <div style="text-align: center;">
-                    <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">Great news, ${candidateName}! 🎉</h2>
+                    <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">Great news, ${candidateName}!</h2>
                     <p style="font-size: 14px; color: #475569;">Our AI engine has analyzed and generated your optimized resume.</p>
 
                     <div style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border-radius: 16px; padding: 24px; color: #ffffff; margin: 24px 0; box-shadow: 0 10px 25px -5px rgba(79,70,229,0.3);">
@@ -768,12 +768,12 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
             break;
 
         case 'job_application_received':
-            subject = `📩 New Applicant for ${vars.job_title || 'Position'} — ${brandName}`;
+            subject = `New Applicant for ${vars.job_title || 'Position'} — ${brandName}`;
             bodyHtml = buildEmailWrapper(
                 'New Job Application Received',
-                'RECRUITER NOTIFICATION 📩',
+                'RECRUITER NOTIFICATION',
                 `
-                <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">New Applicant Alert!</h2>
+                <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">New Applicant Alert</h2>
                 <p style="font-size: 14px; color: #475569;">A new candidate has submitted an application for <strong>${vars.job_title || 'Software Position'}</strong> at <strong>${vars.company_name || 'TechCorp'}</strong>.</p>
 
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 20px; margin: 24px 0;">
@@ -796,17 +796,17 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
             break;
 
         case 'job_status_update':
-            subject = `Application Update: ${vars.application_status || 'Status Changed'} — ${vars.company_name || 'Employer'}`;
+            subject = `Application Status Update: ${vars.application_status || 'Status Changed'} — ${vars.company_name || 'Employer'}`;
             bodyHtml = buildEmailWrapper(
                 'Application Status Update',
-                'STATUS UPDATE 🎯',
+                'STATUS UPDATE',
                 `
                 <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">Hello ${candidateName},</h2>
                 <p style="font-size: 14px; color: #475569;">Your job application status for <strong>${vars.job_title || 'Software Role'}</strong> at <strong>${vars.company_name || 'Company'}</strong> has been updated:</p>
 
                 <div style="background: #eef2ff; border-left: 4px solid #4f46e5; padding: 20px; border-radius: 10px; text-align: center; margin: 24px 0;">
                     <span style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #4338ca; font-weight: 700;">New Status</span>
-                    <div style="font-size: 20px; font-weight: 800; color: #1e1b4b; margin-top: 4px;">${vars.application_status || 'Shortlisted for Interview 🎯'}</div>
+                    <div style="font-size: 20px; font-weight: 800; color: #1e1b4b; margin-top: 4px;">${vars.application_status || 'Shortlisted for Interview'}</div>
                 </div>
 
                 <div style="text-align: center; margin-top: 28px;">
@@ -816,10 +816,10 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
             break;
 
         case 'security_alert':
-            subject = `🛡️ Security Alert: New Login from ${vars.device_info || 'Device'} — ${brandName}`;
+            subject = `Security Alert: New Login from ${vars.device_info || 'Device'} — ${brandName}`;
             bodyHtml = buildEmailWrapper(
                 'Security & Login Alert',
-                'SECURITY ALERT 🛡️',
+                'SECURITY ALERT',
                 `
                 <div style="background: #fff7ed; border: 1px solid #ffedd5; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
                     <h3 style="color: #c2410c; margin: 0 0 6px 0; font-size: 16px; font-weight: 800;">New Sign-In Detected</h3>
@@ -848,10 +848,10 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
             break;
 
         case 'account_created_admin':
-            subject = `🔔 New User Registration: ${candidateName} — ${brandName}`;
+            subject = `New User Registration: ${candidateName} — ${brandName}`;
             bodyHtml = buildEmailWrapper(
                 'New User Account Registered',
-                'ADMIN ALERT 🔔',
+                'ADMIN ALERT',
                 `
                 <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">New Registration Notice</h2>
                 <p style="font-size: 14px; color: #475569;">A new user account was registered on <strong>${brandName}</strong>.</p>
@@ -874,10 +874,10 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
             break;
 
         case 'password_changed_confirm':
-            subject = `🔒 Security Confirmation: Password Updated — ${brandName}`;
+            subject = `Security Confirmation: Password Updated — ${brandName}`;
             bodyHtml = buildEmailWrapper(
                 'Password Successfully Updated',
-                'SECURITY NOTICE 🔒',
+                'SECURITY NOTICE',
                 `
                 <div style="text-align: center;">
                     <div style="width: 56px; height: 56px; background: #e0e7ff; color: #4338ca; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 800; line-height: 56px;">✓</div>
@@ -889,10 +889,10 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
             break;
 
         case 'refund_processed':
-            subject = `💸 Refund Processed: #${invoiceNo} — ${brandName}`;
+            subject = `Refund Processed: #${invoiceNo} — ${brandName}`;
             bodyHtml = buildEmailWrapper(
                 'Refund Confirmation',
-                'BILLING REFUND 💸',
+                'BILLING REFUND',
                 `
                 <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
                     <h3 style="color: #166534; margin: 0 0 6px 0; font-size: 16px; font-weight: 800;">Refund Completed</h3>
@@ -906,7 +906,7 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
             subject = `Subscription Cancelled — ${brandName}`;
             bodyHtml = buildEmailWrapper(
                 'Subscription Cancellation Notice',
-                'SUBSCRIPTION UPDATE ℹ️',
+                'SUBSCRIPTION UPDATE',
                 `
                 <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">Hello ${candidateName},</h2>
                 <p style="font-size: 14px; color: #475569; line-height: 1.6;">Your subscription for <strong>${planName}</strong> has been cancelled as requested.</p>
@@ -920,13 +920,13 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
             break;
 
         case 'ai_cover_letter_ready':
-            subject = `📝 Your AI Cover Letter is Ready! — ${brandName}`;
+            subject = `Your AI Cover Letter is Ready — ${brandName}`;
             bodyHtml = buildEmailWrapper(
                 'AI Cover Letter Generated',
-                'AI OUTPUT 📝',
+                'AI OUTPUT',
                 `
                 <div style="text-align: center;">
-                    <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">Cover Letter Generated! 🎉</h2>
+                    <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">Cover Letter Generated</h2>
                     <p style="font-size: 14px; color: #475569;">Your customized cover letter for <strong>${vars.job_title || 'Target Job'}</strong> is now complete.</p>
                     <div style="text-align: center; margin: 28px 0;">
                         <a href="${siteUrl}/dashboard?tab=cover-letter" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 14px; display: inline-block;">View Cover Letter &rarr;</a>
@@ -936,13 +936,13 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
             break;
 
         case 'portfolio_published':
-            subject = `🌐 Your Live Website Portfolio is Online! — ${brandName}`;
+            subject = `Your Live Website Portfolio is Online — ${brandName}`;
             bodyHtml = buildEmailWrapper(
                 'Portfolio Website Published',
-                'PORTFOLIO LIVE 🌐',
+                'PORTFOLIO LIVE',
                 `
                 <div style="text-align: center;">
-                    <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">Congratulations, ${candidateName}! 🚀</h2>
+                    <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">Congratulations, ${candidateName}!</h2>
                     <p style="font-size: 14px; color: #475569;">Your web portfolio is now live and accessible to recruiters worldwide.</p>
                     <div style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 12px; padding: 16px; margin: 20px 0; font-family: monospace; font-weight: 700; color: #4f46e5;">
                         ${siteUrl}/p/${vars.portfolio_slug || 'candidate'}
@@ -953,12 +953,12 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
             break;
 
         case 'job_posted_employer':
-            subject = `✅ Job Listing Published: ${vars.job_title || 'Position'} — ${brandName}`;
+            subject = `Job Listing Published: ${vars.job_title || 'Position'} — ${brandName}`;
             bodyHtml = buildEmailWrapper(
                 'Job Listing Published',
-                'EMPLOYER ALERT ✅',
+                'EMPLOYER ALERT',
                 `
-                <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">Listing is Now Live!</h2>
+                <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">Listing is Now Live</h2>
                 <p style="font-size: 14px; color: #475569;">Your job post for <strong>${vars.job_title || 'Software Position'}</strong> at <strong>${vars.company_name || 'TechCorp'}</strong> is active and receiving applicants.</p>
                 <div style="text-align: center; margin-top: 24px;">
                     <a href="${siteUrl}/jobs" style="background-color: #4f46e5; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 13px; display: inline-block;">View Job Listing &rarr;</a>
@@ -967,10 +967,10 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
             break;
 
         case 'admin_system_alert':
-            subject = `🚨 System Alert: ${vars.alert_title || 'Operational Notice'} — ${brandName}`;
+            subject = `System Alert: ${vars.alert_title || 'Operational Notice'} — ${brandName}`;
             bodyHtml = buildEmailWrapper(
                 'System Operational Alert',
-                'CRITICAL SYSTEM ALERT 🚨',
+                'SYSTEM ALERT',
                 `
                 <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
                     <h3 style="color: #991b1b; margin: 0 0 6px 0; font-size: 16px; font-weight: 800;">${vars.alert_title || 'System Notification'}</h3>
@@ -983,10 +983,10 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
             break;
 
         case 'broadcast_announcement':
-            subject = vars.subject || `📢 Special Update from ${brandName}`;
+            subject = vars.subject || `Special Update from ${brandName}`;
             bodyHtml = buildEmailWrapper(
                 vars.title || 'Platform Update',
-                'ANNOUNCEMENT 📢',
+                'ANNOUNCEMENT',
                 `
                 <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">${vars.title || 'Special Announcement'}</h2>
                 <div style="font-size: 14px; color: #475569; line-height: 1.6;">${vars.body_html || vars.body || 'Thank you for being a valued member of our platform.'}</div>
@@ -1002,9 +1002,9 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
             subject = vars.subject || `You're invited to join ${vars.organization_name || 'your enterprise workspace'} on ResumePilot Enterprise`;
             bodyHtml = buildEmailWrapper(
                 'Enterprise Workspace Invitation',
-                'ENTERPRISE INVITATION 🏢',
+                'ENTERPRISE INVITATION',
                 `
-                <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">Hi ${candidateName}, 👋</h2>
+                <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">Hi ${candidateName},</h2>
                 <p style="font-size: 14px; color: #475569; line-height: 1.6;">${vars.inviter_name || 'Your team administrator'} has invited you to join the <strong>${vars.organization_name || 'enterprise'}</strong> workspace on ResumePilot AI.</p>
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #4f46e5; border-radius: 8px; padding: 18px 20px; margin: 20px 0;">
                     <p style="margin: 0 0 6px; font-size: 14px; color: #1e293b; font-weight: 700;">Assigned Role: ${vars.role_title || 'Enterprise Team Member'}</p>
@@ -1023,7 +1023,7 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
             subject = vars.subject || `Access Role Updated: ${vars.role_title || 'Updated Role'} — ${vars.organization_name || brandName}`;
             bodyHtml = buildEmailWrapper(
                 'Access Level Update Notice',
-                'ACCESS & IAM UPDATE 🛡️',
+                'ACCESS & IAM UPDATE',
                 `
                 <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">Hi ${candidateName},</h2>
                 <p style="font-size: 14px; color: #475569; line-height: 1.6;">Your workspace permissions for <strong>${vars.organization_name || 'your enterprise organization'}</strong> have been updated by ${vars.updater_name || 'an administrator'}.</p>
@@ -1042,7 +1042,7 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
             subject = vars.subject || `Added to ${vars.workspace_name || 'Workspace'} — ${vars.organization_name || brandName}`;
             bodyHtml = buildEmailWrapper(
                 'Workspace Assignment',
-                'COLLABORATION UPDATE 🗂️',
+                'COLLABORATION UPDATE',
                 `
                 <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">Hi ${candidateName},</h2>
                 <p style="font-size: 14px; color: #475569; line-height: 1.6;">You've been assigned to workspace <strong>${vars.workspace_name || 'Workspace'}</strong> ${vars.team_name ? `and team <strong>${vars.team_name}</strong>` : ''} in ${vars.organization_name || 'ResumePilot Enterprise'}.</p>
@@ -1054,10 +1054,10 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
             break;
 
         case 'enterprise_security_alert':
-            subject = vars.subject || `🚨 Security Notice: Emergency Diagnostic Support Access for ${vars.organization_name || brandName}`;
+            subject = vars.subject || `Security Notice: Emergency Diagnostic Support Access for ${vars.organization_name || brandName}`;
             bodyHtml = buildEmailWrapper(
                 'Enterprise Security Alert',
-                'SECURITY ALERT 🚨',
+                'SECURITY ALERT',
                 `
                 <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
                     <h3 style="color: #991b1b; margin: 0 0 6px 0; font-size: 16px; font-weight: 800;">Emergency Break-Glass Access Authorized</h3>
@@ -1077,10 +1077,10 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
 
         case 'enterprise_quota_alert':
         case 'quota_alert':
-            subject = vars.subject || `⚠️ AI Quota Notice: ${vars.usage_percent || '80'}% of Monthly Allocation Used — ${vars.organization_name || brandName}`;
+            subject = vars.subject || `AI Quota Notice: ${vars.usage_percent || '80'}% of Monthly Allocation Used — ${vars.organization_name || brandName}`;
             bodyHtml = buildEmailWrapper(
                 'AI Quota Alert',
-                'QUOTA WARNING ⚡',
+                'QUOTA WARNING',
                 `
                 <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
                     <h3 style="color: #92400e; margin: 0 0 6px 0; font-size: 16px; font-weight: 800;">Token Allocation Velocity Notice</h3>
@@ -1138,25 +1138,43 @@ async function logOutboundEmail(db, logEntry) {
 let primaryConsecutiveFailures = 0;
 let primaryCircuitBreakerUntil = 0;
 
-// Create Nodemailer Transporter instance with tight timeouts for instant failover
+// Discerning Helper: Only genuine transport/network/auth infrastructure errors trip circuit breaker
+function isTransportInfrastructureError(err) {
+    if (!err) return false;
+    const code = String(err.code || '').toUpperCase();
+    const msg = String(err.message || '').toLowerCase();
+    const responseCode = Number(err.responseCode);
+    // Recipient-specific 4xx/5xx rejection (user unknown, mailbox full, etc.) is NOT a transport outage
+    if (responseCode >= 500 && responseCode <= 554 && (msg.includes('user') || msg.includes('mailbox') || msg.includes('recipient') || msg.includes('does not exist'))) {
+        return false;
+    }
+    if (code === 'EENVELOPE' || code === 'EMSGSIZE') return false;
+    if (['ECONNREFUSED', 'ETIMEDOUT', 'ESOCKET', 'ENOTFOUND', 'EAI_AGAIN', 'EAUTH', 'ECONNRESET'].includes(code)) return true;
+    if (msg.includes('timeout') || msg.includes('refused') || msg.includes('greeting') || msg.includes('auth') || msg.includes('connect') || msg.includes('closed')) return true;
+    return false;
+}
+
+// Create Nodemailer Transporter instance with resilient timeouts and STARTTLS support
 function createTransporter(smtpConfig, resolvedAddress = null) {
     const isSecure = smtpConfig.encryption === 'ssl' || smtpConfig.port === 465;
+    const isTls = smtpConfig.encryption === 'tls' || smtpConfig.encryption === 'starttls' || smtpConfig.port === 587;
     return nodemailer.createTransport({
-        // Pin the already-classified DNS result to close the validation/connect rebinding gap.
         host: resolvedAddress || smtpConfig.host,
         port: smtpConfig.port,
         secure: isSecure,
+        requireTLS: isTls && !isSecure,
         auth: (smtpConfig.username && smtpConfig.password) ? {
             user: smtpConfig.username,
             pass: smtpConfig.password,
         } : undefined,
         tls: {
             rejectUnauthorized: true,
-            servername: smtpConfig.host
+            servername: smtpConfig.host,
+            minVersion: 'TLSv1.2'
         },
-        connectionTimeout: 5000, // 5s fast connection timeout
-        greetingTimeout: 4000,   // 4s SMTP greeting timeout
-        socketTimeout: 8000      // 8s socket timeout to avoid hanging connections
+        connectionTimeout: 20000, // 20s resilient connection timeout (avoids premature drop on cloud relays)
+        greetingTimeout: 15000,   // 15s greeting timeout (handles TLS handshake latency gracefully)
+        socketTimeout: 30000      // 30s socket timeout
     });
 }
 
@@ -1174,9 +1192,32 @@ async function dispatchMailWithFallback(config, mailOptions) {
         mailOptions.headers = {};
     }
     mailOptions.headers['X-Mailer'] = mailOptions.headers['X-Mailer'] || 'ResumePilot Enterprise Mail Gateway/2.0';
-    mailOptions.headers['Auto-Submitted'] = mailOptions.headers['Auto-Submitted'] || 'auto-generated';
     mailOptions.headers['X-Auto-Response-Suppress'] = 'OOF, AutoReply';
+    mailOptions.headers['MIME-Version'] = '1.0';
+    if (!mailOptions.headers['Date'] && !mailOptions.date) {
+        mailOptions.headers['Date'] = new Date().toUTCString();
+    }
     delete mailOptions.headers['Precedence']; // Do not set bulk precedence on transactional mail
+    delete mailOptions.headers['Auto-Submitted']; // Do not set Auto-Submitted on transactional user mail (prevents Spam classification)
+
+    // Ensure authentic Message-ID is generated if missing
+    if (!mailOptions.messageId) {
+        const senderDomain = config.smtp?.username?.includes('@')
+            ? config.smtp.username.split('@')[1]
+            : (new URL(publicSiteOrigin()).hostname || 'airesume.projectdemo.guru');
+        mailOptions.messageId = `<${Date.now()}.${Math.random().toString(36).substring(2, 11)}@${senderDomain}>`;
+    }
+
+    // Standardize sender and reply-to addresses
+    if (!mailOptions.from) {
+        const senderName = config.smtp?.senderName || 'ResumePilot AI';
+        const senderUser = config.smtp?.senderEmail || (config.smtp?.username?.includes('@') ? config.smtp.username : `no-reply@${new URL(publicSiteOrigin()).hostname}`);
+        mailOptions.from = `"${senderName}" <${senderUser}>`;
+    }
+    if (!mailOptions.replyTo) {
+        mailOptions.replyTo = config.smtp?.replyTo || config.smtp?.username || `support@${new URL(publicSiteOrigin()).hostname}`;
+    }
+
     if (config.smtp?.host) {
         if (!allowedEncryption.has(String(config.smtp.encryption || '').toLowerCase())) throw new Error('Encrypted SMTP transport is required');
         primaryTarget = await assertPublicNetworkTarget(config.smtp.host);
@@ -1211,12 +1252,16 @@ async function dispatchMailWithFallback(config, mailOptions) {
             return { success: true, messageId: info.messageId, transport: 'primary_smtp' };
         } catch (err) {
             primaryErr = err;
-            primaryConsecutiveFailures++;
-            console.warn(`⚠️ Primary SMTP Dispatch Failed (Attempt ${primaryConsecutiveFailures}/${maxFailures}):`, err.message);
+            if (isTransportInfrastructureError(err)) {
+                primaryConsecutiveFailures++;
+                console.warn(`⚠️ Primary SMTP Transport Error (Attempt ${primaryConsecutiveFailures}/${maxFailures}):`, err.message);
 
-            if (primaryConsecutiveFailures >= maxFailures) {
-                primaryCircuitBreakerUntil = now + cooldownMinutes * 60 * 1000;
-                console.error(`🚨 Primary SMTP failed ${primaryConsecutiveFailures} consecutive times. Opening Circuit Breaker for ${cooldownMinutes} mins until ${new Date(primaryCircuitBreakerUntil).toLocaleTimeString()}`);
+                if (primaryConsecutiveFailures >= maxFailures) {
+                    primaryCircuitBreakerUntil = now + cooldownMinutes * 60 * 1000;
+                    console.error(`🚨 Primary SMTP failed ${primaryConsecutiveFailures} consecutive times. Opening Circuit Breaker for ${cooldownMinutes} mins until ${new Date(primaryCircuitBreakerUntil).toLocaleTimeString()}`);
+                }
+            } else {
+                console.warn(`⚠️ Primary SMTP Recipient/Content Error (Non-circuit tripping):`, err.message);
             }
         }
     }
@@ -1595,11 +1640,25 @@ router.get('/admin/deliverability', async (req, res) => {
         }
         // "+all" accepts forged mail; it is published but actively unsafe.
         const permissive = /\+all\s*$/.test(spf);
+        const fallbackEnabled = config?.fallbackSmtp?.enabled === true || config?.fallbackSmtp?.enabled === 'true' || config?.fallbackSmtp?.enabled === 1;
+        const fallbackHost = String(config?.fallbackSmtp?.host || '').toLowerCase();
+        const hasBrevo = spf.includes('brevo.com') || spf.includes('sendinblue.com');
+        const isBrevoFallback = fallbackEnabled && (fallbackHost.includes('brevo') || fallbackHost.includes('sendinblue'));
+        const missingRelay = isBrevoFallback && !hasBrevo;
+
+        let detail = permissive ? 'SPF ends in +all, which authorises any sender.' : 'SPF record published.';
+        let remediation = permissive ? 'Replace +all with ~all or -all.' : null;
+
+        if (missingRelay) {
+            detail = 'SPF authorizes primary provider but is missing fallback relay (include:spf.brevo.com).';
+            remediation = `Update SPF record to include both providers: "v=spf1 include:_spf.mail.hostinger.com include:spf.brevo.com ~all"`;
+        }
+
         return {
-            state: permissive ? 'DEGRADED' : 'OPERATIONAL',
+            state: permissive || missingRelay ? 'DEGRADED' : 'OPERATIONAL',
             value: spf,
-            detail: permissive ? 'SPF ends in +all, which authorises any sender.' : 'SPF record published.',
-            remediation: permissive ? 'Replace +all with ~all or -all.' : null,
+            detail,
+            remediation,
         };
     });
 
@@ -2142,7 +2201,7 @@ async function dispatchNotification(db, { to, templateType, vars = {}, customSub
         const messageId = `<${Date.now()}.${Math.random().toString(36).substring(2, 11)}@${senderDomain}>`;
 
         const mailOptions = {
-            from: `"${config.smtp?.senderName || 'ResumePilot Enterprise'}" <${config.smtp?.username}>`,
+            from: `"${config.smtp?.senderName || 'ResumePilot Enterprise'}" <${config.smtp?.senderEmail || config.smtp?.username}>`,
             replyTo: config.smtp?.replyTo || config.smtp?.username,
             to,
             subject: resolvedSubject,
@@ -2152,8 +2211,8 @@ async function dispatchNotification(db, { to, templateType, vars = {}, customSub
             headers: {
                 'X-Mailer': 'ResumePilot Enterprise Mail Gateway/2.0',
                 'X-Entity-Ref-ID': `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-                'Auto-Submitted': 'auto-generated',
                 'X-Auto-Response-Suppress': 'OOF, AutoReply',
+                'MIME-Version': '1.0',
             }
         };
 
@@ -2195,4 +2254,8 @@ module.exports = router;
 module.exports.dispatchNotification = dispatchNotification;
 module.exports.getEmailConfig = getEmailConfig;
 module.exports.renderEmailTemplate = renderEmailTemplate;
-module.exports._test = { normalizedMailSection, normalizeTemplateToggles, projectMailSection, renderEmailTemplate, formatCustomEmailBody, replaceEmailVariables };
+module.exports.createTransporter = createTransporter;
+module.exports.isTransportInfrastructureError = isTransportInfrastructureError;
+module.exports.dispatchMailWithFallback = dispatchMailWithFallback;
+module.exports.htmlToPlainText = htmlToPlainText;
+module.exports._test = { normalizedMailSection, normalizeTemplateToggles, projectMailSection, renderEmailTemplate, formatCustomEmailBody, replaceEmailVariables, isTransportInfrastructureError, createTransporter, dispatchMailWithFallback };
