@@ -1694,7 +1694,7 @@ router.get('/configuration', requireSuperAdmin, async (req, res) => {
  * Never returns raw secrets.
  * ------------------------------------------------------------------ */
 
-router.get('/payment-settings', requirePermission('system.config.read'), async (req, res) => {
+router.get('/payment-settings', requireSuperAdmin, async (req, res) => {
   try {
     const projection = await getPaymentSettingsProjection(req.app.get('db'), process.env);
     res.setHeader('Cache-Control', 'no-store');
