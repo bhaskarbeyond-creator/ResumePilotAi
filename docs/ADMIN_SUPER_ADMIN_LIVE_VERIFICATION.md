@@ -1,25 +1,53 @@
-# Admin & Super Admin Live Verification Report
+# Admin + Super Admin live verification status
 
-## Overview
-This document represents the execution status of the Live Production Verification protocol as strictly mandated by the Final Production Certification requirements.
+**Status at audit time:** `INCOMPLETE / NOT VERIFIED`
+**Reason:** this sandbox has no production Firebase credentials and cannot reach the production origin. No live PASS is claimed.
 
-**Target Environment**: `https://airesume.projectdemo.guru`
-**Target SHA**: `1c3b0377fa664fccfb1aac7324a82133dbaad0c6`
+## Local Developer commands
 
-## 1. Deployment Execution
-- **Deployment Status**: **UNVERIFIED / BLOCKED**
-- **Blocker Reason**: Lack of automated deploy scripts (e.g., `.github/workflows`), lack of `deploy.sh` in the repository, and lack of SSH/Hostinger credentials to manually push the tested SHA or interact with the remote PM2 daemon.
-- **Rollback Verification**: **UNVERIFIED / BLOCKED**
+```sh
+# From the repository root
+export PROD_BASE_URL=https://your-production-host
+export FIREBASE_API_KEY='...'
+export SUPERADMIN_EMAIL='...'
+export SUPERADMIN_PASSWORD='...'
+export ADMIN_EMAIL='...'
+export ADMIN_PASSWORD='...'
 
-## 2. Live Authenticated E2E Tests
-- **Status**: **UNVERIFIED / BLOCKED**
-- **Reason**: Live E2E tests against production require the production environment to be updated to the target SHA. Because deployment is blocked, testing the live environment would yield false negatives against outdated code. Additionally, no ephemeral Live Super Admin test identity is provided in the repository configuration to authenticate against the live Firebase project without triggering actual SMS/MFA limits on the developer's devices.
+EXPECTED_SHA=$(git rev-parse HEAD) node scripts/verify-production-identity.mjs
+node scripts/verify-platform-health-live.mjs
+node scripts/verify-api-inventory-live.mjs
+node scripts/verify-admin-superadmin-live.mjs
+node scripts/verify-crud-live.mjs
+LIVE_CERT_BASE_URL="$PROD_BASE_URL" \
+  LIVE_CERT_SUPERADMIN_EMAIL="$SUPERADMIN_EMAIL" \
+  LIVE_CERT_SUPERADMIN_PASSWORD="$SUPERADMIN_PASSWORD" \
+  LIVE_CERT_ADMIN_EMAIL="$ADMIN_EMAIL" \
+  LIVE_CERT_ADMIN_PASSWORD="$ADMIN_PASSWORD" \
+  npx playwright test --config=playwright.live-admin.config.js
+```
 
-## 3. Network & Console Audit (Live Domain)
-- **Status**: **UNVERIFIED / BLOCKED**
-- **Reason**: Dependent on successful deployment and live authentication.
+## Evidence expected
 
-## 4. Conclusion & Final Status
-Because the live deployment cannot be orchestrated from this local IDE sandbox without external credentials or scripts, the live validation gates strictly demanded by the certification mandate cannot be passed.
+Each script writes a JSON file under ignored `test-results/`:
 
-### Final Verification Status: NO-GO
+- `production-identity.json`: backend SHA, frontend `data-build-sha`, TLS/cache, health.
+- `platform-health-live.json`: service states, remediation, API matrix reconciliation, Admin projection, anonymous rejection.
+- `api-inventory-live.json`: each safe probe and every non-2xx explanation.
+- `admin-superadmin-live.json`: read surfaces, RBAC, health truthfulness, optional tenant lifecycle.
+- `crud-live.json`: disposable tenant/user create/read/update/decommission/cleanup when explicitly enabled.
+- Playwright report/traces/screenshots: UI, settings, authorization, errors, responsive layout.
+
+## Required live assertions
+
+- backend and frontend SHA equal the tested commit;
+- `/adm` and `/admin` reach the same authenticated shell;
+- Admin can read allowed surfaces but receives 403 for Super Admin mutations;
+- Super Admin MFA and recent-auth challenges are enforced server-side;
+- `ENTERPRISE_TENANCY_ENABLED` shows current source, impact, dependency, restart rule, and audit metadata;
+- Razorpay save → reload → configured/masked → replacement → explicit clear behaves consistently;
+- no raw secret appears in UI, API, browser storage, logs, or audit;
+- tenant/user mutations persist and appear after read-back with audit events;
+- platform health returns evidence-backed state; unknown is not healthy;
+- no unexplained 404/500/501/502/503; disabled/not-configured responses carry codes and remediation;
+- all six required viewports have no horizontal overflow.

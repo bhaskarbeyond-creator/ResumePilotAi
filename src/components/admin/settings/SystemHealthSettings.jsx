@@ -11,13 +11,14 @@ const SystemHealthSettings = () => {
     const [runningDiagnostics, setRunningDiagnostics] = useState(false);
     const [diagnosticsResult, setDiagnosticsResult] = useState(null);
     const [statusMessage, setStatusMessage] = useState(null);
+    const [revision, setRevision] = useState(0);
 
     const loadSummary = async ({ diagnostics = false } = {}) => {
         if (diagnostics) setRunningDiagnostics(true); else setLoading(true);
         try {
-            const response = await fetch('/api/admin/health-summary', { cache: 'no-store' });
-            const result = await response.json().catch(() => ({}));
-            if (!response.ok || !result.success) throw new Error(result.error || 'Health summary unavailable.');
+            const { response, data: result } = await fetchAdminWithReauth('/api/admin/health-summary', { cache: 'no-store' });
+            if (!response.ok || !result.success) throw new Error(result.error?.message || result.error || 'Health summary unavailable.');
+            setRevision(Number(result.revision) || 0);
             setHealthConfig(current => ({ ...current, ...(result.settings || {}) }));
             setDiagnosticsResult(result);
         } catch (error) {
@@ -37,10 +38,11 @@ const SystemHealthSettings = () => {
         setStatusMessage(null);
         try {
             const { response, data: result } = await fetchAdminWithReauth('/api/admin/system-health-settings', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(healthConfig),
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...healthConfig, expectedRevision: revision }),
             });
             if (!response.ok || !result.success) throw new Error(result.error?.message || result.error || 'Unable to save settings.');
             setHealthConfig(result.settings);
+            setRevision(Number(result.revision) || revision);
             setStatusMessage({ type: 'success', text: 'Maintenance configuration saved and audited.' });
             await loadSummary({ diagnostics: true });
         } catch (error) {

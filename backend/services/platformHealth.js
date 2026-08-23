@@ -15,6 +15,7 @@
 
 const os = require('os');
 const fs = require('fs');
+const { enterpriseFeatureEnabledAsync } = require('../enterprise/featureFlags');
 
 /** Operational states surfaced to the Admin console. */
 const STATE = Object.freeze({
@@ -147,51 +148,76 @@ function resolvePaymentProviders(providerDoc, legacySubscriptions, publicConfig)
     if (legacy[key] !== undefined) return legacy[key] === true;
     return fallback;
   };
+  const select = ({ envId = '', envSecret = '', storedId = '', storedSecret = '', requiresId = true }) => {
+    const environmentId = String(envId || '').trim();
+    const environmentSecret = String(envSecret || '').trim();
+    const persistedId = String(storedId || '').trim();
+    const persistedSecret = String(storedSecret || '').trim();
+    if ((!requiresId || environmentId) && environmentSecret) return { id: environmentId, secret: environmentSecret, source: 'environment' };
+    if ((!requiresId || persistedId) && persistedSecret) return { id: persistedId, secret: persistedSecret, source: 'firestore' };
+    if (environmentId || environmentSecret) return { id: environmentId, secret: environmentSecret, source: 'environment-partial' };
+    if (persistedId || persistedSecret) return { id: persistedId, secret: persistedSecret, source: 'firestore-partial' };
+    return { id: '', secret: '', source: 'none' };
+  };
+  const stripe = select({ envSecret: process.env.STRIPE_SECRET, storedSecret: stored.stripe?.secretKey, requiresId: false });
+  const paypal = select({
+    envId: process.env.PAYPAL_CLIENT_ID,
+    envSecret: process.env.PAYPAL_CLIENT_SECRET,
+    storedId: stored.paypal?.clientId || publicSubs.paypalClientId || legacy.paypalClientId,
+    storedSecret: stored.paypal?.clientSecret || legacy.paypalClientSecret,
+  });
+  const razorpay = select({
+    envId: process.env.RAZORPAY_KEY_ID,
+    envSecret: process.env.RAZORPAY_KEY_SECRET,
+    storedId: stored.razorpay?.keyId || publicSubs.razorpayKeyId || legacy.razorpayKeyId,
+    storedSecret: stored.razorpay?.keySecret || legacy.razorpayKeySecret,
+  });
+  const paytm = select({
+    envId: process.env.PAYTM_MID,
+    envSecret: process.env.PAYTM_MERCHANT_KEY,
+    storedId: stored.paytm?.mid || publicSubs.paytmMid || legacy.paytmMid,
+    storedSecret: stored.paytm?.merchantKey || legacy.paytmMerchantKey,
+  });
+  const phonepe = select({
+    envId: process.env.PHONEPE_MERCHANT_ID,
+    envSecret: process.env.PHONEPE_SALT_KEY,
+    storedId: stored.phonepe?.merchantId || publicSubs.phonepeId || legacy.phonepeId,
+    storedSecret: stored.phonepe?.saltKey || legacy.phonepeSaltKey,
+  });
+  const pairState = (pair, requiresId = true) => ({
+    credentialed: Boolean(pair.secret && (!requiresId || pair.id)),
+    partial: pair.source.endsWith('partial'),
+    source: pair.source,
+  });
 
   return {
     stripe: {
-      name: 'Stripe',
-      credentialed: truthy(stored.stripe?.secretKey) || truthy(process.env.STRIPE_SECRET),
+      name: 'Stripe', ...pairState(stripe, false),
       webhook: truthy(process.env.STRIPE_WEBHOOK_SECRET),
       adminEnabled: toggle('stripeEnabled', true),
       environment: String(process.env.STRIPE_SECRET || '').startsWith('sk_live') ? 'live' : 'test',
       apis: ['/api/pay', '/api/stripe-webhook'],
     },
     paypal: {
-      name: 'PayPal',
-      credentialed: (truthy(stored.paypal?.clientId) && truthy(stored.paypal?.clientSecret))
-        || (truthy(process.env.PAYPAL_CLIENT_ID) && truthy(process.env.PAYPAL_CLIENT_SECRET))
-        || (truthy(legacy.paypalClientId) && truthy(legacy.paypalClientSecret)),
-      partial: truthy(stored.paypal?.clientId) || truthy(process.env.PAYPAL_CLIENT_ID) || truthy(legacy.paypalClientId),
+      name: 'PayPal', ...pairState(paypal),
       adminEnabled: toggle('paypalEnabled', true),
       environment: String(process.env.PAYPAL_ENV || stored.paypal?.environment || 'sandbox').toLowerCase(),
       apis: ['/api/paypal/create-order', '/api/paypal/verify'],
     },
     razorpay: {
-      name: 'Razorpay',
-      credentialed: (truthy(stored.razorpay?.keyId) && truthy(stored.razorpay?.keySecret))
-        || (truthy(process.env.RAZORPAY_KEY_ID) && truthy(process.env.RAZORPAY_KEY_SECRET)),
-      partial: truthy(stored.razorpay?.keyId) || truthy(process.env.RAZORPAY_KEY_ID),
+      name: 'Razorpay', ...pairState(razorpay),
       adminEnabled: toggle('razorpayEnabled', true),
-      environment: String(process.env.RAZORPAY_KEY_ID || '').startsWith('rzp_live') ? 'live' : 'test',
+      environment: String(razorpay.id || '').startsWith('rzp_live') ? 'live' : 'test',
       apis: ['/api/razorpay/create-order', '/api/razorpay/verify'],
     },
     paytm: {
-      name: 'PayTM',
-      credentialed: (truthy(stored.paytm?.mid) && truthy(stored.paytm?.merchantKey))
-        || (truthy(process.env.PAYTM_MID) && truthy(process.env.PAYTM_MERCHANT_KEY))
-        || (truthy(legacy.paytmMid) && truthy(legacy.paytmMerchantKey)),
-      partial: truthy(stored.paytm?.mid) || truthy(process.env.PAYTM_MID) || truthy(legacy.paytmMid),
+      name: 'PayTM', ...pairState(paytm),
       adminEnabled: toggle('paytmEnabled', false),
       environment: String(process.env.PAYTM_ENV || 'staging').toLowerCase(),
       apis: ['/api/paytm/initiate-transaction', '/api/paytm/verify'],
     },
     phonepe: {
-      name: 'PhonePe',
-      credentialed: (truthy(stored.phonepe?.merchantId) && truthy(stored.phonepe?.saltKey))
-        || (truthy(process.env.PHONEPE_MERCHANT_ID) && truthy(process.env.PHONEPE_SALT_KEY))
-        || (truthy(legacy.phonepeId) && truthy(legacy.phonepeSaltKey)),
-      partial: truthy(stored.phonepe?.merchantId) || truthy(process.env.PHONEPE_MERCHANT_ID) || truthy(legacy.phonepeId),
+      name: 'PhonePe', ...pairState(phonepe),
       adminEnabled: toggle('phonepeEnabled', false),
       environment: String(process.env.PHONEPE_ENV || 'sandbox').toLowerCase(),
       apis: ['/api/phonepe/initiate-payment', '/api/phonepe/status'],
@@ -206,8 +232,15 @@ function resolveOAuthProviders(oauthDoc, adminConfiguration, legacySystemSetting
   const modules = publicConfig?.modules || {};
 
   const build = (provider, envPrefix, legacyPrefix, moduleKeys) => {
-    const clientId = secrets[provider]?.clientId || canonical[`${legacyPrefix}ClientId`] || legacy[`${legacyPrefix}ClientId`] || process.env[`${envPrefix}_CLIENT_ID`] || '';
-    const clientSecret = secrets[provider]?.clientSecret || canonical[`${legacyPrefix}ClientSecret`] || legacy[`${legacyPrefix}ClientSecret`] || process.env[`${envPrefix}_CLIENT_SECRET`] || '';
+    const envClientId = String(process.env[`${envPrefix}_CLIENT_ID`] || '').trim();
+    const envClientSecret = String(process.env[`${envPrefix}_CLIENT_SECRET`] || '').trim();
+    const storedClientId = String(secrets[provider]?.clientId || canonical[`${legacyPrefix}ClientId`] || legacy[`${legacyPrefix}ClientId`] || '').trim();
+    const storedClientSecret = String(secrets[provider]?.clientSecret || canonical[`${legacyPrefix}ClientSecret`] || legacy[`${legacyPrefix}ClientSecret`] || '').trim();
+    const completeEnvironment = Boolean(envClientId && envClientSecret);
+    const completeStored = Boolean(storedClientId && storedClientSecret);
+    const source = completeEnvironment ? 'environment' : completeStored ? 'firestore' : envClientId || envClientSecret ? 'environment-partial' : storedClientId || storedClientSecret ? 'firestore-partial' : 'none';
+    const clientId = source.startsWith('environment') ? envClientId : storedClientId;
+    const clientSecret = source.startsWith('environment') ? envClientSecret : storedClientSecret;
     let adminEnabled = true;
     for (const key of moduleKeys) {
       if (modules[key] !== undefined) { adminEnabled = modules[key] === true; break; }
@@ -215,7 +248,8 @@ function resolveOAuthProviders(oauthDoc, adminConfiguration, legacySystemSetting
     }
     return {
       credentialed: truthy(clientId) && truthy(clientSecret),
-      partial: truthy(clientId) || truthy(clientSecret),
+      partial: source.endsWith('partial'),
+      source,
       adminEnabled,
     };
   };
@@ -310,12 +344,15 @@ async function buildServices(app) {
   const tenantService = app?.get?.('tenantService') || null;
   const checkedAt = nowIso();
 
-  const enterpriseEnabled = String(process.env.ENTERPRISE_TENANCY_ENABLED || '').toLowerCase() === 'true';
+  // Read the same effective flag the Enterprise router uses. This keeps the
+  // command center honest after a Super Admin changes the runtime override.
+  const enterpriseEnabled = await enterpriseFeatureEnabledAsync(db);
 
   const [
     firestorePing,
     authProbe,
     paymentDoc,
+    aiProvidersDoc,
     oauthDoc,
     adminConfigDoc,
     publicConfigDoc,
@@ -340,6 +377,7 @@ async function buildServices(app) {
       return { reachable: true, sampled: Array.isArray(result?.users) ? result.users.length : 0 };
     }),
     observe('settings.payment_providers', () => (db ? db.collection('settings').doc('payment_providers').get() : Promise.reject(new Error('Firestore unavailable')))),
+    observe('settings.ai_providers', () => (db ? db.collection('settings').doc('ai_providers').get() : Promise.reject(new Error('Firestore unavailable')))),
     observe('settings.oauth_providers', () => (db ? db.collection('settings').doc('oauth_providers').get() : Promise.reject(new Error('Firestore unavailable')))),
     observe('settings.admin_configuration', () => (db ? db.collection('settings').doc('admin_configuration').get() : Promise.reject(new Error('Firestore unavailable')))),
     observe('data.public_config', () => (db ? db.collection('data').doc('public_config').get() : Promise.reject(new Error('Firestore unavailable')))),
@@ -775,7 +813,7 @@ async function buildServices(app) {
       affectedFeatures: descriptor.features,
       affectedApis: descriptor.apis,
       affectedUiModules: descriptor.ui,
-      metrics: { credentialsConfigured: provider.credentialed, providerEnabled: provider.adminEnabled },
+      metrics: { credentialsConfigured: provider.credentialed, credentialSource: provider.source, providerEnabled: provider.adminEnabled },
       lastCheckedAt: checkedAt,
     }));
   }
@@ -882,26 +920,32 @@ async function buildServices(app) {
     lastCheckedAt: checkedAt,
   }));
 
-  const cloudflareConfigured = truthy(process.env.CLOUDFLARE_API_TOKEN) || truthy(process.env.CLOUDFLARE_ZONE_ID);
+  const cloudflareToken = truthy(process.env.CLOUDFLARE_API_TOKEN);
+  const cloudflareZone = truthy(process.env.CLOUDFLARE_ZONE_ID);
+  const cloudflareConfigured = cloudflareToken && cloudflareZone;
+  const cloudflarePartial = cloudflareToken || cloudflareZone;
   services.push(service({
     id: 'cloudflare',
     name: 'Cloudflare',
     group: GROUP.INTEGRATIONS,
     critical: false,
-    state: cloudflareConfigured ? STATE.OPERATIONAL : STATE.NOT_SUPPORTED,
-    support: cloudflareConfigured ? 'SUPPORTED' : 'NOT_SUPPORTED',
+    state: cloudflareConfigured ? STATE.OPERATIONAL : cloudflarePartial ? STATE.NOT_CONFIGURED : STATE.NOT_SUPPORTED,
+    support: cloudflarePartial ? 'SUPPORTED' : 'NOT_SUPPORTED',
     enabled: cloudflareConfigured,
-    configuration: cloudflareConfigured ? CONFIG.CONFIGURED : CONFIG.NOT_APPLICABLE,
+    configuration: cloudflareConfigured ? CONFIG.CONFIGURED : cloudflarePartial ? CONFIG.PARTIALLY_CONFIGURED : CONFIG.NOT_APPLICABLE,
     reason: cloudflareConfigured
-      ? 'Cloudflare API credentials are present in the backend environment.'
-      : 'This deployment does not integrate with the Cloudflare API. Edge caching and DNS, if used, are managed outside the application.',
+      ? 'Cloudflare API token and zone identifier are present in the backend environment.'
+      : cloudflarePartial
+        ? 'Cloudflare integration is partially configured; both CLOUDFLARE_API_TOKEN and CLOUDFLARE_ZONE_ID are required before an API operation can run.'
+        : 'This deployment does not integrate with the Cloudflare API. Edge caching and DNS, if used, are managed outside the application.',
     dependency: 'Cloudflare API',
     retryable: false,
-    remediation: '',
+    errorCategory: cloudflarePartial && !cloudflareConfigured ? 'CONFIGURATION_MISSING' : null,
+    remediation: cloudflarePartial && !cloudflareConfigured ? 'Provide the missing Cloudflare API token or zone identifier through the deployment secret manager.' : '',
     affectedFeatures: [],
     affectedApis: [],
     affectedUiModules: [],
-    metrics: { integrationPresent: cloudflareConfigured },
+    metrics: { integrationPresent: cloudflareConfigured, tokenConfigured: cloudflareToken, zoneConfigured: cloudflareZone },
     lastCheckedAt: checkedAt,
   }));
 
@@ -913,7 +957,7 @@ async function buildServices(app) {
     ['openrouter', 'OpenRouter', 'OPENROUTER_API_KEY'],
     ['deepseek', 'DeepSeek', 'DEEPSEEK_API_KEY'],
   ];
-  const configuredAi = aiProviders.filter(([key, , envKey]) => truthy(process.env[envKey]) || truthy(docData(adminConfigDoc)?.ai?.[key]?.apiKey));
+  const configuredAi = aiProviders.filter(([key, , envKey]) => truthy(process.env[envKey]) || truthy(docData(aiProvidersDoc)?.[key]?.apiKey));
   services.push(service({
     id: 'ai-providers',
     name: 'AI Providers',
@@ -1221,7 +1265,7 @@ async function buildServices(app) {
     lastCheckedAt: checkedAt,
   }));
 
-  return { services, checkedAt, sources: buildSources({ firestorePing, authProbe, outbox, emailConfig, enterpriseOutbox, publicConfigDoc, paymentDoc, oauthDoc }) };
+  return { services, checkedAt, sources: buildSources({ firestorePing, authProbe, outbox, emailConfig, enterpriseOutbox, publicConfigDoc, paymentDoc, aiProvidersDoc, oauthDoc }) };
 }
 
 function buildSources(results) {
@@ -1247,7 +1291,7 @@ const MOUNTED_ROUTERS = Object.freeze([
 ]);
 
 const PUBLIC_API_PATHS = new Set([
-  '/api/healthz', '/api/health', '/api/readyz', '/healthz', '/readyz', '/health',
+  '/api/healthz', '/api/health', '/api/readyz', '/healthz', '/readyz', '/health', '/api/platform/version',
   '/api/stripe-webhook', '/api/public-export', '/api/export-render-data', '/api/contact',
   '/api/auth/custom-password-reset', '/api/auth/verify-email-token', '/api/auth/set-user-password',
   '/api/auth/linkedin', '/api/auth/linkedin/callback', '/api/auth/github', '/api/auth/github/callback',

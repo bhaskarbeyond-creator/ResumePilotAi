@@ -31,6 +31,7 @@ export default function AdminAuditLogs() {
       if (categoryFilter) params.set('category', categoryFilter);
       if (severityFilter) params.set('severity', severityFilter);
       if (outcomeFilter) params.set('outcome', outcomeFilter);
+      if (searchQuery.trim()) params.set('search', searchQuery.trim());
 
       const [logsRes, statsRes] = await Promise.all([
         fetch(`/api/admin/audit-logs?${params.toString()}`, {
@@ -57,11 +58,12 @@ export default function AdminAuditLogs() {
     } finally {
       setLoading(false);
     }
-  }, [categoryFilter, severityFilter, outcomeFilter]);
+  }, [categoryFilter, severityFilter, outcomeFilter, searchQuery]);
 
   useEffect(() => {
-    fetchLogs();
-  }, [fetchLogs]);
+    const timer = window.setTimeout(() => fetchLogs(), searchQuery.trim() ? 350 : 0);
+    return () => window.clearTimeout(timer);
+  }, [fetchLogs, searchQuery]);
 
   const filteredLogs = logs.filter(log => {
     if (!searchQuery) return true;

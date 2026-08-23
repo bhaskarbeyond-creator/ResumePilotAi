@@ -26,8 +26,12 @@ export default function FeatureFlagsSettings() {
       const token = await user.getIdToken();
       const res = await fetch('/api/platform/feature-flags', {
         headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store',
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        const failure = await res.json().catch(() => ({}));
+        throw new Error(failure.error?.message || (res.status === 403 ? 'Super Admin access is required to manage feature flags.' : `Feature flags unavailable (HTTP ${res.status}).`));
+      }
       const data = await res.json();
       setFlags(data.flags || {});
     } catch (err) {
@@ -80,8 +84,8 @@ export default function FeatureFlagsSettings() {
         throw new Error(errData.error?.message || `HTTP ${res.status}`);
       }
       const result = await res.json();
-      showNotification('success', `${flagKey} ${nextValue ? 'enabled' : 'disabled'}${result.requiresRestart ? ' — requires restart to take effect' : ''}`);
-      loadFlags();
+      await loadFlags();
+      showNotification('success', `${flagKey} ${nextValue ? 'enabled' : 'disabled'}${result.requiresRestart ? ' — requires restart to take effect' : ''}. Audit event: ${result.auditEvent || 'FEATURE_FLAG_CHANGED'}.`);
     } catch (err) {
       showNotification('error', err.message);
     } finally {
@@ -196,6 +200,9 @@ export default function FeatureFlagsSettings() {
                     <button
                       onClick={() => handleToggle(key, flag.value, flag)}
                       disabled={isPending}
+                      aria-label={`${flag.value ? 'Disable' : 'Enable'} ${key}`}
+                      aria-pressed={flag.value}
+                      data-testid={`feature-flag-${key}`}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 ${
                         isPending ? 'opacity-50 cursor-wait' : 'cursor-pointer'
                       } ${flag.value ? 'bg-emerald-500' : 'bg-slate-300'}`}

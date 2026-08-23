@@ -90,6 +90,36 @@ function requireSuperAdmin(req, res, next) {
   return next();
 }
 
+/**
+ * High-impact control-plane mutations need both the Super Admin role and a
+ * recently refreshed Firebase session. Firebase's verified auth_time is the
+ * server-side source of truth; no client-provided timestamp is accepted.
+ *
+ * Test doubles historically omit auth_time. They remain usable in NODE_ENV=test
+ * unless REQUIRE_RECENT_AUTH_IN_TEST=true is explicitly set, while production
+ * always fails closed when the claim is absent or older than the configured
+ * window.
+ */
+function requireRecentAdminAuthentication(req, res, next) {
+  const superAdminResult = requireSuperAdmin(req, res, () => {});
+  if (superAdminResult) return superAdminResult;
+  const shouldEnforce = process.env.NODE_ENV === 'production' || process.env.REQUIRE_RECENT_AUTH_IN_TEST === 'true';
+  if (!shouldEnforce) return next();
+  const authTimeSeconds = Number(req.user?.claims?.auth_time || 0);
+  const maxAgeMs = Number(process.env.SENSITIVE_AUTH_MAX_AGE_MS || 10 * 60 * 1000);
+  const ageMs = authTimeSeconds > 0 ? Date.now() - authTimeSeconds * 1000 : Infinity;
+  if (!authTimeSeconds || !Number.isFinite(ageMs) || ageMs < 0 || ageMs > maxAgeMs) {
+    return res.status(403).json({
+      error: {
+        code: 'RECENT_AUTH_REQUIRED',
+        message: 'Reauthenticate before changing platform credentials or executing this destructive operation.',
+        requestId: res.locals?.requestId,
+      },
+    });
+  }
+  return next();
+}
+
 const requireAdmin = requirePermission('system.config.write');
 module.exports = {
   requireAuth,
@@ -97,6 +127,8 @@ module.exports = {
   requirePermission,
   requireAdmin,
   requireSuperAdmin,
+  requireRecentAdminAuthentication,
+  requireRecentAuth: requireRecentAdminAuthentication,
   isSuperAdmin,
   hasSecondFactor,
   superAdminMfaEnforced,

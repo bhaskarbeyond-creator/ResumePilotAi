@@ -4,13 +4,14 @@ const { getAuth } = require('firebase-admin/auth');
 const fs = require('fs');
 
 async function getFirebaseToken() {
-    const key = process.env.FIREBASE_WEB_API_KEY || "AIzaSyDigXT7n4Pyf-8WHQtvjHa0wGvJ86nmrwc";
+    const key = process.env.FIREBASE_WEB_API_KEY || process.env.VITE_FIREBASE_KEY;
+    if (!key) throw new Error('Set FIREBASE_WEB_API_KEY or VITE_FIREBASE_KEY.');
     const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${key}`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
-            email: 'bhaskar.beyond@gmail.com',
-            password: 'superpassword123',
+            email: process.env.LIVE_ADMIN_EMAIL,
+            password: process.env.LIVE_ADMIN_PASSWORD,
             returnSecureToken: true
         })
     });

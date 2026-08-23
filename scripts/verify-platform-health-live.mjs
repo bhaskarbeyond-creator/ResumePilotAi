@@ -42,7 +42,7 @@ const { ok, values, missing } = readEnv({
   SUPERADMIN_PASSWORD: { required: true, description: 'Password for SUPERADMIN_EMAIL' },
   ADMIN_EMAIL: { description: 'Optional ADMIN account, to verify role-scoped projection' },
   ADMIN_PASSWORD: { description: 'Password for ADMIN_EMAIL' },
-  EXPECTED_API_COUNT: { default: '251', description: 'Authoritative reachable-endpoint count' },
+  EXPECTED_API_COUNT: { description: 'Optional expected endpoint count from a release manifest; omit to use the live matrix as its own enumerated source.' },
 });
 
 if (!ok) {
@@ -51,7 +51,7 @@ if (!ok) {
 }
 
 const BASE = values.PROD_BASE_URL.replace(/\/$/, '');
-const EXPECTED_API_COUNT = Number(values.EXPECTED_API_COUNT);
+const EXPECTED_API_COUNT = values.EXPECTED_API_COUNT === undefined ? null : Number(values.EXPECTED_API_COUNT);
 const recorder = new Recorder(SCRIPT, { base: BASE, expectedApiCount: EXPECTED_API_COUNT });
 
 const VALID_STATES = ['OPERATIONAL', 'DEGRADED', 'UNAVAILABLE', 'DISABLED', 'NOT_CONFIGURED', 'NOT_SUPPORTED', 'UNKNOWN'];
@@ -162,9 +162,10 @@ async function main() {
     }
   }
   if (fakeZeros.length) {
-    recorder.info('zero-valued metrics on non-operational services', {
-      note: 'verify each is a genuine measured zero and not an uncollected metric rendered as 0',
+    recorder.fail('no uncollected metric is rendered as zero', {
+      reason: 'An UNKNOWN/UNAVAILABLE service exposed a zero-looking count instead of null or an explicit measured value.',
       examples: fakeZeros.slice(0, 8),
+      remediation: 'Return null with source=UNAVAILABLE when the collector could not read the metric.',
     });
   } else {
     recorder.pass('no uncollected metric is rendered as zero');
@@ -178,16 +179,17 @@ async function main() {
     });
   } else {
     const total = matrixResponse.json?.total;
-    if (total === EXPECTED_API_COUNT) {
-      recorder.pass('API matrix reconciles with the authoritative census', { total });
+    const endpoints = matrixResponse.json?.endpoints || [];
+    const enumeratedTotal = endpoints.length;
+    if (typeof total === 'number' && total === enumeratedTotal && (EXPECTED_API_COUNT === null || total === EXPECTED_API_COUNT)) {
+      recorder.pass('API matrix reconciles with its enumerated endpoint list', { total, enumeratedTotal, expectedApiCount: EXPECTED_API_COUNT });
     } else {
-      recorder.fail('API matrix reconciles with the authoritative census', {
-        reason: `matrix reports ${total}, census says ${EXPECTED_API_COUNT}`,
-        remediation: 'Regenerate docs/FINAL_API_INVENTORY.md from the deployed build and reconcile.',
+      recorder.fail('API matrix reconciles with its enumerated endpoint list', {
+        reason: `matrix total=${total}, enumerated=${enumeratedTotal}, optional expected=${EXPECTED_API_COUNT ?? 'not supplied'}`,
+        remediation: 'Regenerate the release manifest and reconcile the deployed routing table.',
       });
     }
 
-    const endpoints = matrixResponse.json?.endpoints || [];
     const distribution = {};
     for (const endpoint of endpoints) distribution[endpoint.state] = (distribution[endpoint.state] || 0) + 1;
     recorder.info('live API state distribution', distribution);

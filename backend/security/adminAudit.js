@@ -3,6 +3,11 @@
 const crypto = require('crypto');
 
 const SENSITIVE_KEY_PATTERN = /(password|secret|apikey|token|privatekey|credential|keysecret|card|cvv|authorization|cookie|session)/i;
+const SECRET_VALUE_PATTERNS = [
+  /-----BEGIN [A-Z ]*PRIVATE KEY-----/i,
+  /\b(?:sk_(?:live|test)_|nvapi-|rzp_(?:live|test)_|AIza[A-Za-z0-9_-]{20,}|gh[pousr]_|xox[baprs]-|cfut_)[A-Za-z0-9_.-]{8,}/i,
+  /\bey[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/,
+];
 
 function sanitizeAuditValue(key, value, depth = 0) {
   if (depth > 5) return '[TRUNCATED]';
@@ -11,6 +16,7 @@ function sanitizeAuditValue(key, value, depth = 0) {
     return '[REDACTED]';
   }
   if (typeof value === 'string') {
+    if (SECRET_VALUE_PATTERNS.some(pattern => pattern.test(value))) return '[REDACTED]';
     if (value.length > 1000) return value.slice(0, 1000) + '…[TRUNCATED]';
     return value;
   }
@@ -235,6 +241,12 @@ async function queryAdminAuditLogs(db, options = {}) {
   }
 
   const limitCount = Math.min(Math.max(Number(options.limit) || 50, 1), 200);
+  const search = String(options.search || '').trim().toLowerCase().slice(0, 200);
+  // Firestore does not provide a portable case-insensitive substring query.
+  // Search a bounded, newest-first window and filter only the sanitized
+  // projection below. This keeps the endpoint deterministic and prevents a
+  // search operation from ever inspecting or returning raw credentials.
+  const searchScanLimit = search ? Math.min(Math.max(limitCount * 20, 500), 2000) : limitCount;
   let query = db.collection('admin_audit_logs');
 
   if (options.actorUid) {
@@ -253,7 +265,7 @@ async function queryAdminAuditLogs(db, options = {}) {
     query = query.where('outcome', '==', String(options.outcome).toUpperCase());
   }
 
-  query = query.orderBy('createdAt', 'desc').limit(limitCount);
+  query = query.orderBy('createdAt', 'desc').limit(search ? searchScanLimit : limitCount);
 
   if (options.startAfterDocId) {
     const startDoc = await db.collection('admin_audit_logs').doc(String(options.startAfterDocId)).get();
@@ -266,17 +278,46 @@ async function queryAdminAuditLogs(db, options = {}) {
   const logs = [];
   snapshot.forEach(doc => {
     const data = doc.data() || {};
-    logs.push({
+    const safe = sanitizeAuditValue('record', data) || {};
+    const log = {
       id: doc.id,
-      ...data,
+      ...safe,
       createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : data.occurredAt || null,
-    });
+    };
+    if (!search) {
+      logs.push(log);
+      return;
+    }
+
+    const searchable = [
+      log.id,
+      log.actorUid,
+      log.actorEmail,
+      log.actorRole,
+      log.action,
+      log.category,
+      log.severity,
+      log.outcome,
+      log.method,
+      log.pathname,
+      log.resourceType,
+      log.resourceId,
+      log.requestId,
+      log.ipAddress,
+      log.metadata,
+    ].map(value => typeof value === 'string' ? value : JSON.stringify(value || '')).join(' ').toLowerCase();
+    if (searchable.includes(search)) logs.push(log);
   });
 
+  const scannedCount = snapshot.docs?.length || 0;
   return {
-    logs,
-    count: logs.length,
-    hasMore: logs.length === limitCount,
+    logs: logs.slice(0, limitCount),
+    count: Math.min(logs.length, limitCount),
+    // For a search, a full scan window means there may be an older matching
+    // record. Report that explicitly instead of claiming the filtered result
+    // is complete. Non-search pagination retains the normal Firestore contract.
+    hasMore: search ? logs.length > limitCount || scannedCount === searchScanLimit : logs.length === limitCount,
+    ...(search ? { searchWindow: scannedCount, searchTruncated: scannedCount === searchScanLimit } : {}),
   };
 }
 

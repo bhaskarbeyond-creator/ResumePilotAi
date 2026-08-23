@@ -116,6 +116,7 @@ const EmailSmtpSettings = () => {
     const [sendingTestTemplate, setSendingTestTemplate] = useState(false);
     const [resendingLogId, setResendingLogId] = useState(null);
     const [statusMessage, setStatusMessage] = useState(null);
+    const [clearSecrets, setClearSecrets] = useState({ smtp: false, fallbackSmtp: false, imap: false });
 
     const API_BASE = '';
 
@@ -519,11 +520,13 @@ const EmailSmtpSettings = () => {
     const handleSmtpChange = (e) => {
         const { name, value } = e.target;
         setSmtpConfig((prev) => ({ ...prev, [name]: value }));
+        if (name === 'password') setClearSecrets(prev => ({ ...prev, smtp: false }));
     };
 
     const handleImapChange = (e) => {
         const { name, value, type, checked } = e.target;
         setImapConfig((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+        if (name === 'password') setClearSecrets(prev => ({ ...prev, imap: false }));
     };
 
     const handleSave = async (e) => {
@@ -535,16 +538,16 @@ const EmailSmtpSettings = () => {
         setSaving(true);
         try {
             // Persist revisioned Admin metadata through trusted backend routes.
-            await saveSystemSettings('smtp', smtpConfig);
-            await saveSystemSettings('fallbackSmtp', fallbackSmtp);
-            await saveSystemSettings('imap', imapConfig);
+            await saveSystemSettings('smtp', smtpConfig, { clearSecrets: { password: clearSecrets.smtp === true } });
+            await saveSystemSettings('fallbackSmtp', fallbackSmtp, { clearSecrets: { password: clearSecrets.fallbackSmtp === true } });
+            await saveSystemSettings('imap', imapConfig, { clearSecrets: { password: clearSecrets.imap === true } });
             await saveSystemSettings('enabledTemplates', enabledTemplates);
 
             // Persist the runtime mail configuration on the trusted backend and inspect its result.
             const { response, data: result } = await fetchAdminWithReauth('/api/email/admin/save-smtp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ smtp: smtpConfig, fallbackSmtp, imap: imapConfig, enabledTemplates })
+                body: JSON.stringify({ smtp: smtpConfig, fallbackSmtp, imap: imapConfig, enabledTemplates, clearSecrets })
             });
             if (!response.ok || !result.success) throw normalizeAdminApiError(response, result, 'Runtime email configuration was not saved.');
             setCredentialStatus(current => ({ smtp: current.smtp || Boolean(smtpConfig.password), fallbackSmtp: current.fallbackSmtp || Boolean(fallbackSmtp.password), imap: current.imap || Boolean(imapConfig.password) }));
@@ -781,6 +784,7 @@ const EmailSmtpSettings = () => {
             {/* TAB 1: OUTBOUND SMTP & FALLBACK RELAY */}
             {activeTab === 'smtp' && (
                 <form onSubmit={handleSave} className="space-y-6">
+                    <fieldset className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"><legend className="px-1 font-bold">Write-only credential controls</legend><p>Blank password fields preserve the active credential. Select a clear action only when you intentionally want to remove a server-stored credential, then save. Deployment environment credentials cannot be cleared here.</p><div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3"><label className="flex items-center gap-2"><input type="checkbox" checked={clearSecrets.smtp === true} onChange={event => setClearSecrets(prev => ({ ...prev, smtp: event.target.checked }))} /> Clear primary SMTP password</label><label className="flex items-center gap-2"><input type="checkbox" checked={clearSecrets.fallbackSmtp === true} onChange={event => setClearSecrets(prev => ({ ...prev, fallbackSmtp: event.target.checked }))} /> Clear fallback password</label><label className="flex items-center gap-2"><input type="checkbox" checked={clearSecrets.imap === true} onChange={event => setClearSecrets(prev => ({ ...prev, imap: event.target.checked }))} /> Clear IMAP password</label></div></fieldset>
                     {/* 1-Click Popular Mailer Presets */}
                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
                         <label className="block text-xs font-extrabold text-slate-700 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">

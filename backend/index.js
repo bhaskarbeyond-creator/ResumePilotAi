@@ -17,6 +17,7 @@ const { createResumeDocx, resolveExportTemplate } = require('./services/docxExpo
 const { loadProviderConfiguration, generateWithProviders } = require('./services/aiRuntime');
 const { loadAiAdminSettings, saveAiAdminSettings, testAiProvider, fetchProviderModels } = require('./services/aiAdmin');
 const { mergeAdminSettingCategory } = require('./services/adminSettingsMerge');
+const { resolveWriteOnlySecret } = require('./services/paymentAdmin');
 const { createExportRenderToken, consumeExportRenderToken, discardExportRenderToken } = require('./security/exportTokens');
 const { createTenantService } = require('./enterprise/tenantService');
 const { enterpriseRouter } = require('./routes/enterprise');
@@ -28,7 +29,7 @@ const { platformRouter } = require('./routes/platform');
 const app = express();
 const cors = require('cors');
 const cryptoRandom = require('crypto');
-const { requireAuth, requirePermission, permissionsFor, requireSuperAdmin } = require('./security/auth');
+const { requireAuth, requirePermission, permissionsFor, requireSuperAdmin, requireRecentAdminAuthentication, isSuperAdmin } = require('./security/auth');
 const { enforceApiPolicy } = require('./security/policy');
 const { createEnterpriseAuthMiddleware } = require('./enterprise/enterpriseAuth');
 const {
@@ -250,7 +251,7 @@ app.use('/api/auth', authLimiter);
 // Zero-trust API boundary. Requests are authenticated unless they are explicitly
 // public protocol endpoints. Route handlers must still enforce their own role/ownership policy.
 const publicApiPaths = new Set([
-    '/healthz', '/readyz', '/health', '/service-availability',
+    '/healthz', '/readyz', '/health', '/service-availability', '/platform/version',
     '/stripe-webhook', '/public-export', '/export-render-data', '/contact', '/auth/custom-password-reset',
     '/auth/verify-email-token', '/auth/set-user-password', '/auth/linkedin', '/auth/linkedin/callback',
     '/auth/github', '/auth/github/callback', '/auth/oauth/exchange'
@@ -275,11 +276,15 @@ app.use('/api', (req, res, next) => {
 // During enterprise rollout, reject tenant/workspace headers on legacy routes rather
 // than silently ignoring them. A client must use a tenant-aware /api/enterprise path
 // or the certified UID-scoped legacy behavior, never an ambiguous hybrid request.
-app.use('/api', (req, res, next) => {
+app.use('/api', async (req, res, next) => {
     const asksForTenantContext = Boolean(req.get('x-tenant-id') || req.get('x-workspace-id'));
-    if (enterpriseFeatureEnabled() && asksForTenantContext && !req.path.startsWith('/enterprise/')) {
-        return res.status(400).json({ error: { code: 'TENANT_CONTEXT_UNSUPPORTED_FOR_LEGACY_ROUTE', message: 'Use a tenant-aware enterprise API route for tenant-scoped operations', requestId: res.locals.requestId } });
-    }
+    if (!asksForTenantContext || req.path.startsWith('/enterprise/')) return next();
+    try {
+        const { enterpriseFeatureEnabledAsync } = require('./enterprise/featureFlags');
+        if (await enterpriseFeatureEnabledAsync(req.app.get('db'))) {
+            return res.status(400).json({ error: { code: 'TENANT_CONTEXT_UNSUPPORTED_FOR_LEGACY_ROUTE', message: 'Use a tenant-aware enterprise API route for tenant-scoped operations', requestId: res.locals.requestId } });
+        }
+    } catch (_) { /* a disabled/unknown flag must not broaden legacy tenant access */ }
     return next();
 });
 
@@ -659,29 +664,56 @@ async function paypalAccessToken(baseUrl, clientId, clientSecret) {
     if (!tokenRes.ok || !tokenData.access_token) throw Object.assign(new Error('PAYPAL_AUTH_FAILED'), { status: 502 });
     return tokenData.access_token;
 }
-async function paypalConfig() {
-    let clientId = process.env.PAYPAL_CLIENT_ID || '';
-    let clientSecret = process.env.PAYPAL_CLIENT_SECRET || '';
+
+// Provider credentials are selected as complete pairs. An incomplete
+// deployment pair must never be combined with a Firestore value from another
+// account, which would make a save/reload or provider test appear successful
+// while checkout still uses invalid credentials.
+function chooseCredentialPair({ environmentId, environmentSecret, storedId, storedSecret, environmentName = 'environment', storedName = 'firestore' }) {
+    const envId = String(environmentId || '').trim();
+    const envSecret = String(environmentSecret || '').trim();
+    const persistedId = String(storedId || '').trim();
+    const persistedSecret = String(storedSecret || '').trim();
+    if (envId && envSecret) return { id: envId, secret: envSecret, source: environmentName };
+    if (persistedId && persistedSecret) return { id: persistedId, secret: persistedSecret, source: storedName };
+    if (envId || envSecret) return { id: envId, secret: envSecret, source: `${environmentName}-partial` };
+    if (persistedId || persistedSecret) return { id: persistedId, secret: persistedSecret, source: `${storedName}-partial` };
+    return { id: '', secret: '', source: 'none' };
+}
+
+async function paypalConfig(database = db) {
+    const envClientId = String(process.env.PAYPAL_CLIENT_ID || '').trim();
+    const envClientSecret = String(process.env.PAYPAL_CLIENT_SECRET || '').trim();
     let environment = String(process.env.PAYPAL_ENV || 'sandbox').toLowerCase();
-    if ((!clientId || !clientSecret) && db) {
-        const stored = (await db.collection('settings').doc('payment_providers').get()).data()?.paypal || {};
-        clientId = clientId || stored.clientId || '';
-        clientSecret = clientSecret || stored.clientSecret || '';
-        environment = stored.environment || environment;
-        if (!clientId || !clientSecret) {
-            const legacy = (await db.collection('data').doc('subscriptions').get()).data() || {};
-            clientId = clientId || legacy.paypalClientId || '';
-            clientSecret = clientSecret || legacy.paypalClientSecret || '';
-        }
+    let storedClientId = '';
+    let storedClientSecret = '';
+    let storedEnvironment = '';
+    if (database) {
+        const [providerSnapshot, legacySnapshot] = await Promise.all([
+            database.collection('settings').doc('payment_providers').get(),
+            database.collection('data').doc('subscriptions').get(),
+        ]);
+        const stored = providerSnapshot.data()?.paypal || {};
+        const legacy = legacySnapshot.data() || {};
+        storedClientId = String(stored.clientId || legacy.paypalClientId || '').trim();
+        storedClientSecret = String(stored.clientSecret || legacy.paypalClientSecret || '').trim();
+        storedEnvironment = String(stored.environment || '').trim();
     }
-    if (!clientId || !clientSecret) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
-    const baseUrl = environment === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
-    return { clientId, clientSecret, baseUrl };
+    const selected = chooseCredentialPair({
+        environmentId: envClientId,
+        environmentSecret: envClientSecret,
+        storedId: storedClientId,
+        storedSecret: storedClientSecret,
+    });
+    if (storedEnvironment && selected.source === 'firestore') environment = storedEnvironment.toLowerCase();
+    if (!selected.id || !selected.secret) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
+    const baseUrl = environment === 'live' || environment === 'production' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
+    return { clientId: selected.id, clientSecret: selected.secret, baseUrl, source: selected.source };
 }
 app.post('/api/paypal/create-order', async (req, res) => {
     let orderRef;
     try {
-        const { clientId, clientSecret, baseUrl } = await paypalConfig();
+        const { clientId, clientSecret, baseUrl } = await paypalConfig(req.app.get('db'));
         const { ref, plan } = await createProviderOrderRecord({ uid: req.user.uid, planId: req.body.planId, provider: 'paypal', couponCode: req.body.couponCode });
         orderRef = ref;
         const accessToken = await paypalAccessToken(baseUrl, clientId, clientSecret);
@@ -729,7 +761,7 @@ app.post('/api/paypal/verify', async (req, res) => {
         } catch (_) {
             return res.status(404).json({ verified: false, error: 'Order not found' });
         }
-        const { clientId, clientSecret, baseUrl } = await paypalConfig();
+        const { clientId, clientSecret, baseUrl } = await paypalConfig(req.app.get('db'));
         const accessToken = await paypalAccessToken(baseUrl, clientId, clientSecret);
         const providerRes = await fetch(`${baseUrl}/v2/checkout/orders/${encodeURIComponent(providerOrderId)}`, {
             headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, timeout: 10_000
@@ -754,24 +786,33 @@ app.post('/api/paypal/verify', async (req, res) => {
 
 // Razorpay credentials are server-owned and never accepted from payment requests.
 async function getRazorpayKeys(database) {
-    let keyId = process.env.RAZORPAY_KEY_ID || '';
-    let keySecret = process.env.RAZORPAY_KEY_SECRET || '';
-    if ((!keyId || !keySecret) && database) {
+    const envKeyId = String(process.env.RAZORPAY_KEY_ID || '').trim();
+    const envKeySecret = String(process.env.RAZORPAY_KEY_SECRET || '').trim();
+    let storedKeyId = '';
+    let storedSecret = '';
+    // A complete environment pair is deployment-managed and wins as a pair. Do
+    // not accidentally combine an old environment key ID with a newly saved
+    // Firestore secret (or vice versa); that was the source of misleading
+    // "saved but checkout still fails" reports.
+    if (envKeyId && envKeySecret) return { keyId: envKeyId, keySecret: envKeySecret, source: 'environment' };
+    if (database) {
         try {
-            const doc = await database.collection('settings').doc('payment_providers').get();
-            const data = doc.data()?.razorpay || {};
-            keyId = keyId || data.keyId || '';
-            keySecret = keySecret || data.keySecret || '';
-            if (!keyId || !keySecret) {
-                const legacy = (await database.collection('data').doc('subscriptions').get()).data() || {};
-                keyId = keyId || legacy.razorpayKeyId || '';
-                keySecret = keySecret || legacy.razorpayKeySecret || '';
-            }
+            const [providerSnapshot, legacySnapshot] = await Promise.all([
+                database.collection('settings').doc('payment_providers').get(),
+                database.collection('data').doc('subscriptions').get(),
+            ]);
+            const stored = providerSnapshot.data()?.razorpay || {};
+            const legacy = legacySnapshot.data() || {};
+            storedKeyId = String(stored.keyId || '').trim() || String(legacy.razorpayKeyId || '').trim();
+            storedSecret = String(stored.keySecret || '').trim() || String(legacy.razorpayKeySecret || '').trim();
+            const selected = chooseCredentialPair({ environmentId: envKeyId, environmentSecret: envKeySecret, storedId: storedKeyId, storedSecret });
+            return { keyId: selected.id, keySecret: selected.secret, source: selected.source };
         } catch (error) {
             console.warn('[Razorpay config]', error.message);
         }
     }
-    return { keyId, keySecret };
+    const selected = chooseCredentialPair({ environmentId: envKeyId, environmentSecret: envKeySecret, storedId: storedKeyId, storedSecret });
+    return { keyId: selected.id, keySecret: selected.secret, source: selected.source };
 }
 
 app.post('/api/razorpay/create-order', async (req, res) => {
@@ -857,75 +898,73 @@ app.post('/api/razorpay/verify-payment', async (req, res) => {
 });
 
 // ── Helper: Resolve Paytm Credentials from Firestore / .env ──────────────────
-async function getPaytmConfig() {
-    let mid = process.env.PAYTM_MID || '';
-    let key = process.env.PAYTM_MERCHANT_KEY || '';
+async function getPaytmConfig(database = db) {
+    const envMid = String(process.env.PAYTM_MID || '').trim();
+    const envKey = String(process.env.PAYTM_MERCHANT_KEY || '').trim();
+    let storedMid = '';
+    let storedKey = '';
     let website = process.env.PAYTM_WEBSITE || 'WEBSTAGING';
-    let channelId = process.env.PAYTM_CHANNEL_ID || 'WEB';
+    const channelId = process.env.PAYTM_CHANNEL_ID || 'WEB';
     const env = (process.env.PAYTM_ENV || 'staging').toLowerCase();
     const isLive = env === 'production' || env === 'live';
     const baseUrl = isLive ? 'https://securegw.paytm.in' : 'https://securegw-stage.paytm.in';
 
-    if ((!mid || !key) && db) {
+    if (database) {
         try {
-            const doc = await db.collection('settings').doc('payment_providers').get();
-            if (doc.exists) {
-                const d = doc.data()?.paytm || {};
-                if (!mid && d.mid) mid = d.mid;
-                if (!key && d.merchantKey) key = d.merchantKey;
-                if (d.website) website = d.website;
-            }
-            if (!mid || !key) {
-                const legacy = (await db.collection('data').doc('subscriptions').get()).data() || {};
-                mid = mid || legacy.paytmMid || '';
-                key = key || legacy.paytmMerchantKey || '';
-                website = legacy.paytmWebsite || website;
-            }
+            const [providerSnapshot, legacySnapshot] = await Promise.all([
+                database.collection('settings').doc('payment_providers').get(),
+                database.collection('data').doc('subscriptions').get(),
+            ]);
+            const stored = providerSnapshot.data()?.paytm || {};
+            const legacy = legacySnapshot.data() || {};
+            storedMid = String(stored.mid || legacy.paytmMid || '').trim();
+            storedKey = String(stored.merchantKey || legacy.paytmMerchantKey || '').trim();
+            if (stored.website || legacy.paytmWebsite) website = stored.website || legacy.paytmWebsite;
         } catch (e) {
             console.warn('[Paytm Config] Firestore lookup notice:', e.message);
         }
     }
-    return { mid, key, website, channelId, baseUrl, isLive };
+    const selected = chooseCredentialPair({ environmentId: envMid, environmentSecret: envKey, storedId: storedMid, storedSecret: storedKey });
+    return { mid: selected.id, key: selected.secret, website, channelId, baseUrl, isLive, source: selected.source };
 }
 
 // ── Helper: Resolve PhonePe Credentials from Firestore / .env ────────────────
-async function getPhonePeConfig() {
-    let merchantId = process.env.PHONEPE_MERCHANT_ID || '';
-    let saltKey = process.env.PHONEPE_SALT_KEY || '';
-    let saltIndex = parseInt(process.env.PHONEPE_SALT_INDEX || '1');
+async function getPhonePeConfig(database = db) {
+    const envMerchantId = String(process.env.PHONEPE_MERCHANT_ID || '').trim();
+    const envSaltKey = String(process.env.PHONEPE_SALT_KEY || '').trim();
+    let storedMerchantId = '';
+    let storedSaltKey = '';
+    let saltIndex = parseInt(process.env.PHONEPE_SALT_INDEX || '1', 10) || 1;
     const env = (process.env.PHONEPE_ENV || 'sandbox').toLowerCase();
     const isLive = env === 'production' || env === 'live';
     const baseUrl = isLive
         ? 'https://api.phonepe.com/apis/hermes'
         : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
 
-    if ((!merchantId || !saltKey) && db) {
+    if (database) {
         try {
-            const doc = await db.collection('settings').doc('payment_providers').get();
-            if (doc.exists) {
-                const d = doc.data()?.phonepe || {};
-                if (!merchantId && d.merchantId) merchantId = d.merchantId;
-                if (!saltKey && d.saltKey) saltKey = d.saltKey;
-                if (d.saltIndex) saltIndex = parseInt(d.saltIndex) || 1;
-            }
-            if (!merchantId || !saltKey) {
-                const legacy = (await db.collection('data').doc('subscriptions').get()).data() || {};
-                merchantId = merchantId || legacy.phonepeId || '';
-                saltKey = saltKey || legacy.phonepeSaltKey || '';
-                saltIndex = parseInt(legacy.phonepeSaltIndex || saltIndex) || 1;
-            }
+            const [providerSnapshot, legacySnapshot] = await Promise.all([
+                database.collection('settings').doc('payment_providers').get(),
+                database.collection('data').doc('subscriptions').get(),
+            ]);
+            const stored = providerSnapshot.data()?.phonepe || {};
+            const legacy = legacySnapshot.data() || {};
+            storedMerchantId = String(stored.merchantId || legacy.phonepeId || '').trim();
+            storedSaltKey = String(stored.saltKey || legacy.phonepeSaltKey || '').trim();
+            if (stored.saltIndex || legacy.phonepeSaltIndex) saltIndex = parseInt(stored.saltIndex || legacy.phonepeSaltIndex || saltIndex, 10) || 1;
         } catch (e) {
             console.warn('[PhonePe Config] Firestore lookup notice:', e.message);
         }
     }
-    return { merchantId, saltKey, saltIndex, baseUrl, isLive };
+    const selected = chooseCredentialPair({ environmentId: envMerchantId, environmentSecret: envSaltKey, storedId: storedMerchantId, storedSecret: storedSaltKey });
+    return { merchantId: selected.id, saltKey: selected.secret, saltIndex, baseUrl, isLive, source: selected.source };
 }
 
 // ── Paytm: server-owned transaction lifecycle ───────────────────────────────
 app.post('/api/paytm/initiate-transaction', async (req, res) => {
     let orderRef;
     try {
-        const { mid, key, website, channelId, baseUrl, isLive } = await getPaytmConfig();
+        const { mid, key, website, channelId, baseUrl, isLive } = await getPaytmConfig(req.app.get('db'));
         if (!mid || !key) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
         const { ref, plan } = await createProviderOrderRecord({ uid: req.user.uid, planId: req.body.planId || req.body.plan, provider: 'paytm', couponCode: req.body.couponCode });
         orderRef = ref;
@@ -987,7 +1026,7 @@ app.post('/api/paytm/verify-transaction', async (req, res) => {
         } catch (_) {
             return res.status(404).json({ verified: false, error: 'Order not found' });
         }
-        const { mid, key, baseUrl } = await getPaytmConfig();
+        const { mid, key, baseUrl } = await getPaytmConfig(req.app.get('db'));
         if (!mid || !key) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
         const verifyBody = JSON.stringify({ body: { mid, orderId } });
         const bodyBase64 = Buffer.from(verifyBody).toString('base64');
@@ -1019,7 +1058,7 @@ app.post('/api/paytm/verify-transaction', async (req, res) => {
 app.post('/api/phonepe/initiate', async (req, res) => {
     let orderRef;
     try {
-        const { merchantId, saltKey, saltIndex, baseUrl, isLive } = await getPhonePeConfig();
+        const { merchantId, saltKey, saltIndex, baseUrl, isLive } = await getPhonePeConfig(req.app.get('db'));
         if (!merchantId || !saltKey) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
         const { ref, plan } = await createProviderOrderRecord({ uid: req.user.uid, planId: req.body.planId || req.body.plan, provider: 'phonepe', couponCode: req.body.couponCode });
         orderRef = ref;
@@ -1082,7 +1121,7 @@ app.post('/api/phonepe/status', async (req, res) => {
         } catch (_) {
             return res.status(404).json({ verified: false, error: 'Order not found' });
         }
-        const { merchantId, saltKey, saltIndex, baseUrl } = await getPhonePeConfig();
+        const { merchantId, saltKey, saltIndex, baseUrl } = await getPhonePeConfig(req.app.get('db'));
         if (!merchantId || !saltKey) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
         const checksum = `${crypto.createHash('sha256').update(`/pg/v1/status/${merchantId}/${orderId}${saltKey}`).digest('hex')}###${saltIndex}`;
         const providerRes = await fetch(`${baseUrl}/pg/v1/status/${encodeURIComponent(merchantId)}/${encodeURIComponent(orderId)}`, {
@@ -1701,6 +1740,20 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
             return res.status(402).json({ error: { code: 'ACTIVE_SUBSCRIPTION_REQUIRED', message: 'An active subscription is required for PDF export', requestId: res.locals.requestId } });
         }
         if (stored?.template && stored.template !== resumeName) return res.status(400).json({ error: 'Template mismatch' });
+
+        // Export preferences are optional, server-side, and bounded. The public
+        // host and executable binding are intentionally not read from browser
+        // settings; this process always renders against its deployment origin.
+        let exportPreferences = { renderTimeout: 60_000, paperFormat: 'A4' };
+        try {
+            const preferencesSnapshot = await requestDb.collection('data').doc('public_config').get();
+            const configured = preferencesSnapshot.data()?.exportPdf || {};
+            const timeout = Number(configured.renderTimeout);
+            if (Number.isFinite(timeout)) exportPreferences.renderTimeout = Math.max(5_000, Math.min(Math.floor(timeout), 120_000));
+            if (['A4', 'Letter', 'Legal'].includes(configured.paperFormat)) exportPreferences.paperFormat = configured.paperFormat;
+        } catch (preferenceError) {
+            console.warn('[Export preferences] unavailable; using bounded defaults:', preferenceError.message);
+        }
         renderToken = await createExportRenderToken(req.app.get('db'), stored);
         const launchOptions = {
             headless: true,
@@ -1739,11 +1792,11 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
         console.log('Playwright exporting PDF, navigating to: ', targetUrl);
         await page.goto(targetUrl, {
             waitUntil: 'domcontentloaded',
-            timeout: 60000,
+            timeout: exportPreferences.renderTimeout,
         });
         // Wait for the normalized lazy template to commit. Export errors fail closed instead
         // of silently producing an empty/corrupt PDF. Use waitForSelector to avoid CSP eval restrictions.
-        await page.waitForSelector('html[data-export-ready="true"], html[data-export-error]', { timeout: 25000 });
+        await page.waitForSelector('html[data-export-ready="true"], html[data-export-error]', { timeout: Math.min(exportPreferences.renderTimeout, 30_000) });
         const exportError = await page.evaluate(() => globalThis.document.documentElement.getAttribute('data-export-error'));
         if (exportError) throw new Error(`EXPORT_RENDER_FAILED:${exportError}`);
         await page.evaluate(async () => {
@@ -1756,7 +1809,7 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
         // not shared across instances, survives crashes as an orphan, and races when two
         // exports land in the same millisecond. Streaming the buffer removes all three.
         const pdfBuffer = await page.pdf({
-            format: 'A4',
+            format: exportPreferences.paperFormat,
             printBackground: true,
             preferCSSPageSize: true,
             margin: {
@@ -2007,56 +2060,86 @@ app.post('/api/admin/blog/publish-due', async (req, res) => {
     }
 });
 
-app.get('/api/admin/health-summary', async (_req, res) => {
-    if (!db || !admin) return res.status(503).json({ success: false, error: 'Health services unavailable.' });
+app.get('/api/admin/health-summary', async (req, res) => {
+    const requestDb = req.app.get('db');
+    const firebaseAdmin = req.app.get('firebaseAdmin') || admin;
+    if (!requestDb || !firebaseAdmin) return res.status(503).json({ success: false, code: 'HEALTH_UNAVAILABLE', error: 'Health services unavailable.' });
     try {
         const [publicConfig, aiProviders, paymentProviders] = await Promise.all([
-            db.collection('data').doc('public_config').get(),
-            db.collection('settings').doc('ai_providers').get(),
-            db.collection('settings').doc('payment_providers').get(),
+            requestDb.collection('data').doc('public_config').get(),
+            requestDb.collection('settings').doc('ai_providers').get(),
+            requestDb.collection('settings').doc('payment_providers').get(),
         ]);
+        const publicData = publicConfig.data() || {};
         const ai = aiProviders.data() || {};
         const payments = paymentProviders.data() || {};
         return res.json({
             success: true,
             checkedAt: new Date().toISOString(),
+            revision: Number(publicData._settingsRevisions?.systemHealth || 0),
             services: {
                 backend: { reachable: true }, firebaseAdmin: { configured: true },
                 aiProviders: Object.fromEntries(['gemini', 'nvidia', 'openai', 'groq', 'openrouter', 'deepseek'].map(provider => [provider, { configured: Boolean(ai[provider]?.apiKey || process.env[`${provider.toUpperCase()}_API_KEY`]) }])),
                 payments: {
                     stripe: { configured: Boolean(payments.stripe?.secretKey || process.env.STRIPE_SECRET) },
-                    razorpay: { configured: Boolean(payments.razorpay?.keySecret || process.env.RAZORPAY_KEY_SECRET) },
+                    razorpay: { configured: Boolean((payments.razorpay?.keyId && payments.razorpay?.keySecret) || (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET)) },
                 },
             },
-            settings: publicConfig.data()?.systemHealth || { maintenanceMode: false, maintenanceMessage: '' },
+            settings: publicData.systemHealth || { maintenanceMode: false, maintenanceMessage: '' },
         });
     } catch (error) {
         console.error('[Admin health summary]', error.message);
-        return res.status(503).json({ success: false, error: 'Unable to read service health configuration.' });
+        return res.status(503).json({ success: false, code: 'HEALTH_UNAVAILABLE', error: 'Unable to read service health configuration.' });
     }
 });
 
-app.post('/api/admin/system-health-settings', async (req, res) => {
-    if (!db || !admin) return res.status(503).json({ success: false, error: 'Settings service unavailable.' });
+app.post('/api/admin/system-health-settings', requireRecentAdminAuthentication, async (req, res) => {
+    const requestDb = req.app.get('db');
+    const firebaseAdmin = req.app.get('firebaseAdmin') || admin;
+    if (!requestDb || !firebaseAdmin?.firestore?.FieldValue) return res.status(503).json({ success: false, code: 'SETTINGS_UNAVAILABLE', error: 'Settings service unavailable.' });
     const maintenanceMode = req.body?.maintenanceMode === true;
     const maintenanceMessage = String(req.body?.maintenanceMessage || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, 500);
-    if (maintenanceMode && !maintenanceMessage) return res.status(400).json({ success: false, error: 'A maintenance message is required while maintenance mode is enabled.' });
+    if (maintenanceMode && !maintenanceMessage) return res.status(400).json({ success: false, code: 'INVALID_MAINTENANCE_MESSAGE', error: 'A maintenance message is required while maintenance mode is enabled.' });
     const systemHealth = { maintenanceMode, maintenanceMessage };
-    const batch = db.batch();
-    batch.set(db.collection('data').doc('public_config'), { systemHealth }, { merge: true });
-    batch.set(db.collection('security_audit_logs').doc(), {
-        action: 'SYSTEM_HEALTH_SETTINGS_UPDATED', actorUid: req.user.uid, maintenanceMode,
-        requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
-    await batch.commit();
-    return res.json({ success: true, settings: systemHealth });
+    try {
+        const publicRef = requestDb.collection('data').doc('public_config');
+        const maintenanceRef = requestDb.collection('settings').doc('maintenance');
+        const revision = await requestDb.runTransaction(async transaction => {
+            const [publicSnapshot, maintenanceSnapshot] = await Promise.all([transaction.get(publicRef), transaction.get(maintenanceRef)]);
+            const currentPublic = publicSnapshot.data() || {};
+            const currentMaintenance = maintenanceSnapshot.data() || {};
+            const currentRevision = Number(currentPublic._settingsRevisions?.systemHealth || currentMaintenance._revision || 0);
+            const expectedRevision = req.body?.expectedRevision === undefined ? currentRevision : Number(req.body.expectedRevision);
+            if (!Number.isInteger(expectedRevision) || expectedRevision !== currentRevision) {
+                const conflict = new Error('Health settings changed after this panel loaded. Refresh before saving.');
+                conflict.code = 'ADMIN_SETTINGS_CONFLICT';
+                throw conflict;
+            }
+            const nextRevision = currentRevision + 1;
+            const timestamp = firebaseAdmin.firestore.FieldValue.serverTimestamp();
+            transaction.set(maintenanceRef, {
+                enabled: maintenanceMode, message: maintenanceMessage,
+                updatedBy: req.user?.email || req.user?.uid || 'admin', updatedAt: timestamp, _revision: nextRevision,
+            }, { merge: true });
+            transaction.set(publicRef, { systemHealth, _settingsRevisions: { systemHealth: nextRevision } }, { merge: true });
+            transaction.set(requestDb.collection('security_audit_logs').doc(), {
+                action: 'SYSTEM_HEALTH_SETTINGS_UPDATED', actorUid: req.user.uid, maintenanceMode,
+                revision: nextRevision, requestId: res.locals.requestId, createdAt: timestamp,
+            });
+            return nextRevision;
+        });
+        return res.json({ success: true, settings: systemHealth, revision });
+    } catch (error) {
+        const status = error.code === 'ADMIN_SETTINGS_CONFLICT' ? 409 : 500;
+        return res.status(status).json({ success: false, code: error.code || 'SYSTEM_HEALTH_SETTINGS_SAVE_FAILED', error: status === 409 ? error.message : 'Unable to save system health settings.', requestId: res.locals.requestId });
+    }
 });
 
 const GENERIC_ADMIN_SETTING_CATEGORIES = new Set([
     'modules', 'auth', 'blog', 'watermark', 'templateManager', 'security', 'jobScraper',
     'exportPdf', 'branding', 'geoSeo', 'llmGeo', 'enabledTemplates', 'integrations',
     'socialAuth', 'google', 'facebook', 'smtp', 'fallbackSmtp', 'imap',
-    'storage', 'codeInjection'
+    'storage', 'codeInjection', 'gdpr'
 ]);
 
 function normalizeAdminSettingValue(value, depth = 0) {
@@ -2117,21 +2200,116 @@ function preserveAdminSettingSecrets(category, current, next) {
     return output;
 }
 
+function applyExplicitAdminSecretClears(category, current, next, clearSecrets) {
+    const requested = Array.isArray(clearSecrets)
+        ? clearSecrets.filter(value => typeof value === 'string')
+        : Object.entries(clearSecrets || {}).filter(([, value]) => value === true).map(([key]) => key);
+    if (!requested.length) return next;
+    const output = next && typeof next === 'object' ? JSON.parse(JSON.stringify(next)) : {};
+    for (const pathName of requested.slice(0, 50)) {
+        const pathParts = String(pathName).split('.').filter(Boolean);
+        const leaf = pathParts[pathParts.length - 1];
+        if (!pathParts.length || !isPrivateAdminSettingKey(category, leaf)) continue;
+        let target = output;
+        for (const part of pathParts.slice(0, -1)) {
+            if (!target[part] || typeof target[part] !== 'object' || Array.isArray(target[part])) target[part] = {};
+            target = target[part];
+        }
+        // The caller replaces this marker with a Firestore delete sentinel before
+        // persisting. Keeping the marker in this pure helper makes the intent
+        // testable without requiring a Firebase SDK instance.
+        target[leaf] = { __adminSecretDelete: true };
+    }
+    return output;
+}
+
+function materializeAdminSecretDeletes(value, admin) {
+    if (Array.isArray(value)) return value.map(item => materializeAdminSecretDeletes(item, admin));
+    if (!value || typeof value !== 'object') return value;
+    if (value.__adminSecretDelete === true && Object.keys(value).length === 1) return admin.firestore.FieldValue.delete();
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, materializeAdminSecretDeletes(item, admin)]));
+}
+
+function containsSecretMutation(value, clearSecrets) {
+    const explicitClear = Object.entries(clearSecrets || {}).some(([, requested]) => requested === true)
+        || (Array.isArray(clearSecrets) && clearSecrets.length > 0);
+    if (explicitClear) return true;
+    const visit = current => {
+        if (Array.isArray(current)) return current.some(visit);
+        if (!current || typeof current !== 'object') return false;
+        return Object.entries(current).some(([key, item]) => {
+            if (isPrivateAdminSettingKey('', key)) {
+                return typeof item === 'string' ? item.trim() !== '' && !/[•*]/.test(item) : item !== null && item !== undefined;
+            }
+            return visit(item);
+        });
+    };
+    return visit(value);
+}
+
+function requiresRecentGenericSettingAuth(category, data, clearSecrets) {
+    // Code injection is a high-impact browser execution surface even though it
+    // is not a credential. Infrastructure bindings are handled separately as
+    // read-only and are never made editable by elevating the caller.
+    if (category === 'codeInjection') return true;
+    return containsSecretMutation(data, clearSecrets);
+}
+
 function publicAdminSettings(category, data) {
     if (category === 'codeInjection') return {};
     if (['smtp', 'fallbackSmtp', 'imap'].includes(category)) return { enabled: data.enabled === true };
     const redact = value => {
         if (Array.isArray(value)) return value.map(redact);
         if (!value || typeof value !== 'object') return value;
-        return Object.fromEntries(Object.entries(value).filter(([key]) => !isPrivateAdminSettingKey(category, key)).map(([key, item]) => [key, redact(item)]));
+        return Object.fromEntries(Object.entries(value).filter(([key]) => !isPrivateAdminSettingKey(category, key) && key !== '__adminSecretDelete').map(([key, item]) => [key, redact(item)]));
     };
     return redact(data);
 }
+
+// Curated read surface used by the admin settings loader and live inventory
+// scripts. It is deliberately separate from the browser's public_config read:
+// server-owned settings are projected through the same secret redaction policy
+// before they leave this process.
+app.get('/api/admin/settings', async (req, res) => {
+    const requestDb = req.app.get('db');
+    if (!requestDb) return res.status(503).json({ success: false, code: 'SETTINGS_UNAVAILABLE', error: 'Settings service unavailable.', requestId: res.locals.requestId });
+    try {
+        const [publicSnapshot, adminSnapshot] = await Promise.all([
+            requestDb.collection('data').doc('public_config').get(),
+            requestDb.collection('settings').doc('admin_configuration').get(),
+        ]);
+        const publicRoot = publicSnapshot.data() || {};
+        const adminRoot = adminSnapshot.data() || {};
+        const settings = {};
+        for (const [category, data] of Object.entries(publicRoot)) {
+            if (category.startsWith('_')) continue;
+            settings[category] = publicAdminSettings(category, data || {});
+        }
+        for (const [category, data] of Object.entries(adminRoot)) {
+            if (category.startsWith('_') || Object.hasOwn(settings, category)) continue;
+            settings[category] = publicAdminSettings(category, data || {});
+        }
+        return res.json({ success: true, settings, revisions: publicRoot._settingsRevisions || adminRoot._revisions || {}, generatedAt: new Date().toISOString() });
+    } catch (error) {
+        console.error('[Admin settings read]', error.message);
+        return res.status(503).json({ success: false, code: 'SETTINGS_UNAVAILABLE', error: 'Unable to read admin settings.', requestId: res.locals.requestId });
+    }
+});
 
 app.post('/api/admin/settings/:category', async (req, res) => {
     const category = String(req.params.category || '');
     if (!GENERIC_ADMIN_SETTING_CATEGORIES.has(category) || !req.body?.data || typeof req.body.data !== 'object' || Array.isArray(req.body.data)) {
         return res.status(400).json({ success: false, error: 'Unsupported settings category or payload.' });
+    }
+    if (category === 'exportPdf' && (Object.hasOwn(req.body.data, 'websiteDomain') || Object.hasOwn(req.body.data, 'backendExportUrl') || Object.hasOwn(req.body.data, 'chromiumPath'))) {
+        return res.status(403).json({ success: false, code: 'INFRASTRUCTURE_SETTING_READ_ONLY', error: 'Public render origin, backend export URL, and Chromium path are deployment-owned infrastructure settings. Change them through the deployment configuration.' });
+    }
+    if (category === 'storage' && Object.hasOwn(req.body.data, 'provider') && req.body.data.provider !== 'firebase') {
+        return res.status(501).json({ success: false, code: 'STORAGE_PROVIDER_UNSUPPORTED', error: 'Only Firebase Storage is implemented by this deployment. Cloudinary and S3 require a server-side adapter before they can be enabled.' });
+    }
+    if (requiresRecentGenericSettingAuth(category, req.body.data, req.body.clearSecrets)) {
+        const guarded = requireRecentAdminAuthentication(req, res, () => {});
+        if (guarded) return guarded;
     }
     const requestDb = req.app.get('db');
     if (!requestDb || !admin) return res.status(503).json({ success: false, error: 'Settings service unavailable.' });
@@ -2155,13 +2333,14 @@ app.post('/api/admin/settings/:category', async (req, res) => {
             const nextRevision = currentRevision + 1;
             const currentCategory = snapshot.data()?.[category];
             const mergedInput = mergeAdminSettingCategory(currentCategory, normalized);
-            const persisted = preserveAdminSettingSecrets(category, currentCategory, mergedInput);
+            const withClears = applyExplicitAdminSecretClears(category, currentCategory, mergedInput, req.body?.clearSecrets);
+            const persisted = materializeAdminSecretDeletes(preserveAdminSettingSecrets(category, currentCategory, withClears), admin);
             publicSettings = publicAdminSettings(category, persisted);
             transaction.set(secretRef, { [category]: persisted, _revisions: { [category]: nextRevision } }, { merge: true });
             transaction.set(publicRef, { [category]: publicSettings, _settingsRevisions: { [category]: nextRevision } }, { merge: true });
             transaction.set(requestDb.collection('security_audit_logs').doc(), {
                 action: 'ADMIN_SETTINGS_UPDATED', actorUid: req.user.uid, category, revision: nextRevision,
-                changedFields: Object.keys(normalized).slice(0, 200), requestId: res.locals.requestId,
+                changedFields: [...Object.keys(normalized), ...(Array.isArray(req.body?.clearSecrets) ? req.body.clearSecrets : Object.entries(req.body?.clearSecrets || {}).filter(([, value]) => value === true).map(([key]) => `clear:${key}`))].slice(0, 200), requestId: res.locals.requestId,
                 createdAt: admin.firestore.FieldValue.serverTimestamp(),
             });
             return nextRevision;
@@ -2173,7 +2352,9 @@ app.post('/api/admin/settings/:category', async (req, res) => {
 });
 
 app.post('/api/admin/gdpr-settings', async (req, res) => {
-    if (!db) return res.status(503).json({ success: false, error: 'Settings service unavailable' });
+    const requestDb = req.app.get('db');
+    const firebaseAdmin = req.app.get('firebaseAdmin') || admin;
+    if (!requestDb || !firebaseAdmin?.firestore?.FieldValue) return res.status(503).json({ success: false, code: 'SETTINGS_UNAVAILABLE', error: 'Settings service unavailable.' });
     const input = req.body || {};
     const safePath = (value, fallback) => {
         const pathValue = String(value || fallback).trim();
@@ -2186,11 +2367,33 @@ app.post('/api/admin/gdpr-settings', async (req, res) => {
         privacyPolicyUrl: safePath(input.privacyPolicyUrl, '/p/privacy-policy'),
         termsOfServiceUrl: safePath(input.termsOfServiceUrl, '/p/terms-of-service'),
     };
-    await db.collection('data').doc('public_config').set({ gdpr }, { merge: true });
-    return res.json({ success: true, settings: gdpr });
+    try {
+        const publicRef = requestDb.collection('data').doc('public_config');
+        const revision = await requestDb.runTransaction(async transaction => {
+            const snapshot = await transaction.get(publicRef);
+            const current = snapshot.data() || {};
+            const currentRevision = Number(current._settingsRevisions?.gdpr || 0);
+            const requestedRevision = input.expectedRevision === undefined ? currentRevision : Number(input.expectedRevision);
+            if (!Number.isInteger(requestedRevision) || requestedRevision !== currentRevision) {
+                const conflict = new Error('GDPR settings changed after this panel loaded. Refresh before saving.');
+                conflict.code = 'ADMIN_SETTINGS_CONFLICT';
+                throw conflict;
+            }
+            const nextRevision = currentRevision + 1;
+            transaction.set(publicRef, { gdpr, _settingsRevisions: { gdpr: nextRevision } }, { merge: true });
+            transaction.set(requestDb.collection('security_audit_logs').doc(), {
+                action: 'GDPR_SETTINGS_UPDATED', actorUid: req.user.uid, revision: nextRevision,
+                requestId: res.locals.requestId, createdAt: firebaseAdmin.firestore.FieldValue.serverTimestamp(),
+            });
+            return nextRevision;
+        });
+        return res.json({ success: true, settings: gdpr, revision });
+    } catch (error) {
+        return res.status(error.code === 'ADMIN_SETTINGS_CONFLICT' ? 409 : 500).json({ success: false, code: error.code || 'GDPR_SETTINGS_SAVE_FAILED', error: error.code === 'ADMIN_SETTINGS_CONFLICT' ? error.message : 'Unable to save GDPR settings.', requestId: res.locals.requestId });
+    }
 });
 
-app.post('/api/admin/ai-settings', requireSuperAdmin, async (req, res) => {
+app.post('/api/admin/ai-settings', requireRecentAdminAuthentication, async (req, res) => {
     try {
         const result = await saveAiAdminSettings({
             db: req.app.get('db'), admin, input: req.body || {},
@@ -2203,7 +2406,7 @@ app.post('/api/admin/ai-settings', requireSuperAdmin, async (req, res) => {
     }
 });
 
-app.post('/api/admin/ai/test-provider', requireSuperAdmin, async (req, res) => {
+app.post('/api/admin/ai/test-provider', requireRecentAdminAuthentication, async (req, res) => {
     try {
         const result = await testAiProvider({
             db: req.app.get('db'), environment: process.env,
@@ -2216,7 +2419,7 @@ app.post('/api/admin/ai/test-provider', requireSuperAdmin, async (req, res) => {
     }
 });
 
-app.post('/api/admin/ai/fetch-models', async (req, res) => {
+app.post('/api/admin/ai/fetch-models', requireRecentAdminAuthentication, async (req, res) => {
     try {
         const provider = String(req.body?.provider || req.query?.provider || 'nvidia');
         const apiKey = req.body?.apiKey;
@@ -2360,76 +2563,164 @@ app.post('/api/admin/ai/reset-quota', async (req, res) => {
     }
 });
 
-app.post('/api/admin/payment-settings', requireSuperAdmin, async (req, res) => {
-    if (!db || !admin) return res.status(503).json({ success: false, error: 'Settings service unavailable.' });
+app.post('/api/admin/payment-settings', requireRecentAdminAuthentication, async (req, res) => {
+    if (!db || !admin?.firestore?.FieldValue) return res.status(503).json({ success: false, code: 'PAYMENT_SETTINGS_UNAVAILABLE', error: 'Payment settings service unavailable.', requestId: res.locals.requestId });
     const input = req.body || {};
     const numberInRange = (value, min, max, fallback) => {
         const parsed = Number(value);
         return Number.isFinite(parsed) && parsed >= min && parsed <= max ? parsed : fallback;
     };
+    const paymentRef = db.collection('settings').doc('payment_providers');
+    const publicRef = db.collection('data').doc('public_config');
+    const [paymentSnapshot, publicSnapshot] = await Promise.all([paymentRef.get(), publicRef.get()]);
+    const currentSecrets = paymentSnapshot.data() || {};
+    const currentPublicRoot = publicSnapshot.data() || {};
+    const currentPublic = currentPublicRoot.subscriptions || {};
+    const currentRevision = Number(currentSecrets._revision || currentPublicRoot._settingsRevisions?.payments || 0);
+    if (input.expectedRevision !== undefined && Number(input.expectedRevision) !== currentRevision) {
+        return res.status(409).json({ success: false, code: 'PAYMENT_SETTINGS_CONFLICT', error: 'Payment settings changed after this panel loaded. Refresh before saving.', revision: currentRevision, requestId: res.locals.requestId });
+    }
+    const valueOrCurrent = (key, fallback = '') => {
+        if (Object.hasOwn(input, key) && input[key] !== null && input[key] !== undefined && String(input[key]).trim() !== '') return input[key];
+        // A blank field in the browser means "preserve". Treat an empty
+        // public-config value as absent as well, so a provider identifier that
+        // is stored in the server-only payment document (or deployment env)
+        // cannot be erased by an unrelated settings save.
+        if (currentPublic[key] !== undefined && currentPublic[key] !== null && String(currentPublic[key]).trim() !== '') return currentPublic[key];
+        return fallback;
+    };
     const publicSettings = {
-        state: input.state !== false,
-        monthlyPrice: numberInRange(input.monthlyPrice, 0, 1_000_000, 199),
-        quartarlyPrice: numberInRange(input.quartarlyPrice, 0, 1_000_000, 399),
-        yearlyPrice: numberInRange(input.yearlyPrice, 0, 1_000_000, 499),
-        currency: /^[A-Z]{3}$/.test(String(input.currency || '').toUpperCase()) ? String(input.currency).toUpperCase() : 'INR',
-        onlyPP: input.onlyPP === true,
-        sandboxMode: input.sandboxMode === true,
-        razorpayUPI: input.razorpayUPI !== false,
-        ...Object.fromEntries(['stripeEnabled','paypalEnabled','razorpayEnabled','paytmEnabled','phonepeEnabled','enableTax','taxInclusive','requireCustomerTaxId'].map(key => [key, input[key] === true])),
-        taxName: String(input.taxName || 'GST').slice(0, 30),
-        taxRate: numberInRange(input.taxRate, 0, 100, 18),
-        companyTaxId: String(input.companyTaxId || '').slice(0, 30),
-        supplierLegalName: String(input.supplierLegalName || '').slice(0, 150),
-        supplierTradeName: String(input.supplierTradeName || '').slice(0, 150),
-        supplierGstin: String(input.supplierGstin || '').slice(0, 30),
-        supplierPan: String(input.supplierPan || '').slice(0, 30),
-        supplierAddress: String(input.supplierAddress || '').slice(0, 500),
-        supplierCity: String(input.supplierCity || '').slice(0, 100),
-        supplierState: String(input.supplierState || '').slice(0, 100),
-        supplierStateCode: String(input.supplierStateCode || '').slice(0, 10),
-        supplierPincode: String(input.supplierPincode || '').slice(0, 20),
-        sacCode: String(input.sacCode || '').slice(0, 30),
-        invoicePrefix: String(input.invoicePrefix || 'RPAI').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 20),
-        financialYear: String(input.financialYear || '').slice(0, 20),
-        receiptTemplate: ['modern','classic','minimal'].includes(input.receiptTemplate) ? input.receiptTemplate : 'modern',
-        reverseCharge: input.reverseCharge === 'Yes' ? 'Yes' : 'No',
-        stripePublishableKey: String(input.stripePublishableKey || '').slice(0, 200),
-        razorpayKeyId: String(input.razorpayKeyId || '').slice(0, 100),
-        paypalClientId: String(input.paypalClientId || '').slice(0, 200),
-        paytmMid: String(input.paytmMid || '').slice(0, 50),
-        paytmWebsite: String(input.paytmWebsite || 'WEBSTAGING').slice(0, 50),
-        phonepeId: String(input.phonepeId || '').slice(0, 100),
-        phonepeSaltIndex: String(input.phonepeSaltIndex || '1').slice(0, 10)
+        state: Object.hasOwn(input, 'state') ? input.state !== false : currentPublic.state !== false,
+        monthlyPrice: numberInRange(valueOrCurrent('monthlyPrice', 199), 0, 1_000_000, 199),
+        quartarlyPrice: numberInRange(valueOrCurrent('quartarlyPrice', 399), 0, 1_000_000, 399),
+        yearlyPrice: numberInRange(valueOrCurrent('yearlyPrice', 499), 0, 1_000_000, 499),
+        currency: /^[A-Z]{3}$/.test(String(valueOrCurrent('currency', 'INR')).toUpperCase()) ? String(valueOrCurrent('currency', 'INR')).toUpperCase() : 'INR',
+        onlyPP: Object.hasOwn(input, 'onlyPP') ? input.onlyPP === true : currentPublic.onlyPP === true,
+        sandboxMode: Object.hasOwn(input, 'sandboxMode') ? input.sandboxMode === true : currentPublic.sandboxMode === true,
+        razorpayUPI: Object.hasOwn(input, 'razorpayUPI') ? input.razorpayUPI !== false : currentPublic.razorpayUPI !== false,
+        ...Object.fromEntries(['stripeEnabled','paypalEnabled','razorpayEnabled','paytmEnabled','phonepeEnabled','enableTax','taxInclusive','requireCustomerTaxId'].map(key => [key, Object.hasOwn(input, key) ? input[key] === true : currentPublic[key] === true])),
+        taxName: String(valueOrCurrent('taxName', 'GST')).replace(/\p{Cc}/gu, ' ').slice(0, 30),
+        taxRate: numberInRange(valueOrCurrent('taxRate', 18), 0, 100, 18),
+        companyTaxId: String(valueOrCurrent('companyTaxId', '')).slice(0, 30),
+        supplierLegalName: String(valueOrCurrent('supplierLegalName', '')).slice(0, 150),
+        supplierTradeName: String(valueOrCurrent('supplierTradeName', '')).slice(0, 150),
+        supplierGstin: String(valueOrCurrent('supplierGstin', '')).slice(0, 30),
+        supplierPan: String(valueOrCurrent('supplierPan', '')).slice(0, 30),
+        supplierAddress: String(valueOrCurrent('supplierAddress', '')).slice(0, 500),
+        supplierCity: String(valueOrCurrent('supplierCity', '')).slice(0, 100),
+        supplierState: String(valueOrCurrent('supplierState', '')).slice(0, 100),
+        supplierStateCode: String(valueOrCurrent('supplierStateCode', '')).slice(0, 10),
+        supplierPincode: String(valueOrCurrent('supplierPincode', '')).slice(0, 20),
+        sacCode: String(valueOrCurrent('sacCode', '')).slice(0, 30),
+        invoicePrefix: String(valueOrCurrent('invoicePrefix', 'RPAI')).replace(/[^A-Za-z0-9_-]/g, '').slice(0, 20),
+        financialYear: String(valueOrCurrent('financialYear', '')).slice(0, 20),
+        receiptTemplate: ['modern','classic','minimal'].includes(valueOrCurrent('receiptTemplate', 'modern')) ? valueOrCurrent('receiptTemplate', 'modern') : 'modern',
+        reverseCharge: valueOrCurrent('reverseCharge', 'No') === 'Yes' ? 'Yes' : 'No',
+        stripePublishableKey: String(valueOrCurrent('stripePublishableKey', '')).slice(0, 200),
+        razorpayKeyId: String(valueOrCurrent('razorpayKeyId', currentSecrets.razorpay?.keyId || process.env.RAZORPAY_KEY_ID || '')).slice(0, 100),
+        paypalClientId: String(valueOrCurrent('paypalClientId', currentSecrets.paypal?.clientId || process.env.PAYPAL_CLIENT_ID || '')).slice(0, 200),
+        paytmMid: String(valueOrCurrent('paytmMid', currentSecrets.paytm?.mid || process.env.PAYTM_MID || '')).slice(0, 50),
+        paytmWebsite: String(valueOrCurrent('paytmWebsite', currentSecrets.paytm?.website || process.env.PAYTM_WEBSITE || 'WEBSTAGING')).slice(0, 50),
+        phonepeId: String(valueOrCurrent('phonepeId', currentSecrets.phonepe?.merchantId || process.env.PHONEPE_MERCHANT_ID || '')).slice(0, 100),
+        phonepeSaltIndex: String(valueOrCurrent('phonepeSaltIndex', currentSecrets.phonepe?.saltIndex || process.env.PHONEPE_SALT_INDEX || '1')).slice(0, 10),
     };
-    const secretValue = value => {
-        const text = String(value || '').trim();
-        if (text && (text.length < 8 || text.length > 1000)) throw new Error('Invalid provider secret length.');
-        return text;
+    const secretValue = (value, label) => resolveWriteOnlySecret({ value, label }).value;
+    const clearSecrets = input.clearSecrets && typeof input.clearSecrets === 'object' ? input.clearSecrets : {};
+    const secretDefinitions = {
+        stripe: ['secretKey', 'stripeSecretKey', 'Stripe secret'],
+        paypal: ['clientSecret', 'paypalClientSecret', 'PayPal client secret'],
+        razorpay: ['keySecret', 'razorpayKeySecret', 'Razorpay key secret'],
+        paytm: ['merchantKey', 'paytmMerchantKey', 'Paytm merchant key'],
+        phonepe: ['saltKey', 'phonepeSaltKey', 'PhonePe salt key'],
     };
+    const providerSecrets = {};
+    const submittedSecrets = {};
     try {
-        const providerSecrets = {
-            stripe: { secretKey: secretValue(input.stripeSecretKey) },
-            paypal: { clientSecret: secretValue(input.paypalClientSecret), clientId: publicSettings.paypalClientId, environment: publicSettings.sandboxMode ? 'sandbox' : 'live' },
-            razorpay: { keySecret: secretValue(input.razorpayKeySecret), keyId: publicSettings.razorpayKeyId },
-            paytm: { merchantKey: secretValue(input.paytmMerchantKey), mid: publicSettings.paytmMid, website: publicSettings.paytmWebsite },
-            phonepe: { saltKey: secretValue(input.phonepeSaltKey), merchantId: publicSettings.phonepeId, saltIndex: publicSettings.phonepeSaltIndex }
-        };
-        // Blank secrets are omitted so viewing/saving a masked form never erases live keys.
-        for (const provider of Object.values(providerSecrets)) {
-            for (const [key, value] of Object.entries(provider)) if (value === '') delete provider[key];
+        for (const [provider, [persistedField, inputField, label]] of Object.entries(secretDefinitions)) {
+            const clear = clearSecrets[provider] === true;
+            const environmentField = provider === 'stripe' ? 'STRIPE_SECRET'
+                : provider === 'paypal' ? 'PAYPAL_CLIENT_SECRET'
+                    : provider === 'razorpay' ? 'RAZORPAY_KEY_SECRET'
+                        : provider === 'paytm' ? 'PAYTM_MERCHANT_KEY' : 'PHONEPE_SALT_KEY';
+            if (clear && String(process.env[environmentField] || '').trim()) {
+                const error = new Error(`${label} is deployment-managed and cannot be cleared from the Admin UI.`);
+                error.code = 'INFRASTRUCTURE_SECRET_CANNOT_CLEAR';
+                error.status = 409;
+                throw error;
+            }
+            const raw = secretValue(input[inputField], label);
+            if (clear) {
+                providerSecrets[provider] = { [persistedField]: admin.firestore.FieldValue.delete() };
+                submittedSecrets[provider] = '';
+            } else if (raw) {
+                providerSecrets[provider] = { [persistedField]: raw };
+                submittedSecrets[provider] = raw;
+            } else {
+                providerSecrets[provider] = {};
+                submittedSecrets[provider] = '';
+            }
         }
+        // Public identifiers are safe to persist, but blank form fields preserve
+        // the current value just like secrets. The runtime reads the same
+        // payment_providers document, so Razorpay saves and reloads use one
+        // canonical schema instead of diverging legacy paths.
+        providerSecrets.paypal.clientId = publicSettings.paypalClientId;
+        providerSecrets.paypal.environment = publicSettings.sandboxMode ? 'sandbox' : 'live';
+        providerSecrets.razorpay.keyId = publicSettings.razorpayKeyId;
+        providerSecrets.paytm.mid = publicSettings.paytmMid;
+        providerSecrets.paytm.website = publicSettings.paytmWebsite;
+        providerSecrets.phonepe.merchantId = publicSettings.phonepeId;
+        providerSecrets.phonepe.saltIndex = publicSettings.phonepeSaltIndex;
+
+        const nextRevision = currentRevision + 1;
+        providerSecrets._revision = nextRevision;
         const batch = db.batch();
-        batch.set(db.collection('settings').doc('payment_providers'), providerSecrets, { merge: true });
-        batch.set(db.collection('data').doc('public_config'), { subscriptions: publicSettings }, { merge: true });
+        batch.set(paymentRef, providerSecrets, { merge: true });
+        batch.set(publicRef, { subscriptions: publicSettings, _settingsRevisions: { payments: nextRevision } }, { merge: true });
         batch.set(db.collection('security_audit_logs').doc(), {
             action: 'PAYMENT_SETTINGS_UPDATED', actorUid: req.user?.uid || 'admin_console',
-            requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp()
+            requestId: res.locals.requestId, revision: nextRevision,
+            changedSecretProviders: Object.entries(clearSecrets).filter(([, value]) => value === true).map(([key]) => key),
+            createdAt: admin.firestore.FieldValue.serverTimestamp()
         });
         await batch.commit();
-        return res.json({ success: true, settings: publicSettings, message: 'Payment settings saved to split public/secret stores.' });
+
+        const configuredProviders = {};
+        const maskedKeys = {};
+        const credentialSources = {};
+        for (const provider of Object.keys(secretDefinitions)) {
+            const field = secretDefinitions[provider][0];
+            const stored = currentSecrets[provider]?.[field];
+            const environmentField = provider === 'stripe' ? 'STRIPE_SECRET'
+                : provider === 'paypal' ? 'PAYPAL_CLIENT_SECRET'
+                    : provider === 'razorpay' ? 'RAZORPAY_KEY_SECRET'
+                        : provider === 'paytm' ? 'PAYTM_MERCHANT_KEY' : 'PHONEPE_SALT_KEY';
+            const storedSecret = clearSecrets[provider] === true ? '' : submittedSecrets[provider] || stored;
+            const identifier = provider === 'razorpay' ? publicSettings.razorpayKeyId
+                : provider === 'paypal' ? publicSettings.paypalClientId
+                    : provider === 'paytm' ? publicSettings.paytmMid
+                        : provider === 'phonepe' ? publicSettings.phonepeId : '';
+            const environmentId = provider === 'razorpay' ? process.env.RAZORPAY_KEY_ID
+                : provider === 'paypal' ? process.env.PAYPAL_CLIENT_ID
+                    : provider === 'paytm' ? process.env.PAYTM_MID
+                        : provider === 'phonepe' ? process.env.PHONEPE_MERCHANT_ID : '';
+            const selected = chooseCredentialPair({ environmentId, environmentSecret: process.env[environmentField], storedId: identifier, storedSecret });
+            configuredProviders[provider] = provider === 'stripe' ? Boolean(selected.secret) : Boolean(selected.id && selected.secret);
+            credentialSources[provider] = selected.source;
+            maskedKeys[provider] = selected.secret ? `••••${String(selected.secret).slice(-4)}` : '';
+        }
+        return res.json({
+            success: true,
+            settings: publicSettings,
+            configuredProviders,
+            maskedKeys,
+            credentialSources,
+            revision: nextRevision,
+            message: 'Payment settings saved to split public/secret stores. Empty secret fields preserved existing credentials.',
+        });
     } catch (error) {
-        return res.status(400).json({ success: false, error: error.message });
+        const status = Number(error.status) || (error.code === 'INFRASTRUCTURE_SECRET_CANNOT_CLEAR' ? 409 : 400);
+        return res.status(status).json({ success: false, code: error.code || 'PAYMENT_SETTINGS_SAVE_FAILED', error: status >= 500 ? 'Unable to save payment settings.' : error.message, requestId: res.locals.requestId });
     }
 });
 
@@ -2477,24 +2768,53 @@ app.delete('/api/admin/coupons/:code', async (req, res) => {
     } catch (error) { const status = error.code === 'ADMIN_TARGET_CHANGED' ? 409 : error.code === 'NOT_FOUND' ? 404 : 500; return res.status(status).json({ success: false, code: error.code, error: status === 500 ? 'Unable to delete coupon.' : error.message }); }
 });
 
-app.post('/api/admin/payment/test-provider', requireSuperAdmin, async (req, res) => {
+app.post('/api/admin/payment/test-provider', requireRecentAdminAuthentication, async (req, res) => {
     const { type, secretKey } = req.body;
-    if (!['stripe', 'razorpay', 'paytm', 'phonepe'].includes(type)) return res.status(400).json({ success: false, code: 'PAYMENT_PROVIDER_VALIDATION_ERROR', error: 'Unsupported payment provider test.' });
+    if (!['stripe', 'razorpay', 'paypal', 'paytm', 'phonepe'].includes(type)) return res.status(400).json({ success: false, code: 'PAYMENT_PROVIDER_VALIDATION_ERROR', error: 'Unsupported payment provider test.' });
     try {
         if (type === 'stripe') {
-            const stripeKey = secretKey || process.env.STRIPE_SECRET;
+            const submitted = String(secretKey || '').trim();
+            let stored = '';
+            const database = req.app.get('db');
+            if (database) {
+                const snapshot = await database.collection('settings').doc('payment_providers').get();
+                stored = String(snapshot.data()?.stripe?.secretKey || '').trim();
+            }
+            const stripeKey = submitted && !/[•*]/.test(submitted) ? submitted : String(process.env.STRIPE_SECRET || stored).trim();
             if (!stripeKey) {
-                return res.json({ success: false, error: 'No Stripe Secret Key provided.' });
+                return res.status(503).json({ success: false, code: 'PAYMENT_PROVIDER_NOT_CONFIGURED', error: 'Stripe is not configured. Add a server credential before testing.' });
             }
             const Stripe = require('stripe');
             const stripeInstance = Stripe(stripeKey);
             const balance = await stripeInstance.balance.retrieve();
             return res.json({ success: true, message: `Connected to Stripe. Livemode: ${balance.livemode}` });
+        } else if (type === 'paypal') {
+            const submittedId = String(req.body.clientId || '').trim();
+            const submittedSecret = String(req.body.clientSecret || '').trim();
+            let configured;
+            try {
+                configured = await paypalConfig(req.app.get('db'));
+            } catch (error) {
+                if (!(submittedId && submittedSecret && !/[•*]/.test(submittedSecret))) throw error;
+                const environment = String(process.env.PAYPAL_ENV || 'sandbox').toLowerCase();
+                configured = { baseUrl: environment === 'live' || environment === 'production' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com' };
+            }
+            const clientId = submittedId && submittedSecret && !/[•*]/.test(submittedSecret) ? submittedId : configured.clientId;
+            const clientSecret = submittedId && submittedSecret && !/[•*]/.test(submittedSecret) ? submittedSecret : configured.clientSecret;
+            if (!clientId || !clientSecret) {
+                return res.status(503).json({ success: false, code: 'PAYMENT_PROVIDER_NOT_CONFIGURED', error: 'PayPal is not fully configured. Add both the Client ID and Client Secret before testing.' });
+            }
+            await paypalAccessToken(configured.baseUrl, clientId, clientSecret);
+            return res.json({ success: true, message: `Connected to PayPal. Mode: ${configured.baseUrl.includes('sandbox') ? 'SANDBOX' : 'LIVE'}` });
         } else if (type === 'razorpay') {
-            const keyId = req.body.keyId || process.env.RAZORPAY_KEY_ID;
-            const keySecret = req.body.keySecret || process.env.RAZORPAY_KEY_SECRET;
+            const suppliedId = String(req.body.keyId || '').trim();
+            const suppliedSecret = String(req.body.keySecret || '').trim();
+            const credentials = suppliedId && suppliedSecret && !/[•*]/.test(suppliedSecret)
+                ? { keyId: suppliedId, keySecret: suppliedSecret }
+                : await getRazorpayKeys(req.app.get('db'));
+            const { keyId, keySecret } = credentials;
             if (!keyId || !keySecret) {
-                return res.json({ success: false, error: 'Razorpay Key ID and Key Secret are required.' });
+                return res.status(503).json({ success: false, code: 'PAYMENT_PROVIDER_NOT_CONFIGURED', error: 'Razorpay is not fully configured. Add both the Key ID and Key Secret, or configure the deployment environment.' });
             }
             const authHeader = 'Basic ' + Buffer.from(`${keyId}:${keySecret}`).toString('base64');
             const rzpRes = await fetch('https://api.razorpay.com/v1/settings', {
@@ -2504,27 +2824,35 @@ app.post('/api/admin/payment/test-provider', requireSuperAdmin, async (req, res)
             if (rzpRes.ok || rzpData.id || rzpData.profile) {
                 return res.json({ success: true, message: `Razorpay connected. Mode: ${keyId.startsWith('rzp_live') ? 'LIVE' : 'TEST'}` });
             } else {
-                return res.json({ success: false, error: rzpData.error?.description || 'Razorpay authentication failed. Check your keys.' });
+                return res.status(422).json({ success: false, code: 'PAYMENT_PROVIDER_AUTHENTICATION_FAILED', error: 'Razorpay rejected the configured credentials.' });
             }
         } else if (type === 'paytm') {
-            const mid = req.body.mid || process.env.PAYTM_MID;
-            const merchantKey = req.body.merchantKey || process.env.PAYTM_MERCHANT_KEY;
+            const submittedMid = String(req.body.mid || '').trim();
+            const submittedKey = String(req.body.merchantKey || '').trim();
+            const configured = await getPaytmConfig(req.app.get('db'));
+            const hasReplacement = submittedMid && submittedKey && !/[•*]/.test(submittedKey);
+            const mid = hasReplacement ? submittedMid : configured.mid;
+            const merchantKey = hasReplacement ? submittedKey : configured.key;
             if (!mid || !merchantKey) {
-                return res.json({ success: false, error: 'Paytm Merchant ID and Merchant Key are required.' });
+                return res.status(503).json({ success: false, code: 'PAYMENT_PROVIDER_NOT_CONFIGURED', error: 'Paytm is not fully configured. Add both the Merchant ID and Merchant Key before testing.' });
             }
             // Paytm credential format validation (MID is typically 20 chars alphanumeric)
             const midValid = /^[A-Za-z0-9]{8,30}$/.test(mid);
             const keyValid = merchantKey.length >= 16;
             if (!midValid || !keyValid) {
-                return res.json({ success: false, error: 'Invalid Paytm credentials format. MID should be 8-30 alphanumeric chars; Merchant Key should be 16+ chars.' });
+                return res.status(422).json({ success: false, code: 'PAYMENT_PROVIDER_VALIDATION_ERROR', error: 'Invalid Paytm credentials format. MID should be 8-30 alphanumeric chars; Merchant Key should be 16+ chars.' });
             }
             const env = (process.env.PAYTM_ENV || 'staging').toLowerCase();
             return res.json({ success: true, message: `Paytm credentials validated. Env: ${env === 'production' || env === 'live' ? 'LIVE' : 'STAGING/SANDBOX'}` });
         } else if (type === 'phonepe') {
-            const merchantId = req.body.merchantId || process.env.PHONEPE_MERCHANT_ID;
-            const saltKey = req.body.saltKey || process.env.PHONEPE_SALT_KEY;
+            const submittedMerchantId = String(req.body.merchantId || '').trim();
+            const submittedSaltKey = String(req.body.saltKey || '').trim();
+            const configured = await getPhonePeConfig(req.app.get('db'));
+            const hasReplacement = submittedMerchantId && submittedSaltKey && !/[•*]/.test(submittedSaltKey);
+            const merchantId = hasReplacement ? submittedMerchantId : configured.merchantId;
+            const saltKey = hasReplacement ? submittedSaltKey : configured.saltKey;
             if (!merchantId || !saltKey) {
-                return res.json({ success: false, error: 'PhonePe Merchant ID and Salt Key are required.' });
+                return res.status(503).json({ success: false, code: 'PAYMENT_PROVIDER_NOT_CONFIGURED', error: 'PhonePe is not fully configured. Add both the Merchant ID and Salt Key before testing.' });
             }
             const env = (process.env.PHONEPE_ENV || 'sandbox').toLowerCase();
             const baseUrl = (env === 'production' || env === 'live')
@@ -2534,7 +2862,7 @@ app.post('/api/admin/payment/test-provider', requireSuperAdmin, async (req, res)
             // Test a status check with a fake orderId to validate credential format
             const checksumStr = `/pg/v1/status/${merchantId}/TEST_CONN${saltKey}`;
             const sha256Hash = crypto.createHash('sha256').update(checksumStr).digest('hex');
-            const saltIndex = parseInt(req.body.saltIndex || process.env.PHONEPE_SALT_INDEX || '1');
+            const saltIndex = parseInt(req.body.saltIndex || configured.saltIndex || '1', 10) || 1;
             const checksum = `${sha256Hash}###${saltIndex}`;
             try {
                 const ppRes = await fetch(`${baseUrl}/pg/v1/status/${merchantId}/TEST_CONN`, {
@@ -2547,16 +2875,18 @@ app.post('/api/admin/payment/test-provider', requireSuperAdmin, async (req, res)
                 } else if (ppRes.ok) {
                     return res.json({ success: true, message: `PhonePe connected. Env: ${env === 'production' || env === 'live' ? 'LIVE' : 'SANDBOX'}` });
                 } else {
-                    return res.json({ success: false, error: ppData?.message || `PhonePe authentication failed (HTTP ${ppRes.status}). Check credentials.` });
+                    return res.status(422).json({ success: false, code: 'PAYMENT_PROVIDER_AUTHENTICATION_FAILED', error: `PhonePe rejected the configured credentials (HTTP ${ppRes.status}).` });
                 }
             } catch (ppErr) {
-                return res.json({ success: false, error: `PhonePe connection error: ${ppErr.message}` });
+                return res.status(503).json({ success: false, code: 'PAYMENT_PROVIDER_UNAVAILABLE', error: 'PhonePe could not be reached.' });
             }
         }
         return res.status(400).json({ success: false, code: 'PAYMENT_PROVIDER_VALIDATION_ERROR', error: 'Unsupported payment provider test.' });
 
     } catch (err) {
-        res.json({ success: false, error: err.message });
+        const status = Number(err.status) >= 400 && Number(err.status) < 600 ? Number(err.status) : 503;
+        const code = err.code || (err.message === 'PAYPAL_AUTH_FAILED' ? 'PAYMENT_PROVIDER_AUTHENTICATION_FAILED' : 'PAYMENT_PROVIDER_UNAVAILABLE');
+        return res.status(status).json({ success: false, code, error: status >= 500 ? 'Payment provider test is unavailable.' : 'Payment provider credentials were rejected.', requestId: res.locals.requestId });
     }
 });
 
@@ -2571,9 +2901,25 @@ async function loadTwilioRuntimeConfig(database) {
         canonical = canonicalSnapshot.data()?.twilio || {};
         legacy = legacySnapshot.data()?.twilio || {};
     }
+    const envSid = String(process.env.TWILIO_ACCOUNT_SID || '').trim();
+    const envToken = String(process.env.TWILIO_AUTH_TOKEN || '').trim();
+    const canonicalSid = String(canonical.accountSid || '').trim();
+    const canonicalToken = String(canonical.authToken || '').trim();
+    const legacySid = String(legacy.accountSid || '').trim();
+    const legacyToken = String(legacy.authToken || '').trim();
+    const canonicalComplete = Boolean(canonicalSid && canonicalToken);
+    const legacyComplete = Boolean(legacySid && legacyToken);
+    const storedSid = canonicalComplete || (canonicalSid || canonicalToken) ? canonicalSid : legacySid;
+    const storedToken = canonicalComplete || (canonicalSid || canonicalToken) ? canonicalToken : legacyToken;
+    const useEnvironment = Boolean(envSid && envToken);
+    const useStored = !useEnvironment && Boolean(storedSid && storedToken);
+    const credentialSource = useEnvironment ? 'environment' : useStored ? 'firestore' : envSid || envToken ? 'environment-partial' : storedSid || storedToken ? 'firestore-partial' : 'none';
+    const accountSid = credentialSource.startsWith('environment') ? envSid : storedSid;
+    const authToken = credentialSource.startsWith('environment') ? envToken : storedToken;
     return {
-        accountSid: canonical.accountSid || process.env.TWILIO_ACCOUNT_SID || legacy.accountSid || '',
-        authToken: canonical.authToken || process.env.TWILIO_AUTH_TOKEN || legacy.authToken || '',
+        accountSid,
+        authToken,
+        credentialSource,
         fromPhoneNumber: canonical.fromPhoneNumber || process.env.TWILIO_FROM_PHONE || legacy.fromPhoneNumber || '',
         enableSmsAlerts: canonical.enableSmsAlerts !== undefined ? canonical.enableSmsAlerts === true : legacy.enableSmsAlerts === true,
         revision: Number(canonical._revision || 0),
@@ -2599,15 +2945,17 @@ app.get('/api/admin/twilio-settings', async (req, res) => {
     }
 });
 
-app.post('/api/admin/twilio-settings', requireSuperAdmin, async (req, res) => {
+app.post('/api/admin/twilio-settings', requireRecentAdminAuthentication, async (req, res) => {
     const requestDb = req.app.get('db');
     if (!requestDb || !admin) return res.status(503).json({ success: false, error: 'SMS configuration service unavailable.' });
     const accountSid = String(req.body?.accountSid || '').trim();
     const authToken = String(req.body?.authToken || '').trim();
     const fromPhoneNumber = String(req.body?.fromPhoneNumber || '').trim();
     const enableSmsAlerts = req.body?.enableSmsAlerts === true;
+    const clearCredentials = req.body?.clearCredentials === true;
     const expectedRevision = Number(req.body?.expectedRevision || 0);
     if (!Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid SMS settings revision.' });
+    if (clearCredentials && (String(process.env.TWILIO_ACCOUNT_SID || '').trim() || String(process.env.TWILIO_AUTH_TOKEN || '').trim())) return res.status(409).json({ success: false, code: 'INFRASTRUCTURE_SECRET_CANNOT_CLEAR', error: 'Twilio credentials are deployment-managed and cannot be cleared from the Admin UI.' });
     if (Boolean(accountSid) !== Boolean(authToken)) return res.status(400).json({ success: false, error: 'Enter both the Twilio Account SID and Auth Token when rotating credentials.' });
     if (accountSid && !/^AC[a-f0-9]{32}$/i.test(accountSid)) return res.status(400).json({ success: false, error: 'Invalid Twilio Account SID.' });
     if (authToken && (authToken.length < 16 || authToken.length > 256 || /\p{Cc}/u.test(authToken))) return res.status(400).json({ success: false, error: 'Invalid Twilio Auth Token.' });
@@ -2621,15 +2969,19 @@ app.post('/api/admin/twilio-settings', requireSuperAdmin, async (req, res) => {
             const current = snapshot.data()?.twilio || {};
             const currentRevision = Number(current._revision || 0);
             if (currentRevision !== expectedRevision) { const conflict = new Error('SMS settings changed after this panel loaded. Refresh before saving.'); conflict.code = 'ADMIN_SETTINGS_CONFLICT'; throw conflict; }
-            const resolvedAccountSid = accountSid || current.accountSid || configuredFallback.accountSid || '';
-            const resolvedAuthToken = authToken || current.authToken || configuredFallback.authToken || '';
+            const resolvedAccountSid = clearCredentials ? '' : accountSid || configuredFallback.accountSid || '';
+            const resolvedAuthToken = clearCredentials ? '' : authToken || configuredFallback.authToken || '';
             const resolvedFrom = fromPhoneNumber || current.fromPhoneNumber || configuredFallback.fromPhoneNumber || '';
             if (enableSmsAlerts && (!resolvedAccountSid || !resolvedAuthToken || !resolvedFrom)) { const invalid = new Error('Configure the Account SID, Auth Token, and sender number before enabling SMS alerts.'); invalid.code = 'TWILIO_CONFIGURATION_INCOMPLETE'; throw invalid; }
             const nextRevision = currentRevision + 1;
             const next = { ...current, ...(accountSid ? { accountSid, authToken } : {}), ...(fromPhoneNumber ? { fromPhoneNumber } : {}), enableSmsAlerts, _revision: nextRevision };
+            if (clearCredentials) {
+                next.accountSid = admin.firestore.FieldValue.delete();
+                next.authToken = admin.firestore.FieldValue.delete();
+            }
             transaction.set(reference, { twilio: next }, { merge: true });
             transaction.set(publicReference, { twilio: { enableSmsAlerts }, _settingsRevisions: { twilio: nextRevision } }, { merge: true });
-            transaction.set(requestDb.collection('security_audit_logs').doc(), { action: 'TWILIO_SETTINGS_UPDATED', actorUid: req.user.uid, revision: nextRevision, credentialsRotated: Boolean(accountSid), requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+            transaction.set(requestDb.collection('security_audit_logs').doc(), { action: 'TWILIO_SETTINGS_UPDATED', actorUid: req.user.uid, revision: nextRevision, credentialsRotated: Boolean(accountSid), credentialsCleared: clearCredentials, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
             return nextRevision;
         });
         const config = await loadTwilioRuntimeConfig(requestDb);
@@ -3177,8 +3529,15 @@ let globalCommitSha = process.env.COMMIT_SHA;
 try {
   const fs = require('fs');
   const shaPath = require('path').join(__dirname, 'COMMIT_SHA');
-  if (fs.existsSync(shaPath)) globalCommitSha = fs.readFileSync(shaPath, 'utf8').trim();
-} catch (e) {}
+  if (fs.existsSync(shaPath)) {
+    const bytes = fs.readFileSync(shaPath);
+    const decoded = bytes[0] === 0xff && bytes[1] === 0xfe
+      ? bytes.toString('utf16le')
+      : bytes.toString('utf8');
+    const candidate = decoded.replace(/^\uFEFF/, '').trim();
+    if (/^[0-9a-f]{40}$/i.test(candidate)) globalCommitSha = candidate;
+  }
+} catch (_) {}
 
 app.get('/healthz', (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
@@ -3467,7 +3826,7 @@ app.get('/api/admin/firebase-service-account', (req, res) => {
     });
 });
 
-app.post('/api/admin/firebase-service-account', requireSuperAdmin, async (req, res) => {
+app.post('/api/admin/firebase-service-account', requireRecentAdminAuthentication, async (req, res) => {
     if (process.env.ALLOW_RUNTIME_FIREBASE_CREDENTIAL_ROTATION !== 'true' || process.env.NODE_ENV === 'production') {
         return res.status(501).json({ success: false, code: 'RUNTIME_SECRET_ROTATION_DISABLED', error: 'Runtime Firebase credential rotation is disabled. Use Workload Identity or the deployment Secret Manager.' });
     }
@@ -3729,7 +4088,7 @@ app.post('/api/admin/payments/refund', async (req, res) => {
             const refund = await stripe.refunds.create({ payment_intent: order.providerPaymentIntentId, reason: 'requested_by_customer' }, { idempotencyKey: `refund:${paymentOrderId}` });
             refundId = refund.id;
         } else if (order.provider === 'paypal') {
-            const { clientId, clientSecret, baseUrl } = await paypalConfig();
+            const { clientId, clientSecret, baseUrl } = await paypalConfig(req.app.get('db'));
             const accessToken = await paypalAccessToken(baseUrl, clientId, clientSecret);
             const providerRes = await fetch(`${baseUrl}/v2/payments/captures/${encodeURIComponent(order.providerPaymentId)}/refund`, {
                 method: 'POST', timeout: 10_000,
@@ -3780,6 +4139,173 @@ app.post('/api/admin/payments/refund', async (req, res) => {
         console.error('[Payment refund]', error.message);
         return res.status(502).json({ success: false, error: 'Provider refund could not be confirmed.' });
     }
+});
+
+// Read-only Admin collection APIs. They keep the browser out of Firestore for
+// moderation reads and return explicit pagination/source metadata so an empty
+// result is not confused with an unavailable collection.
+function adminIso(value) {
+    if (!value) return null;
+    try {
+        const date = value?.toDate?.() || new Date(value);
+        return Number.isFinite(date.getTime()) ? date.toISOString() : null;
+    } catch (_) { return null; }
+}
+
+async function adminCollectionRead(collectionName, { limit = 200, orderField = null } = {}) {
+    if (!db) throw Object.assign(new Error('Firestore unavailable'), { status: 503 });
+    const bounded = Math.min(Math.max(Number(limit) || 200, 1), 500);
+    let snapshot;
+    try {
+        let query = db.collection(collectionName);
+        if (orderField) query = query.orderBy(orderField, 'desc');
+        snapshot = await query.limit(bounded).get();
+    } catch (error) {
+        // A missing composite/index configuration must not turn a valid Admin
+        // list into a false empty state. Fall back to a bounded collection read
+        // and let the caller's deterministic in-memory sort handle presentation.
+        if (!orderField) throw error;
+        snapshot = await db.collection(collectionName).limit(bounded).get();
+    }
+    return snapshot.docs.map(document => ({ id: document.id, ...document.data() }));
+}
+
+app.get('/api/admin/employer-applications', async (req, res) => {
+    try {
+        const rows = await adminCollectionRead('employerApplications', { limit: req.query?.limit || 200, orderField: 'submittedAt' });
+        return res.json({ success: true, applications: rows, source: 'FIRESTORE_SERVER_READ', count: rows.length });
+    } catch (error) { return res.status(error.status || 503).json({ success: false, code: 'EMPLOYER_APPLICATIONS_UNAVAILABLE', error: 'Employer applications are unavailable.', requestId: res.locals.requestId }); }
+});
+
+app.get('/api/admin/companies', async (req, res) => {
+    try {
+        const companies = await adminCollectionRead('companies', { limit: req.query?.limit || 500, orderField: 'createdAt' });
+        let jobs = [];
+        try { jobs = await adminCollectionRead('jobs', { limit: 500 }); } catch (_) { jobs = null; }
+        const result = companies.map(company => {
+            if (!jobs) return company;
+            const related = jobs.filter(job => job.companyId === company.id || job.employerId === company.employerId);
+            return { ...company, stats: { totalJobs: related.length, activeJobs: related.filter(job => String(job.status || '').toLowerCase() === 'active').length, totalApplications: related.reduce((sum, job) => sum + Number(job.applicationsCount || 0), 0), lastJobPosted: related.map(job => adminIso(job.createdAt)).filter(Boolean).sort().pop() || null } };
+        });
+        return res.json({ success: true, companies: result, source: 'FIRESTORE_SERVER_READ', statsSource: jobs ? 'MEASURED' : 'UNAVAILABLE', count: result.length });
+    } catch (error) { return res.status(error.status || 503).json({ success: false, code: 'COMPANIES_UNAVAILABLE', error: 'Company directory is unavailable.', requestId: res.locals.requestId }); }
+});
+
+app.get('/api/admin/jobs', async (req, res) => {
+    try {
+        const status = String(req.query?.status || 'all').toLowerCase();
+        const search = String(req.query?.search || req.query?.q || '').trim().toLowerCase();
+        const pageSize = Math.min(Math.max(Number(req.query?.limit) || 10, 1), 100);
+        const page = Math.max(Number(req.query?.page) || 1, 1);
+        const all = await adminCollectionRead('jobs', { limit: 500 });
+        const mapped = all.map(job => ({ ...job, createdAt: adminIso(job.createdAt), updatedAt: adminIso(job.updatedAt), deadline: adminIso(job.deadline), type: job.jobType, postedDate: adminIso(job.createdAt), applicants: Number(job.applicationsCount || 0), salary: job.minSalary || job.maxSalary ? `${job.minSalary || ''}-${job.maxSalary || ''}` : 'Salary not specified' }));
+        const filtered = mapped.filter(job => (status === 'all' || String(job.status || '').toLowerCase() === status) && (!search || [job.title, job.company, job.location, job.id].some(value => String(value || '').toLowerCase().includes(search))));
+        const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+        const currentPage = Math.min(page, totalPages);
+        return res.json({ success: true, jobs: filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize), allJobs: mapped, source: 'FIRESTORE_SERVER_READ', pagination: { totalItems: filtered.length, totalPages, currentPage, hasNextPage: currentPage < totalPages, hasPreviousPage: currentPage > 1 } });
+    } catch (error) { return res.status(error.status || 503).json({ success: false, code: 'JOBS_UNAVAILABLE', error: 'Job directory is unavailable.', requestId: res.locals.requestId }); }
+});
+
+app.get('/api/admin/reviews', async (req, res) => {
+    try { const reviews = await adminCollectionRead('reviews', { limit: req.query?.limit || 500 }); return res.json({ success: true, reviews, source: 'FIRESTORE_SERVER_READ', count: reviews.length }); }
+    catch (error) { return res.status(error.status || 503).json({ success: false, code: 'REVIEWS_UNAVAILABLE', error: 'Reviews are unavailable.', requestId: res.locals.requestId }); }
+});
+
+app.get('/api/admin/ads', async (req, res) => {
+    try { const ads = await adminCollectionRead('ads', { limit: req.query?.limit || 500 }); return res.json({ success: true, ads, source: 'FIRESTORE_SERVER_READ', count: ads.length }); }
+    catch (error) { return res.status(error.status || 503).json({ success: false, code: 'ADS_UNAVAILABLE', error: 'Advertisements are unavailable.', requestId: res.locals.requestId }); }
+});
+
+app.get('/api/admin/payment-orders', async (req, res) => {
+    try {
+        const limit = Math.min(Math.max(Number(req.query?.limit) || 200, 1), 500);
+        if (!db) throw Object.assign(new Error('Firestore unavailable'), { status: 503 });
+        const snapshots = await Promise.allSettled([
+            db.collection('payment_orders').orderBy('createdAt', 'desc').limit(limit).get(),
+            db.collection('invoices').orderBy('createdAt', 'desc').limit(limit).get(),
+            db.collection('transactions').orderBy('created_at', 'desc').limit(limit).get(),
+        ]);
+        const records = [];
+        const seen = new Set();
+        const dateValue = value => adminIso(value);
+        const statusLabel = raw => {
+            const status = String(raw || 'UNKNOWN').toUpperCase();
+            if (status === 'ACTIVE' || ['PAID', 'SUCCESS', 'COMPLETED'].includes(status)) return 'Completed';
+            if (status === 'REFUNDED') return 'Refunded';
+            if (['FAILED', 'CANCELLED', 'DECLINED'].includes(status)) return 'Failed';
+            if (['PENDING', 'PENDING_PAYMENT', 'PAYMENT_CREATED', 'REFUND_PENDING', 'INITIATED'].includes(status)) return 'Pending';
+            return 'Unknown';
+        };
+        const add = (document, data, source) => {
+            const identity = source === 'payment_orders' ? document.id : data.paymentOrderId || data.transactionId || document.id;
+            if (seen.has(identity)) return;
+            seen.add(identity);
+            const amount = Number(data.amount || data.total || data.price || 0);
+            records.push({
+                docId: source === 'payment_orders' ? document.id : data.paymentOrderId || document.id,
+                source,
+                transactionId: data.providerPaymentId || data.providerOrderId || data.transactionId || document.id,
+                providerReference: data.providerPaymentId || data.providerOrderId || data.providerReference || '',
+                userId: data.uid || data.userId || '',
+                customerEmail: data.customerEmail || '',
+                customerName: data.customerName || '',
+                customerGstin: data.customerGstin || '',
+                planType: data.planId || data.planType || data.type || 'Unknown',
+                paimentType: data.provider || data.paymentProvider || data.paimentType || 'Unknown',
+                price: source === 'payment_orders' ? amount / 100 : amount,
+                originalAmount: Number(data.originalAmount || amount) / (source === 'payment_orders' ? 100 : 1),
+                discountAmount: Number(data.couponDiscount || data.discountAmount || 0) / (source === 'payment_orders' ? 100 : 1),
+                currency: String(data.currency || 'UNKNOWN').toUpperCase(),
+                subtotal: Number(data.subtotal || amount) / (source === 'payment_orders' ? 100 : 1),
+                taxAmount: Number(data.taxAmount || 0) / (source === 'payment_orders' ? 100 : 1),
+                taxRate: Number(data.taxRate || 0),
+                sacCode: data.sacCode || '',
+                invoiceNumber: data.invoiceNumber || '',
+                status: statusLabel(data.status || data.paymentStatus),
+                rawStatus: String(data.status || data.paymentStatus || 'UNKNOWN'),
+                created_at: dateValue(data.createdAt || data.created_at),
+                refundedAt: dateValue(data.refundedAt),
+                refundReason: data.refundReason || '',
+            });
+        };
+        if (snapshots[0].status === 'fulfilled') snapshots[0].value.docs.forEach(doc => add(doc, doc.data() || {}, 'payment_orders'));
+        if (snapshots[1].status === 'fulfilled') snapshots[1].value.docs.forEach(doc => add(doc, doc.data() || {}, 'invoices'));
+        if (snapshots[2].status === 'fulfilled') snapshots[2].value.docs.forEach(doc => add(doc, doc.data() || {}, 'legacy_transactions'));
+        if (snapshots.every(result => result.status === 'rejected')) throw Object.assign(new Error('Billing ledgers unavailable'), { status: 503 });
+        records.sort((left, right) => new Date(right.created_at || 0) - new Date(left.created_at || 0));
+        return res.json({ success: true, records, sources: { paymentOrders: snapshots[0].status === 'fulfilled' ? 'AVAILABLE' : 'UNAVAILABLE', invoices: snapshots[1].status === 'fulfilled' ? 'AVAILABLE' : 'UNAVAILABLE', legacy: snapshots[2].status === 'fulfilled' ? 'AVAILABLE' : 'UNAVAILABLE' }, count: records.length });
+    } catch (error) {
+        return res.status(error.status || 503).json({ success: false, code: 'PAYMENT_LEDGER_UNAVAILABLE', error: 'Payment ledger is unavailable.', requestId: res.locals.requestId });
+    }
+});
+
+app.get('/api/admin/landing-content', async (_req, res) => {
+    try {
+        if (!db) throw Object.assign(new Error('Firestore unavailable'), { status: 503 });
+        const snapshot = await db.collection('data').doc('frontendstats').get();
+        return res.json({ success: true, content: snapshot.exists ? snapshot.data() : null, source: snapshot.exists ? 'FIRESTORE_SERVER_READ' : 'NOT_CONFIGURED' });
+    } catch (error) { return res.status(error.status || 503).json({ success: false, code: 'LANDING_CONTENT_UNAVAILABLE', error: 'Landing content is unavailable.', requestId: res.locals.requestId }); }
+});
+
+app.get('/api/admin/blog/categories', async (_req, res) => {
+    try { const categories = await adminCollectionRead('blog_categories', { limit: 500 }); return res.json({ success: true, categories, source: 'FIRESTORE_SERVER_READ' }); }
+    catch (error) { return res.status(error.status || 503).json({ success: false, code: 'BLOG_CATEGORIES_UNAVAILABLE', error: 'Blog categories are unavailable.', requestId: res.locals.requestId }); }
+});
+
+app.get('/api/admin/blog/posts', async (req, res) => {
+    try {
+        const status = String(req.query?.status || 'all').toLowerCase();
+        const categoryId = String(req.query?.categoryId || '').trim();
+        const search = String(req.query?.search || '').trim().toLowerCase();
+        const pageSize = Math.min(Math.max(Number(req.query?.limit) || 10, 1), 100);
+        const page = Math.max(Number(req.query?.page) || 1, 1);
+        const all = await adminCollectionRead('blog_posts', { limit: 500 });
+        const posts = all.map(post => ({ ...post, createdAt: adminIso(post.createdAt), updatedAt: adminIso(post.updatedAt), publishedAt: adminIso(post.publishedAt), scheduledAt: adminIso(post.scheduledAt) })).filter(post => (status === 'all' || String(post.status || '').toLowerCase() === status) && (!categoryId || post.categoryId === categoryId) && (!search || [post.title, post.slug, post.excerpt].some(value => String(value || '').toLowerCase().includes(search))));
+        posts.sort((a, b) => String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || '')));
+        const totalPages = Math.max(1, Math.ceil(posts.length / pageSize));
+        const currentPage = Math.min(page, totalPages);
+        return res.json({ success: true, posts: posts.slice((currentPage - 1) * pageSize, currentPage * pageSize), source: 'FIRESTORE_SERVER_READ', pagination: { totalCount: posts.length, totalPages, currentPage, hasNextPage: currentPage < totalPages, hasPreviousPage: currentPage > 1 } });
+    } catch (error) { return res.status(error.status || 503).json({ success: false, code: 'BLOG_POSTS_UNAVAILABLE', error: 'Blog posts are unavailable.', requestId: res.locals.requestId }); }
 });
 
 app.patch('/api/admin/employer-applications/:uid', async (req, res) => {
@@ -4257,87 +4783,245 @@ app.delete('/api/admin/jobs/:jobId', async (req, res) => {
     }
 });
 
-// Audited server-authoritative user administration. Firestore rules never permit these
-// identity/entitlement fields to be changed directly by a browser.
-app.patch('/api/admin/users/:uid', async (req, res) => {
-    const uid = String(req.params.uid || '');
-    if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid) || !db || !admin?.auth) {
-        return res.status(400).json({ success: false, error: 'Valid user UID and Firebase services are required.' });
-    }
-    const callerPermissions = permissionsFor(req.user);
-    const allowed = permission => callerPermissions.has('*') || callerPermissions.has(permission);
-    const updates = {};
-    const auditChanges = [];
-    try {
-        const [target, userSnapshot] = await Promise.all([
-            admin.auth().getUser(uid), db.collection('users').doc(uid).get(),
-        ]);
-        const userData = userSnapshot.data() || {};
-        const currentRole = String(target.customClaims?.role || userData.role || 'USER').toUpperCase();
-        const currentMembership = String(userData.membership || 'Basic');
-        if (Object.hasOwn(req.body, 'expectedSuspended') && typeof req.body.expectedSuspended !== 'boolean') return res.status(400).json({ success: false, error: 'Invalid expected suspension state.' });
-        if (Object.hasOwn(req.body, 'expectedRole') && !['ADMIN', 'SUPPORT', 'USER'].includes(req.body.expectedRole)) return res.status(400).json({ success: false, error: 'Invalid expected role.' });
-        if (Object.hasOwn(req.body, 'expectedMembership') && !['Basic', 'Premium'].includes(req.body.expectedMembership)) return res.status(400).json({ success: false, error: 'Invalid expected membership.' });
-        const staleTarget = (Object.hasOwn(req.body, 'expectedSuspended') && req.body.expectedSuspended !== Boolean(target.disabled))
-            || (Object.hasOwn(req.body, 'expectedRole') && req.body.expectedRole !== currentRole)
-            || (Object.hasOwn(req.body, 'expectedMembership') && req.body.expectedMembership !== currentMembership);
-        if (staleTarget) return res.status(409).json({ success: false, code: 'ADMIN_TARGET_CHANGED', error: 'This user changed after the page loaded. Refresh before trying again.' });
-        const requestedChanges = ['suspended', 'membership', 'role'].filter(field => Object.hasOwn(req.body, field));
-        if (requestedChanges.length !== 1) return res.status(400).json({ success: false, error: 'Exactly one administrative user change is allowed per request.' });
+// Authoritative user directory. Firebase Auth is the identity source; the
+// Firestore profile contributes product membership and activity fields. The
+// browser must not infer roles from a stale Firestore-only list.
+function adminUserProjection(identity, profile = {}, id = identity?.uid) {
+    const claims = identity?.customClaims || {};
+    const role = String(claims.role || profile.role || (profile.isA ? 'ADMIN' : 'USER')).toUpperCase();
+    const safeDate = value => {
+        try { const date = value?.toDate?.() || (value ? new Date(value) : null); return date && Number.isFinite(date.getTime()) ? date.toISOString() : null; }
+        catch (_) { return null; }
+    };
+    const membershipEnds = safeDate(profile.membershipEnds);
+    return {
+        id,
+        userId: id,
+        email: identity?.email || profile.email || null,
+        displayName: identity?.displayName || profile.displayName || `${profile.firstname || ''} ${profile.lastname || ''}`.trim() || null,
+        role: ['SUPER_ADMIN', 'ADMIN', 'SUPPORT', 'USER'].includes(role) ? role : 'USER',
+        isA: ['SUPER_ADMIN', 'ADMIN'].includes(role),
+        emailVerified: identity?.emailVerified === true,
+        suspended: identity?.disabled === true || profile.suspended === true,
+        mfaEnabled: Array.isArray(identity?.multiFactor?.enrolledFactors) && identity.multiFactor.enrolledFactors.length > 0,
+        membership: profile.membership || 'Basic',
+        membershipEnds,
+        createdAt: safeDate(profile.createdAt || identity?.metadata?.creationTime),
+        lastLoginAt: safeDate(profile.lastLoginAt || identity?.metadata?.lastSignInTime),
+        updatedAt: safeDate(profile.updatedAt || identity?.tokensValidAfterTime),
+    };
+}
 
-        if (typeof req.body.suspended === 'boolean') {
-            if (!allowed('users.update')) return res.status(403).json({ success: false, error: 'Insufficient permission.' });
-            if (uid === req.user.uid && req.body.suspended) return res.status(400).json({ success: false, error: 'Self-suspension is prohibited.' });
-            await admin.auth().updateUser(uid, { disabled: req.body.suspended });
-            if (req.body.suspended) await admin.auth().revokeRefreshTokens(uid);
-            updates.suspended = req.body.suspended;
-            auditChanges.push('suspended');
-        }
-        if (req.body.membership !== undefined) {
-            if (!allowed('payments.manage')) return res.status(403).json({ success: false, error: 'Insufficient permission.' });
-            if (!['Basic', 'Premium'].includes(req.body.membership)) return res.status(400).json({ success: false, error: 'Invalid membership.' });
-            updates.membership = req.body.membership;
-            updates.paymentStatus = req.body.membership === 'Premium' ? 'ADMIN_GRANTED' : 'INACTIVE';
-            let durationMonths = Number(req.body.durationMonths || 12);
-            if (!Number.isInteger(durationMonths) || durationMonths < 1 || durationMonths > 600) {
-                return res.status(400).json({ success: false, error: 'Invalid membership duration.' });
-            }
-            if (durationMonths > 60 && !allowed('users.roles.manage')) {
-                return res.status(403).json({ success: false, error: 'Long-lived grants require SUPER_ADMIN.' });
-            }
-            const membershipEnds = new Date();
-            membershipEnds.setMonth(membershipEnds.getMonth() + (req.body.membership === 'Premium' ? durationMonths : 0));
-            updates.membershipEnds = membershipEnds;
-            auditChanges.push('membership');
-        }
-        if (req.body.role !== undefined) {
-            if (!allowed('users.roles.manage')) return res.status(403).json({ success: false, error: 'Insufficient permission.' });
-            if (!['ADMIN', 'SUPPORT', 'USER'].includes(req.body.role)) return res.status(400).json({ success: false, error: 'Invalid role.' });
-            if (currentRole === 'SUPER_ADMIN') return res.status(403).json({ success: false, code: 'SUPER_ADMIN_PROTECTED', error: 'SUPER_ADMIN claims cannot be changed from this API.' });
-            if (uid === req.user.uid && req.body.role !== 'ADMIN') return res.status(400).json({ success: false, error: 'Self-demotion is prohibited.' });
-            await admin.auth().setCustomUserClaims(uid, { ...(target.customClaims || {}), role: req.body.role });
-            await admin.auth().revokeRefreshTokens(uid);
-            updates.role = req.body.role;
-            auditChanges.push('role');
-        }
-        if (!auditChanges.length) return res.status(400).json({ success: false, error: 'No supported changes supplied.' });
-        updates.updatedAt = admin.firestore.FieldValue.serverTimestamp();
-        const batch = db.batch();
-        batch.set(db.collection('users').doc(uid), updates, { merge: true });
-        batch.set(db.collection('security_audit_logs').doc(), {
-            action: 'USER_ADMIN_UPDATE', actorUid: req.user.uid, targetUid: uid,
-            changedFields: auditChanges, requestId: res.locals.requestId,
-            createdAt: admin.firestore.FieldValue.serverTimestamp()
+app.get('/api/admin/users', async (req, res) => {
+    const requestDb = req.app.get('db');
+    const identityAdmin = req.app.get('firebaseAdmin') || admin;
+    if (!requestDb || !identityAdmin?.auth) return res.status(503).json({ success: false, code: 'USER_DIRECTORY_UNAVAILABLE', error: 'User directory unavailable.', requestId: res.locals.requestId });
+    const limit = Math.min(Math.max(Number(req.query?.limit) || 100, 1), 200);
+    const query = String(req.query?.q || req.query?.search || '').trim().toLowerCase();
+    const status = String(req.query?.status || 'all').toLowerCase();
+    const roleFilter = String(req.query?.role || 'all').toUpperCase();
+    try {
+        const listed = await identityAdmin.auth().listUsers(limit, req.query?.pageToken ? String(req.query.pageToken) : undefined);
+        const users = await Promise.all((listed.users || []).map(async identity => {
+            const profile = (await requestDb.collection('users').doc(identity.uid).get()).data() || {};
+            return adminUserProjection(identity, profile);
+        }));
+        const filtered = users.filter(user => {
+            const matchesQuery = !query || [user.id, user.email, user.displayName].some(value => String(value || '').toLowerCase().includes(query));
+            const matchesStatus = status === 'all' || (status === 'suspended' && user.suspended) || (status === 'active' && !user.suspended);
+            const matchesRole = roleFilter === 'ALL' || user.role === roleFilter;
+            return matchesQuery && matchesStatus && matchesRole;
         });
-        await batch.commit();
-        return res.json({ success: true, uid, changedFields: auditChanges });
+        return res.json({ success: true, users: filtered, nextPageToken: listed.pageToken || null, pageSize: limit, source: 'firebase-auth-plus-firestore-profile', generatedAt: new Date().toISOString() });
     } catch (error) {
-        console.error('[User admin update]', error.message);
-        const status = error.code === 'auth/user-not-found' ? 404 : 500;
-        return res.status(status).json({ success: false, error: status === 404 ? 'User not found.' : 'Unable to update user.' });
+        console.error('[Admin user directory]', error.message);
+        return res.status(503).json({ success: false, code: 'USER_DIRECTORY_UNAVAILABLE', error: 'Unable to read the authoritative user directory.', requestId: res.locals.requestId });
     }
 });
 
+app.get('/api/admin/users/:uid', async (req, res) => {
+    const uid = String(req.params.uid || '');
+    const requestDb = req.app.get('db');
+    const identityAdmin = req.app.get('firebaseAdmin') || admin;
+    if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid)) return res.status(400).json({ success: false, code: 'INVALID_USER_ID', error: 'Invalid user identifier.', requestId: res.locals.requestId });
+    if (!requestDb || !identityAdmin?.auth) return res.status(503).json({ success: false, code: 'USER_DIRECTORY_UNAVAILABLE', error: 'User directory unavailable.', requestId: res.locals.requestId });
+    try {
+        const [identity, profileSnapshot] = await Promise.all([identityAdmin.auth().getUser(uid), requestDb.collection('users').doc(uid).get()]);
+        if (!profileSnapshot.exists) return res.status(404).json({ success: false, code: 'USER_NOT_FOUND', error: 'User profile not found.', requestId: res.locals.requestId });
+        return res.json({ success: true, user: adminUserProjection(identity, profileSnapshot.data() || {}) });
+    } catch (error) {
+        return res.status(error.code === 'auth/user-not-found' ? 404 : 503).json({ success: false, code: error.code === 'auth/user-not-found' ? 'USER_NOT_FOUND' : 'USER_DIRECTORY_UNAVAILABLE', error: error.code === 'auth/user-not-found' ? 'User not found.' : 'Unable to load user.', requestId: res.locals.requestId });
+    }
+});
+
+// Audited server-authoritative user administration. Firestore rules never permit these
+// identity/entitlement fields to be changed directly by a browser.
+app.get('/api/admin/users/:uid/audit', async (req, res) => {
+    const uid = String(req.params.uid || '');
+    const requestDb = req.app.get('db');
+    if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid)) return res.status(400).json({ success: false, code: 'INVALID_USER_ID', error: 'Invalid user identifier.', requestId: res.locals.requestId });
+    if (!requestDb) return res.status(503).json({ success: false, code: 'AUDIT_UNAVAILABLE', error: 'User audit history is unavailable.', requestId: res.locals.requestId });
+    try {
+        const results = await Promise.allSettled([
+            requestDb.collection('security_audit_logs').where('targetUid', '==', uid).limit(100).get(),
+            requestDb.collection('admin_audit_logs').where('resourceId', '==', uid).limit(100).get(),
+        ]);
+        const events = [];
+        for (const result of results) if (result.status === 'fulfilled') result.value.docs.forEach(doc => {
+            const data = require('./security/adminAudit').sanitizeAuditValue('record', doc.data() || {}) || {};
+            events.push({ id: doc.id, ...data, createdAt: adminIso(doc.data()?.createdAt) || doc.data()?.occurredAt || null });
+        });
+        events.sort((left, right) => String(right.createdAt || '').localeCompare(String(left.createdAt || '')));
+        return res.json({ success: true, userId: uid, events: events.slice(0, 100), source: results.some(result => result.status === 'fulfilled') ? 'AVAILABLE' : 'UNAVAILABLE' });
+    } catch (error) {
+        return res.status(503).json({ success: false, code: 'AUDIT_UNAVAILABLE', error: 'User audit history is unavailable.', requestId: res.locals.requestId });
+    }
+});
+
+app.patch('/api/admin/users/:uid', async (req, res) => {
+    const uid = String(req.params.uid || '');
+    const requestDb = req.app.get('db');
+    const identityAdmin = req.app.get('firebaseAdmin') || admin;
+    if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid)) {
+        return res.status(400).json({ success: false, code: 'INVALID_USER_ID', error: 'Valid user UID is required.', requestId: res.locals.requestId });
+    }
+    if (!requestDb || !identityAdmin?.auth || !identityAdmin?.firestore?.FieldValue) {
+        return res.status(503).json({ success: false, code: 'USER_DIRECTORY_UNAVAILABLE', error: 'User administration is unavailable.', requestId: res.locals.requestId });
+    }
+
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const callerPermissions = permissionsFor(req.user);
+    const allowed = permission => callerPermissions.has('*') || callerPermissions.has(permission);
+
+    try {
+        const [target, userSnapshot] = await Promise.all([
+            identityAdmin.auth().getUser(uid),
+            requestDb.collection('users').doc(uid).get(),
+        ]);
+        if (!userSnapshot.exists) return res.status(404).json({ success: false, code: 'USER_NOT_FOUND', error: 'User profile not found.', requestId: res.locals.requestId });
+
+        const userData = userSnapshot.data() || {};
+        const currentRole = String(target.customClaims?.role || userData.role || 'USER').toUpperCase();
+        const currentMembership = String(userData.membership || 'Basic');
+        if (currentRole === 'SUPER_ADMIN' && !isSuperAdmin(req.user)) {
+            return res.status(403).json({ success: false, code: 'SUPER_ADMIN_PROTECTED', error: 'SUPER_ADMIN accounts can only be changed by another SUPER_ADMIN.' });
+        }
+
+        if (Object.hasOwn(body, 'expectedSuspended') && typeof body.expectedSuspended !== 'boolean') return res.status(400).json({ success: false, code: 'INVALID_EXPECTED_STATE', error: 'Invalid expected suspension state.' });
+        if (Object.hasOwn(body, 'expectedRole') && !['ADMIN', 'SUPPORT', 'USER', 'SUPER_ADMIN'].includes(String(body.expectedRole).toUpperCase())) return res.status(400).json({ success: false, code: 'INVALID_EXPECTED_STATE', error: 'Invalid expected role.' });
+        if (Object.hasOwn(body, 'expectedMembership') && !['Basic', 'Premium'].includes(body.expectedMembership)) return res.status(400).json({ success: false, code: 'INVALID_EXPECTED_STATE', error: 'Invalid expected membership.' });
+        const staleTarget = (Object.hasOwn(body, 'expectedSuspended') && body.expectedSuspended !== Boolean(target.disabled))
+            || (Object.hasOwn(body, 'expectedRole') && String(body.expectedRole).toUpperCase() !== currentRole)
+            || (Object.hasOwn(body, 'expectedMembership') && body.expectedMembership !== currentMembership);
+        if (staleTarget) return res.status(409).json({ success: false, code: 'ADMIN_TARGET_CHANGED', error: 'This user changed after the page loaded. Refresh before trying again.' });
+
+        const requestedChanges = ['suspended', 'membership', 'role'].filter(field => Object.hasOwn(body, field));
+        // Validate the complete change set before touching Firebase Auth. Auth and
+        // Firestore are separate services, so preflight validation plus rollback
+        // below prevents an invalid membership field from leaving a user suspended
+        // without a corresponding profile/audit update.
+        if (!requestedChanges.length || requestedChanges.length > 2 || (requestedChanges.includes('role') && requestedChanges.length > 1)) {
+            return res.status(400).json({ success: false, code: 'INVALID_USER_CHANGE_SET', error: 'Send membership and/or suspension together, or send a role change separately.' });
+        }
+
+        const planned = {};
+        const changedFields = [];
+        if (typeof body.suspended === 'boolean') {
+            if (!allowed('users.update')) return res.status(403).json({ success: false, code: 'FORBIDDEN', error: 'Insufficient permission.' });
+            if (uid === req.user.uid && body.suspended) return res.status(400).json({ success: false, code: 'SELF_SUSPENSION_PROHIBITED', error: 'Self-suspension is prohibited.' });
+            planned.suspended = body.suspended;
+            changedFields.push('suspended');
+        }
+
+        if (body.membership !== undefined) {
+            if (!allowed('payments.manage')) return res.status(403).json({ success: false, code: 'FORBIDDEN', error: 'Insufficient permission.' });
+            if (!['Basic', 'Premium'].includes(body.membership)) return res.status(400).json({ success: false, code: 'INVALID_MEMBERSHIP', error: 'Invalid membership.' });
+            const durationMonths = body.durationMonths === undefined ? 12 : Number(body.durationMonths);
+            if (!Number.isInteger(durationMonths) || durationMonths < 1 || durationMonths > 600) {
+                return res.status(400).json({ success: false, code: 'INVALID_MEMBERSHIP_DURATION', error: 'Invalid membership duration.' });
+            }
+            if (durationMonths > 60 && !allowed('users.roles.manage')) {
+                return res.status(403).json({ success: false, code: 'FORBIDDEN', error: 'Long-lived grants require SUPER_ADMIN.' });
+            }
+            let membershipEnds = new Date();
+            if (body.membershipEnds !== undefined && body.membership === 'Premium') {
+                const requestedEnd = new Date(String(body.membershipEnds));
+                const maxEnd = new Date();
+                maxEnd.setMonth(maxEnd.getMonth() + 600);
+                if (!Number.isFinite(requestedEnd.getTime()) || requestedEnd <= new Date() || requestedEnd > maxEnd) {
+                    return res.status(400).json({ success: false, code: 'INVALID_MEMBERSHIP_END', error: 'Membership end date must be in the future and within 600 months.' });
+                }
+                membershipEnds = requestedEnd;
+            } else {
+                membershipEnds.setMonth(membershipEnds.getMonth() + (body.membership === 'Premium' ? durationMonths : 0));
+            }
+            planned.membership = body.membership;
+            planned.paymentStatus = body.membership === 'Premium' ? 'ADMIN_GRANTED' : 'INACTIVE';
+            planned.membershipEnds = membershipEnds;
+            changedFields.push('membership');
+        }
+
+        if (body.role !== undefined) {
+            if (!allowed('users.roles.manage')) return res.status(403).json({ success: false, code: 'FORBIDDEN', error: 'Insufficient permission.' });
+            const requestedRole = String(body.role).toUpperCase();
+            // There is deliberately no SUPER_ADMIN value in the accepted role
+            // set. SUPER_ADMIN is provisioned out-of-band and cannot be granted
+            // or removed by this Admin user-directory API.
+            if (!['ADMIN', 'SUPPORT', 'USER'].includes(requestedRole)) return res.status(400).json({ success: false, code: 'SUPER_ADMIN_ROLE_FORBIDDEN', error: 'SUPER_ADMIN cannot be granted or removed through this API.' });
+            if (currentRole === 'SUPER_ADMIN') return res.status(403).json({ success: false, code: 'SUPER_ADMIN_PROTECTED', error: 'SUPER_ADMIN claims cannot be changed from this API.' });
+            if (uid === req.user.uid && requestedRole !== 'ADMIN') return res.status(400).json({ success: false, code: 'SELF_DEMOTION_PROHIBITED', error: 'Self-demotion is prohibited.' });
+            planned.role = requestedRole;
+            changedFields.push('role');
+        }
+
+        const previousClaims = { ...(target.customClaims || {}) };
+        const previousDisabled = Boolean(target.disabled);
+        let authDisabledChanged = false;
+        let authClaimsChanged = false;
+        try {
+            if (Object.hasOwn(planned, 'suspended')) {
+                await identityAdmin.auth().updateUser(uid, { disabled: planned.suspended });
+                authDisabledChanged = true;
+                if (planned.suspended) await identityAdmin.auth().revokeRefreshTokens(uid);
+            }
+            if (Object.hasOwn(planned, 'role')) {
+                await identityAdmin.auth().setCustomUserClaims(uid, { ...previousClaims, role: planned.role });
+                authClaimsChanged = true;
+                await identityAdmin.auth().revokeRefreshTokens(uid);
+            }
+
+            const updates = {
+                ...planned,
+                updatedAt: identityAdmin.firestore.FieldValue.serverTimestamp(),
+            };
+            const batch = requestDb.batch();
+            batch.set(requestDb.collection('users').doc(uid), updates, { merge: true });
+            batch.set(requestDb.collection('security_audit_logs').doc(), {
+                action: 'USER_ADMIN_UPDATE', actorUid: req.user.uid, targetUid: uid,
+                changedFields, requestId: res.locals.requestId,
+                createdAt: identityAdmin.firestore.FieldValue.serverTimestamp(),
+            });
+            await batch.commit();
+            return res.json({ success: true, uid, changedFields });
+        } catch (error) {
+            // Best-effort compensation for the cross-service portion. The failure
+            // remains a failure response and is visible to the Admin audit
+            // middleware; never claim success after only one store changed.
+            if (authClaimsChanged) await identityAdmin.auth().setCustomUserClaims(uid, previousClaims).catch(() => {});
+            if (authDisabledChanged) await identityAdmin.auth().updateUser(uid, { disabled: previousDisabled }).catch(() => {});
+            throw error;
+        }
+    } catch (error) {
+        console.error('[User admin update]', error.message);
+        const status = error.code === 'auth/user-not-found' ? 404 : (Number(error.status) >= 400 && Number(error.status) < 500 ? Number(error.status) : error.code === 'ADMIN_TARGET_CHANGED' ? 409 : 500);
+        return res.status(status).json({
+            success: false,
+            code: error.code || 'USER_ADMIN_UPDATE_FAILED',
+            error: status === 404 ? 'User not found.' : status === 500 ? 'Unable to update user.' : error.message,
+            requestId: res.locals.requestId,
+        });
+    }
+});
 async function deleteApplicationNotifications(database, applicationIds) {
     for (const applicationId of applicationIds) {
         try {
@@ -4349,10 +5033,10 @@ async function deleteApplicationNotifications(database, applicationIds) {
     }
 }
 
-async function removeDeletedUserFromRealtimeMessaging(uid) {
-    if (!admin?.database) throw new Error('Realtime Database is unavailable');
+async function removeDeletedUserFromRealtimeMessaging(uid, identityAdmin = admin) {
+    if (!identityAdmin?.database) throw new Error('Realtime Database is unavailable');
     let realtime;
-    try { realtime = admin.database(); } catch (e) { return; }
+    try { realtime = identityAdmin.database(); } catch (e) { return; }
     const indexSnapshot = await realtime.ref(`user-conversations/${uid}`).get();
     const conversationIds = Object.keys(indexSnapshot.val() || {});
     for (const conversationId of conversationIds) {
@@ -4439,87 +5123,113 @@ app.post('/api/account/delete', async (req, res) => {
 });
 
 // Administrative deletion is explicit, recently authenticated, and recursive.
-app.post(['/api/admin/delete-user', '/api/auth/purge-orphaned-auth'], async (req, res) => {
-    const requestedUid = String(req.body.uid || '');
-    const requestedEmail = String(req.body.email || '').trim().toLowerCase();
-    if ((!requestedUid && !requestedEmail) || !db || !admin?.auth) {
-        return res.status(400).json({ success: false, error: 'User UID or email is required.' });
+app.post(['/api/admin/delete-user', '/api/auth/purge-orphaned-auth'], requireRecentAdminAuthentication, async (req, res) => {
+    const requestedUid = String(req.body?.uid || '').trim();
+    const requestedEmail = String(req.body?.email || '').trim().toLowerCase();
+    const requestDb = req.app.get('db');
+    const identityAdmin = req.app.get('firebaseAdmin') || admin;
+    if ((!requestedUid && !requestedEmail) || !requestDb || !identityAdmin?.auth) {
+        return res.status(400).json({ success: false, code: 'USER_DELETE_INPUT_INVALID', error: 'User UID or email is required.' });
     }
+    if (requestedUid && !/^[A-Za-z0-9:_-]{1,128}$/.test(requestedUid)) {
+        return res.status(400).json({ success: false, code: 'INVALID_USER_ID', error: 'Invalid user UID.' });
+    }
+    if (requestedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(requestedEmail)) {
+        return res.status(400).json({ success: false, code: 'INVALID_EMAIL', error: 'Invalid user email.' });
+    }
+
     try {
         let target = null;
         try {
-            target = requestedUid ? await admin.auth().getUser(requestedUid) : await admin.auth().getUserByEmail(requestedEmail);
+            target = requestedUid ? await identityAdmin.auth().getUser(requestedUid) : await identityAdmin.auth().getUserByEmail(requestedEmail);
         } catch (error) {
             if (error.code !== 'auth/user-not-found' || !requestedUid) throw error;
         }
         const targetUid = target?.uid || requestedUid;
-        if (!/^[A-Za-z0-9:_-]{1,128}$/.test(targetUid)) return res.status(400).json({ success: false, error: 'Invalid user UID.' });
-        if (targetUid === req.user.uid) return res.status(400).json({ success: false, error: 'Self-deletion through the admin endpoint is prohibited.' });
-        const profileSnapshot = await db.collection('users').doc(targetUid).get();
+        if (!/^[A-Za-z0-9:_-]{1,128}$/.test(targetUid)) return res.status(400).json({ success: false, code: 'INVALID_USER_ID', error: 'Invalid user UID.' });
+        if (targetUid === req.user.uid) return res.status(400).json({ success: false, code: 'SELF_DELETION_PROHIBITED', error: 'Self-deletion through the admin endpoint is prohibited.' });
+
+        const profileSnapshot = await requestDb.collection('users').doc(targetUid).get();
+        if (!target && !profileSnapshot.exists) return res.status(404).json({ success: false, code: 'USER_NOT_FOUND', error: 'User not found.' });
         const profileData = profileSnapshot.data() || {};
         const authoritativeEmail = String(target?.email || profileData.email || '').toLowerCase();
         if (requestedEmail && authoritativeEmail && authoritativeEmail !== requestedEmail) {
-            return res.status(400).json({ success: false, error: 'UID/email identity mismatch.' });
+            return res.status(400).json({ success: false, code: 'USER_IDENTITY_MISMATCH', error: 'UID/email identity mismatch.' });
         }
         const targetRole = String(target?.customClaims?.role || profileData.role || '').toUpperCase();
-        if (targetRole === 'SUPER_ADMIN' && !permissionsFor(req.user).has('*')) {
-            return res.status(403).json({ success: false, error: 'Only SUPER_ADMIN can delete another SUPER_ADMIN.' });
+        if (targetRole === 'SUPER_ADMIN' && !isSuperAdmin(req.user)) {
+            return res.status(403).json({ success: false, code: 'SUPER_ADMIN_PROTECTED', error: 'Only SUPER_ADMIN can delete another SUPER_ADMIN.' });
         }
-        if (target) await admin.auth().deleteUser(targetUid);
 
+        // Clean application-owned data before deleting the Auth identity. If any
+        // cleanup fails, the account remains recoverable and the operator gets a
+        // retryable failure instead of an orphaned/deleted half-state.
         const cleanupFailures = [];
         try {
-            const ownedJobs = await db.collection('jobs').where('employerId', '==', targetUid).get();
-            for (const job of ownedJobs.docs) await db.recursiveDelete(job.ref);
+            const ownedJobs = await requestDb.collection('jobs').where('employerId', '==', targetUid).get();
+            for (const job of ownedJobs.docs) await requestDb.recursiveDelete(job.ref);
         } catch { cleanupFailures.push('employer jobs'); }
         try {
-            const applications = await db.collection('jobApplications').where('userId', '==', targetUid).get();
+            const applications = await requestDb.collection('jobApplications').where('userId', '==', targetUid).get();
             const applicationIds = applications.docs.map(application => application.id);
-            for (const application of applications.docs) await db.recursiveDelete(application.ref);
-            await deleteApplicationNotifications(db, applicationIds);
+            for (const application of applications.docs) await requestDb.recursiveDelete(application.ref);
+            await deleteApplicationNotifications(requestDb, applicationIds);
         } catch { cleanupFailures.push('job applications'); }
         const relatedQueries = [
-            ['portfolios', db.collection('portfolios').where('userId', '==', targetUid)],
-            ['published portfolios', db.collection('pb').where('ownerUid', '==', targetUid)],
-            ['blog posts', db.collection('blog_posts').where('authorUid', '==', targetUid)],
-            ['companies', db.collection('companies').where('employerId', '==', targetUid)],
+            ['portfolios', requestDb.collection('portfolios').where('userId', '==', targetUid)],
+            ['published portfolios', requestDb.collection('pb').where('ownerUid', '==', targetUid)],
+            ['blog posts', requestDb.collection('blog_posts').where('authorUid', '==', targetUid)],
+            ['companies', requestDb.collection('companies').where('employerId', '==', targetUid)],
         ];
         for (const [label, query] of relatedQueries) {
             try {
                 const snapshot = await query.get();
-                for (const item of snapshot.docs) await db.recursiveDelete(item.ref);
+                for (const item of snapshot.docs) await requestDb.recursiveDelete(item.ref);
             } catch (error) {
                 cleanupFailures.push(label);
                 console.warn(`[User deletion ${label}]`, error.message);
             }
         }
         for (const [label, reference] of [
-            ['employer application', db.collection('employerApplications').doc(targetUid)],
-            ['notifications', db.collection('notifications').doc(targetUid)],
+            ['employer application', requestDb.collection('employerApplications').doc(targetUid)],
+            ['notifications', requestDb.collection('notifications').doc(targetUid)],
         ]) {
-            try { await db.recursiveDelete(reference); } catch { cleanupFailures.push(label); }
+            try { await requestDb.recursiveDelete(reference); } catch { cleanupFailures.push(label); }
         }
-        try { await removeDeletedUserFromRealtimeMessaging(targetUid); } catch { cleanupFailures.push('realtime messaging'); }
+        try { await removeDeletedUserFromRealtimeMessaging(targetUid, identityAdmin); } catch { cleanupFailures.push('realtime messaging'); }
         if (!cleanupFailures.length) {
-            try { await db.recursiveDelete(db.collection('users').doc(targetUid)); }
+            try { await requestDb.recursiveDelete(requestDb.collection('users').doc(targetUid)); }
             catch { cleanupFailures.push('user profile tree'); }
         }
-        await db.collection('security_audit_logs').add({
+
+        const auditRef = requestDb.collection('security_audit_logs').doc();
+        const auditPayload = {
             action: cleanupFailures.length ? 'USER_DELETION_INCOMPLETE' : 'USER_DELETED',
             actorUid: req.user.uid, targetUid, cleanupFailures,
-            requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp()
-        });
-        if (cleanupFailures.length) return res.status(500).json({
-            success: false, code: 'USER_CLEANUP_INCOMPLETE',
-            error: `Identity is absent or was deleted, but cleanup failed for: ${cleanupFailures.join(', ')}. Retry this operation.`,
-        });
+            requestId: res.locals.requestId, createdAt: identityAdmin.firestore?.FieldValue?.serverTimestamp?.() || new Date(),
+        };
+        if (cleanupFailures.length) {
+            await auditRef.set(auditPayload).catch(() => {});
+            return res.status(500).json({
+                success: false, code: 'USER_CLEANUP_INCOMPLETE',
+                error: `Cleanup failed for: ${cleanupFailures.join(', ')}. The identity was retained; retry this operation.`,
+            });
+        }
+
+        if (target) {
+            try { await identityAdmin.auth().deleteUser(targetUid); }
+            catch (error) {
+                await auditRef.set({ ...auditPayload, action: 'USER_IDENTITY_DELETE_FAILED', cleanupFailures: ['firebase identity'], failureCategory: error.code || 'AUTH_DELETE_FAILED' }).catch(() => {});
+                return res.status(500).json({ success: false, code: 'USER_IDENTITY_DELETE_FAILED', error: 'Owned application data was removed, but the Firebase identity could not be deleted. Retry immediately.' });
+            }
+        }
+        await auditRef.set(auditPayload).catch(() => {});
         return res.json({ success: true, deletedFromAuth: Boolean(target), message: 'User identity, profile tree, portfolios, applications, employer content, notifications, messaging data, and authored blog posts were deleted.' });
     } catch (error) {
         console.error('[Admin delete user]', error.message);
-        return res.status(error.code === 'auth/user-not-found' ? 404 : 500).json({ success: false, error: 'Unable to delete user.' });
+        return res.status(error.code === 'auth/user-not-found' ? 404 : 500).json({ success: false, code: error.code === 'auth/user-not-found' ? 'USER_NOT_FOUND' : 'USER_DELETE_FAILED', error: 'Unable to delete user.' });
     }
 });
-
 app.post('/api/auth/set-user-password', async (req, res) => {
     const email = String(req.body.email || '').trim().toLowerCase();
     const newPassword = String(req.body.newPassword || '');
@@ -4689,12 +5399,9 @@ const oauthCookie = (state, clear = false) => {
 const safeRedirect = (res, value) => res.redirect(`${protocol}://${websiteName}${value}`);
 
 async function getSocialAuthCredentials(provider, database = db) {
-    let config = {};
+    let storedClientId = '';
+    let storedClientSecret = '';
     const legacyPrefix = provider === 'linkedin' ? 'linkedin' : 'github';
-    const fillMissing = candidate => {
-        if (!config.clientId && candidate?.clientId) config.clientId = candidate.clientId;
-        if (!config.clientSecret && candidate?.clientSecret) config.clientSecret = candidate.clientSecret;
-    };
     try {
         if (database) {
             const [providerSecrets, adminConfiguration, legacySettings] = await Promise.all([
@@ -4702,20 +5409,23 @@ async function getSocialAuthCredentials(provider, database = db) {
                 database.collection('settings').doc('admin_configuration').get(),
                 database.collection('data').doc('system_settings').get(),
             ]);
-            fillMissing(providerSecrets.data()?.[provider]);
+            const providerConfig = providerSecrets.data()?.[provider] || {};
             const canonical = adminConfiguration.data()?.socialAuth || {};
-            fillMissing({ clientId: canonical[`${legacyPrefix}ClientId`], clientSecret: canonical[`${legacyPrefix}ClientSecret`] });
             const legacy = legacySettings.data()?.socialAuth || {};
-            fillMissing({ clientId: legacy[`${legacyPrefix}ClientId`], clientSecret: legacy[`${legacyPrefix}ClientSecret`] });
+            storedClientId = String(providerConfig.clientId || canonical[`${legacyPrefix}ClientId`] || legacy[`${legacyPrefix}ClientId`] || '').trim();
+            storedClientSecret = String(providerConfig.clientSecret || canonical[`${legacyPrefix}ClientSecret`] || legacy[`${legacyPrefix}ClientSecret`] || '').trim();
         }
     } catch (error) {
         console.warn(`[OAuth config ${provider}]`, error.message);
     }
     const envPrefix = provider === 'linkedin' ? 'LINKEDIN' : 'GITHUB';
-    return {
-        clientId: String(config.clientId || process.env[`${envPrefix}_CLIENT_ID`] || '').trim(),
-        clientSecret: String(config.clientSecret || process.env[`${envPrefix}_CLIENT_SECRET`] || '').trim()
-    };
+    const selected = chooseCredentialPair({
+        environmentId: process.env[`${envPrefix}_CLIENT_ID`],
+        environmentSecret: process.env[`${envPrefix}_CLIENT_SECRET`],
+        storedId: storedClientId,
+        storedSecret: storedClientSecret,
+    });
+    return { clientId: selected.id, clientSecret: selected.secret, source: selected.source };
 }
 
 /**
@@ -4738,10 +5448,11 @@ async function beginOAuth(provider, req, res) {
             console.warn(`[OAuth begin ${provider}] state store unavailable`);
             return failOAuthBegin(res, provider, 'oauth_unavailable');
         }
-        const { clientId } = await getSocialAuthCredentials(provider);
-        // A missing client id is a configuration gap, reported as such so the
-        // login screen can say "not configured" rather than "something broke".
-        if (!clientId) {
+        const { clientId, clientSecret } = await getSocialAuthCredentials(provider, req.app.get('db'));
+        // Both halves are required for the complete code exchange. Starting a
+        // redirect with only a client id would create a guaranteed callback
+        // failure and make the UI look healthier than the runtime.
+        if (!clientId || !clientSecret) {
             console.warn(`[OAuth begin ${provider}] no client id configured`);
             return failOAuthBegin(res, provider, 'oauth_not_configured');
         }

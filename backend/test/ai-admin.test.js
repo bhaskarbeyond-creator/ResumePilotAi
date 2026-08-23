@@ -55,6 +55,15 @@ test('authorized AI settings save is revisioned, audited, split, and never retur
   await assert.rejects(() => saveAiAdminSettings({ db, admin, input, expectedRevision: 0, actorUid: 'admin-1' }), error => error.code === 'AI_SETTINGS_CONFLICT');
 });
 
+test('AI secret lifecycle preserves blank values and accepts only explicit clears', () => {
+  const { secretPatch } = require('../services/aiAdmin');
+  const existing = { openai: { apiKey: 'existing-server-key' } };
+  const preserved = secretPatch({ openaiApiKey: '' }, existing, {});
+  assert.equal(preserved.openai.apiKey, 'existing-server-key');
+  const cleared = secretPatch({ openaiApiKey: '', clearSecrets: { openai: true } }, existing, {});
+  assert.equal(Object.hasOwn(cleared.openai, 'apiKey'), false);
+});
+
 test('AI settings load reports configured booleans without returning provider keys', async () => {
   const db = fakeDb({
     'data/public_config': { ai: baseInput, aiRevision: 4 },

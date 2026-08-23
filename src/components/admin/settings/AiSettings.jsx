@@ -63,6 +63,7 @@ const AiSettings = () => {
     const [nvidiaModels, setNvidiaModels] = useState(RECOMMENDED_NVIDIA_MODELS);
     const [configuredProviders, setConfiguredProviders] = useState({});
     const [credentialSources, setCredentialSources] = useState({});
+    const [clearSecrets, setClearSecrets] = useState({});
     const [settingsRevision, setSettingsRevision] = useState(0);
     const [pendingOperation, setPendingOperation] = useState(null);
     const [reauthPassword, setReauthPassword] = useState('');
@@ -218,6 +219,8 @@ const AiSettings = () => {
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
+        const providerForField = Object.entries(PROVIDER_KEY_FIELDS).find(([, field]) => field === name)?.[0];
+        if (providerForField) setClearSecrets(current => ({ ...current, [providerForField]: false }));
         setAiConfig((prev) => {
             const next = {
                 ...prev,
@@ -264,6 +267,14 @@ const AiSettings = () => {
 
     const toggleKeyVisibility = (keyName) => {
         setShowKeys((prev) => ({ ...prev, [keyName]: !prev[keyName] }));
+    };
+
+    const clearProviderSecret = (provider) => {
+        const field = PROVIDER_KEY_FIELDS[provider];
+        if (!field) return;
+        setAiConfig(current => ({ ...current, [field]: '' }));
+        setClearSecrets(current => ({ ...current, [provider]: true }));
+        setGlobalMessage({ type: 'info', text: `${provider} credential will be cleared when you click Save AI settings.` });
     };
 
     const setCardMessage = (providerKey, type, text) => {
@@ -318,19 +329,21 @@ const AiSettings = () => {
         if (loadFailed) { setGlobalMessage({ type: 'error', text: 'Reload AI settings successfully before saving to avoid overwriting unknown state.' }); return false; }
         setSaving(true);
         try {
-            const result = await saveAdminAiSettings(aiConfig, settingsRevision);
+            const requestedClearSecrets = { ...clearSecrets };
+            const result = await saveAdminAiSettings({ ...aiConfig, clearSecrets: requestedClearSecrets }, settingsRevision);
             setSettingsRevision(Number(result.revision) || settingsRevision);
             setConfiguredProviders(result.configuredProviders || {});
             setCredentialSources(result.credentialSources || {});
+            setClearSecrets({});
             const masked = result.maskedKeys || {};
             setAiConfig(current => ({
                 ...current, ...(result.settings || {}),
-                geminiApiKey: result.settings?.geminiApiKey || masked.gemini || current.geminiApiKey,
-                nvidiaApiKey: result.settings?.nvidiaApiKey || masked.nvidia || current.nvidiaApiKey,
-                openaiApiKey: result.settings?.openaiApiKey || masked.openai || current.openaiApiKey,
-                groqApiKey: result.settings?.groqApiKey || masked.groq || current.groqApiKey,
-                openrouterApiKey: result.settings?.openrouterApiKey || masked.openrouter || current.openrouterApiKey,
-                deepseekApiKey: result.settings?.deepseekApiKey || masked.deepseek || current.deepseekApiKey,
+                geminiApiKey: requestedClearSecrets.gemini ? '' : (result.settings?.geminiApiKey || masked.gemini || current.geminiApiKey),
+                nvidiaApiKey: requestedClearSecrets.nvidia ? '' : (result.settings?.nvidiaApiKey || masked.nvidia || current.nvidiaApiKey),
+                openaiApiKey: requestedClearSecrets.openai ? '' : (result.settings?.openaiApiKey || masked.openai || current.openaiApiKey),
+                groqApiKey: requestedClearSecrets.groq ? '' : (result.settings?.groqApiKey || masked.groq || current.groqApiKey),
+                openrouterApiKey: requestedClearSecrets.openrouter ? '' : (result.settings?.openrouterApiKey || masked.openrouter || current.openrouterApiKey),
+                deepseekApiKey: requestedClearSecrets.deepseek ? '' : (result.settings?.deepseekApiKey || masked.deepseek || current.deepseekApiKey),
             }));
             setPendingOperation(null);
             setReauthPassword('');
@@ -626,7 +639,7 @@ const AiSettings = () => {
                             {configuredProviders.nvidia && (
                                 <div className="mt-1 text-[11px] text-emerald-700 font-medium flex items-center gap-1">
                                     <FaCheck className="w-3 h-3 text-emerald-600 flex-shrink-0" />
-                                    <span>API key configured & active on server (masked for security)</span>
+                                    <span>API key configured &amp; active on server (masked for security)</span><button type="button" className="ml-2 font-bold underline" onClick={() => clearProviderSecret('nvidia')} aria-label="Clear nvidia API key">Clear</button>
                                 </div>
                             )}
                         </div>
@@ -752,7 +765,7 @@ const AiSettings = () => {
                             {configuredProviders.gemini && (
                                 <div className="mt-1 text-[11px] text-blue-700 font-medium flex items-center gap-1">
                                     <FaCheck className="w-3 h-3 text-blue-600 flex-shrink-0" />
-                                    <span>API key configured & active on server (masked for security)</span>
+                                    <span>API key configured &amp; active on server (masked for security)</span><button type="button" className="ml-2 font-bold underline" onClick={() => clearProviderSecret('gemini')} aria-label="Clear gemini API key">Clear</button>
                                 </div>
                             )}
                         </div>
@@ -864,7 +877,7 @@ const AiSettings = () => {
                             {configuredProviders.openai && (
                                 <div className="mt-1 text-[11px] text-indigo-700 font-medium flex items-center gap-1">
                                     <FaCheck className="w-3 h-3 text-indigo-600 flex-shrink-0" />
-                                    <span>API key configured & active on server (masked for security)</span>
+                                    <span>API key configured &amp; active on server (masked for security)</span><button type="button" className="ml-2 font-bold underline" onClick={() => clearProviderSecret('openai')} aria-label="Clear openai API key">Clear</button>
                                 </div>
                             )}
                         </div>
@@ -969,7 +982,7 @@ const AiSettings = () => {
                                 {configuredProviders.groq && (
                                     <div className="mt-1 text-[11px] text-amber-700 font-medium flex items-center gap-1">
                                         <FaCheck className="w-3 h-3 text-amber-600 flex-shrink-0" />
-                                        <span>API key configured & active on server (masked for security)</span>
+                                        <span>API key configured &amp; active on server (masked for security)</span><button type="button" className="ml-2 font-bold underline" onClick={() => clearProviderSecret('groq')} aria-label="Clear groq API key">Clear</button>
                                     </div>
                                 )}
                             </div>
@@ -1061,7 +1074,7 @@ const AiSettings = () => {
                                 {configuredProviders.openrouter && (
                                     <div className="mt-1 text-[11px] text-purple-700 font-medium flex items-center gap-1">
                                         <FaCheck className="w-3 h-3 text-purple-600 flex-shrink-0" />
-                                        <span>API key configured & active on server (masked for security)</span>
+                                        <span>API key configured &amp; active on server (masked for security)</span><button type="button" className="ml-2 font-bold underline" onClick={() => clearProviderSecret('openrouter')} aria-label="Clear openrouter API key">Clear</button>
                                     </div>
                                 )}
                             </div>
@@ -1155,7 +1168,7 @@ const AiSettings = () => {
                                 {configuredProviders.deepseek && (
                                     <div className="mt-1 text-[11px] text-blue-700 font-medium flex items-center gap-1">
                                         <FaCheck className="w-3 h-3 text-blue-600 flex-shrink-0" />
-                                        <span>API key configured & active on server (masked for security)</span>
+                                        <span>API key configured &amp; active on server (masked for security)</span><button type="button" className="ml-2 font-bold underline" onClick={() => clearProviderSecret('deepseek')} aria-label="Clear deepseek API key">Clear</button>
                                     </div>
                                 )}
                             </div>

@@ -22,7 +22,8 @@ export default function PlatformOperations() {
   const [observability, setObservability] = useState(null);
   const [backup, setBackup] = useState(null);
   const [enterpriseQueue, setEnterpriseQueue] = useState(null);
-  const [maintenance, setMaintenanceState] = useState({ enabled: false, message: '' });
+  const [maintenance, setMaintenanceState] = useState({ enabled: null, message: '' });
+  const [maintenanceRevision, setMaintenanceRevision] = useState(0);
   const [announcements, setAnnouncements] = useState([]);
   const [error, setError] = useState(null);
   const [notice, setNotice] = useState(null);
@@ -48,7 +49,8 @@ export default function PlatformOperations() {
       setObservability(obs);
       setBackup(bak);
       setEnterpriseQueue(entQueue);
-      setMaintenanceState({ enabled: maint.enabled === true, message: maint.message || '' });
+      setMaintenanceState({ enabled: maint.available === false ? null : maint.enabled === true, message: maint.message || '' });
+      setMaintenanceRevision(Number(maint.revision) || 0);
       setAnnouncements(notes.announcements || []);
     } catch (err) {
       setError(err.message || 'Failed to load operations telemetry');
@@ -62,6 +64,10 @@ export default function PlatformOperations() {
   const saveMaint = async (event) => {
     event.preventDefault();
     if (!isSuperAdmin) return;
+    if (maintenance.enabled === null) {
+      setError('Maintenance status is unavailable. Refresh before changing it.');
+      return;
+    }
     
     if (maintenance.enabled && confirmAction?.id !== 'maintenance') {
       setConfirmAction({
@@ -83,7 +89,8 @@ export default function PlatformOperations() {
     setSaving(true);
     setNotice(null);
     try {
-      await setMaintenance(maintenance);
+      const result = await setMaintenance({ ...maintenance, expectedRevision: maintenanceRevision });
+      setMaintenanceRevision(Number(result.revision) || maintenanceRevision + 1);
       setNotice('Maintenance state saved and audited.');
       load();
     } catch (err) {
@@ -209,11 +216,11 @@ export default function PlatformOperations() {
           <h2 className="font-bold text-slate-900 flex items-center gap-2"><FiTool /> Maintenance mode</h2>
           <form onSubmit={saveMaint} className="mt-3 space-y-3 text-xs">
             <label className="flex items-center gap-2 font-semibold">
-              <input type="checkbox" checked={maintenance.enabled} disabled={!isSuperAdmin} onChange={e => setMaintenanceState(current => ({ ...current, enabled: e.target.checked }))} />
-              Enable public maintenance banner
+              <input type="checkbox" checked={maintenance.enabled === true} disabled={!isSuperAdmin || maintenance.enabled === null} onChange={e => setMaintenanceState(current => ({ ...current, enabled: e.target.checked }))} />
+              Enable public maintenance banner {maintenance.enabled === null ? '(status unavailable)' : ''}
             </label>
             <textarea className="w-full rounded-xl border border-slate-200 p-2" rows={3} disabled={!isSuperAdmin} value={maintenance.message} onChange={e => setMaintenanceState(current => ({ ...current, message: e.target.value }))} />
-            <button type="submit" disabled={!isSuperAdmin || saving} className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900 text-white font-bold disabled:opacity-50"><FiSave /> {isSuperAdmin ? 'Save maintenance' : 'Super Admin only'}</button>
+            <button type="submit" disabled={!isSuperAdmin || saving || maintenance.enabled === null} className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900 text-white font-bold disabled:opacity-50"><FiSave /> {isSuperAdmin ? 'Save maintenance' : 'Super Admin only'}</button>
           </form>
         </section>
       </div>

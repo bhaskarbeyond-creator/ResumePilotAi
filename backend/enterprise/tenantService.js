@@ -629,6 +629,24 @@ class TenantService {
     return tenant;
   }
 
+  async updateTenantProfileAsPlatform({ user, tenantId, displayName, requestId }) {
+    if (!isPlatformTenantProvisioner(user)) {
+      throw Object.assign(new Error('Platform tenant profile permission is required'), { code: 'FORBIDDEN', status: 403 });
+    }
+    const tenant = await this.registry.updateTenantProfile({ tenantId, displayName });
+    if (this.db && this.admin?.firestore?.FieldValue) {
+      await this.db.collection('security_audit_logs').doc().set({
+        action: 'PLATFORM_TENANT_RENAMED',
+        actorUid: user.uid,
+        tenantId: tenant.id,
+        displayName: tenant.displayName,
+        requestId: requestId || null,
+        createdAt: this.admin.firestore.FieldValue.serverTimestamp(),
+      });
+    }
+    return tenant;
+  }
+
   async setTenantLifecycleState({ context, nextState }) {
     const tenant = await this.registry.setTenantLifecycleState({ tenantId: context.tenantId, nextState });
     if (this.db && this.admin) {

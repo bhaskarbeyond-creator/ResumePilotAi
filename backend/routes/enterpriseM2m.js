@@ -1,15 +1,19 @@
 'use strict';
 
 const express = require('express');
-const { enterpriseFeatureEnabled } = require('../enterprise/featureFlags');
+const { enterpriseFeatureEnabledAsync } = require('../enterprise/featureFlags');
 
 const router = express.Router();
 
-router.use((req, res, next) => {
-  if (!enterpriseFeatureEnabled()) {
-    return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'API route not found', requestId: res.locals?.requestId } });
+router.use(async (req, res, next) => {
+  try {
+    if (!await enterpriseFeatureEnabledAsync(req.app.get('db'))) {
+      return res.status(404).json({ error: { code: 'ENTERPRISE_DISABLED', message: 'Enterprise tenancy is disabled for this deployment.', configurationState: 'DISABLED', requestId: res.locals?.requestId } });
+    }
+    return next();
+  } catch (_) {
+    return res.status(503).json({ error: { code: 'ENTERPRISE_FLAG_UNAVAILABLE', message: 'Enterprise rollout state could not be determined.', configurationState: 'UNKNOWN', requestId: res.locals?.requestId } });
   }
-  return next();
 });
 
 // The service principal was already authenticated and bound to its tenant and

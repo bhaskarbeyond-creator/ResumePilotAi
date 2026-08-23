@@ -95,8 +95,9 @@ export default function PlatformQueues() {
     }
   };
 
-  const summary = data?.summary || { totalInspected: 0, deadLetterCount: 0, pendingCount: 0, successCount: 0 };
+  const summary = data?.summary || { totalInspected: null, deadLetterCount: null, pendingCount: null, successCount: null };
   const jobs = data?.jobs || [];
+  const queueAvailable = data !== null;
 
   return (
     <div className="space-y-6">
@@ -155,10 +156,10 @@ export default function PlatformQueues() {
         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
           <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Queue Health</p>
           <div className="flex items-center justify-between mt-2">
-            <p className={`text-xl font-extrabold ${summary.deadLetterCount === 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
-              {summary.deadLetterCount === 0 ? 'HEALTHY' : 'ATTENTION'}
+            <p className={`text-xl font-extrabold ${!queueAvailable ? 'text-slate-500' : summary.deadLetterCount > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+              {!queueAvailable ? 'UNAVAILABLE' : summary.deadLetterCount > 0 ? 'ATTENTION' : 'HEALTHY'}
             </p>
-            {summary.deadLetterCount === 0 ? <FiCheckCircle className="text-emerald-500 h-6 w-6" /> : <FiAlertTriangle className="text-amber-500 h-6 w-6" />}
+            {!queueAvailable ? <FiAlertTriangle className="text-slate-400 h-6 w-6" /> : summary.deadLetterCount > 0 ? <FiAlertTriangle className="text-amber-500 h-6 w-6" /> : <FiCheckCircle className="text-emerald-500 h-6 w-6" />}
           </div>
         </div>
 
@@ -166,7 +167,7 @@ export default function PlatformQueues() {
           <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Dead-Letter Queue (DLQ)</p>
           <div className="flex items-center justify-between mt-2">
             <p className={`text-xl font-extrabold ${summary.deadLetterCount > 0 ? 'text-red-600' : 'text-slate-900'}`}>
-              {summary.deadLetterCount}
+              {summary.deadLetterCount == null ? 'Unavailable' : summary.deadLetterCount}
             </p>
             <FiAlertCircle className="text-slate-400 h-6 w-6" />
           </div>
@@ -175,7 +176,7 @@ export default function PlatformQueues() {
         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
           <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pending / Queued</p>
           <div className="flex items-center justify-between mt-2">
-            <p className="text-xl font-extrabold text-indigo-600">{summary.pendingCount}</p>
+            <p className="text-xl font-extrabold text-indigo-600">{summary.pendingCount == null ? 'Unavailable' : summary.pendingCount}</p>
             <FiClock className="text-indigo-400 h-6 w-6" />
           </div>
         </div>
@@ -183,7 +184,7 @@ export default function PlatformQueues() {
         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
           <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Delivered / Accepted</p>
           <div className="flex items-center justify-between mt-2">
-            <p className="text-xl font-extrabold text-slate-900">{summary.successCount}</p>
+            <p className="text-xl font-extrabold text-slate-900">{summary.successCount == null ? 'Unavailable' : summary.successCount}</p>
             <FiMail className="text-slate-400 h-6 w-6" />
           </div>
         </div>

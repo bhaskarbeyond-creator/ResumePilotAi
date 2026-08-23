@@ -18,6 +18,7 @@ const TwilioSmsSettings = () => {
     const [saving, setSaving] = useState(false);
     const [testing, setTesting] = useState(false);
     const [statusMessage, setStatusMessage] = useState(null);
+    const [clearCredentials, setClearCredentials] = useState(false);
 
     useEffect(() => {
         let active = true;
@@ -37,6 +38,7 @@ const TwilioSmsSettings = () => {
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
+        if ((name === 'accountSid' || name === 'authToken') && String(value).trim()) setClearCredentials(false);
         setTwilioConfig((prev) => {
             const next = {
                 ...prev,
@@ -59,14 +61,15 @@ const TwilioSmsSettings = () => {
         try {
             const { response, data } = await fetchAdminWithReauth('/api/admin/twilio-settings', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...twilioConfig, expectedRevision: revision }),
+                body: JSON.stringify({ ...twilioConfig, clearCredentials, expectedRevision: revision }),
             });
             if (!response.ok || !data.success) throw Object.assign(new Error(data.error?.message || data.error || 'SMS settings could not be saved.'), { code: data.code });
             const settings = data.settings || {};
             setRevision(Number(data.revision || revision));
             setCredentialStatus({ configured: settings.accountSidConfigured === true && settings.authTokenConfigured === true && Boolean(settings.fromPhoneNumber), accountSidSuffix: settings.accountSidSuffix || '' });
             setTwilioConfig(current => ({ ...current, accountSid: '', authToken: '', fromPhoneNumber: settings.fromPhoneNumber || current.fromPhoneNumber, enableSmsAlerts: settings.enableSmsAlerts === true }));
-            setStatusMessage({ type: 'success', text: 'Twilio SMS gateway settings saved to the trusted backend.' });
+            setClearCredentials(false);
+            setStatusMessage({ type: 'success', text: 'Twilio SMS gateway settings saved to the trusted backend. Empty credentials were preserved; explicit clear actions were applied.' });
         } catch (error) {
             setStatusMessage({ type: 'error', text: `Failed to save settings: ${error.message}` });
         } finally {
@@ -106,6 +109,7 @@ const TwilioSmsSettings = () => {
                 <p className={`mb-4 text-xs font-semibold ${credentialStatus.configured ? 'text-emerald-700' : 'text-amber-700'}`}>
                     {credentialStatus.configured ? `Gateway credential configured${credentialStatus.accountSidSuffix ? ` (Account SID ending ${credentialStatus.accountSidSuffix})` : ''}.` : 'Gateway credential is not fully configured.'}
                 </p>
+                <label className="mb-4 flex items-center gap-2 text-xs font-semibold text-slate-700"><input type="checkbox" checked={clearCredentials} onChange={event => setClearCredentials(event.target.checked)} /> Clear stored Twilio Account SID and Auth Token on save</label>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>

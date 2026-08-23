@@ -36,7 +36,7 @@ export default function PlatformOperators() {
 
   useEffect(() => { load(); }, [load]);
 
-  const changeRole = async (targetUid, nextRole) => {
+  const changeRole = async (targetUid, nextRole, expectedRole = '') => {
     if (!isSuperAdmin) return;
     const accepted = await confirm({
       title: `Assign ${nextRole}`,
@@ -49,7 +49,7 @@ export default function PlatformOperators() {
     setNotice(null);
     setError(null);
     try {
-      await setOperatorRole(targetUid, nextRole);
+      await setOperatorRole(targetUid, nextRole, expectedRole);
       setNotice(`Role ${nextRole} assigned. Refresh tokens were revoked.`);
       setUid('');
       load();
@@ -132,7 +132,7 @@ export default function PlatformOperators() {
                     <td className="py-3 px-4">{op.suspended ? 'Suspended' : 'Active'}</td>
                     <td className="py-3 px-4 text-right">
                       {op.role === 'SUPER_ADMIN' ? <span className="text-slate-400">Protected</span> : isSuperAdmin ? (
-                        <select disabled={saving} defaultValue="" onChange={e => { const next = e.target.value; e.target.value = ''; if (next) changeRole(op.id, next); }} className="rounded-lg border border-slate-200 px-2 py-1">
+                        <select disabled={saving} defaultValue="" onChange={e => { const next = e.target.value; e.target.value = ''; if (next) changeRole(op.id, next, op.role); }} className="rounded-lg border border-slate-200 px-2 py-1">
                           <option value="">Change role…</option>
                           {ASSIGNABLE.filter(value => value !== op.role).map(value => <option key={value} value={value}>{value}</option>)}
                         </select>

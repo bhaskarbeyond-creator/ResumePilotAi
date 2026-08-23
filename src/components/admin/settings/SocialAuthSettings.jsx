@@ -24,6 +24,7 @@ const SocialAuthSettings = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [statusMessage, setStatusMessage] = useState(null);
+    const [clearSecrets, setClearSecrets] = useState({});
 
     useEffect(() => {
         getSystemSettings().then((settings) => {
@@ -52,6 +53,8 @@ const SocialAuthSettings = () => {
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
+        const secretFields = new Set(['googleClientSecret', 'facebookAppSecret', 'linkedinClientSecret', 'githubClientSecret']);
+        if (secretFields.has(name)) setClearSecrets(prev => ({ ...prev, [name]: false }));
         setSocialAuthConfig((prev) => {
             const next = {
                 ...prev,
@@ -87,24 +90,26 @@ const SocialAuthSettings = () => {
         e.preventDefault();
         setSaving(true);
         try {
-            await saveSystemSettings('socialAuth', socialAuthConfig);
+            await saveSystemSettings('socialAuth', socialAuthConfig, { clearSecrets });
             await saveSystemSettings('google', {
                 googleClientId: socialAuthConfig.googleClientId,
                 googleClientSecret: socialAuthConfig.googleClientSecret,
                 enableGoogleLogin: !!(socialAuthConfig.googleClientId && socialAuthConfig.googleClientId.trim())
-            });
+            }, { clearSecrets });
             await saveSystemSettings('facebook', {
                 facebookAppId: socialAuthConfig.facebookAppId,
                 facebookAppSecret: socialAuthConfig.facebookAppSecret,
                 facebookPixelId: socialAuthConfig.facebookPixelId,
                 enableFacebookLogin: !!(socialAuthConfig.facebookAppId && socialAuthConfig.facebookAppId.trim())
-            });
+            }, { clearSecrets });
             // CRITICAL FIX: Also save enable flags to 'modules' namespace which Login/Register read
             await saveSystemSettings('modules', {
                 enableLinkedinLogin: socialAuthConfig.enableLinkedinLogin,
                 enableGithubLogin: socialAuthConfig.enableGithubLogin,
             });
-            setStatusMessage({ type: 'success', text: 'OAuth settings saved. LinkedIn/GitHub toggles are now live.' });
+            setClearSecrets({});
+            setSocialAuthConfig(current => ({ ...current, googleClientSecret: '', facebookAppSecret: '', linkedinClientSecret: '', githubClientSecret: '' }));
+            setStatusMessage({ type: 'success', text: 'OAuth settings saved. Empty secrets were preserved; explicit clear selections were applied and audited.' });
         } catch (error) {
             setStatusMessage({ type: 'error', text: `Failed to save settings: ${error.message}` });
         } finally {
@@ -441,6 +446,11 @@ const SocialAuthSettings = () => {
                 </div>
             </div>
 
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+                <p className="font-bold">Write-only secret controls</p>
+                <p className="mt-1">Blank fields preserve the active server credential. Select a field only when you intentionally want to delete the stored secret, then save. Deployment-managed environment secrets cannot be cleared here.</p>
+                <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2"><label className="flex items-center gap-2"><input type="checkbox" checked={clearSecrets.googleClientSecret === true} onChange={event => setClearSecrets(prev => ({ ...prev, googleClientSecret: event.target.checked }))} /> Clear Google client secret</label><label className="flex items-center gap-2"><input type="checkbox" checked={clearSecrets.facebookAppSecret === true} onChange={event => setClearSecrets(prev => ({ ...prev, facebookAppSecret: event.target.checked }))} /> Clear Facebook app secret</label><label className="flex items-center gap-2"><input type="checkbox" checked={clearSecrets.linkedinClientSecret === true} onChange={event => setClearSecrets(prev => ({ ...prev, linkedinClientSecret: event.target.checked }))} /> Clear LinkedIn client secret</label><label className="flex items-center gap-2"><input type="checkbox" checked={clearSecrets.githubClientSecret === true} onChange={event => setClearSecrets(prev => ({ ...prev, githubClientSecret: event.target.checked }))} /> Clear GitHub client secret</label></div>
+            </div>
             <div className="flex items-center justify-end pt-2">
                 <button
                     type="submit"

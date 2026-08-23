@@ -104,8 +104,11 @@ async function getEmailConfig(db) {
         if (!incoming || typeof incoming !== 'object' || Array.isArray(incoming)) return current;
         const merged = { ...current, ...incoming };
         // Across env, local file and legacy Firestore, blank means "no replacement".
-        // Credential removal requires a separate deliberate workflow.
-        if (!String(incoming.password || '').trim()) merged.password = current.password;
+        // An explicit passwordCleared tombstone is the only deliberate removal
+        // path; deployment environment credentials still take precedence and
+        // therefore cannot be cleared from the UI.
+        if (incoming.passwordCleared === true) merged.password = '';
+        else if (!String(incoming.password || '').trim()) merged.password = current.password;
         return merged;
     };
     const localConfig = readLocalConfig();
@@ -139,6 +142,13 @@ async function getEmailConfig(db) {
         if (localConfig.fallbackSmtp) config.fallbackSmtp = mergeSection(config.fallbackSmtp, localConfig.fallbackSmtp);
         if (localConfig.imap) config.imap = mergeSection(config.imap, localConfig.imap);
         if (localConfig.enabledTemplates) config.enabledTemplates = { ...config.enabledTemplates, ...localConfig.enabledTemplates };
+    }
+
+    // Deployment-managed passwords always win over lower-precedence Firestore or
+    // local-file values. In particular, a stale passwordCleared tombstone must
+    // never disable a credential that was supplied by the environment.
+    for (const [section, envKey] of [['smtp', 'SMTP_PASS'], ['fallbackSmtp', 'FALLBACK_SMTP_PASS'], ['imap', 'IMAP_PASS']]) {
+        if (String(process.env[envKey] || '').trim()) config[section].password = process.env[envKey];
     }
 
     return config;
@@ -193,8 +203,10 @@ function normalizedMailSection(section, input, localCurrent = {}) {
     }
     const replacementPassword = String(input.password || '');
     const localPassword = String(localCurrent.password || '');
-    if (replacementPassword.trim()) output.password = replacementPassword.slice(0, 4096);
-    else if (localPassword.trim()) output.password = localPassword;
+    if (replacementPassword.trim()) {
+        output.password = replacementPassword.slice(0, 4096);
+        output.passwordCleared = false;
+    } else if (localPassword.trim()) output.password = localPassword;
     return output;
 }
 
@@ -1442,7 +1454,7 @@ router.get('/admin/deliverability', async (req, res) => {
     // Derive the domain to inspect from the configured sender, never from
     // caller-supplied input, so this cannot be used as a DNS probe primitive.
     const config = await getEmailConfig(req.app.get('db'));
-    const sender = config?.smtp?.user || config?.smtp?.from || '';
+    const sender = config?.smtp?.username || config?.smtp?.replyTo || config?.smtp?.adminEmail || '';
     const domain = String(sender).includes('@') ? String(sender).split('@').pop().trim().toLowerCase() : '';
 
     if (!domain) {
@@ -1568,15 +1580,40 @@ router.post('/admin/save-smtp', async (req, res) => {
         if (!smtp && !fallbackSmtp && !imap && !enabledTemplates) return res.status(400).json({ success: false, error: 'Email settings are required.' });
         const local = readLocalConfig() || {};
         const data = {};
-        if (smtp) data.smtp = normalizedMailSection('smtp', smtp, local.smtp);
-        if (fallbackSmtp) data.fallbackSmtp = normalizedMailSection('fallbackSmtp', fallbackSmtp, local.fallbackSmtp);
-        if (imap) data.imap = normalizedMailSection('imap', imap, local.imap);
+        const clearSecrets = req.body?.clearSecrets && typeof req.body.clearSecrets === 'object' ? req.body.clearSecrets : {};
+        const environmentSecret = key => String(process.env[key] || '').trim();
+        if (clearSecrets.smtp === true && environmentSecret('SMTP_PASS', 'smtp')) return res.status(409).json({ success: false, code: 'INFRASTRUCTURE_SECRET_CANNOT_CLEAR', error: 'Primary SMTP credentials are deployment-managed and cannot be cleared from the Admin UI.' });
+        if (clearSecrets.fallbackSmtp === true && environmentSecret('FALLBACK_SMTP_PASS', 'fallbackSmtp')) return res.status(409).json({ success: false, code: 'INFRASTRUCTURE_SECRET_CANNOT_CLEAR', error: 'Fallback SMTP credentials are deployment-managed and cannot be cleared from the Admin UI.' });
+        if (clearSecrets.imap === true && environmentSecret('IMAP_PASS', 'imap')) return res.status(409).json({ success: false, code: 'INFRASTRUCTURE_SECRET_CANNOT_CLEAR', error: 'IMAP credentials are deployment-managed and cannot be cleared from the Admin UI.' });
+        if (smtp) {
+            data.smtp = normalizedMailSection('smtp', smtp, local.smtp);
+            if (clearSecrets.smtp === true) { data.smtp.password = ''; data.smtp.passwordCleared = true; }
+        }
+        if (fallbackSmtp) {
+            data.fallbackSmtp = normalizedMailSection('fallbackSmtp', fallbackSmtp, local.fallbackSmtp);
+            if (clearSecrets.fallbackSmtp === true) { data.fallbackSmtp.password = ''; data.fallbackSmtp.passwordCleared = true; }
+        }
+        if (imap) {
+            data.imap = normalizedMailSection('imap', imap, local.imap);
+            if (clearSecrets.imap === true) { data.imap.password = ''; data.imap.passwordCleared = true; }
+        }
         if (enabledTemplates) data.enabledTemplates = normalizeTemplateToggles(enabledTemplates);
 
         const success = writeLocalConfig(data);
         if (success) {
             console.log('[Email Config] Settings & Template toggles saved to', CONFIG_FILE);
-            return res.json({ success: true, message: 'Email settings saved to server.' });
+            const database = req.app.get('db');
+            const firebaseAdmin = req.app.get('firebaseAdmin');
+            if (database && firebaseAdmin?.firestore?.FieldValue) {
+                await database.collection('security_audit_logs').doc().set({
+                    action: 'SMTP_SETTINGS_UPDATED',
+                    actorUid: req.user?.uid || 'unknown',
+                    requestId: res.locals?.requestId || null,
+                    credentialsCleared: Object.entries(clearSecrets).filter(([, value]) => value === true).map(([key]) => key),
+                    createdAt: firebaseAdmin.firestore.FieldValue.serverTimestamp(),
+                });
+            }
+            return res.json({ success: true, message: 'Email settings saved to server.', credentialPolicy: 'EMPTY_PRESERVES_EXPLICIT_CLEAR_REQUIRED' });
         }
         return res.status(500).json({ success: false, error: 'Failed to write config file.' });
     } catch (err) {

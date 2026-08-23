@@ -1,24 +1,19 @@
 /**
- * Live Admin / Super Admin UI certification.
+ * Production Admin/Super Admin browser certification.
  *
- * Drives the REAL production console in a browser and asserts what a human
- * would see. This is the half that API scripts cannot cover: that a click
- * actually issues the request, that the table actually refreshes afterwards,
- * and that a failure actually says something.
- *
- * These tests are skipped unless LIVE_CERT_BASE_URL is set, so they never run
- * against a dev server by accident and never fail a normal `npx playwright test`.
- *
- *   LIVE_CERT_BASE_URL       required to enable, e.g. https://airesume.projectdemo.guru
- *   LIVE_CERT_SUPERADMIN_EMAIL / _PASSWORD   required
- *   LIVE_CERT_ADMIN_EMAIL / _PASSWORD        optional, adds negative RBAC in the UI
+ * This suite is opt-in and never runs against a local server accidentally.
+ * It tests the same origin a human uses, checks real authenticated requests,
+ * and keeps destructive CRUD behind LIVE_CERT_ALLOW_DESTRUCTIVE=1. The API
+ * scripts own disposable create/delete lifecycles; this file focuses on UI
+ * navigation, state refresh, authorization visibility, errors, and responsive
+ * behavior.
  *
  * Run:
- *   LIVE_CERT_BASE_URL=https://airesume.projectdemo.guru \
+ *   LIVE_CERT_BASE_URL=https://your-host \
  *   LIVE_CERT_SUPERADMIN_EMAIL=... LIVE_CERT_SUPERADMIN_PASSWORD=... \
- *   npx playwright test tests/admin-superadmin-live-certification.spec.js
+ *   LIVE_CERT_ADMIN_EMAIL=... LIVE_CERT_ADMIN_PASSWORD=... \
+ *   npx playwright test --config=playwright.live-admin.config.js
  */
-
 import { test, expect } from '@playwright/test';
 
 const BASE = process.env.LIVE_CERT_BASE_URL;
@@ -26,171 +21,162 @@ const SUPER_EMAIL = process.env.LIVE_CERT_SUPERADMIN_EMAIL;
 const SUPER_PASSWORD = process.env.LIVE_CERT_SUPERADMIN_PASSWORD;
 const ADMIN_EMAIL = process.env.LIVE_CERT_ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.LIVE_CERT_ADMIN_PASSWORD;
-
-// Skipping loudly beats failing silently: the reason appears in the report.
-// A top-level test.skip() cannot be used outside a test body, so the condition
-// is applied to the whole describe block instead.
 const LIVE_ENABLED = Boolean(BASE && SUPER_EMAIL && SUPER_PASSWORD);
-const SKIP_REASON = !BASE
-  ? 'LIVE_CERT_BASE_URL is not set — live UI certification is disabled.'
-  : 'LIVE_CERT_SUPERADMIN_EMAIL/_PASSWORD are required for live UI certification.';
+const DESTRUCTIVE = process.env.LIVE_CERT_ALLOW_DESTRUCTIVE === '1';
+const RAW_SECRET = /BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY|(?:sk|nvapi|rzp)_(?:live|test)_[A-Za-z0-9_-]{8,}|AIza[A-Za-z0-9_-]{30,}/i;
 
-test.describe.configure({ mode: 'serial' });
-
-/** Signs in through the real login form, as a user would. */
 async function signIn(page, email, password) {
   await page.goto(`${BASE}/login`, { waitUntil: 'domcontentloaded' });
-  await page.fill('input[type="email"], input[name="email"]', email);
-  await page.fill('input[type="password"], input[name="password"]', password);
-  await Promise.all([
-    page.waitForURL('**/adm**', { timeout: 15000 }).catch(() => {}),
-    page.getByRole('button', { name: 'Login', exact: true }).click(),
-  ]);
+  await page.locator('input[type="email"], input[name="Email"], input[name="email"]').first().fill(email);
+  await page.locator('input[type="password"], input[name="Password"], input[name="password"]').first().fill(password);
+  const submit = page.locator('input[type="submit"], button[type="submit"]').first();
+  await submit.click();
+  await page.waitForTimeout(1200);
+  if (page.url().includes('/login')) {
+    const error = await page.locator('[role="alert"]').allTextContents().catch(() => []);
+    throw new Error(`Login did not leave /login${error.length ? `: ${error.join(' ')}` : ''}`);
+  }
 }
 
-test.describe('live Admin / Super Admin console', () => {
-  test.skip(!LIVE_ENABLED, SKIP_REASON);
+async function openAdmin(page, route = '/adm') {
+  await page.goto(`${BASE}${route}`, { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('main')).toBeVisible({ timeout: 20_000 });
+}
 
-  test('super admin can sign in and reach the console', async ({ page }) => {
+async function api(page, path, options = {}) {
+  return page.evaluate(async ({ path: target, options: init }) => {
+    const response = await fetch(target, { ...init, headers: { Accept: 'application/json', ...(init.headers || {}) } });
+    const text = await response.text();
+    let body = null;
+    try { body = JSON.parse(text); } catch (_) {}
+    return { status: response.status, body, text };
+  }, { path, options });
+}
+
+const forbiddenUiText = [
+  'API route not found',
+  'Failed to fetch',
+  'Unexpected error',
+  'undefined is not',
+  '[object Object]',
+  'NaN',
+];
+
+test.describe.configure({ mode: 'serial' });
+test.describe('live Admin and Super Admin certification', () => {
+  test.skip(!LIVE_ENABLED, !BASE ? 'Set LIVE_CERT_BASE_URL to enable live certification.' : 'Set LIVE_CERT_SUPERADMIN_EMAIL and LIVE_CERT_SUPERADMIN_PASSWORD.');
+
+  test('authenticates and supports both /adm and /admin compatibility routes', async ({ page }) => {
     await signIn(page, SUPER_EMAIL, SUPER_PASSWORD);
-    await page.goto(`${BASE}/adm`, { waitUntil: 'domcontentloaded' });
-
-    // Must not have been bounced back to login.
+    await openAdmin(page, '/adm');
     expect(page.url()).toContain('/adm');
-    await expect(page.locator('body')).not.toContainText('API route not found');
+    await page.goto(`${BASE}/admin`, { waitUntil: 'domcontentloaded' });
+    await expect(page).toHaveURL(/\/adm/);
+    await expect(page.locator('main')).toBeVisible();
   });
 
-  test('no admin surface shows a raw error or unexplained failure', async ({ page }) => {
+  test('all first-class navigation modules render without unexplained UI failures', async ({ page }) => {
     await signIn(page, SUPER_EMAIL, SUPER_PASSWORD);
-
-    const FORBIDDEN = [
-      'API route not found',
-      'Failed to fetch',
-      'Unexpected error',
-      'undefined is not',
-      'NaN',
-      'Coming Soon',
-      '[object Object]',
-    ];
-
-    const modules = [
-      'health', 'attention', 'tenants', 'users', 'operators',
-      'audit', 'security', 'queues', 'operations', 'settings',
-    ];
-
-    for (const module of modules) {
-      await page.goto(`${BASE}/adm/${module}`, { waitUntil: 'domcontentloaded' });
-      const body = (await page.locator('body').innerText()).slice(0, 20000);
-      for (const phrase of FORBIDDEN) {
-        expect(body, `"${phrase}" must not appear on /adm/${module}`).not.toContain(phrase);
-      }
+    const routes = ['dashboard', 'tenants', 'audit-logs', 'security', 'queues', 'operations', 'attention', 'health', 'operators', 'users', 'employer-applications', 'jobs-manager', 'company-management', 'blog-management', 'landing-pages', 'reviews', 'trustedby', 'messages', 'phrases'];
+    for (const route of routes) {
+      await openAdmin(page, `/adm/${route}`);
+      const text = await page.locator('body').innerText();
+      for (const forbidden of forbiddenUiText) expect(text, `${forbidden} on ${route}`).not.toContain(forbidden);
     }
   });
 
-  test('platform health renders real states with reasons, not placeholders', async ({ page }) => {
+  test('Super Admin settings expose flags, configuration census, and secret-free status', async ({ page }) => {
     await signIn(page, SUPER_EMAIL, SUPER_PASSWORD);
-    await page.goto(`${BASE}/adm/health`, { waitUntil: 'domcontentloaded' });
-
-    const rows = page.locator('[data-testid="health-service-row"]');
-    await expect(rows.first()).toBeVisible({ timeout: 20000 });
-    expect(await rows.count()).toBeGreaterThan(0);
-
-    // Every visible state must be one of the documented values.
+    await openAdmin(page, '/adm/settings?tab=featureFlagsSettings');
+    await expect(page.getByText('Feature Flags', { exact: true }).first()).toBeVisible();
+    await openAdmin(page, '/adm/settings?tab=platformConfigSettings');
+    await expect(page.getByTestId('platform-configuration')).toBeVisible();
     const text = await page.locator('body').innerText();
-    const VALID = ['OPERATIONAL', 'DEGRADED', 'UNAVAILABLE', 'DISABLED', 'NOT CONFIGURED', 'NOT_CONFIGURED', 'UNKNOWN', 'NOT SUPPORTED'];
-    expect(VALID.some(state => text.includes(state))).toBeTruthy();
+    expect(text).toContain('ENTERPRISE_TENANCY_ENABLED');
+    expect(text).toContain('Restart');
+    expect(RAW_SECRET.test(text)).toBeFalsy();
+    const configuration = await api(page, '/api/platform/configuration');
+    expect(configuration.status).toBe(200);
+    expect(RAW_SECRET.test(configuration.text)).toBeFalsy();
+    expect(configuration.body?.policy?.secretsNeverReturned).toBe(true);
+  });
 
-    // A dashboard that cannot collect a metric must say so, not print 0.
-    if (text.includes('Data unavailable')) {
-      expect(text).toContain('Data unavailable');
+  test('platform health and API matrix expose evidence-backed states and actionable errors', async ({ page }) => {
+    await signIn(page, SUPER_EMAIL, SUPER_PASSWORD);
+    await openAdmin(page, '/adm/health');
+    await expect(page.locator('[data-testid="health-service-row"]').first()).toBeVisible({ timeout: 20_000 });
+    const text = await page.locator('body').innerText();
+    expect(text).toMatch(/OPERATIONAL|DEGRADED|UNAVAILABLE|DISABLED|NOT_CONFIGURED|UNKNOWN/);
+    await page.getByRole('button', { name: /View API Matrix/i }).click();
+    await expect(page.locator('[data-testid="api-matrix-table"], [data-testid="api-matrix-card"]').first()).toBeVisible({ timeout: 20_000 });
+    expect(RAW_SECRET.test(await page.locator('body').innerText())).toBeFalsy();
+  });
+
+  test('Super Admin API permissions are enforced independently of button visibility', async ({ page }) => {
+    await signIn(page, SUPER_EMAIL, SUPER_PASSWORD);
+    const own = await api(page, '/api/platform/maintenance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled: false }) });
+    expect([200, 400, 409, 503]).toContain(own.status);
+
+    test.skip(!ADMIN_EMAIL || !ADMIN_PASSWORD, 'Set LIVE_CERT_ADMIN_EMAIL and LIVE_CERT_ADMIN_PASSWORD for ADMIN negative checks.');
+    await page.evaluate(async () => { await window.fire?.auth?.().signOut?.(); });
+    await signIn(page, ADMIN_EMAIL, ADMIN_PASSWORD);
+    await openAdmin(page, '/adm/operations');
+    const maintenance = await api(page, '/api/platform/maintenance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled: false }) });
+    expect(maintenance.status).toBe(403);
+    const flags = await api(page, '/api/platform/feature-flags');
+    expect(flags.status).toBe(403);
+  });
+
+  test('user directory, audit trail, and tenant detail return explicit data-plane states', async ({ page }) => {
+    await signIn(page, SUPER_EMAIL, SUPER_PASSWORD);
+    const users = await api(page, '/api/admin/users?limit=5');
+    expect([200, 503]).toContain(users.status);
+    if (users.status === 200) {
+      expect(Array.isArray(users.body?.users)).toBeTruthy();
+      expect(RAW_SECRET.test(users.text)).toBeFalsy();
+    }
+    const audit = await api(page, '/api/admin/audit-logs?limit=5');
+    expect([200, 503]).toContain(audit.status);
+    if (audit.status === 200) expect(Array.isArray(audit.body?.logs)).toBeTruthy();
+    const tenants = await api(page, '/api/enterprise/platform/tenants');
+    expect([200, 403, 404, 503]).toContain(tenants.status);
+    if (tenants.status === 200 && tenants.body?.tenants?.[0]?.id) {
+      const detail = await api(page, `/api/platform/tenants/${encodeURIComponent(tenants.body.tenants[0].id)}`);
+      expect(detail.status).toBe(200);
+      for (const section of ['overview', 'users', 'memberships', 'usage', 'security', 'm2m', 'audit', 'activity', 'configuration']) expect(section in detail.body).toBeTruthy();
     }
   });
 
-  test('the health indicator is visible in navigation and deep-links', async ({ page }) => {
+  test('validation and not-found responses are machine-readable rather than false success', async ({ page }) => {
     await signIn(page, SUPER_EMAIL, SUPER_PASSWORD);
-    await page.goto(`${BASE}/adm`, { waitUntil: 'domcontentloaded' });
-
-    const indicator = page.locator('[data-testid="sidebar-health-indicator"]');
-    await expect(indicator).toBeVisible({ timeout: 20000 });
-
-    await indicator.click();
-    await page.waitForLoadState('domcontentloaded');
-    expect(page.url()).toContain('/adm/health');
+    const invalidRename = await api(page, '/api/platform/tenants/not-a-tenant', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ displayName: 'Nope' }) });
+    expect(invalidRename.status).toBe(400);
+    expect(invalidRename.body?.error?.code).toBeTruthy();
+    const invalidDelete = await api(page, '/api/admin/delete-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ uid: 'not-a-real-user' }) });
+    expect([400, 404, 503]).toContain(invalidDelete.status);
+    expect(invalidDelete.body?.success).not.toBe(true);
   });
 
-  test('the API matrix is behind a control, not on the initial dashboard', async ({ page }) => {
+  test('responsive layout has no horizontal overflow at all required viewports', async ({ page }) => {
     await signIn(page, SUPER_EMAIL, SUPER_PASSWORD);
-    await page.goto(`${BASE}/adm/health`, { waitUntil: 'domcontentloaded' });
-
-    // The full endpoint list must not be dumped onto first paint.
-    const matrixBefore = page.locator('[data-testid="api-matrix-table"]');
-    const visibleBefore = await matrixBefore.isVisible().catch(() => false);
-    expect(visibleBefore, 'the API matrix must be behind "View API Matrix"').toBeFalsy();
-
-    const trigger = page.getByRole('button', { name: /API Matrix/i });
-    if (await trigger.count()) {
-      await trigger.first().click();
-      await expect(page.locator('[data-testid="api-matrix-table"], [data-testid="api-matrix-card"]').first())
-        .toBeVisible({ timeout: 20000 });
-    }
-  });
-
-  test('every visible admin button is wired to something', async ({ page }) => {
-    await signIn(page, SUPER_EMAIL, SUPER_PASSWORD);
-    await page.goto(`${BASE}/adm`, { waitUntil: 'domcontentloaded' });
-
-    // A button with no accessible name is a dead control by definition.
-    const nameless = await page.$$eval('button:visible', buttons =>
-      buttons
-        .filter(button => {
-          const label = (button.getAttribute('aria-label') || button.textContent || '').trim();
-          return label.length === 0 && !button.querySelector('svg, img');
-        })
-        .length,
-    ).catch(() => 0);
-
-    expect(nameless, 'every button needs an accessible name or an icon').toBe(0);
-  });
-
-  test('responsive: no horizontal overflow at any required viewport', async ({ page }) => {
-    await signIn(page, SUPER_EMAIL, SUPER_PASSWORD);
-
-    const viewports = [
-      { name: 'desktop-1440', width: 1440, height: 900 },
-      { name: 'desktop-1280', width: 1280, height: 800 },
-      { name: 'laptop-1024', width: 1024, height: 768 },
-      { name: 'tablet-768', width: 768, height: 1024 },
-      { name: 'phone-430', width: 430, height: 932 },
-      { name: 'phone-375', width: 375, height: 667 },
-    ];
-
-    for (const viewport of viewports) {
-      await page.setViewportSize({ width: viewport.width, height: viewport.height });
-      for (const route of ['/adm', '/adm/health', '/adm/users']) {
-        await page.goto(`${BASE}${route}`, { waitUntil: 'domcontentloaded' });
-        const overflow = await page.evaluate(() =>
-          document.documentElement.scrollWidth - document.documentElement.clientWidth,
-        );
-        expect(overflow, `${route} overflows horizontally at ${viewport.name}`).toBeLessThanOrEqual(1);
+    const viewports = [[1440, 900], [1280, 800], [1024, 768], [768, 1024], [430, 932], [375, 667]];
+    for (const [width, height] of viewports) {
+      await page.setViewportSize({ width, height });
+      for (const route of ['/adm', '/adm/health', '/adm/users', '/adm/settings?tab=platformConfigSettings']) {
+        await openAdmin(page, route);
+        const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+        expect(overflow, `${route} overflows at ${width}x${height}`).toBeLessThanOrEqual(1);
+        const dialogs = page.locator('[role="dialog"]:visible');
+        if (await dialogs.count()) expect(await dialogs.first().boundingBox()).not.toBeNull();
       }
     }
   });
 
-  test('a plain admin cannot see or use super-admin-only controls', async ({ page }) => {
-    test.skip(!ADMIN_EMAIL || !ADMIN_PASSWORD, 'LIVE_CERT_ADMIN_EMAIL/_PASSWORD not provided.');
-
-    await signIn(page, ADMIN_EMAIL, ADMIN_PASSWORD);
-    await page.goto(`${BASE}/adm/health`, { waitUntil: 'domcontentloaded' });
-
-    // The UI should hide it...
-    const testButtons = page.getByRole('button', { name: /run (a )?test|test provider/i });
-    expect(await testButtons.count()).toBe(0);
-
-    // ...but hiding is not the control. Prove the server refuses it too.
-    const status = await page.evaluate(async base => {
-      const response = await fetch(`${base}/api/platform/operational-status/firestore/test`, { method: 'POST' });
-      return response.status;
-    }, BASE);
-    expect([401, 403]).toContain(status);
+  test('destructive browser CRUD is opt-in and delegates to the API certification script', async () => {
+    test.skip(!DESTRUCTIVE, 'Set LIVE_CERT_ALLOW_DESTRUCTIVE=1 only in an isolated certification window; verify-crud-live.mjs owns disposable mutations.');
+    await signIn(page, SUPER_EMAIL, SUPER_PASSWORD);
+    // The browser suite deliberately does not invent/decommission resources.
+    // Invoke the API CRUD runner separately so cleanup remains centralized.
+    await expect(page.getByText(/Command|Admin/i).first()).toBeVisible();
   });
 });

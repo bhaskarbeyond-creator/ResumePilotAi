@@ -79,6 +79,14 @@ const FLAG_DEFINITIONS = {
 
 const FIRESTORE_DOC = 'settings/feature_flags';
 
+function timestampToIso(value) {
+  if (!value) return null;
+  try {
+    const date = typeof value.toDate === 'function' ? value.toDate() : new Date(value);
+    return Number.isFinite(date.getTime()) ? date.toISOString() : null;
+  } catch (_) { return null; }
+}
+
 // In-memory cache. Refreshed on read if stale, and immediately on write.
 let _cache = null;
 let _cacheTime = 0;
@@ -157,8 +165,12 @@ async function getAllFlags(db) {
       value: effectiveValue,
       source,
       ...def,
-      lastChangedAt: override?.changedAt || null,
+      // Environment values are startup-bound even when the same flag supports a
+      // Firestore runtime override. The UI must show the effective restart rule.
+      requiresRestart: source === 'environment' ? true : def.requiresRestart,
+      lastChangedAt: timestampToIso(override?.changedAt),
       lastChangedBy: override?.changedBy || null,
+      auditEvent: override?.changedAt ? 'FEATURE_FLAG_CHANGED' : null,
     };
   }
 
@@ -176,46 +188,51 @@ async function getAllFlags(db) {
  */
 async function setFlagValue(db, admin, flagKey, value, actorUid, requestId) {
   const def = FLAG_DEFINITIONS[flagKey];
-  if (!def) throw new Error(`Unknown feature flag: ${flagKey}`);
-  if (typeof value !== 'boolean') throw new Error('Flag value must be a boolean');
+  if (!def) throw Object.assign(new Error(`Unknown feature flag: ${flagKey}`), { code: 'UNKNOWN_FEATURE_FLAG', status: 400 });
+  if (typeof value !== 'boolean') throw Object.assign(new Error('Flag value must be a boolean'), { code: 'INVALID_FLAG_VALUE', status: 400 });
+  if (!db || !admin?.firestore?.FieldValue) {
+    throw Object.assign(new Error('Feature flag storage is unavailable'), { code: 'FEATURE_FLAGS_UNAVAILABLE', status: 503 });
+  }
+  if (!actorUid) throw Object.assign(new Error('An authenticated actor is required'), { code: 'AUTH_REQUIRED', status: 401 });
 
-  const previousValue = await getFlagValue(db, flagKey);
-
-  const batch = db.batch();
-
-  // Update the flag
-  batch.set(db.doc(FIRESTORE_DOC), {
-    [flagKey]: {
-      value,
-      changedAt: admin.firestore.FieldValue.serverTimestamp(),
-      changedBy: actorUid,
-    },
-  }, { merge: true });
-
-  // Audit trail
-  batch.set(db.collection('security_audit_logs').doc(), {
-    action: 'FEATURE_FLAG_CHANGED',
-    flag: flagKey,
-    previousValue,
-    newValue: value,
-    requiresRestart: def.requiresRestart,
-    actorUid,
-    requestId,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+  let previousValue;
+  await db.runTransaction(async transaction => {
+    const reference = db.doc(FIRESTORE_DOC);
+    const snapshot = await transaction.get(reference);
+    const stored = snapshot.data() || {};
+    const envValue = process.env[flagKey];
+    previousValue = stored[flagKey]?.value === true || stored[flagKey]?.value === false
+      ? stored[flagKey].value
+      : envValue !== undefined ? String(envValue).toLowerCase() === 'true' : def.defaultValue;
+    const auditRef = db.collection('security_audit_logs').doc();
+    transaction.set(reference, {
+      [flagKey]: {
+        value,
+        changedAt: admin.firestore.FieldValue.serverTimestamp(),
+        changedBy: actorUid,
+      },
+    }, { merge: true });
+    transaction.set(auditRef, {
+      action: 'FEATURE_FLAG_CHANGED',
+      flag: flagKey,
+      previousValue,
+      newValue: value,
+      requiresRestart: def.requiresRestart,
+      actorUid,
+      requestId: requestId || null,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
   });
 
-  await batch.commit();
-
-  // Invalidate cache
   _cache = null;
   _cacheTime = 0;
-
   return {
     flag: flagKey,
     value,
     previousValue,
     requiresRestart: def.requiresRestart,
     description: def.description,
+    auditEvent: 'FEATURE_FLAG_CHANGED',
   };
 }
 

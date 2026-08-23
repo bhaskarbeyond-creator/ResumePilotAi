@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { getAllUsers, getUserById, setUserAdminStatus, makeUserAdminByEmail, deleteUserByAdmin, updateUserSubscription, toggleUserSuspension, mergeUserAccounts, bulkMergeDuplicateUsers, getMergedUserBackups, restoreMergedUserAccount } from '../../../firestore/dbOperations';
 import fire from '../../../conf/fire';
+import { useAdminSession } from '../AdminContext';
 import { Navigate } from 'react-router-dom';
 import { FaUsers, FaSearch, FaCrown, FaUser, FaEnvelope, FaCheck, FaShieldAlt, FaUserPlus, FaSpinner, FaTimes, FaTrashAlt, FaEdit, FaBan, FaCheckCircle, FaLock, FaExclamationTriangle, FaLink, FaHistory, FaUndo, FaLayerGroup } from 'react-icons/fa';
 
@@ -37,6 +38,8 @@ class UsersManager extends Component {
             selectedSubscriptionEnd: null,
             selectedIsA: false,
             selectedSuspended: false,
+            statusFilter: 'all',
+            roleFilter: 'all',
         };
         this.createData = this.createData.bind(this);
         this.showTable = this.showTable.bind(this);
@@ -163,6 +166,10 @@ class UsersManager extends Component {
     }
 
     async handleToggleAdmin(userId, email, currentIsA, confirmed = false) {
+        if (!this.props.isSuperAdmin) {
+            this.setState({ statusMessage: { type: 'error', text: 'Only a Super Admin can change platform administrator roles.' } });
+            return;
+        }
         const newIsA = !currentIsA;
         if (!newIsA && this.isSelfAccount(userId, email)) {
             this.setState({ statusMessage: { type: 'error', text: 'You cannot revoke your own Admin status to ensure one admin remains active.' } });
@@ -200,6 +207,14 @@ class UsersManager extends Component {
     }
 
     async handleSetRole(userId, email, currentRole, targetRole, confirmed = false) {
+        if (!this.props.isSuperAdmin) {
+            this.setState({ statusMessage: { type: 'error', text: 'Only a Super Admin can change platform operator roles.' } });
+            return;
+        }
+        if (targetRole === 'SUPER_ADMIN') {
+            this.setState({ statusMessage: { type: 'error', text: 'SUPER_ADMIN is never assignable from the Admin UI.' } });
+            return;
+        }
         if (!confirmed) {
             this.setState({ pendingUserAction: {
                 title: `Assign ${targetRole} role?`,
@@ -298,6 +313,10 @@ class UsersManager extends Component {
 
     async handleAddAdminByEmail(e, confirmed = false) {
         e?.preventDefault?.();
+        if (!this.props.isSuperAdmin) {
+            this.setState({ statusMessage: { type: 'error', text: 'Only a Super Admin can grant platform administrator access.' } });
+            return;
+        }
         const email = this.state.newAdminEmail.trim();
         if (!email) return;
         if (!confirmed) {
@@ -330,6 +349,10 @@ class UsersManager extends Component {
     }
 
     async handleConfirmDelete() {
+        if (!this.props.isSuperAdmin) {
+            this.setState({ statusMessage: { type: 'error', text: 'Only a Super Admin can permanently delete a user account.' }, userToDelete: null });
+            return;
+        }
         if (!this.state.userToDelete) return;
         if (this.isSelfAccount(this.state.userToDelete.id, this.state.userToDelete.email)) {
             this.setState({
@@ -458,6 +481,11 @@ class UsersManager extends Component {
     }
 
     render() {
+        const visibleRows = (this.state.rows || []).filter(row => {
+            const statusMatches = this.state.statusFilter === 'all' || (this.state.statusFilter === 'active' && !row.suspended) || (this.state.statusFilter === 'suspended' && row.suspended);
+            const roleMatches = this.state.roleFilter === 'all' || row.role === this.state.roleFilter;
+            return statusMatches && roleMatches;
+        });
         return (
             <div className="min-h-screen bg-slate-50 p-4 sm:p-6">
                 {this.state.isRedirectToUser && (
@@ -885,6 +913,11 @@ class UsersManager extends Component {
                             <span>Search User</span>
                         </button>
                     </div>
+                    <div className="mt-3 flex flex-wrap items-center gap-2" role="group" aria-label="Filter users">
+                        <label className="text-xs font-semibold text-slate-600">Status<select aria-label="Filter users by status" value={this.state.statusFilter} onChange={event => this.setState({ statusFilter: event.target.value })} className="ml-2 rounded-lg border border-slate-200 px-2 py-1.5 text-xs"><option value="all">All</option><option value="active">Active</option><option value="suspended">Suspended</option></select></label>
+                        <label className="text-xs font-semibold text-slate-600">Role<select aria-label="Filter users by role" value={this.state.roleFilter} onChange={event => this.setState({ roleFilter: event.target.value })} className="ml-2 rounded-lg border border-slate-200 px-2 py-1.5 text-xs"><option value="all">All</option><option value="USER">User</option><option value="SUPPORT">Support</option><option value="ADMIN">Admin</option><option value="SUPER_ADMIN">Super Admin</option></select></label>
+                        <span className="text-[11px] text-slate-400">{this.state.rows ? `${visibleRows.length} of ${this.state.rows.length} loaded` : 'No directory loaded'}</span>
+                    </div>
                 </div>
 
                 {/* Users Table Section */}
@@ -934,8 +967,8 @@ class UsersManager extends Component {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-slate-200">
-                                    {this.state.rows?.length === 0 && <tr><td colSpan="5" className="px-6 py-10 text-center text-sm text-slate-500">No users matched this view.</td></tr>}
-                                    {this.state.rows?.map((row, index) => {
+                                    {visibleRows.length === 0 && <tr><td colSpan="5" className="px-6 py-10 text-center text-sm text-slate-500">No users matched this view.</td></tr>}
+                                    {visibleRows.map((row, index) => {
                                         const isSelf = this.isSelfAccount(row.id, row.email);
                                         const isDuplicate = row.email && row.email !== 'Not Provided' && this.getDuplicateEmails().has(row.email.toLowerCase().trim());
                                         return (
@@ -1015,7 +1048,7 @@ class UsersManager extends Component {
                                                             <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-lg shadow-xl z-50 py-1 overflow-hidden" style={{ top: '100%' }}>
                                                                 <button
                                                                     type="button"
-                                                                    onClick={() => { this.toggleActionMenu(null); this.redirectToUser(row.id, row.email, row.subscription, row.rawElement?.membershipsEnds, row.isA, row.role, row.suspended); }}
+                                                                    onClick={() => { this.toggleActionMenu(null); this.redirectToUser(row.id, row.email, row.subscription, row.rawElement?.membershipEnds, row.isA, row.role, row.suspended); }}
                                                                     className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center space-x-2"
                                                                 >
                                                                     <FaEdit className="w-3.5 h-3.5 text-slate-400" />
@@ -1101,14 +1134,14 @@ class UsersManager extends Component {
                                                                     </>
                                                                 ) : (
                                                                     <>
-                                                                        <button
+                                                                        {this.props.isSuperAdmin && <button
                                                                             type="button"
                                                                             onClick={() => { this.toggleActionMenu(null); this.handleToggleAdmin(row.id, row.email, row.isA); }}
                                                                             className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center space-x-2"
                                                                         >
                                                                             <FaShieldAlt className={`w-3.5 h-3.5 ${row.isA ? 'text-red-500' : 'text-slate-400'}`} />
                                                                             <span>{row.isA ? 'Revoke Admin' : 'Make Admin'}</span>
-                                                                        </button>
+                                                                        </button>}
                                                                         <button
                                                                             type="button"
                                                                             onClick={() => { this.toggleActionMenu(null); this.handleToggleSuspension(row.id, row.email, row.suspended); }}
@@ -1117,14 +1150,14 @@ class UsersManager extends Component {
                                                                             {row.suspended ? <FaCheckCircle className="w-3.5 h-3.5" /> : <FaBan className="w-3.5 h-3.5" />}
                                                                             <span>{row.suspended ? 'Activate User' : 'Suspend User'}</span>
                                                                         </button>
-                                                                        <button
+                                                                        {this.props.isSuperAdmin && <button
                                                                             type="button"
                                                                             onClick={() => { this.toggleActionMenu(null); this.setState({ userToDelete: row }); }}
                                                                             className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
                                                                         >
                                                                             <FaTrashAlt className="w-3.5 h-3.5" />
                                                                             <span>Delete User</span>
-                                                                        </button>
+                                                                        </button>}
                                                                     </>
                                                                 )}
                                                             </div>
@@ -1144,4 +1177,7 @@ class UsersManager extends Component {
     }
 }
 
-export default UsersManager;
+export default function UsersManagerWithSession(props) {
+    const { isSuperAdmin } = useAdminSession();
+    return <UsersManager {...props} isSuperAdmin={isSuperAdmin === true} />;
+}

@@ -32,8 +32,15 @@ const ExportPdfSettings = () => {
         e.preventDefault();
         setSaving(true);
         try {
-            await saveSystemSettings('exportPdf', exportConfig);
-            setStatusMessage({ type: 'success', text: 'PDF Exporter settings saved successfully!' });
+            // Backend URL and Chromium path are deployment-owned infrastructure
+            // bindings. They are intentionally excluded from the runtime settings
+            // mutation and are visible through the Platform Configuration census.
+            const editable = {
+                renderTimeout: exportConfig.renderTimeout,
+                paperFormat: exportConfig.paperFormat,
+            };
+            await saveSystemSettings('exportPdf', editable);
+            setStatusMessage({ type: 'success', text: 'PDF render preferences saved. Infrastructure bindings remain deployment-managed.' });
         } catch (error) {
             setStatusMessage({ type: 'error', text: `Failed to save settings: ${error.message}` });
         } finally {
@@ -75,29 +82,21 @@ const ExportPdfSettings = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
                         <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                            Application Website Domain
+                            Public render origin
                         </label>
-                        <input
-                            type="text"
-                            name="websiteDomain"
-                            value={exportConfig.websiteDomain}
-                            onChange={handleChange}
-                            placeholder="ai-resume-builder.local / mydomain.com"
-                            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                        />
+                        <div className="w-full rounded-md border border-dashed border-slate-300 bg-slate-100 px-3 py-2 text-sm text-slate-600">
+                            Same-origin deployment host
+                        </div>
+                        <p className="mt-1 text-[11px] text-slate-500">The public host is deployment-owned and cannot be changed from the Admin UI.</p>
                     </div>
                     <div>
                         <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
                             Backend Export Service URL
                         </label>
-                        <input
-                            type="text"
-                            name="backendExportUrl"
-                            value={exportConfig.backendExportUrl}
-                            onChange={handleChange}
-                            placeholder="Same-origin /api"
-                            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                        />
+                        <div className="w-full rounded-md border border-dashed border-slate-300 bg-slate-100 px-3 py-2 text-sm text-slate-600">
+                            Same-origin <code className="font-mono text-xs">/api</code> · deployment-managed
+                        </div>
+                        <p className="mt-1 text-[11px] text-slate-500">This binding is read-only. Change it only through the deployment configuration.</p>
                     </div>
                 </div>
 
@@ -132,16 +131,12 @@ const ExportPdfSettings = () => {
                     </div>
                     <div>
                         <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                            Chromium Executable Path (Optional)
+                            Chromium Executable Path
                         </label>
-                        <input
-                            type="text"
-                            name="chromiumPath"
-                            value={exportConfig.chromiumPath}
-                            onChange={handleChange}
-                            placeholder="/snap/bin/chromium"
-                            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                        />
+                        <div className="w-full rounded-md border border-dashed border-slate-300 bg-slate-100 px-3 py-2 text-sm text-slate-600">
+                            Deployment-managed · inspect Platform Config / PDF Export health
+                        </div>
+                        <p className="mt-1 text-[11px] text-slate-500">The application never accepts an executable path from the browser.</p>
                     </div>
                 </div>
             </div>

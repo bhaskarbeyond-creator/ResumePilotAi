@@ -31,11 +31,13 @@
     "test:enterprise:visuals": "node tests/capture-enterprise-visuals.mjs",
     "test:enterprise:all": "npm run test:enterprise && npm run test:interview && npm run test:security && npm run test:product",
     "certify:identity": "node scripts/verify-production-identity.mjs",
+    "inventory:api": "node scripts/generate-api-inventory.mjs",
     "certify:api": "node scripts/verify-api-inventory-live.mjs",
     "certify:health": "node scripts/verify-platform-health-live.mjs",
-    "certify:crud": "node scripts/verify-admin-superadmin-live.mjs",
+    "certify:admin": "node scripts/verify-admin-superadmin-live.mjs",
+    "certify:crud": "node scripts/verify-crud-live.mjs",
     "certify:backup": "node scripts/verify-backup-rollback.mjs",
-    "certify:ui": "playwright test tests/admin-superadmin-live-certification.spec.js",
+    "certify:ui": "playwright test --config=playwright.live-admin.config.js",
     "certify:all": "npm run certify:identity && npm run certify:health && npm run certify:api && npm run certify:crud && npm run certify:ui"
   },
   "dependencies": {

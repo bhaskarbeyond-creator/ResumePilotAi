@@ -17,7 +17,7 @@
  * Environment
  *   EXPECTED_SHA    required. The full git SHA you tested and deployed.
  *   PROD_BASE_URL   optional. Defaults to the production origin.
- *   EXPECTED_API_COUNT optional. Defaults to 249 (see docs/FINAL_API_INVENTORY.md).
+ *   EXPECTED_API_COUNT optional. If supplied, it must match the deployed matrix; otherwise the script records the live count without inventing a baseline.
  *
  * Exit codes: 0 verified, 1 mismatch/failure, 2 could not be verified.
  */
@@ -38,7 +38,7 @@ const { ok, values, missing } = readEnv({
     description: 'Full git SHA that was tested and deployed, e.g. export EXPECTED_SHA=$(git rev-parse HEAD)',
   },
   PROD_BASE_URL: { default: DEFAULT_BASE_URL, description: 'Production origin' },
-  EXPECTED_API_COUNT: { default: '251', description: 'Authoritative reachable-endpoint count' },
+  EXPECTED_API_COUNT: { description: 'Optional expected endpoint count from the tested release manifest' },
 });
 
 if (!ok) {
@@ -48,7 +48,7 @@ if (!ok) {
 
 const BASE = values.PROD_BASE_URL.replace(/\/$/, '');
 const EXPECTED_SHA = values.EXPECTED_SHA.trim();
-const EXPECTED_API_COUNT = Number(values.EXPECTED_API_COUNT);
+const EXPECTED_API_COUNT = values.EXPECTED_API_COUNT === undefined ? null : Number(values.EXPECTED_API_COUNT);
 
 const recorder = new Recorder(SCRIPT, { base: BASE, expectedSha: EXPECTED_SHA });
 
@@ -183,11 +183,13 @@ async function main() {
       reason: 'endpoint is correctly protected; run verify-api-inventory-live.mjs with credentials to compare counts',
     });
   } else if (matrix.status === 200 && typeof matrix.json?.total === 'number') {
-    if (matrix.json.total === EXPECTED_API_COUNT) {
-      recorder.pass('API surface size matches the census', { total: matrix.json.total });
+    if (EXPECTED_API_COUNT === null) {
+      recorder.info('API surface size observed', { total: matrix.json.total, reason: 'EXPECTED_API_COUNT was not supplied; no baseline was invented.' });
+    } else if (matrix.json.total === EXPECTED_API_COUNT) {
+      recorder.pass('API surface size matches the supplied release manifest', { total: matrix.json.total });
     } else {
-      recorder.fail('API surface size matches the census', {
-        reason: `production exposes ${matrix.json.total} endpoints, census says ${EXPECTED_API_COUNT}`,
+      recorder.fail('API surface size matches the supplied release manifest', {
+        reason: `production exposes ${matrix.json.total} endpoints, supplied manifest says ${EXPECTED_API_COUNT}`,
         remediation: 'Reconcile docs/FINAL_API_INVENTORY.md against the deployed build.',
       });
     }

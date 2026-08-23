@@ -29,7 +29,8 @@ test('billing journey remains server-authoritative from plan through entitlement
   assert.match(backend, /createProviderOrderRecord/);
   assert.match(backend, /activateVerifiedOrder/);
   assert.match(backend, /Only an active payment can be refunded/);
-  assert.match(operations, /source: 'payment_orders'/);
+  assert.match(operations, /\/api\/admin\/payment-orders/);
+  assert.match(backend, /source === 'payment_orders'/);
   assert.doesNotMatch(operations.match(/getAllAdminTransactions[\s\S]*?refundOrderTransaction/)?.[0] || '', /membership === 'Premium'/);
 });
 
