@@ -320,10 +320,6 @@ export default function PlatformOperations() {
   );
 }
 
-function confirmDeleteAnnouncementComponentState() {} // placeholder
-
-
-
 function Stat({ label, value }) {
   // formatMetric keeps a real 0 but turns null/undefined into
   // "Data unavailable", so a missing sample can never read as a measured zero.

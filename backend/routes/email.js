@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const { assertPublicNetworkTarget } = require('../security/network');
 const { enterpriseConsoleUrl, resolvePublicAppOrigin, sanitizeAbsoluteHttpUrl, assertNoForbiddenEmailHost } = require('../services/publicAppUrl');
+const { requireRecentAdminAuthentication } = require('../security/auth');
 
 // In-memory Outbox Log Store (persisted to DB if available)
 let emailLogsStore = [];
@@ -1266,6 +1267,27 @@ async function dispatchMailWithFallback(config, mailOptions) {
 
 // --- API ENDPOINTS ---
 
+function recentAuthForMailSecretMutation(req, res, next) {
+    const input = req.body || {};
+    const clear = Object.values(input.clearSecrets || {}).some(value => value === true);
+    const suppliedPassword = ['smtp', 'fallbackSmtp', 'imap']
+        .map(section => input[section]?.password)
+        .some(value => String(value || '').trim() !== '');
+    if (!clear && !suppliedPassword) return next();
+    // Let malformed requests reach the normal schema validator so callers get
+    // the precise 400 response; no write occurs before validation. A valid
+    // secret-bearing request still requires the Super Admin recent-auth gate.
+    const encryptedTransport = section => {
+        const value = input[section];
+        if (!value || typeof value !== 'object' || !value.password) return true;
+        const encryption = String(value.encryption || '').toLowerCase();
+        const port = Number(value.port);
+        return (section === 'imap' ? encryption === 'ssl' && port === 993 : ['ssl', 'tls', 'starttls'].includes(encryption));
+    };
+    if (!['smtp', 'fallbackSmtp', 'imap'].every(encryptedTransport)) return next();
+    return requireRecentAdminAuthentication(req, res, next);
+}
+
 // 0. Circuit Breaker Control & Status Endpoints
 router.get('/admin/circuit-breaker-status', (req, res) => {
     const now = Date.now();
@@ -1280,7 +1302,7 @@ router.get('/admin/circuit-breaker-status', (req, res) => {
     });
 });
 
-router.post('/admin/reset-circuit-breaker', (req, res) => {
+router.post('/admin/reset-circuit-breaker', requireRecentAdminAuthentication, (req, res) => {
     primaryConsecutiveFailures = 0;
     primaryCircuitBreakerUntil = 0;
     res.json({ success: true, message: 'Circuit breaker reset successfully! Primary SMTP restored to Operational state.' });
@@ -1313,7 +1335,12 @@ router.get('/admin/custom-templates', (req, res) => {
 });
 
 // 1. Test Outbound SMTP Socket Connection (Supports type='smtp' and type='fallback_smtp')
-router.post('/admin/test-connection', async (req, res) => {
+function recentAuthForEmailTest(req, res, next) {
+    if (!['smtp', 'fallback_smtp'].includes(req.body?.type)) return next();
+    return requireRecentAdminAuthentication(req, res, next);
+}
+
+router.post('/admin/test-connection', recentAuthForEmailTest, async (req, res) => {
     const { type } = req.body;
 
     if (type === 'fallback_smtp') {
@@ -1454,7 +1481,7 @@ router.get('/admin/deliverability', async (req, res) => {
     // Derive the domain to inspect from the configured sender, never from
     // caller-supplied input, so this cannot be used as a DNS probe primitive.
     const config = await getEmailConfig(req.app.get('db'));
-    const sender = config?.smtp?.username || config?.smtp?.replyTo || config?.smtp?.adminEmail || '';
+    const sender = config?.smtp?.username || config?.smtp?.user || config?.smtp?.from || '';
     const domain = String(sender).includes('@') ? String(sender).split('@').pop().trim().toLowerCase() : '';
 
     if (!domain) {
@@ -1574,7 +1601,7 @@ router.get('/admin/deliverability', async (req, res) => {
 });
 
 // Save validated SMTP/IMAP settings while blank secret fields preserve every configured source.
-router.post('/admin/save-smtp', async (req, res) => {
+router.post('/admin/save-smtp', recentAuthForMailSecretMutation, async (req, res) => {
     try {
         const { smtp, fallbackSmtp, imap, enabledTemplates } = req.body || {};
         if (!smtp && !fallbackSmtp && !imap && !enabledTemplates) return res.status(400).json({ success: false, error: 'Email settings are required.' });
@@ -1623,7 +1650,7 @@ router.post('/admin/save-smtp', async (req, res) => {
 });
 
 // 2. Test Inbound IMAP Connection Socket
-router.post('/admin/test-imap', async (req, res) => {
+router.post('/admin/test-imap', requireRecentAdminAuthentication, async (req, res) => {
     try {
         const stored = (await getEmailConfig(req.app.get('db'))).imap || {};
         const imapConfig = {

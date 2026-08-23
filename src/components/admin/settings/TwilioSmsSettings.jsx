@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { sendSmsNotification } from '../../../firestore/dbOperations';
 import { fetchAdminWithReauth } from '../../../services/adminReauth';
+import { useAdminSession } from '../AdminContext';
 import { FaCommentAlt, FaCheck, FaTimes, FaSpinner, FaPhoneAlt, FaEye, FaEyeSlash, FaPaperPlane } from 'react-icons/fa';
 
 const TwilioSmsSettings = () => {
+    const { isSuperAdmin } = useAdminSession();
     const [twilioConfig, setTwilioConfig] = useState({
         accountSid: '',
         authToken: '',
@@ -109,7 +111,7 @@ const TwilioSmsSettings = () => {
                 <p className={`mb-4 text-xs font-semibold ${credentialStatus.configured ? 'text-emerald-700' : 'text-amber-700'}`}>
                     {credentialStatus.configured ? `Gateway credential configured${credentialStatus.accountSidSuffix ? ` (Account SID ending ${credentialStatus.accountSidSuffix})` : ''}.` : 'Gateway credential is not fully configured.'}
                 </p>
-                <label className="mb-4 flex items-center gap-2 text-xs font-semibold text-slate-700"><input type="checkbox" checked={clearCredentials} onChange={event => setClearCredentials(event.target.checked)} /> Clear stored Twilio Account SID and Auth Token on save</label>
+                <label className="mb-4 flex items-center gap-2 text-xs font-semibold text-slate-700"><input type="checkbox" checked={clearCredentials} disabled={!isSuperAdmin} onChange={event => setClearCredentials(event.target.checked)} /> Clear stored Twilio Account SID and Auth Token on save</label>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
@@ -121,7 +123,8 @@ const TwilioSmsSettings = () => {
                             name="accountSid"
                             value={twilioConfig.accountSid}
                             onChange={handleChange}
-                            placeholder={credentialStatus.configured ? 'Configured — enter SID only when rotating both credentials' : 'ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'}
+                            disabled={!isSuperAdmin}
+                            placeholder={isSuperAdmin ? (credentialStatus.configured ? 'Configured — enter both credentials to rotate' : 'ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx') : 'Super Admin only — status is shown'}
                             className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-red-500 focus:outline-none"
                         />
                     </div>
@@ -135,7 +138,8 @@ const TwilioSmsSettings = () => {
                                 name="authToken"
                                 value={twilioConfig.authToken}
                                 onChange={handleChange}
-                                placeholder={credentialStatus.configured ? 'Configured — leave blank to preserve' : 'Enter Twilio Auth Token'}
+                                disabled={!isSuperAdmin}
+                                placeholder={isSuperAdmin ? (credentialStatus.configured ? 'Configured — leave blank to preserve' : 'Enter Twilio Auth Token') : 'Super Admin only — status is shown'}
                                 className="w-full pl-3 pr-10 py-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-red-500 focus:outline-none"
                             />
                             <button
@@ -184,7 +188,7 @@ const TwilioSmsSettings = () => {
             <div className="flex items-center justify-between pt-2">
                 <button
                     type="button"
-                    disabled={testing || !credentialStatus.configured}
+                    disabled={testing || !credentialStatus.configured || !isSuperAdmin}
                     onClick={async () => {
                         const testNumber = prompt('Enter recipient mobile phone number with country code (e.g. +14155552671 or +919876543210):');
                         if (!testNumber) return;
@@ -204,15 +208,15 @@ const TwilioSmsSettings = () => {
                     }}
                     className="px-4 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-md flex items-center space-x-1.5 shadow-xs cursor-pointer">
                     {testing ? <FaSpinner className="animate-spin text-slate-600" /> : <FaPaperPlane className="text-indigo-600 w-3 h-3" />}
-                    <span>Send Test SMS</span>
+                    <span>{isSuperAdmin ? 'Send Test SMS' : 'Super Admin test only'}</span>
                 </button>
                 <button
                     type="submit"
-                    disabled={saving || !settingsLoaded}
+                    disabled={saving || !settingsLoaded || !isSuperAdmin}
                     className="px-5 py-2 text-sm font-medium text-white bg-slate-800 hover:bg-slate-900 rounded-md flex items-center space-x-2 shadow-sm cursor-pointer"
                 >
                     {saving && <FaSpinner className="animate-spin text-white" />}
-                    <span>Save SMS Settings</span>
+                    <span>{isSuperAdmin ? 'Save SMS Settings' : 'Super Admin only'}</span>
                 </button>
             </div>
         </form>

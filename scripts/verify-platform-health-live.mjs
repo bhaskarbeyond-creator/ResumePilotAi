@@ -19,7 +19,7 @@
  *   FIREBASE_API_KEY     required
  *   SUPERADMIN_EMAIL / SUPERADMIN_PASSWORD  required
  *   ADMIN_EMAIL / ADMIN_PASSWORD            optional, checks role projection
- *   EXPECTED_API_COUNT   optional, defaults to 249
+ *   EXPECTED_API_COUNT   optional; when omitted, the live matrix is reconciled only with its own enumerated list
  *
  * Exit codes: 0 consistent, 1 an inconsistency found, 2 could not be verified.
  */

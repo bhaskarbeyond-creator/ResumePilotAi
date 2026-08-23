@@ -15,6 +15,7 @@
  */
 
 const { FLAG_DEFINITIONS, getAllFlags } = require('./featureFlagService');
+const { selectPaymentPair } = require('./paymentAdmin');
 
 const FLAG_DESCRIPTIONS = Object.freeze({
   ENTERPRISE_TENANCY_ENABLED: {
@@ -198,7 +199,7 @@ function timestampToIso(value) {
   } catch (_) { return null; }
 }
 
-function sourceForEnv(env, key, stored, storedPaths = []) {
+function sourceForEnv(env, key, storedPaths = []) {
   if (storedPaths.some(value => value !== undefined && value !== null && value !== '')) return 'firestore';
   if (env[key] !== undefined && String(env[key]).trim() !== '') return 'environment';
   return 'default';
@@ -217,7 +218,7 @@ function envItem(env, key, label, category, secret, requiresRestart) {
     category,
     value,
     configured,
-    source: sourceForEnv(env, key, null),
+    source: sourceForEnv(env, key),
     secret,
     editable: false,
     owner: 'INFRASTRUCTURE_ONLY',
@@ -330,7 +331,6 @@ async function getPlatformConfiguration({ db = null, env = process.env } = {}) {
 
   const payment = docs.payment || {};
   const publicConfig = docs.public || {};
-  const subscriptions = publicConfig.subscriptions || docs.subscriptions || {};
   const providers = {
     razorpay: { label: 'Razorpay', paths: ['keySecret', 'keyId'], env: ['RAZORPAY_KEY_SECRET', 'RAZORPAY_KEY_ID'], ui: '/adm/settings?tab=subscriptionsSettings' },
     stripe: { label: 'Stripe', paths: ['secretKey'], env: ['STRIPE_SECRET'], ui: '/adm/settings?tab=subscriptionsSettings' },
@@ -340,14 +340,20 @@ async function getPlatformConfiguration({ db = null, env = process.env } = {}) {
   };
   for (const [key, meta] of Object.entries(providers)) {
     const doc = payment[key] || {};
-    const storedValues = meta.paths.map(path => storedField(doc, [path]));
-    const envValues = meta.env.map(name => env[name]);
-    const configured = configuredValue(...storedValues, ...envValues);
-    const complete = meta.paths.every(path => configuredValue(storedField(doc, [path]), env[meta.env[meta.paths.indexOf(path)]]));
+    const requiresId = meta.paths.length > 1;
+    const pair = selectPaymentPair({
+      envId: requiresId ? env[meta.env[1]] : '',
+      envSecret: env[meta.env[0]],
+      storedId: requiresId ? storedField(doc, [meta.paths[1]]) : '',
+      storedSecret: storedField(doc, [meta.paths[0]]),
+      requiresId,
+    });
+    const configured = Boolean(pair.secret && (!requiresId || pair.id));
+    const hasAnyCredential = Boolean(pair.id || pair.secret);
     groups.integrations[`payment.${key}`] = storedItem(`payment.${key}`, meta.label, 'payments', {
       configured,
-      source: sourceForEnv(env, meta.env[0], payment, storedValues),
-      value: complete ? 'CONFIGURED' : configured ? 'PARTIALLY_CONFIGURED' : 'NOT_CONFIGURED',
+      source: pair.source,
+      value: configured ? 'CONFIGURED' : hasAnyCredential ? 'PARTIALLY_CONFIGURED' : 'NOT_CONFIGURED',
       secret: false,
       editable: true,
       runtime: 'per-request',
@@ -395,12 +401,21 @@ async function getPlatformConfiguration({ db = null, env = process.env } = {}) {
   const adminSocial = docs.admin?.socialAuth || {};
   const legacySocial = docs.legacy?.socialAuth || {};
   for (const [provider, envPrefix] of [['github', 'GITHUB'], ['linkedin', 'LINKEDIN']]) {
-    const clientId = storedField(oauthDoc, [`${provider}.clientId`]) || storedField(adminSocial, [`${provider}ClientId`]) || env[`${envPrefix}_CLIENT_ID`];
-    const clientSecret = storedField(oauthDoc, [`${provider}.clientSecret`]) || storedField(adminSocial, [`${provider}ClientSecret`]) || storedField(legacySocial, [`${provider}ClientSecret`]) || env[`${envPrefix}_CLIENT_SECRET`];
+    const storedClientId = storedField(oauthDoc, [`${provider}.clientId`]) || storedField(adminSocial, [`${provider}ClientId`]) || storedField(legacySocial, [`${provider}ClientId`]);
+    const storedClientSecret = storedField(oauthDoc, [`${provider}.clientSecret`]) || storedField(adminSocial, [`${provider}ClientSecret`]) || storedField(legacySocial, [`${provider}ClientSecret`]);
+    const envClientId = env[`${envPrefix}_CLIENT_ID`];
+    const envClientSecret = env[`${envPrefix}_CLIENT_SECRET`];
+    const environmentComplete = Boolean(envClientId && envClientSecret);
+    const storedComplete = Boolean(storedClientId && storedClientSecret);
+    const source = environmentComplete ? 'environment' : storedComplete ? 'firestore' : envClientId || envClientSecret ? 'environment-partial' : storedClientId || storedClientSecret ? 'firestore-partial' : 'none';
+    const clientId = source.startsWith('environment') ? envClientId : storedClientId;
+    const clientSecret = source.startsWith('environment') ? envClientSecret : storedClientSecret;
+    const configured = Boolean(clientId && clientSecret);
+    const partial = source.endsWith('partial');
     groups.integrations[`oauth.${provider}`] = storedItem(`oauth.${provider}`, `${provider} OAuth`, 'oauth', {
-      configured: configuredValue(clientId, clientSecret),
-      source: oauthDoc[provider] ? 'firestore' : (env[`${envPrefix}_CLIENT_ID`] || env[`${envPrefix}_CLIENT_SECRET`] ? 'environment' : 'none'),
-      value: configuredValue(clientId, clientSecret) && clientId && clientSecret ? 'CONFIGURED' : configuredValue(clientId, clientSecret) ? 'PARTIALLY_CONFIGURED' : 'NOT_CONFIGURED',
+      configured,
+      source,
+      value: configured ? 'CONFIGURED' : partial ? 'PARTIALLY_CONFIGURED' : 'NOT_CONFIGURED',
       secret: true,
       editable: true,
       runtime: 'per-request',
@@ -415,28 +430,35 @@ async function getPlatformConfiguration({ db = null, env = process.env } = {}) {
   const smtp = docs.admin?.smtp || docs.legacy?.smtp || {};
   const fallback = docs.admin?.fallbackSmtp || docs.legacy?.fallbackSmtp || {};
   const twilio = docs.admin?.twilio || docs.legacy?.twilio || {};
+  const smtpPair = selectPaymentPair({ envId: env.SMTP_USER, envSecret: env.SMTP_PASS, storedId: smtp.username, storedSecret: smtp.password });
+  const fallbackPair = selectPaymentPair({ envId: env.FALLBACK_SMTP_USER, envSecret: env.FALLBACK_SMTP_PASS, storedId: fallback.username, storedSecret: fallback.password });
+  const twilioPair = selectPaymentPair({ envId: env.TWILIO_ACCOUNT_SID, envSecret: env.TWILIO_AUTH_TOKEN, storedId: twilio.accountSid, storedSecret: twilio.authToken });
+  const smtpConfigured = Boolean(smtpPair.id && smtpPair.secret && (smtp.host || env.SMTP_HOST));
+  const fallbackConfigured = Boolean(fallbackPair.id && fallbackPair.secret);
+  const twilioSender = String(twilio.fromPhoneNumber || env.TWILIO_FROM_PHONE || '').trim();
+  const twilioConfigured = Boolean(twilioPair.id && twilioPair.secret && twilioSender);
   groups.integrations['smtp.primary'] = storedItem('smtp.primary', 'Primary SMTP', 'communications', {
-    configured: configuredValue(smtp.username, smtp.password, env.SMTP_USER, env.SMTP_PASS),
-    source: configuredValue(smtp.username, smtp.password) ? 'firestore' : configuredValue(env.SMTP_USER, env.SMTP_PASS) ? 'environment' : 'none',
-    value: configuredValue(smtp.username, smtp.password, env.SMTP_USER, env.SMTP_PASS) && configuredValue(smtp.host, env.SMTP_HOST) ? 'CONFIGURED' : 'NOT_CONFIGURED',
+    configured: smtpConfigured,
+    source: smtpPair.source,
+    value: smtpConfigured && (smtpPair.source.startsWith('environment') ? configuredValue(env.SMTP_HOST) : configuredValue(smtp.host || env.SMTP_HOST)) ? 'CONFIGURED' : smtpPair.source.endsWith('partial') ? 'PARTIALLY_CONFIGURED' : 'NOT_CONFIGURED',
     secret: true, editable: true, runtime: 'per-request', requiresRestart: false,
     description: 'Outbound mail configuration. Empty password fields preserve the current server credential.',
     impact: 'Controls verification, reset, notification, invoice, and alert delivery.',
     dependencies: ['SMTP relay', 'notification outbox'], auditEvent: 'SMTP_SETTINGS_UPDATED',
   });
   groups.integrations['smtp.fallback'] = storedItem('smtp.fallback', 'Fallback SMTP', 'communications', {
-    configured: configuredValue(fallback.username, fallback.password, env.FALLBACK_SMTP_USER, env.FALLBACK_SMTP_PASS),
-    source: configuredValue(fallback.username, fallback.password) ? 'firestore' : configuredValue(env.FALLBACK_SMTP_USER, env.FALLBACK_SMTP_PASS) ? 'environment' : 'none',
-    value: fallback.enabled === true ? (configuredValue(fallback.username, fallback.password, env.FALLBACK_SMTP_USER, env.FALLBACK_SMTP_PASS) ? 'CONFIGURED' : 'NOT_CONFIGURED') : 'DISABLED',
+    configured: fallbackConfigured,
+    source: fallbackPair.source,
+    value: fallback.enabled === true ? (fallbackConfigured ? 'CONFIGURED' : fallbackPair.source.endsWith('partial') ? 'PARTIALLY_CONFIGURED' : 'NOT_CONFIGURED') : 'DISABLED',
     secret: true, editable: true, runtime: 'per-request', requiresRestart: false,
     description: 'Optional fallback relay used when the primary provider is unavailable.',
     impact: 'Provides a second delivery path; it is not a substitute for a healthy primary relay.',
     dependencies: ['Fallback SMTP relay'], auditEvent: 'SMTP_SETTINGS_UPDATED',
   });
   groups.integrations['twilio'] = storedItem('twilio', 'Twilio SMS', 'communications', {
-    configured: configuredValue(twilio.accountSid, twilio.authToken, env.TWILIO_ACCOUNT_SID, env.TWILIO_AUTH_TOKEN),
-    source: configuredValue(twilio.accountSid, twilio.authToken) ? 'firestore' : configuredValue(env.TWILIO_ACCOUNT_SID, env.TWILIO_AUTH_TOKEN) ? 'environment' : 'none',
-    value: twilio.enableSmsAlerts === true ? (configuredValue(twilio.accountSid, twilio.authToken, env.TWILIO_ACCOUNT_SID, env.TWILIO_AUTH_TOKEN) ? 'CONFIGURED' : 'NOT_CONFIGURED') : 'DISABLED',
+    configured: twilioConfigured,
+    source: twilioPair.source,
+    value: twilio.enableSmsAlerts === true ? (twilioConfigured ? 'CONFIGURED' : twilioPair.source.endsWith('partial') ? 'PARTIALLY_CONFIGURED' : 'NOT_CONFIGURED') : 'DISABLED',
     secret: true, editable: true, runtime: 'per-request', requiresRestart: false,
     description: 'SMS alert configuration. Auth tokens are write-only.', impact: 'Controls SMS security and operational notifications.', dependencies: ['Twilio Programmable Messaging'], auditEvent: 'TWILIO_SETTINGS_UPDATED',
   });

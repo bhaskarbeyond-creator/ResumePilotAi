@@ -42,10 +42,10 @@ const createdTenants = [];
 const createdUsers = [];
 
 const authHeaders = session => ({ Authorization: `Bearer ${session.idToken}`, 'Content-Type': 'application/json' });
-async function call(session, method, route, body) {
+async function call(session, method, route, body, extraHeaders = {}) {
   return probe(`${BASE}${route}`, {
     method,
-    headers: session ? authHeaders(session) : { 'Content-Type': 'application/json' },
+    headers: { ...(session ? authHeaders(session) : { 'Content-Type': 'application/json' }), ...extraHeaders },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
 }
@@ -53,6 +53,39 @@ function bodyCode(response) { return response.json?.error?.code || response.json
 function assertStatus(label, response, expected, reason) {
   if (expected.includes(response.status)) recorder.pass(label, { status: response.status, code: bodyCode(response) });
   else recorder.fail(label, { status: response.status, expected, reason: reason || `Expected ${expected.join('/')} but received ${response.status}` });
+}
+
+async function assertAuditEvent(session, label, needle, tenantId = null, expectedAction = null) {
+  const matches = entry => {
+    const text = JSON.stringify(entry).toLowerCase();
+    return text.includes(String(needle).toLowerCase()) && (!expectedAction || String(entry.action || '').toUpperCase() === expectedAction.toUpperCase());
+  };
+  let matched = null;
+  let lastStatus = null;
+  for (let attempt = 0; attempt < 6 && !matched; attempt += 1) {
+    const adminAudit = await call(session, 'GET', `/api/admin/audit-logs?limit=100&search=${encodeURIComponent(needle)}`);
+    lastStatus = adminAudit.status;
+    if (adminAudit.status === 200) matched = (adminAudit.json?.logs || []).find(matches);
+    if (!matched) {
+      const security = await call(session, 'GET', '/api/platform/security-events?limit=100');
+      lastStatus = security.status;
+      if (security.status === 200) matched = (security.json?.events || []).find(matches);
+    }
+    if (!matched && tenantId) {
+      const tenantAudit = await call(session, 'GET', '/api/enterprise/audit?limit=100', undefined, { 'X-Tenant-Id': tenantId });
+      lastStatus = tenantAudit.status;
+      if (tenantAudit.status === 200) matched = (tenantAudit.json?.events || []).find(matches);
+    }
+    if (!matched && attempt < 5) await new Promise(resolve => setTimeout(resolve, 250));
+  }
+  if (matched) {
+    const flat = JSON.stringify(matched).toLowerCase();
+    const useful = Boolean(matched.action && (matched.createdAt || matched.occurredAt || flat.includes('createdat') || flat.includes('occurredat')));
+    if (useful) recorder.pass(`audit event read-back: ${label}`, { action: matched.action, status: lastStatus });
+    else recorder.fail(`audit event read-back: ${label}`, { reason: 'Matched record is missing action or timestamp fields.' });
+  } else {
+    recorder.fail(`audit event read-back: ${label}`, { reason: `No audit event referenced ${needle}. Last response status: ${lastStatus}` });
+  }
 }
 
 async function signIn(label, email, password) {
@@ -75,6 +108,10 @@ async function runRbac(superAdmin, admin) {
   assertStatus('ADMIN cannot mutate Super Admin maintenance control', adminWrite, [403], 'Maintenance changes are Super Admin-only.');
   const adminFlag = await call(admin, 'GET', '/api/platform/feature-flags');
   assertStatus('ADMIN cannot read Super Admin feature-flag control surface', adminFlag, [403], 'Feature flag control is Super Admin-only.');
+  const adminConfig = await call(admin, 'GET', '/api/platform/configuration');
+  assertStatus('ADMIN cannot read the Super Admin configuration census', adminConfig, [403], 'The full configuration census is Super Admin-only.');
+  const adminPayments = await call(admin, 'GET', '/api/platform/payment-settings');
+  assertStatus('ADMIN cannot read payment credential status', adminPayments, [403], 'Payment credential status is Super Admin-only.');
   const superFlags = await call(superAdmin, 'GET', '/api/platform/feature-flags');
   assertStatus('SUPER_ADMIN can read feature-flag control surface', superFlags, [200], 'A valid Super Admin must be able to inspect the governed flags.');
 }
@@ -96,6 +133,7 @@ async function runTenantCrud(superAdmin) {
   if (!tenantId) { recorder.fail('tenant CREATE returned an id', { reason: 'No tenant id was returned; cleanup cannot be safely targeted.' }); return; }
   createdTenants.push({ id: tenantId, name });
   recorder.pass('tenant CREATE returned a disposable id', { tenantId });
+  await assertAuditEvent(superAdmin, 'tenant CREATE', tenantId, tenantId, 'TENANT_PROVISIONED');
 
   const listed = await call(superAdmin, 'GET', '/api/enterprise/platform/tenants');
   if (listed.status === 200 && JSON.stringify(listed.json).includes(tenantId)) recorder.pass('tenant CREATE persisted and is visible on read-back', { tenantId });
@@ -113,17 +151,20 @@ async function runTenantCrud(superAdmin) {
   const renamed = await call(superAdmin, 'PATCH', `/api/platform/tenants/${encodeURIComponent(tenantId)}`, { displayName: `${name}-renamed` });
   assertStatus('tenant RENAME returns the persisted name', renamed, [200]);
   if (renamed.status === 200 && renamed.json?.tenant?.displayName !== `${name}-renamed`) recorder.fail('tenant RENAME read-back matches', { reason: 'Response did not contain the renamed displayName.' });
+  await assertAuditEvent(superAdmin, 'tenant RENAME', tenantId, tenantId, 'PLATFORM_TENANT_RENAMED');
 
   for (const [verb, action, expectedState] of [['suspend', 'SUSPEND', 'SUSPENDED'], ['reactivate', 'REACTIVATE', 'ACTIVE']]) {
     const response = await call(superAdmin, 'POST', `/api/enterprise/platform/tenants/${encodeURIComponent(tenantId)}/${verb}`);
     assertStatus(`tenant ${action} returns a state`, response, [200]);
     if (response.status === 200 && response.json?.tenant?.lifecycleState !== expectedState) recorder.fail(`tenant ${action} read-back is ${expectedState}`, { reason: `Got ${response.json?.tenant?.lifecycleState}` });
     else if (response.status === 200) recorder.pass(`tenant ${action} read-back is ${expectedState}`);
+    await assertAuditEvent(superAdmin, `tenant ${action}`, tenantId, tenantId, `PLATFORM_TENANT_${expectedState}`);
   }
 
   const retired = await call(superAdmin, 'POST', `/api/platform/tenants/${encodeURIComponent(tenantId)}/decommission`, { reason: 'Disposable live CRUD certification record' });
   assertStatus('tenant DECOMMISSION is a controlled lifecycle transition', retired, [200], 'A created disposable tenant is safe to retire through the retention lifecycle.');
   if (retired.status === 200 && retired.json?.tenant?.lifecycleState === 'DELETING') recorder.pass('tenant DECOMMISSION persisted as DELETING');
+  await assertAuditEvent(superAdmin, 'tenant DECOMMISSION', tenantId, tenantId, 'DECOMMISSION_PLATFORM_TENANT');
 }
 
 async function createTestUser(superAdmin) {
@@ -141,17 +182,25 @@ async function runUserCrud(superAdmin) {
   const uid = await createTestUser(superAdmin);
   if (!uid) { recorder.blocked('user CRUD read-back', { reason: 'Set TEST_USER_EMAIL and TEST_USER_PASSWORD to create a disposable user fixture.' }); return; }
   const initial = await call(superAdmin, 'GET', `/api/admin/users/${encodeURIComponent(uid)}`);
+  if (initial.status === 404 && bodyCode(initial) === 'USER_NOT_FOUND') {
+    recorder.blocked('user CRUD profile fixture', { reason: 'Firebase Auth created the account but no product profile exists. Create the disposable profile through the approved signup/bootstrap flow before rerunning user CRUD.' });
+    return;
+  }
   assertStatus('user CREATE is visible in authoritative directory', initial, [200]);
+  if (initial.status !== 200) return;
   const initialUser = initial.json?.user || {};
   const suspended = await call(superAdmin, 'PATCH', `/api/admin/users/${encodeURIComponent(uid)}`, { suspended: true, expectedSuspended: false });
   assertStatus('user SUSPEND is server-authorized', suspended, [200]);
+  await assertAuditEvent(superAdmin, 'user SUSPEND', uid, null, 'USER_ADMIN_UPDATE');
   const suspendedRead = await call(superAdmin, 'GET', `/api/admin/users/${encodeURIComponent(uid)}`);
   if (suspendedRead.status === 200 && suspendedRead.json?.user?.suspended === true) recorder.pass('user SUSPEND persisted on read-back');
   else recorder.fail('user SUSPEND persisted on read-back', { status: suspendedRead.status, reason: 'Disabled state was not visible in Firebase Auth-backed read.' });
   const active = await call(superAdmin, 'PATCH', `/api/admin/users/${encodeURIComponent(uid)}`, { suspended: false, expectedSuspended: true });
   assertStatus('user ACTIVATE is server-authorized', active, [200]);
+  await assertAuditEvent(superAdmin, 'user ACTIVATE', uid, null, 'USER_ADMIN_UPDATE');
   const role = await call(superAdmin, 'PATCH', `/api/admin/users/${encodeURIComponent(uid)}`, { role: 'SUPPORT', expectedRole: initialUser.role || 'USER' });
   assertStatus('user role assignment is server-authorized', role, [200]);
+  await assertAuditEvent(superAdmin, 'user role assignment', uid, null, 'USER_ADMIN_UPDATE');
   const roleRead = await call(superAdmin, 'GET', `/api/admin/users/${encodeURIComponent(uid)}`);
   if (roleRead.status === 200 && roleRead.json?.user?.role === 'SUPPORT') recorder.pass('user role assignment persisted on read-back');
   else recorder.fail('user role assignment persisted on read-back', { status: roleRead.status, reason: 'Firebase custom claim did not appear in the subsequent read.' });

@@ -77,10 +77,10 @@ const authHeaders = session => ({
   'Content-Type': 'application/json',
 });
 
-async function call(session, method, route, body) {
+async function call(session, method, route, body, extraHeaders = {}) {
   return probe(`${BASE}${route}`, {
     method,
-    headers: session ? authHeaders(session) : { 'Content-Type': 'application/json' },
+    headers: { ...(session ? authHeaders(session) : { 'Content-Type': 'application/json' }), ...extraHeaders },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
 }
@@ -109,14 +109,14 @@ async function assertServerSideRbac(label, method, route, body, sessions) {
     denied.push({ role, status: response.status });
   }
 
-  const leaks = denied.filter(entry => entry.status > 0 && entry.status < 400);
-  if (leaks.length === 0) {
+  const invalid = denied.filter(entry => entry.status === 0 || (entry.role === 'anonymous' ? ![401, 403].includes(entry.status) : entry.status !== 403));
+  if (invalid.length === 0) {
     recorder.pass(`RBAC enforced server-side: ${label}`, { attempts: denied });
   } else {
     recorder.fail(`RBAC enforced server-side: ${label}`, {
-      reason: `${leaks.map(l => l.role).join(', ')} were allowed through`,
+      reason: `${invalid.map(l => `${l.role}=HTTP ${l.status}`).join(', ')} did not return the expected authorization response`,
       attempts: denied,
-      remediation: 'Add or repair the server-side authorization check. Never rely on the UI hiding the control.',
+      remediation: 'Add or repair the server-side authorization check. Never rely on the UI hiding the control, and do not treat a 5xx as an authorization pass.',
     });
   }
 }
@@ -129,51 +129,47 @@ async function assertServerSideRbac(label, method, route, body, sessions) {
  * Confirms a mutation produced a server-side audit record. Looks the action up
  * by the disposable resource name so it cannot match an unrelated event.
  */
-async function assertAuditRecord(session, label, needle) {
-  let response;
-  let match;
-  // Audit middleware writes after the HTTP response is committed. Give the
-  // read-back a short bounded consistency window rather than racing the write
-  // and reporting a false failure.
-  for (let attempt = 0; attempt < 6; attempt += 1) {
-    response = await call(session, 'GET', `/api/admin/audit-logs?limit=50&search=${encodeURIComponent(needle)}`);
-    if (!response.ok) {
-      recorder.blocked(`audit record written: ${label}`, { reason: response.error });
-      return;
+async function assertAuditRecord(session, label, needle, { tenantId = null, expectedAction = null } = {}) {
+  const matches = entry => {
+    const text = JSON.stringify(entry).toLowerCase();
+    return text.includes(String(needle).toLowerCase())
+      && (!expectedAction || String(entry.action || entry.type || '').toUpperCase() === expectedAction.toUpperCase());
+  };
+  let match = null;
+  let lastStatus = null;
+  for (let attempt = 0; attempt < 6 && !match; attempt += 1) {
+    const adminAudit = await call(session, 'GET', `/api/admin/audit-logs?limit=100&search=${encodeURIComponent(needle)}`);
+    lastStatus = adminAudit.status;
+    if (adminAudit.status === 200) match = (adminAudit.json?.logs || []).find(matches);
+    if (!match) {
+      const security = await call(session, 'GET', '/api/platform/security-events?limit=100');
+      lastStatus = security.status;
+      if (security.status === 200) match = (security.json?.events || []).find(matches);
     }
-    if (response.status !== 200) {
-      recorder.blocked(`audit record written: ${label}`, { reason: `audit query returned HTTP ${response.status}` });
-      return;
+    if (!match && tenantId) {
+      const tenantAudit = await call(session, 'GET', `/api/enterprise/audit?limit=100`, undefined, { 'X-Tenant-Id': tenantId });
+      lastStatus = tenantAudit.status;
+      if (tenantAudit.status === 200) match = (tenantAudit.json?.events || []).find(matches);
     }
-    const entries = response.json?.logs || response.json?.entries || response.json?.items || [];
-    match = entries.find(entry => JSON.stringify(entry).toLowerCase().includes(String(needle).toLowerCase()));
-    if (match) break;
-    if (attempt < 5) await new Promise(resolve => setTimeout(resolve, 250));
+    if (!match && attempt < 5) await new Promise(resolve => setTimeout(resolve, 250));
   }
-
   if (!match) {
     recorder.fail(`audit record written: ${label}`, {
-      reason: `no audit entry references ${needle}`,
-      remediation: 'Ensure recordAdminAuditLog runs for this mutation.',
+      reason: `no audit entry references ${needle}; last query status ${lastStatus}`,
+      remediation: 'Ensure the mutation writes a durable Admin/security/tenant audit event before certification.',
     });
     return;
   }
-
-  // The record has to be useful, not merely present. The API names its
-  // timestamps `createdAt`/`occurredAt`; requiring a literal `timestamp` key
-  // would reject a valid audit record for the wrong reason.
   const flat = JSON.stringify(match).toLowerCase();
-  const missing = [];
-  if (!match.actorUid && !match.actorEmail && !flat.includes('actor')) missing.push('actor');
-  if (!match.action && !match.type) missing.push('action');
-  if (!match.createdAt && !match.occurredAt && !flat.includes('createdat') && !flat.includes('occurredat')) missing.push('createdAt/occurredAt');
-  if (missing.length) {
-    recorder.fail(`audit record written: ${label}`, { reason: `record is missing ${missing.join(', ')}` });
+  const hasActor = Boolean(match.actorUid || match.actorEmail || match.principalId || flat.includes('actor'));
+  const hasAction = Boolean(match.action || match.type);
+  const hasTime = Boolean(match.createdAt || match.occurredAt || flat.includes('createdat') || flat.includes('occurredat'));
+  if (!hasActor || !hasAction || !hasTime) {
+    recorder.fail(`audit record written: ${label}`, { reason: 'record is missing actor, action, or timestamp fields' });
   } else {
     recorder.pass(`audit record written: ${label}`, { action: match.action || match.type });
   }
 }
-
 /* ------------------------------------------------------------------ *
  * Domain flows
  * ------------------------------------------------------------------ */
@@ -281,7 +277,7 @@ async function verifyTenantLifecycle(superAdmin, _sessions) {
     if (reactivate.status < 400) recorder.pass('tenant reactivate', { tenantId });
     else recorder.fail('tenant reactivate', { reason: `HTTP ${reactivate.status}`, tenantId });
 
-    await assertAuditRecord(superAdmin, 'tenant lifecycle', tenantId);
+    await assertAuditRecord(superAdmin, 'tenant lifecycle', tenantId, { tenantId });
   } finally {
     await cleanupTenant(superAdmin, tenantId, name);
   }
@@ -323,7 +319,7 @@ async function verifyOperatorRbac(superAdmin, sessions) {
     uid: 'zz-cert-nonexistent-uid',
     role: 'SUPER_ADMIN',
   });
-  if (escalation.status >= 400) {
+  if ([400, 403].includes(escalation.status)) {
     recorder.pass('SUPER_ADMIN cannot be granted via the operators API', { status: escalation.status });
   } else {
     recorder.fail('SUPER_ADMIN cannot be granted via the operators API', {

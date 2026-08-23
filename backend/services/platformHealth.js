@@ -16,6 +16,7 @@
 const os = require('os');
 const fs = require('fs');
 const { enterpriseFeatureEnabledAsync } = require('../enterprise/featureFlags');
+const { selectPaymentPair } = require('./paymentAdmin');
 
 /** Operational states surfaced to the Admin console. */
 const STATE = Object.freeze({
@@ -664,7 +665,7 @@ async function buildServices(app) {
   } else {
     const deadLetters = outboxStats.available ? outboxStats.deadLetter : null;
     let emailState = STATE.OPERATIONAL;
-    let emailReason = `SMTP credentials are configured for ${smtp.host}:${smtp.port} over ${smtp.encryption}. No dead-letter deliveries were found in the inspected outbox sample.`;
+    let emailReason = `SMTP credentials are configured for ${smtp.host}:${smtp.port} over ${smtp.encryption}. No dead-letter deliveries were found in the inspected outbox sample; an SMTP handshake is not claimed until the explicit test runs.`;
     let emailCategory = null;
     if (!smtp.credentialed) {
       emailState = smtp.partial ? STATE.DEGRADED : STATE.NOT_CONFIGURED;
@@ -778,7 +779,7 @@ async function buildServices(app) {
   for (const descriptor of oauthDescriptors) {
     const provider = oauth[descriptor.key];
     let state = STATE.OPERATIONAL;
-    let reason = 'Client credentials are configured and the provider is enabled, so the redirect flow is available.';
+    let reason = 'Complete client credentials are configured and the provider is enabled. The read-only collector does not perform an external OAuth handshake.';
     let configuration = CONFIG.CONFIGURED;
     let category = null;
     if (!provider.adminEnabled) {
@@ -821,7 +822,7 @@ async function buildServices(app) {
   for (const [key, provider] of Object.entries(payments)) {
     let state = STATE.OPERATIONAL;
     let configuration = CONFIG.CONFIGURED;
-    let reason = `Credentials are configured (${provider.environment} environment) and the gateway is enabled for checkout.`;
+    let reason = `Complete credentials are configured for the ${provider.environment} environment and the gateway is enabled for checkout. Provider connectivity is not claimed until an explicit test or transaction succeeds.`;
     let category = null;
     if (!provider.adminEnabled) {
       state = STATE.DISABLED;
@@ -859,6 +860,7 @@ async function buildServices(app) {
       affectedUiModules: ['/plans', '/adm/settings?tab=subscriptionsSettings'],
       metrics: {
         credentialsConfigured: provider.credentialed,
+        credentialSource: provider.source,
         gatewayEnabled: provider.adminEnabled,
         environment: provider.environment,
         webhookSecretConfigured: provider.webhook === undefined ? null : provider.webhook,
@@ -869,8 +871,14 @@ async function buildServices(app) {
 
   const twilio = docData(adminConfigDoc)?.twilio || {};
   const twilioLegacy = docData(legacySystemDoc)?.twilio || {};
-  const twilioCredentialed = truthy(twilio.accountSid || process.env.TWILIO_ACCOUNT_SID || twilioLegacy.accountSid)
-    && truthy(twilio.authToken || process.env.TWILIO_AUTH_TOKEN || twilioLegacy.authToken);
+  const twilioPair = selectPaymentPair({
+    envId: process.env.TWILIO_ACCOUNT_SID,
+    envSecret: process.env.TWILIO_AUTH_TOKEN,
+    storedId: twilio.accountSid || twilioLegacy.accountSid,
+    storedSecret: twilio.authToken || twilioLegacy.authToken,
+  });
+  const twilioSender = truthy(twilio.fromPhoneNumber || process.env.TWILIO_FROM_PHONE || twilioLegacy.fromPhoneNumber);
+  const twilioCredentialed = Boolean(twilioPair.id && twilioPair.secret && twilioSender);
   const twilioEnabled = twilio.enableSmsAlerts !== undefined ? twilio.enableSmsAlerts === true : twilioLegacy.enableSmsAlerts === true;
   services.push(service({
     id: 'twilio-sms',
@@ -885,7 +893,7 @@ async function buildServices(app) {
     reason: !twilioEnabled
       ? 'SMS alerts are switched off in Admin → Settings → Twilio SMS, so no message is dispatched.'
       : (twilioCredentialed
-        ? 'Twilio credentials and a sender number are configured and SMS alerts are enabled.'
+        ? 'Twilio credentials and a sender number are configured and SMS alerts are enabled. This read-only collector does not send a message.'
         : 'SMS alerts are enabled but the Twilio Account SID, Auth Token, or sender number is missing.'),
     dependency: 'Twilio Programmable Messaging',
     retryable: false,
@@ -896,7 +904,7 @@ async function buildServices(app) {
     affectedFeatures: ['SMS security alerts'],
     affectedApis: ['/api/send-sms'],
     affectedUiModules: ['/adm/settings?tab=twilioSmsSettings'],
-    metrics: { credentialsConfigured: twilioCredentialed, smsAlertsEnabled: twilioEnabled },
+    metrics: { credentialsConfigured: twilioCredentialed, credentialSource: twilioPair.source, senderConfigured: twilioSender, smsAlertsEnabled: twilioEnabled },
     lastCheckedAt: checkedAt,
   }));
 
@@ -967,7 +975,7 @@ async function buildServices(app) {
     enabled: configuredAi.length > 0,
     configuration: configuredAi.length > 0 ? CONFIG.CONFIGURED : CONFIG.NOT_CONFIGURED,
     reason: configuredAi.length > 0
-      ? `${configuredAi.length} of ${aiProviders.length} supported AI providers hold a server-side API key.`
+      ? `${configuredAi.length} of ${aiProviders.length} supported AI providers hold a server-side API key. Provider reachability is not claimed until an explicit test or generation succeeds.`
       : 'No AI provider API key is configured, so generation endpoints fall back to deterministic non-AI behaviour or return 503.',
     dependency: 'Third-party AI inference APIs',
     retryable: true,
@@ -1630,15 +1638,18 @@ async function runServiceTest(app, serviceId) {
   }
 
   // ai-providers: configuration reachability only; no paid inference call is made.
-  const configured = ['GEMINI_API_KEY', 'OPENAI_API_KEY', 'NVIDIA_API_KEY', 'GROQ_API_KEY', 'OPENROUTER_API_KEY', 'DEEPSEEK_API_KEY']
-    .filter(name => truthy(process.env[name]));
+  const { loadProviderConfiguration } = require('./aiRuntime');
+  const configuration = await loadProviderConfiguration(db, process.env);
+  const configured = Object.entries(configuration.providers || {})
+    .filter(([, provider]) => truthy(provider?.key))
+    .map(([provider]) => provider);
   return {
     serviceId,
     passed: configured.length > 0,
     latencyMs: 0,
     detail: configured.length > 0
-      ? `${configured.length} provider key(s) are present in the backend environment. No billable inference call was made by this test.`
-      : 'No AI provider key is present in the backend environment.',
+      ? `${configured.length} provider credential(s) are available to the server runtime (${configured.join(', ')}). No billable inference call was made by this test.`
+      : 'No AI provider credential is available to the server runtime.',
     errorCategory: configured.length > 0 ? null : 'CONFIGURATION_MISSING',
   };
 }

@@ -6,6 +6,7 @@ const {
   resolveWriteOnlySecret,
   paymentCredentialStatus,
   maskWriteOnlySecret,
+  getPaymentSettingsProjection,
 } = require('../services/paymentAdmin');
 
 test('payment secret lifecycle preserves blank and masked reload values', () => {
@@ -24,4 +25,19 @@ test('payment status exposes only configuration state and a non-reversible mask'
   assert.equal(status.masked, '••••1234');
   assert.doesNotMatch(JSON.stringify(status), /secret-value/);
   assert.equal(maskWriteOnlySecret(''), '');
+});
+
+test('payment projection reads legacy identifiers without mixing incomplete sources or returning secrets', async () => {
+  const docs = {
+    'data/public_config': { subscriptions: { razorpayKeyId: '' } },
+    'settings/payment_providers': { razorpay: { keySecret: 'stored-secret-value' }, paypal: { clientId: 'paypal-client', clientSecret: 'paypal-secret-value' } },
+    'data/subscriptions': { razorpayKeyId: 'rzp_test_legacy', razorpayKeySecret: 'legacy-secret-value' },
+  };
+  const db = { collection(name) { return { doc(id) { return { async get() { const value = docs[`${name}/${id}`]; return { exists: Boolean(value), data: () => value }; } }; } }; } };
+  const projection = await getPaymentSettingsProjection(db, { RAZORPAY_KEY_ID: 'rzp_test_env_only', RAZORPAY_KEY_SECRET: '', PAYPAL_CLIENT_ID: '', PAYPAL_CLIENT_SECRET: '' });
+  assert.equal(projection.publicKeys.razorpayKeyId, 'rzp_test_legacy');
+  assert.equal(projection.configuredProviders.razorpay, true);
+  assert.equal(projection.configuredProviders.paypal, true);
+  assert.equal(projection.credentialSources.razorpay, 'firestore');
+  assert.doesNotMatch(JSON.stringify(projection), /stored-secret-value|legacy-secret-value|paypal-secret-value/);
 });

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import fire from '../../../conf/fire';
+import { useAdminSession } from '../AdminContext';
 import { FaFlag, FaSpinner, FaCheck, FaTimes, FaExclamationTriangle, FaRedo, FaServer, FaShieldAlt, FaCubes, FaCog } from 'react-icons/fa';
 
 const CATEGORY_LABELS = {
@@ -10,6 +11,7 @@ const CATEGORY_LABELS = {
 };
 
 export default function FeatureFlagsSettings() {
+  const { isSuperAdmin } = useAdminSession();
   const [flags, setFlags] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -49,6 +51,10 @@ export default function FeatureFlagsSettings() {
   };
 
   const handleToggle = (flagKey, currentValue, flag) => {
+    if (!isSuperAdmin) {
+      showNotification('error', 'Only Super Admin can change platform feature flags.');
+      return;
+    }
     const nextValue = !currentValue;
     const verb = nextValue ? 'Enable' : 'Disable';
 
@@ -123,7 +129,7 @@ export default function FeatureFlagsSettings() {
             <FaFlag className="text-indigo-600" /> Feature Flags
           </h2>
           <p className="text-xs text-slate-500 mt-1">
-            Platform-wide feature gates. Changes are audited. Flags marked "Requires Restart" need a server restart to take effect.
+            Platform-wide feature gates. Changes are audited. Flags marked "Requires Restart" need a server restart to take effect. {isSuperAdmin ? 'Changes are available to this Super Admin session.' : 'Feature flag values are restricted to Super Admin.'}
           </p>
         </div>
         <button onClick={loadFlags} className="text-slate-400 hover:text-slate-600 p-2" title="Refresh">
@@ -199,7 +205,7 @@ export default function FeatureFlagsSettings() {
                   <td className="px-4 py-3 text-center">
                     <button
                       onClick={() => handleToggle(key, flag.value, flag)}
-                      disabled={isPending}
+                      disabled={isPending || !isSuperAdmin}
                       aria-label={`${flag.value ? 'Disable' : 'Enable'} ${key}`}
                       aria-pressed={flag.value}
                       data-testid={`feature-flag-${key}`}

@@ -9,6 +9,7 @@ import {
 } from 'react-icons/fa';
 import { SiNvidia } from 'react-icons/si';
 import useConfirmDialog from '../../../hooks/useConfirmDialog';
+import { useAdminSession } from '../AdminContext';
 
 const SUPPORTED_AI_PROVIDERS = ['gemini', 'nvidia', 'openai', 'groq', 'openrouter', 'deepseek'];
 const PROVIDER_KEY_FIELDS = { gemini: 'geminiApiKey', nvidia: 'nvidiaApiKey', openai: 'openaiApiKey', groq: 'groqApiKey', openrouter: 'openrouterApiKey', deepseek: 'deepseekApiKey' };
@@ -22,6 +23,7 @@ const RECOMMENDED_NVIDIA_MODELS = [
 ];
 
 const AiSettings = () => {
+    const { isSuperAdmin } = useAdminSession();
     const { confirm, confirmationDialog } = useConfirmDialog();
     const [aiConfig, setAiConfig] = useState({
         provider: 'gemini',
@@ -295,6 +297,10 @@ const AiSettings = () => {
     };
 
     const handleFetchNvidiaModels = async () => {
+        if (!isSuperAdmin) {
+            setCardMessage('nvidia', 'error', 'Only Super Admin can fetch provider models.');
+            return;
+        }
         setFetchingNvidiaModels(true);
         try {
             const res = await fetchAdminAiModels({ provider: 'nvidia', apiKey: aiConfig.nvidiaApiKey });
@@ -326,6 +332,10 @@ const AiSettings = () => {
     };
 
     const saveSettings = async () => {
+        if (!isSuperAdmin) {
+            setGlobalMessage({ type: 'error', text: 'Only Super Admin can change AI provider settings. Admin can review the server-side status without editing credentials.' });
+            return false;
+        }
         if (loadFailed) { setGlobalMessage({ type: 'error', text: 'Reload AI settings successfully before saving to avoid overwriting unknown state.' }); return false; }
         setSaving(true);
         try {
@@ -368,6 +378,10 @@ const AiSettings = () => {
     };
 
     const testSpecificProvider = async (targetProvider) => {
+        if (!isSuperAdmin) {
+            setCardMessage(targetProvider, 'error', 'Only Super Admin can run provider connectivity tests.');
+            return;
+        }
         setTestingProvider(targetProvider);
         setCardMessage(targetProvider, null, null);
         const keyFields = PROVIDER_KEY_FIELDS;
@@ -625,6 +639,7 @@ const AiSettings = () => {
                                     name="nvidiaApiKey"
                                     value={aiConfig.nvidiaApiKey}
                                     onChange={handleChange}
+                                    disabled={!isSuperAdmin}
                                     placeholder={configuredProviders.nvidia ? 'Configured securely — enter only to replace' : 'nvapi-...'}
                                     className="w-full pl-3 pr-10 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                                 />
@@ -636,7 +651,7 @@ const AiSettings = () => {
                                     {showKeys.nvidia ? <FaEyeSlash className="w-3.5 h-3.5" /> : <FaEye className="w-3.5 h-3.5" />}
                                 </button>
                             </div>
-                            {configuredProviders.nvidia && (
+                            {configuredProviders.nvidia && isSuperAdmin && (
                                 <div className="mt-1 text-[11px] text-emerald-700 font-medium flex items-center gap-1">
                                     <FaCheck className="w-3 h-3 text-emerald-600 flex-shrink-0" />
                                     <span>API key configured &amp; active on server (masked for security)</span><button type="button" className="ml-2 font-bold underline" onClick={() => clearProviderSecret('nvidia')} aria-label="Clear nvidia API key">Clear</button>
@@ -650,7 +665,7 @@ const AiSettings = () => {
                                 <button
                                     type="button"
                                     onClick={handleFetchNvidiaModels}
-                                    disabled={fetchingNvidiaModels}
+                                    disabled={fetchingNvidiaModels || !isSuperAdmin}
                                     className="text-[11px] font-medium text-emerald-700 hover:text-emerald-800 flex items-center gap-1"
                                 >
                                     {fetchingNvidiaModels ? <FaSpinner className="animate-spin" /> : <FaDownload />}
@@ -692,7 +707,7 @@ const AiSettings = () => {
                         <button
                             type="button"
                             onClick={() => testSpecificProvider('nvidia')}
-                            disabled={testingProvider === 'nvidia'}
+                            disabled={testingProvider === 'nvidia' || !isSuperAdmin}
                             className="px-3 py-1.5 text-xs font-medium bg-emerald-600 hover:bg-emerald-700 text-white rounded-md flex items-center space-x-1.5 shadow-sm"
                         >
                             {testingProvider === 'nvidia' ? <FaSpinner className="animate-spin" /> : <FaRobot />}
@@ -751,6 +766,7 @@ const AiSettings = () => {
                                     name="geminiApiKey"
                                     value={aiConfig.geminiApiKey}
                                     onChange={handleChange}
+                                    disabled={!isSuperAdmin}
                                     placeholder={configuredProviders.gemini ? 'Configured securely — enter only to replace' : 'AIzaSy...'}
                                     className="w-full pl-3 pr-10 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                 />
@@ -762,7 +778,7 @@ const AiSettings = () => {
                                     {showKeys.gemini ? <FaEyeSlash className="w-3.5 h-3.5" /> : <FaEye className="w-3.5 h-3.5" />}
                                 </button>
                             </div>
-                            {configuredProviders.gemini && (
+                            {configuredProviders.gemini && isSuperAdmin && (
                                 <div className="mt-1 text-[11px] text-blue-700 font-medium flex items-center gap-1">
                                     <FaCheck className="w-3 h-3 text-blue-600 flex-shrink-0" />
                                     <span>API key configured &amp; active on server (masked for security)</span><button type="button" className="ml-2 font-bold underline" onClick={() => clearProviderSecret('gemini')} aria-label="Clear gemini API key">Clear</button>
@@ -804,7 +820,7 @@ const AiSettings = () => {
                         <button
                             type="button"
                             onClick={() => testSpecificProvider('gemini')}
-                            disabled={testingProvider === 'gemini'}
+                            disabled={testingProvider === 'gemini' || !isSuperAdmin}
                             className="px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-md flex items-center space-x-1.5 shadow-sm"
                         >
                             {testingProvider === 'gemini' ? <FaSpinner className="animate-spin" /> : <FaRobot />}
@@ -863,6 +879,7 @@ const AiSettings = () => {
                                     name="openaiApiKey"
                                     value={aiConfig.openaiApiKey}
                                     onChange={handleChange}
+                                    disabled={!isSuperAdmin}
                                     placeholder={configuredProviders.openai ? 'Configured securely — enter only to replace' : 'sk-proj-...'}
                                     className="w-full pl-3 pr-10 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                                 />
@@ -874,7 +891,7 @@ const AiSettings = () => {
                                     {showKeys.openai ? <FaEyeSlash className="w-3.5 h-3.5" /> : <FaEye className="w-3.5 h-3.5" />}
                                 </button>
                             </div>
-                            {configuredProviders.openai && (
+                            {configuredProviders.openai && isSuperAdmin && (
                                 <div className="mt-1 text-[11px] text-indigo-700 font-medium flex items-center gap-1">
                                     <FaCheck className="w-3 h-3 text-indigo-600 flex-shrink-0" />
                                     <span>API key configured &amp; active on server (masked for security)</span><button type="button" className="ml-2 font-bold underline" onClick={() => clearProviderSecret('openai')} aria-label="Clear openai API key">Clear</button>
@@ -910,7 +927,7 @@ const AiSettings = () => {
                         <button
                             type="button"
                             onClick={() => testSpecificProvider('openai')}
-                            disabled={testingProvider === 'openai'}
+                            disabled={testingProvider === 'openai' || !isSuperAdmin}
                             className="px-3 py-1.5 text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-md flex items-center space-x-1.5 shadow-sm"
                         >
                             {testingProvider === 'openai' ? <FaSpinner className="animate-spin" /> : <FaRobot />}
@@ -968,6 +985,7 @@ const AiSettings = () => {
                                         name="groqApiKey"
                                         value={aiConfig.groqApiKey}
                                         onChange={handleChange}
+                                        disabled={!isSuperAdmin}
                                         placeholder={configuredProviders.groq ? 'Configured securely — enter only to replace' : 'gsk_...'}
                                         className="w-full pl-3 pr-10 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:outline-none"
                                     />
@@ -979,7 +997,7 @@ const AiSettings = () => {
                                         {showKeys.groq ? <FaEyeSlash className="w-3.5 h-3.5" /> : <FaEye className="w-3.5 h-3.5" />}
                                     </button>
                                 </div>
-                                {configuredProviders.groq && (
+                                {configuredProviders.groq && isSuperAdmin && (
                                     <div className="mt-1 text-[11px] text-amber-700 font-medium flex items-center gap-1">
                                         <FaCheck className="w-3 h-3 text-amber-600 flex-shrink-0" />
                                         <span>API key configured &amp; active on server (masked for security)</span><button type="button" className="ml-2 font-bold underline" onClick={() => clearProviderSecret('groq')} aria-label="Clear groq API key">Clear</button>
@@ -1004,7 +1022,7 @@ const AiSettings = () => {
                             <button
                                 type="button"
                                 onClick={() => testSpecificProvider('groq')}
-                                disabled={testingProvider === 'groq'}
+                                disabled={testingProvider === 'groq' || !isSuperAdmin}
                                 className="px-3 py-1.5 text-xs font-medium bg-amber-600 hover:bg-amber-700 text-white rounded-md flex items-center space-x-1.5 shadow-sm"
                             >
                                 {testingProvider === 'groq' ? <FaSpinner className="animate-spin" /> : <FaRobot />}
@@ -1060,6 +1078,7 @@ const AiSettings = () => {
                                         name="openrouterApiKey"
                                         value={aiConfig.openrouterApiKey}
                                         onChange={handleChange}
+                                        disabled={!isSuperAdmin}
                                         placeholder={configuredProviders.openrouter ? 'Configured securely — enter only to replace' : 'sk-or-v1-...'}
                                         className="w-full pl-3 pr-10 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:outline-none"
                                     />
@@ -1071,7 +1090,7 @@ const AiSettings = () => {
                                         {showKeys.openrouter ? <FaEyeSlash className="w-3.5 h-3.5" /> : <FaEye className="w-3.5 h-3.5" />}
                                     </button>
                                 </div>
-                                {configuredProviders.openrouter && (
+                                {configuredProviders.openrouter && isSuperAdmin && (
                                     <div className="mt-1 text-[11px] text-purple-700 font-medium flex items-center gap-1">
                                         <FaCheck className="w-3 h-3 text-purple-600 flex-shrink-0" />
                                         <span>API key configured &amp; active on server (masked for security)</span><button type="button" className="ml-2 font-bold underline" onClick={() => clearProviderSecret('openrouter')} aria-label="Clear openrouter API key">Clear</button>
@@ -1096,7 +1115,7 @@ const AiSettings = () => {
                             <button
                                 type="button"
                                 onClick={() => testSpecificProvider('openrouter')}
-                                disabled={testingProvider === 'openrouter'}
+                                disabled={testingProvider === 'openrouter' || !isSuperAdmin}
                                 className="px-3 py-1.5 text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white rounded-md flex items-center space-x-1.5 shadow-sm"
                             >
                                 {testingProvider === 'openrouter' ? <FaSpinner className="animate-spin" /> : <FaRobot />}
@@ -1154,6 +1173,7 @@ const AiSettings = () => {
                                         name="deepseekApiKey"
                                         value={aiConfig.deepseekApiKey}
                                         onChange={handleChange}
+                                        disabled={!isSuperAdmin}
                                         placeholder={configuredProviders.deepseek ? 'Configured securely — enter only to replace' : 'sk-...'}
                                         className="w-full pl-3 pr-10 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     />
@@ -1165,7 +1185,7 @@ const AiSettings = () => {
                                         {showKeys.deepseek ? <FaEyeSlash className="w-3.5 h-3.5" /> : <FaEye className="w-3.5 h-3.5" />}
                                     </button>
                                 </div>
-                                {configuredProviders.deepseek && (
+                                {configuredProviders.deepseek && isSuperAdmin && (
                                     <div className="mt-1 text-[11px] text-blue-700 font-medium flex items-center gap-1">
                                         <FaCheck className="w-3 h-3 text-blue-600 flex-shrink-0" />
                                         <span>API key configured &amp; active on server (masked for security)</span><button type="button" className="ml-2 font-bold underline" onClick={() => clearProviderSecret('deepseek')} aria-label="Clear deepseek API key">Clear</button>
@@ -1190,7 +1210,7 @@ const AiSettings = () => {
                             <button
                                 type="button"
                                 onClick={() => testSpecificProvider('deepseek')}
-                                disabled={testingProvider === 'deepseek'}
+                                disabled={testingProvider === 'deepseek' || !isSuperAdmin}
                                 className="px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-md flex items-center space-x-1.5 shadow-sm"
                             >
                                 {testingProvider === 'deepseek' ? <FaSpinner className="animate-spin" /> : <FaRobot />}
@@ -1445,11 +1465,11 @@ const AiSettings = () => {
             <div className="flex items-center justify-end pt-2">
                 <button
                     type="submit"
-                    disabled={saving || loadFailed}
+                    disabled={saving || loadFailed || !isSuperAdmin}
                     className="px-6 py-2.5 text-sm font-medium text-white bg-slate-900 hover:bg-black rounded-lg flex items-center space-x-2 shadow-md disabled:opacity-50"
                 >
                     {saving && <FaSpinner className="animate-spin text-white" />}
-                    <span>Save AI Settings</span>
+                    <span>{isSuperAdmin ? 'Save AI Settings' : 'Super Admin only'}</span>
                 </button>
             </div>
             {confirmationDialog}

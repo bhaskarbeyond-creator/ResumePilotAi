@@ -3,6 +3,7 @@ import React, { Component } from 'react';
 import { getSubscriptionStatus, setSubscriptionsData, getAllCouponsAdmin, saveCoupon, deleteCoupon, getSystemSettings, saveSystemSettings, getAllAdminTransactions, refundOrderTransaction, getAdminPaymentSettings, testAdminPaymentProvider } from '../../../firestore/dbOperations';
 import { FaCheck, FaTimes, FaCreditCard, FaRupeeSign, FaDollarSign, FaToggleOn, FaToggleOff, FaPaypal, FaStripe, FaFlask, FaShieldAlt, FaTag, FaPlus, FaTrash, FaEdit, FaCalendarAlt, FaPercent, FaEye, FaEyeSlash, FaDownload, FaSearch, FaFileInvoice, FaPrint, FaListAlt, FaCog, FaUndo } from 'react-icons/fa';
 import config from '../../../conf/configuration';
+import { useAdminSession } from '../AdminContext';
 
 class SubscriptionSetting extends Component {
     constructor(props) {
@@ -1466,6 +1467,10 @@ class SubscriptionSetting extends Component {
 
 
     clearPaymentSecret(provider) {
+        if (!this.props.isSuperAdmin) {
+            this.setState({ couponErrorMsg: 'Only Super Admin can clear payment provider credentials.' });
+            return;
+        }
         const fieldByProvider = {
             razorpay: 'razorpayKeySecret',
             stripe: 'stripeSecretKey',
@@ -1482,6 +1487,10 @@ class SubscriptionSetting extends Component {
     }
 
     async testPaymentProvider(provider) {
+        if (!this.props.isSuperAdmin) {
+            this.setState({ providerTestMessage: { type: 'error', text: 'Only Super Admin can run payment provider tests.' } });
+            return;
+        }
         if (this.state.testingProvider) return;
         this.setState({ testingProvider: provider, providerTestMessage: null });
         const credentialsByProvider = {
@@ -1624,6 +1633,10 @@ class SubscriptionSetting extends Component {
     }
 
     async submitHandler() {
+        if (!this.props.isSuperAdmin) {
+            this.setState({ couponErrorMsg: 'Payment credential and gateway changes are Super Admin-only. This view is read-only for Admin.' });
+            return;
+        }
         try {
             const result = await setSubscriptionsData(
             this.state.checkedSubscriptions,
@@ -2955,6 +2968,7 @@ class SubscriptionSetting extends Component {
                         </div>
 
                         {/* --- CARD 4: PAYMENT GATEWAY API & SANDBOX CREDENTIALS CARD --- */}
+                        <fieldset disabled={!this.props.isSuperAdmin} className="contents">
                         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs space-y-5">
                             <div className="flex items-center space-x-3 border-b border-slate-100 pb-4">
                                 <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 font-bold">
@@ -3204,6 +3218,7 @@ class SubscriptionSetting extends Component {
                                 </div>
                             </div>
                         </div>
+                        </fieldset>
                     </div>
                 )}
 
@@ -3920,4 +3935,7 @@ class SubscriptionSetting extends Component {
     }
 }
 
-export default SubscriptionSetting;
+export default function SubscriptionSettingWithSession(props) {
+    const { isSuperAdmin } = useAdminSession();
+    return <SubscriptionSetting {...props} isSuperAdmin={isSuperAdmin === true} />;
+}

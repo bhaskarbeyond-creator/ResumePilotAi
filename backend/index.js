@@ -17,7 +17,7 @@ const { createResumeDocx, resolveExportTemplate } = require('./services/docxExpo
 const { loadProviderConfiguration, generateWithProviders } = require('./services/aiRuntime');
 const { loadAiAdminSettings, saveAiAdminSettings, testAiProvider, fetchProviderModels } = require('./services/aiAdmin');
 const { mergeAdminSettingCategory } = require('./services/adminSettingsMerge');
-const { resolveWriteOnlySecret } = require('./services/paymentAdmin');
+const { resolveWriteOnlySecret, getPaymentSettingsProjection } = require('./services/paymentAdmin');
 const { createExportRenderToken, consumeExportRenderToken, discardExportRenderToken } = require('./security/exportTokens');
 const { createTenantService } = require('./enterprise/tenantService');
 const { enterpriseRouter } = require('./routes/enterprise');
@@ -1866,6 +1866,17 @@ app.use(['/api/admin', '/api/platform'], createAdminAuditMiddleware());
 // Super Admin / Platform & Audit Routes
 app.use('/api/admin', adminAuditRouter);
 app.use('/api/platform', platformRouter);
+// Backwards-compatible read alias. The canonical frontend route is
+// /api/platform/payment-settings, but old Admin bundles receive the same
+// Super-Admin-only secret-free projection instead of an unexplained 404.
+app.get('/api/admin/payment-settings', requirePermission('system.config.read'), async (req, res) => {
+    try {
+        res.setHeader('Cache-Control', 'no-store');
+        return res.json(await getPaymentSettingsProjection(req.app.get('db'), process.env));
+    } catch (error) {
+        return res.status(Number(error.status) || 503).json({ error: { code: error.code || 'PAYMENT_SETTINGS_UNAVAILABLE', message: 'Could not load payment settings.', requestId: res.locals.requestId } });
+    }
+});
 
 // AI provider configuration is split: secrets remain in a server-only document while
 // browser-readable settings contain models/toggles only.
@@ -2564,14 +2575,16 @@ app.post('/api/admin/ai/reset-quota', async (req, res) => {
 });
 
 app.post('/api/admin/payment-settings', requireRecentAdminAuthentication, async (req, res) => {
-    if (!db || !admin?.firestore?.FieldValue) return res.status(503).json({ success: false, code: 'PAYMENT_SETTINGS_UNAVAILABLE', error: 'Payment settings service unavailable.', requestId: res.locals.requestId });
+    const requestDb = req.app.get('db');
+    const firebaseAdmin = req.app.get('firebaseAdmin') || admin;
+    if (!requestDb || !firebaseAdmin?.firestore?.FieldValue) return res.status(503).json({ success: false, code: 'PAYMENT_SETTINGS_UNAVAILABLE', error: 'Payment settings service unavailable.', requestId: res.locals.requestId });
     const input = req.body || {};
     const numberInRange = (value, min, max, fallback) => {
         const parsed = Number(value);
         return Number.isFinite(parsed) && parsed >= min && parsed <= max ? parsed : fallback;
     };
-    const paymentRef = db.collection('settings').doc('payment_providers');
-    const publicRef = db.collection('data').doc('public_config');
+    const paymentRef = requestDb.collection('settings').doc('payment_providers');
+    const publicRef = requestDb.collection('data').doc('public_config');
     const [paymentSnapshot, publicSnapshot] = await Promise.all([paymentRef.get(), publicRef.get()]);
     const currentSecrets = paymentSnapshot.data() || {};
     const currentPublicRoot = publicSnapshot.data() || {};
@@ -2650,7 +2663,7 @@ app.post('/api/admin/payment-settings', requireRecentAdminAuthentication, async 
             }
             const raw = secretValue(input[inputField], label);
             if (clear) {
-                providerSecrets[provider] = { [persistedField]: admin.firestore.FieldValue.delete() };
+                providerSecrets[provider] = { [persistedField]: firebaseAdmin.firestore.FieldValue.delete() };
                 submittedSecrets[provider] = '';
             } else if (raw) {
                 providerSecrets[provider] = { [persistedField]: raw };
@@ -2674,14 +2687,14 @@ app.post('/api/admin/payment-settings', requireRecentAdminAuthentication, async 
 
         const nextRevision = currentRevision + 1;
         providerSecrets._revision = nextRevision;
-        const batch = db.batch();
+        const batch = requestDb.batch();
         batch.set(paymentRef, providerSecrets, { merge: true });
         batch.set(publicRef, { subscriptions: publicSettings, _settingsRevisions: { payments: nextRevision } }, { merge: true });
-        batch.set(db.collection('security_audit_logs').doc(), {
+        batch.set(requestDb.collection('security_audit_logs').doc(), {
             action: 'PAYMENT_SETTINGS_UPDATED', actorUid: req.user?.uid || 'admin_console',
             requestId: res.locals.requestId, revision: nextRevision,
             changedSecretProviders: Object.entries(clearSecrets).filter(([, value]) => value === true).map(([key]) => key),
-            createdAt: admin.firestore.FieldValue.serverTimestamp()
+            createdAt: firebaseAdmin.firestore.FieldValue.serverTimestamp()
         });
         await batch.commit();
 
@@ -2993,7 +3006,7 @@ app.post('/api/admin/twilio-settings', requireRecentAdminAuthentication, async (
 });
 
 // Twilio SMS Dispatcher Endpoint
-app.post('/api/send-sms', async (req, res) => {
+app.post('/api/send-sms', requireRecentAdminAuthentication, async (req, res) => {
     const { toPhone, messageBody } = req.body;
     if (!toPhone || !messageBody) {
         return res.status(400).json({ success: false, error: 'Target phone number and message body are required.' });
@@ -4152,12 +4165,12 @@ function adminIso(value) {
     } catch (_) { return null; }
 }
 
-async function adminCollectionRead(collectionName, { limit = 200, orderField = null } = {}) {
-    if (!db) throw Object.assign(new Error('Firestore unavailable'), { status: 503 });
+async function adminCollectionRead(database, collectionName, { limit = 200, orderField = null } = {}) {
+    if (!database) throw Object.assign(new Error('Firestore unavailable'), { status: 503 });
     const bounded = Math.min(Math.max(Number(limit) || 200, 1), 500);
     let snapshot;
     try {
-        let query = db.collection(collectionName);
+        let query = database.collection(collectionName);
         if (orderField) query = query.orderBy(orderField, 'desc');
         snapshot = await query.limit(bounded).get();
     } catch (error) {
@@ -4165,23 +4178,23 @@ async function adminCollectionRead(collectionName, { limit = 200, orderField = n
         // list into a false empty state. Fall back to a bounded collection read
         // and let the caller's deterministic in-memory sort handle presentation.
         if (!orderField) throw error;
-        snapshot = await db.collection(collectionName).limit(bounded).get();
+        snapshot = await database.collection(collectionName).limit(bounded).get();
     }
     return snapshot.docs.map(document => ({ id: document.id, ...document.data() }));
 }
 
 app.get('/api/admin/employer-applications', async (req, res) => {
     try {
-        const rows = await adminCollectionRead('employerApplications', { limit: req.query?.limit || 200, orderField: 'submittedAt' });
+        const rows = await adminCollectionRead(req.app.get('db'), 'employerApplications', { limit: req.query?.limit || 200, orderField: 'submittedAt' });
         return res.json({ success: true, applications: rows, source: 'FIRESTORE_SERVER_READ', count: rows.length });
     } catch (error) { return res.status(error.status || 503).json({ success: false, code: 'EMPLOYER_APPLICATIONS_UNAVAILABLE', error: 'Employer applications are unavailable.', requestId: res.locals.requestId }); }
 });
 
 app.get('/api/admin/companies', async (req, res) => {
     try {
-        const companies = await adminCollectionRead('companies', { limit: req.query?.limit || 500, orderField: 'createdAt' });
+        const companies = await adminCollectionRead(req.app.get('db'), 'companies', { limit: req.query?.limit || 500, orderField: 'createdAt' });
         let jobs = [];
-        try { jobs = await adminCollectionRead('jobs', { limit: 500 }); } catch (_) { jobs = null; }
+        try { jobs = await adminCollectionRead(req.app.get('db'), 'jobs', { limit: 500 }); } catch (_) { jobs = null; }
         const result = companies.map(company => {
             if (!jobs) return company;
             const related = jobs.filter(job => job.companyId === company.id || job.employerId === company.employerId);
@@ -4197,7 +4210,7 @@ app.get('/api/admin/jobs', async (req, res) => {
         const search = String(req.query?.search || req.query?.q || '').trim().toLowerCase();
         const pageSize = Math.min(Math.max(Number(req.query?.limit) || 10, 1), 100);
         const page = Math.max(Number(req.query?.page) || 1, 1);
-        const all = await adminCollectionRead('jobs', { limit: 500 });
+        const all = await adminCollectionRead(req.app.get('db'), 'jobs', { limit: 500 });
         const mapped = all.map(job => ({ ...job, createdAt: adminIso(job.createdAt), updatedAt: adminIso(job.updatedAt), deadline: adminIso(job.deadline), type: job.jobType, postedDate: adminIso(job.createdAt), applicants: Number(job.applicationsCount || 0), salary: job.minSalary || job.maxSalary ? `${job.minSalary || ''}-${job.maxSalary || ''}` : 'Salary not specified' }));
         const filtered = mapped.filter(job => (status === 'all' || String(job.status || '').toLowerCase() === status) && (!search || [job.title, job.company, job.location, job.id].some(value => String(value || '').toLowerCase().includes(search))));
         const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
@@ -4207,23 +4220,24 @@ app.get('/api/admin/jobs', async (req, res) => {
 });
 
 app.get('/api/admin/reviews', async (req, res) => {
-    try { const reviews = await adminCollectionRead('reviews', { limit: req.query?.limit || 500 }); return res.json({ success: true, reviews, source: 'FIRESTORE_SERVER_READ', count: reviews.length }); }
+    try { const reviews = await adminCollectionRead(req.app.get('db'), 'reviews', { limit: req.query?.limit || 500 }); return res.json({ success: true, reviews, source: 'FIRESTORE_SERVER_READ', count: reviews.length }); }
     catch (error) { return res.status(error.status || 503).json({ success: false, code: 'REVIEWS_UNAVAILABLE', error: 'Reviews are unavailable.', requestId: res.locals.requestId }); }
 });
 
 app.get('/api/admin/ads', async (req, res) => {
-    try { const ads = await adminCollectionRead('ads', { limit: req.query?.limit || 500 }); return res.json({ success: true, ads, source: 'FIRESTORE_SERVER_READ', count: ads.length }); }
+    try { const ads = await adminCollectionRead(req.app.get('db'), 'ads', { limit: req.query?.limit || 500 }); return res.json({ success: true, ads, source: 'FIRESTORE_SERVER_READ', count: ads.length }); }
     catch (error) { return res.status(error.status || 503).json({ success: false, code: 'ADS_UNAVAILABLE', error: 'Advertisements are unavailable.', requestId: res.locals.requestId }); }
 });
 
 app.get('/api/admin/payment-orders', async (req, res) => {
     try {
+        const requestDb = req.app.get('db');
         const limit = Math.min(Math.max(Number(req.query?.limit) || 200, 1), 500);
-        if (!db) throw Object.assign(new Error('Firestore unavailable'), { status: 503 });
+        if (!requestDb) throw Object.assign(new Error('Firestore unavailable'), { status: 503 });
         const snapshots = await Promise.allSettled([
-            db.collection('payment_orders').orderBy('createdAt', 'desc').limit(limit).get(),
-            db.collection('invoices').orderBy('createdAt', 'desc').limit(limit).get(),
-            db.collection('transactions').orderBy('created_at', 'desc').limit(limit).get(),
+            requestDb.collection('payment_orders').orderBy('createdAt', 'desc').limit(limit).get(),
+            requestDb.collection('invoices').orderBy('createdAt', 'desc').limit(limit).get(),
+            requestDb.collection('transactions').orderBy('created_at', 'desc').limit(limit).get(),
         ]);
         const records = [];
         const seen = new Set();
@@ -4279,16 +4293,16 @@ app.get('/api/admin/payment-orders', async (req, res) => {
     }
 });
 
-app.get('/api/admin/landing-content', async (_req, res) => {
+app.get('/api/admin/landing-content', async (req, res) => {
     try {
-        if (!db) throw Object.assign(new Error('Firestore unavailable'), { status: 503 });
-        const snapshot = await db.collection('data').doc('frontendstats').get();
+        if (!req.app.get('db')) throw Object.assign(new Error('Firestore unavailable'), { status: 503 });
+        const snapshot = await req.app.get('db').collection('data').doc('frontendstats').get();
         return res.json({ success: true, content: snapshot.exists ? snapshot.data() : null, source: snapshot.exists ? 'FIRESTORE_SERVER_READ' : 'NOT_CONFIGURED' });
     } catch (error) { return res.status(error.status || 503).json({ success: false, code: 'LANDING_CONTENT_UNAVAILABLE', error: 'Landing content is unavailable.', requestId: res.locals.requestId }); }
 });
 
 app.get('/api/admin/blog/categories', async (_req, res) => {
-    try { const categories = await adminCollectionRead('blog_categories', { limit: 500 }); return res.json({ success: true, categories, source: 'FIRESTORE_SERVER_READ' }); }
+    try { const categories = await adminCollectionRead(_req.app.get('db'), 'blog_categories', { limit: 500 }); return res.json({ success: true, categories, source: 'FIRESTORE_SERVER_READ' }); }
     catch (error) { return res.status(error.status || 503).json({ success: false, code: 'BLOG_CATEGORIES_UNAVAILABLE', error: 'Blog categories are unavailable.', requestId: res.locals.requestId }); }
 });
 
@@ -4299,7 +4313,7 @@ app.get('/api/admin/blog/posts', async (req, res) => {
         const search = String(req.query?.search || '').trim().toLowerCase();
         const pageSize = Math.min(Math.max(Number(req.query?.limit) || 10, 1), 100);
         const page = Math.max(Number(req.query?.page) || 1, 1);
-        const all = await adminCollectionRead('blog_posts', { limit: 500 });
+        const all = await adminCollectionRead(req.app.get('db'), 'blog_posts', { limit: 500 });
         const posts = all.map(post => ({ ...post, createdAt: adminIso(post.createdAt), updatedAt: adminIso(post.updatedAt), publishedAt: adminIso(post.publishedAt), scheduledAt: adminIso(post.scheduledAt) })).filter(post => (status === 'all' || String(post.status || '').toLowerCase() === status) && (!categoryId || post.categoryId === categoryId) && (!search || [post.title, post.slug, post.excerpt].some(value => String(value || '').toLowerCase().includes(search))));
         posts.sort((a, b) => String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || '')));
         const totalPages = Math.max(1, Math.ceil(posts.length / pageSize));

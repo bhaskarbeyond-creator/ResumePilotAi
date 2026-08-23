@@ -242,30 +242,22 @@ async function queryAdminAuditLogs(db, options = {}) {
 
   const limitCount = Math.min(Math.max(Number(options.limit) || 50, 1), 200);
   const search = String(options.search || '').trim().toLowerCase().slice(0, 200);
-  // Firestore does not provide a portable case-insensitive substring query.
-  // Search a bounded, newest-first window and filter only the sanitized
-  // projection below. This keeps the endpoint deterministic and prevents a
-  // search operation from ever inspecting or returning raw credentials.
-  const searchScanLimit = search ? Math.min(Math.max(limitCount * 20, 500), 2000) : limitCount;
-  let query = db.collection('admin_audit_logs');
-
-  if (options.actorUid) {
-    query = query.where('actorUid', '==', String(options.actorUid));
-  }
-  if (options.action) {
-    query = query.where('action', '==', String(options.action).toUpperCase());
-  }
-  if (options.category) {
-    query = query.where('category', '==', String(options.category).toLowerCase());
-  }
-  if (options.severity) {
-    query = query.where('severity', '==', String(options.severity).toUpperCase());
-  }
-  if (options.outcome) {
-    query = query.where('outcome', '==', String(options.outcome).toUpperCase());
-  }
-
-  query = query.orderBy('createdAt', 'desc').limit(search ? searchScanLimit : limitCount);
+  // Firestore does not provide a portable case-insensitive substring query,
+  // and combining several optional filters with createdAt can require a
+  // deployment-specific composite index. Read a bounded newest-first window
+  // and apply all filters to the sanitized projection below instead. This keeps
+  // the endpoint deterministic and turns a missing index into an explicit
+  // truncated/unknown window rather than a misleading 500 or empty result.
+  const filterValues = {
+    actorUid: options.actorUid ? String(options.actorUid) : '',
+    action: options.action ? String(options.action).toUpperCase() : '',
+    category: options.category ? String(options.category).toLowerCase() : '',
+    severity: options.severity ? String(options.severity).toUpperCase() : '',
+    outcome: options.outcome ? String(options.outcome).toUpperCase() : '',
+  };
+  const hasFilter = Boolean(search || Object.values(filterValues).some(Boolean));
+  const searchScanLimit = hasFilter ? Math.min(Math.max(limitCount * 20, 500), 2000) : limitCount;
+  let query = db.collection('admin_audit_logs').orderBy('createdAt', 'desc').limit(searchScanLimit);
 
   if (options.startAfterDocId) {
     const startDoc = await db.collection('admin_audit_logs').doc(String(options.startAfterDocId)).get();
@@ -284,40 +276,43 @@ async function queryAdminAuditLogs(db, options = {}) {
       ...safe,
       createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : data.occurredAt || null,
     };
-    if (!search) {
-      logs.push(log);
-      return;
+    if (filterValues.actorUid && log.actorUid !== filterValues.actorUid) return;
+    if (filterValues.action && String(log.action || '').toUpperCase() !== filterValues.action) return;
+    if (filterValues.category && String(log.category || '').toLowerCase() !== filterValues.category) return;
+    if (filterValues.severity && String(log.severity || '').toUpperCase() !== filterValues.severity) return;
+    if (filterValues.outcome && String(log.outcome || '').toUpperCase() !== filterValues.outcome) return;
+    if (search) {
+      const searchable = [
+        log.id,
+        log.actorUid,
+        log.actorEmail,
+        log.actorRole,
+        log.action,
+        log.category,
+        log.severity,
+        log.outcome,
+        log.method,
+        log.pathname,
+        log.resourceType,
+        log.resourceId,
+        log.requestId,
+        log.ipAddress,
+        log.metadata,
+      ].map(value => typeof value === 'string' ? value : JSON.stringify(value || '')).join(' ').toLowerCase();
+      if (!searchable.includes(search)) return;
     }
-
-    const searchable = [
-      log.id,
-      log.actorUid,
-      log.actorEmail,
-      log.actorRole,
-      log.action,
-      log.category,
-      log.severity,
-      log.outcome,
-      log.method,
-      log.pathname,
-      log.resourceType,
-      log.resourceId,
-      log.requestId,
-      log.ipAddress,
-      log.metadata,
-    ].map(value => typeof value === 'string' ? value : JSON.stringify(value || '')).join(' ').toLowerCase();
-    if (searchable.includes(search)) logs.push(log);
+    logs.push(log);
   });
 
   const scannedCount = snapshot.docs?.length || 0;
   return {
     logs: logs.slice(0, limitCount),
     count: Math.min(logs.length, limitCount),
-    // For a search, a full scan window means there may be an older matching
-    // record. Report that explicitly instead of claiming the filtered result
-    // is complete. Non-search pagination retains the normal Firestore contract.
-    hasMore: search ? logs.length > limitCount || scannedCount === searchScanLimit : logs.length === limitCount,
-    ...(search ? { searchWindow: scannedCount, searchTruncated: scannedCount === searchScanLimit } : {}),
+    // For a filtered search, a full scan window means there may be an older
+    // matching record. Report that explicitly instead of claiming the filtered
+    // result is complete. Non-filtered pagination retains the normal contract.
+    hasMore: hasFilter ? logs.length > limitCount || scannedCount === searchScanLimit : logs.length === limitCount,
+    ...(hasFilter ? { searchWindow: scannedCount, searchTruncated: scannedCount === searchScanLimit } : {}),
   };
 }
 

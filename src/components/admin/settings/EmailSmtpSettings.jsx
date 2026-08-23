@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { normalizeAdminApiError } from '../../../services/adminAiSettings';
 import { fetchAdminWithReauth } from '../../../services/adminReauth';
+import { useAdminSession } from '../AdminContext';
 import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
 import config from '../../../conf/configuration';
 import { 
@@ -29,6 +30,7 @@ const DNS_CARD_STYLES = {
 };
 
 const EmailSmtpSettings = () => {
+    const { isSuperAdmin } = useAdminSession();
     const [activeTab, setActiveTab] = useState('smtp'); // 'smtp', 'imap', 'templates', 'logs', 'deliverability'
     
     // Outbound SMTP & Fallback State
@@ -784,7 +786,7 @@ const EmailSmtpSettings = () => {
             {/* TAB 1: OUTBOUND SMTP & FALLBACK RELAY */}
             {activeTab === 'smtp' && (
                 <form onSubmit={handleSave} className="space-y-6">
-                    <fieldset className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"><legend className="px-1 font-bold">Write-only credential controls</legend><p>Blank password fields preserve the active credential. Select a clear action only when you intentionally want to remove a server-stored credential, then save. Deployment environment credentials cannot be cleared here.</p><div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3"><label className="flex items-center gap-2"><input type="checkbox" checked={clearSecrets.smtp === true} onChange={event => setClearSecrets(prev => ({ ...prev, smtp: event.target.checked }))} /> Clear primary SMTP password</label><label className="flex items-center gap-2"><input type="checkbox" checked={clearSecrets.fallbackSmtp === true} onChange={event => setClearSecrets(prev => ({ ...prev, fallbackSmtp: event.target.checked }))} /> Clear fallback password</label><label className="flex items-center gap-2"><input type="checkbox" checked={clearSecrets.imap === true} onChange={event => setClearSecrets(prev => ({ ...prev, imap: event.target.checked }))} /> Clear IMAP password</label></div></fieldset>
+                    <fieldset disabled={!isSuperAdmin} className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"><legend className="px-1 font-bold">Write-only credential controls</legend><p>Blank password fields preserve the active credential. Select a clear action only when you intentionally want to remove a server-stored credential, then save. Deployment environment credentials cannot be cleared here.</p><div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3"><label className="flex items-center gap-2"><input type="checkbox" checked={clearSecrets.smtp === true} onChange={event => setClearSecrets(prev => ({ ...prev, smtp: event.target.checked }))} /> Clear primary SMTP password</label><label className="flex items-center gap-2"><input type="checkbox" checked={clearSecrets.fallbackSmtp === true} onChange={event => setClearSecrets(prev => ({ ...prev, fallbackSmtp: event.target.checked }))} /> Clear fallback password</label><label className="flex items-center gap-2"><input type="checkbox" checked={clearSecrets.imap === true} onChange={event => setClearSecrets(prev => ({ ...prev, imap: event.target.checked }))} /> Clear IMAP password</label></div></fieldset>
                     {/* 1-Click Popular Mailer Presets */}
                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
                         <label className="block text-xs font-extrabold text-slate-700 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
@@ -881,7 +883,8 @@ const EmailSmtpSettings = () => {
                                         name="password"
                                         value={smtpConfig.password}
                                         onChange={handleSmtpChange}
-                                        placeholder={credentialStatus.smtp ? 'Configured securely — enter only to replace' : 'Account Password / API Key'}
+                                        disabled={!isSuperAdmin}
+                                        placeholder={isSuperAdmin ? (credentialStatus.smtp ? 'Configured securely — enter only to replace' : 'Account Password / API Key') : 'Super Admin only — status is shown'}
                                         className="w-full pl-3.5 pr-10 py-2 text-xs font-semibold border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 font-mono"
                                     />
                                     <button
@@ -1010,7 +1013,8 @@ const EmailSmtpSettings = () => {
                                             type="password"
                                             value={fallbackSmtp.password}
                                             onChange={(e) => setFallbackSmtp(prev => ({ ...prev, password: e.target.value }))}
-                                            placeholder={credentialStatus.fallbackSmtp ? 'Configured securely — enter only to replace' : 'API Key / App Password'}
+                                            disabled={!isSuperAdmin}
+                                            placeholder={isSuperAdmin ? (credentialStatus.fallbackSmtp ? 'Configured securely — enter only to replace' : 'API Key / App Password') : 'Super Admin only — status is shown'}
                                             className="w-full px-3 py-1.5 text-xs font-semibold border border-slate-300 rounded-xl font-mono"
                                         />
                                     </div>
@@ -1058,7 +1062,7 @@ const EmailSmtpSettings = () => {
                             <button
                                 type="button"
                                 onClick={handleTestSmtp}
-                                disabled={testingSmtp}
+                                disabled={testingSmtp || !isSuperAdmin}
                                 className="px-4 py-2.5 text-xs font-bold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-xs"
                             >
                                 {testingSmtp ? <FaSpinner className="animate-spin text-indigo-600 w-4 h-4" /> : <FaPaperPlane className="text-indigo-600 w-4 h-4" />}
@@ -1068,7 +1072,7 @@ const EmailSmtpSettings = () => {
                             <button
                                 type="button"
                                 onClick={handleTestFallbackSmtp}
-                                disabled={testingFallbackSmtp || !fallbackSmtp.enabled || !fallbackSmtp.username}
+                                disabled={testingFallbackSmtp || !fallbackSmtp.enabled || !fallbackSmtp.username || !isSuperAdmin}
                                 className="px-4 py-2.5 text-xs font-bold text-indigo-700 bg-indigo-50/80 border border-indigo-200 hover:bg-indigo-100 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-xs disabled:opacity-40"
                             >
                                 {testingFallbackSmtp ? <FaSpinner className="animate-spin text-indigo-600 w-4 h-4" /> : <FaShieldAlt className="text-indigo-600 w-4 h-4" />}
@@ -1086,6 +1090,7 @@ const EmailSmtpSettings = () => {
                                         setStatusMessage({ type: 'error', text: e.message });
                                     }
                                 }}
+                                disabled={!isSuperAdmin}
                                 className="px-4 py-2.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-xs"
                             >
                                 <FaCheckCircle className="text-emerald-600 w-4 h-4" />
@@ -1186,7 +1191,8 @@ const EmailSmtpSettings = () => {
                                     name="password"
                                     value={imapConfig.password}
                                     onChange={handleImapChange}
-                                    placeholder={credentialStatus.imap ? 'Configured securely — enter only to replace' : 'Account Password'}
+                                    disabled={!isSuperAdmin}
+                                    placeholder={isSuperAdmin ? (credentialStatus.imap ? 'Configured securely — enter only to replace' : 'Account Password') : 'Super Admin only — status is shown'}
                                     className="w-full px-3.5 py-2 text-xs font-semibold border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 font-mono"
                                 />
                             </div>
@@ -1197,7 +1203,7 @@ const EmailSmtpSettings = () => {
                         <button
                             type="button"
                             onClick={handleTestImap}
-                            disabled={testingImap}
+                            disabled={testingImap || !isSuperAdmin}
                             className="px-5 py-2.5 text-xs font-bold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-xs"
                         >
                             {testingImap ? <FaSpinner className="animate-spin text-indigo-600 w-4 h-4" /> : <FaInbox className="text-indigo-600 w-4 h-4" />}

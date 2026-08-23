@@ -12,8 +12,8 @@ const publicPaths = new Set(['/healthz', '/readyz', '/api/healthz', '/api/readyz
 const superAdmin = new Set([
   'GET /api/admin/firebase-service-account', 'POST /api/admin/ai-settings', 'POST /api/admin/ai/test-provider', 'POST /api/admin/ai/fetch-models',
   'POST /api/admin/payment-settings', 'POST /api/admin/payment/test-provider', 'POST /api/admin/system-health-settings',
-  'POST /api/admin/firebase-service-account', 'POST /api/admin/twilio-settings', 'POST /api/admin/delete-user', 'POST /api/auth/purge-orphaned-auth',
-  'GET /api/platform/feature-flags', 'GET /api/platform/configuration', 'GET /api/platform/payment-settings',
+  'POST /api/admin/firebase-service-account', 'POST /api/admin/twilio-settings', 'POST /api/admin/delete-user', 'POST /api/auth/purge-orphaned-auth', 'POST /api/send-sms',
+  'GET /api/platform/feature-flags', 'GET /api/platform/configuration',
 ]);
 const platformSuper = /^(POST|PATCH|DELETE) \/api\/platform\/(maintenance|announcements|operators|queues\/retry|tenants\/.*(?:decommission)?|feature-flags|operational-status\/.*\/test)/;
 const moduleFor = path => path.startsWith('/api/enterprise') ? 'enterprise' : path.startsWith('/api/platform') ? 'platform' : path.startsWith('/api/admin') || path.startsWith('/api/email/admin') ? 'admin' : path.startsWith('/api/email') || path.includes('/notify') ? 'notifications' : path.startsWith('/api/auth') ? 'auth' : path.startsWith('/api/health') || path === '/healthz' || path === '/readyz' ? 'health' : path.startsWith('/api/') ? 'consumer-api' : 'public';

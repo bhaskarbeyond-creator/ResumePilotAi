@@ -32,6 +32,8 @@ const FILTERS = [
   { id: HEALTH_STATES.UNAVAILABLE, label: 'Unavailable' },
   { id: HEALTH_STATES.DISABLED, label: 'Disabled' },
   { id: HEALTH_STATES.NOT_CONFIGURED, label: 'Not configured' },
+  { id: HEALTH_STATES.NOT_SUPPORTED, label: 'Not supported' },
+  { id: HEALTH_STATES.UNKNOWN, label: 'Unknown' },
 ];
 
 function StatusDot({ state, className = '' }) {

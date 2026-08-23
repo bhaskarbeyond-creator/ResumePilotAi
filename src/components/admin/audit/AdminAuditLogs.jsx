@@ -11,6 +11,7 @@ export default function AdminAuditLogs() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedLog, setSelectedLog] = useState(null);
+  const [searchWindow, setSearchWindow] = useState(null);
 
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -51,6 +52,7 @@ export default function AdminAuditLogs() {
       const statsData = statsRes.ok ? await statsRes.json() : null;
 
       setLogs(logsData.logs || []);
+      setSearchWindow(logsData.searchTruncated ? { size: logsData.searchWindow } : null);
       setStats(statsData);
     } catch (err) {
       console.error('[AdminAuditLogs] Error fetching logs:', err);
@@ -171,7 +173,7 @@ export default function AdminAuditLogs() {
           <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
             <div>
               <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Success Rate</p>
-              <p className="text-2xl font-extrabold text-emerald-600 mt-1">{stats.successRate}%</p>
+              <p className="text-2xl font-extrabold text-emerald-600 mt-1">{stats.successRate == null ? 'Data unavailable' : `${stats.successRate}%`}</p>
             </div>
             <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
               <FiCheckCircle className="h-5 w-5" />
@@ -239,6 +241,8 @@ export default function AdminAuditLogs() {
           <option value="DENIED">Denied</option>
         </select>
       </div>
+
+      {searchWindow && <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">Search examined the newest {searchWindow.size} records. Older matching records may require a narrower server filter or an audited export.</div>}
 
       {/* Error State */}
       {error && (

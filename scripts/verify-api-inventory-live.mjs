@@ -42,7 +42,7 @@ if (!ok) { reportMissingEnv(missing, SCRIPT); process.exit(2); }
 const BASE = values.PROD_BASE_URL.replace(/\/$/, '');
 const allowMutations = values.ALLOW_MUTATIONS === '1';
 const delayMs = Math.max(0, Math.min(Number(values.REQUEST_DELAY_MS) || 120, 5000));
-const recorder = new Recorder(SCRIPT, { base: BASE, allowMutations });
+const recorder = new Recorder(SCRIPT, { base: BASE, allowMutationsRequested: allowMutations, mutationPolicy: 'READ_ONLY_MANIFEST' });
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 function loadInventory() {
@@ -54,18 +54,18 @@ function loadInventory() {
   const rows = [];
   const seen = new Set();
   for (const line of source.slice(start).split('\n')) {
-    const match = line.match(/^\|\s*(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s*\|\s*`([^`]+)`([^|]*)\|(.+)\|?$/);
-    if (!match) continue;
-    const [, method, routePath, annotation, tail] = match;
-    const cells = tail.split('|').map(value => value.trim().replaceAll('`', ''));
+    if (!line.startsWith('|') || line.includes('| ---')) continue;
+    const columns = line.slice(1, line.endsWith('|') ? -1 : undefined)
+      .split('|').map(value => value.trim().replaceAll('`', ''));
+    if (!['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'].includes(columns[0])) continue;
+    const [method, routePath, authentication, role, , , , documentedFailures, , , , , , , live] = columns;
     const key = `${method} ${routePath}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    rows.push({ method, path: routePath, alias: /alias of/i.test(annotation), cells, documentedState: cells[9] || '', documentedFailures: cells[5] || '', live: cells[12] || '' });
+    rows.push({ method, path: routePath, authentication, role, documentedFailures, live });
   }
   return rows.length ? rows : null;
 }
-
 const parameterised = route => /:[A-Za-z]/.test(route) || /\{[A-Za-z]/.test(route);
 const failureContractContains = (row, status) => {
   const failures = String(row.documentedFailures || '').replaceAll(' ', '').split('/');
@@ -76,15 +76,25 @@ function responseCode(response) {
   return response.json?.error?.code || response.json?.code || response.json?.errorCode || null;
 }
 
-function explainNon2xx(row, response) {
+function explainNon2xx(row, response, sessionRole = null) {
   const status = response.status;
   const code = responseCode(response);
   const body = response.json || {};
   const configurationState = body.configurationState || body.error?.configurationState || body.deliveryState || null;
-  const documentedState = String(row.documentedState || '').toUpperCase();
 
-  if (status === 401) return { kind: 'protected', reason: 'The endpoint requires a bearer credential and rejected the unauthenticated probe.' };
-  if (status === 403) return { kind: 'protected', reason: 'The endpoint authenticated the caller but denied the caller role or permission.' };
+  if (status === 401) {
+    return sessionRole ? null : { kind: 'protected', reason: 'The endpoint requires a bearer credential and rejected the unauthenticated probe.' };
+  }
+  if (status === 403) {
+    if (!sessionRole) return { kind: 'protected', reason: 'The endpoint rejected the unauthenticated probe.' };
+    // A valid Super Admin read can still be refused by production MFA/recent
+    // auth policy only on a mutation. A generic 403 from the expected role is
+    // not silently accepted: it is an unexplained authorization regression.
+    if (code && ['SUPER_ADMIN_MFA_REQUIRED', 'RECENT_AUTH_REQUIRED'].includes(code)) {
+      return { kind: 'documented', reason: `The server enforced ${code}.`, code };
+    }
+    return null;
+  }
   if (status === 429 && (response.headers?.['retry-after'] || code === 'RATE_LIMITED' || code === 'M2M_RATE_LIMITED')) {
     return { kind: 'documented', reason: `The server supplied rate-limit evidence${response.headers?.['retry-after'] ? ` (Retry-After ${response.headers['retry-after']})` : ''}.`, code };
   }
@@ -93,15 +103,13 @@ function explainNon2xx(row, response) {
   }
   // A disabled/unconfigured route must say so itself. Route-name guesses are
   // not evidence and are deliberately not accepted.
-  if ([404, 501, 503].includes(status) && code && (configurationState || /DISABLED|NOT_CONFIGURED|UNAVAILABLE|NOT_SUPPORTED/i.test(documentedState))) {
+  if ([404, 501, 503].includes(status) && code && (
+    configurationState || /DISABLED|NOT_CONFIGURED|UNAVAILABLE|NOT_SUPPORTED|ENTERPRISE_DISABLED|SCRAPER_NOT_CONFIGURED/i.test(String(code))
+  )) {
     return { kind: 'documented', reason: `The endpoint returned machine-readable ${code}${configurationState ? ` (${configurationState})` : ''}.`, code, configurationState };
-  }
-  if (status === 503 && code && /unavailable|not_configured|disabled|configuration|service/i.test(String(code))) {
-    return { kind: 'documented', reason: `The endpoint explained its unavailable state with ${code}.`, code, configurationState };
   }
   return null;
 }
-
 async function signIn(label, emailKey, passwordKey) {
   if (!values.FIREBASE_API_KEY || !values[emailKey] || !values[passwordKey]) {
     recorder.blocked(`${label} session established`, { reason: `Set FIREBASE_API_KEY, ${emailKey}, and ${passwordKey} for authenticated probes.` });
@@ -135,8 +143,14 @@ async function main() {
 
   const superAdmin = await signIn('SUPER_ADMIN', 'SUPERADMIN_EMAIL', 'SUPERADMIN_PASSWORD');
   const admin = await signIn('ADMIN', 'ADMIN_EMAIL', 'ADMIN_PASSWORD');
-  const authenticated = superAdmin || admin;
   const findings = { probed: 0, pass: 0, protected: 0, blocked: 0, unexplained: [] };
+  const sessionForRow = row => {
+    if (row.role === 'SUPER_ADMIN') return { session: superAdmin, role: 'SUPER_ADMIN' };
+    if (row.role === 'ADMIN+') return { session: admin, role: 'ADMIN' };
+    if (row.role === 'SERVICE_KEY') return { session: null, role: null };
+    if (row.role === 'TENANT_POLICY') return { session: superAdmin, role: 'SUPER_ADMIN' };
+    return { session: admin || superAdmin, role: admin ? 'ADMIN' : superAdmin ? 'SUPER_ADMIN' : null };
+  };
 
   for (const row of inventory) {
     if (parameterised(row.path)) {
@@ -144,14 +158,28 @@ async function main() {
       recorder.blocked(`${row.method} ${row.path}`, { reason: 'Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle.' });
       continue;
     }
-    if (!allowMutations && !['GET', 'HEAD', 'OPTIONS'].includes(row.method)) {
+    // Inventory probing is deliberately read-only. Even ALLOW_MUTATIONS=1
+    // cannot turn a broad manifest scan into a production write; the CRUD
+    // verifier owns disposable mutation lifecycles and cleanup.
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(row.method)) {
       findings.blocked += 1;
+      recorder.skipped(`${row.method} ${row.path}`, { reason: 'Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted.' });
+      continue;
+    }
+    if (row.role === 'SERVICE_KEY') {
+      findings.blocked += 1;
+      recorder.blocked(`${row.method} ${row.path}`, { reason: 'Service-key endpoint requires a provisioned disposable M2M credential; run Enterprise M2M certification separately.' });
+      continue;
+    }
+    const { session, role: sessionRole } = sessionForRow(row);
+    if (row.authentication !== 'PUBLIC' && !session) {
+      findings.blocked += 1;
+      recorder.blocked(`${row.method} ${row.path}`, { reason: `The ${row.role || row.authentication} session required for this endpoint was not established.` });
       continue;
     }
     const response = await probe(`${BASE}${row.path}`, {
       method: row.method,
-      headers: authenticated ? { Authorization: `Bearer ${authenticated.idToken}` } : {},
-      ...(allowMutations && ['POST', 'PUT', 'PATCH'].includes(row.method) ? { headers: { ...(authenticated ? { Authorization: `Bearer ${authenticated.idToken}` } : {}), 'Content-Type': 'application/json' }, body: '{}' } : {}),
+      headers: session ? { Authorization: `Bearer ${session.idToken}` } : {},
     });
     findings.probed += 1;
     await sleep(delayMs);
@@ -160,10 +188,10 @@ async function main() {
       continue;
     }
     if (response.status < 400) { findings.pass += 1; continue; }
-    const explanation = explainNon2xx(row, response);
-    if (explanation?.kind === 'protected') { findings.protected += 1; continue; }
+    const explanation = explainNon2xx(row, response, sessionRole);
+    if (explanation?.kind === 'protected') { findings.protected += 1; recorder.pass(`${row.method} ${row.path} rejects an unauthenticated request`, { status: response.status, reason: explanation.reason }); continue; }
     if (explanation) { findings.pass += 1; recorder.info(`${row.method} ${row.path} non-2xx is explained`, { status: response.status, code: explanation.code, reason: explanation.reason, configurationState: explanation.configurationState }); continue; }
-    findings.unexplained.push({ method: row.method, path: row.path, status: response.status, code: responseCode(response), body: (response.text || '').slice(0, 240), documentedState: row.documentedState });
+    findings.unexplained.push({ method: row.method, path: row.path, status: response.status, code: responseCode(response), body: (response.text || '').slice(0, 240), expectedRole: row.role, suppliedRole: sessionRole });
   }
 
   recorder.info('endpoint probes completed', { probed: findings.probed, protected: findings.protected, skippedParameterised: findings.blocked, successfulOrExplained: findings.pass });

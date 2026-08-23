@@ -7,6 +7,7 @@ const path = require('path');
 const { requirePermission, requireSuperAdmin, requireRecentAdminAuthentication, isSuperAdmin } = require('../security/auth');
 const { recordAdminAuditLog } = require('../security/adminAudit');
 const { getPlatformConfiguration } = require('../services/platformConfiguration');
+const { getPaymentSettingsProjection } = require('../services/paymentAdmin');
 const {
   getHealthSnapshot,
   resetHealthCache,
@@ -41,18 +42,6 @@ function isoFrom(value) {
   }
   const date = value instanceof Date ? value : new Date(value);
   return Number.isFinite(date.getTime()) ? date.toISOString() : null;
-}
-
-function selectProviderCredentials({ envId = '', envSecret = '', storedId = '', storedSecret = '' } = {}) {
-  const environmentId = String(envId || '').trim();
-  const environmentSecret = String(envSecret || '').trim();
-  const persistedId = String(storedId || '').trim();
-  const persistedSecret = String(storedSecret || '').trim();
-  if (environmentId && environmentSecret) return { id: environmentId, secret: environmentSecret, source: 'environment' };
-  if (persistedId && persistedSecret) return { id: persistedId, secret: persistedSecret, source: 'firestore' };
-  if (environmentId || environmentSecret) return { id: environmentId, secret: environmentSecret, source: 'environment-partial' };
-  if (persistedId || persistedSecret) return { id: persistedId, secret: persistedSecret, source: 'firestore-partial' };
-  return { id: '', secret: '', source: 'none' };
 }
 
 async function safeQuery(label, fn) {
@@ -91,6 +80,8 @@ async function buildHealthPayload(req) {
   const startTime = Date.now();
   let dbHealthy = false;
   let dbLatencyMs = null;
+  let authHealthy = false;
+  let authLatencyMs = null;
 
   if (db) {
     try {
@@ -106,6 +97,17 @@ async function buildHealthPayload(req) {
     }
   }
 
+  if (admin?.auth) {
+    try {
+      const authStart = Date.now();
+      await admin.auth().listUsers(1);
+      authLatencyMs = Date.now() - authStart;
+      authHealthy = true;
+    } catch (err) {
+      console.warn('[PlatformHealth] Auth probe warning:', err.message);
+    }
+  }
+
   const queueStats = await inspectOutbox(db).catch(() => ({ active: null, deadLetter: null, completed: null, status: 'UNKNOWN', inspected: null }));
   const memoryUsage = process.memoryUsage();
   const totalMem = os.totalmem();
@@ -114,6 +116,8 @@ async function buildHealthPayload(req) {
   let healthScore = 100;
   if (!dbHealthy) healthScore -= 40;
   else if (dbLatencyMs > 500) healthScore -= 10;
+  if (!authHealthy) healthScore -= 30;
+  else if (authLatencyMs > 1500) healthScore -= 10;
   if (queueStats.status === 'UNKNOWN') healthScore -= 20;
   else if (queueStats.deadLetter > 5) healthScore -= 20;
   else if (queueStats.deadLetter > 0) healthScore -= 10;
@@ -121,7 +125,7 @@ async function buildHealthPayload(req) {
   healthScore = Math.max(0, Math.min(100, healthScore));
 
   return {
-    status: healthScore >= 80 && queueStats.status !== 'UNKNOWN' ? 'HEALTHY' : healthScore >= 50 ? 'DEGRADED' : 'UNHEALTHY',
+    status: healthScore >= 80 && dbHealthy && authHealthy && queueStats.status !== 'UNKNOWN' ? 'HEALTHY' : healthScore >= 50 ? 'DEGRADED' : 'UNHEALTHY',
     healthScore,
     commitSha: getCommitSha(),
     uptimeSeconds: Math.floor(process.uptime()),
@@ -132,6 +136,11 @@ async function buildHealthPayload(req) {
         status: dbHealthy ? 'HEALTHY' : 'DOWN',
         latencyMs: dbLatencyMs,
         provider: 'Google Cloud Firestore',
+      },
+      authentication: {
+        status: authHealthy ? 'HEALTHY' : 'DOWN',
+        latencyMs: authLatencyMs,
+        provider: 'Firebase Authentication',
       },
       queue: {
         status: queueStats.status,
@@ -734,6 +743,7 @@ router.get('/command-center', async (req, res) => {
 
   let riskScore = 0;
   if (health.subsystems.database.status !== 'HEALTHY') riskScore += 40;
+  if (health.subsystems.authentication?.status !== 'HEALTHY') riskScore += 30;
   if (health.subsystems.queue.deadLetterJobs > 0) riskScore += Math.min(25, health.subsystems.queue.deadLetterJobs * 5);
   if (paymentFailed > 0) riskScore += Math.min(20, paymentFailed * 4);
   if (highSecurity > 0) riskScore += Math.min(20, highSecurity * 5);
@@ -744,6 +754,9 @@ router.get('/command-center', async (req, res) => {
 
   if (health.subsystems.database.status !== 'HEALTHY') {
     recommendations.push({ id: 'db-down', severity: 'HIGH', title: 'Firestore ping failed', detail: 'Platform data plane did not acknowledge the health write.', href: '/adm/operations' });
+  }
+  if (health.subsystems.authentication?.status !== 'HEALTHY') {
+    recommendations.push({ id: 'auth-down', severity: 'HIGH', title: 'Firebase Authentication probe failed', detail: 'The identity directory did not acknowledge the administrative probe. Authenticated routes cannot be certified as healthy.', href: '/adm/health' });
   }
   if (health.subsystems.queue.deadLetterJobs > 0) {
     recommendations.push({ id: 'dlq', severity: 'HIGH', title: `${health.subsystems.queue.deadLetterJobs} dead-letter notification(s)`, detail: 'Replay or inspect failed email/outbox jobs. Queue counts are from the latest inspected outbox sample.', href: '/adm/queues' });
@@ -1602,86 +1615,19 @@ router.get('/configuration', requireSuperAdmin, async (req, res) => {
  * Never returns raw secrets.
  * ------------------------------------------------------------------ */
 
-router.get('/payment-settings', requireSuperAdmin, async (req, res) => {
+router.get('/payment-settings', requirePermission('system.config.read'), async (req, res) => {
   try {
-    const db = req.app.get('db');
-    if (!db) return res.status(503).json({ error: 'Settings service unavailable' });
-
-    // Read public config
-    const publicDoc = await db.collection('data').doc('public_config').get();
-    const publicRoot = publicDoc.exists ? (publicDoc.data() || {}) : {};
-    const rawPublicConfig = publicRoot.subscriptions || {};
-    const publicConfig = Object.fromEntries(Object.entries(rawPublicConfig).filter(([key]) => !/(?:secret|password|privateKey|authToken|clientSecret|merchantKey|saltKey|keySecret|token)/i.test(key)));
-
-    // Read secrets doc (never expose raw values)
-    const secretsDoc = await db.collection('settings').doc('payment_providers').get();
-    const secrets = secretsDoc.exists ? (secretsDoc.data() || {}) : {};
-
-    // Build configured status and masked keys from one complete credential
-    // source. A deployment secret and a Firestore identifier are never mixed.
-    const maskKey = (key) => {
-      const value = String(key || '').trim();
-      return value.length >= 4 ? `••••${value.slice(-4)}` : '';
-    };
-    const providers = {
-      razorpay: selectProviderCredentials({
-        envId: process.env.RAZORPAY_KEY_ID,
-        envSecret: process.env.RAZORPAY_KEY_SECRET,
-        storedId: secrets.razorpay?.keyId || publicConfig.razorpayKeyId,
-        storedSecret: secrets.razorpay?.keySecret,
-      }),
-      stripe: selectProviderCredentials({ envSecret: process.env.STRIPE_SECRET, storedSecret: secrets.stripe?.secretKey }),
-      paypal: selectProviderCredentials({
-        envId: process.env.PAYPAL_CLIENT_ID,
-        envSecret: process.env.PAYPAL_CLIENT_SECRET,
-        storedId: secrets.paypal?.clientId || publicConfig.paypalClientId,
-        storedSecret: secrets.paypal?.clientSecret,
-      }),
-      paytm: selectProviderCredentials({
-        envId: process.env.PAYTM_MID,
-        envSecret: process.env.PAYTM_MERCHANT_KEY,
-        storedId: secrets.paytm?.mid || publicConfig.paytmMid,
-        storedSecret: secrets.paytm?.merchantKey,
-      }),
-      phonepe: selectProviderCredentials({
-        envId: process.env.PHONEPE_MERCHANT_ID,
-        envSecret: process.env.PHONEPE_SALT_KEY,
-        storedId: secrets.phonepe?.merchantId || publicConfig.phonepeId,
-        storedSecret: secrets.phonepe?.saltKey,
-      }),
-    };
-    const configuredProviders = Object.fromEntries(Object.entries(providers).map(([provider, credentials]) => [provider, Boolean(credentials.id && credentials.secret)]));
-    const maskedKeys = Object.fromEntries(Object.entries(providers).map(([provider, credentials]) => [provider, maskKey(credentials.secret)]));
-    const credentialSources = Object.fromEntries(Object.entries(providers).map(([provider, credentials]) => [provider, credentials.source]));
-
-    // Public key IDs are safe to return. They remain visible even when a
-    // provider is partial so the operator can diagnose which half is missing;
-    // no secret is ever included in this projection.
-    const publicKeys = {
-      razorpayKeyId: providers.razorpay.id || '',
-      stripePublishableKey: publicConfig.stripePublishableKey || '',
-      paypalClientId: providers.paypal.id || '',
-      paytmMid: providers.paytm.id || '',
-      phonepeId: providers.phonepe.id || '',
-      phonepeSaltIndex: publicConfig.phonepeSaltIndex || secrets.phonepe?.saltIndex || process.env.PHONEPE_SALT_INDEX || '1',
-      paytmWebsite: publicConfig.paytmWebsite || secrets.paytm?.website || process.env.PAYTM_WEBSITE || 'WEBSTAGING',
-    };
-
-    return res.json({
-      settings: publicConfig,
-      publicKeys,
-      configuredProviders,
-      maskedKeys,
-      credentialSources,
-      revision: Number(secrets._revision || publicRoot._settingsRevisions?.payments || 0),
-      secretPolicy: {
-        emptyField: 'PRESERVE',
-        clear: 'EXPLICIT_ONLY',
-        environmentManagedSecrets: Object.entries(credentialSources).filter(([, source]) => source.startsWith('environment')).map(([provider]) => provider),
+    const projection = await getPaymentSettingsProjection(req.app.get('db'), process.env);
+    res.setHeader('Cache-Control', 'no-store');
+    return res.json(projection);
+  } catch (error) {
+    return res.status(Number(error.status) || 503).json({
+      error: {
+        code: error.code || 'PAYMENT_SETTINGS_UNAVAILABLE',
+        message: 'Could not load payment settings.',
+        requestId: res.locals?.requestId,
       },
     });
-  } catch (error) {
-    return res.status(503).json({ error: { code: 'PAYMENT_SETTINGS_UNAVAILABLE', message: 'Could not load payment settings' } });
   }
 });
 

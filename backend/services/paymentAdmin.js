@@ -68,19 +68,21 @@ function publicPaymentSettings(value) {
  */
 async function getPaymentSettingsProjection(db, environment = process.env) {
   if (!db) throw paymentError('PAYMENT_SETTINGS_UNAVAILABLE', 'Settings service unavailable.', 503);
-  const [publicDoc, secretsDoc] = await Promise.all([
+  const [publicDoc, secretsDoc, legacyDoc] = await Promise.all([
     db.collection('data').doc('public_config').get(),
     db.collection('settings').doc('payment_providers').get(),
+    db.collection('data').doc('subscriptions').get(),
   ]);
   const publicRoot = publicDoc.exists ? (publicDoc.data() || {}) : {};
-  const publicConfig = publicPaymentSettings(publicRoot.subscriptions || {});
+  const legacyConfig = legacyDoc.exists ? (legacyDoc.data() || {}) : {};
+  const publicConfig = publicPaymentSettings(publicRoot.subscriptions || legacyConfig);
   const secrets = secretsDoc.exists ? (secretsDoc.data() || {}) : {};
   const providers = {
-    razorpay: selectPaymentPair({ envId: environment.RAZORPAY_KEY_ID, envSecret: environment.RAZORPAY_KEY_SECRET, storedId: secrets.razorpay?.keyId || publicConfig.razorpayKeyId, storedSecret: secrets.razorpay?.keySecret }),
-    stripe: selectPaymentPair({ envSecret: environment.STRIPE_SECRET, storedSecret: secrets.stripe?.secretKey, requiresId: false }),
-    paypal: selectPaymentPair({ envId: environment.PAYPAL_CLIENT_ID, envSecret: environment.PAYPAL_CLIENT_SECRET, storedId: secrets.paypal?.clientId || publicConfig.paypalClientId, storedSecret: secrets.paypal?.clientSecret }),
-    paytm: selectPaymentPair({ envId: environment.PAYTM_MID, envSecret: environment.PAYTM_MERCHANT_KEY, storedId: secrets.paytm?.mid || publicConfig.paytmMid, storedSecret: secrets.paytm?.merchantKey }),
-    phonepe: selectPaymentPair({ envId: environment.PHONEPE_MERCHANT_ID, envSecret: environment.PHONEPE_SALT_KEY, storedId: secrets.phonepe?.merchantId || publicConfig.phonepeId, storedSecret: secrets.phonepe?.saltKey }),
+    razorpay: selectPaymentPair({ envId: environment.RAZORPAY_KEY_ID, envSecret: environment.RAZORPAY_KEY_SECRET, storedId: secrets.razorpay?.keyId || publicConfig.razorpayKeyId || legacyConfig.razorpayKeyId, storedSecret: secrets.razorpay?.keySecret || legacyConfig.razorpayKeySecret }),
+    stripe: selectPaymentPair({ envSecret: environment.STRIPE_SECRET, storedSecret: secrets.stripe?.secretKey || legacyConfig.stripeSecretKey, requiresId: false }),
+    paypal: selectPaymentPair({ envId: environment.PAYPAL_CLIENT_ID, envSecret: environment.PAYPAL_CLIENT_SECRET, storedId: secrets.paypal?.clientId || publicConfig.paypalClientId || legacyConfig.paypalClientId, storedSecret: secrets.paypal?.clientSecret || legacyConfig.paypalClientSecret }),
+    paytm: selectPaymentPair({ envId: environment.PAYTM_MID, envSecret: environment.PAYTM_MERCHANT_KEY, storedId: secrets.paytm?.mid || publicConfig.paytmMid || legacyConfig.paytmMid, storedSecret: secrets.paytm?.merchantKey || legacyConfig.paytmMerchantKey }),
+    phonepe: selectPaymentPair({ envId: environment.PHONEPE_MERCHANT_ID, envSecret: environment.PHONEPE_SALT_KEY, storedId: secrets.phonepe?.merchantId || publicConfig.phonepeId || legacyConfig.phonepeId, storedSecret: secrets.phonepe?.saltKey || legacyConfig.phonepeSaltKey }),
   };
   const configuredProviders = Object.fromEntries(Object.entries(providers).map(([provider, pair]) => [provider, Boolean(pair.secret && (provider === 'stripe' || pair.id))]));
   const maskedKeys = Object.fromEntries(Object.entries(providers).map(([provider, pair]) => [provider, maskWriteOnlySecret(pair.secret)]));
