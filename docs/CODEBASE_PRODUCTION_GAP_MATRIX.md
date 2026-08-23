@@ -36,13 +36,17 @@ Legend for *Final Classification*:
 | AI provider configuration | Registry + health + fallback | Admin AI settings | `routes/ai.js` | Provider keys | AI providers | Keys masked | Pre-existing suites | **Yes** | CODEBASE VERIFIED / PROD PENDING |
 | Email verification → AI flow | Live Auth fallback on stale JWT | — | `requireAuth` re-checks the Auth record | — | Firebase Auth | No downgrade | Pre-existing suite | **Yes** | CODEBASE VERIFIED / PROD PENDING |
 | Tenant CRUD: create/read/suspend/reactivate | Implemented | Correct routes, re-fetch after mutation | `routes/enterprise.js` | `ENTERPRISE_TENANCY_ENABLED` | Firestore | Server-authorized | Enterprise suite passes | **Yes** | CODEBASE VERIFIED / PROD PENDING |
-| Tenant decommission | Backend only | **No UI surface** | `POST /api/platform/tenants/:id/decommission`, MFA-guarded | — | Firestore | Enforced | Backend covered | **Yes** | **GAP — DOCUMENTED** |
+| Tenant decommission | Implemented | **UI EXISTS** — `tenants/PlatformTenants.jsx` detail drawer via `services/platformApi.js` | `POST /api/platform/tenants/:id/decommission`, recent-auth + Super Admin + MFA | — | Firestore | Enforced | 10 executed reconciliation tests | **Yes** | CODEBASE VERIFIED / PROD PENDING — *the earlier "no UI" claim was a false finding from a service-layer-blind scan; see FINAL_CODEBASE_FORENSIC_AUDIT.md §2* |
 | API contract (271 endpoints) | Generated inventory | All frontend `/api/**` calls resolve | Routers mounted | — | — | — | Cross-checked in audit | Live status codes | CODEBASE VERIFIED / PROD PENDING |
-| Configuration census (126 keys) | Generated from source | 13 backend-only keys have no UI | — | — | — | 30 SECRET keys identified | Generator is reproducible | No | CODEBASE VERIFIED |
+| Configuration census (137 keys) | Generated from source; second pass found 12 keys the first missed (incl. 5 encryption keys and `FIREBASE_TOTP_MFA_ENABLED`) | 17 backend-only keys have no UI | — | — | — | SECRET vs PUBLISHABLE CLIENT IDENTIFIER now distinguished | 6 executed tests incl. staleness + independent cross-check | No | CODEBASE VERIFIED |
 | Enterprise multi-tenant architecture | Frozen; untouched by this audit | Unchanged | Unchanged | `ENTERPRISE_TENANCY_ENABLED` | Firestore | Unchanged | `test:enterprise` passes | **Yes** | CODEBASE VERIFIED / PROD PENDING |
 | Consumer surfaces | Unchanged except scoped editor CSS | Verified by build + suites | — | — | — | — | `test:product` passes | **Yes** | CODEBASE VERIFIED / PROD PENDING |
-| Dead stylesheets (~75 files) | Not imported, inert | — | — | — | — | — | Not applicable | No | **GAP — DOCUMENTED** |
-| Google Fonts `@import` in `tailwind.css` | Duplicate of self-hosted Poppins | Render-blocking third-party request | — | — | Google Fonts CDN | — | — | **Yes** | **GAP — DOCUMENTED** |
+| Dead stylesheets | 73 removed; build output byte-identical before/after | — | — | — | — | — | `tests/stylesheet-hygiene.test.mjs` blocks reintroduction | No | CODEBASE VERIFIED |
+| Duplicate remote font imports | Removed from `tailwind.css` and `Dashboard/Settings/Settings.scss` | Typography now resolves from the self-hosted face only | — | — | none for the app shell | — | 7 executed tests incl. built-output assertion | Confirm no `fonts.googleapis.com` request in production | CODEBASE VERIFIED |
+| Remote fonts in CV/portfolio template engines | Retained deliberately | Required by certified template themes | — | — | Google Fonts / rsms.me | — | Allowlisted and asserted | **Yes** | ACCEPTED — DOCUMENTED |
+| Enterprise tenant selection persistence | Persists only after server acceptance; rolls back on failure | `EnterpriseContext.jsx` | Server verifies membership | — | Firestore | No client-trusted context | 4 executed tests | **Yes** | CODEBASE VERIFIED |
+| GDPR consent-banner settings | Single shared validator on both write paths | `settings/GdprLegalSettings.jsx` | `POST /api/admin/settings/gdpr` + dedicated endpoint converge | — | — | Site-relative paths only; bounded; control chars stripped | 6 executed tests (4 fail without the fix) | **Yes** | CODEBASE VERIFIED |
+| Admin/Super Admin capability reconciliation | Resolver traces the module graph | 0 broken frontend calls | 108 control-plane routes | — | — | Guards recorded per route | 10 executed tests | No | CODEBASE VERIFIED |
 
 ---
 

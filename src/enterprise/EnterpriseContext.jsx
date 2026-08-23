@@ -85,6 +85,10 @@ export function EnterpriseTenantProvider({ children }) {
       setState(next);
       return next;
     } catch (error) {
+      // A rejected context must not be replayed on the next mount. Clearing the
+      // request makes the next load fall back to the server's default tenant
+      // instead of reproducing the failure indefinitely.
+      writeStorage(tenantStorageKey(user.uid), '');
       setState(previous => ({
         ...previous,
         loading: false,
@@ -99,18 +103,47 @@ export function EnterpriseTenantProvider({ children }) {
     load().catch(() => {});
   }, [load]);
 
+  /**
+   * Persist the requested context ONLY after the server accepts it.
+   *
+   * DEFECT THIS CLOSES: the requested tenant/workspace was written to
+   * sessionStorage *before* `load()` ran. If the server then rejected the
+   * selection (revoked membership, suspended or decommissioned tenant, a
+   * transient 5xx), the rejected id stayed persisted. Every subsequent mount
+   * read it back as the requested context, so the console reopened straight
+   * into the same failure — a broken state that a reload could not clear,
+   * only clearing browser storage could. Selection state must not outlive a
+   * failed selection.
+   */
   const selectTenant = useCallback(async tenantId => {
     if (!enabled || !user?.uid) return null;
-    // The server verifies membership. This is only a requested UI context.
-    writeStorage(tenantStorageKey(user.uid), tenantId);
-    return load({ tenantId });
+    const key = tenantStorageKey(user.uid);
+    const previous = readStorage(key);
+    try {
+      // The server verifies membership. This is only a requested UI context.
+      const result = await load({ tenantId });
+      writeStorage(key, result?.tenant?.id || '');
+      return result;
+    } catch (error) {
+      // Restore the last context the server actually accepted.
+      writeStorage(key, previous);
+      throw error;
+    }
   }, [enabled, load, user?.uid]);
 
   const selectWorkspace = useCallback(async workspaceId => {
     if (!enabled || !user?.uid || !state.tenant?.id) return null;
-    // The active tenant is retained; the server verifies workspace membership/scope.
-    writeStorage(workspaceStorageKey(user.uid, state.tenant.id), workspaceId);
-    return load({ tenantId: state.tenant.id, workspaceId });
+    const key = workspaceStorageKey(user.uid, state.tenant.id);
+    const previous = readStorage(key);
+    try {
+      // The active tenant is retained; the server verifies workspace membership/scope.
+      const result = await load({ tenantId: state.tenant.id, workspaceId });
+      writeStorage(key, result?.workspace?.id || '');
+      return result;
+    } catch (error) {
+      writeStorage(key, previous);
+      throw error;
+    }
   }, [enabled, load, state.tenant?.id, user?.uid]);
 
   const value = useMemo(() => ({

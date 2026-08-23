@@ -179,3 +179,19 @@ test('the enrollment UI does not present a working control when the provider is 
   assert.doesNotMatch(settings, /Unable to start MFA enrollment\. Reauthenticate and try again\./, 'the misleading fallback message must be gone');
   assert.match(settings, /data-testid="mfa-guidance"/);
 });
+
+test('platformApi propagates a second-factor denial instead of a bare HTTP error', () => {
+  const source = fs.readFileSync(new URL('../src/services/platformApi.js', import.meta.url), 'utf8');
+  assert.match(source, /mfaDenial/, 'the shared platform client must surface MFA denials');
+  assert.match(source, /error\.mfaState = mfaDenial\.mfaState/);
+  assert.match(source, /recoverableByReauthentication = false/);
+});
+
+test('destructive tenant controls report a blocked second factor rather than failing opaquely', () => {
+  const api = fs.readFileSync(new URL('../src/services/platformApi.js', import.meta.url), 'utf8');
+  const reauth = fs.readFileSync(new URL('../src/services/adminReauth.js', import.meta.url), 'utf8');
+  // The denial must originate from the shared client, so every panel built on
+  // platformFetch inherits it — including tenant decommission.
+  assert.match(reauth, /export function mfaDenial/);
+  assert.match(api, /const \{ response, data, mfaDenial \} = await fetchAdminWithReauth/);
+});

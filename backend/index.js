@@ -2146,6 +2146,40 @@ app.post('/api/admin/system-health-settings', requireRecentAdminAuthentication, 
     }
 });
 
+/**
+ * Canonical GDPR settings validator.
+ *
+ * DEFECT THIS CLOSES: a hardened `POST /api/admin/gdpr-settings` endpoint
+ * existed with path/length/control-character validation, but no frontend ever
+ * called it. The Admin console saves GDPR settings through the GENERIC
+ * `POST /api/admin/settings/:category` route, which applied only the generic
+ * normaliser. The hardening was therefore dead code and the live write path
+ * accepted, for example, an absolute third-party `privacyPolicyUrl` that is
+ * then rendered to every visitor in the consent banner.
+ *
+ * Both routes now share this single validator, so the hardened path cannot be
+ * bypassed and cannot drift.
+ */
+function sanitizeGdprSettings(input = {}, current = {}) {
+    const safePath = (value, fallback) => {
+        const pathValue = String(value ?? '').trim();
+        // Site-relative paths only: an absolute URL in the consent banner is an
+        // off-site redirect for every visitor.
+        return /^\/[A-Za-z0-9/_-]{1,200}$/.test(pathValue) ? pathValue : fallback;
+    };
+    const clean = (value, fallback, maxLength) =>
+        String(value ?? fallback ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, maxLength);
+
+    const merged = { ...current, ...input };
+    return {
+        enableCookieBanner: merged.enableCookieBanner !== false,
+        cookieMessage: clean(merged.cookieMessage, '', 500),
+        buttonText: clean(merged.buttonText, 'Allow analytics', 80) || 'Allow analytics',
+        privacyPolicyUrl: safePath(merged.privacyPolicyUrl, '/p/privacy-policy'),
+        termsOfServiceUrl: safePath(merged.termsOfServiceUrl, '/p/terms-of-service'),
+    };
+}
+
 const GENERIC_ADMIN_SETTING_CATEGORIES = new Set([
     'modules', 'auth', 'blog', 'watermark', 'templateManager', 'security', 'jobScraper',
     'exportPdf', 'branding', 'geoSeo', 'llmGeo', 'enabledTemplates', 'integrations',
@@ -2327,7 +2361,11 @@ app.post('/api/admin/settings/:category', async (req, res) => {
     if (!requestDb || !admin) return res.status(503).json({ success: false, error: 'Settings service unavailable.' });
     try {
         if (Buffer.byteLength(JSON.stringify(req.body.data), 'utf8') > 100_000) throw new Error('Settings payload is too large.');
-        const normalized = normalizeAdminSettingValue(req.body.data);
+        let normalized = normalizeAdminSettingValue(req.body.data);
+        // The generic normaliser cannot know category semantics. GDPR values are
+        // rendered to every visitor, so they go through the same dedicated
+        // validator as /api/admin/gdpr-settings rather than a weaker path.
+        if (category === 'gdpr') normalized = sanitizeGdprSettings(normalized);
         let publicSettings;
         const rawRevision = req.body?.expectedRevision;
         const expectedRevision = rawRevision !== undefined ? Number(rawRevision) : -1;
@@ -2368,17 +2406,7 @@ app.post('/api/admin/gdpr-settings', async (req, res) => {
     const firebaseAdmin = req.app.get('firebaseAdmin') || admin;
     if (!requestDb || !firebaseAdmin?.firestore?.FieldValue) return res.status(503).json({ success: false, code: 'SETTINGS_UNAVAILABLE', error: 'Settings service unavailable.' });
     const input = req.body || {};
-    const safePath = (value, fallback) => {
-        const pathValue = String(value || fallback).trim();
-        return /^\/[A-Za-z0-9/_-]{1,200}$/.test(pathValue) ? pathValue : fallback;
-    };
-    const gdpr = {
-        enableCookieBanner: input.enableCookieBanner !== false,
-        cookieMessage: String(input.cookieMessage || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 500),
-        buttonText: String(input.buttonText || 'Allow analytics').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 80),
-        privacyPolicyUrl: safePath(input.privacyPolicyUrl, '/p/privacy-policy'),
-        termsOfServiceUrl: safePath(input.termsOfServiceUrl, '/p/terms-of-service'),
-    };
+    const gdpr = sanitizeGdprSettings(input);
     try {
         const publicRef = requestDb.collection('data').doc('public_config');
         const revision = await requestDb.runTransaction(async transaction => {

@@ -1,14 +1,14 @@
 # FINAL API INVENTORY
 
-**Generated:** 2026-08-23T17:35:23.818Z
-**Source commit:** `8dbdbce43f0ca701aff2fecc1d4b23248cb3db85`
+**Generated:** 2026-08-23T23:29:09.336Z
+**Source commit:** `c1587d55b0e88084789fb5f41b0cff1c867b74ca`
 **Authority:** Express runtime routing table collected by `backend/services/platformHealth.js`.
 
 > This is a source/release manifest, not live production evidence. `LIVE` remains `NOT VERIFIED` until the local/live runbook is executed against the deployed SHA.
 
 ## 1. Reconciled source counts
 
-- Unique reachable `METHOD + path` entries: **270**.
+- Unique reachable `METHOD + path` entries: **271**.
 - The count includes dual-mounted email aliases and the `/api/enterprise/m2m` service-key namespace.
 - Parameterised routes are legitimate but require a disposable fixture id; they are not probed with guessed ids.
 - No source count is presented as a production count.
@@ -295,6 +295,7 @@ npm run certify:ui
 | POST | `/api/platform/queues/retry` | BEARER_ADMIN | SUPER_ADMIN | PLATFORM | YES | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | YES | NOT VERIFIED |
 | GET | `/api/platform/search` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | NO | NOT VERIFIED |
 | GET | `/api/platform/security-events` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | NO | NOT VERIFIED |
+| GET | `/api/platform/security/mfa-posture` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | NO | NOT VERIFIED |
 | GET | `/api/platform/tenants/:tenantId` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | NO | NOT VERIFIED |
 | PATCH | `/api/platform/tenants/:tenantId` | BEARER_ADMIN | SUPER_ADMIN | PLATFORM | YES | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | YES | NOT VERIFIED |
 | POST | `/api/platform/tenants/:tenantId/decommission` | BEARER_ADMIN | SUPER_ADMIN | PLATFORM | YES | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | YES | NOT VERIFIED |

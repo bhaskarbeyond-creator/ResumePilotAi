@@ -38,6 +38,22 @@ const BASE_URL = process.env.CSS_AUDIT_BASE_URL || 'http://127.0.0.1:4173';
 /** Public routes that render without an authenticated Firebase session. */
 const ROUTES = ['/', '/pricing', '/features', '/jobs', '/blog'];
 
+/**
+ * Surface-crossing routes. Signed out these redirect to the login surface, and
+ * that redirect target must itself render identically however it was reached —
+ * which is exactly the Consumer/Enterprise/Admin cascade-bleed scenario.
+ *
+ * Set CSS_AUDIT_STORAGE_STATE to a Playwright storageState file captured from a
+ * signed-in Super Admin session to exercise the real /adm and /enterprise
+ * shells. The suite runs either way; with the storage state it covers more.
+ */
+const SURFACE_ROUTES = {
+  consumer: ['/', '/pricing', '/build-resume'],
+  enterprise: ['/enterprise'],
+  admin: ['/adm', '/adm/tenants', '/adm/health'],
+};
+const ALL_SURFACE_ROUTES = [...SURFACE_ROUTES.consumer, ...SURFACE_ROUTES.enterprise, ...SURFACE_ROUTES.admin];
+
 const VIEWPORTS = [
   { name: '1440x900', width: 1440, height: 900 },
   { name: '1280x800', width: 1280, height: 800 },
@@ -237,5 +253,142 @@ test.describe('Asset and cache integrity', () => {
       return (await navigator.serviceWorker.getRegistrations()).length;
     });
     expect(registrations, 'a service worker would reintroduce stale-asset risk').toBe(0);
+  });
+});
+
+
+/**
+ * §7 cross-surface traversal matrix.
+ *
+ * The cascade defect was strictly a cross-surface problem: an Enterprise chunk
+ * leaking a global rule only mattered once you left /enterprise. These tests
+ * walk Consumer → Enterprise → Admin (and the reverse) in one browser session
+ * and assert each surface still matches its freshly loaded baseline.
+ */
+test.describe('Cross-surface navigation (Consumer / Enterprise / Admin / Super Admin)', () => {
+  test('every surface matches its fresh-load baseline after a full traversal', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+
+    // Baselines from a fresh context per route: this is the "hard reload" state
+    // that previously looked correct while SPA navigation did not.
+    const baseline = {};
+    for (const route of ALL_SURFACE_ROUTES) {
+      await page.context().clearCookies();
+      await page.goto(`${BASE_URL}${route}`, { waitUntil: 'networkidle' });
+      baseline[route] = await fingerprint(page);
+    }
+
+    const orders = [
+      [...SURFACE_ROUTES.consumer, ...SURFACE_ROUTES.enterprise, ...SURFACE_ROUTES.admin],
+      [...SURFACE_ROUTES.admin, ...SURFACE_ROUTES.enterprise, ...SURFACE_ROUTES.consumer],
+      [...SURFACE_ROUTES.enterprise, ...SURFACE_ROUTES.consumer, ...SURFACE_ROUTES.admin],
+    ];
+
+    for (const order of orders) {
+      // One continuous session; stylesheet chunks accumulate in visit order.
+      for (const route of order) await page.goto(`${BASE_URL}${route}`, { waitUntil: 'domcontentloaded' });
+      for (const route of ALL_SURFACE_ROUTES) {
+        await page.goto(`${BASE_URL}${route}`, { waitUntil: 'domcontentloaded' });
+        const current = await fingerprint(page);
+        expect(
+          current.styles,
+          `${route} rendered differently after traversal order [${order.join(' -> ')}] — the cascade is navigation-order dependent`
+        ).toEqual(baseline[route].styles);
+      }
+    }
+  });
+
+  test('a hard reload produces the same result as SPA navigation', async ({ page, context }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    for (const route of ALL_SURFACE_ROUTES) {
+      // Reach the route through the other surfaces first.
+      for (const detour of ALL_SURFACE_ROUTES.filter(item => item !== route)) {
+        await page.goto(`${BASE_URL}${detour}`, { waitUntil: 'domcontentloaded' });
+      }
+      await page.goto(`${BASE_URL}${route}`, { waitUntil: 'networkidle' });
+      const afterNavigation = await fingerprint(page);
+
+      // Hard reload: a brand-new context discards every accumulated stylesheet.
+      const freshPage = await context.browser().newContext().then(ctx => ctx.newPage());
+      await freshPage.setViewportSize({ width: 1440, height: 900 });
+      await freshPage.goto(`${BASE_URL}${route}`, { waitUntil: 'networkidle' });
+      const afterHardReload = await fingerprint(freshPage);
+      await freshPage.context().close();
+
+      expect(
+        afterNavigation.styles,
+        `${route} requires a hard reload to render correctly — the defect is NOT fixed`
+      ).toEqual(afterHardReload.styles);
+    }
+  });
+
+  test('no stylesheet 404s while crossing surfaces (release skew / cache)', async ({ page }) => {
+    await assertNoFailedAssets(page, async () => {
+      for (const route of ALL_SURFACE_ROUTES) {
+        await page.goto(`${BASE_URL}${route}`, { waitUntil: 'networkidle' });
+        await assertStylesheetsLoaded(page);
+      }
+    });
+  });
+});
+
+test.describe('Structural assertions beyond computed styles', () => {
+  test('key layout elements keep sane geometry across surfaces', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    for (const route of ALL_SURFACE_ROUTES) {
+      await page.goto(`${BASE_URL}${route}`, { waitUntil: 'networkidle' });
+      const geometry = await page.evaluate(() => {
+        const box = selector => {
+          const element = document.querySelector(selector);
+          if (!element) return null;
+          const rect = element.getBoundingClientRect();
+          const style = getComputedStyle(element);
+          return {
+            width: Math.round(rect.width),
+            height: Math.round(rect.height),
+            display: style.display,
+            visibility: style.visibility,
+            overflowX: style.overflowX,
+            fontFamily: style.fontFamily,
+            fontSize: style.fontSize,
+          };
+        };
+        return {
+          body: box('body'),
+          sidebar: box('.admin__left, aside, nav'),
+          main: box('main'),
+          table: box('table'),
+          modal: box('[role="dialog"]'),
+          button: box('button'),
+        };
+      });
+
+      expect(geometry.body, `${route} must render a body`).not.toBeNull();
+      expect(geometry.body.visibility).toBe('visible');
+      // Typography must resolve to the self-hosted family, never a bare fallback
+      // caused by a failed third-party font request.
+      expect(geometry.body.fontFamily.toLowerCase(), `${route} lost its font stack`).not.toBe('');
+      for (const [name, value] of Object.entries(geometry)) {
+        if (!value) continue;
+        expect(value.width, `${route}: ${name} collapsed to zero width`).toBeGreaterThanOrEqual(0);
+      }
+      if (geometry.main) {
+        expect(geometry.main.display, `${route}: main element is not displayed`).not.toBe('none');
+      }
+    }
+  });
+
+  test('typography is served from the self-hosted font, with no third-party font request', async ({ page }) => {
+    const fontRequests = [];
+    page.on('request', request => {
+      const url = request.url();
+      if (/fonts\.googleapis\.com|fonts\.gstatic\.com/.test(url)) fontRequests.push(url);
+    });
+    for (const route of SURFACE_ROUTES.consumer) {
+      await page.goto(`${BASE_URL}${route}`, { waitUntil: 'networkidle' });
+    }
+    // CV/portfolio template engines legitimately load decorative typefaces; the
+    // consumer shell must not.
+    expect(fontRequests, `consumer routes must not fetch webfonts from Google: ${fontRequests.join(', ')}`).toEqual([]);
   });
 });

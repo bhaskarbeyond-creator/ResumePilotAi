@@ -952,7 +952,12 @@ class SubscriptionSetting extends Component {
         writeSanitizedPrintDocument(printWindow, html);
         try {
             printWindow.focus();
-        } catch (e) {}
+        } catch (error) {
+            // Focus is a best-effort convenience: some browsers refuse it for
+            // popups. Printing below still proceeds, so this must not surface as
+            // a user-facing failure — but it must not vanish silently either.
+            console.warn('Invoice print window could not take focus:', error);
+        }
         setTimeout(() => {
             try {
                 printWindow.print();

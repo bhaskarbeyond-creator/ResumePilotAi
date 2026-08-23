@@ -11,12 +11,22 @@ async function authHeaders(extra = {}) {
 export async function platformFetch(path, options = {}) {
   const headers = await authHeaders(options.headers || {});
   if (options.body && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
-  const { response, data } = await fetchAdminWithReauth(path, { ...options, headers });
+  const { response, data, mfaDenial } = await fetchAdminWithReauth(path, { ...options, headers });
   if (!response.ok) {
     const error = new Error(data.error?.message || data.message || `HTTP ${response.status}`);
     error.status = response.status;
     error.code = data.error?.code || data.code;
     error.body = data;
+    // A second-factor denial is not retryable and not fixable by
+    // reauthentication. Carrying the structured posture lets a panel explain the
+    // block (and, for MFA_CONFIGURATION_REQUIRED, name the platform-owner action)
+    // instead of showing a bare 403.
+    if (mfaDenial) {
+      error.mfaDenial = mfaDenial;
+      error.mfaState = mfaDenial.mfaState;
+      error.remediation = mfaDenial.remediation;
+      error.recoverableByReauthentication = false;
+    }
     throw error;
   }
   return data;

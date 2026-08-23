@@ -1,6 +1,17 @@
 @use "../../variables" as *;
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 @use 'sass:color';
+
+/*
+ * A `@import url('https://fonts.googleapis.com/css2?family=Inter...')` was
+ * removed from here. This is an application UI stylesheet, not a CV/portfolio
+ * template engine: fetching a webfont from a third party makes this page's
+ * typography depend on whether that CDN answers, which is the same
+ * non-deterministic rendering class that was removed from tailwind.css.
+ *
+ * The rules below already declare a complete fallback stack
+ * (`'Inter', -apple-system, BlinkMacSystemFont, sans-serif`), so typography now
+ * resolves locally and deterministically with no network round trip.
+ */
 
 // Theme colors from project
 $primary-blue: #4a6cf7;

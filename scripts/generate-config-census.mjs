@@ -25,8 +25,19 @@ const TEST_HINT = /(TEST|MOCK|FIXTURE)/i;
 
 function classify(name, { frontend, backend }) {
   const tags = [];
+  // A VITE_*/import.meta.env value is compiled into the client bundle and is
+  // therefore readable by anyone who loads the page. Labelling it SECRET is
+  // actively misleading — it implies a protection that cannot exist. These are
+  // publishable client identifiers (Firebase Web API key, Maps key, …) whose
+  // security comes from provider-side referrer/domain restrictions, NOT secrecy.
+  // The VITE_ prefix is the determinant, not which files happen to read the
+  // value. Vite inlines every VITE_* variable into the client bundle, so such a
+  // key is public even when a build script also reads it from process.env
+  // (VITE_FIREBASE_KEY is exactly this case).
+  const buildTimePublic = name.startsWith('VITE_') || (frontend && !backend);
   if (frontend) tags.push('BUILD TIME');
-  if (SECRET_HINT.test(name)) tags.push('SECRET');
+  if (buildTimePublic && SECRET_HINT.test(name)) tags.push('PUBLISHABLE CLIENT IDENTIFIER');
+  else if (SECRET_HINT.test(name)) tags.push('SECRET');
   if (FLAG_HINT.test(name)) tags.push('FEATURE FLAG');
   if (TEST_HINT.test(name)) tags.push('TEST ONLY');
   if (backend && !frontend && !tags.includes('SECRET')) tags.push('INFRASTRUCTURE ONLY');
@@ -34,7 +45,12 @@ function classify(name, { frontend, backend }) {
   return tags;
 }
 
-const files = [...walk('backend'), ...walk('src'), ...walk('scripts')].filter(f => /\.(m?js|jsx|cjs)$/.test(f));
+const SELF = 'scripts/generate-config-census.mjs';
+const files = [...walk('backend'), ...walk('src'), ...walk('scripts')]
+  .filter(f => /\.(m?js|jsx|cjs)$/.test(f))
+  // The generator's own source contains the very patterns it scans for, which
+  // would otherwise inject phantom keys (e.g. a bare `NAME`) into the census.
+  .filter(f => f.split(path.sep).join('/') !== SELF);
 const census = new Map();
 
 for (const file of files) {
@@ -43,6 +59,12 @@ for (const file of files) {
   for (const match of source.matchAll(/process\.env\.([A-Z0-9_]+)/g)) record(match[1], file, isFrontend);
   for (const match of source.matchAll(/process\.env\[['"]([A-Z0-9_]+)['"]\]/g)) record(match[1], file, isFrontend);
   for (const match of source.matchAll(/import\.meta\.env\.([A-Z0-9_]+)/g)) record(match[1], file, true);
+  // Modules that take an injected `env` object (defaulting to process.env) read
+  // configuration as `env.NAME`. The first census pass matched only
+  // `process.env.NAME` and therefore missed FIREBASE_TOTP_MFA_ENABLED entirely —
+  // a key the platform's own security posture depends on.
+  for (const match of source.matchAll(/\benv(?:ironment)?\.([A-Z][A-Z0-9_]{3,})\b/g)) record(match[1], file, isFrontend);
+  for (const match of source.matchAll(/\benv(?:ironment)?\[['"]([A-Z][A-Z0-9_]{3,})['"]\]/g)) record(match[1], file, isFrontend);
 }
 
 function record(name, file, frontend) {

@@ -1,4 +1,27 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap');
+/*
+ * Poppins is self-hosted from /fonts/poppins.css, which index.html loads as a
+ * render-blocking stylesheet before any bundle.
+ *
+ * A `@import url('https://fonts.googleapis.com/css2?family=Poppins...')` used to
+ * sit on the line above. It was actively harmful:
+ *
+ *   1. It survived the build as a real `@import` inside main-*.css, so every
+ *      page load made a render-blocking request to a third-party CDN while
+ *      parsing the main stylesheet.
+ *   2. It re-declared @font-face for weights 300-900 that are ALREADY
+ *      self-hosted. Because main.css is parsed after /fonts/poppins.css, the
+ *      remote faces won — meaning the product actually rendered Google's copy
+ *      and silently fell back to the self-hosted copy whenever the CDN was
+ *      slow, blocked by an ad blocker or extension, unreachable on a
+ *      restricted network, or refused by CSP. That is a non-deterministic
+ *      typography path and a plausible contributor to "the page doesn't look
+ *      right until I reload".
+ *
+ * Typography is now sourced from exactly one place. The self-hosted stylesheet
+ * provides weights 300-900 in normal and italic; the only usage of a lighter
+ * weight (`font-extralight`, 200) resolves to the nearest available face
+ * deterministically instead of depending on a network round trip.
+ */
 @import 'tailwindcss';
 
 /* Preserve original heading styles */
