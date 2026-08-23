@@ -2,11 +2,13 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FiRefreshCw, FiShield, FiAlertTriangle } from 'react-icons/fi';
 import { useAdminSession } from '../AdminContext';
 import { getOperators, searchPlatform, setOperatorRole } from '../../../services/platformApi';
+import useConfirmDialog from '../../../hooks/useConfirmDialog';
 
 const ASSIGNABLE = ['ADMIN', 'SUPPORT', 'USER'];
 
 export default function PlatformOperators() {
   const { isSuperAdmin } = useAdminSession();
+  const { confirm, confirmationDialog } = useConfirmDialog();
   const [operators, setOperators] = useState([]);
   const [note, setNote] = useState('');
   const [error, setError] = useState(null);
@@ -36,7 +38,13 @@ export default function PlatformOperators() {
 
   const changeRole = async (targetUid, nextRole) => {
     if (!isSuperAdmin) return;
-    if (!window.confirm(`Assign role ${nextRole} to ${targetUid}? Refresh tokens will be revoked. SUPER_ADMIN cannot be assigned here.`)) return;
+    const accepted = await confirm({
+      title: `Assign ${nextRole}`,
+      message: `Assign role ${nextRole} to ${targetUid}? Their refresh tokens will be revoked, signing them out of every session. SUPER_ADMIN cannot be assigned here.`,
+      confirmLabel: `Assign ${nextRole}`,
+      variant: 'danger',
+    });
+    if (!accepted) return;
     setSaving(true);
     setNotice(null);
     setError(null);
@@ -137,6 +145,7 @@ export default function PlatformOperators() {
           </div>
         )}
       </div>
+      {confirmationDialog}
     </div>
   );
 }

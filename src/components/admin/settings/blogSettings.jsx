@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import useConfirmDialog from '../../../hooks/useConfirmDialog';
 import { 
     getBlogSettings, 
     updateBlogSettings, 
@@ -20,6 +21,7 @@ import {
 } from 'react-icons/fi';
 
 const BlogSettings = () => {
+    const { confirm, confirmationDialog } = useConfirmDialog();
     const [settings, setSettings] = useState({
         blogTitle: 'Blog',
         blogDescription: 'Latest news and articles',
@@ -153,9 +155,13 @@ const BlogSettings = () => {
     };
 
     const handleCategoryDelete = async (categoryId, revision) => {
-        if (!window.confirm('Are you sure you want to delete this category? This action cannot be undone.')) {
-            return;
-        }
+        const accepted = await confirm({
+            title: 'Delete category',
+            message: 'Delete this blog category? This cannot be undone, and any posts filed under it will lose their category.',
+            confirmLabel: 'Delete category',
+            variant: 'danger',
+        });
+        if (!accepted) return;
 
         setSaving(true);
         
@@ -522,6 +528,7 @@ const BlogSettings = () => {
                     </button>
                 </div>
             )}
+            {confirmationDialog}
         </div>
     );
 };

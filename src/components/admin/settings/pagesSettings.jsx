@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { addPages, getAdminPages, removePageByName } from '../../../firestore/dbOperations';
 import { FaCheck, FaTimes, FaFile, FaTrash, FaPlus, FaEdit, FaEye, FaGlobe } from 'react-icons/fa';
+import EnterpriseConfirmModal from '../../../enterprise/components/EnterpriseConfirmModal';
 // import ReactQuill from 'react-quill'; // ES6
 // import 'react-quill/dist/quill.snow.css'; // ES6
 
@@ -13,11 +14,16 @@ class PagesSettings extends Component {
             isSuccesShowed: false,
             error: '', saving: false, editingRevision: 0, status: 'draft',
             pages: null,
+            // Pending delete awaiting confirmation. A class component cannot use
+            // the shared hook, so it drives the same Enterprise modal directly.
+            pendingDelete: null,
+            deleting: false,
         };
         this.handleChange = this.handleChange.bind(this);
         this.saveNewPage = this.saveNewPage.bind(this);
         this.handleTextChange = this.handleTextChange.bind(this);
         this.removePageHandler = this.removePageHandler.bind(this);
+        this.confirmRemovePage = this.confirmRemovePage.bind(this);
         this.getPages = this.getPages.bind(this);
     }
     componentDidMount() {
@@ -52,11 +58,26 @@ class PagesSettings extends Component {
         try { this.setState({ pages: await getAdminPages(), error: '' }); }
         catch (error) { this.setState({ pages: [], error: error.message }); }
     }
-    async removePageHandler(page) {
-        if (!window.confirm(`Delete “${page.id}”? This cannot be undone.`)) return;
-        const result = await removePageByName(page.id, page.revision);
-        if (!result.success) { this.setState({ error: result.error }); return; }
-        await this.getPages();
+    removePageHandler(page) {
+        // Ask first; the deletion itself happens in confirmRemovePage.
+        this.setState({ pendingDelete: page, error: '' });
+    }
+    async confirmRemovePage() {
+        const page = this.state.pendingDelete;
+        if (!page) return;
+        this.setState({ deleting: true });
+        try {
+            const result = await removePageByName(page.id, page.revision);
+            if (!result.success) {
+                this.setState({ error: result.error || 'The page could not be deleted.' });
+                return;
+            }
+            await this.getPages();
+        } catch (error) {
+            this.setState({ error: error.message || 'The page could not be deleted.' });
+        } finally {
+            this.setState({ pendingDelete: null, deleting: false });
+        }
     }
     render() {
         const totalPages = this.state.pages ? this.state.pages.length : 0;
@@ -256,6 +277,16 @@ class PagesSettings extends Component {
                         </button>
                     </div>
                 </div>
+                <EnterpriseConfirmModal
+                    isOpen={Boolean(this.state.pendingDelete)}
+                    title="Delete page"
+                    message={this.state.pendingDelete ? `Delete “${this.state.pendingDelete.id}”? This cannot be undone.` : ''}
+                    confirmLabel="Delete page"
+                    variant="danger"
+                    busy={this.state.deleting}
+                    onConfirm={this.confirmRemovePage}
+                    onClose={() => !this.state.deleting && this.setState({ pendingDelete: null })}
+                />
             </div>
         );
     }

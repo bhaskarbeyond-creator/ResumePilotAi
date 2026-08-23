@@ -83,10 +83,13 @@ export default function PlatformQueues() {
         throw new Error(result.error?.message || 'Retry operation failed');
       }
 
+      setError(null);
       setNotification(`Successfully requeued ${result.retriedCount || 1} job(s) for delivery.`);
       fetchQueues();
     } catch (err) {
-      alert(err.message || 'Failed to retry jobs');
+      // Surface in the page's existing error banner rather than a native
+      // alert(), which is unstyled and invisible to the UI test suite.
+      setError(err.message || 'Failed to retry jobs.');
     } finally {
       setRetrying(false);
     }
