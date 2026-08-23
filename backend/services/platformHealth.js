@@ -774,10 +774,10 @@ async function buildServices(app) {
     metrics: {
       localWorkerEnabled: dispatcherWorkerLocal,
       externalWorkerDeclared: dispatcherWorkerExternal,
-      queued: outboxStats.available ? outboxStats.queued : null,
-      delivered: outboxStats.available ? outboxStats.delivered : null,
-      deadLetter: outboxStats.available ? outboxStats.deadLetter : null,
-      inspected: outboxStats.available ? outboxStats.inspected : null,
+      queued: (dispatcherState === STATE.OPERATIONAL && outboxStats.available) ? outboxStats.queued : null,
+      delivered: (dispatcherState === STATE.OPERATIONAL && outboxStats.available) ? outboxStats.delivered : null,
+      deadLetter: (dispatcherState === STATE.OPERATIONAL && outboxStats.available) ? outboxStats.deadLetter : null,
+      inspected: (dispatcherState === STATE.OPERATIONAL && outboxStats.available) ? outboxStats.inspected : null,
     },
     lastCheckedAt: checkedAt,
   }));
@@ -1160,7 +1160,13 @@ async function buildServices(app) {
     affectedFeatures: ['Tenant background jobs', 'Tenant exports'],
     affectedApis: ['/api/platform/enterprise-queue', '/api/enterprise/jobs'],
     affectedUiModules: ['/adm/operations', '/enterprise'],
-    metrics: entQueue ? { engine: entQueue.engine, status: entQueue.status, activeQueued: entQueue.activeQueued, deadLetterCount: entQueue.deadLetterCount, signingConfigured: entQueue.signingConfigured } : {},
+    metrics: entQueue ? {
+      engine: entQueue.engine,
+      status: entQueue.status,
+      activeQueued: enterpriseOutboxState === STATE.OPERATIONAL ? entQueue.activeQueued : null,
+      deadLetterCount: enterpriseOutboxState === STATE.OPERATIONAL ? entQueue.deadLetterCount : null,
+      signingConfigured: entQueue.signingConfigured,
+    } : {},
     lastCheckedAt: checkedAt,
   }));
 
