@@ -15,6 +15,7 @@ function unauthorized(res, code = 'AUTH_REQUIRED') {
 }
 
 let verifyToken = token => admin.auth().verifyIdToken(token, true);
+let lookupUser = uid => admin.auth().getUser(uid);
 
 async function requireAuth(req, res, next) {
   const header = req.get('authorization') || '';
@@ -26,9 +27,9 @@ async function requireAuth(req, res, next) {
 
     // Real-time verification fallback: If client JWT was minted prior to verification,
     // check live Firebase Auth record so verified users are not blocked by token cache lag.
-    if (!emailVerified && decoded.uid && process.env.NODE_ENV !== 'test' && admin?.auth && typeof admin.auth().getUser === 'function') {
+    if (!emailVerified && decoded.uid && typeof lookupUser === 'function') {
       try {
-        const userRecord = await admin.auth().getUser(decoded.uid);
+        const userRecord = await lookupUser(decoded.uid);
         if (userRecord?.emailVerified === true) {
           emailVerified = true;
         }
@@ -70,6 +71,11 @@ function requirePermission(permission) {
 function setTokenVerifierForTests(verifier) {
   if (process.env.NODE_ENV !== 'test') throw new Error('Test verifier injection is disabled outside tests');
   verifyToken = verifier;
+}
+
+function setUserLookupForTests(lookup) {
+  if (process.env.NODE_ENV !== 'test') throw new Error('Test lookup injection is disabled outside tests');
+  lookupUser = lookup;
 }
 
 function isSuperAdmin(user) {
@@ -149,6 +155,7 @@ module.exports = {
   superAdminMfaEnforced,
   permissionsFor,
   setTokenVerifierForTests,
+  setUserLookupForTests,
 };
 
 
