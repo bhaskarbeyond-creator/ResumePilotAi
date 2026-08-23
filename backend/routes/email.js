@@ -1242,7 +1242,13 @@ async function dispatchMailWithFallback(config, mailOptions) {
     }
 
     if (primaryErr) throw primaryErr;
-    throw new Error('No valid SMTP credentials configured.');
+    // No transport was even attempted because no credentials exist. This is a
+    // configuration gap, not a delivery failure, and the distinction has to
+    // survive all the way to the HTTP status: a missing SMTP account must not
+    // be reported to an operator as "the mail server rejected your message".
+    const notConfigured = new Error('No valid SMTP credentials configured.');
+    notConfigured.code = 'EMAIL_NOT_CONFIGURED';
+    throw notConfigured;
 }
 
 // --- API ENDPOINTS ---
@@ -1879,15 +1885,23 @@ async function dispatchNotification(db, { to, templateType, vars = {}, customSub
         });
         return { success: true, result };
     } catch (err) {
-        console.error(`[Notification Error] Template '${templateType}' to '${to}' failed:`, err.message);
+        // Separate "we are not set up to send mail" from "we tried and it
+        // failed". Only the latter is an incident; the former is a known,
+        // reportable configuration state.
+        const notConfigured = err.code === 'EMAIL_NOT_CONFIGURED';
+        if (notConfigured) {
+            console.warn(`[Notification Not Configured] Template '${templateType}' to '${to}': ${err.message}`);
+        } else {
+            console.error(`[Notification Error] Template '${templateType}' to '${to}' failed:`, err.message);
+        }
         await logOutboundEmail(db, {
             to,
             subject: customSubject || `Notification (${templateType})`,
             templateType: templateType || 'custom',
-            status: 'FAILED',
+            status: notConfigured ? 'NOT_CONFIGURED' : 'FAILED',
             error: err.message
         });
-        return { success: false, error: err.message };
+        return { success: false, error: err.message, code: notConfigured ? 'EMAIL_NOT_CONFIGURED' : 'EMAIL_DELIVERY_FAILED' };
     }
 }
 

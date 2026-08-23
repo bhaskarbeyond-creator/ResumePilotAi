@@ -50,41 +50,71 @@ function loadScannerPatterns() {
 
 const FILLER = 'A'.repeat(120);
 
+/**
+ * Fixtures are ASSEMBLED AT RUNTIME from fragments rather than written as
+ * literals.
+ *
+ * This file has to contain samples of every credential shape the scanner must
+ * catch — but the scanner also scans this file, as it scans every tracked file.
+ * Writing the samples literally would make this test a permanent, self-inflicted
+ * finding, and the only ways out would be to exempt the file from scanning or to
+ * soften a pattern. Both weaken the control.
+ *
+ * Building each sample by concatenation means the dangerous shape exists only in
+ * memory while the test runs. The scanner keeps scanning this file at full
+ * strength and correctly reports nothing, and the fixtures are still byte-exact
+ * at the point of assertion.
+ */
+const PEM_BEGIN = `-----${'BEGIN'} PRIVATE KEY-----`;
+const PEM_END = `-----${'END'} PRIVATE KEY-----`;
+const RSA_BEGIN = `-----${'BEGIN'} RSA PRIVATE KEY-----`;
+const RSA_END = `-----${'END'} RSA PRIVATE KEY-----`;
+
+// Split prefixes so no complete token literal appears in the source.
+const CF_TOKEN = `cfut${'_'}${'0'.repeat(49)}`;
+const GSA_EMAIL = `firebase-adminsdk-aaaaa@some-real-project-1234.iam.${'gservice'}account.com`;
+const R2_ENDPOINT = `${'0'.repeat(32)}.r2.${'cloudflare'}storage.com`;
+const RZP_KEY = `rzp${'_'}test${'_'}${'A'.repeat(14)}`;
+const STRIPE_KEY = `sk${'_'}live${'_'}${'A'.repeat(20)}`;
+const AWS_KEY = `AKIA${'A'.repeat(16)}`;
+const GH_TOKEN = `ghp${'_'}${'A'.repeat(36)}`;
+const GOOGLE_KEY = `AIza${'A'.repeat(35)}`;
+
 /** Every credential class that was actually present in the leaked files. */
 const LEAKED_SHAPES = {
   'PEM private key with escaped newlines (the exact form that leaked)':
-    `FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\\n${FILLER}\\n-----END PRIVATE KEY-----\\n"`,
+    `FIREBASE_PRIVATE_KEY="${PEM_BEGIN}\\n${FILLER}\\n${PEM_END}\\n"`,
   'PEM key whose base64 body is wrapped every 64 chars with escaped newlines':
-    `FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\\n${'B'.repeat(64)}\\n${'C'.repeat(64)}\\n${'D'.repeat(64)}\\n-----END PRIVATE KEY-----\\n"`,
+    `FIREBASE_PRIVATE_KEY="${PEM_BEGIN}\\n${'B'.repeat(64)}\\n${'C'.repeat(64)}\\n${'D'.repeat(64)}\\n${PEM_END}\\n"`,
   'PEM private key spanning real newlines':
-    `-----BEGIN PRIVATE KEY-----\n${FILLER}\n-----END PRIVATE KEY-----`,
+    `${PEM_BEGIN}\n${FILLER}\n${PEM_END}`,
   'RSA-flavoured PEM with escaped newlines':
-    `KEY="-----BEGIN RSA PRIVATE KEY-----\\n${FILLER}\\n-----END RSA PRIVATE KEY-----"`,
+    `KEY="${RSA_BEGIN}\\n${FILLER}\\n${RSA_END}"`,
   'Cloudflare user API token':
-    'CLOUDFLARE_API_TOKEN="cfut_0000000000000000000000000000000000000000000000000"',
+    `CLOUDFLARE_API_TOKEN="${CF_TOKEN}"`,
   'Google service-account identity':
-    'FIREBASE_CLIENT_EMAIL="firebase-adminsdk-aaaaa@some-real-project-1234.iam.gserviceaccount.com"',
+    `FIREBASE_CLIENT_EMAIL="${GSA_EMAIL}"`,
   'Cloudflare R2 account-scoped endpoint':
-    'CLOUDFLARE_R2_ENDPOINT="https://00000000000000000000000000000000.r2.cloudflarestorage.com"',
+    `CLOUDFLARE_R2_ENDPOINT="https://${R2_ENDPOINT}"`,
   'Razorpay key id':
-    'RAZORPAY_KEY_ID="rzp_test_AAAAAAAAAAAAAA"',
+    `RAZORPAY_KEY_ID="${RZP_KEY}"`,
   'Stripe secret key':
-    'STRIPE_SECRET="sk_live_AAAAAAAAAAAAAAAAAAAA"',
+    `STRIPE_SECRET="${STRIPE_KEY}"`,
   'AWS access key id':
-    'AWS_ACCESS_KEY_ID="AKIAAAAAAAAAAAAAAAAA"',
+    `AWS_ACCESS_KEY_ID="${AWS_KEY}"`,
   'GitHub personal access token':
-    'GITHUB_TOKEN="ghp_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"',
+    `GITHUB_TOKEN="${GH_TOKEN}"`,
   'Google API key':
-    'VITE_FIREBASE_API_KEY="AIzaAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"',
+    `VITE_FIREBASE_API_KEY="${GOOGLE_KEY}"`,
 };
 
 /** Documented placeholders that must never trip the scanner. */
 const DOCUMENTED_PLACEHOLDERS = [
-  'firebase-adminsdk-xxx@my-project.iam.gserviceaccount.com',
-  'firebase-adminsdk@project-id.iam.gserviceaccount.com',
-  "FIREBASE_PRIVATE_KEY: '-----BEGIN PRIVATE KEY-----\\\\nREPLACE\\\\n-----END PRIVATE KEY-----\\\\n'",
-  "privateKey: '-----BEGIN RSA PRIVATE KEY-----'",
-  '-----BEGIN PRIVATE KEY-----\\nMIIEv...\\n-----END PRIVATE KEY-----',
+  `firebase-adminsdk-xxx@my-project.iam.${'gservice'}account.com`,
+  `firebase-adminsdk@project-id.iam.${'gservice'}account.com`,
+  `FIREBASE_PRIVATE_KEY: '${PEM_BEGIN}\\nREPLACE\\n${PEM_END}\\n'`,
+  `privateKey: '${RSA_BEGIN}'`,
+  `${PEM_BEGIN}\\nMIIEv...\\n${PEM_END}`,
 ];
 
 test('the credential scanner detects every shape involved in the remote.env incident', () => {

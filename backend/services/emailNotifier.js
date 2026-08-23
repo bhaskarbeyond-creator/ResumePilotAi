@@ -98,21 +98,40 @@ function publicSiteOrigin() {
     return resolvePublicAppOrigin();
 }
 
+/**
+ * Delivery states are deliberately three-valued. Collapsing NOT_CONFIGURED into
+ * DELIVERY_FAILED is what previously made an unconfigured SMTP account look
+ * like a mail outage, and drove notification endpoints to answer 502 on a
+ * perfectly healthy deployment that simply has no mail provider yet.
+ */
 const sendNotification = async (db, { to, templateType, vars, customSubject, customBody }) => {
     if (!to) return { success: false, deliveryState: 'DELIVERY_FAILED', error: 'Notification recipient unavailable' };
     try {
         const emailRoute = require('../routes/email');
         if (emailRoute && typeof emailRoute.dispatchNotification === 'function') {
             const result = await emailRoute.dispatchNotification(db, { to, templateType, vars, customSubject, customBody });
-            return result?.success
-                ? { success: true, deliveryState: 'DELIVERY_ATTEMPTED', providerAccepted: true }
-                : { success: false, deliveryState: 'DELIVERY_FAILED', error: result?.error || 'Provider rejected delivery attempt' };
+            if (result?.success) {
+                return { success: true, deliveryState: 'DELIVERY_ATTEMPTED', providerAccepted: true };
+            }
+            const notConfigured = result?.code === 'EMAIL_NOT_CONFIGURED';
+            return {
+                success: false,
+                deliveryState: notConfigured ? 'NOT_CONFIGURED' : 'DELIVERY_FAILED',
+                code: result?.code || 'EMAIL_DELIVERY_FAILED',
+                error: result?.error || 'Provider rejected delivery attempt',
+            };
         }
     } catch (e) {
         console.warn(`[EmailNotifier Direct Error] Template '${templateType}' fallback:`, e.message);
-        return { success: false, deliveryState: 'DELIVERY_FAILED', error: e.message };
+        const notConfigured = e.code === 'EMAIL_NOT_CONFIGURED';
+        return {
+            success: false,
+            deliveryState: notConfigured ? 'NOT_CONFIGURED' : 'DELIVERY_FAILED',
+            code: notConfigured ? 'EMAIL_NOT_CONFIGURED' : 'EMAIL_DELIVERY_FAILED',
+            error: e.message,
+        };
     }
-    return { success: false, deliveryState: 'DELIVERY_FAILED', error: 'Email dispatcher unavailable' };
+    return { success: false, deliveryState: 'DELIVERY_FAILED', code: 'EMAIL_DISPATCHER_UNAVAILABLE', error: 'Email dispatcher unavailable' };
 };
 
 class EmailNotifier {
