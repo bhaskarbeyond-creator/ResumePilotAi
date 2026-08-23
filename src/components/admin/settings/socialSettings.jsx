@@ -12,22 +12,49 @@ class SocialSettings extends Component {
             pinterest: '',
             youtube: '',
             isSuccesShowed: false,
+            // Pristine copy of the last saved values, used by Reset.
+            savedLinks: null,
+            saving: false,
+            saveError: null,
         };
         this.handleChange = this.handleChange.bind(this);
         this.saveWebsiteMetaData = this.saveWebsiteMetaData.bind(this);
     }
     componentDidMount() {
-        getSocialLinks().then((element) => {
+        this.loadSocialLinks();
+    }
+
+    /**
+     * Loads the saved links and keeps a pristine copy, so Reset can restore the
+     * last saved values rather than merely blanking the form.
+     */
+    loadSocialLinks() {
+        return getSocialLinks().then((element) => {
             if (element) {
-                this.setState({
-                    facebook: element.facebook,
-                    instagram: element.instagram,
-                    twitter: element.twitter,
-                    pinterest: element.pinterest,
-                    youtube: element.youtube,
-                });
+                const saved = {
+                    facebook: element.facebook || '',
+                    instagram: element.instagram || '',
+                    twitter: element.twitter || '',
+                    pinterest: element.pinterest || '',
+                    youtube: element.youtube || '',
+                };
+                this.setState({ ...saved, savedLinks: saved });
             }
         });
+    }
+
+    /** Discards unsaved edits, restoring the last values loaded from storage. */
+    /** True when the form differs from the last saved values. */
+    hasUnsavedChanges() {
+        const saved = this.state.savedLinks;
+        if (!saved) return false;
+        return Object.keys(saved).some(key => (this.state[key] || '') !== (saved[key] || ''));
+    }
+
+    resetChanges() {
+        const saved = this.state.savedLinks;
+        if (!saved) return;
+        this.setState({ ...saved, isSuccesShowed: false });
     }
     handleChange(event, inputName) {
         switch (inputName) {
@@ -50,13 +77,36 @@ class SocialSettings extends Component {
                 break;
         }
     }
-    saveWebsiteMetaData() {
-        this.setState({ isSuccesShowed: true });
-        addSocial(this.state.facebook, this.state.twitter, this.state.instagram, this.state.youtube, this.state.pinterest);
-        // Auto-hide success message after 3 seconds
-        setTimeout(() => {
-            this.setState({ isSuccesShowed: false });
-        }, 3000);
+    async saveWebsiteMetaData() {
+        // Previously this flagged success *before* awaiting the write and
+        // ignored the result, so a failed save still told the operator it had
+        // worked. Now the outcome decides what is shown.
+        if (this.state.saving) return;
+        this.setState({ saving: true, saveError: null, isSuccesShowed: false });
+        try {
+            await addSocial(
+                this.state.facebook,
+                this.state.twitter,
+                this.state.instagram,
+                this.state.youtube,
+                this.state.pinterest,
+            );
+            const saved = {
+                facebook: this.state.facebook,
+                instagram: this.state.instagram,
+                twitter: this.state.twitter,
+                pinterest: this.state.pinterest,
+                youtube: this.state.youtube,
+            };
+            // Refresh the pristine copy so Reset compares against what is now
+            // actually stored.
+            this.setState({ isSuccesShowed: true, savedLinks: saved });
+            setTimeout(() => this.setState({ isSuccesShowed: false }), 3000);
+        } catch (error) {
+            this.setState({ saveError: error?.message || 'Social links could not be saved. Please retry.' });
+        } finally {
+            this.setState({ saving: false });
+        }
     }
     render() {
         const socialPlatforms = [
@@ -220,6 +270,12 @@ class SocialSettings extends Component {
                     </div>
                 </div>
 
+                {this.state.saveError && (
+                    <div role="alert" data-testid="social-save-error" className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                        {this.state.saveError}
+                    </div>
+                )}
+
                 {/* Action Buttons */}
                 <div className="flex items-center justify-between pt-6 border-t border-slate-200">
                     <div className="flex items-center text-sm text-slate-500">
@@ -229,17 +285,21 @@ class SocialSettings extends Component {
                     <div className="flex space-x-3">
                         <button
                             type="button"
-                            className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
+                            onClick={() => this.resetChanges()}
+                            disabled={!this.state.savedLinks || !this.hasUnsavedChanges()}
+                            title={this.hasUnsavedChanges() ? 'Discard unsaved changes' : 'No unsaved changes'}
+                            className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Reset
                         </button>
                         <button
                             type="button"
                             onClick={() => this.saveWebsiteMetaData()}
-                            className="px-6 py-2 text-sm font-medium text-white bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors flex items-center space-x-2"
+                            disabled={this.state.saving}
+                            className="px-6 py-2 text-sm font-medium text-white bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors flex items-center space-x-2 disabled:opacity-50"
                         >
                             <FaCheck className="w-4 h-4" />
-                            <span>Save Changes</span>
+                            <span>{this.state.saving ? 'Saving…' : 'Save Changes'}</span>
                         </button>
                     </div>
                 </div>

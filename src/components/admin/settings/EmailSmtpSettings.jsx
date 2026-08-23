@@ -1671,10 +1671,19 @@ const EmailSmtpSettings = () => {
                                                 )}
                                             </div>
 
+                                            {/* This is a rendering of the call-to-action inside the
+                                                email itself, not an admin control. It is presented as
+                                                inert so it cannot read as a dead button: it is not
+                                                focusable and is hidden from assistive technology. */}
                                             <div className="pt-2 text-center">
-                                                <button type="button" className="px-5 py-2.5 bg-indigo-600 text-white font-bold rounded-xl text-xs shadow-md">
+                                                <span
+                                                    aria-hidden="true"
+                                                    data-testid="email-preview-cta"
+                                                    className="inline-block px-5 py-2.5 bg-indigo-600 text-white font-bold rounded-xl text-xs shadow-md select-none"
+                                                >
                                                     Take Action &rarr;
-                                                </button>
+                                                </span>
+                                                <p className="mt-1 text-[10px] text-slate-400">Preview only — this button appears in the email the recipient receives.</p>
                                             </div>
                                         </div>
 

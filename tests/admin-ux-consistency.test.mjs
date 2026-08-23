@@ -127,3 +127,50 @@ test('admin data mutations do not swallow their failures', () => {
   }
   assert.deepEqual(offenders, [], `these admin mutations fail silently:\n${offenders.join('\n')}`);
 });
+
+/**
+ * No dead buttons in the Admin console.
+ *
+ * A <button> that carries no onClick, is not a form submit, and is not inside
+ * generated print/preview markup is a control that silently does nothing when
+ * an operator clicks it. Two of these existed (a "Reset" in social settings and
+ * a "Take Action" in the email preview) and both misled the operator.
+ *
+ * Legitimate exemptions, each narrow and justified:
+ *  - buttons with type="submit" (the enclosing <form onSubmit> wires them)
+ *  - string-templated HTML for a print window, which uses lowercase onclick
+ */
+test('every admin button is wired to a handler or submits a form', () => {
+  const offenders = [];
+
+  for (const file of walk(adminRoot)) {
+    const source = fs.readFileSync(file, 'utf8');
+
+    for (const match of source.matchAll(/<button\b([^>]*)>/gs)) {
+      const attributes = match[1];
+
+      // React handler, or a submit button driven by its form.
+      if (/onClick/.test(attributes)) continue;
+      if (/type=["']submit["']/.test(attributes)) continue;
+
+      // Buttons written into a generated document (print/invoice windows) use
+      // the lowercase DOM attribute and run in that document, not in React.
+      if (/onclick=/.test(attributes)) continue;
+
+      // A JSX button with no explicit type inside a <form> defaults to submit.
+      const before = source.slice(0, match.index);
+      const openForms = (before.match(/<form\b/g) || []).length;
+      const closedForms = (before.match(/<\/form>/g) || []).length;
+      if (openForms > closedForms && !/type=/.test(attributes)) continue;
+
+      const line = before.split('\n').length;
+      offenders.push(`${path.relative(root, file)}:${line}`);
+    }
+  }
+
+  assert.deepEqual(
+    offenders,
+    [],
+    `Dead admin buttons — clicking these does nothing:\n  ${offenders.join('\n  ')}`,
+  );
+});
