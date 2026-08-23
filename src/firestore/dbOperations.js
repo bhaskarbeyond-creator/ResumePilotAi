@@ -460,15 +460,16 @@ export async function getAllSubscriptions() {
 
 export async function checkIfAdmin(uid) {
     const authUser = fire.auth().currentUser;
-    if (!authUser || authUser.uid !== uid) return false;
+    if (!authUser) return false;
     try {
         const token = await authUser.getIdTokenResult();
-        return ['ADMIN', 'SUPER_ADMIN'].includes(String(token.claims.role || '').toUpperCase()) || token.claims.permissions?.includes('*');
+        return ['ADMIN', 'SUPER_ADMIN'].includes(String(token.claims?.role || '').toUpperCase()) || token.claims?.permissions?.includes('*') === true;
     } catch (error) {
         console.warn('Unable to verify admin claim:', error.message);
         return false;
     }
 }
+
 // Get one user by exact UID or email. Admin callers use Firebase Auth-backed
 // server data; ordinary callers retain the owner-scoped profile lookup.
 export async function getUserById(identifier) {

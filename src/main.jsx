@@ -121,6 +121,8 @@ function PostLoginRedirect({ user }) {
         if (target && isSafeInternalPath(target)) {
             clearPostLoginRedirectPath();
             navigate(target, { replace: true });
+        } else if (location.pathname === '/login') {
+            navigate('/dashboard', { replace: true });
         }
     }, [user, location.pathname, location.search, navigate]);
     return null;

@@ -31,7 +31,11 @@ async function signIn(page, email, password) {
   await page.locator('input[type="password"], input[name="Password"], input[name="password"]').first().fill(password);
   const submit = page.locator('input[type="submit"], button[type="submit"]').first();
   await submit.click();
-  await page.waitForTimeout(1200);
+  try {
+    await page.waitForURL(url => !url.pathname.includes('/login'), { timeout: 10_000 });
+  } catch (_) {
+    await page.waitForTimeout(2000);
+  }
   if (page.url().includes('/login')) {
     const error = await page.locator('[role="alert"]').allTextContents().catch(() => []);
     throw new Error(`Login did not leave /login${error.length ? `: ${error.join(' ')}` : ''}`);
