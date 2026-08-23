@@ -835,7 +835,8 @@ router.get('/queue/jobs', resolveTenantContext, requireTenantPermission('tenant.
     const jobs = await listOutboxJobs({ db, context: req.tenantContext, status: req.query?.status, limit: req.query?.limit });
     return res.json({ jobs });
   } catch (error) {
-    return res.status(error.status || 503).json({ error: { code: error.code || 'ENTERPRISE_OUTBOX_UNAVAILABLE', message: 'Tenant jobs are unavailable', requestId: res.locals?.requestId } });
+    const code = (typeof error.code === 'string' && error.code) ? error.code : 'ENTERPRISE_OUTBOX_UNAVAILABLE';
+    return res.status(error.status || 503).json({ error: { code, message: 'Tenant jobs are unavailable', requestId: res.locals?.requestId } });
   }
 });
 

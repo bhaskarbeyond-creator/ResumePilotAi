@@ -13,7 +13,7 @@ const superAdmin = new Set([
   'GET /api/admin/firebase-service-account', 'POST /api/admin/ai-settings', 'POST /api/admin/ai/test-provider', 'POST /api/admin/ai/fetch-models',
   'POST /api/admin/payment-settings', 'POST /api/admin/payment/test-provider', 'POST /api/admin/system-health-settings',
   'POST /api/admin/firebase-service-account', 'POST /api/admin/twilio-settings', 'POST /api/admin/delete-user', 'POST /api/auth/purge-orphaned-auth', 'POST /api/send-sms',
-  'GET /api/platform/feature-flags', 'GET /api/platform/configuration',
+  'GET /api/platform/feature-flags', 'GET /api/platform/configuration', 'GET /api/platform/payment-settings',
 ]);
 const platformSuper = /^(POST|PATCH|DELETE) \/api\/platform\/(maintenance|announcements|operators|queues\/retry|tenants\/.*(?:decommission)?|feature-flags|operational-status\/.*\/test)/;
 const moduleFor = path => path.startsWith('/api/enterprise') ? 'enterprise' : path.startsWith('/api/platform') ? 'platform' : path.startsWith('/api/admin') || path.startsWith('/api/email/admin') ? 'admin' : path.startsWith('/api/email') || path.includes('/notify') ? 'notifications' : path.startsWith('/api/auth') ? 'auth' : path.startsWith('/api/health') || path === '/healthz' || path === '/readyz' ? 'health' : path.startsWith('/api/') ? 'consumer-api' : 'public';
@@ -21,7 +21,7 @@ const uiFor = path => path.startsWith('/api/platform') ? 'src/components/admin' 
 const adminControlPaths = new Set(['/api/auth/purge-orphaned-auth', '/api/auth/github/test-credentials', '/api/auth/linkedin/test-credentials', '/api/send-sms', '/api/email/logs', '/api/email/resend', '/api/email/templates', '/api/logs', '/api/resend', '/api/templates', '/api/send-email']);
 const isAdminControlPath = path => path.startsWith('/api/platform') || path.startsWith('/api/admin') || path.startsWith('/api/email/admin') || adminControlPaths.has(path);
 const authFor = path => publicPaths.has(path) ? 'PUBLIC' : isAdminControlPath(path) ? 'BEARER_ADMIN' : path.startsWith('/api/enterprise/m2m') ? 'SERVICE_KEY' : 'BEARER_USER';
-const roleFor = (method, path) => publicPaths.has(path) ? 'PUBLIC' : superAdmin.has(`${method} ${path}`) || platformSuper.test(`${method} ${path}`) ? 'SUPER_ADMIN' : isAdminControlPath(path) ? 'ADMIN+' : path.startsWith('/api/enterprise') ? 'TENANT_POLICY' : 'AUTHENTICATED';
+const roleFor = (method, path) => publicPaths.has(path) ? 'PUBLIC' : superAdmin.has(`${method} ${path}`) || platformSuper.test(`${method} ${path}`) ? 'SUPER_ADMIN' : path.startsWith('/api/enterprise/m2m') ? 'SERVICE_KEY' : isAdminControlPath(path) ? 'ADMIN+' : path.startsWith('/api/enterprise') ? 'TENANT_POLICY' : 'AUTHENTICATED';
 const auditFor = (method, path) => ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method) || path.includes('/audit') || path.includes('/firebase-service-account') ? 'YES' : 'NO';
 const okFor = method => method === 'POST' ? '200/201/202/204' : method === 'DELETE' ? '200/204' : '200';
 const failFor = () => '400/401/403/404/409/429/500/501/502/503';

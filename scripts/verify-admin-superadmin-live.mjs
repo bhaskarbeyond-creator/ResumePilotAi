@@ -289,7 +289,7 @@ async function cleanupTenant(superAdmin, tenantId, name) {
     orphaned.push({ kind: 'tenant', id: tenantId, reason: 'refusing to delete a resource this script did not create' });
     return;
   }
-  const response = await call(superAdmin, 'POST', `/api/enterprise/platform/tenants/${tenantId}/decommission`, {
+  const response = await call(superAdmin, 'POST', `/api/platform/tenants/${tenantId}/decommission`, {
     reason: 'automated certification cleanup',
   });
   if (response.status < 400) {

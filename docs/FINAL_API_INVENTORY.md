@@ -1,7 +1,7 @@
 # FINAL API INVENTORY
 
-**Generated:** 2026-08-23T10:08:00.104Z
-**Source commit:** `866538312527d4353c76f5f5c9d481408e1271f9`
+**Generated:** 2026-08-23T10:40:21.951Z
+**Source commit:** `13c496c928bbc2703a38bf421b847b5ceaa0d069`
 **Authority:** Express runtime routing table collected by `backend/services/platformHealth.js`.
 
 > This is a source/release manifest, not live production evidence. `LIVE` remains `NOT VERIFIED` until the local/live runbook is executed against the deployed SHA.
@@ -166,7 +166,7 @@ npm run certify:ui
 | GET | `/api/enterprise/data-plane/status` | BEARER_USER | TENANT_POLICY | TENANT/PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/enterprise | NO | NOT VERIFIED |
 | GET | `/api/enterprise/data/export` | BEARER_USER | TENANT_POLICY | TENANT/PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/enterprise | NO | NOT VERIFIED |
 | POST | `/api/enterprise/lifecycle/suspend` | BEARER_USER | TENANT_POLICY | TENANT/PLATFORM | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/enterprise | YES | NOT VERIFIED |
-| GET | `/api/enterprise/m2m/context` | SERVICE_KEY | TENANT_POLICY | TENANT/PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/enterprise | NO | NOT VERIFIED |
+| GET | `/api/enterprise/m2m/context` | SERVICE_KEY | SERVICE_KEY | TENANT/PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/enterprise | NO | NOT VERIFIED |
 | GET | `/api/enterprise/memberships` | BEARER_USER | TENANT_POLICY | TENANT/PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/enterprise | NO | NOT VERIFIED |
 | POST | `/api/enterprise/memberships` | BEARER_USER | TENANT_POLICY | TENANT/PLATFORM | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/enterprise | YES | NOT VERIFIED |
 | DELETE | `/api/enterprise/memberships/:principalId` | BEARER_USER | TENANT_POLICY | TENANT/PLATFORM | - | 200/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/enterprise | YES | NOT VERIFIED |
@@ -289,7 +289,7 @@ npm run certify:ui
 | GET | `/api/platform/operators` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | NO | NOT VERIFIED |
 | POST | `/api/platform/operators` | BEARER_ADMIN | SUPER_ADMIN | PLATFORM | YES | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | YES | NOT VERIFIED |
 | GET | `/api/platform/overview` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | NO | NOT VERIFIED |
-| GET | `/api/platform/payment-settings` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | NO | NOT VERIFIED |
+| GET | `/api/platform/payment-settings` | BEARER_ADMIN | SUPER_ADMIN | PLATFORM | YES | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | NO | NOT VERIFIED |
 | GET | `/api/platform/payments-health` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | NO | NOT VERIFIED |
 | GET | `/api/platform/queues` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | NO | NOT VERIFIED |
 | POST | `/api/platform/queues/retry` | BEARER_ADMIN | SUPER_ADMIN | PLATFORM | YES | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | YES | NOT VERIFIED |

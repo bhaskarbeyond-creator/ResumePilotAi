@@ -1659,7 +1659,7 @@ app.get('/api/export-render-data', async (req, res) => {
     res.setHeader('X-Robots-Tag', 'noindex, nofollow');
     try {
         const data = await consumeExportRenderToken(req.app.get('db'), req.query.token);
-        if (!data) return res.status(404).json({ error: 'Export data not found' });
+        if (!data) return res.status(404).json({ error: 'Export data not found', code: 'RENDER_TOKEN_NOT_FOUND' });
         return res.json({ data });
     } catch (error) {
         console.error('[Export render data]', { message: error.message, requestId: res.locals.requestId });
