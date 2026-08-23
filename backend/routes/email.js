@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const nodemailer = require('nodemailer');
 const tls = require('tls');
+const dnsPromises = require('dns').promises;
 const net = require('net');
 const fs = require('fs');
 const path = require('path');
@@ -1422,6 +1423,142 @@ router.get('/admin/settings', async (req, res) => {
         imap: projectMailSection('imap', config.imap),
         enabledTemplates: config.enabledTemplates || {},
     } });
+});
+
+/**
+ * Real DNS deliverability inspection.
+ *
+ * The Admin console previously rendered a hardcoded "100% EXCELLENT
+ * DELIVERABILITY" badge with four permanently-green SPF/DKIM/DMARC/MX cards.
+ * Those values were never measured, so the panel claimed a healthy mail
+ * posture even when the records were missing or broken.
+ *
+ * This resolves the records live and reports exactly what DNS returns. Every
+ * card can come back OPERATIONAL, DEGRADED, NOT_CONFIGURED or UNKNOWN, and a
+ * lookup failure is reported as UNKNOWN with the reason attached — never as a
+ * pass.
+ */
+router.get('/admin/deliverability', async (req, res) => {
+    // Derive the domain to inspect from the configured sender, never from
+    // caller-supplied input, so this cannot be used as a DNS probe primitive.
+    const config = await getEmailConfig(req.app.get('db'));
+    const sender = config?.smtp?.user || config?.smtp?.from || '';
+    const domain = String(sender).includes('@') ? String(sender).split('@').pop().trim().toLowerCase() : '';
+
+    if (!domain) {
+        return res.json({
+            success: true,
+            domain: null,
+            checkedAt: new Date().toISOString(),
+            overall: 'NOT_CONFIGURED',
+            summary: 'No sender domain is configured, so deliverability cannot be assessed.',
+            records: [],
+        });
+    }
+
+    const records = [];
+    const check = async (label, fn) => {
+        try {
+            records.push({ label, ...(await fn()) });
+        } catch (error) {
+            // ENOTFOUND / ENODATA mean the record genuinely is not published;
+            // anything else means we could not determine the answer.
+            const missing = error?.code === 'ENOTFOUND' || error?.code === 'ENODATA';
+            records.push({
+                label,
+                state: missing ? 'NOT_CONFIGURED' : 'UNKNOWN',
+                detail: missing ? 'No record published for this domain.' : `Lookup failed: ${error?.code || error?.message || 'unknown error'}`,
+                value: null,
+                remediation: missing
+                    ? `Publish the required ${label} record in the DNS zone for ${domain}.`
+                    : 'Retry once DNS resolution is available from the server.',
+            });
+        }
+    };
+
+    await check('SPF', async () => {
+        const txt = (await dnsPromises.resolveTxt(domain)).map(chunks => chunks.join(''));
+        const spf = txt.find(entry => entry.toLowerCase().startsWith('v=spf1'));
+        if (!spf) {
+            return { state: 'NOT_CONFIGURED', value: null, detail: 'No v=spf1 TXT record found.', remediation: `Publish an SPF TXT record for ${domain}.` };
+        }
+        // "+all" accepts forged mail; it is published but actively unsafe.
+        const permissive = /\+all\s*$/.test(spf);
+        return {
+            state: permissive ? 'DEGRADED' : 'OPERATIONAL',
+            value: spf,
+            detail: permissive ? 'SPF ends in +all, which authorises any sender.' : 'SPF record published.',
+            remediation: permissive ? 'Replace +all with ~all or -all.' : null,
+        };
+    });
+
+    await check('DKIM', async () => {
+        // Probe the selectors this deployment is known to use.
+        const selectors = ['hostingermail-a', 'hostingermail-b', 'hostingermail-c', 'default', 'google'];
+        const found = [];
+        for (const selector of selectors) {
+            try {
+                const txt = (await dnsPromises.resolveTxt(`${selector}._domainkey.${domain}`)).map(chunks => chunks.join(''));
+                if (txt.some(entry => entry.includes('p='))) found.push(selector);
+            } catch { /* selector not published; try the next one */ }
+        }
+        if (!found.length) {
+            return { state: 'NOT_CONFIGURED', value: null, detail: 'No DKIM key found for the known selectors.', remediation: `Publish a DKIM key for ${domain}.` };
+        }
+        return { state: 'OPERATIONAL', value: found.join(', '), detail: `${found.length} DKIM ${found.length === 1 ? 'key' : 'keys'} published.`, remediation: null };
+    });
+
+    await check('DMARC', async () => {
+        const txt = (await dnsPromises.resolveTxt(`_dmarc.${domain}`)).map(chunks => chunks.join(''));
+        const dmarc = txt.find(entry => entry.toLowerCase().startsWith('v=dmarc1'));
+        if (!dmarc) {
+            return { state: 'NOT_CONFIGURED', value: null, detail: 'No _dmarc TXT record found.', remediation: `Publish a DMARC policy for ${domain}.` };
+        }
+        // p=none monitors only; it does not protect the domain.
+        const monitoring = /p=\s*none/i.test(dmarc);
+        return {
+            state: monitoring ? 'DEGRADED' : 'OPERATIONAL',
+            value: dmarc,
+            detail: monitoring ? 'DMARC is published but the policy is p=none (monitor only).' : 'DMARC policy is enforced.',
+            remediation: monitoring ? 'Move to p=quarantine or p=reject once reports look clean.' : null,
+        };
+    });
+
+    await check('MX', async () => {
+        const mx = await dnsPromises.resolveMx(domain);
+        if (!mx.length) {
+            return { state: 'NOT_CONFIGURED', value: null, detail: 'No MX records published.', remediation: `Publish MX records for ${domain}.` };
+        }
+        const hosts = mx.sort((a, b) => a.priority - b.priority).map(entry => entry.exchange);
+        return {
+            state: mx.length === 1 ? 'DEGRADED' : 'OPERATIONAL',
+            value: hosts.join(', '),
+            detail: mx.length === 1 ? 'Only one MX host is published, so mail routing has no redundancy.' : `${mx.length} MX hosts published.`,
+            remediation: mx.length === 1 ? 'Add a secondary MX host for redundancy.' : null,
+        };
+    });
+
+    // The overall verdict is the worst individual result, so one bad record
+    // can never be averaged away into a green badge.
+    const order = ['UNKNOWN', 'NOT_CONFIGURED', 'DEGRADED', 'OPERATIONAL'];
+    const overall = records.reduce(
+        (worst, record) => (order.indexOf(record.state) < order.indexOf(worst) ? record.state : worst),
+        'OPERATIONAL',
+    );
+
+    return res.json({
+        success: true,
+        domain,
+        checkedAt: new Date().toISOString(),
+        overall,
+        summary: {
+            OPERATIONAL: 'All checked DNS records are published and correctly configured.',
+            DEGRADED: 'DNS records are published but at least one weakens deliverability.',
+            NOT_CONFIGURED: 'At least one required DNS record is missing.',
+            UNKNOWN: 'At least one record could not be resolved from this server.',
+        }[overall],
+        records,
+    });
 });
 
 // Save validated SMTP/IMAP settings while blank secret fields preserve every configured source.
