@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { normalizeAdminApiError } from '../../../services/adminAiSettings';
 import { fetchAdminWithReauth } from '../../../services/adminReauth';
 import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
@@ -8,6 +8,25 @@ import {
     FaEye, FaEyeSlash, FaServer, FaCode, FaSlidersH, FaFileInvoice, FaUserPlus, 
     FaKey, FaExclamationTriangle, FaInbox, FaHistory, FaShieldAlt, FaRedo, FaSearch, FaCheckCircle, FaExclamationCircle, FaBriefcase, FaDesktop, FaMobileAlt, FaFilter
 } from 'react-icons/fa';
+
+/**
+ * Colour vocabulary for DNS results, matching the Platform Health palette:
+ * green only for a genuinely good record, amber for published-but-weak, red
+ * for missing, grey for unknown. Nothing defaults to green.
+ */
+const DNS_STATE_STYLES = {
+    OPERATIONAL: 'bg-emerald-100 text-emerald-800',
+    DEGRADED: 'bg-amber-100 text-amber-900',
+    NOT_CONFIGURED: 'bg-rose-100 text-rose-800',
+    UNKNOWN: 'bg-slate-200 text-slate-700',
+};
+
+const DNS_CARD_STYLES = {
+    OPERATIONAL: 'bg-emerald-50 border-emerald-200 text-emerald-900',
+    DEGRADED: 'bg-amber-50 border-amber-200 text-amber-900',
+    NOT_CONFIGURED: 'bg-rose-50 border-rose-200 text-rose-900',
+    UNKNOWN: 'bg-slate-50 border-slate-200 text-slate-700',
+};
 
 const EmailSmtpSettings = () => {
     const [activeTab, setActiveTab] = useState('smtp'); // 'smtp', 'imap', 'templates', 'logs', 'deliverability'
@@ -35,6 +54,10 @@ const EmailSmtpSettings = () => {
 
     // Inbound IMAP State
     const [credentialStatus, setCredentialStatus] = useState({ smtp: false, fallbackSmtp: false, imap: false });
+    // Live DNS deliverability, resolved by the backend. Never hardcoded.
+    const [deliverability, setDeliverability] = useState(null);
+    const [deliverabilityLoading, setDeliverabilityLoading] = useState(false);
+    const [deliverabilityError, setDeliverabilityError] = useState(null);
     const [imapConfig, setImapConfig] = useState({
         enabled: true,
         host: 'imap.hostinger.com',
@@ -349,6 +372,33 @@ const EmailSmtpSettings = () => {
             }
         }
     };
+
+
+    /** Resolves the real DNS posture from the backend; never assumes success. */
+    const loadDeliverability = useCallback(async () => {
+        setDeliverabilityLoading(true);
+        setDeliverabilityError(null);
+        try {
+            const { response, data } = await fetchAdminWithReauth(`${API_BASE}/api/email/admin/deliverability`);
+            if (!response.ok || !data?.success) {
+                throw new Error(data?.error || `Deliverability check failed (HTTP ${response.status}).`);
+            }
+            setDeliverability(data);
+        } catch (error) {
+            setDeliverability(null);
+            setDeliverabilityError(error?.message || 'DNS records could not be checked.');
+        } finally {
+            setDeliverabilityLoading(false);
+        }
+    }, []);
+
+    // Only check when the operator opens the tab, so we do not add DNS lookups
+    // to every page load.
+    useEffect(() => {
+        if (activeTab === 'deliverability' && !deliverability && !deliverabilityLoading && !deliverabilityError) {
+            loadDeliverability();
+        }
+    }, [activeTab, deliverability, deliverabilityLoading, deliverabilityError, loadDeliverability]);
 
     useEffect(() => {
         loadSettingsAndLogs();
@@ -1528,40 +1578,78 @@ const EmailSmtpSettings = () => {
             {/* TAB 5: DELIVERABILITY & DNS MONITOR */}
             {activeTab === 'deliverability' && (
                 <div className="bg-white p-6 rounded-2xl border border-slate-200 space-y-6 shadow-xs">
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3 gap-3 flex-wrap">
                         <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
                             <FaShieldAlt className="text-indigo-600" /> Deliverability &amp; DNS Health Status
                         </h3>
-                        <span className="px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-black rounded-full">
-                            100% EXCELLENT DELIVERABILITY
-                        </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 space-y-1">
-                            <div className="text-[10px] font-extrabold uppercase text-emerald-700">SPF Record</div>
-                            <div className="font-black text-sm text-emerald-900">VERIFIED ACTIVE</div>
-                            <div className="text-[10px] text-emerald-800 font-mono">v=spf1 include:_spf.mail.hostinger.com ~all</div>
-                        </div>
-
-                        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 space-y-1">
-                            <div className="text-[10px] font-extrabold uppercase text-emerald-700">DKIM Authentication</div>
-                            <div className="font-black text-sm text-emerald-900">3 KEYS ALIGNED</div>
-                            <div className="text-[10px] text-emerald-800 font-mono">hostingermail-a/b/c._domainkey</div>
-                        </div>
-
-                        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 space-y-1">
-                            <div className="text-[10px] font-extrabold uppercase text-emerald-700">DMARC Policy</div>
-                            <div className="font-black text-sm text-emerald-900">ENFORCED (sp=none)</div>
-                            <div className="text-[10px] text-emerald-800 font-mono">v=DMARC1; p=none; rua=mailto:admin</div>
-                        </div>
-
-                        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 space-y-1">
-                            <div className="text-[10px] font-extrabold uppercase text-emerald-700">MX Mail Routing</div>
-                            <div className="font-black text-sm text-emerald-900">DUAL CLUSTER</div>
-                            <div className="text-[10px] text-emerald-800 font-mono">mx1 &amp; mx2.hostinger.com</div>
+                        <div className="flex items-center gap-2">
+                            {/* The verdict is the worst individual record, resolved live. */}
+                            <span
+                                data-testid="deliverability-overall"
+                                className={`px-3 py-1 text-xs font-black rounded-full ${DNS_STATE_STYLES[deliverability?.overall] || DNS_STATE_STYLES.UNKNOWN}`}
+                            >
+                                {deliverabilityLoading ? 'CHECKING…' : (deliverability?.overall || 'NOT CHECKED').replace('_', ' ')}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={loadDeliverability}
+                                disabled={deliverabilityLoading}
+                                className="px-3 py-1 text-xs font-bold rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                            >
+                                {deliverabilityLoading ? 'Checking…' : 'Re-check'}
+                            </button>
                         </div>
                     </div>
+
+                    {deliverability?.domain && (
+                        <p className="text-xs text-slate-500">
+                            Checked <span className="font-mono font-bold text-slate-700">{deliverability.domain}</span>
+                            {deliverability.checkedAt ? ` at ${new Date(deliverability.checkedAt).toLocaleString()}` : ''}
+                            {deliverability.summary ? ` — ${deliverability.summary}` : ''}
+                        </p>
+                    )}
+
+                    {deliverabilityError && (
+                        <div role="alert" data-testid="deliverability-error" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                            <p className="font-bold">DNS records could not be checked.</p>
+                            <p className="mt-1 text-xs">{deliverabilityError}</p>
+                            <p className="mt-1 text-xs">This is reported as unknown rather than healthy — the previous state of these records is not assumed.</p>
+                        </div>
+                    )}
+
+                    {deliverabilityLoading && !deliverability && (
+                        <div role="status" className="p-8 text-center text-sm text-slate-500">
+                            <FaSpinner className="mx-auto animate-spin mb-2" />Resolving DNS records…
+                        </div>
+                    )}
+
+                    {deliverability && deliverability.records?.length === 0 && (
+                        <p className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                            {deliverability.summary || 'No sender domain is configured, so deliverability cannot be assessed.'}
+                        </p>
+                    )}
+
+                    {deliverability?.records?.length > 0 && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                            {deliverability.records.map(record => (
+                                <div
+                                    key={record.label}
+                                    data-testid="deliverability-record"
+                                    className={`p-4 rounded-xl border space-y-1 ${DNS_CARD_STYLES[record.state] || DNS_CARD_STYLES.UNKNOWN}`}
+                                >
+                                    <div className="text-[10px] font-extrabold uppercase opacity-80">{record.label}</div>
+                                    <div className="font-black text-sm">{(record.state || 'UNKNOWN').replace('_', ' ')}</div>
+                                    {record.value && <div className="text-[10px] font-mono break-all opacity-90">{record.value}</div>}
+                                    {record.detail && <div className="text-[10px] opacity-80">{record.detail}</div>}
+                                    {record.remediation && (
+                                        <div className="text-[10px] font-semibold pt-1 border-t border-current/20 opacity-90">
+                                            Fix: {record.remediation}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -1671,10 +1759,19 @@ const EmailSmtpSettings = () => {
                                                 )}
                                             </div>
 
+                                            {/* This is a rendering of the call-to-action inside the
+                                                email itself, not an admin control. It is presented as
+                                                inert so it cannot read as a dead button: it is not
+                                                focusable and is hidden from assistive technology. */}
                                             <div className="pt-2 text-center">
-                                                <button type="button" className="px-5 py-2.5 bg-indigo-600 text-white font-bold rounded-xl text-xs shadow-md">
+                                                <span
+                                                    aria-hidden="true"
+                                                    data-testid="email-preview-cta"
+                                                    className="inline-block px-5 py-2.5 bg-indigo-600 text-white font-bold rounded-xl text-xs shadow-md select-none"
+                                                >
                                                     Take Action &rarr;
-                                                </button>
+                                                </span>
+                                                <p className="mt-1 text-[10px] text-slate-400">Preview only — this button appears in the email the recipient receives.</p>
                                             </div>
                                         </div>
 

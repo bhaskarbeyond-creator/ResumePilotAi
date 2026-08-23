@@ -8,7 +8,8 @@ import addUser, { updateUserOnLogin } from '../../../firestore/auth';
 import fire, { googleProvider, facebookProvider } from '../../../conf/fire';
 import Toast from '../../Toasts/Toats';
 import { withTranslation } from 'react-i18next';
-import { resolveOAuthSettings } from '../../../utils/oauthResolver';
+import { resolveOAuthSettings, fetchOAuthAvailability, applyOAuthAvailability } from '../../../utils/oauthResolver';
+import { describeOAuthRedirectError, stripOAuthRedirectError } from '../../../utils/oauthRedirectError';
 
 // LinkedIn & GitHub SVG icons (inline — no extra dependencies)
 const LinkedInIcon = () => (
@@ -45,6 +46,7 @@ class Register extends Component {
             enableLinkedIn,
             enableGitHub,
             oauthLoading: null,
+            oauthError: '', // explanation for a social sign-up that failed and redirected back
             isSubmitting: false, // GAP-01: prevent double-submit
             errors: {}, // Validation errors
         };
@@ -59,20 +61,41 @@ class Register extends Component {
         this._handleRedirect = this._handleRedirect.bind(this);
     }
 
+    componentWillUnmount() {
+        this._unmounted = true;
+    }
+
+    readOAuthRedirectError() {
+        try {
+            const search = window.location.search;
+            const message = describeOAuthRedirectError(search);
+            if (!message) return;
+            this.setState({ oauthError: message });
+            const cleaned = stripOAuthRedirectError(search);
+            window.history.replaceState({}, '', `${window.location.pathname}${cleaned}${window.location.hash}`);
+        } catch (e) {}
+    }
+
     componentDidMount() {
+        // Surface a social sign-up that failed and redirected back here.
+        this.readOAuthRedirectError();
+
         import('../../../firestore/dbOperations').then(({ getSystemSettings }) => {
             getSystemSettings().then((settings) => {
                 try {
                     localStorage.setItem('system_settings', JSON.stringify(settings));
                 } catch (e) {}
 
-                const { enableGoogle, enableFacebook, enableLinkedIn, enableGitHub } = resolveOAuthSettings(settings);
+                const configured = resolveOAuthSettings(settings);
 
-                this.setState({
-                    enableGoogle,
-                    enableFacebook,
-                    enableLinkedIn,
-                    enableGitHub
+                this.setState(configured);
+
+                // Intersect the configured toggles with what the backend can
+                // actually serve, so a provider whose route would 404 or 502 is
+                // never presented as a working sign-in option.
+                fetchOAuthAvailability().then(({ status, auth }) => {
+                    if (this._unmounted) return;
+                    this.setState(applyOAuthAvailability(configured, auth, status));
                 });
             }).catch(() => {});
         }).catch(() => {});
@@ -335,7 +358,7 @@ class Register extends Component {
 
     render() {
         const { t } = this.props;
-        const { enableGoogle, enableFacebook, enableLinkedIn, enableGitHub, oauthLoading } = this.state;
+        const { enableGoogle, enableFacebook, enableLinkedIn, enableGitHub, oauthLoading, oauthError } = this.state;
         const anySocial = enableGoogle || enableFacebook || enableLinkedIn || enableGitHub;
 
         return (
@@ -346,6 +369,11 @@ class Register extends Component {
                     <p>Build ATS-friendly resumes & portfolios in minutes</p>
                 </div>
                 <div className="body">
+                    {oauthError && (
+                        <div className="oauthNotice" role="alert" data-testid="oauth-error-notice">
+                            {oauthError}
+                        </div>
+                    )}
                     <div className="socialAuth" role="group" aria-label="Register with social account">
                         {/* Google — GAP-07: button for keyboard/a11y */}
                         {enableGoogle && (

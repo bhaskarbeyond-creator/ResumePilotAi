@@ -413,3 +413,20 @@
         }
     }
 }
+
+/* Social sign-in failure notice.
+   OAuth entry points are browser navigations, so a failure can only report
+   itself by redirecting back with a reason. This is where that reason is
+   shown; without it the user clicks a provider and appears to get nothing. */
+.oauthNotice {
+    margin: 0 0 14px;
+    padding: 10px 14px;
+    border: 1px solid #fca5a5;
+    border-left: 3px solid #dc2626;
+    border-radius: 8px;
+    background: #fef2f2;
+    color: #7f1d1d;
+    font-size: 0.86rem;
+    line-height: 1.45;
+    text-align: left;
+}

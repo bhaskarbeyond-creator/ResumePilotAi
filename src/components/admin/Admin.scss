@@ -22,7 +22,11 @@
         padding-left: 280px; // Default padding to accommodate expanded sidebar
         transition: padding-left 0.3s ease;
 
-        @media (max-width: 1024px) {
+        // Tailwind's `lg` breakpoint is min-width: 1024px, and the sidebar is
+        // pinned open from that width up. This query must therefore stop one
+        // step below 1024px, otherwise at exactly 1024px the sidebar is visible
+        // while the content pane has no offset and the two overlap.
+        @media (max-width: 1023.98px) {
             padding-left: 0 !important;
         }
         
@@ -54,7 +58,10 @@
                 display: none;
             }
             
-            @media (max-width: 1050px) {
+            // Aligned to the same breakpoint as the sidebar: above it the rail
+            // is already pinned open, so a "open navigation" toggle would be a
+            // redundant control sitting next to a visible sidebar.
+            @media (max-width: 1023.98px) {
                 .admin__mobileToggle {
                     display: block;
                     cursor: pointer;

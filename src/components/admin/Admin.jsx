@@ -25,6 +25,7 @@ import PlatformSecurity from './security/PlatformSecurity';
 import PlatformOperations from './operations/PlatformOperations';
 import PlatformAttention from './attention/PlatformAttention';
 import PlatformOperators from './operators/PlatformOperators';
+import PlatformHealth from './health/PlatformHealth';
 import AdminCommandPalette from './command/AdminCommandPalette';
 import { AdminProvider } from './AdminContext';
 import { FaCircle, FaExternalLinkAlt, FaSignOutAlt, FaChevronRight, FaSyncAlt, FaCrown, FaBars } from 'react-icons/fa';
@@ -192,6 +193,7 @@ const Admin = () => {
                         <Route path="security" element={<PlatformSecurity />} />
                         <Route path="operations" element={<PlatformOperations />} />
                         <Route path="attention" element={<PlatformAttention />} />
+                        <Route path="health" element={<PlatformHealth />} />
                         <Route path="operators" element={<PlatformOperators />} />
                         <Route path="settings" element={<Settings />} />
                         <Route path="user/ss" element={<UserEdit />} />

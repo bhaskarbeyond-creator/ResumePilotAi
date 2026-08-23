@@ -7,6 +7,7 @@ import { PayPalScriptProvider } from '@paypal/react-paypal-js';
 import conf from '../../../conf/configuration';
 import Checkout from './Checkout';
 import { getSubscriptionStatus, getCoupons, getUserTransactions, updateUserAutoRenew, cancelUserSubscription, getSystemSettings, getWebsiteData } from '../../../firestore/dbOperations';
+import { useServiceAvailability, resolveUsable } from '../../../hooks/useServiceAvailability';
 import { getUserMembership } from '../../../firestore/paidOperations';
 import fire from '../../../conf/fire';
 import HomepageNavbar from '../../Dashboard2/elements/HomepageNavbar';
@@ -76,6 +77,20 @@ const PlansPage = (props) => {
         sandboxMode: false,
         isLoading: true
     });
+
+    // Live provider availability from the backend operational-status collector.
+    // A gateway is offered only when the operator enabled it AND the backend
+    // reports it can actually serve a request. This is what prevents a
+    // "disabled PayPal" from rendering as a working payment option.
+    const { availability: serviceAvailability, status: availabilityStatus } = useServiceAvailability();
+    const livePayments = serviceAvailability?.payments || {};
+    const paymentAvailability = {
+        stripeEnabled: resolveUsable(subscriptionConfig.stripeEnabled, livePayments.stripe, availabilityStatus),
+        paypalEnabled: resolveUsable(subscriptionConfig.paypalEnabled, livePayments.paypal, availabilityStatus),
+        razorpayEnabled: resolveUsable(subscriptionConfig.razorpayEnabled, livePayments.razorpay, availabilityStatus),
+        paytmEnabled: resolveUsable(subscriptionConfig.paytmEnabled, livePayments.paytm, availabilityStatus),
+        phonepeEnabled: resolveUsable(subscriptionConfig.phonepeEnabled, livePayments.phonepe, availabilityStatus),
+    };
 
     useEffect(() => {
         // Fetch System Addon Modules Settings for enableCouponsModule toggle
@@ -837,11 +852,11 @@ const PlansPage = (props) => {
                                                 currency={subscriptionConfig.symbol}
                                                 currencyCode={currencyCode}
                                                 onlyPP={subscriptionConfig.onlyPP}
-                                                stripeEnabled={subscriptionConfig.stripeEnabled}
-                                                paypalEnabled={subscriptionConfig.paypalEnabled}
-                                                razorpayEnabled={subscriptionConfig.razorpayEnabled}
-                                                paytmEnabled={subscriptionConfig.paytmEnabled}
-                                                phonepeEnabled={subscriptionConfig.phonepeEnabled}
+                                                stripeEnabled={paymentAvailability.stripeEnabled}
+                                                paypalEnabled={paymentAvailability.paypalEnabled}
+                                                razorpayEnabled={paymentAvailability.razorpayEnabled}
+                                                paytmEnabled={paymentAvailability.paytmEnabled}
+                                                phonepeEnabled={paymentAvailability.phonepeEnabled}
                                                 sandboxMode={subscriptionConfig.sandboxMode}
                                                 couponCode={appliedCoupon?.code || null}
                                                 previousStep={handlePublicPreviousStep}
@@ -1265,11 +1280,11 @@ const PlansPage = (props) => {
                                                     currency={subscriptionConfig.symbol}
                                                     currencyCode={currencyCode}
                                                     onlyPP={subscriptionConfig.onlyPP}
-                                                    stripeEnabled={subscriptionConfig.stripeEnabled}
-                                                    paypalEnabled={subscriptionConfig.paypalEnabled}
-                                                    razorpayEnabled={subscriptionConfig.razorpayEnabled}
-                                                    paytmEnabled={subscriptionConfig.paytmEnabled}
-                                                    phonepeEnabled={subscriptionConfig.phonepeEnabled}
+                                                    stripeEnabled={paymentAvailability.stripeEnabled}
+                                                    paypalEnabled={paymentAvailability.paypalEnabled}
+                                                    razorpayEnabled={paymentAvailability.razorpayEnabled}
+                                                    paytmEnabled={paymentAvailability.paytmEnabled}
+                                                    phonepeEnabled={paymentAvailability.phonepeEnabled}
                                                     sandboxMode={subscriptionConfig.sandboxMode}
                                                     couponCode={appliedCoupon?.code || null}
                                                     previousStep={() => setStep(1)}

@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import './Phrases.scss';
 import { addCategoryToData, getAllCategories, removeCategoryByName, removePhraseFromCategory, addPhraseToCategory, getPhrasesOfCategory } from '../../../firestore/dbOperations';
+import EnterpriseConfirmModal from '../../../enterprise/components/EnterpriseConfirmModal';
 
 class Settings extends Component {
     constructor(props) {
@@ -11,6 +12,13 @@ class Settings extends Component {
             categories: [],
             phrases: [],
             isPhrasesShowed: true,
+            // Inline feedback replaces the native alert() calls, which were
+            // unstyled, blocking and invisible to the UI test suite.
+            feedback: null,
+            // Removing a category is destructive and previously had no
+            // confirmation step at all.
+            pendingCategoryRemoval: null,
+            removingCategory: false,
         };
         this.setStep = this.setStep.bind(this);
         this.handleChange = this.handleChange.bind(this);
@@ -18,6 +26,7 @@ class Settings extends Component {
         this.handleCategorySubmit = this.handleCategorySubmit.bind(this);
         this.handlePhraseSubmit = this.handlePhraseSubmit.bind(this);
         this.handlePhraseRemove = this.handlePhraseRemove.bind(this);
+        this.confirmCategoryRemove = this.confirmCategoryRemove.bind(this);
     }
     setStep(stepName) {
         this.setState({ step: stepName });
@@ -55,16 +64,29 @@ class Settings extends Component {
     }
     // handle category remove
     handleCategoryRemove() {
-        /// remove category from data
-        removeCategoryByName(this.state.categoryInput).then((response) => {
+        const name = this.state.categoryInput;
+        if (!name) {
+            this.setState({ feedback: { tone: 'error', message: 'Select or type a category name first.' } });
+            return;
+        }
+        this.setState({ pendingCategoryRemoval: name, feedback: null });
+    }
+
+    confirmCategoryRemove() {
+        const name = this.state.pendingCategoryRemoval;
+        if (!name) return Promise.resolve();
+        this.setState({ removingCategory: true });
+        return removeCategoryByName(name).then((response) => {
             if (response === true) {
-                alert('Category removed');
-                getAllCategories().then((categories) => {
-                    this.setState({ categories: categories });
-                });
-            } else {
-                alert('Category not found');
+                this.setState({ feedback: { tone: 'success', message: `Category “${name}” removed.` } });
+                return getAllCategories().then((categories) => this.setState({ categories }));
             }
+            this.setState({ feedback: { tone: 'error', message: `Category “${name}” was not found.` } });
+            return undefined;
+        }).catch((error) => {
+            this.setState({ feedback: { tone: 'error', message: error?.message || 'The category could not be removed.' } });
+        }).finally(() => {
+            this.setState({ pendingCategoryRemoval: null, removingCategory: false });
         });
     }
 
@@ -87,7 +109,7 @@ class Settings extends Component {
                     this.setState({ phrases: phrases });
                 });
             } else {
-                alert('Category not found');
+                this.setState({ feedback: { tone: 'error', message: 'That category was not found, so the phrase was not added.' } });
             }
         });
     }
@@ -101,12 +123,12 @@ class Settings extends Component {
         /// remove phrase from category
         removePhraseFromCategory(this.state.categoryInput, this.state.phraseInput).then((response) => {
             if (response === true) {
-                alert('Phrase removed');
+                this.setState({ feedback: { tone: 'success', message: 'Phrase removed.' } });
                 getPhrasesOfCategory(this.state.categoryInput).then((phrases) => {
                     this.setState({ phrases: phrases });
                 });
             } else {
-                alert('Category not found');
+                this.setState({ feedback: { tone: 'error', message: 'That category was not found, so the phrase was not removed.' } });
             }
         });
     }
@@ -115,6 +137,17 @@ class Settings extends Component {
         return (
             <div className="settings">
                 <div className="container mx-auto px-4">
+                    {this.state.feedback && (
+                        <div
+                            role={this.state.feedback.tone === 'error' ? 'alert' : 'status'}
+                            data-testid="phrases-feedback"
+                            className={this.state.feedback.tone === 'error'
+                                ? 'mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800'
+                                : 'mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800'}
+                        >
+                            {this.state.feedback.message}
+                        </div>
+                    )}
                     {/* Categories */}
                     <div className="settings-categories">
                         <h1 className="text-3xl font-bold mb-6 text-gray-800">Categories</h1>
@@ -194,6 +227,18 @@ class Settings extends Component {
                         </div>
                     </div>
                 </div>
+                <EnterpriseConfirmModal
+                    isOpen={Boolean(this.state.pendingCategoryRemoval)}
+                    title="Remove category"
+                    message={this.state.pendingCategoryRemoval
+                        ? `Remove the category “${this.state.pendingCategoryRemoval}” and all phrases filed under it? This cannot be undone.`
+                        : ''}
+                    confirmLabel="Remove category"
+                    variant="danger"
+                    busy={this.state.removingCategory}
+                    onConfirm={this.confirmCategoryRemove}
+                    onClose={() => !this.state.removingCategory && this.setState({ pendingCategoryRemoval: null })}
+                />
             </div>
         );
     }

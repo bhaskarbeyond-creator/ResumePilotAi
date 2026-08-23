@@ -11,6 +11,8 @@ const JobsLandingStats = () => {
         successRate: '',
         featuredJobs: ''
     });
+    const [saving, setSaving] = useState(false);
+    const [feedback, setFeedback] = useState(null);
 
     useEffect(() => {
         const fetchStats = async () => {
@@ -30,8 +32,19 @@ const JobsLandingStats = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        await setStats(stats);
-        alert('Stats updated successfully!');
+        if (saving) return;
+        setSaving(true);
+        setFeedback(null);
+        try {
+            await setStats(stats);
+            setFeedback({ tone: 'success', message: 'Stats updated successfully.' });
+        } catch (error) {
+            // Previously the save was unguarded and always announced success,
+            // so a failed write still told the operator it had worked.
+            setFeedback({ tone: 'error', message: error?.message || 'Stats could not be saved. Please retry.' });
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
@@ -49,7 +62,16 @@ const JobsLandingStats = () => {
                         />
                     </div>
                 ))}
-                <button type="submit">Save</button>
+                <button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
+                {feedback && (
+                    <p
+                        role={feedback.tone === 'error' ? 'alert' : 'status'}
+                        data-testid="jobs-landing-stats-feedback"
+                        className={feedback.tone === 'error' ? 'form-feedback form-feedback--error' : 'form-feedback form-feedback--success'}
+                    >
+                        {feedback.message}
+                    </p>
+                )}
             </form>
         </div>
     );

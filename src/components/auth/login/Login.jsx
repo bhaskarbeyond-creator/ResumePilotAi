@@ -7,7 +7,8 @@ import firebase from 'firebase/compat/app';
 import fire, { googleProvider, facebookProvider } from '../../../conf/fire';
 import addUser from '../../../firestore/auth'
 import { withTranslation } from 'react-i18next';
-import { resolveOAuthSettings } from '../../../utils/oauthResolver';
+import { resolveOAuthSettings, fetchOAuthAvailability, applyOAuthAvailability } from '../../../utils/oauthResolver';
+import { describeOAuthRedirectError, stripOAuthRedirectError } from '../../../utils/oauthRedirectError';
 import { getTotpSignInResolver, completeTotpSignIn } from '../../../services/mfaService';
 
 // LinkedIn & GitHub SVG icons (inline — no extra dependencies)
@@ -48,6 +49,7 @@ class Login extends Component {
             enableLinkedIn,
             enableGitHub,
             oauthLoading: null, // tracks which provider is loading
+            oauthError: '', // explanation for a social sign-in that failed and redirected back
             isSubmitting: false, // GAP-01: prevents double-submit
             mfaResolver: null,
             mfaCode: '',
@@ -61,6 +63,7 @@ class Login extends Component {
         this.signInWithLinkedIn = this.signInWithLinkedIn.bind(this);
         this.signInWithGitHub = this.signInWithGitHub.bind(this);
         this.login = this.login.bind(this);
+        this.readOAuthRedirectError = this.readOAuthRedirectError.bind(this);
         this.completeMfaLogin = this.completeMfaLogin.bind(this);
         this._postAuth = this._postAuth.bind(this);
         this._handleRedirect = this._handleRedirect.bind(this);
@@ -70,20 +73,47 @@ class Login extends Component {
         this.setState({ rememberMe: e.target.checked });
     }
 
+    /**
+     * Surfaces a failed social sign-in that redirected back here, then clears
+     * the parameters so the warning does not survive a refresh.
+     */
+    readOAuthRedirectError() {
+        try {
+            const search = window.location.search;
+            const message = describeOAuthRedirectError(search);
+            if (!message) return;
+            this.setState({ oauthError: message });
+            const cleaned = stripOAuthRedirectError(search);
+            window.history.replaceState({}, '', `${window.location.pathname}${cleaned}${window.location.hash}`);
+        } catch (e) {}
+    }
+
+    componentWillUnmount() {
+        this._unmounted = true;
+    }
+
     componentDidMount() {
+        // A failed social sign-in returns here by redirect with a reason in the
+        // query string. Without this the user lands back on a pristine login
+        // form with no explanation for why the provider did nothing.
+        this.readOAuthRedirectError();
+
         import('../../../firestore/dbOperations').then(({ getSystemSettings }) => {
             getSystemSettings().then(settings => {
                 try {
                     localStorage.setItem('system_settings', JSON.stringify(settings));
                 } catch (e) {}
 
-                const { enableGoogle, enableFacebook, enableLinkedIn, enableGitHub } = resolveOAuthSettings(settings);
+                const configured = resolveOAuthSettings(settings);
 
-                this.setState({
-                    enableGoogle,
-                    enableFacebook,
-                    enableLinkedIn,
-                    enableGitHub
+                this.setState(configured);
+
+                // Intersect the configured toggles with what the backend can
+                // actually serve, so a provider whose route would 404 or 502 is
+                // never presented as a working sign-in option.
+                fetchOAuthAvailability().then(({ status, auth }) => {
+                    if (this._unmounted) return;
+                    this.setState(applyOAuthAvailability(configured, auth, status));
                 });
             }).catch(() => {});
         }).catch(() => {});
@@ -356,7 +386,7 @@ class Login extends Component {
 
     render() {
         const { t } = this.props;
-        const { enableGoogle, enableFacebook, enableLinkedIn, enableGitHub, oauthLoading } = this.state;
+        const { enableGoogle, enableFacebook, enableLinkedIn, enableGitHub, oauthLoading, oauthError } = this.state;
         const anySocial = enableGoogle || enableFacebook || enableLinkedIn || enableGitHub;
 
         return (
@@ -367,6 +397,11 @@ class Login extends Component {
                     <p>Enter your credentials to access your dashboard</p>
                 </div>
                 <div className="body">
+                    {oauthError && (
+                        <div className="oauthNotice" role="alert" data-testid="oauth-error-notice">
+                            {oauthError}
+                        </div>
+                    )}
                     <div className="socialAuth" role="group" aria-label="Sign in with social account">
                         {/* Google — GAP-07: button element for keyboard/a11y */}
                         {enableGoogle && (

@@ -21,10 +21,16 @@ class SubscriptionSetting extends Component {
             yearlyPrice: 499,
             currency: 'INR',
             isSuccessOpen: false,
+            // Inline notice for invoice/export actions. These used to be native
+            // alert() dialogs.
+            invoiceNotice: null,
 
             // Payment Gateway API Credentials State
             razorpayKeyId: '',
-            razorpayKeySecret: 'ERtqc12PbwXNyou8ITu0Ekqp',
+            // Must default to empty. A credential-shaped default is persisted to
+            // the payments config on save if the operator never touches the
+            // field, silently writing a bogus secret into a live deployment.
+            razorpayKeySecret: '',
             stripePublishableKey: '',
             stripeSecretKey: '',
             paypalClientId: '',
@@ -566,7 +572,7 @@ class SubscriptionSetting extends Component {
         if (!inv) return;
         const printWindow = window.open('', '_blank');
         if (!printWindow) {
-            alert('Please allow popups to download/print your PDF tax invoice.');
+            this.setState({ invoiceNotice: 'Your browser blocked the invoice window. Allow pop-ups for this site, then try again.' });
             return;
         }
 
@@ -945,7 +951,7 @@ class SubscriptionSetting extends Component {
     handleExportGSTR1CSV() {
         const invoices = this.state.adminInvoicesList || [];
         if (invoices.length === 0) {
-            alert('No invoices found to export.');
+            this.setState({ invoiceNotice: 'There are no invoices to export for the selected filters.' });
             return;
         }
 
@@ -1021,7 +1027,7 @@ class SubscriptionSetting extends Component {
     handlePrintInvoicePDF(inv) {
         const win = window.open('', '_blank');
         if (!win) {
-            alert('Please allow popups to view & print the PDF Tax Invoice.');
+            this.setState({ invoiceNotice: 'Your browser blocked the invoice window. Allow pop-ups for this site, then try again.' });
             return;
         }
 
@@ -1637,6 +1643,22 @@ class SubscriptionSetting extends Component {
 
         return (
             <div className="space-y-6 max-w-5xl mx-auto p-4 sm:p-6">
+                {this.state.invoiceNotice && (
+                    <div
+                        role="alert"
+                        data-testid="invoice-notice"
+                        className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 flex items-start gap-2"
+                    >
+                        <span className="flex-1">{this.state.invoiceNotice}</span>
+                        <button
+                            type="button"
+                            onClick={() => this.setState({ invoiceNotice: null })}
+                            className="underline underline-offset-2"
+                        >
+                            Dismiss
+                        </button>
+                    </div>
+                )}
                 {/* Success Alert */}
                 {this.state.isSuccessOpen && (
                     <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center justify-between shadow-2xs">
@@ -2907,7 +2929,7 @@ class SubscriptionSetting extends Component {
                                             type="password"
                                             value={this.state.razorpayKeySecret}
                                             onChange={(e) => this.setState({ razorpayKeySecret: e.target.value })}
-                                            placeholder="e.g. ERtqc12PbwXNyou8ITu0Ekqp"
+                                            placeholder="Paste your Razorpay key secret"
                                             className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 font-mono focus:border-emerald-500 outline-none"
                                         />
                                     </div>

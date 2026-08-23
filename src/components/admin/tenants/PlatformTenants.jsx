@@ -15,6 +15,10 @@ export default function PlatformTenants() {
   const [searchQuery, setSearchQuery] = useState('');
   const [busyTenant, setBusyTenant] = useState(null);
   const [notification, setNotification] = useState(null);
+  // Action failures render inline next to the table. They used to be raised as
+  // native alert() dialogs, which are unstyled, block the thread and cannot be
+  // asserted against as page content.
+  const [actionError, setActionError] = useState(null);
   const [selectedTenant, setSelectedTenant] = useState(null);
   const [decommissionReason, setDecommissionReason] = useState('');
   const [confirmAction, setConfirmAction] = useState(null);
@@ -105,10 +109,11 @@ export default function PlatformTenants() {
         throw new Error(errData.error?.message || `Failed to ${verb.toLowerCase()} tenant`);
       }
 
+      setActionError(null);
       setNotification(`Organization "${tenant.displayName}" has been ${nextState.toLowerCase()}.`);
       fetchTenants();
     } catch (err) {
-      alert(err.message || 'Action failed');
+      setActionError(err.message || 'The tenant action could not be completed.');
     } finally {
       setBusyTenant(null);
     }
@@ -149,7 +154,7 @@ export default function PlatformTenants() {
       setIsolationTier('STANDARD');
       fetchTenants();
     } catch (err) {
-      alert(err.message || 'Provisioning failed');
+      setActionError(err.message || 'Provisioning failed.');
     } finally {
       setProvisioning(false);
     }
@@ -158,7 +163,7 @@ export default function PlatformTenants() {
   const handleDecommission = async (tenant) => {
     if (!isSuperAdmin) return;
     if (decommissionReason.trim().length < 8) {
-      alert('A decommission reason of at least 8 characters is required.');
+      setActionError('A decommission reason of at least 8 characters is required.');
       return;
     }
     
@@ -185,7 +190,7 @@ export default function PlatformTenants() {
       setSelectedTenant(null);
       fetchTenants();
     } catch (err) {
-      alert(err.message || 'Decommission failed');
+      setActionError(err.message || 'Decommission failed.');
     } finally {
       setBusyTenant(null);
     }
@@ -243,6 +248,24 @@ export default function PlatformTenants() {
         <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs text-emerald-800 flex items-center gap-2">
           <FiCheck className="h-4 w-4 text-emerald-600 shrink-0" />
           <span>{notification}</span>
+        </div>
+      )}
+
+      {actionError && (
+        <div
+          role="alert"
+          data-testid="tenant-action-error"
+          className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-800 flex items-start gap-2"
+        >
+          <FiAlertTriangle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
+          <span className="flex-1">{actionError}</span>
+          <button
+            type="button"
+            onClick={() => setActionError(null)}
+            className="text-rose-700 underline underline-offset-2"
+          >
+            Dismiss
+          </button>
         </div>
       )}
 

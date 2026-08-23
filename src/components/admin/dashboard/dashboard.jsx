@@ -2,11 +2,12 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   FaDollarSign, FaUsers, FaFileAlt, FaDownload, FaExclamationTriangle, FaSyncAlt,
-  FaShieldAlt, FaServer, FaCheckCircle, FaExclamationCircle, FaArrowRight,
+  FaShieldAlt, FaServer, FaCheckCircle, FaExclamationCircle, FaArrowRight, FaHeartbeat,
 } from 'react-icons/fa';
 import { FiActivity, FiCpu, FiLock } from 'react-icons/fi';
 import { formatAdminMoney } from '../../../utils/adminData';
 import { getCommandCenter } from '../../../services/platformApi';
+import { describeOverall, formatCheckedAt, formatMetric, formatUptime } from '../../../utils/healthPresentation';
 
 const Dashboard = () => {
   const [center, setCenter] = useState(null);
@@ -72,7 +73,7 @@ const Dashboard = () => {
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${center.status === 'HEALTHY' ? 'bg-emerald-100 text-emerald-800' : center.status === 'DEGRADED' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'}`}>{center.status}</span>
                 </div>
                 <p className="text-xs text-slate-500 mt-1">
-                  Uptime: {Math.floor((center.uptimeSeconds || 0) / 3600)}h {Math.floor(((center.uptimeSeconds || 0) % 3600) / 60)}m • DB Latency: {center.subsystems?.database?.latencyMs ?? '—'}ms • Memory: {center.subsystems?.runtime?.heapUsedMb ?? '—'}MB
+                  Uptime: {formatUptime(center.uptimeSeconds)} • DB Latency: {formatMetric(center.subsystems?.database?.latencyMs)}{center.subsystems?.database?.latencyMs == null ? '' : 'ms'} • Memory: {formatMetric(center.subsystems?.runtime?.heapUsedMb)}{center.subsystems?.runtime?.heapUsedMb == null ? '' : 'MB'}
                 </p>
               </div>
             </div>
@@ -81,6 +82,7 @@ const Dashboard = () => {
               <Link to="/adm/queues" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700"><FiActivity className="text-emerald-600" /> Queue Monitor</Link>
               <Link to="/adm/tenants" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700"><FaServer className="text-violet-600" /> Tenants</Link>
               <Link to="/adm/security" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700"><FiLock className="text-rose-600" /> Security</Link>
+              <Link to="/adm/health" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700"><FaHeartbeat className="text-emerald-600" /> Platform Health</Link>
               <Link to="/adm/attention" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700">Attention</Link>
               <Link to="/adm/operations" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700">Operations</Link>
             </div>
@@ -107,6 +109,64 @@ const Dashboard = () => {
           </section>
         ))}
       </div>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs sm:p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-bold text-slate-900">Operational status</h2>
+            <p className="text-[11px] text-slate-500">Live state of core services, integrations, and workers.</p>
+          </div>
+          <Link to="/adm/health" className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-indigo-50 hover:text-indigo-700">
+            Platform Health <FaArrowRight className="h-2.5 w-2.5" />
+          </Link>
+        </div>
+        {center?.operationalStatus ? (
+          <>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span aria-hidden="true" className={`h-2.5 w-2.5 rounded-full ${describeOverall(center.operationalStatus.overall).dot}`} />
+              <span className="text-sm font-extrabold text-slate-900">{describeOverall(center.operationalStatus.overall).label}</span>
+              <span className="text-[11px] text-slate-500">Last checked {formatCheckedAt(center.operationalStatus.checkedAt)}</span>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+              <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-2.5">
+                <p className="text-[10px] font-extrabold uppercase tracking-wide text-slate-500">Endpoints checked</p>
+                <p className="mt-0.5 text-lg font-black text-slate-900">{center.operationalStatus.apiMatrix?.total ?? 'Data unavailable'}</p>
+              </div>
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-2.5">
+                <p className="text-[10px] font-extrabold uppercase tracking-wide text-emerald-700">Operational / expected</p>
+                <p className="mt-0.5 text-lg font-black text-emerald-800">{center.operationalStatus.apiMatrix?.operationalOrExpected ?? 'Data unavailable'}</p>
+              </div>
+              <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-2.5">
+                <p className="text-[10px] font-extrabold uppercase tracking-wide text-amber-800">Degraded</p>
+                <p className="mt-0.5 text-lg font-black text-amber-900">{center.operationalStatus.apiMatrix?.degraded ?? 'Data unavailable'}</p>
+              </div>
+              <div className="rounded-xl border border-red-200 bg-red-50/60 p-2.5">
+                <p className="text-[10px] font-extrabold uppercase tracking-wide text-red-700">Unavailable</p>
+                <p className="mt-0.5 text-lg font-black text-red-800">{center.operationalStatus.apiMatrix?.unavailable ?? 'Data unavailable'}</p>
+              </div>
+            </div>
+            {(center.operationalStatus.attention || []).length > 0 && (
+              <ul className="mt-3 space-y-1.5">
+                {center.operationalStatus.attention.slice(0, 5).map(item => (
+                  <li key={item.id}>
+                    <Link to={`/adm/health?service=${encodeURIComponent(item.id)}`} className="flex items-start justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 p-2.5 hover:border-indigo-200">
+                      <span className="min-w-0">
+                        <span className="block text-xs font-bold text-slate-900">{item.name}</span>
+                        <span className="mt-0.5 block truncate text-[11px] text-slate-500">{item.reason}</span>
+                      </span>
+                      <span className={`flex-none rounded-full px-2 py-0.5 text-[10px] font-extrabold ${item.state === 'UNAVAILABLE' ? 'bg-red-100 text-red-800' : item.state === 'DEGRADED' ? 'bg-amber-100 text-amber-800' : 'bg-violet-100 text-violet-800'}`}>{item.state}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        ) : (
+          <p className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-500">
+            Operational status data unavailable — the health collector did not respond. No status is inferred.
+          </p>
+        )}
+      </section>
 
       <section className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5">
         <h2 className="text-sm font-bold text-slate-900">What should the Super Admin do next?</h2>

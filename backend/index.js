@@ -250,7 +250,7 @@ app.use('/api/auth', authLimiter);
 // Zero-trust API boundary. Requests are authenticated unless they are explicitly
 // public protocol endpoints. Route handlers must still enforce their own role/ownership policy.
 const publicApiPaths = new Set([
-    '/healthz', '/readyz', '/health',
+    '/healthz', '/readyz', '/health', '/service-availability',
     '/stripe-webhook', '/public-export', '/export-render-data', '/contact', '/auth/custom-password-reset',
     '/auth/verify-email-token', '/auth/set-user-password', '/auth/linkedin', '/auth/linkedin/callback',
     '/auth/github', '/auth/github/callback', '/auth/oauth/exchange'
@@ -959,7 +959,18 @@ app.post('/api/paytm/initiate-transaction', async (req, res) => {
             await releaseCouponForRef(orderRef);
         }
         console.error('[Paytm create]', err.message);
-        return res.status(err.status || 502).json({ success: false, error: 'Unable to create Paytm transaction' });
+        // Carry the machine-readable code through so the checkout UI can tell an
+        // unconfigured gateway apart from one that is configured but refusing.
+        const unavailable = err.message === 'PAYMENT_PROVIDER_UNAVAILABLE';
+        return res.status(err.status || (unavailable ? 503 : 502)).json({
+            success: false,
+            code: unavailable ? 'PAYMENT_PROVIDER_UNAVAILABLE' : 'PAYMENT_CREATE_FAILED',
+            configurationState: unavailable ? 'NOT_CONFIGURED' : 'CONFIGURED',
+            error: unavailable
+                ? 'Paytm payments are not configured on this deployment.'
+                : 'Unable to create Paytm transaction',
+            requestId: res.locals.requestId,
+        });
     }
 });
 
@@ -1043,7 +1054,18 @@ app.post('/api/phonepe/initiate', async (req, res) => {
             await releaseCouponForRef(orderRef);
         }
         console.error('[PhonePe create]', err.message);
-        return res.status(err.status || 502).json({ success: false, error: 'Unable to create PhonePe transaction' });
+        // Carry the machine-readable code through so the checkout UI can tell an
+        // unconfigured gateway apart from one that is configured but refusing.
+        const unavailable = err.message === 'PAYMENT_PROVIDER_UNAVAILABLE';
+        return res.status(err.status || (unavailable ? 503 : 502)).json({
+            success: false,
+            code: unavailable ? 'PAYMENT_PROVIDER_UNAVAILABLE' : 'PAYMENT_CREATE_FAILED',
+            configurationState: unavailable ? 'NOT_CONFIGURED' : 'CONFIGURED',
+            error: unavailable
+                ? 'PhonePe payments are not configured on this deployment.'
+                : 'Unable to create PhonePe transaction',
+            requestId: res.locals.requestId,
+        });
     }
 });
 
@@ -1956,11 +1978,32 @@ app.delete('/api/admin/blog/posts/:postId', async (req, res) => {
 });
 
 app.post('/api/admin/blog/publish-due', async (req, res) => {
+    // The datastore is the only dependency this scheduler has. Checking it up
+    // front lets us report "not configured" precisely, instead of letting every
+    // possible fault collapse into one opaque "unavailable" message.
+    if (!req.app.get('db')) {
+        return res.status(503).json({
+            success: false,
+            code: 'CMS_SCHEDULER_NOT_CONFIGURED',
+            configurationState: 'NOT_CONFIGURED',
+            error: 'The CMS scheduler requires Firestore, which is not configured on this deployment.',
+            remediation: 'Provide Firebase service-account credentials so the backend can reach Firestore.',
+        });
+    }
     try {
         const published = await publishDueBlogPosts(req.app.get('db'), { actorUid: req.user.uid, requestId: res.locals.requestId });
         return res.json({ success: true, published });
-    } catch {
-        return res.status(503).json({ success: false, error: 'CMS scheduler unavailable' });
+    } catch (error) {
+        // Previously this swallowed the error entirely, leaving no way to tell a
+        // permissions problem from an outage.
+        console.error('[CMS publish-due]', error.message);
+        return res.status(503).json({
+            success: false,
+            code: 'CMS_SCHEDULER_UNAVAILABLE',
+            error: 'The CMS scheduler could not complete this run.',
+            reason: error.message,
+            requestId: res.locals.requestId,
+        });
     }
 });
 
@@ -3113,6 +3156,23 @@ app.post('/api/jobs/naukri', async (_req, res) => {
     });
 });
 
+// Public, secret-free capability projection. The browser uses this to hide
+// controls whose provider is disabled or unconfigured, so a user can never
+// click a button that is guaranteed to return 404/503. It exposes booleans
+// only: no hostname, key, credential, or provider error detail.
+app.get('/api/service-availability', async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    try {
+        const { getServiceAvailability } = require('./services/platformHealth');
+        return res.json({ success: true, ...(await getServiceAvailability(req.app)) });
+    } catch (error) {
+        console.error('[Service availability]', error?.message || error);
+        // Availability is unknown, not "everything works". The client keeps its
+        // last known state rather than optimistically enabling controls.
+        return res.status(503).json({ success: false, error: { code: 'AVAILABILITY_UNAVAILABLE', message: 'Service availability could not be determined' } });
+    }
+});
+
 app.get('/healthz', (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     return res.json({ status: 'ok', firebaseAdminConfigured: Boolean(db && admin), date: new Date().toISOString() });
@@ -3349,8 +3409,33 @@ app.get('/api/linkedin-scraper', async (req, res) => {
 app.post('/api/notify/user-signup', async (req, res) => {
     const { userEmail, userName } = req.body;
     const result = await EmailNotifier.notifyUserRegistration(req.app.get('db'), { userEmail, userName });
-    const attempted = result?.userDelivery?.deliveryState === 'DELIVERY_ATTEMPTED';
-    return res.status(attempted ? 202 : 502).json({ success: attempted, deliveryState: result?.userDelivery?.deliveryState || 'DELIVERY_FAILED', providerAccepted: result?.userDelivery?.providerAccepted === true, message: attempted ? 'Welcome email delivery was attempted and accepted by the configured provider.' : 'Welcome email delivery failed.', adminDeliveryState: result?.adminDelivery?.deliveryState || 'DELIVERY_FAILED' });
+    // Signup notification reports the admin copy alongside the user copy, so it
+    // formats its own body, but it uses the same three-state semantics as every
+    // other notification route.
+    const userDelivery = result?.userDelivery;
+    const state = userDelivery?.deliveryState || 'DELIVERY_FAILED';
+    const attempted = state === 'DELIVERY_ATTEMPTED';
+    const notConfigured = state === 'NOT_CONFIGURED';
+    const status = attempted ? 202 : (notConfigured ? 503 : 502);
+    return res.status(status).json({
+        success: attempted,
+        deliveryState: state,
+        providerAccepted: userDelivery?.providerAccepted === true,
+        adminDeliveryState: result?.adminDelivery?.deliveryState || 'DELIVERY_FAILED',
+        ...(notConfigured
+            ? {
+                configurationState: 'NOT_CONFIGURED',
+                code: 'EMAIL_NOT_CONFIGURED',
+                message: 'Welcome email was not sent because no email provider is configured for this deployment.',
+                remediation: 'Configure SMTP credentials in Admin → Settings → Email, then retry.',
+            }
+            : {
+                message: attempted
+                    ? 'Welcome email delivery was attempted and accepted by the configured provider.'
+                    : 'Welcome email delivery failed.',
+                ...(attempted ? {} : { code: userDelivery?.code || 'EMAIL_DELIVERY_FAILED' }),
+            }),
+    });
 });
 
 // ─── Firebase Admin SDK Service Account Status ──────────────────────────────
@@ -4478,9 +4563,64 @@ app.post('/api/auth/set-user-password', async (req, res) => {
     }
 });
 
+/**
+ * Turns a delivery result into an HTTP response.
+ *
+ * Three outcomes, deliberately kept distinct:
+ *   202 DELIVERY_ATTEMPTED - handed to the provider and accepted.
+ *   503 NOT_CONFIGURED     - no mail provider is configured on this deployment.
+ *                            Nothing is broken; the capability is simply not
+ *                            set up, and the caller is told exactly that.
+ *   502 DELIVERY_FAILED    - a configured provider was tried and refused.
+ *
+ * The middle case used to be reported as 502, which made a deployment without
+ * SMTP look like it had a failing mail server.
+ */
 function respondToDeliveryAttempt(res, delivery, label) {
-    const attempted = delivery?.deliveryState === 'DELIVERY_ATTEMPTED';
-    return res.status(attempted ? 202 : 502).json({ success: attempted, deliveryState: delivery?.deliveryState || 'DELIVERY_FAILED', providerAccepted: delivery?.providerAccepted === true, message: attempted ? `${label} delivery was attempted and accepted by the configured provider.` : `${label} delivery failed.` });
+    // The notifier returns undefined when the caller omitted the recipient, so
+    // nothing was ever dispatched. That is a bad request, not a mail outage —
+    // reporting it as 502 blamed the mail provider for a client-side omission.
+    if (delivery === undefined || delivery === null) {
+        return res.status(400).json({
+            success: false,
+            deliveryState: 'NOT_ATTEMPTED',
+            code: 'NOTIFICATION_RECIPIENT_REQUIRED',
+            message: `${label} was not sent because no recipient address was supplied.`,
+        });
+    }
+
+    const state = delivery?.deliveryState || 'DELIVERY_FAILED';
+    const attempted = state === 'DELIVERY_ATTEMPTED';
+    const notConfigured = state === 'NOT_CONFIGURED';
+
+    if (attempted) {
+        return res.status(202).json({
+            success: true,
+            deliveryState: state,
+            providerAccepted: delivery?.providerAccepted === true,
+            message: `${label} delivery was attempted and accepted by the configured provider.`,
+        });
+    }
+
+    if (notConfigured) {
+        return res.status(503).json({
+            success: false,
+            deliveryState: state,
+            configurationState: 'NOT_CONFIGURED',
+            providerAccepted: false,
+            code: 'EMAIL_NOT_CONFIGURED',
+            message: `${label} was not sent because no email provider is configured for this deployment.`,
+            remediation: 'Configure SMTP credentials in Admin → Settings → Email, then retry.',
+        });
+    }
+
+    return res.status(502).json({
+        success: false,
+        deliveryState: state,
+        providerAccepted: false,
+        code: delivery?.code || 'EMAIL_DELIVERY_FAILED',
+        message: `${label} delivery failed.`,
+    });
 }
 
 app.post('/api/notify/password-changed', async (req, res) => {
@@ -4502,8 +4642,7 @@ app.post('/api/notify/security-alert', async (req, res) => {
 app.post('/api/notify/portfolio-published', async (req, res) => {
     const { userEmail, userName, portfolioSlug } = req.body;
     const delivery = await EmailNotifier.notifyPortfolioPublished(req.app.get('db'), { userEmail, userName, portfolioSlug });
-    const attempted = delivery?.deliveryState === 'DELIVERY_ATTEMPTED';
-    return res.status(attempted ? 202 : 502).json({ success: attempted, deliveryState: delivery?.deliveryState || 'DELIVERY_FAILED', providerAccepted: delivery?.providerAccepted === true, message: attempted ? 'Portfolio email delivery was attempted and accepted by the configured provider.' : 'Portfolio email delivery failed.' });
+    return respondToDeliveryAttempt(res, delivery, 'Portfolio email');
 });
 
 app.post('/api/notify/job-application', async (req, res) => {
@@ -4572,11 +4711,33 @@ async function getSocialAuthCredentials(provider, database = db) {
     };
 }
 
+/**
+ * Sign-in entry points are reached by a browser navigation, not by fetch, so an
+ * error here must land the user somewhere that can explain itself. Returning a
+ * bare 503 body left the user on a blank page with no way back — the classic
+ * unexplained failure. Instead we redirect to the login screen carrying a
+ * machine-readable reason that distinguishes "this provider was never
+ * configured" from "the provider is configured but temporarily unavailable".
+ */
+function failOAuthBegin(res, provider, reason) {
+    return safeRedirect(res, `/login?error=${encodeURIComponent(reason)}&provider=${encodeURIComponent(provider)}`);
+}
+
 async function beginOAuth(provider, req, res) {
     try {
-        if (!db) throw new Error('OAuth state store unavailable');
+        // No datastore means we cannot mint or verify the anti-CSRF state, so the
+        // flow genuinely cannot start. That is an outage, not a misconfiguration.
+        if (!db) {
+            console.warn(`[OAuth begin ${provider}] state store unavailable`);
+            return failOAuthBegin(res, provider, 'oauth_unavailable');
+        }
         const { clientId } = await getSocialAuthCredentials(provider);
-        if (!clientId) return res.status(503).send('OAuth provider is not configured.');
+        // A missing client id is a configuration gap, reported as such so the
+        // login screen can say "not configured" rather than "something broke".
+        if (!clientId) {
+            console.warn(`[OAuth begin ${provider}] no client id configured`);
+            return failOAuthBegin(res, provider, 'oauth_not_configured');
+        }
         const state = crypto.randomBytes(32).toString('base64url');
         const codeVerifier = crypto.randomBytes(32).toString('base64url');
         const challenge = createPkceChallenge(codeVerifier);
@@ -4593,7 +4754,7 @@ async function beginOAuth(provider, req, res) {
         return res.redirect(url.href);
     } catch (error) {
         console.error(`[OAuth begin ${provider}]`, error.message);
-        return res.status(503).send('OAuth is temporarily unavailable.');
+        return failOAuthBegin(res, provider, 'oauth_unavailable');
     }
 }
 

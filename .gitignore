@@ -43,6 +43,20 @@ dist-ssr
 .env
 .env*
 !.env.example
+# Any env file regardless of prefix. `.env*` only matches names that START with
+# ".env", so files like remote.env / prod.env / backend.env slipped through and
+# were committed with live credentials. These patterns close that gap.
+*.env
+!example.env
+**/*.env
+!**/example.env
+# Service-account and key material
+*service-account*.json
+*serviceaccount*.json
+*credentials*.json
+*.p12
+*.pfx
+*.key
 
 # Vercel
 .vercel

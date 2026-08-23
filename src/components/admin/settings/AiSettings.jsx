@@ -8,6 +8,7 @@ import {
     FaDesktop, FaDownload, FaChartBar, FaTrashAlt, FaSyncAlt, FaUserShield
 } from 'react-icons/fa';
 import { SiNvidia } from 'react-icons/si';
+import useConfirmDialog from '../../../hooks/useConfirmDialog';
 
 const SUPPORTED_AI_PROVIDERS = ['gemini', 'nvidia', 'openai', 'groq', 'openrouter', 'deepseek'];
 const PROVIDER_KEY_FIELDS = { gemini: 'geminiApiKey', nvidia: 'nvidiaApiKey', openai: 'openaiApiKey', groq: 'groqApiKey', openrouter: 'openrouterApiKey', deepseek: 'deepseekApiKey' };
@@ -21,6 +22,7 @@ const RECOMMENDED_NVIDIA_MODELS = [
 ];
 
 const AiSettings = () => {
+    const { confirm, confirmationDialog } = useConfirmDialog();
     const [aiConfig, setAiConfig] = useState({
         provider: 'gemini',
         enableGemini: true,
@@ -189,7 +191,13 @@ const AiSettings = () => {
 
     const handleResetQuota = async (targetUid) => {
         const label = targetUid ? `user ${targetUid.slice(0, 12)}...` : 'ALL users';
-        if (!window.confirm(`Reset AI quota for ${label}? This will restore their daily count to 0.`)) return;
+        const accepted = await confirm({
+            title: 'Reset AI quota',
+            message: `Reset the AI quota for ${label}? Their daily usage count returns to 0 immediately.`,
+            confirmLabel: 'Reset quota',
+            variant: 'warning',
+        });
+        if (!accepted) return;
         setQuotaResetting(targetUid || '__all__');
         setQuotaMessage(null);
         try {
@@ -1431,6 +1439,7 @@ const AiSettings = () => {
                     <span>Save AI Settings</span>
                 </button>
             </div>
+            {confirmationDialog}
         </form>
     );
 };

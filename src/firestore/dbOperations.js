@@ -1062,18 +1062,58 @@ export async function getAllCompanies() {
     const db = fire.firestore();
     try {
         const snapshot = await db.collection('companies').orderBy('createdAt', 'desc').get();
-        if (!snapshot.empty) {
-            const companies = [];
-            snapshot.forEach((doc) => {
-                companies.push({
-                    id: doc.id,
-                    ...doc.data(),
-                });
+        if (snapshot.empty) return [];
+
+        const companies = [];
+        snapshot.forEach((doc) => {
+            companies.push({ id: doc.id, ...doc.data() });
+        });
+
+        // The admin console shows per-company job and application counts. Those
+        // were previously rendered as `stats?.totalJobs || 0`, but nothing ever
+        // populated `stats`, so every company reported a hard zero regardless of
+        // how many jobs it had. Derive the real figures from the jobs collection
+        // in a single read, and leave `stats` undefined if that read fails so the
+        // UI can say the data is unavailable instead of inventing a zero.
+        try {
+            const jobsSnapshot = await db.collection('jobs').get();
+            const byEmployer = new Map();
+
+            jobsSnapshot.forEach((doc) => {
+                const job = doc.data() || {};
+                const key = job.employerId || job.companyId;
+                if (!key) return;
+
+                const entry = byEmployer.get(key) || { totalJobs: 0, activeJobs: 0, totalApplications: 0, lastJobPosted: null };
+                entry.totalJobs += 1;
+                if (job.status === 'active') entry.activeJobs += 1;
+                entry.totalApplications += Number(job.applicationsCount) || 0;
+
+                const created = job.createdAt?.toDate?.() || job.createdAt || null;
+                if (created && (!entry.lastJobPosted || new Date(created) > new Date(entry.lastJobPosted))) {
+                    entry.lastJobPosted = created;
+                }
+
+                byEmployer.set(key, entry);
             });
-            return companies;
-        } else {
-            return [];
+
+            for (const company of companies) {
+                // A company with no jobs genuinely has zero, which is a real
+                // measurement and must be shown as such.
+                company.stats = byEmployer.get(company.employerId) || byEmployer.get(company.id) || {
+                    totalJobs: 0,
+                    activeJobs: 0,
+                    totalApplications: 0,
+                    lastJobPosted: null,
+                };
+            }
+        } catch (error) {
+            // Deliberately non-fatal: the company list is still useful without
+            // counts. `stats` stays undefined so the UI reports it honestly.
+            console.error('Company statistics could not be derived:', error);
         }
+
+        return companies;
     } catch (error) {
         console.error('Error getting all companies:', error);
         throw error;

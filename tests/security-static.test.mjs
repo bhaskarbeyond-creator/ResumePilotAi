@@ -21,6 +21,10 @@ test('tracked files contain no recognizable private credentials', () => {
   const tracked = execFileSync('git', ['ls-files', '-z'], { cwd: root }).toString().split('\0').filter(Boolean);
   const patterns = [
     /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----\s+[A-Za-z0-9+/=\r\n]{100,}-----END/,
+    // A PEM body carried on one line with escaped newlines, which is how a
+    // service-account key looks inside an env file. The multi-line pattern
+    // above cannot see this form.
+    /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----(?:\\+[rn]|\s|[A-Za-z0-9+/=]){100,}/,
     /AKIA[0-9A-Z]{16}/,
     /gh[pousr]_[A-Za-z0-9]{20,}/,
     /xox[baprs]-[A-Za-z0-9-]{10,}/,
@@ -28,13 +32,27 @@ test('tracked files contain no recognizable private credentials', () => {
     /nvapi-[A-Za-z0-9_-]{10,}/,
     /AIza[0-9A-Za-z_-]{30,}/,
     /rzp_(?:live|test)_[A-Za-z0-9]{8,}/,
+    // Cloudflare user API tokens (cfut_) and classic 37-char API keys.
+    /\bcfut_[A-Za-z0-9_-]{20,}/,
+    // A real Google service-account identity. The generic placeholder forms
+    // used in docs and UI hints are excluded below.
+    /[a-z0-9](?:[a-z0-9-]{4,})@[a-z0-9-]{4,}\.iam\.gserviceaccount\.com/,
+    // Cloudflare R2 / S3-style account-scoped endpoints embed the account id.
+    /[0-9a-f]{32}\.r2\.cloudflarestorage\.com/,
+    /SG\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}/,
+  ];
+  // Documented placeholders that intentionally look like the real thing.
+  const placeholders = [
+    /firebase-adminsdk-xxx@my-project\.iam\.gserviceaccount\.com/,
+    /firebase-adminsdk@project-id\.iam\.gserviceaccount\.com/,
   ];
   const findings = [];
   for (const file of tracked) {
     if (/\.(?:png|jpe?g|gif|pdf|ttf|woff2?|ico|zip)$/i.test(file)) continue;
     let content;
     try { content = read(file); } catch (_) { continue; }
-    if (patterns.some(pattern => pattern.test(content))) findings.push(file);
+    const scrubbed = placeholders.reduce((text, placeholder) => text.replace(new RegExp(placeholder, 'g'), ''), content);
+    if (patterns.some(pattern => pattern.test(scrubbed))) findings.push(file);
     if (file !== '.env.example' && /\bpassword\s*=\s*['"][^'"]{8,}['"]/i.test(content)) findings.push(`${file}: hardcoded password`);
   }
   assert.deepEqual(findings, []);

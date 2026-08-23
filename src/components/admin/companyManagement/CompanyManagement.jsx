@@ -569,21 +569,24 @@ class CompanyManagement extends Component {
                                                                 <div className="space-y-3 min-w-0">
                                                                     <h4 className="text-sm font-semibold text-slate-800 border-b border-slate-200 pb-1">Company Statistics</h4>
                                                                     <div className="space-y-2 text-xs">
+                                                                        {/* `stats` is only absent when the derivation failed. A
+                                                                            company with no jobs still gets real zeros, so a missing
+                                                                            object means "unknown", not "none". */}
                                                                         <div>
                                                                             <span className="text-slate-500">Total Jobs:</span>
-                                                                            <p className="text-slate-700">{company.stats?.totalJobs || 0}</p>
+                                                                            <p className="text-slate-700">{company.stats ? company.stats.totalJobs : 'Data unavailable'}</p>
                                                                         </div>
                                                                         <div>
                                                                             <span className="text-slate-500">Active Jobs:</span>
-                                                                            <p className="text-slate-700">{company.stats?.activeJobs || 0}</p>
+                                                                            <p className="text-slate-700">{company.stats ? company.stats.activeJobs : 'Data unavailable'}</p>
                                                                         </div>
                                                                         <div>
                                                                             <span className="text-slate-500">Total Applications:</span>
-                                                                            <p className="text-slate-700">{company.stats?.totalApplications || 0}</p>
+                                                                            <p className="text-slate-700">{company.stats ? company.stats.totalApplications : 'Data unavailable'}</p>
                                                                         </div>
                                                                         <div>
                                                                             <span className="text-slate-500">Last Job Posted:</span>
-                                                                            <p className="text-slate-700">{company.stats?.lastJobPosted ? this.formatDate(company.stats.lastJobPosted) : 'Never'}</p>
+                                                                            <p className="text-slate-700">{!company.stats ? 'Data unavailable' : company.stats.lastJobPosted ? this.formatDate(company.stats.lastJobPosted) : 'Never'}</p>
                                                                         </div>
                                                                     </div>
                                                                 </div>

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiActivity, FiAlertTriangle, FiCheck, FiDatabase, FiLock, FiRefreshCw, FiSave, FiTool } from 'react-icons/fi';
+import { formatMetric } from '../../../utils/healthPresentation';
 import { useAdminSession } from '../AdminContext';
 import {
   deleteAnnouncement,
@@ -185,10 +186,12 @@ export default function PlatformOperations() {
           <h2 className="font-bold text-slate-900 flex items-center gap-2"><FiActivity /> Observability</h2>
           <p className="text-xs text-slate-500 mt-1">{observability?.note}</p>
           <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-            <Stat label="Samples" value={metrics.sampleCount ?? 0} />
-            <Stat label="p50 ms" value={Math.round(metrics.p50 || 0)} />
-            <Stat label="p95 ms" value={Math.round(metrics.p95 || 0)} />
-            <Stat label="5xx" value={metrics.errors?.serverErrors ?? 0} />
+            {/* A latency of 0 ms is not a plausible reading — it means the
+                metric was absent. Show that instead of inventing a number. */}
+            <Stat label="Samples" value={metrics.sampleCount} />
+            <Stat label="p50 ms" value={metrics.p50 == null ? null : Math.round(metrics.p50)} />
+            <Stat label="p95 ms" value={metrics.p95 == null ? null : Math.round(metrics.p95)} />
+            <Stat label="5xx" value={metrics.errors?.serverErrors} />
           </div>
         </section>
 
@@ -315,10 +318,15 @@ function confirmDeleteAnnouncementComponentState() {} // placeholder
 
 
 function Stat({ label, value }) {
+  // formatMetric keeps a real 0 but turns null/undefined into
+  // "Data unavailable", so a missing sample can never read as a measured zero.
+  const missing = value === null || value === undefined || value === '';
   return (
     <div className="rounded-xl bg-slate-50 p-2">
       <p className="text-[10px] uppercase font-extrabold text-slate-400">{label}</p>
-      <p className="font-black text-slate-900">{value}</p>
+      <p className={missing ? 'text-xs font-semibold text-slate-500' : 'font-black text-slate-900'}>
+        {formatMetric(value)}
+      </p>
     </div>
   );
 }
