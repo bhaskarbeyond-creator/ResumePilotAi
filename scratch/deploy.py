@@ -220,7 +220,7 @@ local_backend = r'd:\xampp\htdocs\ai-resume-builder\backend'
 remote_backend = '/home/u727965524/backend'
 mkdir_p(sftp, remote_backend)
 
-for item in ['index.js', 'package.json', '.env']:
+for item in ['index.js', 'package.json', '.env', 'COMMIT_SHA']:
     local_path = os.path.join(local_backend, item)
     if os.path.exists(local_path):
         sftp.put(local_path, os.path.join(remote_backend, item).replace('\\', '/'))

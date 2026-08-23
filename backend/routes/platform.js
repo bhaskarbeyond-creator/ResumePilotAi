@@ -1628,7 +1628,7 @@ router.post('/tenants/:tenantId/decommission', requireRecentAdminAuthentication,
  * Feature Flags — SUPER_ADMIN only
  * ------------------------------------------------------------------ */
 
-const { getAllFlags, setFlagValue } = require('../services/featureFlagService');
+const { FLAG_DEFINITIONS, getAllFlags, setFlagValue } = require('../services/featureFlagService');
 
 router.get('/feature-flags', requireSuperAdmin, async (req, res) => {
   try {
@@ -1645,6 +1645,9 @@ router.put('/feature-flags/:flagKey', requireRecentAdminAuthentication, async (r
   const { value } = req.body;
   if (typeof value !== 'boolean') {
     return res.status(400).json({ error: { code: 'INVALID_VALUE', message: 'Flag value must be a boolean' } });
+  }
+  if (!FLAG_DEFINITIONS[flagKey]) {
+    return res.status(400).json({ error: { code: 'UNKNOWN_FEATURE_FLAG', message: `Unknown feature flag: ${flagKey}` } });
   }
   try {
     const db = req.app.get('db');
