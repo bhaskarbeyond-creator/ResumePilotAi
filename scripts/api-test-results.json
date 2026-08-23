@@ -1,0 +1,1117 @@
+[
+  {
+    "method": "POST",
+    "url": "/api/admin/ai/fetch-models",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "/api/admin/ai/quota-limits",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "/api/admin/ai/quota-stats",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "/api/admin/ai/reset-quota",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/admin/ai/test-provider",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/admin/blog/categories",
+    "status": 400
+  },
+  {
+    "method": "PATCH",
+    "url": "/api/admin/blog/categories/:categoryId",
+    "status": 400
+  },
+  {
+    "method": "DELETE",
+    "url": "/api/admin/blog/categories/:categoryId",
+    "status": 404
+  },
+  {
+    "method": "PATCH",
+    "url": "/api/admin/blog/posts/:postId",
+    "status": 400
+  },
+  {
+    "method": "DELETE",
+    "url": "/api/admin/blog/posts/:postId",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/admin/blog/publish-due",
+    "status": 503
+  },
+  {
+    "method": "PATCH",
+    "url": "/api/admin/companies/:companyId",
+    "status": 400
+  },
+  {
+    "method": "GET",
+    "url": "/api/admin/coupons",
+    "status": 200
+  },
+  {
+    "method": "PUT",
+    "url": "/api/admin/coupons/:code",
+    "status": 400
+  },
+  {
+    "method": "DELETE",
+    "url": "/api/admin/coupons/:code",
+    "status": 404
+  },
+  {
+    "method": "POST",
+    "url": "/api/admin/delete-user",
+    "status": 400
+  },
+  {
+    "method": "PATCH",
+    "url": "/api/admin/employer-applications/:uid",
+    "status": 400
+  },
+  {
+    "method": "GET",
+    "url": "/api/admin/firebase-service-account",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "/api/admin/firebase-service-account",
+    "status": 501
+  },
+  {
+    "method": "POST",
+    "url": "/api/admin/gdpr-settings",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "/api/admin/global-rating",
+    "status": 400
+  },
+  {
+    "method": "GET",
+    "url": "/api/admin/health-summary",
+    "status": 200
+  },
+  {
+    "method": "PATCH",
+    "url": "/api/admin/jobs/:jobId",
+    "status": 400
+  },
+  {
+    "method": "DELETE",
+    "url": "/api/admin/jobs/:jobId",
+    "status": 404
+  },
+  {
+    "method": "POST",
+    "url": "/api/admin/landing-content",
+    "status": 400
+  },
+  {
+    "method": "GET",
+    "url": "/api/admin/pages",
+    "status": 200
+  },
+  {
+    "method": "PUT",
+    "url": "/api/admin/pages/:slug",
+    "status": 400
+  },
+  {
+    "method": "DELETE",
+    "url": "/api/admin/pages/:slug",
+    "status": 404
+  },
+  {
+    "method": "POST",
+    "url": "/api/admin/payment-settings",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "/api/admin/payment/test-provider",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/admin/payments/refund",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/admin/reviews",
+    "status": 400
+  },
+  {
+    "method": "DELETE",
+    "url": "/api/admin/reviews/:reviewId",
+    "status": 404
+  },
+  {
+    "method": "POST",
+    "url": "/api/admin/settings/:category",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/admin/system-health-settings",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "/api/admin/trusted-by",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "/api/admin/trusted-by",
+    "status": 400
+  },
+  {
+    "method": "PATCH",
+    "url": "/api/admin/trusted-by/:logoId",
+    "status": 400
+  },
+  {
+    "method": "DELETE",
+    "url": "/api/admin/trusted-by/:logoId",
+    "status": 404
+  },
+  {
+    "method": "GET",
+    "url": "/api/admin/twilio-settings",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "/api/admin/twilio-settings",
+    "status": 200
+  },
+  {
+    "method": "PATCH",
+    "url": "/api/admin/users/:uid",
+    "status": 404
+  },
+  {
+    "method": "POST",
+    "url": "/api/admin/website-meta",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/auth/custom-password-reset",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "/api/auth/github",
+    "status": 503
+  },
+  {
+    "method": "GET",
+    "url": "/api/auth/github/callback",
+    "status": 302
+  },
+  {
+    "method": "GET",
+    "url": "/api/auth/github/test-credentials",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "/api/auth/linkedin",
+    "status": 302
+  },
+  {
+    "method": "GET",
+    "url": "/api/auth/linkedin/callback",
+    "status": 302
+  },
+  {
+    "method": "GET",
+    "url": "/api/auth/linkedin/test-credentials",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "/api/auth/oauth/exchange",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/auth/purge-orphaned-auth",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/auth/send-verification-email",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "/api/auth/set-user-password",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/auth/verify-email-token",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/check",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "/api/contact",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/employer/companies",
+    "status": 403
+  },
+  {
+    "method": "PATCH",
+    "url": "/api/employer/companies/:companyId",
+    "status": 403
+  },
+  {
+    "method": "DELETE",
+    "url": "/api/employer/companies/:companyId",
+    "status": 403
+  },
+  {
+    "method": "POST",
+    "url": "/api/employer/jobs",
+    "status": 403
+  },
+  {
+    "method": "PATCH",
+    "url": "/api/employer/jobs/:jobId",
+    "status": 403
+  },
+  {
+    "method": "DELETE",
+    "url": "/api/employer/jobs/:jobId",
+    "status": 403
+  },
+  {
+    "method": "POST",
+    "url": "/api/export",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/export-docx",
+    "status": 400
+  },
+  {
+    "method": "GET",
+    "url": "/api/export-render-data",
+    "status": 404
+  },
+  {
+    "method": "POST",
+    "url": "/api/generate-ai-cover-letter",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "/api/health",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "/api/healthz",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "/api/invoice",
+    "status": 410
+  },
+  {
+    "method": "POST",
+    "url": "/api/invoice/generate",
+    "status": 400
+  },
+  {
+    "method": "PATCH",
+    "url": "/api/job-applications/:applicationId/status",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/jobs/:jobId/applications",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/jobs/naukri",
+    "status": 501
+  },
+  {
+    "method": "GET",
+    "url": "/api/linkedin-scraper",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "/api/messages/conversations",
+    "status": 400
+  },
+  {
+    "method": "GET",
+    "url": "/api/messages/conversations/:conversationId/participant-profile",
+    "status": 503
+  },
+  {
+    "method": "POST",
+    "url": "/api/messages/send",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/notify/email-otp",
+    "status": 410
+  },
+  {
+    "method": "POST",
+    "url": "/api/notify/job-application",
+    "status": 502
+  },
+  {
+    "method": "POST",
+    "url": "/api/notify/job-posted",
+    "status": 502
+  },
+  {
+    "method": "POST",
+    "url": "/api/notify/job-status-update",
+    "status": 502
+  },
+  {
+    "method": "POST",
+    "url": "/api/notify/password-changed",
+    "status": 502
+  },
+  {
+    "method": "POST",
+    "url": "/api/notify/password-reset",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "/api/notify/portfolio-published",
+    "status": 502
+  },
+  {
+    "method": "POST",
+    "url": "/api/notify/security-alert",
+    "status": 502
+  },
+  {
+    "method": "POST",
+    "url": "/api/notify/send-verification-email",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "/api/notify/subscription-cancelled",
+    "status": 502
+  },
+  {
+    "method": "POST",
+    "url": "/api/notify/user-signup",
+    "status": 502
+  },
+  {
+    "method": "POST",
+    "url": "/api/pay",
+    "status": 400
+  },
+  {
+    "method": "GET",
+    "url": "/api/payment-orders/:orderId",
+    "status": 404
+  },
+  {
+    "method": "POST",
+    "url": "/api/payment/razorpay-order",
+    "status": 410
+  },
+  {
+    "method": "POST",
+    "url": "/api/paypal/create-order",
+    "status": 503
+  },
+  {
+    "method": "POST",
+    "url": "/api/paypal/verify",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/paytm/initiate-transaction",
+    "status": 503
+  },
+  {
+    "method": "POST",
+    "url": "/api/paytm/verify-transaction",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/phonepe/initiate",
+    "status": 503
+  },
+  {
+    "method": "POST",
+    "url": "/api/phonepe/status",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/public-export",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/razorpay/create-order",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/razorpay/verify-payment",
+    "status": 400
+  },
+  {
+    "method": "GET",
+    "url": "/api/readyz",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "/api/rtl-font-config",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "/api/send-sms",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/stripe-webhook",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/subscription/preferences",
+    "status": 400
+  },
+  {
+    "method": "GET",
+    "url": "/healthz",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "/llms.txt",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "/public/custom-pages.json",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "/public/trusted-by.json",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "/readyz",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "/api/admin/audit-logs",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "/api/admin/audit-logs/:id",
+    "status": 404
+  },
+  {
+    "method": "GET",
+    "url": "/api/admin/audit-logs/stats",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "/api/check-grammar",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/generate-content",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/generate-education-description",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/generate-interview",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/generate-resume",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/generate-skills",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/generate-summary",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "/api/generate-work-description",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/parse-resume",
+    "status": 400
+  },
+  {
+    "method": "GET",
+    "url": "/api/email/admin/circuit-breaker-status",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "/api/email/admin/custom-templates",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "/api/email/admin/reset-circuit-breaker",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "/api/email/admin/save-smtp",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/email/admin/save-template-customization",
+    "status": 400
+  },
+  {
+    "method": "GET",
+    "url": "/api/email/admin/settings",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "/api/email/admin/test-connection",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/email/admin/test-imap",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "/api/email/logs",
+    "status": 429
+  },
+  {
+    "method": "POST",
+    "url": "/api/email/resend",
+    "status": 429
+  },
+  {
+    "method": "POST",
+    "url": "/api/email/send-email",
+    "status": 429
+  },
+  {
+    "method": "POST",
+    "url": "/api/email/send-invoice-email",
+    "status": 429
+  },
+  {
+    "method": "GET",
+    "url": "/api/email/templates",
+    "status": 429
+  },
+  {
+    "method": "POST",
+    "url": "/api/email/templates",
+    "status": 429
+  },
+  {
+    "method": "POST",
+    "url": "/api/enterprise/ai/generate-content",
+    "status": 400
+  },
+  {
+    "method": "GET",
+    "url": "/api/enterprise/audit",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "/api/enterprise/configuration",
+    "status": 200
+  },
+  {
+    "method": "PATCH",
+    "url": "/api/enterprise/configuration",
+    "status": 409
+  },
+  {
+    "method": "GET",
+    "url": "/api/enterprise/context",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "/api/enterprise/context",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "/api/enterprise/data-plane/status",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "/api/enterprise/data/export",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "/api/enterprise/lifecycle/suspend",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "/api/enterprise/memberships",
+    "status": 403
+  },
+  {
+    "method": "POST",
+    "url": "/api/enterprise/memberships",
+    "status": 403
+  },
+  {
+    "method": "PATCH",
+    "url": "/api/enterprise/memberships/:principalId",
+    "status": 403
+  },
+  {
+    "method": "DELETE",
+    "url": "/api/enterprise/memberships/:principalId",
+    "status": 403
+  },
+  {
+    "method": "POST",
+    "url": "/api/enterprise/memberships/:principalId/invitation-resend",
+    "status": 403
+  },
+  {
+    "method": "GET",
+    "url": "/api/enterprise/observability/metrics",
+    "status": 403
+  },
+  {
+    "method": "GET",
+    "url": "/api/enterprise/platform/tenants",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "/api/enterprise/platform/tenants/:tenantId/reactivate",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/enterprise/platform/tenants/:tenantId/suspend",
+    "status": 400
+  },
+  {
+    "method": "GET",
+    "url": "/api/enterprise/queue/jobs",
+    "status": 403
+  },
+  {
+    "method": "POST",
+    "url": "/api/enterprise/queue/jobs",
+    "status": 403
+  },
+  {
+    "method": "POST",
+    "url": "/api/enterprise/queue/replay",
+    "status": 403
+  },
+  {
+    "method": "GET",
+    "url": "/api/enterprise/queue/status",
+    "status": 403
+  },
+  {
+    "method": "GET",
+    "url": "/api/enterprise/resources",
+    "status": 403
+  },
+  {
+    "method": "POST",
+    "url": "/api/enterprise/resources",
+    "status": 403
+  },
+  {
+    "method": "GET",
+    "url": "/api/enterprise/resources/:resourceId",
+    "status": 403
+  },
+  {
+    "method": "PATCH",
+    "url": "/api/enterprise/resources/:resourceId",
+    "status": 403
+  },
+  {
+    "method": "DELETE",
+    "url": "/api/enterprise/resources/:resourceId",
+    "status": 403
+  },
+  {
+    "method": "GET",
+    "url": "/api/enterprise/roles-matrix",
+    "status": 403
+  },
+  {
+    "method": "POST",
+    "url": "/api/enterprise/service-accounts",
+    "status": 403
+  },
+  {
+    "method": "GET",
+    "url": "/api/enterprise/service-accounts",
+    "status": 403
+  },
+  {
+    "method": "POST",
+    "url": "/api/enterprise/service-accounts/:serviceAccountId/revoke",
+    "status": 403
+  },
+  {
+    "method": "POST",
+    "url": "/api/enterprise/service-accounts/:serviceAccountId/rotate",
+    "status": 403
+  },
+  {
+    "method": "GET",
+    "url": "/api/enterprise/status",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "/api/enterprise/storage/token",
+    "status": 403
+  },
+  {
+    "method": "POST",
+    "url": "/api/enterprise/storage/verify",
+    "status": 403
+  },
+  {
+    "method": "POST",
+    "url": "/api/enterprise/support-grants",
+    "status": 403
+  },
+  {
+    "method": "GET",
+    "url": "/api/enterprise/support-grants",
+    "status": 403
+  },
+  {
+    "method": "POST",
+    "url": "/api/enterprise/support-grants/:grantId/revoke",
+    "status": 403
+  },
+  {
+    "method": "GET",
+    "url": "/api/enterprise/support/context",
+    "status": 400
+  },
+  {
+    "method": "GET",
+    "url": "/api/enterprise/teams",
+    "status": 403
+  },
+  {
+    "method": "POST",
+    "url": "/api/enterprise/teams",
+    "status": 403
+  },
+  {
+    "method": "PATCH",
+    "url": "/api/enterprise/teams/:teamId",
+    "status": 403
+  },
+  {
+    "method": "POST",
+    "url": "/api/enterprise/teams/:teamId/archive",
+    "status": 403
+  },
+  {
+    "method": "GET",
+    "url": "/api/enterprise/teams/:teamId/members",
+    "status": 403
+  },
+  {
+    "method": "POST",
+    "url": "/api/enterprise/teams/:teamId/members",
+    "status": 403
+  },
+  {
+    "method": "DELETE",
+    "url": "/api/enterprise/teams/:teamId/members/:principalId",
+    "status": 403
+  },
+  {
+    "method": "POST",
+    "url": "/api/enterprise/teams/:teamId/restore",
+    "status": 403
+  },
+  {
+    "method": "PATCH",
+    "url": "/api/enterprise/tenant",
+    "status": 403
+  },
+  {
+    "method": "GET",
+    "url": "/api/enterprise/tenants",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "/api/enterprise/tenants",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/enterprise/tenants/:tenantId/reactivate",
+    "status": 400
+  },
+  {
+    "method": "POST",
+    "url": "/api/enterprise/test-email",
+    "status": 403
+  },
+  {
+    "method": "GET",
+    "url": "/api/enterprise/usage/ai",
+    "status": 403
+  },
+  {
+    "method": "GET",
+    "url": "/api/enterprise/usage/ai/events",
+    "status": 403
+  },
+  {
+    "method": "GET",
+    "url": "/api/enterprise/workspaces",
+    "status": 403
+  },
+  {
+    "method": "POST",
+    "url": "/api/enterprise/workspaces",
+    "status": 403
+  },
+  {
+    "method": "PATCH",
+    "url": "/api/enterprise/workspaces/:workspaceId",
+    "status": 403
+  },
+  {
+    "method": "POST",
+    "url": "/api/enterprise/workspaces/:workspaceId/archive",
+    "status": 403
+  },
+  {
+    "method": "GET",
+    "url": "/api/enterprise/workspaces/:workspaceId/members",
+    "status": 403
+  },
+  {
+    "method": "POST",
+    "url": "/api/enterprise/workspaces/:workspaceId/members",
+    "status": 403
+  },
+  {
+    "method": "DELETE",
+    "url": "/api/enterprise/workspaces/:workspaceId/members/:principalId",
+    "status": 403
+  },
+  {
+    "method": "POST",
+    "url": "/api/enterprise/workspaces/:workspaceId/restore",
+    "status": 403
+  },
+  {
+    "method": "GET",
+    "url": "/api/enterpriseM2m/context",
+    "status": 404
+  },
+  {
+    "method": "GET",
+    "url": "/api/platform/announcements",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "/api/platform/announcements",
+    "status": 400
+  },
+  {
+    "method": "PATCH",
+    "url": "/api/platform/announcements/:id",
+    "status": 404
+  },
+  {
+    "method": "DELETE",
+    "url": "/api/platform/announcements/:id",
+    "status": 404
+  },
+  {
+    "method": "GET",
+    "url": "/api/platform/attention",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "/api/platform/backup-status",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "/api/platform/command-center",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "/api/platform/encryption",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "/api/platform/enterprise-queue",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "/api/platform/health",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "/api/platform/maintenance",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "/api/platform/maintenance",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "/api/platform/observability",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "/api/platform/operators",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "/api/platform/operators",
+    "status": 400
+  },
+  {
+    "method": "GET",
+    "url": "/api/platform/overview",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "/api/platform/payments-health",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "/api/platform/queues",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "/api/platform/queues/retry",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "/api/platform/search",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "/api/platform/security-events",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "/api/platform/tenants/:tenantId",
+    "status": 404
+  },
+  {
+    "method": "POST",
+    "url": "/api/platform/tenants/:tenantId/decommission",
+    "status": 400
+  }
+]

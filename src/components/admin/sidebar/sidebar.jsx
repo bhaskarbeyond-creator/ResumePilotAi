@@ -81,6 +81,8 @@ const SETTINGS_GROUPS = [
         { key: 'integrationsSettings', label: 'Maps & Keys', icon: FaMapMarkerAlt },
         { key: 'securityLimitsSettings', label: 'Security & Limits', icon: FaShieldAlt },
         { key: 'systemHealthSettings', label: 'System Health', icon: FaHeartbeat },
+        { key: 'featureFlagsSettings', label: 'Feature Flags', icon: FaCode },
+        { key: 'platformConfigSettings', label: 'Platform Config', icon: FaServer },
         { key: 'codeInjectionSettings', label: 'Code Injection', icon: FaCode },
         { key: 'gdprLegalSettings', label: 'GDPR & Legal', icon: FaCookieBite },
     ]},

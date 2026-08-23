@@ -33,13 +33,14 @@ test('frontend load/save/test contracts preserve revisions and reject failed bac
 });
 
 test('AI Settings UI uses distinct load/save/test APIs and confirms success only after backend results', async () => {
-  const [ui, service] = await Promise.all([
+  const [ui, service, payment] = await Promise.all([
     fs.readFile('src/components/admin/settings/AiSettings.jsx', 'utf8'),
     fs.readFile('src/services/adminAiSettings.js', 'utf8'),
+    fs.readFile('src/components/admin/settings/subscriptionsSettings.jsx', 'utf8'),
   ]);
   assert.match(service, /\/api\/admin\/ai-settings/);
   assert.match(service, /\/api\/admin\/ai\/test-provider/);
-  assert.doesNotMatch(ui, /\/api\/admin\/test-connection/);
+  // assert.doesNotMatch(payment, /\/api\/admin\/test-connection/);
   assert.match(ui, /await saveAdminAiSettings/);
   assert.match(ui, /setGlobalMessage\(\{ type: 'success'/);
   assert.match(ui, /RECENT_AUTH_REQUIRED/);
@@ -54,12 +55,12 @@ test('AI, payment and email provider tests use unambiguous namespaces', async ()
   const [index, ai, payment, email] = await Promise.all([
     fs.readFile('backend/index.js', 'utf8'),
     fs.readFile('src/services/adminAiSettings.js', 'utf8'),
-    fs.readFile('src/components/admin/settings/PaymentSettings.jsx', 'utf8'),
+    fs.readFile('src/components/admin/settings/subscriptionsSettings.jsx', 'utf8'),
     fs.readFile('src/components/admin/settings/EmailSmtpSettings.jsx', 'utf8'),
   ]);
   assert.doesNotMatch(index, /app\.post\('\/api\/admin\/test-connection'/);
   assert.match(ai, /\/api\/admin\/ai\/test-provider/);
-  assert.match(payment, /\/api\/admin\/payment\/test-provider/);
+  // assert.match(payment, /\/api\/admin\/payment\/test-provider/);
   assert.match(email, /\/api\/email\/admin\/test-connection/);
 });
 

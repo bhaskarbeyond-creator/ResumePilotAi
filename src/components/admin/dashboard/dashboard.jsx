@@ -83,6 +83,7 @@ const Dashboard = () => {
               <Link to="/adm/tenants" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700"><FaServer className="text-violet-600" /> Tenants</Link>
               <Link to="/adm/security" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700"><FiLock className="text-rose-600" /> Security</Link>
               <Link to="/adm/health" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700"><FaHeartbeat className="text-emerald-600" /> Platform Health</Link>
+              <Link to="/adm/feature-flags" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700"><FiCpu className="text-blue-600" /> Feature Flags</Link>
               <Link to="/adm/attention" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700">Attention</Link>
               <Link to="/adm/operations" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700">Operations</Link>
             </div>
@@ -94,6 +95,7 @@ const Dashboard = () => {
             <Signal label="Payments" ok={center.signals?.payments?.status === 'HEALTHY'} text={center.signals?.payments?.status === 'UNAVAILABLE' ? 'Count unavailable' : `${center.signals?.payments?.failed ?? '—'} failed`} />
             <Signal label="Security" ok={center.signals?.security?.status === 'HEALTHY'} text={center.signals?.security?.status === 'UNAVAILABLE' ? 'Count unavailable' : `${center.signals?.security?.highSeverity ?? '—'} high`} />
             <Signal label="Encryption" ok={center.signals?.encryption?.status === 'CONFIGURED'} text={center.signals?.encryption?.provider || 'none'} />
+            <Signal label="Feature Flags" ok={true} text={center.signals?.featureFlags?.total ? `${center.signals.featureFlags.enabled} enabled` : 'Unavailable'} />
             <Signal label="Runtime" ok icon={<FiCpu className="text-slate-500 h-3.5 w-3.5" />} text={center.subsystems?.runtime?.nodeVersion || '—'} />
           </div>
         </div>

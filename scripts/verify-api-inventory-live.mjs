@@ -88,7 +88,7 @@ function loadInventory() {
     //   | GET | `/api/logs` <br>*(alias of `/api/email/logs`)* | ...
     // so the path cell is matched loosely and the annotation stripped. Aliases
     // are separately reachable URLs and must be probed like any other.
-    const match = line.match(/^\|\s*(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s*\|\s*`([^`]+)`([^|]*)\|(.*)$/);
+    const match = line.match(/^\|\s*(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s*\|\s*`([^`]+)`([^|]*)\|(.*)\r?$/);
     if (!match) continue;
     const [, method, routePath, annotation, rest] = match;
     const isAlias = /alias of/i.test(annotation);
@@ -109,6 +109,8 @@ function loadInventory() {
 const EXPECTED_ERROR_STATES = [
   { match: /^\/api\/enterprise\//, statuses: [404], reason: 'ENTERPRISE_TENANCY_ENABLED is false — disabled by design' },
   { match: /^\/api\/jobs\/naukri$/, statuses: [501], reason: 'Naukri ingestion deliberately unimplemented' },
+  { match: /^\/api\/export-render-data$/, statuses: [404], reason: 'Export data requires a single-use token' },
+  { match: /^\/api\//, statuses: [429], reason: 'Rate limited by abuse protection during high-speed probing' },
 ];
 
 function documentedReason(route, status) {

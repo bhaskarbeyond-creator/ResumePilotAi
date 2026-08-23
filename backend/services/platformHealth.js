@@ -120,7 +120,7 @@ function service(descriptor) {
     affectedUiModules: descriptor.affectedUiModules || [],
     metrics: descriptor.metrics || {},
     testable: descriptor.testable === true,
-    lastCheckedAt: descriptor.lastCheckedAt || nowIso(),
+    checkedAt: descriptor.checkedAt || nowIso(),
     docsHref: descriptor.docsHref || null,
   });
 }

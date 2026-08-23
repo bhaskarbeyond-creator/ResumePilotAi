@@ -42,7 +42,7 @@ const { ok, values, missing } = readEnv({
   SUPERADMIN_PASSWORD: { required: true, description: 'Password for SUPERADMIN_EMAIL' },
   ADMIN_EMAIL: { description: 'Optional ADMIN account, to verify role-scoped projection' },
   ADMIN_PASSWORD: { description: 'Password for ADMIN_EMAIL' },
-  EXPECTED_API_COUNT: { default: '249', description: 'Authoritative reachable-endpoint count' },
+  EXPECTED_API_COUNT: { default: '251', description: 'Authoritative reachable-endpoint count' },
 });
 
 if (!ok) {

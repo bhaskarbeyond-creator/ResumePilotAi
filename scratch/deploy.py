@@ -44,6 +44,19 @@ def upload_dir(local_dir, remote_dir):
 local_dist = r'd:\xampp\htdocs\ai-resume-builder\dist'
 remote_public = '/home/u727965524/domains/airesume.projectdemo.guru/public_html'
 
+expected_sha = os.environ.get('EXPECTED_SHA', '')
+if expected_sha:
+    index_path = os.path.join(local_dist, 'index.html')
+    if os.path.exists(index_path):
+        with open(index_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        # Avoid injecting multiple times if deploy.py is run repeatedly on the same build
+        if 'data-build-sha=' not in content:
+            content = content.replace('</body>', f'<meta data-build-sha="{expected_sha}" /></body>')
+            with open(index_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+        print(f"Injected BUILD_SHA {expected_sha} into index.html")
+
 # Keep previous assets on server so active browser sessions don't get chunk 404 / MIME errors
 print("Preserving existing assets for backward compatibility.")
 
@@ -55,9 +68,10 @@ remote_htaccess_content = r'''<IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
 
-  # Proxy /api requests to PHP API proxy
-  RewriteCond %{REQUEST_URI} ^/api/ [NC]
-  RewriteRule ^api/(.*)$ api/index.php [L]
+  # Proxy /api and /healthz requests to PHP API proxy
+  RewriteCond %{REQUEST_URI} ^/api/ [NC,OR]
+  RewriteCond %{REQUEST_URI} ^/healthz [NC]
+  RewriteRule ^(api/.*|healthz)$ api/index.php [L]
 
   # Return 404 for missing static assets under /assets/ instead of falling back to index.html
   RewriteCond %{REQUEST_URI} ^/assets/ [NC]

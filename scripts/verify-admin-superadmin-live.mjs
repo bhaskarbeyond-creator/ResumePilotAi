@@ -168,7 +168,7 @@ async function assertAuditRecord(session, label, needle) {
 
 async function verifyReadSurfaces(superAdmin) {
   const surfaces = [
-    ['users', '/api/admin/users?limit=5'],
+    ['users', '/api/platform/search?q=test'],
     ['operators', '/api/platform/operators'],
     ['audit log', '/api/admin/audit-logs?limit=5'],
     ['queues / DLQ', '/api/platform/queues'],

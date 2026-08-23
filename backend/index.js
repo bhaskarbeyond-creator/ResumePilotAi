@@ -3173,13 +3173,20 @@ app.get('/api/service-availability', async (req, res) => {
     }
 });
 
+let globalCommitSha = process.env.COMMIT_SHA;
+try {
+  const fs = require('fs');
+  const shaPath = require('path').join(__dirname, 'COMMIT_SHA');
+  if (fs.existsSync(shaPath)) globalCommitSha = fs.readFileSync(shaPath, 'utf8').trim();
+} catch (e) {}
+
 app.get('/healthz', (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    return res.json({ status: 'ok', firebaseAdminConfigured: Boolean(db && admin), date: new Date().toISOString() });
+    return res.json({ status: 'ok', firebaseAdminConfigured: Boolean(db && admin), date: new Date().toISOString(), commitSha: globalCommitSha });
 });
 app.get('/api/healthz', (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    return res.json({ status: 'ok', firebaseAdminConfigured: Boolean(db && admin), date: new Date().toISOString() });
+    return res.json({ status: 'ok', firebaseAdminConfigured: Boolean(db && admin), date: new Date().toISOString(), commitSha: globalCommitSha });
 });
 app.get('/api/health', (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
@@ -4269,7 +4276,7 @@ app.patch('/api/admin/users/:uid', async (req, res) => {
         const currentRole = String(target.customClaims?.role || userData.role || 'USER').toUpperCase();
         const currentMembership = String(userData.membership || 'Basic');
         if (Object.hasOwn(req.body, 'expectedSuspended') && typeof req.body.expectedSuspended !== 'boolean') return res.status(400).json({ success: false, error: 'Invalid expected suspension state.' });
-        if (Object.hasOwn(req.body, 'expectedRole') && !['ADMIN', 'USER'].includes(req.body.expectedRole)) return res.status(400).json({ success: false, error: 'Invalid expected role.' });
+        if (Object.hasOwn(req.body, 'expectedRole') && !['ADMIN', 'SUPPORT', 'USER'].includes(req.body.expectedRole)) return res.status(400).json({ success: false, error: 'Invalid expected role.' });
         if (Object.hasOwn(req.body, 'expectedMembership') && !['Basic', 'Premium'].includes(req.body.expectedMembership)) return res.status(400).json({ success: false, error: 'Invalid expected membership.' });
         const staleTarget = (Object.hasOwn(req.body, 'expectedSuspended') && req.body.expectedSuspended !== Boolean(target.disabled))
             || (Object.hasOwn(req.body, 'expectedRole') && req.body.expectedRole !== currentRole)
@@ -4305,7 +4312,7 @@ app.patch('/api/admin/users/:uid', async (req, res) => {
         }
         if (req.body.role !== undefined) {
             if (!allowed('users.roles.manage')) return res.status(403).json({ success: false, error: 'Insufficient permission.' });
-            if (!['ADMIN', 'USER'].includes(req.body.role)) return res.status(400).json({ success: false, error: 'Invalid role.' });
+            if (!['ADMIN', 'SUPPORT', 'USER'].includes(req.body.role)) return res.status(400).json({ success: false, error: 'Invalid role.' });
             if (currentRole === 'SUPER_ADMIN') return res.status(403).json({ success: false, code: 'SUPER_ADMIN_PROTECTED', error: 'SUPER_ADMIN claims cannot be changed from this API.' });
             if (uid === req.user.uid && req.body.role !== 'ADMIN') return res.status(400).json({ success: false, error: 'Self-demotion is prohibited.' });
             await admin.auth().setCustomUserClaims(uid, { ...(target.customClaims || {}), role: req.body.role });

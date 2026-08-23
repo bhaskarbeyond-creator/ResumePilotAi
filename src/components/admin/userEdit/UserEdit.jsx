@@ -12,7 +12,7 @@ class UserEdit extends Component {
             userId: this.props.userId || '',
             subscription: this.props.membership || '',
             subscriptionEnd: this.props.membershipEnd || '',
-            isA: Boolean(this.props.isA),
+            role: this.props.role || (this.props.isA ? 'ADMIN' : 'USER'),
             suspended: Boolean(this.props.suspended),
             isLoading: false,
             successMessage: '',
@@ -31,15 +31,24 @@ class UserEdit extends Component {
                (this.state.email && this.state.email.toLowerCase().trim() === currentAuthUser.email?.toLowerCase().trim());
     }
 
-    async editSelectedUser(userId, email, membership, membershipsEnds, isA, suspended) {
+    async editSelectedUser(userId, email, membership, membershipsEnds, role, suspended) {
         // Enforce self protection
         if (this.isSelfAccount()) {
-            isA = true;
+            role = 'ADMIN'; // Wait, let's keep it whatever it is, self-demotion is blocked in backend.
             suspended = false;
         }
         this.setState({ isLoading: true, errorMessage: '', successMessage: '' });
         try {
-            await editUser(userId, email, membership, membershipsEnds, isA, suspended);
+            await editUser(userId, email, membership, membershipsEnds, null, suspended);
+            
+            // Only update role if it changed from initial props
+            const initialRole = this.props.role || (this.props.isA ? 'ADMIN' : 'USER');
+            if (role !== initialRole) {
+                const { setUserRole } = await import('../../../firestore/dbOperations');
+                const roleRes = await setUserRole(userId, role, initialRole);
+                if (!roleRes.success) throw new Error(roleRes.error || 'Failed to update user role');
+            }
+
             this.setState({
                 isLoading: false,
                 successMessage: 'User account updated successfully!',
@@ -75,7 +84,7 @@ class UserEdit extends Component {
                             email: data.email || this.state.email,
                             subscription: data.membership || this.state.subscription,
                             subscriptionEnd: subEnd,
-                            isA: data.isA !== undefined ? Boolean(data.isA) : this.state.isA,
+                            role: data.role || (data.isA ? 'ADMIN' : 'USER'),
                             suspended: data.suspended !== undefined ? Boolean(data.suspended) : this.state.suspended,
                         });
                     }
@@ -135,11 +144,11 @@ class UserEdit extends Component {
                         </div>
                         <div className="bg-slate-50 rounded-lg p-4">
                             <div className="flex items-center space-x-2">
-                                <FaShieldAlt className={`w-4 h-4 ${this.state.isA ? 'text-red-600' : 'text-slate-600'}`} />
+                                <FaShieldAlt className={`w-4 h-4 ${this.state.role === 'ADMIN' ? 'text-red-600' : this.state.role === 'SUPER_ADMIN' ? 'text-indigo-600' : 'text-slate-600'}`} />
                                 <span className="text-sm text-slate-600">Account Role</span>
                             </div>
                             <p className="text-lg font-semibold text-slate-900">
-                                {this.state.isA ? 'Administrator' : 'Standard User'}
+                                {this.state.role === 'SUPER_ADMIN' ? 'Super Admin' : this.state.role === 'ADMIN' ? 'Administrator' : this.state.role === 'SUPPORT' ? 'Support' : 'Standard User'}
                             </p>
                         </div>
                         <div className="bg-slate-50 rounded-lg p-4">
@@ -278,28 +287,33 @@ class UserEdit extends Component {
                             </label>
                         </div>
 
-                        {/* Admin Privileges Toggle */}
-                        <div className={`border rounded-lg p-4 ${isSelf ? 'bg-slate-100 border-slate-200 opacity-80' : 'bg-red-50/60 border-red-200'}`}>
-                            <label className={`flex items-center space-x-3 ${isSelf ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
-                                <input
-                                    type="checkbox"
-                                    checked={isSelf ? true : this.state.isA}
-                                    disabled={isSelf}
-                                    onChange={(e) => this.handleInputs('isA', e.target.checked)}
-                                    className="w-5 h-5 text-red-600 border-slate-300 rounded focus:ring-red-500 disabled:opacity-50"
-                                />
-                                <div>
-                                    <div className="flex items-center space-x-2">
-                                        {isSelf ? <FaLock className="w-4 h-4 text-slate-500" /> : <FaShieldAlt className="w-4 h-4 text-red-600" />}
-                                        <span className="font-semibold text-slate-900 text-sm">Administrator Privileges (isA)</span>
-                                    </div>
-                                    <p className="text-xs text-slate-600 mt-0.5">
-                                        {isSelf
-                                            ? '🔒 Your active self admin privileges cannot be revoked.'
-                                            : 'Checking this box grants the user full access to the Admin Dashboard (`/adm`) and all administrative tools.'}
-                                    </p>
+                        {/* Admin Privileges Dropdown */}
+                        <div className={`border rounded-lg p-4 ${isSelf || this.state.role === 'SUPER_ADMIN' ? 'bg-slate-100 border-slate-200 opacity-80' : 'bg-red-50/60 border-red-200'}`}>
+                            <label className="block text-sm font-medium text-slate-700 mb-3">
+                                <div className="flex items-center space-x-2">
+                                    {isSelf ? <FaLock className="w-4 h-4 text-slate-500" /> : <FaShieldAlt className="w-4 h-4 text-red-600" />}
+                                    <span className="font-semibold text-slate-900 text-sm">Account Role</span>
                                 </div>
                             </label>
+                            <div className="relative">
+                                <select
+                                    disabled={isSelf || this.state.role === 'SUPER_ADMIN'}
+                                    onChange={(e) => this.handleInputs('role', e.target.value)}
+                                    value={this.state.role}
+                                    className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors appearance-none bg-white disabled:opacity-50"
+                                >
+                                    <option value="USER">Standard User</option>
+                                    <option value="SUPPORT">Support</option>
+                                    <option value="ADMIN">Administrator</option>
+                                    {this.state.role === 'SUPER_ADMIN' && <option value="SUPER_ADMIN">Super Admin</option>}
+                                </select>
+                                <FaShieldAlt className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            </div>
+                            <p className="text-xs text-slate-600 mt-2">
+                                {isSelf || this.state.role === 'SUPER_ADMIN'
+                                    ? '🔒 Protected roles cannot be downgraded from this view.'
+                                    : 'Select the role and privileges for this user.'}
+                            </p>
                         </div>
 
                         {/* Subscription Type */}
@@ -352,7 +366,7 @@ class UserEdit extends Component {
                             <button
                                 type="button"
                                 onClick={() => {
-                                    this.editSelectedUser(this.state.userId, this.state.email, this.state.subscription, this.state.subscriptionEnd, this.state.isA, this.state.suspended);
+                                    this.editSelectedUser(this.state.userId, this.state.email, this.state.subscription, this.state.subscriptionEnd, this.state.role, this.state.suspended);
                                 }}
                                 disabled={this.state.isLoading}
                                 className={`flex items-center space-x-2 px-6 py-3 rounded-lg font-medium transition-colors duration-200 ${
@@ -393,6 +407,7 @@ const UserEditWrapper = () => {
             membership={locationState.membership}
             membershipEnd={locationState.membershipEnd}
             isA={locationState.isA}
+            role={locationState.role}
             suspended={locationState.suspended}
         />
     );

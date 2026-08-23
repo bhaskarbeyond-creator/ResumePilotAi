@@ -275,9 +275,9 @@ export default function PlatformTenants() {
           <h2 className="text-xl font-bold text-slate-800 mb-2">Enterprise Tenancy Disabled</h2>
           <p className="text-sm text-slate-500 max-w-lg mx-auto">
             The enterprise tenant foundation is currently inactive in this environment. 
-            To enable multi-tenancy and organization management, the 
-            <code className="mx-1 px-1.5 py-0.5 bg-slate-200 rounded text-slate-700">ENTERPRISE_TENANCY_ENABLED=true</code>
-            flag must be configured in the server environment.
+            Enable the 
+            <code className="mx-1 px-1.5 py-0.5 bg-slate-200 rounded text-slate-700 font-mono font-bold text-xs">ENTERPRISE_TENANCY_ENABLED</code>
+            feature flag from <strong className="text-indigo-600">Settings &gt; Feature Flags</strong> to manage tenants.
           </p>
         </div>
       ) : (

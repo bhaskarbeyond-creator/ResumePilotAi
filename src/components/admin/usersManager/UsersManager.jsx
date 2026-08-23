@@ -86,7 +86,11 @@ class UsersManager extends Component {
     }
 
     createData(id, email, subscription, isA, suspended, rawElement) {
-        return { id, email, subscription, isA, suspended: Boolean(suspended), rawElement };
+        const rawRole = String(rawElement.role || '').toUpperCase();
+        const role = rawRole || (isA ? 'ADMIN' : 'USER');
+        const emailVerified = Boolean(rawElement.emailVerified);
+        const mfaEnabled = Boolean(rawElement.mfaEnabled);
+        return { id, email, subscription, isA, role, emailVerified, mfaEnabled, suspended: Boolean(suspended), rawElement };
     }
 
     // Load users without mutating identities as a side effect.
@@ -114,7 +118,7 @@ class UsersManager extends Component {
     }
 
     // Redirect to user edit page
-    redirectToUser(id, email, subscription, subscriptionEnd, isA, suspended) {
+    redirectToUser(id, email, subscription, subscriptionEnd, isA, role, suspended) {
         this.setState({
             isRedirectToUser: true,
             selectedId: id,
@@ -122,6 +126,7 @@ class UsersManager extends Component {
             selectedSubscription: subscription,
             selectedSubscriptionEnd: subscriptionEnd,
             selectedIsA: isA,
+            selectedRole: role,
             selectedSuspended: suspended,
         });
     }
@@ -175,10 +180,42 @@ class UsersManager extends Component {
         }
         this.setState({ isUserActionRunning: true });
         try {
-            const res = await setUserAdminStatus(userId, newIsA, currentIsA);
+            // Import and use setUserRole dynamically if we were setting role, but for toggle it's boolean logic:
+            const { setUserRole } = await import('../../../firestore/dbOperations');
+            const res = await setUserRole(userId, newIsA ? 'ADMIN' : 'USER', currentIsA ? 'ADMIN' : 'USER');
             if (res.success) {
                 this.setState({
                     statusMessage: { type: 'success', text: `Successfully ${newIsA ? 'granted' : 'revoked'} Admin access!` }
+                });
+                this.showTable();
+            } else {
+                this.setState({ statusMessage: { type: 'error', text: res.error } });
+            }
+        } catch (err) {
+            this.setState({ statusMessage: { type: 'error', text: err.message } });
+        } finally {
+            this.setState({ isUserActionRunning: false, pendingUserAction: null });
+            setTimeout(() => this.setState({ statusMessage: null }), 4000);
+        }
+    }
+
+    async handleSetRole(userId, email, currentRole, targetRole, confirmed = false) {
+        if (!confirmed) {
+            this.setState({ pendingUserAction: {
+                title: `Assign ${targetRole} role?`,
+                message: `${email} will be assigned the ${targetRole} role. The current target state will be verified before applying this change.`,
+                confirmLabel: `Assign ${targetRole}`,
+                onConfirm: () => this.handleSetRole(userId, email, currentRole, targetRole, true),
+            } });
+            return;
+        }
+        this.setState({ isUserActionRunning: true });
+        try {
+            const { setUserRole } = await import('../../../firestore/dbOperations');
+            const res = await setUserRole(userId, targetRole, currentRole);
+            if (res.success) {
+                this.setState({
+                    statusMessage: { type: 'success', text: `Successfully assigned ${targetRole} role!` }
                 });
                 this.showTable();
             } else {
@@ -432,6 +469,7 @@ class UsersManager extends Component {
                             membership: this.state.selectedSubscription,
                             membershipEnd: this.state.selectedSubscriptionEnd,
                             isA: this.state.selectedIsA,
+                            role: this.state.selectedRole,
                             suspended: this.state.selectedSuspended,
                         }}
                         replace
@@ -921,8 +959,10 @@ class UsersManager extends Component {
                                                                     </span>
                                                                 )}
                                                             </div>
-                                                            <div className="text-xs text-slate-500 font-mono mt-0.5">
-                                                                ID: {row.id ? (row.id.length > 12 ? row.id.slice(0, 10) + '...' : row.id) : '—'}
+                                                            <div className="text-xs text-slate-500 font-mono mt-0.5 flex items-center gap-2">
+                                                                <span>ID: {row.id ? (row.id.length > 12 ? row.id.slice(0, 10) + '...' : row.id) : '—'}</span>
+                                                                {row.emailVerified && <span className="text-emerald-600 flex items-center gap-0.5" title="Email Verified"><FaCheckCircle className="w-3 h-3"/></span>}
+                                                                {row.mfaEnabled && <span className="text-indigo-600 flex items-center gap-0.5" title="MFA Enabled"><FaLock className="w-3 h-3"/></span>}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -937,10 +977,18 @@ class UsersManager extends Component {
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-center">
                                                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                                                        row.isA ? 'bg-red-100 text-red-800' : 'bg-slate-100 text-slate-700'
+                                                        row.role === 'SUPER_ADMIN' ? 'bg-indigo-100 text-indigo-800' :
+                                                        row.role === 'ADMIN' ? 'bg-red-100 text-red-800' :
+                                                        row.role === 'SUPPORT' ? 'bg-blue-100 text-blue-800' :
+                                                        'bg-slate-100 text-slate-700'
                                                     }`}>
-                                                        {row.isA ? <FaShieldAlt className="w-3 h-3 mr-1 text-red-600" /> : <FaUser className="w-3 h-3 mr-1 text-slate-500" />}
-                                                        {row.isA ? 'Admin' : 'User'}
+                                                        {row.role === 'SUPER_ADMIN' ? <FaCrown className="w-3 h-3 mr-1 text-indigo-600" /> :
+                                                         row.role === 'ADMIN' ? <FaShieldAlt className="w-3 h-3 mr-1 text-red-600" /> : 
+                                                         row.role === 'SUPPORT' ? <FaUser className="w-3 h-3 mr-1 text-blue-600" /> :
+                                                         <FaUser className="w-3 h-3 mr-1 text-slate-500" />}
+                                                        {row.role === 'SUPER_ADMIN' ? 'Super Admin' :
+                                                         row.role === 'ADMIN' ? 'Admin' :
+                                                         row.role === 'SUPPORT' ? 'Support' : 'User'}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -967,7 +1015,7 @@ class UsersManager extends Component {
                                                             <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-lg shadow-xl z-50 py-1 overflow-hidden" style={{ top: '100%' }}>
                                                                 <button
                                                                     type="button"
-                                                                    onClick={() => { this.toggleActionMenu(null); this.redirectToUser(row.id, row.email, row.subscription, row.rawElement?.membershipsEnds, row.isA, row.suspended); }}
+                                                                    onClick={() => { this.toggleActionMenu(null); this.redirectToUser(row.id, row.email, row.subscription, row.rawElement?.membershipsEnds, row.isA, row.role, row.suspended); }}
                                                                     className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center space-x-2"
                                                                 >
                                                                     <FaEdit className="w-3.5 h-3.5 text-slate-400" />
@@ -982,6 +1030,35 @@ class UsersManager extends Component {
                                                                     <FaCrown className={`w-3.5 h-3.5 ${row.subscription === 'Premium' ? 'text-slate-400' : 'text-amber-500'}`} />
                                                                     <span>{row.subscription === 'Premium' ? 'Downgrade to Basic' : 'Upgrade to Premium'}</span>
                                                                 </button>
+                                                                
+                                                                {row.role !== 'SUPER_ADMIN' && (
+                                                                    <>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => { this.toggleActionMenu(null); this.handleSetRole(row.id, row.email, row.role, 'ADMIN'); }}
+                                                                            className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center space-x-2"
+                                                                        >
+                                                                            <FaShieldAlt className={`w-3.5 h-3.5 ${row.role === 'ADMIN' ? 'text-red-500' : 'text-slate-400'}`} />
+                                                                            <span className={row.role === 'ADMIN' ? 'font-bold' : ''}>Assign Admin Role</span>
+                                                                        </button>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => { this.toggleActionMenu(null); this.handleSetRole(row.id, row.email, row.role, 'SUPPORT'); }}
+                                                                            className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center space-x-2"
+                                                                        >
+                                                                            <FaUser className={`w-3.5 h-3.5 ${row.role === 'SUPPORT' ? 'text-blue-500' : 'text-slate-400'}`} />
+                                                                            <span className={row.role === 'SUPPORT' ? 'font-bold' : ''}>Assign Support Role</span>
+                                                                        </button>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => { this.toggleActionMenu(null); this.handleSetRole(row.id, row.email, row.role, 'USER'); }}
+                                                                            className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center space-x-2"
+                                                                        >
+                                                                            <FaUser className={`w-3.5 h-3.5 ${row.role === 'USER' ? 'text-slate-900' : 'text-slate-400'}`} />
+                                                                            <span className={row.role === 'USER' ? 'font-bold' : ''}>Revert to User</span>
+                                                                        </button>
+                                                                    </>
+                                                                )}
 
                                                                 {isDuplicate && (
                                                                     <button

@@ -43,8 +43,8 @@ async function signIn(page, email, password) {
   await page.fill('input[type="email"], input[name="email"]', email);
   await page.fill('input[type="password"], input[name="password"]', password);
   await Promise.all([
-    page.waitForLoadState('networkidle'),
-    page.click('button[type="submit"]'),
+    page.waitForURL('**/adm**', { timeout: 15000 }).catch(() => {}),
+    page.getByRole('button', { name: 'Login', exact: true }).click(),
   ]);
 }
 
@@ -53,7 +53,7 @@ test.describe('live Admin / Super Admin console', () => {
 
   test('super admin can sign in and reach the console', async ({ page }) => {
     await signIn(page, SUPER_EMAIL, SUPER_PASSWORD);
-    await page.goto(`${BASE}/adm`, { waitUntil: 'networkidle' });
+    await page.goto(`${BASE}/adm`, { waitUntil: 'domcontentloaded' });
 
     // Must not have been bounced back to login.
     expect(page.url()).toContain('/adm');
@@ -79,7 +79,7 @@ test.describe('live Admin / Super Admin console', () => {
     ];
 
     for (const module of modules) {
-      await page.goto(`${BASE}/adm/${module}`, { waitUntil: 'networkidle' });
+      await page.goto(`${BASE}/adm/${module}`, { waitUntil: 'domcontentloaded' });
       const body = (await page.locator('body').innerText()).slice(0, 20000);
       for (const phrase of FORBIDDEN) {
         expect(body, `"${phrase}" must not appear on /adm/${module}`).not.toContain(phrase);
@@ -89,7 +89,7 @@ test.describe('live Admin / Super Admin console', () => {
 
   test('platform health renders real states with reasons, not placeholders', async ({ page }) => {
     await signIn(page, SUPER_EMAIL, SUPER_PASSWORD);
-    await page.goto(`${BASE}/adm/health`, { waitUntil: 'networkidle' });
+    await page.goto(`${BASE}/adm/health`, { waitUntil: 'domcontentloaded' });
 
     const rows = page.locator('[data-testid="health-service-row"]');
     await expect(rows.first()).toBeVisible({ timeout: 20000 });
@@ -108,19 +108,19 @@ test.describe('live Admin / Super Admin console', () => {
 
   test('the health indicator is visible in navigation and deep-links', async ({ page }) => {
     await signIn(page, SUPER_EMAIL, SUPER_PASSWORD);
-    await page.goto(`${BASE}/adm`, { waitUntil: 'networkidle' });
+    await page.goto(`${BASE}/adm`, { waitUntil: 'domcontentloaded' });
 
     const indicator = page.locator('[data-testid="sidebar-health-indicator"]');
     await expect(indicator).toBeVisible({ timeout: 20000 });
 
     await indicator.click();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     expect(page.url()).toContain('/adm/health');
   });
 
   test('the API matrix is behind a control, not on the initial dashboard', async ({ page }) => {
     await signIn(page, SUPER_EMAIL, SUPER_PASSWORD);
-    await page.goto(`${BASE}/adm/health`, { waitUntil: 'networkidle' });
+    await page.goto(`${BASE}/adm/health`, { waitUntil: 'domcontentloaded' });
 
     // The full endpoint list must not be dumped onto first paint.
     const matrixBefore = page.locator('[data-testid="api-matrix-table"]');
@@ -137,7 +137,7 @@ test.describe('live Admin / Super Admin console', () => {
 
   test('every visible admin button is wired to something', async ({ page }) => {
     await signIn(page, SUPER_EMAIL, SUPER_PASSWORD);
-    await page.goto(`${BASE}/adm`, { waitUntil: 'networkidle' });
+    await page.goto(`${BASE}/adm`, { waitUntil: 'domcontentloaded' });
 
     // A button with no accessible name is a dead control by definition.
     const nameless = await page.$$eval('button:visible', buttons =>
@@ -167,7 +167,7 @@ test.describe('live Admin / Super Admin console', () => {
     for (const viewport of viewports) {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       for (const route of ['/adm', '/adm/health', '/adm/users']) {
-        await page.goto(`${BASE}${route}`, { waitUntil: 'networkidle' });
+        await page.goto(`${BASE}${route}`, { waitUntil: 'domcontentloaded' });
         const overflow = await page.evaluate(() =>
           document.documentElement.scrollWidth - document.documentElement.clientWidth,
         );
@@ -180,7 +180,7 @@ test.describe('live Admin / Super Admin console', () => {
     test.skip(!ADMIN_EMAIL || !ADMIN_PASSWORD, 'LIVE_CERT_ADMIN_EMAIL/_PASSWORD not provided.');
 
     await signIn(page, ADMIN_EMAIL, ADMIN_PASSWORD);
-    await page.goto(`${BASE}/adm/health`, { waitUntil: 'networkidle' });
+    await page.goto(`${BASE}/adm/health`, { waitUntil: 'domcontentloaded' });
 
     // The UI should hide it...
     const testButtons = page.getByRole('button', { name: /run (a )?test|test provider/i });

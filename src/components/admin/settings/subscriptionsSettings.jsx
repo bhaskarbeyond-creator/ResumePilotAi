@@ -1,6 +1,6 @@
 import { writeSanitizedPrintDocument } from '../../../utils/sanitizeHtml';
 import React, { Component } from 'react';
-import { getSubscriptionStatus, setSubscriptionsData, getAllCouponsAdmin, saveCoupon, deleteCoupon, getSystemSettings, saveSystemSettings, getAllAdminTransactions, refundOrderTransaction } from '../../../firestore/dbOperations';
+import { getSubscriptionStatus, setSubscriptionsData, getAllCouponsAdmin, saveCoupon, deleteCoupon, getSystemSettings, saveSystemSettings, getAllAdminTransactions, refundOrderTransaction, getAdminPaymentSettings } from '../../../firestore/dbOperations';
 import { FaCheck, FaTimes, FaCreditCard, FaRupeeSign, FaDollarSign, FaToggleOn, FaToggleOff, FaPaypal, FaStripe, FaFlask, FaShieldAlt, FaTag, FaPlus, FaTrash, FaEdit, FaCalendarAlt, FaPercent, FaEye, FaEyeSlash, FaDownload, FaSearch, FaFileInvoice, FaPrint, FaListAlt, FaCog, FaUndo } from 'react-icons/fa';
 import config from '../../../conf/configuration';
 
@@ -187,33 +187,38 @@ class SubscriptionSetting extends Component {
         }).catch(e => console.warn('getSubscriptionStatus error:', e));
 
         try {
-            const settings = await getSystemSettings();
-            if (settings) {
-                const mods = settings.modules || {};
-                const pay = settings.payments || {};
+            const systemSettings = await getSystemSettings();
+            if (systemSettings && systemSettings.modules) {
+                this.setState({ enableCouponsModule: systemSettings.modules.enableCouponsModule !== false });
+            }
+
+            const paymentData = await getAdminPaymentSettings();
+            if (paymentData) {
+                const { publicKeys, configuredProviders, maskedKeys, credentialSources } = paymentData;
                 this.setState({
-                    enableCouponsModule: mods.enableCouponsModule !== false,
-                    razorpayKeyId: pay.razorpayKeyId || this.state.razorpayKeyId,
-                    razorpayKeySecret: pay.razorpayKeySecret || this.state.razorpayKeySecret,
-                    stripePublishableKey: pay.stripePublishableKey || this.state.stripePublishableKey,
-                    stripeSecretKey: pay.stripeSecretKey || this.state.stripeSecretKey,
-                    paypalClientId: pay.paypalClientId || this.state.paypalClientId,
-                    paypalClientSecret: pay.paypalClientSecret || this.state.paypalClientSecret,
-                    currency: pay.currency || this.state.currency,
-                    // Load Paytm
-                    checkedPaytm: pay.paytmEnabled === true,
-                    paytmMid: pay.paytmMid || '',
-                    paytmMerchantKey: pay.paytmMerchantKey || '',
-                    paytmWebsite: pay.paytmWebsite || 'WEBSTAGING',
-                    // Load PhonePe
-                    checkedPhonePe: pay.phonepeEnabled === true,
-                    phonepeId: pay.phonepeId || '',
-                    phonepeSaltKey: pay.phonepeSaltKey || '',
-                    phonepeSaltIndex: pay.phonepeSaltIndex || '1',
+                    razorpayKeyId: publicKeys.razorpayKeyId || this.state.razorpayKeyId,
+                    stripePublishableKey: publicKeys.stripePublishableKey || this.state.stripePublishableKey,
+                    paypalClientId: publicKeys.paypalClientId || this.state.paypalClientId,
+                    paytmMid: publicKeys.paytmMid || '',
+                    paytmWebsite: publicKeys.paytmWebsite || 'WEBSTAGING',
+                    phonepeId: publicKeys.phonepeId || '',
+                    phonepeSaltIndex: publicKeys.phonepeSaltIndex || '1',
+                    
+                    // We DO NOT load secrets into state text boxes. We store the masked versions
+                    // just for display, and leave the editable text boxes blank.
+                    configuredProviders: configuredProviders || {},
+                    maskedKeys: maskedKeys || {},
+                    credentialSources: credentialSources || {},
+                    
+                    razorpayKeySecret: '',
+                    stripeSecretKey: '',
+                    paypalClientSecret: '',
+                    paytmMerchantKey: '',
+                    phonepeSaltKey: '',
                 });
             }
         } catch (e) {
-            console.warn('Error in componentDidMount:', e);
+            console.warn('Error in componentDidMount loading settings:', e);
         }
     }
 
@@ -2925,13 +2930,22 @@ class SubscriptionSetting extends Component {
                                     </div>
                                     <div>
                                         <label className="block text-[11px] font-bold text-slate-700 mb-1">Razorpay Key Secret *</label>
-                                        <input
-                                            type="password"
-                                            value={this.state.razorpayKeySecret}
-                                            onChange={(e) => this.setState({ razorpayKeySecret: e.target.value })}
-                                            placeholder="Paste your Razorpay key secret"
-                                            className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 font-mono focus:border-emerald-500 outline-none"
-                                        />
+                                        <div className="relative">
+                                            <input
+                                                type="password"
+                                                value={this.state.razorpayKeySecret}
+                                                onChange={(e) => this.setState({ razorpayKeySecret: e.target.value })}
+                                                placeholder={this.state.configuredProviders?.razorpay ? '✓ Configured securely — enter to replace' : 'Paste your Razorpay key secret'}
+                                                className={`w-full text-xs p-2.5 bg-white border rounded-lg text-slate-900 font-mono outline-none ${
+                                                    this.state.configuredProviders?.razorpay && !this.state.razorpayKeySecret ? 'border-emerald-300 placeholder:text-emerald-700 focus:border-emerald-500' : 'border-slate-300 focus:border-emerald-500'
+                                                }`}
+                                            />
+                                            {this.state.configuredProviders?.razorpay && !this.state.razorpayKeySecret && (
+                                                <div className="absolute right-2.5 top-2.5 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                                    {this.state.maskedKeys?.razorpay}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -2955,13 +2969,22 @@ class SubscriptionSetting extends Component {
                                     </div>
                                     <div>
                                         <label className="block text-[11px] font-bold text-slate-700 mb-1">Stripe Secret Key</label>
-                                        <input
-                                            type="password"
-                                            value={this.state.stripeSecretKey}
-                                            onChange={(e) => this.setState({ stripeSecretKey: e.target.value })}
-                                            placeholder="e.g. sk_test_..."
-                                            className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 font-mono focus:border-indigo-500 outline-none"
-                                        />
+                                        <div className="relative">
+                                            <input
+                                                type="password"
+                                                value={this.state.stripeSecretKey}
+                                                onChange={(e) => this.setState({ stripeSecretKey: e.target.value })}
+                                                placeholder={this.state.configuredProviders?.stripe ? '✓ Configured securely — enter to replace' : 'e.g. sk_test_...'}
+                                                className={`w-full text-xs p-2.5 bg-white border rounded-lg text-slate-900 font-mono outline-none ${
+                                                    this.state.configuredProviders?.stripe && !this.state.stripeSecretKey ? 'border-indigo-300 placeholder:text-indigo-700 focus:border-indigo-500' : 'border-slate-300 focus:border-indigo-500'
+                                                }`}
+                                            />
+                                            {this.state.configuredProviders?.stripe && !this.state.stripeSecretKey && (
+                                                <div className="absolute right-2.5 top-2.5 text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
+                                                    {this.state.maskedKeys?.stripe}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -2985,13 +3008,22 @@ class SubscriptionSetting extends Component {
                                     </div>
                                     <div>
                                         <label className="block text-[11px] font-bold text-slate-700 mb-1">PayPal Client Secret</label>
-                                        <input
-                                            type="password"
-                                            value={this.state.paypalClientSecret}
-                                            onChange={(e) => this.setState({ paypalClientSecret: e.target.value })}
-                                            placeholder="e.g. E..."
-                                            className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 font-mono focus:border-blue-500 outline-none"
-                                        />
+                                        <div className="relative">
+                                            <input
+                                                type="password"
+                                                value={this.state.paypalClientSecret}
+                                                onChange={(e) => this.setState({ paypalClientSecret: e.target.value })}
+                                                placeholder={this.state.configuredProviders?.paypal ? '✓ Configured securely — enter to replace' : 'e.g. E...'}
+                                                className={`w-full text-xs p-2.5 bg-white border rounded-lg text-slate-900 font-mono outline-none ${
+                                                    this.state.configuredProviders?.paypal && !this.state.paypalClientSecret ? 'border-blue-300 placeholder:text-blue-700 focus:border-blue-500' : 'border-slate-300 focus:border-blue-500'
+                                                }`}
+                                            />
+                                            {this.state.configuredProviders?.paypal && !this.state.paypalClientSecret && (
+                                                <div className="absolute right-2.5 top-2.5 text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                                                    {this.state.maskedKeys?.paypal}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -3022,12 +3054,20 @@ class SubscriptionSetting extends Component {
                                                 type={this.state.showPaytmKey ? 'text' : 'password'}
                                                 value={this.state.paytmMerchantKey}
                                                 onChange={(e) => this.setState({ paytmMerchantKey: e.target.value })}
-                                                placeholder="Merchant Key from Paytm Dashboard"
-                                                className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 font-mono focus:border-sky-500 outline-none pr-9"
+                                                placeholder={this.state.configuredProviders?.paytm ? '✓ Configured securely — enter to replace' : 'Merchant Key from Paytm Dashboard'}
+                                                className={`w-full text-xs p-2.5 bg-white border rounded-lg text-slate-900 font-mono outline-none pr-20 ${
+                                                    this.state.configuredProviders?.paytm && !this.state.paytmMerchantKey ? 'border-sky-300 placeholder:text-sky-700 focus:border-sky-500' : 'border-slate-300 focus:border-sky-500'
+                                                }`}
                                             />
-                                            <button type="button" onClick={() => this.setState((s) => ({ showPaytmKey: !s.showPaytmKey }))} className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-700 cursor-pointer">
-                                                {this.state.showPaytmKey ? <FaEyeSlash className="w-3.5 h-3.5" /> : <FaEye className="w-3.5 h-3.5" />}
-                                            </button>
+                                            {this.state.configuredProviders?.paytm && !this.state.paytmMerchantKey ? (
+                                                <div className="absolute right-2.5 top-2.5 text-[10px] font-bold text-sky-600 bg-sky-50 px-2 py-0.5 rounded border border-sky-200">
+                                                    {this.state.maskedKeys?.paytm}
+                                                </div>
+                                            ) : (
+                                                <button type="button" onClick={() => this.setState((s) => ({ showPaytmKey: !s.showPaytmKey }))} className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-700 cursor-pointer">
+                                                    {this.state.showPaytmKey ? <FaEyeSlash className="w-3.5 h-3.5" /> : <FaEye className="w-3.5 h-3.5" />}
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                     <div>
@@ -3069,12 +3109,20 @@ class SubscriptionSetting extends Component {
                                                 type={this.state.showPhonePeKey ? 'text' : 'password'}
                                                 value={this.state.phonepeSaltKey}
                                                 onChange={(e) => this.setState({ phonepeSaltKey: e.target.value })}
-                                                placeholder="Salt Key from PhonePe Dashboard"
-                                                className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 font-mono focus:border-violet-500 outline-none pr-9"
+                                                placeholder={this.state.configuredProviders?.phonepe ? '✓ Configured securely — enter to replace' : 'Salt Key from PhonePe Dashboard'}
+                                                className={`w-full text-xs p-2.5 bg-white border rounded-lg text-slate-900 font-mono outline-none pr-20 ${
+                                                    this.state.configuredProviders?.phonepe && !this.state.phonepeSaltKey ? 'border-violet-300 placeholder:text-violet-700 focus:border-violet-500' : 'border-slate-300 focus:border-violet-500'
+                                                }`}
                                             />
-                                            <button type="button" onClick={() => this.setState((s) => ({ showPhonePeKey: !s.showPhonePeKey }))} className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-700 cursor-pointer">
-                                                {this.state.showPhonePeKey ? <FaEyeSlash className="w-3.5 h-3.5" /> : <FaEye className="w-3.5 h-3.5" />}
-                                            </button>
+                                            {this.state.configuredProviders?.phonepe && !this.state.phonepeSaltKey ? (
+                                                <div className="absolute right-2.5 top-2.5 text-[10px] font-bold text-violet-600 bg-violet-50 px-2 py-0.5 rounded border border-violet-200">
+                                                    {this.state.maskedKeys?.phonepe}
+                                                </div>
+                                            ) : (
+                                                <button type="button" onClick={() => this.setState((s) => ({ showPhonePeKey: !s.showPhonePeKey }))} className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-700 cursor-pointer">
+                                                    {this.state.showPhonePeKey ? <FaEyeSlash className="w-3.5 h-3.5" /> : <FaEye className="w-3.5 h-3.5" />}
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                     <div>

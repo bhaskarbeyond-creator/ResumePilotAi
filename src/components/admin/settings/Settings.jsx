@@ -27,6 +27,8 @@ import TwilioSmsSettings from './TwilioSmsSettings';
 import GeoSeoSettings from './GeoSeoSettings';
 import LlmGeoSettings from './LlmGeoSettings';
 import ModulesSettings from './ModulesSettings';
+import FeatureFlagsSettings from './FeatureFlagsSettings';
+import PlatformConfigSettings from './PlatformConfigSettings';
 import { FaCircle } from 'react-icons/fa';
 
 // All settings metadata
@@ -50,6 +52,8 @@ const ALL_SETTINGS = [
     { key: 'integrationsSettings', label: 'Maps & Keys', group: 'Security & Health', description: 'Google Maps & reCAPTCHA' },
     { key: 'securityLimitsSettings', label: 'Security & Limits', group: 'Security & Health', description: 'Upload caps & rate limits' },
     { key: 'systemHealthSettings', label: 'System Health', group: 'Security & Health', description: 'Maintenance & Diagnostics' },
+    { key: 'featureFlagsSettings', label: 'Feature Flags', group: 'Security & Health', description: 'Platform-wide feature gates & rollout controls' },
+    { key: 'platformConfigSettings', label: 'Platform Config', group: 'Security & Health', description: 'Infrastructure & runtime configuration census' },
     { key: 'codeInjectionSettings', label: 'Code Injection', group: 'Security & Health', description: 'Head & Body Scripting' },
     { key: 'gdprLegalSettings', label: 'GDPR & Legal', group: 'Security & Health', description: 'Cookie Banner & Policies' },
     { key: 'templateManagerSettings', label: 'Templates', group: 'Content & Media', description: '51 CV & Cover controls' },
@@ -110,6 +114,8 @@ class SettingsContent extends Component {
                     {step === 'integrationsSettings' && <IntegrationsSettings />}
                     {step === 'securityLimitsSettings' && <SecurityLimitsSettings />}
                     {step === 'systemHealthSettings' && <SystemHealthSettings />}
+                    {step === 'featureFlagsSettings' && <FeatureFlagsSettings />}
+                    {step === 'platformConfigSettings' && <PlatformConfigSettings />}
                     {step === 'codeInjectionSettings' && <CodeInjectionSettings />}
                     {step === 'gdprLegalSettings' && <GdprLegalSettings />}
                     {step === 'templateManagerSettings' && <TemplateManagerSettings />}

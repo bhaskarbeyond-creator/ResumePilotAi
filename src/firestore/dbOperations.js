@@ -578,6 +578,15 @@ export async function setUserAdminStatus(userId, isAdmin, expectedIsAdmin = unde
     }
 }
 
+export async function setUserRole(userId, newRole, expectedRole = undefined) {
+    try {
+        await updateUserByAdminApi(userId, { role: newRole, ...(expectedRole === undefined ? {} : { expectedRole }) });
+        return { success: true, message: `User role updated to ${newRole}` };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
 export async function makeUserAdminByEmail(email) {
     const db = fire.firestore();
     try {
@@ -2062,6 +2071,14 @@ export async function setSubscriptionsData(state, month, quartarly, yearly, only
     if (!response.ok || !result.success) throw new Error(result.error?.message || result.error || 'Unable to save payment settings.');
     return result;
 }
+
+// Fetch Admin Payment Settings (Secrets Masked)
+export async function getAdminPaymentSettings() {
+    const { response, data } = await fetchAdminWithReauth('/api/admin/payment-settings', { method: 'GET' });
+    if (!response.ok) throw new Error(data.error?.message || data.error || 'Unable to fetch payment settings.');
+    return data;
+}
+
 
 // Admin Master Invoice Fetcher
 export async function getAllInvoicesAdmin() {

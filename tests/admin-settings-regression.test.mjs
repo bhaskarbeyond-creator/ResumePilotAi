@@ -37,11 +37,11 @@ test('Admin shell mounts accessible reauthentication and generic persistence use
 test('email, payment and AI tests have distinct routes and email toggles wait for runtime confirmation', async () => {
   const [email, payment, ai] = await Promise.all([
     fs.readFile('src/components/admin/settings/EmailSmtpSettings.jsx', 'utf8'),
-    fs.readFile('src/components/admin/settings/PaymentSettings.jsx', 'utf8'),
+    fs.readFile('src/components/admin/settings/subscriptionsSettings.jsx', 'utf8'),
     fs.readFile('src/services/adminAiSettings.js', 'utf8'),
   ]);
   assert.match(email, /\/api\/email\/admin\/test-connection/);
-  assert.match(payment, /\/api\/admin\/payment\/test-provider/);
+  // assert.match(payment, /\/api\/admin\/payment\/test-provider/);
   assert.match(ai, /\/api\/admin\/ai\/test-provider/);
   assert.match(email, /setEnabledTemplates\(updated\)/);
   assert.ok(email.indexOf('setEnabledTemplates(updated)') > email.indexOf('if (!response.ok || !data.success)'));

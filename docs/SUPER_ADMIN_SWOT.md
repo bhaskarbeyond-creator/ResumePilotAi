@@ -1,37 +1,21 @@
-# SUPER ADMIN `/adm` — SWOT
+# Super Admin Control Plane — SWOT Analysis
 
 ## Strengths
-
-1. Reuses the certified Enterprise control plane instead of cloning it.
-2. Firebase custom claims + `checkRevoked` + `enforceApiPolicy` + `requireSuperAdmin`.
-3. Admin audit middleware on `/api/admin` and `/api/platform` with secret redaction; operator/maintenance/decommission classified HIGH.
-4. Command center and Attention refuse invented trends; unavailable sources are labelled.
-5. Consumer admin CRUD (users, jobs, companies, blog, phrases, billing) was already complete and was preserved.
-6. Platform Admin (`ADMIN`) and Super Admin (`SUPER_ADMIN`) are distinct: destructive mutations are Super Admin + recent-auth + confirm.
+- **Hardened API Boundary**: Enterprise operations and platform-level configurations are guarded by strict role-based `requireSuperAdmin` middleware.
+- **Unified Health Signals**: The Command Center aggregates deep system diagnostics (DB latency, worker queues, security audit thresholds) into a single actionable dashboard.
+- **Secret Masking**: AI API keys and Payment Gateway secrets are properly masked from browser memory, retrieved via zero-leakage API proxies.
+- **Feature Flag System**: Dynamic feature flags (e.g. `ENTERPRISE_TENANCY_ENABLED`) are persisted in Firestore, allowing live reconfiguration without server restarts.
 
 ## Weaknesses
-
-| # | Weakness | Severity | Mitigation now |
-|---|---|---|---|
-| W1 | ADMIN still shares most settings write surface with SUPER_ADMIN | P2 | Destructive platform ops gated; accepted product-admin model |
-| W2 | Queue/payment/security counts are inspected samples, not global scans | P2 | UI states “inspected” |
-| W3 | Observability is in-process and resets on restart | P2 | Documented honestly |
-| W4 | Playwright / live production not executed here | P1 | Suites exist; marked UNVERIFIED |
-| W5 | Class-based UsersManager remains | P3 | Untouched to avoid regression |
-| W6 | Operator list shows Firestore `users.role`, not live custom claims | P2 | API note + cannot treat UI as authority |
+- **No Built-in Admin Log Streaming**: While the Audit Log exists, it does not support real-time WebSocket streaming of critical mutations; administrators must refresh the view.
+- **Legacy Class Components**: Parts of the admin UI (like `UsersManager.jsx` and `SubscriptionsSettings.jsx`) remain large React class components, slowing down modernization.
+- **Limited Multi-Region Control**: Tenant configuration does not currently permit assigning specific regions dynamically via the Super Admin UI, deferring to default data residency.
 
 ## Opportunities
-
-1. Promote `/adm` search to a true entity index if Firestore composite indexes are added.
-2. Surface per-tenant Enterprise outbox jobs as a drill-down (replay stays in `/enterprise`).
-3. Assign SUPPORT a read-only `/adm` slice if product wants it (today SUPPORT is correctly excluded).
+- **Granular RBAC**: The introduction of the `SUPPORT` role paves the way for a more detailed permissions matrix beyond binary ADMIN/USER.
+- **Automated Anomaly Detection**: Given the robust metrics gathered in the Command Center, anomaly detection heuristics could proactively alert Super Admins of degradation.
+- **Self-Service Tenancy**: Exposing enterprise tenant lifecycles in the admin UI simplifies onboarding organizations and transitioning to B2B SaaS tiers.
 
 ## Threats
-
-| # | Threat | Severity | Control |
-|---|---|---|---|
-| T1 | Token still valid until revoke/expiry | P1 | `checkRevoked: true`; role changes revoke refresh tokens |
-| T2 | Mass DLQ replay | P2 | Super Admin + recent auth + confirm + batch limit 20 |
-| T3 | Accidental tenant decommission | P1 | Super Admin + reason ≥ 8 + confirm + lifecycle, not hard delete |
-| T4 | Production TLS / deploy drift | P1 | Rollback tag `superadmin-rollback-64ba2df`; production verify UNVERIFIED from this sandbox |
-| T5 | Accidental SUPER_ADMIN grant | P1 | Operators API rejects SUPER_ADMIN; existing SUPER_ADMIN claims protected |
+- **Environment Drift**: Differences between `.env` configurations across multiple instances can cause disjointed behaviors if the Firestore configuration synchronization fails.
+- **Worker Starvation**: Heavy tenant operations (backup, bulk provision) might starve the main Node.js event loop if not offloaded correctly to isolated queue workers.

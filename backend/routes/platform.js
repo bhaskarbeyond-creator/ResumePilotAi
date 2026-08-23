@@ -538,6 +538,17 @@ router.get('/command-center', async (req, res) => {
   const auditResult = db ? await safeQuery('audit', () => db.collection('admin_audit_logs').orderBy('createdAt', 'desc').limit(8).get()) : { ok: false };
   const announcementsResult = db ? await safeQuery('announcements', () => db.collection('platform_announcements').limit(20).get()) : { ok: false };
   const maintenanceResult = db ? await safeQuery('maintenance', () => db.collection('settings').doc('maintenance').get()) : { ok: false };
+  
+  let featureFlagsSummary = { enabled: 0, disabled: 0, total: 0 };
+  try {
+    const { getAllFlags } = require('../services/featureFlagService');
+    const flags = await getAllFlags();
+    featureFlagsSummary.total = flags.length;
+    featureFlagsSummary.enabled = flags.filter(f => f.value === true || f.value === 'true').length;
+    featureFlagsSummary.disabled = flags.length - featureFlagsSummary.enabled;
+  } catch (err) {
+    // best effort
+  }
 
   const [paymentsFailCnt, securityHighCnt, suspendedTenantsCnt, activeTenantsCnt, tenantsTotalCnt, activePaymentsCnt, pendingPaymentsCnt] = db ? await Promise.all([
     safeQuery('payments-failed-count', () => db.collection('payment_orders').where('status', 'in', ['FAILED', 'CANCELLED', 'DECLINED']).count().get()),
@@ -750,6 +761,7 @@ router.get('/command-center', async (req, res) => {
         provider: encryption.provider || 'none',
         securityLevel: encryption.securityLevel || null,
       },
+      featureFlags: featureFlagsSummary,
       deployment: {
         status: 'REPORTED',
         commitSha: health.commitSha,
@@ -1326,4 +1338,170 @@ router.post('/tenants/:tenantId/decommission', requireSuperAdmin, async (req, re
   }
 });
 
+/* ------------------------------------------------------------------
+ * Feature Flags — SUPER_ADMIN only
+ * ------------------------------------------------------------------ */
+
+const { getAllFlags, setFlagValue } = require('../services/featureFlagService');
+
+router.get('/feature-flags', requireSuperAdmin, async (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const flags = await getAllFlags(db);
+    return res.json({ flags });
+  } catch (error) {
+    return res.status(503).json({ error: { code: 'FEATURE_FLAGS_UNAVAILABLE', message: 'Could not load feature flags' } });
+  }
+});
+
+router.put('/feature-flags/:flagKey', requireSuperAdmin, async (req, res) => {
+  const { flagKey } = req.params;
+  const { value } = req.body;
+  if (typeof value !== 'boolean') {
+    return res.status(400).json({ error: { code: 'INVALID_VALUE', message: 'Flag value must be a boolean' } });
+  }
+  try {
+    const db = req.app.get('db');
+    const admin = req.app.get('admin');
+    const result = await setFlagValue(db, admin, flagKey, value, req.user?.uid, res.locals.requestId);
+    return res.json({ success: true, ...result });
+  } catch (error) {
+    return res.status(400).json({ error: { code: 'FLAG_UPDATE_FAILED', message: error.message } });
+  }
+});
+
+/* ------------------------------------------------------------------
+ * Platform Configuration — SUPER_ADMIN only
+ * Read-only configuration census for the Admin UI.
+ * ------------------------------------------------------------------ */
+
+router.get('/configuration', requireSuperAdmin, async (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const flags = await getAllFlags(db);
+
+    // Mask secrets: show only whether configured, never the value
+    const maskSecret = (val) => val ? '••••••••' : null;
+    const isConfigured = (val) => Boolean(val && String(val).trim().length > 0);
+
+    const infrastructure = {
+      FIREBASE_PROJECT_ID: { value: process.env.FIREBASE_PROJECT_ID || '', category: 'firebase', editable: false },
+      FIREBASE_CLIENT_EMAIL: { value: (process.env.FIREBASE_CLIENT_EMAIL || '').replace(/^(.{4}).*(@.*)$/, '$1****$2'), category: 'firebase', editable: false },
+      FIREBASE_PRIVATE_KEY: { value: isConfigured(process.env.FIREBASE_PRIVATE_KEY) ? 'Configured' : 'Not Configured', category: 'firebase', editable: false, secret: true },
+      NODE_ENV: { value: process.env.NODE_ENV || 'development', category: 'runtime', editable: false },
+      PORT: { value: process.env.PORT || '8080', category: 'runtime', editable: false },
+      PROTOCOL: { value: process.env.PROTOCOL || 'https', category: 'runtime', editable: false },
+      COMMIT_SHA: { value: getCommitSha(), category: 'deployment', editable: false },
+    };
+
+    const runtime = {
+      CORS_ALLOWED_ORIGINS: { value: process.env.CORS_ALLOWED_ORIGINS || '(default)', category: 'security', editable: false, requiresRestart: true },
+      TRUST_PROXY_HOPS: { value: process.env.TRUST_PROXY_HOPS || '0', category: 'security', editable: false, requiresRestart: true },
+      GLOBAL_RATE_LIMIT_MAX: { value: process.env.GLOBAL_RATE_LIMIT_MAX || '2500', category: 'security', editable: false, requiresRestart: true },
+      WEBSITE_NAME: { value: process.env.WEBSITE_NAME || 'airesume.projectdemo.guru', category: 'general', editable: false },
+    };
+
+    const integrations = {
+      RAZORPAY_KEY_ID: { value: process.env.RAZORPAY_KEY_ID ? 'Configured (env)' : 'Not in env', category: 'payments' },
+      RAZORPAY_KEY_SECRET: { value: isConfigured(process.env.RAZORPAY_KEY_SECRET) ? 'Configured (env)' : 'Not in env', category: 'payments', secret: true },
+      STRIPE_SECRET: { value: isConfigured(process.env.STRIPE_SECRET) ? 'Configured (env)' : 'Not in env', category: 'payments', secret: true },
+      STRIPE_WEBHOOK_SECRET: { value: isConfigured(process.env.STRIPE_WEBHOOK_SECRET) ? 'Configured (env)' : 'Not in env', category: 'payments', secret: true },
+      TWILIO_ACCOUNT_SID: { value: isConfigured(process.env.TWILIO_ACCOUNT_SID) ? 'Configured (env)' : 'Not in env', category: 'communications' },
+      TWILIO_AUTH_TOKEN: { value: isConfigured(process.env.TWILIO_AUTH_TOKEN) ? 'Configured (env)' : 'Not in env', category: 'communications', secret: true },
+      CLOUDFLARE_API_TOKEN: { value: isConfigured(process.env.CLOUDFLARE_API_TOKEN) ? 'Configured (env)' : 'Not in env', category: 'storage', secret: true },
+      CLOUDFLARE_R2_ACCESS_KEY_ID: { value: isConfigured(process.env.CLOUDFLARE_R2_ACCESS_KEY_ID) ? 'Configured (env)' : 'Not in env', category: 'storage', secret: true },
+    };
+
+    const workers = {
+      CMS_SCHEDULER_INTERVAL_MS: { value: process.env.CMS_SCHEDULER_INTERVAL_MS || '300000', category: 'workers', requiresRestart: true },
+      ENTERPRISE_OUTBOX_INTERVAL_MS: { value: process.env.ENTERPRISE_OUTBOX_INTERVAL_MS || '15000', category: 'workers', requiresRestart: true },
+      NOTIFICATION_OUTBOX_INTERVAL_MS: { value: process.env.NOTIFICATION_OUTBOX_INTERVAL_MS || '15000', category: 'workers', requiresRestart: true },
+    };
+
+    return res.json({
+      infrastructure,
+      runtime,
+      featureFlags: flags,
+      integrations,
+      workers,
+      generatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    return res.status(503).json({ error: { code: 'CONFIGURATION_UNAVAILABLE', message: 'Could not load platform configuration' } });
+  }
+});
+
+/* ------------------------------------------------------------------
+ * Payment Settings GET — SUPER_ADMIN only
+ * Returns public settings + configured/masked state for secrets.
+ * Never returns raw secrets.
+ * ------------------------------------------------------------------ */
+
+router.get('/payment-settings', requireSuperAdmin, async (req, res) => {
+  try {
+    const db = req.app.get('db');
+    if (!db) return res.status(503).json({ error: 'Settings service unavailable' });
+
+    // Read public config
+    const publicDoc = await db.collection('data').doc('public_config').get();
+    const publicConfig = publicDoc.exists ? (publicDoc.data()?.subscriptions || {}) : {};
+
+    // Read secrets doc (never expose raw values)
+    const secretsDoc = await db.collection('settings').doc('payment_providers').get();
+    const secrets = secretsDoc.exists ? (secretsDoc.data() || {}) : {};
+
+    // Build configured status & masked keys
+    const maskKey = (key) => {
+      if (!key || typeof key !== 'string' || key.length < 4) return null;
+      return '••••' + key.slice(-4);
+    };
+
+    const configuredProviders = {
+      razorpay: Boolean(secrets.razorpay?.keySecret || process.env.RAZORPAY_KEY_SECRET),
+      stripe: Boolean(secrets.stripe?.secretKey || process.env.STRIPE_SECRET),
+      paypal: Boolean(secrets.paypal?.clientSecret || process.env.PAYPAL_CLIENT_SECRET),
+      paytm: Boolean(secrets.paytm?.merchantKey || process.env.PAYTM_MERCHANT_KEY),
+      phonepe: Boolean(secrets.phonepe?.saltKey || process.env.PHONEPE_SALT_KEY),
+    };
+
+    const maskedKeys = {
+      razorpay: maskKey(secrets.razorpay?.keySecret || process.env.RAZORPAY_KEY_SECRET),
+      stripe: maskKey(secrets.stripe?.secretKey || process.env.STRIPE_SECRET),
+      paypal: maskKey(secrets.paypal?.clientSecret || process.env.PAYPAL_CLIENT_SECRET),
+      paytm: maskKey(secrets.paytm?.merchantKey || process.env.PAYTM_MERCHANT_KEY),
+      phonepe: maskKey(secrets.phonepe?.saltKey || process.env.PHONEPE_SALT_KEY),
+    };
+
+    const credentialSources = {
+      razorpay: secrets.razorpay?.keySecret ? 'firestore' : process.env.RAZORPAY_KEY_SECRET ? 'env' : 'none',
+      stripe: secrets.stripe?.secretKey ? 'firestore' : process.env.STRIPE_SECRET ? 'env' : 'none',
+      paypal: secrets.paypal?.clientSecret ? 'firestore' : process.env.PAYPAL_CLIENT_SECRET ? 'env' : 'none',
+      paytm: secrets.paytm?.merchantKey ? 'firestore' : process.env.PAYTM_MERCHANT_KEY ? 'env' : 'none',
+      phonepe: secrets.phonepe?.saltKey ? 'firestore' : process.env.PHONEPE_SALT_KEY ? 'env' : 'none',
+    };
+
+    // Public key IDs (not secrets — safe to return)
+    const publicKeys = {
+      razorpayKeyId: publicConfig.razorpayKeyId || secrets.razorpay?.keyId || process.env.RAZORPAY_KEY_ID || '',
+      stripePublishableKey: publicConfig.stripePublishableKey || '',
+      paypalClientId: publicConfig.paypalClientId || secrets.paypal?.clientId || process.env.PAYPAL_CLIENT_ID || '',
+      paytmMid: publicConfig.paytmMid || secrets.paytm?.mid || process.env.PAYTM_MID || '',
+      phonepeId: publicConfig.phonepeId || secrets.phonepe?.merchantId || process.env.PHONEPE_MERCHANT_ID || '',
+      phonepeSaltIndex: publicConfig.phonepeSaltIndex || secrets.phonepe?.saltIndex || process.env.PHONEPE_SALT_INDEX || '1',
+      paytmWebsite: publicConfig.paytmWebsite || process.env.PAYTM_WEBSITE || 'WEBSTAGING',
+    };
+
+    return res.json({
+      settings: publicConfig,
+      publicKeys,
+      configuredProviders,
+      maskedKeys,
+      credentialSources,
+    });
+  } catch (error) {
+    return res.status(503).json({ error: { code: 'PAYMENT_SETTINGS_UNAVAILABLE', message: 'Could not load payment settings' } });
+  }
+});
+
 module.exports = { platformRouter: router };
+
