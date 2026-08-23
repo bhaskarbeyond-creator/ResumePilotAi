@@ -4,8 +4,10 @@ const express = require('express');
 const os = require('os');
 const fs = require('fs');
 const path = require('path');
-const { requirePermission, requireSuperAdmin, isSuperAdmin } = require('../security/auth');
+const { requirePermission, requireSuperAdmin, requireRecentAdminAuthentication, isSuperAdmin } = require('../security/auth');
 const { recordAdminAuditLog } = require('../security/adminAudit');
+const { getPlatformConfiguration } = require('../services/platformConfiguration');
+const { getPaymentSettingsProjection } = require('../services/paymentAdmin');
 const {
   getHealthSnapshot,
   resetHealthCache,
@@ -22,8 +24,11 @@ function getCommitSha() {
   try {
     const shaPath = path.join(__dirname, '..', 'COMMIT_SHA');
     if (fs.existsSync(shaPath)) {
-      cachedCommitSha = fs.readFileSync(shaPath, 'utf8').trim();
-      return cachedCommitSha;
+      const raw = fs.readFileSync(shaPath, 'utf8').replace(/^\uFEFF/, '').trim();
+      if (/^[0-9a-f]{40}$/i.test(raw)) {
+        cachedCommitSha = raw;
+        return cachedCommitSha;
+      }
     }
   } catch (_) { /* ignore */ }
   return process.env.COMMIT_SHA || 'production-live';
@@ -54,8 +59,8 @@ function countFrom(result) {
 }
 
 async function inspectOutbox(db) {
+  if (!db) return { active: null, deadLetter: null, completed: null, status: 'UNKNOWN', inspected: null };
   const stats = { active: 0, deadLetter: 0, completed: 0, status: 'HEALTHY', inspected: 0 };
-  if (!db) return stats;
   const snap = await db.collection('notification_outbox').limit(100).get();
   snap.forEach(doc => {
     const data = doc.data() || {};
@@ -75,6 +80,8 @@ async function buildHealthPayload(req) {
   const startTime = Date.now();
   let dbHealthy = false;
   let dbLatencyMs = null;
+  let authHealthy = false;
+  let authLatencyMs = null;
 
   if (db) {
     try {
@@ -90,7 +97,18 @@ async function buildHealthPayload(req) {
     }
   }
 
-  const queueStats = await inspectOutbox(db).catch(() => ({ active: 0, deadLetter: 0, completed: 0, status: 'UNKNOWN', inspected: 0 }));
+  if (admin?.auth) {
+    try {
+      const authStart = Date.now();
+      await admin.auth().listUsers(1);
+      authLatencyMs = Date.now() - authStart;
+      authHealthy = true;
+    } catch (err) {
+      console.warn('[PlatformHealth] Auth probe warning:', err.message);
+    }
+  }
+
+  const queueStats = await inspectOutbox(db).catch(() => ({ active: null, deadLetter: null, completed: null, status: 'UNKNOWN', inspected: null }));
   const memoryUsage = process.memoryUsage();
   const totalMem = os.totalmem();
   const freeMem = os.freemem();
@@ -98,13 +116,16 @@ async function buildHealthPayload(req) {
   let healthScore = 100;
   if (!dbHealthy) healthScore -= 40;
   else if (dbLatencyMs > 500) healthScore -= 10;
-  if (queueStats.deadLetter > 5) healthScore -= 20;
+  if (!authHealthy) healthScore -= 30;
+  else if (authLatencyMs > 1500) healthScore -= 10;
+  if (queueStats.status === 'UNKNOWN') healthScore -= 20;
+  else if (queueStats.deadLetter > 5) healthScore -= 20;
   else if (queueStats.deadLetter > 0) healthScore -= 10;
   if ((memoryUsage.heapUsed / memoryUsage.heapTotal) > 0.9) healthScore -= 15;
   healthScore = Math.max(0, Math.min(100, healthScore));
 
   return {
-    status: healthScore >= 80 ? 'HEALTHY' : healthScore >= 50 ? 'DEGRADED' : 'UNHEALTHY',
+    status: healthScore >= 80 && dbHealthy && authHealthy && queueStats.status !== 'UNKNOWN' ? 'HEALTHY' : healthScore >= 50 ? 'DEGRADED' : 'UNHEALTHY',
     healthScore,
     commitSha: getCommitSha(),
     uptimeSeconds: Math.floor(process.uptime()),
@@ -115,6 +136,11 @@ async function buildHealthPayload(req) {
         status: dbHealthy ? 'HEALTHY' : 'DOWN',
         latencyMs: dbLatencyMs,
         provider: 'Google Cloud Firestore',
+      },
+      authentication: {
+        status: authHealthy ? 'HEALTHY' : 'DOWN',
+        latencyMs: authLatencyMs,
+        provider: 'Firebase Authentication',
       },
       queue: {
         status: queueStats.status,
@@ -138,6 +164,14 @@ async function buildHealthPayload(req) {
     },
   };
 }
+
+// Deployment identity is deliberately public and contains no environment or secret material.
+// The live certification runner uses this endpoint before authenticating so a
+// stale frontend/backend pair cannot be mistaken for a tested release.
+router.get('/version', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  return res.json({ commitSha: getCommitSha(), service: 'resumepilot-backend', apiVersion: 'platform-v2' });
+});
 
 router.use(requirePermission('system.config.read'));
 
@@ -258,7 +292,7 @@ router.get('/operational-status/:serviceId', async (req, res) => {
  * Operator-initiated provider test. This is a mutation of operational intent
  * (it contacts a provider), so it requires SUPER_ADMIN and is always audited.
  */
-router.post('/operational-status/:serviceId/test', requireSuperAdmin, async (req, res) => {
+router.post('/operational-status/:serviceId/test', requireRecentAdminAuthentication, async (req, res) => {
   const serviceId = String(req.params.serviceId || '');
   if (!TESTABLE_SERVICES.includes(serviceId)) {
     return res.status(400).json({
@@ -267,23 +301,27 @@ router.post('/operational-status/:serviceId/test', requireSuperAdmin, async (req
   }
   const db = req.app?.get('db');
   const admin = req.app?.get('firebaseAdmin');
+  if (!db || !admin?.firestore?.FieldValue) {
+    return res.status(503).json({ error: { code: 'AUDIT_UNAVAILABLE', message: 'The provider test cannot run without a durable audit store.', requestId: res.locals?.requestId } });
+  }
   try {
     const result = await runServiceTest(req.app, serviceId);
     resetHealthCache();
-    if (db && admin?.firestore?.FieldValue) {
-      await recordAdminAuditLog(db, admin, {
-        actorUid: req.user?.uid,
-        actorEmail: req.user?.email,
-        actorRole: 'SUPER_ADMIN',
-        action: 'TEST_PLATFORM_INTEGRATION',
-        category: 'platform.health',
-        severity: result.passed ? 'INFO' : 'MEDIUM',
-        outcome: result.passed ? 'SUCCESS' : 'FAILURE',
-        method: 'POST',
-        pathname: req.originalUrl,
-        statusCode: 200,
-        metadata: { serviceId, passed: result.passed, errorCategory: result.errorCategory },
-      }).catch(() => { /* the test result is still authoritative if the trail write fails */ });
+    const audit = await recordAdminAuditLog(db, admin, {
+      actorUid: req.user?.uid,
+      actorEmail: req.user?.email,
+      actorRole: 'SUPER_ADMIN',
+      action: 'TEST_PLATFORM_INTEGRATION',
+      category: 'platform.health',
+      severity: result.passed ? 'INFO' : 'MEDIUM',
+      outcome: result.passed ? 'SUCCESS' : 'FAILURE',
+      method: 'POST',
+      pathname: req.originalUrl,
+      statusCode: 200,
+      metadata: { serviceId, passed: result.passed, errorCategory: result.errorCategory },
+    });
+    if (!audit) {
+      return res.status(503).json({ error: { code: 'AUDIT_WRITE_FAILED', message: 'The provider test completed but its audit event could not be persisted.', requestId: res.locals?.requestId } });
     }
     return res.json({ ...result, checkedAt: new Date().toISOString() });
   } catch (error) {
@@ -297,25 +335,27 @@ router.post('/operational-status/:serviceId/test', requireSuperAdmin, async (req
 router.post('/operational-status/refresh', requirePermission('system.config.write'), async (req, res) => {
   const db = req.app?.get('db');
   const admin = req.app?.get('firebaseAdmin');
+  if (!db || !admin?.firestore?.FieldValue) {
+    return res.status(503).json({ error: { code: 'AUDIT_UNAVAILABLE', message: 'A durable audit store is required to refresh platform health.', requestId: res.locals?.requestId } });
+  }
   try {
     resetHealthCache();
     const elevated = isSuperAdmin(req.user);
     const snapshot = await getHealthSnapshot(req.app, { force: true });
-    if (db && admin?.firestore?.FieldValue) {
-      await recordAdminAuditLog(db, admin, {
-        actorUid: req.user?.uid,
-        actorEmail: req.user?.email,
-        actorRole: elevated ? 'SUPER_ADMIN' : 'ADMIN',
-        action: 'RUN_PLATFORM_HEALTH_CHECK',
-        category: 'platform.health',
-        severity: 'INFO',
-        outcome: 'SUCCESS',
-        method: 'POST',
-        pathname: req.originalUrl,
-        statusCode: 200,
-        metadata: { overall: snapshot.summary.overall },
-      }).catch(() => { /* non-fatal */ });
-    }
+    const audit = await recordAdminAuditLog(db, admin, {
+      actorUid: req.user?.uid,
+      actorEmail: req.user?.email,
+      actorRole: elevated ? 'SUPER_ADMIN' : 'ADMIN',
+      action: 'RUN_PLATFORM_HEALTH_CHECK',
+      category: 'platform.health',
+      severity: 'INFO',
+      outcome: 'SUCCESS',
+      method: 'POST',
+      pathname: req.originalUrl,
+      statusCode: 200,
+      metadata: { overall: snapshot.summary.overall },
+    });
+    if (!audit) return res.status(503).json({ error: { code: 'AUDIT_WRITE_FAILED', message: 'The health check ran but its audit event could not be persisted.', requestId: res.locals?.requestId } });
     return res.json({ ...projectSnapshotForRole(snapshot, elevated), elevated });
   } catch (error) {
     console.error('[PlatformHealth] manual refresh failed:', error?.message || error);
@@ -333,40 +373,36 @@ router.get('/overview', async (req, res) => {
 
   try {
     const [statsDoc, earningsDoc, tenantsSnap] = await Promise.allSettled([
-      db.collection('stats').doc('global').get(),
-      db.collection('earnings').doc('global').get(),
+      db.collection('data').doc('stats').get(),
+      db.collection('data').doc('earnings').get(),
       db.collection('enterprise_tenants').limit(500).get(),
     ]);
 
-    const statsData = statsDoc.status === 'fulfilled' && statsDoc.value.exists ? statsDoc.value.data() : {};
-    const earningsData = earningsDoc.status === 'fulfilled' && earningsDoc.value.exists ? earningsDoc.value.data() : {};
+    const statsData = statsDoc.status === 'fulfilled' && statsDoc.value.exists ? statsDoc.value.data() : null;
+    const earningsData = earningsDoc.status === 'fulfilled' && earningsDoc.value.exists ? earningsDoc.value.data() : null;
 
-    let totalTenants = 0;
-    let activeTenants = 0;
-    let suspendedTenants = 0;
-
+    let tenantCounts = null;
     if (tenantsSnap.status === 'fulfilled' && tenantsSnap.value) {
+      let total = 0; let active = 0; let suspended = 0;
       tenantsSnap.value.forEach(doc => {
-        totalTenants += 1;
+        total += 1;
         const data = doc.data() || {};
-        if (data.lifecycleState === 'ACTIVE') activeTenants += 1;
-        else if (data.lifecycleState === 'SUSPENDED') suspendedTenants += 1;
+        if (data.lifecycleState === 'ACTIVE') active += 1;
+        else if (data.lifecycleState === 'SUSPENDED') suspended += 1;
       });
+      tenantCounts = { total, active, suspended, source: 'SAMPLED_MAX_500' };
     }
 
     return res.json({
       kpis: {
-        totalUsers: statsData.users ?? statsData.totalUsers ?? statsData.numberOfUsers ?? 0,
-        resumesCreated: statsData.resumes ?? statsData.numberOfResumesCreated ?? 0,
-        totalDownloads: statsData.downloads ?? statsData.numberOfResumesDownloaded ?? 0,
-        totalEarningsCents: earningsData.total ?? earningsData.amount ?? 0,
-        currency: earningsData.currency || 'USD',
-        tenants: {
-          total: totalTenants,
-          active: activeTenants,
-          suspended: suspendedTenants,
-        },
+        totalUsers: statsData ? (statsData.users ?? statsData.totalUsers ?? statsData.numberOfUsers ?? null) : null,
+        resumesCreated: statsData ? (statsData.resumes ?? statsData.numberOfResumesCreated ?? null) : null,
+        totalDownloads: statsData ? (statsData.downloads ?? statsData.numberOfResumesDownloaded ?? null) : null,
+        totalEarningsCents: earningsData ? (earningsData.total ?? earningsData.amount ?? null) : null,
+        currency: earningsData?.currency || null,
+        tenants: tenantCounts,
       },
+      sources: { stats: statsData ? 'AVAILABLE' : 'UNAVAILABLE', earnings: earningsData ? 'AVAILABLE' : 'UNAVAILABLE', tenants: tenantCounts ? 'AVAILABLE' : 'UNAVAILABLE' },
       updatedAt: new Date().toISOString(),
     });
   } catch (err) {
@@ -382,7 +418,16 @@ router.get('/queues', async (req, res) => {
   }
 
   try {
-    const snap = await db.collection('notification_outbox').orderBy('createdAt', 'desc').limit(50).get();
+    let snap;
+    let queryMode = 'ORDERED';
+    try {
+      snap = await db.collection('notification_outbox').orderBy('createdAt', 'desc').limit(50).get();
+    } catch (_) {
+      // A missing Firestore index must not look like an empty queue. A bounded
+      // unordered fallback still exposes the records, with an explicit mode.
+      snap = await db.collection('notification_outbox').limit(50).get();
+      queryMode = 'BOUNDED_UNORDERED_FALLBACK';
+    }
     const items = [];
     let deadLetterCount = 0;
     let pendingCount = 0;
@@ -408,21 +453,23 @@ router.get('/queues', async (req, res) => {
       });
     });
 
+    if (queryMode !== 'ORDERED') items.sort((left, right) => String(right.createdAt || '').localeCompare(String(left.createdAt || '')));
     return res.json({
       summary: {
         totalInspected: items.length,
         deadLetterCount,
         pendingCount,
         successCount,
+        source: queryMode,
       },
       jobs: items,
     });
   } catch (err) {
-    return res.status(500).json({ error: { code: 'QUEUE_QUERY_FAILED', message: err.message } });
+    return res.status(503).json({ error: { code: 'QUEUE_QUERY_UNAVAILABLE', message: 'Queue telemetry is unavailable.', requestId: res.locals?.requestId } });
   }
 });
 
-router.post('/queues/retry', requireSuperAdmin, async (req, res) => {
+router.post('/queues/retry', requireRecentAdminAuthentication, async (req, res) => {
   const db = req.app?.get('db');
   const admin = req.app?.get('firebaseAdmin');
   if (!db || !admin?.firestore?.FieldValue) {
@@ -430,12 +477,21 @@ router.post('/queues/retry', requireSuperAdmin, async (req, res) => {
   }
 
   const { jobId, all = false } = req.body || {};
+  if (jobId !== undefined && !/^[A-Za-z0-9_-]{1,128}$/.test(String(jobId))) {
+    return res.status(400).json({ error: { code: 'INVALID_JOB_ID', message: 'A valid queue job id is required', requestId: res.locals?.requestId } });
+  }
+  if (!jobId && all !== true) {
+    return res.status(400).json({ error: { code: 'RETRY_TARGET_REQUIRED', message: 'Provide jobId or set all=true', requestId: res.locals?.requestId } });
+  }
 
   try {
     let retriedCount = 0;
     if (jobId) {
       const docRef = db.collection('notification_outbox').doc(String(jobId));
       const snap = await docRef.get();
+      if (!snap.exists) {
+        return res.status(404).json({ error: { code: 'QUEUE_JOB_NOT_FOUND', message: 'Queue job was not found', requestId: res.locals?.requestId } });
+      }
       if (snap.exists) {
         await docRef.update({
           state: 'NOTIFICATION_QUEUED',
@@ -464,15 +520,35 @@ router.post('/queues/retry', requireSuperAdmin, async (req, res) => {
       }
     }
 
+    await db.collection('security_audit_logs').doc().set({
+      action: 'PLATFORM_QUEUE_RETRY', actorUid: req.user?.uid,
+      jobId: jobId || null, all: all === true, retriedCount,
+      requestId: res.locals?.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    const audit = await recordAdminAuditLog(db, admin, {
+      actorUid: req.user?.uid,
+      actorEmail: req.user?.email,
+      actorRole: 'SUPER_ADMIN',
+      action: 'PLATFORM_QUEUE_RETRY',
+      category: 'platform.queue',
+      severity: 'HIGH',
+      outcome: 'SUCCESS',
+      method: 'POST',
+      pathname: req.originalUrl,
+      statusCode: 200,
+      metadata: { jobId: jobId || null, all: all === true, retriedCount },
+      requestId: res.locals?.requestId,
+    });
+    if (!audit) return res.status(503).json({ error: { code: 'AUDIT_WRITE_FAILED', message: 'Queue retry completed but its Admin audit event could not be persisted.', requestId: res.locals?.requestId } });
     return res.json({ success: true, retriedCount });
   } catch (err) {
-    return res.status(500).json({ error: { code: 'RETRY_FAILED', message: err.message } });
+    return res.status(500).json({ error: { code: 'RETRY_FAILED', message: 'Queue retry could not be completed', requestId: res.locals?.requestId } });
   }
 });
 
 router.get('/maintenance', async (req, res) => {
   const db = req.app?.get('db');
-  if (!db) return res.json({ enabled: false, message: '' });
+  if (!db) return res.json({ enabled: false, available: false, configurationState: 'UNKNOWN', message: 'Maintenance state is unavailable because Firestore is not initialized.' });
   try {
     const [legacy, publicConfig] = await Promise.all([
       db.collection('settings').doc('maintenance').get(),
@@ -480,19 +556,23 @@ router.get('/maintenance', async (req, res) => {
     ]);
     const data = legacy.exists ? legacy.data() : {};
     const publicHealth = publicConfig.exists ? (publicConfig.data()?.systemHealth || {}) : {};
+    const available = Boolean(legacy.exists || publicConfig.exists);
     return res.json({
       enabled: data.enabled === true || publicHealth.maintenanceMode === true,
+      available,
+      configurationState: available ? 'AVAILABLE' : 'UNKNOWN',
       message: data.message || publicHealth.maintenanceMessage || 'Platform is undergoing scheduled maintenance.',
       scheduledEnd: data.scheduledEnd || null,
       updatedBy: data.updatedBy || null,
       updatedAt: isoFrom(data.updatedAt),
+      revision: Number(data._revision || publicConfig.data()?._settingsRevisions?.systemHealth || 0),
     });
   } catch (_) {
-    return res.json({ enabled: false, message: '' });
+    return res.status(503).json({ error: { code: 'MAINTENANCE_UNAVAILABLE', message: 'Maintenance state could not be read.', requestId: res.locals?.requestId } });
   }
 });
 
-router.post('/maintenance', requireSuperAdmin, async (req, res) => {
+router.post('/maintenance', requireRecentAdminAuthentication, async (req, res) => {
   const db = req.app?.get('db');
   const admin = req.app?.get('firebaseAdmin');
   if (!db || !admin?.firestore?.FieldValue) {
@@ -502,24 +582,53 @@ router.post('/maintenance', requireSuperAdmin, async (req, res) => {
   const { enabled, message, scheduledEnd } = req.body || {};
 
   try {
+    const maintenanceRef = db.collection('settings').doc('maintenance');
+    const publicRef = db.collection('data').doc('public_config');
     const payload = {
       enabled: Boolean(enabled),
-      message: String(message || 'Platform is undergoing scheduled maintenance.').slice(0, 300),
+      message: String(message || 'Platform is undergoing scheduled maintenance.').replace(/\p{Cc}/gu, ' ').slice(0, 300),
       scheduledEnd: scheduledEnd ? String(scheduledEnd).slice(0, 100) : null,
       updatedBy: req.user?.email || req.user?.uid || 'admin',
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
-    await db.collection('settings').doc('maintenance').set(payload, { merge: true });
-    await db.collection('data').doc('public_config').set({
-      systemHealth: {
-        maintenanceMode: Boolean(enabled),
-        maintenanceMessage: payload.message,
-      },
-    }, { merge: true });
+    const revision = await db.runTransaction(async transaction => {
+      const [maintenanceSnapshot, publicSnapshot] = await Promise.all([transaction.get(maintenanceRef), transaction.get(publicRef)]);
+      const currentMaintenance = maintenanceSnapshot.data() || {};
+      const currentPublic = publicSnapshot.data() || {};
+      const currentRevision = Number(currentMaintenance._revision || currentPublic._settingsRevisions?.systemHealth || 0);
+      const expectedRevision = req.body?.expectedRevision === undefined ? currentRevision : Number(req.body.expectedRevision);
+      if (!Number.isInteger(expectedRevision) || expectedRevision !== currentRevision) {
+        const conflict = new Error('Maintenance settings changed after this panel loaded. Refresh before saving.');
+        conflict.code = 'MAINTENANCE_SETTINGS_CONFLICT';
+        throw conflict;
+      }
+      const nextRevision = currentRevision + 1;
+      const timestamp = admin.firestore.FieldValue.serverTimestamp();
+      transaction.set(maintenanceRef, { ...payload, updatedAt: timestamp, _revision: nextRevision }, { merge: true });
+      transaction.set(publicRef, {
+        systemHealth: { maintenanceMode: payload.enabled, maintenanceMessage: payload.message },
+        _settingsRevisions: { systemHealth: nextRevision },
+      }, { merge: true });
+      return nextRevision;
+    });
+    await recordAdminAuditLog(db, admin, {
+      actorUid: req.user?.uid,
+      actorEmail: req.user?.email,
+      actorRole: 'SUPER_ADMIN',
+      action: 'PLATFORM_MAINTENANCE_UPDATED',
+      category: 'platform.operations',
+      severity: 'HIGH',
+      outcome: 'SUCCESS',
+      method: 'POST',
+      pathname: req.originalUrl,
+      statusCode: 200,
+      metadata: { enabled: payload.enabled, scheduledEnd: payload.scheduledEnd, revision },
+      requestId: res.locals?.requestId,
+    });
 
-    return res.json({ success: true, enabled: Boolean(enabled) });
+    return res.json({ success: true, enabled: payload.enabled, message: payload.message, revision, updatedAt: new Date().toISOString() });
   } catch (err) {
-    return res.status(500).json({ error: { code: 'MAINTENANCE_UPDATE_FAILED', message: err.message } });
+    const status = err.code === 'MAINTENANCE_SETTINGS_CONFLICT' ? 409 : 500;
+    return res.status(status).json({ error: { code: err.code || 'MAINTENANCE_UPDATE_FAILED', message: status === 409 ? err.message : 'Maintenance setting could not be saved', requestId: res.locals?.requestId } });
   }
 });
 
@@ -539,15 +648,17 @@ router.get('/command-center', async (req, res) => {
   const announcementsResult = db ? await safeQuery('announcements', () => db.collection('platform_announcements').limit(20).get()) : { ok: false };
   const maintenanceResult = db ? await safeQuery('maintenance', () => db.collection('settings').doc('maintenance').get()) : { ok: false };
   
-  let featureFlagsSummary = { enabled: 0, disabled: 0, total: 0 };
+  let featureFlagsSummary = { enabled: null, disabled: null, total: null, source: 'UNAVAILABLE' };
   try {
     const { getAllFlags } = require('../services/featureFlagService');
-    const flags = await getAllFlags();
-    featureFlagsSummary.total = flags.length;
-    featureFlagsSummary.enabled = flags.filter(f => f.value === true || f.value === 'true').length;
-    featureFlagsSummary.disabled = flags.length - featureFlagsSummary.enabled;
+    const flags = await getAllFlags(db);
+    const flagEntries = Object.values(flags || {});
+    featureFlagsSummary.total = flagEntries.length;
+    featureFlagsSummary.enabled = flagEntries.filter(f => f.value === true || f.value === 'true').length;
+    featureFlagsSummary.disabled = flagEntries.length - featureFlagsSummary.enabled;
+    featureFlagsSummary.source = db ? 'AVAILABLE' : 'DEFAULTS_ONLY';
   } catch (err) {
-    // best effort
+    // The absence of a flag read is not a zero-count result.
   }
 
   const [paymentsFailCnt, securityHighCnt, suspendedTenantsCnt, activeTenantsCnt, tenantsTotalCnt, activePaymentsCnt, pendingPaymentsCnt] = db ? await Promise.all([
@@ -643,18 +754,19 @@ router.get('/command-center', async (req, res) => {
   }
 
   const maintenance = maintenanceResult.ok && maintenanceResult.value.exists
-    ? { enabled: maintenanceResult.value.data()?.enabled === true, message: maintenanceResult.value.data()?.message || '' }
-    : { enabled: false, message: '' };
+    ? { enabled: maintenanceResult.value.data()?.enabled === true, message: maintenanceResult.value.data()?.message || '', source: 'AVAILABLE' }
+    : { enabled: null, message: null, source: 'UNAVAILABLE' };
 
   const runtime = tenantService?.describeRuntime?.() || { encryption: { provider: 'none' } };
   const encryption = runtime.encryption || { provider: 'none', configured: false };
 
   const suspendedSample = tenants.filter(t => t.lifecycleState === 'SUSPENDED');
-  const suspendedCount = suspendedAgg.ok ? suspendedAgg.value : suspendedSample.length;
+  const suspendedCount = suspendedAgg.ok ? suspendedAgg.value : tenantsResult.ok ? suspendedSample.length : null;
   const suspendedMode = suspendedAgg.ok ? 'AGGREGATED' : tenantsResult.ok ? 'SAMPLED' : 'UNAVAILABLE';
 
   let riskScore = 0;
   if (health.subsystems.database.status !== 'HEALTHY') riskScore += 40;
+  if (health.subsystems.authentication?.status !== 'HEALTHY') riskScore += 30;
   if (health.subsystems.queue.deadLetterJobs > 0) riskScore += Math.min(25, health.subsystems.queue.deadLetterJobs * 5);
   if (paymentFailed > 0) riskScore += Math.min(20, paymentFailed * 4);
   if (highSecurity > 0) riskScore += Math.min(20, highSecurity * 5);
@@ -665,6 +777,9 @@ router.get('/command-center', async (req, res) => {
 
   if (health.subsystems.database.status !== 'HEALTHY') {
     recommendations.push({ id: 'db-down', severity: 'HIGH', title: 'Firestore ping failed', detail: 'Platform data plane did not acknowledge the health write.', href: '/adm/operations' });
+  }
+  if (health.subsystems.authentication?.status !== 'HEALTHY') {
+    recommendations.push({ id: 'auth-down', severity: 'HIGH', title: 'Firebase Authentication probe failed', detail: 'The identity directory did not acknowledge the administrative probe. Authenticated routes cannot be certified as healthy.', href: '/adm/health' });
   }
   if (health.subsystems.queue.deadLetterJobs > 0) {
     recommendations.push({ id: 'dlq', severity: 'HIGH', title: `${health.subsystems.queue.deadLetterJobs} dead-letter notification(s)`, detail: 'Replay or inspect failed email/outbox jobs. Queue counts are from the latest inspected outbox sample.', href: '/adm/queues' });
@@ -688,9 +803,11 @@ router.get('/command-center', async (req, res) => {
   // Operational health is folded into the command center so the Attention list
   // and the Platform Health console can never disagree about the same fact.
   let operationalStatus = null;
+  let emailOperationalState = 'UNKNOWN';
   try {
     const snapshot = await getHealthSnapshot(req.app);
     sources.operationalStatus = 'ok';
+    emailOperationalState = snapshot.services.find(item => item.id === 'email-smtp')?.state || 'UNKNOWN';
     operationalStatus = {
       overall: snapshot.summary.overall,
       indicator: snapshot.summary.indicator,
@@ -731,10 +848,10 @@ router.get('/command-center', async (req, res) => {
       resumesCreated: statsData.numberOfResumesCreated ?? statsData.resumes ?? null,
       totalDownloads: statsData.numberOfResumesDownloaded ?? statsData.downloads ?? null,
       totalEarnings: earningsData.amount ?? earningsData.total ?? null,
-      currency: earningsData.currency || 'USD',
+      currency: earningsResult.ok && earningsData.currency ? earningsData.currency : null,
       tenants: {
-        total: tenantTotalAgg.ok ? tenantTotalAgg.value : tenants.length,
-        active: activeTenantAgg.ok ? activeTenantAgg.value : tenants.filter(t => t.lifecycleState === 'ACTIVE').length,
+        total: tenantTotalAgg.ok ? tenantTotalAgg.value : tenantsResult.ok ? tenants.length : null,
+        active: activeTenantAgg.ok ? activeTenantAgg.value : tenantsResult.ok ? tenants.filter(t => t.lifecycleState === 'ACTIVE').length : null,
         suspended: suspendedCount,
         mode: tenantTotalAgg.ok ? 'AGGREGATED' : tenantsResult.ok ? 'SAMPLED' : 'UNAVAILABLE',
       },
@@ -742,7 +859,7 @@ router.get('/command-center', async (req, res) => {
     signals: {
       database: { status: health.subsystems.database.status, latencyMs: health.subsystems.database.latencyMs },
       queue: { status: health.subsystems.queue.status, deadLetter: health.subsystems.queue.deadLetterJobs, pending: health.subsystems.queue.activeJobs, mode: 'SAMPLED' },
-      email: { status: health.subsystems.queue.status, deadLetter: health.subsystems.queue.deadLetterJobs, pending: health.subsystems.queue.activeJobs, mode: 'SAMPLED' },
+      email: { status: emailOperationalState, deadLetter: health.subsystems.queue.deadLetterJobs, pending: health.subsystems.queue.activeJobs, mode: emailOperationalState === 'UNKNOWN' ? 'UNAVAILABLE' : 'OPERATIONAL_STATUS' },
       payments: {
         status: !paymentFailedAgg.ok ? 'UNAVAILABLE' : paymentFailed > 0 ? 'DEGRADED' : 'HEALTHY',
         failed: paymentFailed,
@@ -757,7 +874,7 @@ router.get('/command-center', async (req, res) => {
         mode: highSecurityAgg.ok ? 'AGGREGATED' : 'UNAVAILABLE',
       },
       encryption: {
-        status: encryption.provider && encryption.provider !== 'none' ? 'CONFIGURED' : 'UNAVAILABLE',
+        status: encryption.configured === true ? 'CONFIGURED' : 'UNAVAILABLE',
         provider: encryption.provider || 'none',
         securityLevel: encryption.securityLevel || null,
       },
@@ -979,6 +1096,7 @@ router.get('/announcements', async (req, res) => {
         severity: data.severity || 'INFO',
         audience: data.audience || 'ALL',
         enabled: data.enabled === true,
+        revision: Number(data.revision || 0),
         createdBy: data.createdBy || null,
         updatedAt: isoFrom(data.updatedAt),
       });
@@ -986,11 +1104,11 @@ router.get('/announcements', async (req, res) => {
     announcements.sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
     return res.json({ announcements });
   } catch (error) {
-    return res.status(500).json({ error: { code: 'ANNOUNCEMENTS_UNAVAILABLE', message: error.message } });
+    return res.status(503).json({ error: { code: 'ANNOUNCEMENTS_UNAVAILABLE', message: 'Announcements are unavailable.', requestId: res.locals?.requestId } });
   }
 });
 
-router.post('/announcements', requireSuperAdmin, async (req, res) => {
+router.post('/announcements', requireRecentAdminAuthentication, async (req, res) => {
   const db = req.app?.get('db');
   const admin = req.app?.get('firebaseAdmin');
   if (!db || !admin?.firestore?.FieldValue) {
@@ -1008,15 +1126,23 @@ router.post('/announcements', requireSuperAdmin, async (req, res) => {
     severity: ['INFO', 'MEDIUM', 'HIGH'].includes(String(req.body?.severity || '').toUpperCase()) ? String(req.body.severity).toUpperCase() : 'INFO',
     audience: String(req.body?.audience || 'ALL').slice(0, 40),
     enabled: req.body?.enabled !== false,
+    revision: 1,
     createdBy: req.user?.email || req.user?.uid || 'admin',
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
   };
-  await ref.set(payload);
-  return res.status(201).json({ announcement: { id: ref.id, ...payload, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } });
+  const auditRef = db.collection('security_audit_logs').doc();
+  const batch = db.batch();
+  batch.set(ref, payload);
+  batch.set(auditRef, {
+    action: 'PLATFORM_ANNOUNCEMENT_CREATED', actorUid: req.user?.uid, announcementId: ref.id,
+    revision: 1, requestId: res.locals?.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+  await batch.commit();
+  return res.status(201).json({ announcement: { id: ref.id, ...payload, revision: 1, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } });
 });
 
-router.patch('/announcements/:id', requireSuperAdmin, async (req, res) => {
+router.patch('/announcements/:id', requireRecentAdminAuthentication, async (req, res) => {
   const db = req.app?.get('db');
   const admin = req.app?.get('firebaseAdmin');
   if (!db || !admin?.firestore?.FieldValue) {
@@ -1027,29 +1153,68 @@ router.patch('/announcements/:id', requireSuperAdmin, async (req, res) => {
     return res.status(400).json({ error: { code: 'INVALID_ANNOUNCEMENT', message: 'Invalid announcement id' } });
   }
   const ref = db.collection('platform_announcements').doc(id);
-  const snap = await ref.get();
-  if (!snap.exists) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Announcement not found' } });
-  const updates = { updatedAt: admin.firestore.FieldValue.serverTimestamp() };
-  if (req.body?.title !== undefined) updates.title = String(req.body.title).trim().slice(0, 160);
-  if (req.body?.message !== undefined) updates.message = String(req.body.message).trim().slice(0, 1000);
-  if (req.body?.enabled !== undefined) updates.enabled = req.body.enabled === true;
-  if (req.body?.severity) updates.severity = String(req.body.severity).toUpperCase().slice(0, 16);
-  await ref.set(updates, { merge: true });
-  return res.json({ success: true, id });
+  try {
+    const result = await db.runTransaction(async transaction => {
+      const snap = await transaction.get(ref);
+      if (!snap.exists) throw Object.assign(new Error('Announcement not found'), { code: 'NOT_FOUND', status: 404 });
+      const current = snap.data() || {};
+      const currentRevision = Number(current.revision || 0);
+      const expectedRevision = req.body?.expectedRevision === undefined ? null : Number(req.body.expectedRevision);
+      if (expectedRevision === null || !Number.isInteger(expectedRevision) || expectedRevision !== currentRevision) {
+        throw Object.assign(new Error('This announcement changed after the page loaded. Refresh before saving.'), { code: 'ADMIN_TARGET_CHANGED', status: 409 });
+      }
+      const updates = { revision: currentRevision + 1, updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+      if (req.body?.title !== undefined) updates.title = String(req.body.title).replace(/\p{Cc}/gu, ' ').trim().slice(0, 160);
+      if (req.body?.message !== undefined) updates.message = String(req.body.message).replace(/\p{Cc}/gu, ' ').trim().slice(0, 1000);
+      if (req.body?.enabled !== undefined) updates.enabled = req.body.enabled === true;
+      if (req.body?.severity !== undefined) {
+        const severity = String(req.body.severity).toUpperCase();
+        if (!['INFO', 'MEDIUM', 'HIGH'].includes(severity)) throw Object.assign(new Error('Invalid announcement severity'), { code: 'INVALID_ANNOUNCEMENT', status: 400 });
+        updates.severity = severity;
+      }
+      transaction.set(ref, updates, { merge: true });
+      transaction.set(db.collection('security_audit_logs').doc(), {
+        action: 'PLATFORM_ANNOUNCEMENT_UPDATED', actorUid: req.user?.uid, announcementId: id,
+        revision: updates.revision, requestId: res.locals?.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+      return { ...current, ...updates, id, revision: updates.revision };
+    });
+    return res.json({ success: true, announcement: { id, title: result.title, message: result.message, severity: result.severity, audience: result.audience, enabled: result.enabled, revision: result.revision } });
+  } catch (error) {
+    const status = error.status || 500;
+    return res.status(status).json({ error: { code: error.code || 'ANNOUNCEMENT_UPDATE_FAILED', message: status === 409 || status === 400 ? error.message : 'Announcement could not be updated', requestId: res.locals?.requestId } });
+  }
 });
 
-router.delete('/announcements/:id', requireSuperAdmin, async (req, res) => {
+router.delete('/announcements/:id', requireRecentAdminAuthentication, async (req, res) => {
   const db = req.app?.get('db');
-  if (!db) return res.status(503).json({ error: { code: 'DATABASE_UNAVAILABLE', message: 'Database unavailable' } });
+  const admin = req.app?.get('firebaseAdmin');
+  if (!db || !admin?.firestore?.FieldValue) return res.status(503).json({ error: { code: 'DATABASE_UNAVAILABLE', message: 'Database unavailable' } });
   const id = String(req.params.id || '');
   if (!/^[A-Za-z0-9_-]{1,128}$/.test(id)) {
     return res.status(400).json({ error: { code: 'INVALID_ANNOUNCEMENT', message: 'Invalid announcement id' } });
   }
   const ref = db.collection('platform_announcements').doc(id);
-  const snap = await ref.get();
-  if (!snap.exists) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Announcement not found' } });
-  await ref.delete();
-  return res.json({ success: true, id });
+  try {
+    await db.runTransaction(async transaction => {
+      const snap = await transaction.get(ref);
+      if (!snap.exists) throw Object.assign(new Error('Announcement not found'), { code: 'NOT_FOUND', status: 404 });
+      const currentRevision = Number(snap.data()?.revision || 0);
+      const expectedRevision = req.body?.expectedRevision === undefined ? null : Number(req.body.expectedRevision);
+      if (expectedRevision === null || !Number.isInteger(expectedRevision) || expectedRevision !== currentRevision) {
+        throw Object.assign(new Error('This announcement changed after the page loaded. Refresh before deleting.'), { code: 'ADMIN_TARGET_CHANGED', status: 409 });
+      }
+      transaction.delete(ref);
+      transaction.set(db.collection('security_audit_logs').doc(), {
+        action: 'PLATFORM_ANNOUNCEMENT_DELETED', actorUid: req.user?.uid, announcementId: id,
+        revision: currentRevision, requestId: res.locals?.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    });
+    return res.json({ success: true, id });
+  } catch (error) {
+    const status = error.status || 500;
+    return res.status(status).json({ error: { code: error.code || 'ANNOUNCEMENT_DELETE_FAILED', message: status === 409 || status === 404 ? error.message : 'Announcement could not be deleted', requestId: res.locals?.requestId } });
+  }
 });
 
 async function inspectAttentionSignals(req) {
@@ -1229,30 +1394,38 @@ const PLATFORM_OPERATOR_ROLES = new Set(['ADMIN', 'SUPPORT', 'USER']);
 
 router.get('/operators', async (req, res) => {
   const db = req.app?.get('db');
-  if (!db) return res.json({ operators: [] });
+  const identityAdmin = req.app?.get('firebaseAdmin');
+  if (!db || !identityAdmin?.auth) return res.json({ operators: [], source: 'UNAVAILABLE', note: 'Firebase Auth and Firestore are unavailable; no operator count is inferred.' });
   try {
-    const snap = await db.collection('users').where('role', 'in', ['ADMIN', 'SUPER_ADMIN', 'SUPPORT']).limit(100).get();
+    const listed = await identityAdmin.auth().listUsers(200);
     const operators = [];
-    snap.forEach(doc => {
-      const data = doc.data() || {};
+    for (const identity of listed.users || []) {
+      const claims = identity.customClaims || {};
+      const profile = (await db.collection('users').doc(identity.uid).get()).data() || {};
+      const role = String(claims.role || profile.role || '').toUpperCase();
+      if (!['ADMIN', 'SUPER_ADMIN', 'SUPPORT'].includes(role)) continue;
       operators.push({
-        id: doc.id,
-        email: data.email || null,
-        role: String(data.role || 'USER').toUpperCase(),
-        suspended: data.suspended === true,
-        displayName: data.displayName || `${data.firstname || ''} ${data.lastname || ''}`.trim() || null,
+        id: identity.uid,
+        email: identity.email || profile.email || null,
+        role,
+        suspended: identity.disabled === true || profile.suspended === true,
+        emailVerified: identity.emailVerified === true,
+        mfaEnabled: Array.isArray(identity.multiFactor?.enrolledFactors) && identity.multiFactor.enrolledFactors.length > 0,
+        displayName: identity.displayName || profile.displayName || `${profile.firstname || ''} ${profile.lastname || ''}`.trim() || null,
       });
-    });
-    return res.json({ operators, note: 'Roles shown are the Firestore role field. Authoritative access is the Firebase custom claim.' });
+    }
+    return res.json({ operators, source: 'FIREBASE_AUTH_CLAIMS', note: 'Roles shown are the verified Firebase custom claims. Firestore profile role fields are display metadata only.' });
   } catch (error) {
-    return res.status(500).json({ error: { code: 'OPERATORS_UNAVAILABLE', message: error.message } });
+    console.error('[Platform operators]', error.message);
+    return res.status(503).json({ error: { code: 'OPERATORS_UNAVAILABLE', message: 'The authoritative operator directory could not be read.', requestId: res.locals?.requestId } });
   }
 });
 
-router.post('/operators', requireSuperAdmin, async (req, res) => {
+router.post('/operators', requireRecentAdminAuthentication, async (req, res) => {
   const uid = String(req.body?.uid || '').trim();
   const nextRole = String(req.body?.role || '').toUpperCase();
-  if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid) || !PLATFORM_OPERATOR_ROLES.has(nextRole)) {
+  const expectedRole = req.body?.expectedRole === undefined ? null : String(req.body.expectedRole || '').toUpperCase();
+  if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid) || !PLATFORM_OPERATOR_ROLES.has(nextRole) || (expectedRole !== null && !PLATFORM_OPERATOR_ROLES.has(expectedRole) && expectedRole !== 'SUPER_ADMIN')) {
     return res.status(400).json({ error: { code: 'INVALID_OPERATOR', message: 'A valid uid and role of ADMIN, SUPPORT, or USER is required' } });
   }
   const db = req.app?.get('db');
@@ -1266,13 +1439,37 @@ router.post('/operators', requireSuperAdmin, async (req, res) => {
   try {
     const target = await admin.auth().getUser(uid);
     const currentRole = String(target.customClaims?.role || '').toUpperCase();
+    if (expectedRole !== null && currentRole !== expectedRole) {
+      return res.status(409).json({ error: { code: 'OPERATOR_TARGET_CHANGED', message: 'This operator role changed after the page loaded. Refresh before retrying.', requestId: res.locals?.requestId } });
+    }
     if (currentRole === 'SUPER_ADMIN') {
       return res.status(403).json({ error: { code: 'SUPER_ADMIN_PROTECTED', message: 'SUPER_ADMIN claims cannot be changed from this API' } });
     }
     await admin.auth().setCustomUserClaims(uid, { ...(target.customClaims || {}), role: nextRole });
     await admin.auth().revokeRefreshTokens(uid);
     await db.collection('users').doc(uid).set({ role: nextRole, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
-    return res.json({ success: true, uid, role: nextRole });
+    await db.collection('security_audit_logs').doc().set({
+      action: 'PLATFORM_OPERATOR_ROLE_CHANGED', actorUid: req.user?.uid, targetUid: uid,
+      previousRole: currentRole, nextRole, requestId: res.locals?.requestId,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    await recordAdminAuditLog(db, admin, {
+      actorUid: req.user?.uid,
+      actorEmail: req.user?.email,
+      actorRole: 'SUPER_ADMIN',
+      action: 'PLATFORM_OPERATOR_ROLE_CHANGED',
+      category: 'iam.operators',
+      severity: 'HIGH',
+      outcome: 'SUCCESS',
+      method: 'POST',
+      pathname: req.originalUrl,
+      statusCode: 200,
+      resourceType: 'user',
+      resourceId: uid,
+      metadata: { previousRole: currentRole, nextRole },
+      requestId: res.locals?.requestId,
+    });
+    return res.json({ success: true, uid, role: nextRole, previousRole: currentRole });
   } catch (error) {
     const status = error.code === 'auth/user-not-found' ? 404 : 500;
     return res.status(status).json({ error: { code: status === 404 ? 'USER_NOT_FOUND' : 'OPERATOR_UPDATE_FAILED', message: status === 404 ? 'User not found' : 'Operator role could not be updated' } });
@@ -1280,21 +1477,110 @@ router.post('/operators', requireSuperAdmin, async (req, res) => {
 });
 
 router.get('/tenants/:tenantId', async (req, res) => {
+  const tenantId = String(req.params.tenantId || '').trim();
   const tenantService = req.app?.get('tenantService');
-  if (!tenantService?.listPlatformTenants) {
-    return res.status(503).json({ error: { code: 'TENANT_CONTROL_PLANE_UNAVAILABLE', message: 'Tenant service unavailable' } });
+  const db = req.app?.get('db');
+  const admin = req.app?.get('firebaseAdmin');
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(tenantId)) {
+    return res.status(400).json({ error: { code: 'INVALID_TENANT_ID', message: 'Invalid tenant identifier', requestId: res.locals?.requestId } });
+  }
+  if (!tenantService?.registry) {
+    return res.status(503).json({ error: { code: 'TENANT_CONTROL_PLANE_UNAVAILABLE', message: 'Tenant service unavailable', requestId: res.locals?.requestId } });
   }
   try {
-    const tenants = await tenantService.listPlatformTenants({ user: req.user, limit: 500 });
-    const tenant = tenants.find(item => item.id === req.params.tenantId);
-    if (!tenant) return res.status(404).json({ error: { code: 'TENANT_NOT_FOUND', message: 'Tenant was not found' } });
-    return res.json({ tenant });
+    const tenant = await tenantService.registry.getTenant(tenantId);
+    const results = await Promise.all([
+      safeQuery('tenant-configuration', () => tenantService.registry.getTenantConfiguration(tenantId)),
+      safeQuery('tenant-memberships', () => tenantService.registry.listTenantMemberships(tenantId)),
+      safeQuery('tenant-workspaces', () => db ? db.collection('enterprise_workspaces').where('tenantId', '==', tenantId).get() : Promise.reject(new Error('Firestore unavailable'))),
+      safeQuery('tenant-service-accounts', () => db ? db.collection('enterprise_service_accounts').where('tenantId', '==', tenantId).get() : Promise.reject(new Error('Firestore unavailable'))),
+      safeQuery('tenant-audit', () => db ? db.collection(`tenants/${tenantId}/audit_events`).orderBy('occurredAt', 'desc').limit(25).get() : Promise.reject(new Error('Firestore unavailable'))),
+      safeQuery('tenant-usage', () => db ? db.collection(`tenants/${tenantId}/ai_usage_daily`).limit(366).get() : Promise.reject(new Error('Firestore unavailable'))),
+    ]);
+    const [configurationResult, membershipsResult, workspacesResult, accountsResult, auditResult, usageResult] = results;
+    const memberships = membershipsResult.ok ? membershipsResult.value : [];
+    const workspaces = workspacesResult.ok ? workspacesResult.value.docs.map(doc => ({ id: doc.id, name: doc.data()?.name || 'Unnamed workspace', lifecycleState: doc.data()?.lifecycleState || doc.data()?.status || 'UNKNOWN', isDefault: doc.data()?.isDefault === true })) : [];
+    const serviceAccounts = accountsResult.ok ? accountsResult.value.docs.map(doc => {
+      const data = doc.data() || {};
+      return { id: doc.id, displayName: data.displayName || null, status: data.status || 'UNKNOWN', scopes: Array.isArray(data.scopes) ? data.scopes : [], expiresAt: isoFrom(data.expiresAt), lastUsedAt: isoFrom(data.lastUsedAt), createdAt: isoFrom(data.createdAt) };
+    }) : [];
+    const activity = auditResult.ok ? auditResult.value.docs.map(doc => {
+      const data = doc.data() || {};
+      return { id: doc.id, action: data.action || 'UNKNOWN', category: data.category || null, severity: data.severity || 'INFO', outcome: data.outcome || null, principalId: data.principalId || data.subjectId || null, resourceType: data.resourceType || null, resourceId: data.resourceId || null, occurredAt: isoFrom(data.occurredAt || data.createdAt) };
+    }) : [];
+    const usageRows = usageResult.ok ? usageResult.value.docs.map(doc => doc.data() || {}) : [];
+    const usage = usageResult.ok ? {
+      source: 'MEASURED',
+      daysInspected: usageRows.length,
+      inputTokens: usageRows.reduce((sum, row) => sum + Number(row.inputTokens || 0), 0),
+      outputTokens: usageRows.reduce((sum, row) => sum + Number(row.outputTokens || 0), 0),
+      requests: usageRows.reduce((sum, row) => sum + Number(row.requests || row.requestCount || 0), 0),
+      estimatedCostMicros: usageRows.reduce((sum, row) => sum + Number(row.estimatedCostMicros || 0), 0),
+    } : { source: 'UNAVAILABLE', daysInspected: null, inputTokens: null, outputTokens: null, requests: null, estimatedCostMicros: null };
+    const memberUsers = [];
+    if (admin?.auth && memberships.length) {
+      for (const membership of memberships.slice(0, 200)) {
+        try {
+          const identity = await admin.auth().getUser(membership.principalId);
+          memberUsers.push({ id: identity.uid, email: identity.email || null, displayName: identity.displayName || null, emailVerified: identity.emailVerified === true, disabled: identity.disabled === true, roles: membership.roles, status: membership.status || 'UNKNOWN', workspaceId: membership.workspaceId || null });
+        } catch (_) {
+          memberUsers.push({ id: membership.principalId, email: null, displayName: null, emailVerified: null, disabled: null, roles: membership.roles, status: membership.status || 'UNKNOWN', workspaceId: membership.workspaceId || null });
+        }
+      }
+    }
+    const measure = (value, source) => ({ value, source: source ? 'MEASURED' : 'UNAVAILABLE' });
+    const sourceMap = Object.fromEntries(results.map(result => [result.source, result.ok ? 'AVAILABLE' : 'UNAVAILABLE']));
+    return res.json({
+      tenant: {
+        id: tenant.id,
+        slug: tenant.slug,
+        displayName: tenant.displayName,
+        lifecycleState: tenant.lifecycleState,
+        isolationTier: tenant.isolationTier,
+        region: tenant.dataPlane?.region || null,
+        createdAt: isoFrom(tenant.createdAt),
+        updatedAt: isoFrom(tenant.updatedAt),
+        plan: tenant.plan || tenant.planId || null,
+        dataPlane: tenant.dataPlane || null,
+      },
+      overview: {
+        users: measure(membershipsResult.ok ? memberships.length : null, membershipsResult.ok),
+        activeUsers: measure(membershipsResult.ok ? memberships.filter(item => String(item.status || '').toUpperCase() === 'ACTIVE').length : null, membershipsResult.ok),
+        workspaces: measure(workspacesResult.ok ? workspaces.length : null, workspacesResult.ok),
+        serviceAccounts: measure(accountsResult.ok ? serviceAccounts.length : null, accountsResult.ok),
+      },
+      users: { items: memberUsers, source: membershipsResult.ok && (admin?.auth || !memberships.length) ? 'AVAILABLE' : 'PARTIAL' },
+      memberships: { items: memberships.map(item => ({ id: item.id, principalId: item.principalId, roles: item.roles, status: item.status, workspaceId: item.workspaceId || null, revision: item.revision || null, updatedAt: isoFrom(item.updatedAt) })), source: membershipsResult.ok ? 'AVAILABLE' : 'UNAVAILABLE' },
+      usage,
+      plan: { value: tenant.plan || tenant.planId || null, source: tenant.plan || tenant.planId ? 'TENANT_RECORD' : 'NOT_RECORDED' },
+      security: { configuration: configurationResult.ok ? configurationResult.value.securityPolicy || {} : null, identityPolicy: configurationResult.ok ? configurationResult.value.identityPolicy || {} : null, source: configurationResult.ok ? 'AVAILABLE' : 'UNAVAILABLE' },
+      m2m: { accounts: serviceAccounts, source: accountsResult.ok ? 'AVAILABLE' : 'UNAVAILABLE' },
+      audit: { events: activity, source: auditResult.ok ? 'AVAILABLE' : 'UNAVAILABLE' },
+      activity: { events: activity.slice(0, 10), source: auditResult.ok ? 'AVAILABLE' : 'UNAVAILABLE' },
+      configuration: { value: configurationResult.ok ? configurationResult.value : null, source: configurationResult.ok ? 'AVAILABLE' : 'UNAVAILABLE' },
+      sources: sourceMap,
+      checkedAt: new Date().toISOString(),
+    });
   } catch (error) {
-    return res.status(error.status || 503).json({ error: { code: error.code || 'TENANT_LOOKUP_FAILED', message: error.status === 403 ? 'Platform administration is not permitted' : 'Tenant detail is unavailable' } });
+    const status = error.status === 404 ? 404 : 503;
+    return res.status(status).json({ error: { code: error.code || 'TENANT_LOOKUP_FAILED', message: status === 404 ? 'Tenant was not found' : 'Tenant detail is unavailable', requestId: res.locals?.requestId } });
   }
 });
 
-router.post('/tenants/:tenantId/decommission', requireSuperAdmin, async (req, res) => {
+router.patch('/tenants/:tenantId', requireRecentAdminAuthentication, async (req, res) => {
+  const tenantService = req.app?.get('tenantService');
+  const displayName = String(req.body?.displayName || '').trim();
+  if (!tenantService?.updateTenantProfileAsPlatform) return res.status(503).json({ error: { code: 'TENANT_CONTROL_PLANE_UNAVAILABLE', message: 'Tenant service unavailable', requestId: res.locals?.requestId } });
+  if (displayName.length < 2 || displayName.length > 120) return res.status(400).json({ error: { code: 'INVALID_TENANT_NAME', message: 'A tenant display name between 2 and 120 characters is required', requestId: res.locals?.requestId } });
+  try {
+    const tenant = await tenantService.updateTenantProfileAsPlatform({ user: req.user, tenantId: req.params.tenantId, displayName, requestId: res.locals?.requestId });
+    return res.json({ success: true, tenant: { id: tenant.id, slug: tenant.slug, displayName: tenant.displayName, lifecycleState: tenant.lifecycleState } });
+  } catch (error) {
+    return res.status(error.status || 503).json({ error: { code: error.code || 'TENANT_RENAME_FAILED', message: error.status === 400 || error.status === 404 ? error.message : 'Tenant could not be renamed', requestId: res.locals?.requestId } });
+  }
+});
+
+router.post('/tenants/:tenantId/decommission', requireRecentAdminAuthentication, async (req, res) => {
   const tenantService = req.app?.get('tenantService');
   const db = req.app?.get('db');
   const admin = req.app?.get('firebaseAdmin');
@@ -1354,7 +1640,7 @@ router.get('/feature-flags', requireSuperAdmin, async (req, res) => {
   }
 });
 
-router.put('/feature-flags/:flagKey', requireSuperAdmin, async (req, res) => {
+router.put('/feature-flags/:flagKey', requireRecentAdminAuthentication, async (req, res) => {
   const { flagKey } = req.params;
   const { value } = req.body;
   if (typeof value !== 'boolean') {
@@ -1362,11 +1648,15 @@ router.put('/feature-flags/:flagKey', requireSuperAdmin, async (req, res) => {
   }
   try {
     const db = req.app.get('db');
-    const admin = req.app.get('admin');
+    const admin = req.app.get('firebaseAdmin');
+    if (!db || !admin?.firestore?.FieldValue) {
+      return res.status(503).json({ error: { code: 'FEATURE_FLAGS_UNAVAILABLE', message: 'Feature flag storage is unavailable', requestId: res.locals?.requestId } });
+    }
     const result = await setFlagValue(db, admin, flagKey, value, req.user?.uid, res.locals.requestId);
     return res.json({ success: true, ...result });
   } catch (error) {
-    return res.status(400).json({ error: { code: 'FLAG_UPDATE_FAILED', message: error.message } });
+    const status = Number(error.status) >= 400 && Number(error.status) < 600 ? Number(error.status) : 400;
+    return res.status(status).json({ error: { code: error.code || 'FLAG_UPDATE_FAILED', message: status >= 500 ? 'Feature flag storage is unavailable.' : error.message, requestId: res.locals?.requestId } });
   }
 });
 
@@ -1377,57 +1667,21 @@ router.put('/feature-flags/:flagKey', requireSuperAdmin, async (req, res) => {
 
 router.get('/configuration', requireSuperAdmin, async (req, res) => {
   try {
-    const db = req.app.get('db');
-    const flags = await getAllFlags(db);
-
-    // Mask secrets: show only whether configured, never the value
-    const maskSecret = (val) => val ? '••••••••' : null;
-    const isConfigured = (val) => Boolean(val && String(val).trim().length > 0);
-
-    const infrastructure = {
-      FIREBASE_PROJECT_ID: { value: process.env.FIREBASE_PROJECT_ID || '', category: 'firebase', editable: false },
-      FIREBASE_CLIENT_EMAIL: { value: (process.env.FIREBASE_CLIENT_EMAIL || '').replace(/^(.{4}).*(@.*)$/, '$1****$2'), category: 'firebase', editable: false },
-      FIREBASE_PRIVATE_KEY: { value: isConfigured(process.env.FIREBASE_PRIVATE_KEY) ? 'Configured' : 'Not Configured', category: 'firebase', editable: false, secret: true },
-      NODE_ENV: { value: process.env.NODE_ENV || 'development', category: 'runtime', editable: false },
-      PORT: { value: process.env.PORT || '8080', category: 'runtime', editable: false },
-      PROTOCOL: { value: process.env.PROTOCOL || 'https', category: 'runtime', editable: false },
-      COMMIT_SHA: { value: getCommitSha(), category: 'deployment', editable: false },
-    };
-
-    const runtime = {
-      CORS_ALLOWED_ORIGINS: { value: process.env.CORS_ALLOWED_ORIGINS || '(default)', category: 'security', editable: false, requiresRestart: true },
-      TRUST_PROXY_HOPS: { value: process.env.TRUST_PROXY_HOPS || '0', category: 'security', editable: false, requiresRestart: true },
-      GLOBAL_RATE_LIMIT_MAX: { value: process.env.GLOBAL_RATE_LIMIT_MAX || '2500', category: 'security', editable: false, requiresRestart: true },
-      WEBSITE_NAME: { value: process.env.WEBSITE_NAME || 'airesume.projectdemo.guru', category: 'general', editable: false },
-    };
-
-    const integrations = {
-      RAZORPAY_KEY_ID: { value: process.env.RAZORPAY_KEY_ID ? 'Configured (env)' : 'Not in env', category: 'payments' },
-      RAZORPAY_KEY_SECRET: { value: isConfigured(process.env.RAZORPAY_KEY_SECRET) ? 'Configured (env)' : 'Not in env', category: 'payments', secret: true },
-      STRIPE_SECRET: { value: isConfigured(process.env.STRIPE_SECRET) ? 'Configured (env)' : 'Not in env', category: 'payments', secret: true },
-      STRIPE_WEBHOOK_SECRET: { value: isConfigured(process.env.STRIPE_WEBHOOK_SECRET) ? 'Configured (env)' : 'Not in env', category: 'payments', secret: true },
-      TWILIO_ACCOUNT_SID: { value: isConfigured(process.env.TWILIO_ACCOUNT_SID) ? 'Configured (env)' : 'Not in env', category: 'communications' },
-      TWILIO_AUTH_TOKEN: { value: isConfigured(process.env.TWILIO_AUTH_TOKEN) ? 'Configured (env)' : 'Not in env', category: 'communications', secret: true },
-      CLOUDFLARE_API_TOKEN: { value: isConfigured(process.env.CLOUDFLARE_API_TOKEN) ? 'Configured (env)' : 'Not in env', category: 'storage', secret: true },
-      CLOUDFLARE_R2_ACCESS_KEY_ID: { value: isConfigured(process.env.CLOUDFLARE_R2_ACCESS_KEY_ID) ? 'Configured (env)' : 'Not in env', category: 'storage', secret: true },
-    };
-
-    const workers = {
-      CMS_SCHEDULER_INTERVAL_MS: { value: process.env.CMS_SCHEDULER_INTERVAL_MS || '300000', category: 'workers', requiresRestart: true },
-      ENTERPRISE_OUTBOX_INTERVAL_MS: { value: process.env.ENTERPRISE_OUTBOX_INTERVAL_MS || '15000', category: 'workers', requiresRestart: true },
-      NOTIFICATION_OUTBOX_INTERVAL_MS: { value: process.env.NOTIFICATION_OUTBOX_INTERVAL_MS || '15000', category: 'workers', requiresRestart: true },
-    };
-
-    return res.json({
-      infrastructure,
-      runtime,
-      featureFlags: flags,
-      integrations,
-      workers,
-      generatedAt: new Date().toISOString(),
+    const configuration = await getPlatformConfiguration({
+      db: req.app.get('db'),
+      env: process.env,
     });
+    res.setHeader('Cache-Control', 'no-store');
+    return res.json(configuration);
   } catch (error) {
-    return res.status(503).json({ error: { code: 'CONFIGURATION_UNAVAILABLE', message: 'Could not load platform configuration' } });
+    console.error('[PlatformConfiguration] census failed:', error?.message || error);
+    return res.status(503).json({
+      error: {
+        code: 'CONFIGURATION_UNAVAILABLE',
+        message: 'The server-side configuration census could not be collected.',
+        requestId: res.locals?.requestId,
+      },
+    });
   }
 });
 
@@ -1437,69 +1691,19 @@ router.get('/configuration', requireSuperAdmin, async (req, res) => {
  * Never returns raw secrets.
  * ------------------------------------------------------------------ */
 
-router.get('/payment-settings', requireSuperAdmin, async (req, res) => {
+router.get('/payment-settings', requirePermission('system.config.read'), async (req, res) => {
   try {
-    const db = req.app.get('db');
-    if (!db) return res.status(503).json({ error: 'Settings service unavailable' });
-
-    // Read public config
-    const publicDoc = await db.collection('data').doc('public_config').get();
-    const publicConfig = publicDoc.exists ? (publicDoc.data()?.subscriptions || {}) : {};
-
-    // Read secrets doc (never expose raw values)
-    const secretsDoc = await db.collection('settings').doc('payment_providers').get();
-    const secrets = secretsDoc.exists ? (secretsDoc.data() || {}) : {};
-
-    // Build configured status & masked keys
-    const maskKey = (key) => {
-      if (!key || typeof key !== 'string' || key.length < 4) return null;
-      return '••••' + key.slice(-4);
-    };
-
-    const configuredProviders = {
-      razorpay: Boolean(secrets.razorpay?.keySecret || process.env.RAZORPAY_KEY_SECRET),
-      stripe: Boolean(secrets.stripe?.secretKey || process.env.STRIPE_SECRET),
-      paypal: Boolean(secrets.paypal?.clientSecret || process.env.PAYPAL_CLIENT_SECRET),
-      paytm: Boolean(secrets.paytm?.merchantKey || process.env.PAYTM_MERCHANT_KEY),
-      phonepe: Boolean(secrets.phonepe?.saltKey || process.env.PHONEPE_SALT_KEY),
-    };
-
-    const maskedKeys = {
-      razorpay: maskKey(secrets.razorpay?.keySecret || process.env.RAZORPAY_KEY_SECRET),
-      stripe: maskKey(secrets.stripe?.secretKey || process.env.STRIPE_SECRET),
-      paypal: maskKey(secrets.paypal?.clientSecret || process.env.PAYPAL_CLIENT_SECRET),
-      paytm: maskKey(secrets.paytm?.merchantKey || process.env.PAYTM_MERCHANT_KEY),
-      phonepe: maskKey(secrets.phonepe?.saltKey || process.env.PHONEPE_SALT_KEY),
-    };
-
-    const credentialSources = {
-      razorpay: secrets.razorpay?.keySecret ? 'firestore' : process.env.RAZORPAY_KEY_SECRET ? 'env' : 'none',
-      stripe: secrets.stripe?.secretKey ? 'firestore' : process.env.STRIPE_SECRET ? 'env' : 'none',
-      paypal: secrets.paypal?.clientSecret ? 'firestore' : process.env.PAYPAL_CLIENT_SECRET ? 'env' : 'none',
-      paytm: secrets.paytm?.merchantKey ? 'firestore' : process.env.PAYTM_MERCHANT_KEY ? 'env' : 'none',
-      phonepe: secrets.phonepe?.saltKey ? 'firestore' : process.env.PHONEPE_SALT_KEY ? 'env' : 'none',
-    };
-
-    // Public key IDs (not secrets — safe to return)
-    const publicKeys = {
-      razorpayKeyId: publicConfig.razorpayKeyId || secrets.razorpay?.keyId || process.env.RAZORPAY_KEY_ID || '',
-      stripePublishableKey: publicConfig.stripePublishableKey || '',
-      paypalClientId: publicConfig.paypalClientId || secrets.paypal?.clientId || process.env.PAYPAL_CLIENT_ID || '',
-      paytmMid: publicConfig.paytmMid || secrets.paytm?.mid || process.env.PAYTM_MID || '',
-      phonepeId: publicConfig.phonepeId || secrets.phonepe?.merchantId || process.env.PHONEPE_MERCHANT_ID || '',
-      phonepeSaltIndex: publicConfig.phonepeSaltIndex || secrets.phonepe?.saltIndex || process.env.PHONEPE_SALT_INDEX || '1',
-      paytmWebsite: publicConfig.paytmWebsite || process.env.PAYTM_WEBSITE || 'WEBSTAGING',
-    };
-
-    return res.json({
-      settings: publicConfig,
-      publicKeys,
-      configuredProviders,
-      maskedKeys,
-      credentialSources,
-    });
+    const projection = await getPaymentSettingsProjection(req.app.get('db'), process.env);
+    res.setHeader('Cache-Control', 'no-store');
+    return res.json(projection);
   } catch (error) {
-    return res.status(503).json({ error: { code: 'PAYMENT_SETTINGS_UNAVAILABLE', message: 'Could not load payment settings' } });
+    return res.status(Number(error.status) || 503).json({
+      error: {
+        code: error.code || 'PAYMENT_SETTINGS_UNAVAILABLE',
+        message: 'Could not load payment settings.',
+        requestId: res.locals?.requestId,
+      },
+    });
   }
 });
 

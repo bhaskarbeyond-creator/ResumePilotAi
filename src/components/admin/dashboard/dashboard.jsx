@@ -95,7 +95,13 @@ const Dashboard = () => {
             <Signal label="Payments" ok={center.signals?.payments?.status === 'HEALTHY'} text={center.signals?.payments?.status === 'UNAVAILABLE' ? 'Count unavailable' : `${center.signals?.payments?.failed ?? '—'} failed`} />
             <Signal label="Security" ok={center.signals?.security?.status === 'HEALTHY'} text={center.signals?.security?.status === 'UNAVAILABLE' ? 'Count unavailable' : `${center.signals?.security?.highSeverity ?? '—'} high`} />
             <Signal label="Encryption" ok={center.signals?.encryption?.status === 'CONFIGURED'} text={center.signals?.encryption?.provider || 'none'} />
-            <Signal label="Feature Flags" ok={true} text={center.signals?.featureFlags?.total ? `${center.signals.featureFlags.enabled} enabled` : 'Unavailable'} />
+            <Signal
+              label="Feature Flags"
+              ok={Number(center?.signals?.featureFlags?.total) > 0}
+              text={Number(center?.signals?.featureFlags?.total) > 0
+                ? `${center.signals.featureFlags.enabled} enabled`
+                : 'Status unavailable'}
+            />
             <Signal label="Runtime" ok icon={<FiCpu className="text-slate-500 h-3.5 w-3.5" />} text={center.subsystems?.runtime?.nodeVersion || '—'} />
           </div>
         </div>

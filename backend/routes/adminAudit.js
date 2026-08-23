@@ -1,7 +1,7 @@
 'use strict';
 
 const express = require('express');
-const { queryAdminAuditLogs } = require('../security/adminAudit');
+const { queryAdminAuditLogs, sanitizeAuditValue } = require('../security/adminAudit');
 const { requirePermission } = require('../security/auth');
 
 const router = express.Router();
@@ -22,6 +22,7 @@ router.get('/audit-logs', async (req, res) => {
       category,
       severity,
       outcome,
+      search,
       startAfterDocId,
     } = req.query;
 
@@ -32,6 +33,7 @@ router.get('/audit-logs', async (req, res) => {
       category: category ? String(category) : undefined,
       severity: severity ? String(severity) : undefined,
       outcome: outcome ? String(outcome) : undefined,
+      search: search ? String(search) : undefined,
       startAfterDocId: startAfterDocId ? String(startAfterDocId) : undefined,
     });
 
@@ -78,7 +80,7 @@ router.get('/audit-logs/stats', async (req, res) => {
       sampleSize: totalRecent,
       highSeverityCount,
       failureCount,
-      successRate: totalRecent > 0 ? Math.round(((totalRecent - failureCount) / totalRecent) * 100) : 100,
+      successRate: totalRecent > 0 ? Math.round(((totalRecent - failureCount) / totalRecent) * 100) : null,
       categoryCounts,
       topActors: Object.entries(actorCounts).map(([actor, count]) => ({ actor, count })).slice(0, 10),
     });
@@ -101,9 +103,10 @@ router.get('/audit-logs/:id', async (req, res) => {
     }
 
     const data = doc.data() || {};
+    const safe = sanitizeAuditValue('record', data) || {};
     return res.json({
       id: doc.id,
-      ...data,
+      ...safe,
       createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : data.occurredAt || null,
     });
   } catch (error) {

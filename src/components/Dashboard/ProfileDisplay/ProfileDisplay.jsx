@@ -111,8 +111,9 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
     // therefore require the backend to confirm tenancy is actually served.
     const buildTimeEnterpriseFlag = import.meta.env?.VITE_ENTERPRISE_TENANCY_ENABLED === 'true';
     const { availability: platformAvailability, status: availabilityStatus } = useServiceAvailability();
-    const enterpriseEnabled = buildTimeEnterpriseFlag
-        && (availabilityStatus !== 'ready' || platformAvailability?.enterpriseTenancy === true);
+    const enterpriseEnabled = availabilityStatus === 'ready'
+        && (buildTimeEnterpriseFlag || platformAvailability?.enterpriseTenancy === true)
+        && platformAvailability?.enterpriseTenancy === true;
 
     // Check system modules settings
     useEffect(() => {

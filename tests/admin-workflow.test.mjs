@@ -178,9 +178,9 @@ test('billing admin uses authoritative ledgers without inferred user/subscriptio
     fs.readFile('backend/index.js', 'utf8'),
   ]);
   const ledger = operations.match(/export async function getAllAdminTransactions\(\)[\s\S]*?export async function refundOrderTransaction/)?.[0] || '';
-  assert.match(ledger, /payment_orders/);
-  assert.match(ledger, /collection\('invoices'\)/);
-  assert.doesNotMatch(ledger, /collection\('users'\)|collection\('subscriptions'\)|price \|\| 199|Date\.now/);
+  assert.match(ledger, /\/api\/admin\/payment-orders/);
+  assert.match(invoices, /Server-Verified Payment Receipt/);
+  assert.doesNotMatch(ledger, /collection\(['"]users['"]\)|collection\(['"]subscriptions['"]\)|price \|\| 199|Date\.now/);
   assert.doesNotMatch(operations, /subscriptions_cache/);
   assert.match(invoices, /Server-Verified Payment Receipt/);
   assert.match(invoices, /inv\.source === 'payment_orders'/);

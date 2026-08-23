@@ -38,7 +38,8 @@ export const searchPlatform = (q) => platformFetch(`/api/platform/search?q=${enc
 export const getAnnouncements = () => platformFetch('/api/platform/announcements');
 export const saveAnnouncement = (body) => platformFetch('/api/platform/announcements', { method: 'POST', body: JSON.stringify(body || {}) });
 export const updateAnnouncement = (id, body) => platformFetch(`/api/platform/announcements/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(body || {}) });
-export const deleteAnnouncement = (id) => platformFetch(`/api/platform/announcements/${encodeURIComponent(id)}`, { method: 'DELETE' });
+export const deleteAnnouncement = (id, expectedRevision) => platformFetch(`/api/platform/announcements/${encodeURIComponent(id)}`, { method: 'DELETE', body: JSON.stringify({ expectedRevision }) });
+export const renameTenant = (tenantId, displayName) => platformFetch(`/api/platform/tenants/${encodeURIComponent(tenantId)}`, { method: 'PATCH', body: JSON.stringify({ displayName }) });
 export const decommissionTenant = (tenantId, reason) => platformFetch(`/api/platform/tenants/${encodeURIComponent(tenantId)}/decommission`, { method: 'POST', body: JSON.stringify({ reason }) });
 export const getTenantDetail = (tenantId) => platformFetch(`/api/platform/tenants/${encodeURIComponent(tenantId)}`);
 export const getAttention = () => platformFetch('/api/platform/attention');
@@ -50,4 +51,4 @@ export const getApiHealthMatrix = () => platformFetch('/api/platform/operational
 export const getHealthIndicator = () => platformFetch('/api/platform/health-indicator');
 export const getEnterpriseQueue = () => platformFetch('/api/platform/enterprise-queue');
 export const getOperators = () => platformFetch('/api/platform/operators');
-export const setOperatorRole = (uid, role) => platformFetch('/api/platform/operators', { method: 'POST', body: JSON.stringify({ uid, role }) });
+export const setOperatorRole = (uid, role, expectedRole) => platformFetch('/api/platform/operators', { method: 'POST', body: JSON.stringify({ uid, role, ...(expectedRole ? { expectedRole } : {}) }) });

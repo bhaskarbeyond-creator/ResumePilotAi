@@ -1,8 +1,9 @@
 import { writeSanitizedPrintDocument } from '../../../utils/sanitizeHtml';
 import React, { Component } from 'react';
-import { getSubscriptionStatus, setSubscriptionsData, getAllCouponsAdmin, saveCoupon, deleteCoupon, getSystemSettings, saveSystemSettings, getAllAdminTransactions, refundOrderTransaction, getAdminPaymentSettings } from '../../../firestore/dbOperations';
+import { getSubscriptionStatus, setSubscriptionsData, getAllCouponsAdmin, saveCoupon, deleteCoupon, getSystemSettings, saveSystemSettings, getAllAdminTransactions, refundOrderTransaction, getAdminPaymentSettings, testAdminPaymentProvider } from '../../../firestore/dbOperations';
 import { FaCheck, FaTimes, FaCreditCard, FaRupeeSign, FaDollarSign, FaToggleOn, FaToggleOff, FaPaypal, FaStripe, FaFlask, FaShieldAlt, FaTag, FaPlus, FaTrash, FaEdit, FaCalendarAlt, FaPercent, FaEye, FaEyeSlash, FaDownload, FaSearch, FaFileInvoice, FaPrint, FaListAlt, FaCog, FaUndo } from 'react-icons/fa';
 import config from '../../../conf/configuration';
+import { useAdminSession } from '../AdminContext';
 
 class SubscriptionSetting extends Component {
     constructor(props) {
@@ -45,6 +46,10 @@ class SubscriptionSetting extends Component {
             phonepeId: '',
             phonepeSaltKey: '',
             phonepeSaltIndex: '1',
+            paymentRevision: 0,
+            clearSecrets: {},
+            testingProvider: null,
+            providerTestMessage: null,
 
             // Secret Key Masking Toggles
             showRazorpaySecret: false,
@@ -143,6 +148,8 @@ class SubscriptionSetting extends Component {
         this.confirmDeleteCouponCode = this.confirmDeleteCouponCode.bind(this);
         this.previewTemplate = this.previewTemplate.bind(this);
         this.closePreviewTemplateModal = this.closePreviewTemplateModal.bind(this);
+        this.clearPaymentSecret = this.clearPaymentSecret.bind(this);
+        this.testPaymentProvider = this.testPaymentProvider.bind(this);
     }
 
     async componentDidMount() {
@@ -209,6 +216,8 @@ class SubscriptionSetting extends Component {
                     configuredProviders: configuredProviders || {},
                     maskedKeys: maskedKeys || {},
                     credentialSources: credentialSources || {},
+                    paymentRevision: Number(paymentData.revision || 0),
+                    clearSecrets: {},
                     
                     razorpayKeySecret: '',
                     stripeSecretKey: '',
@@ -1457,6 +1466,50 @@ class SubscriptionSetting extends Component {
 
 
 
+    clearPaymentSecret(provider) {
+        if (!this.props.isSuperAdmin) {
+            this.setState({ couponErrorMsg: 'Only Super Admin can clear payment provider credentials.' });
+            return;
+        }
+        const fieldByProvider = {
+            razorpay: 'razorpayKeySecret',
+            stripe: 'stripeSecretKey',
+            paypal: 'paypalClientSecret',
+            paytm: 'paytmMerchantKey',
+            phonepe: 'phonepeSaltKey',
+        };
+        const field = fieldByProvider[provider];
+        if (!field) return;
+        this.setState(previous => ({
+            [field]: '',
+            clearSecrets: { ...(previous.clearSecrets || {}), [provider]: true },
+        }));
+    }
+
+    async testPaymentProvider(provider) {
+        if (!this.props.isSuperAdmin) {
+            this.setState({ providerTestMessage: { type: 'error', text: 'Only Super Admin can run payment provider tests.' } });
+            return;
+        }
+        if (this.state.testingProvider) return;
+        this.setState({ testingProvider: provider, providerTestMessage: null });
+        const credentialsByProvider = {
+            razorpay: { keyId: this.state.razorpayKeyId, keySecret: this.state.razorpayKeySecret },
+            stripe: { secretKey: this.state.stripeSecretKey },
+            paypal: { clientId: this.state.paypalClientId, clientSecret: this.state.paypalClientSecret },
+            paytm: { mid: this.state.paytmMid, merchantKey: this.state.paytmMerchantKey },
+            phonepe: { merchantId: this.state.phonepeId, saltKey: this.state.phonepeSaltKey, saltIndex: this.state.phonepeSaltIndex },
+        };
+        try {
+            const result = await testAdminPaymentProvider(provider, credentialsByProvider[provider] || {});
+            this.setState({ providerTestMessage: { type: 'success', text: result.message || `${provider} connection verified.` } });
+        } catch (error) {
+            this.setState({ providerTestMessage: { type: 'error', text: error.message || `${provider} test failed.` } });
+        } finally {
+            this.setState({ testingProvider: null });
+        }
+    }
+
     async handleToggleCouponsModule() {
         const nextState = !this.state.enableCouponsModule;
         this.setState({ enableCouponsModule: nextState });
@@ -1580,8 +1633,12 @@ class SubscriptionSetting extends Component {
     }
 
     async submitHandler() {
+        if (!this.props.isSuperAdmin) {
+            this.setState({ couponErrorMsg: 'Payment credential and gateway changes are Super Admin-only. This view is read-only for Admin.' });
+            return;
+        }
         try {
-            await setSubscriptionsData(
+            const result = await setSubscriptionsData(
             this.state.checkedSubscriptions,
             this.state.monthlyPrice,
             this.state.quartarlyPrice,
@@ -1608,6 +1665,8 @@ class SubscriptionSetting extends Component {
                 phonepeId: this.state.phonepeId,
                 phonepeSaltKey: this.state.phonepeSaltKey,
                 phonepeSaltIndex: this.state.phonepeSaltIndex || '1',
+                clearSecrets: this.state.clearSecrets || {},
+                expectedRevision: this.state.paymentRevision,
                 enableTax: this.state.enableTax,
                 taxName: this.state.taxName,
                 taxRate: parseFloat(this.state.taxRate) || 0,
@@ -1630,7 +1689,19 @@ class SubscriptionSetting extends Component {
                 reverseCharge: this.state.reverseCharge || 'No',
             }
         );
-        this.setState({ isSuccessOpen: true });
+        this.setState({
+            isSuccessOpen: true,
+            paymentRevision: Number(result.revision || this.state.paymentRevision),
+            configuredProviders: result.configuredProviders || this.state.configuredProviders || {},
+            maskedKeys: result.maskedKeys || this.state.maskedKeys || {},
+            credentialSources: result.credentialSources || this.state.credentialSources || {},
+            clearSecrets: {},
+            razorpayKeySecret: '',
+            stripeSecretKey: '',
+            paypalClientSecret: '',
+            paytmMerchantKey: '',
+            phonepeSaltKey: '',
+        });
             setTimeout(() => {
                 this.setState({ isSuccessOpen: false });
             }, 3000);
@@ -2897,6 +2968,7 @@ class SubscriptionSetting extends Component {
                         </div>
 
                         {/* --- CARD 4: PAYMENT GATEWAY API & SANDBOX CREDENTIALS CARD --- */}
+                        <fieldset disabled={!this.props.isSuperAdmin} className="contents">
                         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs space-y-5">
                             <div className="flex items-center space-x-3 border-b border-slate-100 pb-4">
                                 <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 font-bold">
@@ -2905,6 +2977,9 @@ class SubscriptionSetting extends Component {
                                 <div>
                                     <h3 className="text-base font-bold text-slate-900">Payment Gateway API Keys &amp; Credentials (Sandbox &amp; Production)</h3>
                                     <p className="text-xs text-slate-500">Configure test (sandbox) or live API keys for Razorpay, Stripe, PayPal, Paytm, and PhonePe.</p>
+                                    <p className="mt-1 text-[10px] font-semibold text-slate-500">Secrets are write-only. Empty fields preserve the active credential; use Clear, then Save, to intentionally remove a Firestore credential.</p>
+                                    {this.state.providerTestMessage && <div role={this.state.providerTestMessage.type === 'success' ? 'status' : 'alert'} className={`mt-3 rounded-lg border p-3 text-xs font-semibold ${this.state.providerTestMessage.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-red-200 bg-red-50 text-red-800'}`}>{this.state.providerTestMessage.text}</div>}
+                                    <div className="mt-3 flex flex-wrap items-center gap-2"><span className="text-[10px] font-extrabold uppercase text-slate-500">Test active credentials</span>{['razorpay', 'stripe', 'paypal', 'paytm', 'phonepe'].map(provider => <button key={provider} type="button" onClick={() => this.testPaymentProvider(provider)} disabled={Boolean(this.state.testingProvider)} className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-[10px] font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50">{this.state.testingProvider === provider ? 'Testing…' : provider}</button>)}</div>
                                 </div>
                             </div>
 
@@ -2934,15 +3009,16 @@ class SubscriptionSetting extends Component {
                                             <input
                                                 type="password"
                                                 value={this.state.razorpayKeySecret}
-                                                onChange={(e) => this.setState({ razorpayKeySecret: e.target.value })}
+                                                onChange={(e) => this.setState(prev => ({ razorpayKeySecret: e.target.value, clearSecrets: { ...(prev.clearSecrets || {}), razorpay: false } }))}
                                                 placeholder={this.state.configuredProviders?.razorpay ? '✓ Configured securely — enter to replace' : 'Paste your Razorpay key secret'}
                                                 className={`w-full text-xs p-2.5 bg-white border rounded-lg text-slate-900 font-mono outline-none ${
                                                     this.state.configuredProviders?.razorpay && !this.state.razorpayKeySecret ? 'border-emerald-300 placeholder:text-emerald-700 focus:border-emerald-500' : 'border-slate-300 focus:border-emerald-500'
                                                 }`}
                                             />
                                             {this.state.configuredProviders?.razorpay && !this.state.razorpayKeySecret && (
-                                                <div className="absolute right-2.5 top-2.5 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                                                    {this.state.maskedKeys?.razorpay}
+                                                <div className="absolute right-2.5 top-1.5 flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-1 rounded border border-emerald-200">
+                                                    <span>{this.state.maskedKeys?.razorpay}</span>
+                                                    <button type="button" className="underline hover:no-underline" onClick={() => this.clearPaymentSecret('razorpay')} aria-label="Clear razorpay credential">Clear</button>
                                                 </div>
                                             )}
                                         </div>
@@ -2973,15 +3049,16 @@ class SubscriptionSetting extends Component {
                                             <input
                                                 type="password"
                                                 value={this.state.stripeSecretKey}
-                                                onChange={(e) => this.setState({ stripeSecretKey: e.target.value })}
+                                                onChange={(e) => this.setState(prev => ({ stripeSecretKey: e.target.value, clearSecrets: { ...(prev.clearSecrets || {}), stripe: false } }))}
                                                 placeholder={this.state.configuredProviders?.stripe ? '✓ Configured securely — enter to replace' : 'e.g. sk_test_...'}
                                                 className={`w-full text-xs p-2.5 bg-white border rounded-lg text-slate-900 font-mono outline-none ${
                                                     this.state.configuredProviders?.stripe && !this.state.stripeSecretKey ? 'border-indigo-300 placeholder:text-indigo-700 focus:border-indigo-500' : 'border-slate-300 focus:border-indigo-500'
                                                 }`}
                                             />
                                             {this.state.configuredProviders?.stripe && !this.state.stripeSecretKey && (
-                                                <div className="absolute right-2.5 top-2.5 text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
-                                                    {this.state.maskedKeys?.stripe}
+                                                <div className="absolute right-2.5 top-1.5 flex items-center gap-1 text-[10px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-1 rounded border border-indigo-200">
+                                                    <span>{this.state.maskedKeys?.stripe}</span>
+                                                    <button type="button" className="underline hover:no-underline" onClick={() => this.clearPaymentSecret('stripe')} aria-label="Clear stripe credential">Clear</button>
                                                 </div>
                                             )}
                                         </div>
@@ -3012,15 +3089,16 @@ class SubscriptionSetting extends Component {
                                             <input
                                                 type="password"
                                                 value={this.state.paypalClientSecret}
-                                                onChange={(e) => this.setState({ paypalClientSecret: e.target.value })}
+                                                onChange={(e) => this.setState(prev => ({ paypalClientSecret: e.target.value, clearSecrets: { ...(prev.clearSecrets || {}), paypal: false } }))}
                                                 placeholder={this.state.configuredProviders?.paypal ? '✓ Configured securely — enter to replace' : 'e.g. E...'}
                                                 className={`w-full text-xs p-2.5 bg-white border rounded-lg text-slate-900 font-mono outline-none ${
                                                     this.state.configuredProviders?.paypal && !this.state.paypalClientSecret ? 'border-blue-300 placeholder:text-blue-700 focus:border-blue-500' : 'border-slate-300 focus:border-blue-500'
                                                 }`}
                                             />
                                             {this.state.configuredProviders?.paypal && !this.state.paypalClientSecret && (
-                                                <div className="absolute right-2.5 top-2.5 text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                                                    {this.state.maskedKeys?.paypal}
+                                                <div className="absolute right-2.5 top-1.5 flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-1 rounded border border-blue-200">
+                                                    <span>{this.state.maskedKeys?.paypal}</span>
+                                                    <button type="button" className="underline hover:no-underline" onClick={() => this.clearPaymentSecret('paypal')} aria-label="Clear paypal credential">Clear</button>
                                                 </div>
                                             )}
                                         </div>
@@ -3053,15 +3131,16 @@ class SubscriptionSetting extends Component {
                                             <input
                                                 type={this.state.showPaytmKey ? 'text' : 'password'}
                                                 value={this.state.paytmMerchantKey}
-                                                onChange={(e) => this.setState({ paytmMerchantKey: e.target.value })}
+                                                onChange={(e) => this.setState(prev => ({ paytmMerchantKey: e.target.value, clearSecrets: { ...(prev.clearSecrets || {}), paytm: false } }))}
                                                 placeholder={this.state.configuredProviders?.paytm ? '✓ Configured securely — enter to replace' : 'Merchant Key from Paytm Dashboard'}
                                                 className={`w-full text-xs p-2.5 bg-white border rounded-lg text-slate-900 font-mono outline-none pr-20 ${
                                                     this.state.configuredProviders?.paytm && !this.state.paytmMerchantKey ? 'border-sky-300 placeholder:text-sky-700 focus:border-sky-500' : 'border-slate-300 focus:border-sky-500'
                                                 }`}
                                             />
                                             {this.state.configuredProviders?.paytm && !this.state.paytmMerchantKey ? (
-                                                <div className="absolute right-2.5 top-2.5 text-[10px] font-bold text-sky-600 bg-sky-50 px-2 py-0.5 rounded border border-sky-200">
-                                                    {this.state.maskedKeys?.paytm}
+                                                <div className="absolute right-2.5 top-1.5 flex items-center gap-1 text-[10px] font-bold text-sky-600 bg-sky-50 px-1.5 py-1 rounded border border-sky-200">
+                                                    <span>{this.state.maskedKeys?.paytm}</span>
+                                                    <button type="button" className="underline hover:no-underline" onClick={() => this.clearPaymentSecret('paytm')} aria-label="Clear paytm credential">Clear</button>
                                                 </div>
                                             ) : (
                                                 <button type="button" onClick={() => this.setState((s) => ({ showPaytmKey: !s.showPaytmKey }))} className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-700 cursor-pointer">
@@ -3108,15 +3187,16 @@ class SubscriptionSetting extends Component {
                                             <input
                                                 type={this.state.showPhonePeKey ? 'text' : 'password'}
                                                 value={this.state.phonepeSaltKey}
-                                                onChange={(e) => this.setState({ phonepeSaltKey: e.target.value })}
+                                                onChange={(e) => this.setState(prev => ({ phonepeSaltKey: e.target.value, clearSecrets: { ...(prev.clearSecrets || {}), phonepe: false } }))}
                                                 placeholder={this.state.configuredProviders?.phonepe ? '✓ Configured securely — enter to replace' : 'Salt Key from PhonePe Dashboard'}
                                                 className={`w-full text-xs p-2.5 bg-white border rounded-lg text-slate-900 font-mono outline-none pr-20 ${
                                                     this.state.configuredProviders?.phonepe && !this.state.phonepeSaltKey ? 'border-violet-300 placeholder:text-violet-700 focus:border-violet-500' : 'border-slate-300 focus:border-violet-500'
                                                 }`}
                                             />
                                             {this.state.configuredProviders?.phonepe && !this.state.phonepeSaltKey ? (
-                                                <div className="absolute right-2.5 top-2.5 text-[10px] font-bold text-violet-600 bg-violet-50 px-2 py-0.5 rounded border border-violet-200">
-                                                    {this.state.maskedKeys?.phonepe}
+                                                <div className="absolute right-2.5 top-1.5 flex items-center gap-1 text-[10px] font-bold text-violet-600 bg-violet-50 px-1.5 py-1 rounded border border-violet-200">
+                                                    <span>{this.state.maskedKeys?.phonepe}</span>
+                                                    <button type="button" className="underline hover:no-underline" onClick={() => this.clearPaymentSecret('phonepe')} aria-label="Clear phonepe credential">Clear</button>
                                                 </div>
                                             ) : (
                                                 <button type="button" onClick={() => this.setState((s) => ({ showPhonePeKey: !s.showPhonePeKey }))} className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-700 cursor-pointer">
@@ -3138,6 +3218,7 @@ class SubscriptionSetting extends Component {
                                 </div>
                             </div>
                         </div>
+                        </fieldset>
                     </div>
                 )}
 
@@ -3854,4 +3935,7 @@ class SubscriptionSetting extends Component {
     }
 }
 
-export default SubscriptionSetting;
+export default function SubscriptionSettingWithSession(props) {
+    const { isSuperAdmin } = useAdminSession();
+    return <SubscriptionSetting {...props} isSuperAdmin={isSuperAdmin === true} />;
+}

@@ -41,7 +41,9 @@ test('email, payment and AI tests have distinct routes and email toggles wait fo
     fs.readFile('src/services/adminAiSettings.js', 'utf8'),
   ]);
   assert.match(email, /\/api\/email\/admin\/test-connection/);
-  // assert.match(payment, /\/api\/admin\/payment\/test-provider/);
+  const paymentOperations = await fs.readFile('src/firestore/dbOperations.js', 'utf8');
+  assert.match(paymentOperations, /\/api\/admin\/payment\/test-provider/);
+  assert.match(payment, /testPaymentProvider/);
   assert.match(ai, /\/api\/admin\/ai\/test-provider/);
   assert.match(email, /setEnabledTemplates\(updated\)/);
   assert.ok(email.indexOf('setEnabledTemplates(updated)') > email.indexOf('if (!response.ok || !data.success)'));

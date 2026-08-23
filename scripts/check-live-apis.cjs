@@ -1,6 +1,9 @@
 const https = require('https');
 
-const API_KEY = process.env.VITE_FIREBASE_KEY || 'AIzaSyDigXT7n4Pyf-8WHQtvjHa0wGvJ86nmrwc';
+const API_KEY = process.env.FIREBASE_WEB_API_KEY || process.env.VITE_FIREBASE_KEY;
+const ADMIN_EMAIL = process.env.LIVE_ADMIN_EMAIL;
+const ADMIN_PASSWORD = process.env.LIVE_ADMIN_PASSWORD;
+if (!API_KEY || !ADMIN_EMAIL || !ADMIN_PASSWORD) throw new Error('Set FIREBASE_WEB_API_KEY (or VITE_FIREBASE_KEY), LIVE_ADMIN_EMAIL, and LIVE_ADMIN_PASSWORD.');
 const BASE_URL = 'https://airesume.projectdemo.guru';
 
 async function fetchJson(url, options = {}) {
@@ -24,8 +27,8 @@ async function fetchJson(url, options = {}) {
 
 async function login() {
     const postData = JSON.stringify({
-        email: 'forensic@projectdemo.guru',
-        password: 'Forensic@2026!',
+        email: ADMIN_EMAIL,
+        password: ADMIN_PASSWORD,
         returnSecureToken: true
     });
     const { status, data } = await fetchJson(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${API_KEY}`, { method: 'POST', body: postData });

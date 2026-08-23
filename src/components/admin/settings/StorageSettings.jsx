@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
-import { FaCloud, FaCheck, FaTimes, FaSpinner, FaHdd, FaAws, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaCloud, FaCheck, FaTimes, FaSpinner } from 'react-icons/fa';
 
 const StorageSettings = () => {
     const [storageConfig, setStorageConfig] = useState({
@@ -14,8 +14,6 @@ const StorageSettings = () => {
         s3BucketName: '',
         s3Region: 'us-east-1',
     });
-    const [showCloudinarySecret, setShowCloudinarySecret] = useState(false);
-    const [showS3Secret, setShowS3Secret] = useState(false);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [statusMessage, setStatusMessage] = useState(null);
@@ -38,8 +36,9 @@ const StorageSettings = () => {
         e.preventDefault();
         setSaving(true);
         try {
-            await saveSystemSettings('storage', storageConfig);
-            setStatusMessage({ type: 'success', text: 'Cloud storage engine settings saved successfully!' });
+            await saveSystemSettings('storage', { provider: 'firebase' });
+            setStorageConfig(current => ({ ...current, provider: 'firebase' }));
+            setStatusMessage({ type: 'success', text: 'Cloud storage engine settings saved successfully. Empty secrets were preserved; Clear actions were applied explicitly.' });
         } catch (error) {
             setStatusMessage({ type: 'error', text: `Failed to save settings: ${error.message}` });
         } finally {
@@ -74,9 +73,10 @@ const StorageSettings = () => {
                 <h3 className="text-base font-semibold text-slate-800 flex items-center gap-2 mb-1">
                     <FaCloud className="text-sky-500" /> Media Storage Provider Engine
                 </h3>
-                <p className="text-xs text-slate-500 mb-4">
-                    Select where uploaded avatars, logos, and user attachments will be permanently stored.
+                <p className="text-xs text-slate-500 mb-2">
+                    Application uploads currently use the Firebase Storage bucket supplied by the deployment. Provider changes are not client-only settings: a Cloudinary or S3 adapter must be installed on the backend before it can be enabled.
                 </p>
+                <p className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-2 text-[11px] font-semibold text-amber-800">Cloudinary and S3 are shown as planned integrations and are unavailable in this deployment. The backend rejects attempts to enable an unimplemented adapter.</p>
 
                 <div className="mb-4">
                     <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
@@ -88,139 +88,16 @@ const StorageSettings = () => {
                         onChange={handleChange}
                         className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none"
                     >
-                        <option value="firebase">Firebase Storage (Default)</option>
-                        <option value="cloudinary">Cloudinary CDN Engine</option>
-                        <option value="s3">Amazon Web Services (AWS S3)</option>
+                        <option value="firebase">Firebase Storage (implemented)</option>
+                        <option value="cloudinary" disabled>Cloudinary CDN Engine (adapter unavailable)</option>
+                        <option value="s3" disabled>Amazon Web Services (S3 adapter unavailable)</option>
                     </select>
                 </div>
 
-                {storageConfig.provider === 'cloudinary' && (
-                    <div className="p-4 bg-white rounded border border-slate-200 space-y-4">
-                        <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Cloudinary Settings</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">Cloud Name</label>
-                                <input
-                                    type="text"
-                                    name="cloudinaryCloudName"
-                                    value={storageConfig.cloudinaryCloudName}
-                                    onChange={handleChange}
-                                    placeholder="demo_cloud"
-                                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">API Key</label>
-                                <input
-                                    type="text"
-                                    name="cloudinaryApiKey"
-                                    value={storageConfig.cloudinaryApiKey}
-                                    onChange={handleChange}
-                                    placeholder="123456789012345"
-                                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none"
-                                />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">API Secret</label>
-                                <div className="relative">
-                                    <input
-                                        type={showCloudinarySecret ? "text" : "password"}
-                                        name="cloudinaryApiSecret"
-                                        value={storageConfig.cloudinaryApiSecret}
-                                        onChange={handleChange}
-                                        placeholder="secret_key"
-                                        className="w-full pl-3 pr-10 py-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowCloudinarySecret(!showCloudinarySecret)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 focus:outline-none"
-                                        title={showCloudinarySecret ? "Hide Secret" : "Show Secret"}
-                                    >
-                                        {showCloudinarySecret ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
-                                    </button>
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">Upload Preset</label>
-                                <input
-                                    type="text"
-                                    name="cloudinaryUploadPreset"
-                                    value={storageConfig.cloudinaryUploadPreset}
-                                    onChange={handleChange}
-                                    placeholder="unsigned_preset"
-                                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {storageConfig.provider === 's3' && (
-                    <div className="p-4 bg-white rounded border border-slate-200 space-y-4">
-                        <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
-                            <FaAws className="text-amber-500 text-lg" /> AWS S3 Bucket Settings
-                        </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">AWS Access Key ID</label>
-                                <input
-                                    type="text"
-                                    name="s3AccessKeyId"
-                                    value={storageConfig.s3AccessKeyId}
-                                    onChange={handleChange}
-                                    placeholder="AKIA..."
-                                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">AWS Secret Access Key</label>
-                                <div className="relative">
-                                    <input
-                                        type={showS3Secret ? "text" : "password"}
-                                        name="s3SecretAccessKey"
-                                        value={storageConfig.s3SecretAccessKey}
-                                        onChange={handleChange}
-                                        placeholder="Secret Key"
-                                        className="w-full pl-3 pr-10 py-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowS3Secret(!showS3Secret)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 focus:outline-none"
-                                        title={showS3Secret ? "Hide Secret" : "Show Secret"}
-                                    >
-                                        {showS3Secret ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">S3 Bucket Name</label>
-                                <input
-                                    type="text"
-                                    name="s3BucketName"
-                                    value={storageConfig.s3BucketName}
-                                    onChange={handleChange}
-                                    placeholder="my-resume-bucket"
-                                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">AWS Region</label>
-                                <input
-                                    type="text"
-                                    name="s3Region"
-                                    value={storageConfig.s3Region}
-                                    onChange={handleChange}
-                                    placeholder="us-east-1"
-                                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none"
-                                />
-                            </div>
-                        </div>
+                {storageConfig.provider !== 'firebase' && (
+                    <div className="rounded border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900">
+                        <p className="font-bold">{storageConfig.provider === 's3' ? 'Amazon S3' : 'Cloudinary'} is not available</p>
+                        <p className="mt-1">This checkout has no server-side adapter for the selected provider. No credential editor is exposed and the backend will reject attempts to enable it.</p>
                     </div>
                 )}
             </div>

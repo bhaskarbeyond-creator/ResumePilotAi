@@ -40,27 +40,36 @@ test('AI Settings UI uses distinct load/save/test APIs and confirms success only
   ]);
   assert.match(service, /\/api\/admin\/ai-settings/);
   assert.match(service, /\/api\/admin\/ai\/test-provider/);
-  // assert.doesNotMatch(payment, /\/api\/admin\/test-connection/);
+  // Payment configuration is intentionally not allowed to reuse the email
+  // connection route. This protects the regression where a provider test
+  // returned success for the wrong subsystem.
+  assert.doesNotMatch(payment, /\/api\/admin\/test-connection/);
+  assert.match(payment, /getAdminPaymentSettings/);
   assert.match(ui, /await saveAdminAiSettings/);
   assert.match(ui, /setGlobalMessage\(\{ type: 'success'/);
   assert.match(ui, /RECENT_AUTH_REQUIRED/);
   assert.match(ui, /Reauthenticate and retry/);
   assert.match(ui, /AI_SETTINGS_CONFLICT/);
   assert.match(ui, /Reload AI settings successfully before saving/);
-  assert.match(ui, /disabled=\{saving \|\| loadFailed\}/);
+  assert.match(ui, /disabled=\{saving \|\| loadFailed \|\| !isSuperAdmin\}/);
   assert.doesNotMatch(`${ui}\n${service}`, /localStorage|sessionStorage/);
 });
 
 test('AI, payment and email provider tests use unambiguous namespaces', async () => {
-  const [index, ai, payment, email] = await Promise.all([
+  const [index, ai, payment, paymentService, email] = await Promise.all([
     fs.readFile('backend/index.js', 'utf8'),
     fs.readFile('src/services/adminAiSettings.js', 'utf8'),
     fs.readFile('src/components/admin/settings/subscriptionsSettings.jsx', 'utf8'),
+    fs.readFile('src/firestore/dbOperations.js', 'utf8'),
     fs.readFile('src/components/admin/settings/EmailSmtpSettings.jsx', 'utf8'),
   ]);
   assert.doesNotMatch(index, /app\.post\('\/api\/admin\/test-connection'/);
   assert.match(ai, /\/api\/admin\/ai\/test-provider/);
-  // assert.match(payment, /\/api\/admin\/payment\/test-provider/);
+  assert.match(paymentService, /\/api\/admin\/payment\/test-provider/);
+  assert.match(paymentService, /\/api\/platform\/payment-settings/);
+  assert.match(payment, /testPaymentProvider/);
+  assert.match(payment, /razorpayKeySecret/);
+  assert.match(payment, /configuredProviders/);
   assert.match(email, /\/api\/email\/admin\/test-connection/);
 });
 

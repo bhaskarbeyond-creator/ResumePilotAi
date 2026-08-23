@@ -1,6 +1,11 @@
 const https = require('https');
 
-const API_KEY = process.env.VITE_FIREBASE_KEY || 'AIzaSyDigXT7n4Pyf-8WHQtvjHa0wGvJ86nmrwc';
+const API_KEY = process.env.FIREBASE_WEB_API_KEY || process.env.VITE_FIREBASE_KEY;
+const ADMIN_EMAIL = process.env.LIVE_ADMIN_EMAIL;
+const ADMIN_PASSWORD = process.env.LIVE_ADMIN_PASSWORD;
+const DELETE_EMAIL = process.env.LIVE_DELETE_EMAIL;
+const DELETE_PASSWORD = process.env.LIVE_DELETE_PASSWORD;
+if (!API_KEY || !ADMIN_EMAIL || !ADMIN_PASSWORD || !DELETE_EMAIL || !DELETE_PASSWORD) throw new Error('Set FIREBASE_WEB_API_KEY (or VITE_FIREBASE_KEY), LIVE_ADMIN_EMAIL, LIVE_ADMIN_PASSWORD, LIVE_DELETE_EMAIL, and LIVE_DELETE_PASSWORD.');
 const BASE_URL = 'https://airesume.projectdemo.guru';
 
 async function fetchJson(url, options = {}) {
@@ -24,8 +29,8 @@ async function fetchJson(url, options = {}) {
 
 async function login() {
     const postData = JSON.stringify({
-        email: 'forensic@projectdemo.guru',
-        password: 'Forensic@2026!',
+        email: ADMIN_EMAIL,
+        password: ADMIN_PASSWORD,
         returnSecureToken: true
     });
     const { status, data } = await fetchJson(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${API_KEY}`, { method: 'POST', body: postData });
@@ -58,8 +63,8 @@ async function run() {
         // 1. Create a dummy user directly via Firebase REST API
         console.log('\n--- Creating dummy user to delete ---');
         const signUpData = JSON.stringify({
-            email: 'dummy-to-delete@projectdemo.guru',
-            password: 'Password123!',
+            email: DELETE_EMAIL,
+            password: DELETE_PASSWORD,
             returnSecureToken: true
         });
         const signUpRes = await fetchJson(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${API_KEY}`, { method: 'POST', body: signUpData });
@@ -68,7 +73,7 @@ async function run() {
 
         // 2. Call the delete-user admin endpoint to delete the user!
         console.log('\n--- Testing /api/admin/delete-user endpoint ---');
-        const deleteRes = await checkApi('/api/admin/delete-user', token, 'POST', { uid, email: 'dummy-to-delete@projectdemo.guru' });
+        const deleteRes = await checkApi('/api/admin/delete-user', token, 'POST', { uid, email: DELETE_EMAIL });
         
         if (deleteRes.status === 200 && deleteRes.data.success) {
             console.log('\n✅ DELETE_USER_ACCOUNT returned 200 OK! The 500 error is fixed!');

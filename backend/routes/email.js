@@ -8,6 +8,8 @@ const fs = require('fs');
 const path = require('path');
 const { assertPublicNetworkTarget } = require('../security/network');
 const { enterpriseConsoleUrl, resolvePublicAppOrigin, sanitizeAbsoluteHttpUrl, assertNoForbiddenEmailHost } = require('../services/publicAppUrl');
+const { requireRecentAdminAuthentication } = require('../security/auth');
+const { recordAdminAuditLog } = require('../security/adminAudit');
 
 // In-memory Outbox Log Store (persisted to DB if available)
 let emailLogsStore = [];
@@ -104,8 +106,11 @@ async function getEmailConfig(db) {
         if (!incoming || typeof incoming !== 'object' || Array.isArray(incoming)) return current;
         const merged = { ...current, ...incoming };
         // Across env, local file and legacy Firestore, blank means "no replacement".
-        // Credential removal requires a separate deliberate workflow.
-        if (!String(incoming.password || '').trim()) merged.password = current.password;
+        // An explicit passwordCleared tombstone is the only deliberate removal
+        // path; deployment environment credentials still take precedence and
+        // therefore cannot be cleared from the UI.
+        if (incoming.passwordCleared === true) merged.password = '';
+        else if (!String(incoming.password || '').trim()) merged.password = current.password;
         return merged;
     };
     const localConfig = readLocalConfig();
@@ -139,6 +144,13 @@ async function getEmailConfig(db) {
         if (localConfig.fallbackSmtp) config.fallbackSmtp = mergeSection(config.fallbackSmtp, localConfig.fallbackSmtp);
         if (localConfig.imap) config.imap = mergeSection(config.imap, localConfig.imap);
         if (localConfig.enabledTemplates) config.enabledTemplates = { ...config.enabledTemplates, ...localConfig.enabledTemplates };
+    }
+
+    // Deployment-managed passwords always win over lower-precedence Firestore or
+    // local-file values. In particular, a stale passwordCleared tombstone must
+    // never disable a credential that was supplied by the environment.
+    for (const [section, envKey] of [['smtp', 'SMTP_PASS'], ['fallbackSmtp', 'FALLBACK_SMTP_PASS'], ['imap', 'IMAP_PASS']]) {
+        if (String(process.env[envKey] || '').trim()) config[section].password = process.env[envKey];
     }
 
     return config;
@@ -193,8 +205,10 @@ function normalizedMailSection(section, input, localCurrent = {}) {
     }
     const replacementPassword = String(input.password || '');
     const localPassword = String(localCurrent.password || '');
-    if (replacementPassword.trim()) output.password = replacementPassword.slice(0, 4096);
-    else if (localPassword.trim()) output.password = localPassword;
+    if (replacementPassword.trim()) {
+        output.password = replacementPassword.slice(0, 4096);
+        output.passwordCleared = false;
+    } else if (localPassword.trim()) output.password = localPassword;
     return output;
 }
 
@@ -1254,6 +1268,47 @@ async function dispatchMailWithFallback(config, mailOptions) {
 
 // --- API ENDPOINTS ---
 
+async function recordMailAdminAudit(req, { action, outcome = 'SUCCESS', severity = 'MEDIUM', metadata = {}, requestId = null } = {}) {
+    const db = req.app?.get('db');
+    const admin = req.app?.get('firebaseAdmin');
+    if (!db || !admin?.firestore?.FieldValue) return null;
+    return recordAdminAuditLog(db, admin, {
+        actorUid: req.user?.uid,
+        actorEmail: req.user?.email,
+        actorRole: String(req.user?.claims?.role || 'ADMIN').toUpperCase(),
+        action,
+        category: 'communications.email',
+        severity,
+        outcome,
+        method: req.method,
+        pathname: req.originalUrl || req.path,
+        statusCode: outcome === 'SUCCESS' ? 200 : 500,
+        metadata,
+        requestId: requestId || null,
+    });
+}
+
+function recentAuthForMailSecretMutation(req, res, next) {
+    const input = req.body || {};
+    const clear = Object.values(input.clearSecrets || {}).some(value => value === true);
+    const suppliedPassword = ['smtp', 'fallbackSmtp', 'imap']
+        .map(section => input[section]?.password)
+        .some(value => String(value || '').trim() !== '');
+    if (!clear && !suppliedPassword) return next();
+    // Let malformed requests reach the normal schema validator so callers get
+    // the precise 400 response; no write occurs before validation. A valid
+    // secret-bearing request still requires the Super Admin recent-auth gate.
+    const encryptedTransport = section => {
+        const value = input[section];
+        if (!value || typeof value !== 'object' || !value.password) return true;
+        const encryption = String(value.encryption || '').toLowerCase();
+        const port = Number(value.port);
+        return (section === 'imap' ? encryption === 'ssl' && port === 993 : ['ssl', 'tls', 'starttls'].includes(encryption));
+    };
+    if (!['smtp', 'fallbackSmtp', 'imap'].every(encryptedTransport)) return next();
+    return requireRecentAdminAuthentication(req, res, next);
+}
+
 // 0. Circuit Breaker Control & Status Endpoints
 router.get('/admin/circuit-breaker-status', (req, res) => {
     const now = Date.now();
@@ -1268,10 +1323,22 @@ router.get('/admin/circuit-breaker-status', (req, res) => {
     });
 });
 
-router.post('/admin/reset-circuit-breaker', (req, res) => {
+router.post('/admin/reset-circuit-breaker', requireRecentAdminAuthentication, async (req, res) => {
+    const previous = { failures: primaryConsecutiveFailures, until: primaryCircuitBreakerUntil };
     primaryConsecutiveFailures = 0;
     primaryCircuitBreakerUntil = 0;
-    res.json({ success: true, message: 'Circuit breaker reset successfully! Primary SMTP restored to Operational state.' });
+    const audit = await recordMailAdminAudit(req, {
+        action: 'EMAIL_CIRCUIT_BREAKER_RESET',
+        severity: 'HIGH',
+        metadata: { previousFailures: previous.failures, previousOpenUntil: previous.until ? new Date(previous.until).toISOString() : null },
+        requestId: res.locals?.requestId,
+    });
+    if (!audit) {
+        primaryConsecutiveFailures = previous.failures;
+        primaryCircuitBreakerUntil = previous.until;
+        return res.status(503).json({ success: false, code: 'AUDIT_WRITE_FAILED', error: 'Circuit-breaker state was not changed because the audit event could not be persisted.', requestId: res.locals?.requestId });
+    }
+    return res.json({ success: true, message: 'Circuit breaker reset successfully! Primary SMTP restored to Operational state.' });
 });
 
 // 0b. Custom Template Customization Endpoints
@@ -1281,16 +1348,31 @@ router.post('/admin/save-template-customization', async (req, res) => {
     if (!templateType || !html) {
         return res.status(400).json({ success: false, error: 'templateType and html are required.' });
     }
+    const previousTemplates = { ...customTemplatesStore };
     customTemplatesStore[templateType] = { subject: subject || '', html, updatedAt: new Date().toISOString() };
-    
+    let previousRemoteTemplates = null;
+
     try {
         const local = readLocalConfig() || {};
         local.customTemplates = customTemplatesStore;
-        writeLocalConfig(local);
+        if (!writeLocalConfig(local)) throw Object.assign(new Error('Email template local persistence failed'), { code: 'EMAIL_CONFIG_WRITE_FAILED', status: 503 });
         if (db) {
+            const previousRemote = await db.collection('data').doc('custom_email_templates').get();
+            previousRemoteTemplates = previousRemote.exists ? (previousRemote.data() || {}) : {};
             await db.collection('data').doc('custom_email_templates').set(customTemplatesStore, { merge: true });
         }
-        res.json({ success: true, message: `Template '${templateType}' customized successfully!` });
+        const audit = await recordMailAdminAudit(req, {
+            action: 'EMAIL_TEMPLATE_CUSTOMIZATION_UPDATED',
+            metadata: { templateType: String(templateType).slice(0, 80) },
+            requestId: res.locals?.requestId,
+        });
+        if (!audit) {
+            customTemplatesStore = previousTemplates;
+            writeLocalConfig({ customTemplates: previousTemplates });
+            if (db && previousRemoteTemplates !== null) await db.collection('data').doc('custom_email_templates').set(previousRemoteTemplates);
+            return res.status(503).json({ success: false, code: 'AUDIT_WRITE_FAILED', error: 'The template was not confirmed because its audit event could not be persisted.', requestId: res.locals?.requestId });
+        }
+        return res.json({ success: true, message: `Template '${templateType}' customized successfully!` });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
@@ -1301,7 +1383,12 @@ router.get('/admin/custom-templates', (req, res) => {
 });
 
 // 1. Test Outbound SMTP Socket Connection (Supports type='smtp' and type='fallback_smtp')
-router.post('/admin/test-connection', async (req, res) => {
+function recentAuthForEmailTest(req, res, next) {
+    if (!['smtp', 'fallback_smtp'].includes(req.body?.type)) return next();
+    return requireRecentAdminAuthentication(req, res, next);
+}
+
+router.post('/admin/test-connection', recentAuthForEmailTest, async (req, res) => {
     const { type } = req.body;
 
     if (type === 'fallback_smtp') {
@@ -1345,14 +1432,25 @@ router.post('/admin/test-connection', async (req, res) => {
             };
 
             const info = await transporter.sendMail(mailOptions);
+            const audit = await recordMailAdminAudit(req, {
+                action: 'EMAIL_PROVIDER_TESTED',
+                metadata: { provider: 'fallback_smtp', host: fallbackConfig.host, result: 'SUCCESS' },
+                requestId: res.locals?.requestId,
+            });
+            if (!audit) return res.status(503).json({ success: false, code: 'AUDIT_WRITE_FAILED', error: 'The fallback SMTP test ran but its audit event could not be persisted.', requestId: res.locals?.requestId });
             return res.json({
                 success: true,
                 messageId: info.messageId,
                 message: `Secondary Fallback Relay verified! Test email sent to ${fallbackConfig.adminEmail}`
             });
         } catch (err) {
-            console.error('[Fallback Test Error]:', err);
-            return res.status(500).json({ success: false, error: err.message });
+            console.error('[Fallback Test Error]:', err.code || err.name || 'provider_error');
+            await recordMailAdminAudit(req, {
+                action: 'EMAIL_PROVIDER_TESTED', outcome: 'FAILURE', severity: 'MEDIUM',
+                metadata: { provider: 'fallback_smtp', result: 'FAILURE', errorCategory: err.code || err.name || 'PROVIDER_ERROR' },
+                requestId: res.locals?.requestId,
+            });
+            return res.status(503).json({ success: false, code: 'EMAIL_PROVIDER_TEST_FAILED', error: 'Fallback SMTP verification failed.', requestId: res.locals?.requestId });
         }
     }
 
@@ -1400,16 +1498,29 @@ router.post('/admin/test-connection', async (req, res) => {
         };
 
         const info = await transporter.sendMail(mailOptions);
+        const audit = await recordMailAdminAudit(req, {
+            action: 'EMAIL_PROVIDER_TESTED',
+            metadata: { provider: 'smtp', host: smtpConfig.host, result: 'SUCCESS' },
+            requestId: res.locals?.requestId,
+        });
+        if (!audit) return res.status(503).json({ success: false, code: 'AUDIT_WRITE_FAILED', error: 'The SMTP test ran but its audit event could not be persisted.', requestId: res.locals?.requestId });
         return res.json({
             success: true,
             message: `SMTP Verified! Live test mail dispatched to ${smtpConfig.adminEmail}. (Message ID: ${info.messageId})`
         });
 
     } catch (err) {
-        console.error('SMTP Connection Test Error:', err);
-        return res.status(500).json({
+        console.error('SMTP Connection Test Error:', err.code || err.name || 'provider_error');
+        await recordMailAdminAudit(req, {
+            action: 'EMAIL_PROVIDER_TESTED', outcome: 'FAILURE', severity: 'MEDIUM',
+            metadata: { provider: 'smtp', result: 'FAILURE', errorCategory: err.code || err.name || 'PROVIDER_ERROR' },
+            requestId: res.locals?.requestId,
+        });
+        return res.status(503).json({
             success: false,
-            error: err.message || 'Failed to connect to SMTP server. Check host, port, or password.'
+            code: 'EMAIL_PROVIDER_TEST_FAILED',
+            error: 'SMTP verification failed. Check the configured host and credentials.',
+            requestId: res.locals?.requestId,
         });
     }
 });
@@ -1442,7 +1553,7 @@ router.get('/admin/deliverability', async (req, res) => {
     // Derive the domain to inspect from the configured sender, never from
     // caller-supplied input, so this cannot be used as a DNS probe primitive.
     const config = await getEmailConfig(req.app.get('db'));
-    const sender = config?.smtp?.user || config?.smtp?.from || '';
+    const sender = config?.smtp?.username || config?.smtp?.user || config?.smtp?.from || '';
     const domain = String(sender).includes('@') ? String(sender).split('@').pop().trim().toLowerCase() : '';
 
     if (!domain) {
@@ -1562,21 +1673,46 @@ router.get('/admin/deliverability', async (req, res) => {
 });
 
 // Save validated SMTP/IMAP settings while blank secret fields preserve every configured source.
-router.post('/admin/save-smtp', async (req, res) => {
+router.post('/admin/save-smtp', recentAuthForMailSecretMutation, async (req, res) => {
     try {
         const { smtp, fallbackSmtp, imap, enabledTemplates } = req.body || {};
         if (!smtp && !fallbackSmtp && !imap && !enabledTemplates) return res.status(400).json({ success: false, error: 'Email settings are required.' });
         const local = readLocalConfig() || {};
         const data = {};
-        if (smtp) data.smtp = normalizedMailSection('smtp', smtp, local.smtp);
-        if (fallbackSmtp) data.fallbackSmtp = normalizedMailSection('fallbackSmtp', fallbackSmtp, local.fallbackSmtp);
-        if (imap) data.imap = normalizedMailSection('imap', imap, local.imap);
+        const clearSecrets = req.body?.clearSecrets && typeof req.body.clearSecrets === 'object' ? req.body.clearSecrets : {};
+        const environmentSecret = key => String(process.env[key] || '').trim();
+        if (clearSecrets.smtp === true && environmentSecret('SMTP_PASS', 'smtp')) return res.status(409).json({ success: false, code: 'INFRASTRUCTURE_SECRET_CANNOT_CLEAR', error: 'Primary SMTP credentials are deployment-managed and cannot be cleared from the Admin UI.' });
+        if (clearSecrets.fallbackSmtp === true && environmentSecret('FALLBACK_SMTP_PASS', 'fallbackSmtp')) return res.status(409).json({ success: false, code: 'INFRASTRUCTURE_SECRET_CANNOT_CLEAR', error: 'Fallback SMTP credentials are deployment-managed and cannot be cleared from the Admin UI.' });
+        if (clearSecrets.imap === true && environmentSecret('IMAP_PASS', 'imap')) return res.status(409).json({ success: false, code: 'INFRASTRUCTURE_SECRET_CANNOT_CLEAR', error: 'IMAP credentials are deployment-managed and cannot be cleared from the Admin UI.' });
+        if (smtp) {
+            data.smtp = normalizedMailSection('smtp', smtp, local.smtp);
+            if (clearSecrets.smtp === true) { data.smtp.password = ''; data.smtp.passwordCleared = true; }
+        }
+        if (fallbackSmtp) {
+            data.fallbackSmtp = normalizedMailSection('fallbackSmtp', fallbackSmtp, local.fallbackSmtp);
+            if (clearSecrets.fallbackSmtp === true) { data.fallbackSmtp.password = ''; data.fallbackSmtp.passwordCleared = true; }
+        }
+        if (imap) {
+            data.imap = normalizedMailSection('imap', imap, local.imap);
+            if (clearSecrets.imap === true) { data.imap.password = ''; data.imap.passwordCleared = true; }
+        }
         if (enabledTemplates) data.enabledTemplates = normalizeTemplateToggles(enabledTemplates);
 
         const success = writeLocalConfig(data);
         if (success) {
             console.log('[Email Config] Settings & Template toggles saved to', CONFIG_FILE);
-            return res.json({ success: true, message: 'Email settings saved to server.' });
+            const database = req.app.get('db');
+            const firebaseAdmin = req.app.get('firebaseAdmin');
+            if (database && firebaseAdmin?.firestore?.FieldValue) {
+                await database.collection('security_audit_logs').doc().set({
+                    action: 'SMTP_SETTINGS_UPDATED',
+                    actorUid: req.user?.uid || 'unknown',
+                    requestId: res.locals?.requestId || null,
+                    credentialsCleared: Object.entries(clearSecrets).filter(([, value]) => value === true).map(([key]) => key),
+                    createdAt: firebaseAdmin.firestore.FieldValue.serverTimestamp(),
+                });
+            }
+            return res.json({ success: true, message: 'Email settings saved to server.', credentialPolicy: 'EMPTY_PRESERVES_EXPLICIT_CLEAR_REQUIRED' });
         }
         return res.status(500).json({ success: false, error: 'Failed to write config file.' });
     } catch (err) {
@@ -1586,7 +1722,7 @@ router.post('/admin/save-smtp', async (req, res) => {
 });
 
 // 2. Test Inbound IMAP Connection Socket
-router.post('/admin/test-imap', async (req, res) => {
+router.post('/admin/test-imap', requireRecentAdminAuthentication, async (req, res) => {
     try {
         const stored = (await getEmailConfig(req.app.get('db'))).imap || {};
         const imapConfig = {
@@ -1601,11 +1737,22 @@ router.post('/admin/test-imap', async (req, res) => {
             return res.status(400).json({ success: false, error: 'IMAP requires TLS on port 993.' });
         }
         const imapTarget = await assertPublicNetworkTarget(imapConfig.host);
-        const result = await verifyImapConnection(imapConfig, imapTarget.addresses[0]);
+        await verifyImapConnection(imapConfig, imapTarget.addresses[0]);
+        const audit = await recordMailAdminAudit(req, {
+            action: 'EMAIL_PROVIDER_TESTED',
+            metadata: { provider: 'imap', host: imapConfig.host, result: 'SUCCESS' },
+            requestId: res.locals?.requestId,
+        });
+        if (!audit) return res.status(503).json({ success: false, code: 'AUDIT_WRITE_FAILED', error: 'The IMAP test ran but its audit event could not be persisted.', requestId: res.locals?.requestId });
         return res.json({ success: true, message: `IMAP Socket Verified! Connected to ${imapConfig.host}:${imapConfig.port}` });
     } catch (err) {
-        console.error('IMAP Test Error:', err);
-        return res.status(500).json({ success: false, error: err.message || 'IMAP connection failed.' });
+        console.error('IMAP Test Error:', err.code || err.name || 'provider_error');
+        await recordMailAdminAudit(req, {
+            action: 'EMAIL_PROVIDER_TESTED', outcome: 'FAILURE', severity: 'MEDIUM',
+            metadata: { provider: 'imap', result: 'FAILURE', errorCategory: err.code || err.name || 'PROVIDER_ERROR' },
+            requestId: res.locals?.requestId,
+        });
+        return res.status(503).json({ success: false, code: 'EMAIL_PROVIDER_TEST_FAILED', error: 'IMAP verification failed.', requestId: res.locals?.requestId });
     }
 });
 

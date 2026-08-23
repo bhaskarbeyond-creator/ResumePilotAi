@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import fire from '../../../conf/fire';
 import { useAdminSession } from '../AdminContext';
-import { decommissionTenant } from '../../../services/platformApi';
+import { decommissionTenant, getTenantDetail, renameTenant } from '../../../services/platformApi';
 import {
   FiServer, FiRefreshCw, FiPlus, FiSearch, FiShieldOff,
   FiPlay, FiCheck, FiAlertTriangle, FiX, FiEye
@@ -20,6 +20,10 @@ export default function PlatformTenants() {
   // asserted against as page content.
   const [actionError, setActionError] = useState(null);
   const [selectedTenant, setSelectedTenant] = useState(null);
+  const [selectedDetail, setSelectedDetail] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState(null);
+  const [detailRefresh, setDetailRefresh] = useState(0);
   const [decommissionReason, setDecommissionReason] = useState('');
   const [confirmAction, setConfirmAction] = useState(null);
 
@@ -27,6 +31,8 @@ export default function PlatformTenants() {
   const [showProvisionModal, setShowProvisionModal] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [slug, setSlug] = useState('');
+  const [editingTenantName, setEditingTenantName] = useState('');
+  const [renaming, setRenaming] = useState(false);
   const [isolationTier, setIsolationTier] = useState('STANDARD');
   const [provisioning, setProvisioning] = useState(false);
 
@@ -69,9 +75,44 @@ export default function PlatformTenants() {
     const focus = new URLSearchParams(window.location.search).get('focus');
     if (focus && tenants.length) {
       const match = tenants.find(item => item.id === focus);
-      if (match) setSelectedTenant(match);
+      if (match) { setSelectedTenant(match); setEditingTenantName(match.displayName || ''); }
     }
   }, [tenants]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!selectedTenant?.id) {
+      setSelectedDetail(null);
+      setDetailError(null);
+      return undefined;
+    }
+    setDetailLoading(true);
+    setDetailError(null);
+    getTenantDetail(selectedTenant.id)
+      .then(result => { if (!cancelled) setSelectedDetail(result); })
+      .catch(error => { if (!cancelled) setDetailError(error.message || 'Tenant detail is unavailable.'); })
+      .finally(() => { if (!cancelled) setDetailLoading(false); });
+    return () => { cancelled = true; };
+  }, [selectedTenant?.id, detailRefresh]);
+
+  const handleRename = async () => {
+    if (!selectedTenant || !isSuperAdmin || renaming) return;
+    const name = editingTenantName.trim();
+    if (name.length < 2 || name.length > 120) { setActionError('Tenant name must contain between 2 and 120 characters.'); return; }
+    setRenaming(true);
+    setActionError(null);
+    try {
+      const result = await renameTenant(selectedTenant.id, name);
+      const updated = { ...selectedTenant, ...(result.tenant || {}), displayName: result.tenant?.displayName || name };
+      setSelectedTenant(updated);
+      setTenants(current => current.map(item => item.id === updated.id ? { ...item, ...updated } : item));
+      setNotification(`Organization renamed to "${updated.displayName}".`);
+    } catch (error) {
+      setActionError(error.message || 'Tenant could not be renamed.');
+    } finally {
+      setRenaming(false);
+    }
+  };
 
   const handleLifecycle = async (tenant, nextState) => {
     const verb = nextState === 'SUSPENDED' ? 'Suspend' : 'Reactivate';
@@ -346,6 +387,8 @@ export default function PlatformTenants() {
             <FiRefreshCw className="animate-spin h-6 w-6 text-indigo-600 mx-auto mb-2" />
             Loading tenant registry…
           </div>
+        ) : error ? (
+          <div className="p-12 text-center text-sm text-amber-800">Tenant registry is unavailable. No empty tenant result is inferred from the failed request.</div>
         ) : filteredTenants.length === 0 ? (
           <div className="p-12 text-center text-sm text-slate-500">
             No enterprise tenants found.
@@ -387,7 +430,7 @@ export default function PlatformTenants() {
                       </span>
                     </td>
                     <td className="py-3 px-4 text-right space-x-1">
-                      <button type="button" onClick={() => setSelectedTenant(tenant)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-50 text-slate-700 border border-slate-200 font-bold hover:bg-slate-100 text-[11px]">
+                      <button type="button" onClick={() => { setSelectedTenant(tenant); setEditingTenantName(tenant.displayName || ''); }} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-50 text-slate-700 border border-slate-200 font-bold hover:bg-slate-100 text-[11px]">
                         <FiEye /> Details
                       </button>
                       {tenant.lifecycleState === 'ACTIVE' ? (
@@ -510,6 +553,7 @@ export default function PlatformTenants() {
               <div>
                 <h3 className="text-lg font-bold text-slate-900">{selectedTenant.displayName}</h3>
                 <p className="text-xs font-mono text-slate-500">{selectedTenant.id}</p>
+                {isSuperAdmin && <div className="mt-2 flex gap-2"><label className="sr-only" htmlFor="platform-tenant-name">Tenant display name</label><input id="platform-tenant-name" value={editingTenantName} onChange={event => setEditingTenantName(event.target.value)} className="min-w-0 flex-1 rounded-lg border border-slate-200 px-2 py-1 text-xs" maxLength={120} /><button type="button" onClick={handleRename} disabled={renaming} className="rounded-lg bg-indigo-600 px-2 py-1 text-[11px] font-bold text-white disabled:opacity-50">{renaming ? 'Saving…' : 'Rename'}</button></div>}
               </div>
               <button type="button" onClick={() => setSelectedTenant(null)} className="p-1 text-slate-400"><FiX /></button>
             </div>
@@ -519,6 +563,17 @@ export default function PlatformTenants() {
               <div><dt className="uppercase text-[10px] font-extrabold text-slate-400">Isolation</dt><dd className="font-semibold">{selectedTenant.isolationTier}</dd></div>
               <div><dt className="uppercase text-[10px] font-extrabold text-slate-400">Region</dt><dd className="font-semibold">{selectedTenant.region || 'default'}</dd></div>
             </dl>
+            {detailLoading && <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-500" role="status">Loading tenant users, memberships, usage, security, M2M, audit, and configuration…</div>}
+            {detailError && <div className="mt-5 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800" role="alert">{detailError}<button type="button" className="ml-2 font-bold underline" onClick={() => setDetailRefresh(value => value + 1)}>Retry</button></div>}
+            {selectedDetail && <div className="mt-5 space-y-3" data-testid="tenant-detail-sections">
+              <div className="grid grid-cols-2 gap-2">
+                {Object.entries(selectedDetail.overview || {}).map(([key, item]) => <div key={key} className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-[10px] font-extrabold uppercase text-slate-400">{key.replaceAll('_', ' ')}</p><p className="mt-1 text-sm font-bold text-slate-900">{item?.value === null || item?.value === undefined ? 'Unavailable' : item.value}</p><p className="text-[10px] text-slate-500">{item?.source || 'unknown'}</p></div>)}
+              </div>
+              <div className="rounded-xl border border-slate-200 p-3"><h4 className="text-xs font-extrabold text-slate-800">Users &amp; memberships</h4><p className="mt-1 text-[11px] text-slate-500">{selectedDetail.users?.source || 'unknown'} · {selectedDetail.memberships?.items?.length ?? 'Unavailable'} membership records</p><div className="mt-2 max-h-32 space-y-1 overflow-y-auto">{(selectedDetail.users?.items || []).slice(0, 20).map(user => <div key={user.id} className="flex items-center justify-between gap-2 text-[11px]"><span className="truncate font-semibold">{user.email || user.id}</span><span className="shrink-0 text-slate-500">{user.roles?.join(', ') || user.status || 'UNKNOWN'}</span></div>)}</div></div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><div className="rounded-xl border border-slate-200 p-3"><h4 className="text-xs font-extrabold text-slate-800">Usage</h4><p className="mt-1 text-[11px] text-slate-500">Source: {selectedDetail.usage?.source || 'unknown'}</p><p className="mt-2 text-xs">Requests: {selectedDetail.usage?.requests ?? 'Unavailable'}</p><p className="text-xs">Tokens: {selectedDetail.usage?.inputTokens === null ? 'Unavailable' : `${(selectedDetail.usage?.inputTokens || 0) + (selectedDetail.usage?.outputTokens || 0)}`}</p></div><div className="rounded-xl border border-slate-200 p-3"><h4 className="text-xs font-extrabold text-slate-800">Security &amp; M2M</h4><p className="mt-1 text-[11px] text-slate-500">Security: {selectedDetail.security?.source || 'unknown'} · M2M: {selectedDetail.m2m?.source || 'unknown'}</p><p className="mt-2 text-xs">Service accounts: {selectedDetail.m2m?.accounts?.length ?? 'Unavailable'}</p></div></div>
+              <div className="rounded-xl border border-slate-200 p-3"><h4 className="text-xs font-extrabold text-slate-800">Audit &amp; activity</h4><p className="mt-1 text-[11px] text-slate-500">Source: {selectedDetail.audit?.source || 'unknown'}</p><div className="mt-2 space-y-1">{(selectedDetail.activity?.events || []).slice(0, 5).map(event => <div key={event.id} className="flex justify-between gap-2 text-[10px]"><span className="font-semibold">{event.action}</span><span className="text-slate-400">{event.occurredAt ? new Date(event.occurredAt).toLocaleString() : 'time unavailable'}</span></div>)}</div></div>
+              <div className="rounded-xl border border-slate-200 p-3"><h4 className="text-xs font-extrabold text-slate-800">Configuration</h4><p className="mt-1 text-[11px] text-slate-500">Source: {selectedDetail.configuration?.source || 'unknown'} · Plan: {selectedDetail.plan?.value || 'not recorded'}</p></div>
+            </div>}
             <div className="mt-4 flex flex-wrap gap-2 text-xs">
               <a className="px-3 py-1.5 rounded-lg bg-slate-100 font-bold" href={`/enterprise?tab=audit&tenant=${encodeURIComponent(selectedTenant.id)}`}>Tenant audit</a>
               <a className="px-3 py-1.5 rounded-lg bg-slate-100 font-bold" href={`/enterprise?tab=usage&tenant=${encodeURIComponent(selectedTenant.id)}`}>Usage</a>

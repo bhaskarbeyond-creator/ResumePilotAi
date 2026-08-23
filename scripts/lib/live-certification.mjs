@@ -127,7 +127,10 @@ export class Recorder {
    */
   finish(outputFile) {
     const counts = this.summarise();
-    const verdict = counts.FAIL > 0 ? 'FAIL' : (counts.BLOCKED > 0 ? 'INCOMPLETE' : 'PASS');
+    // A skipped or blocked check is evidence of incomplete certification, not
+    // green. This is especially important for the inventory/CRUD tools, which
+    // intentionally avoid destructive production mutations by default.
+    const verdict = counts.FAIL > 0 ? 'FAIL' : (counts.BLOCKED > 0 || counts.SKIPPED > 0 ? 'INCOMPLETE' : 'PASS');
 
     const report = {
       script: this.name,

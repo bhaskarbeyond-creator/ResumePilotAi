@@ -35,10 +35,12 @@ function maskApiKey(key) {
 function publicAiSettings(input = {}) {
   if (input.provider && !PROVIDERS.includes(input.provider)) throw errorWith('AI_SETTINGS_VALIDATION_ERROR', 'Unsupported primary AI provider.', 400);
   const provider = PROVIDERS.includes(input.provider) ? input.provider : 'gemini';
+  const temperatureValue = Number(input.temperature ?? 0.7);
+  const maxTokensValue = Number(input.maxTokens ?? 2048);
   const result = {
     provider,
-    temperature: Math.max(0, Math.min(1, Number(input.temperature ?? 0.7))),
-    maxTokens: Math.max(256, Math.min(4096, Math.floor(Number(input.maxTokens) || 2048))),
+    temperature: Number.isFinite(temperatureValue) ? Math.max(0, Math.min(1, temperatureValue)) : 0.7,
+    maxTokens: Number.isFinite(maxTokensValue) ? Math.max(256, Math.min(4096, Math.floor(maxTokensValue))) : 2048,
     enableFallback: input.enableFallback !== false,
     enableImportModule: input.enableImportModule === true,
   };
@@ -53,24 +55,30 @@ function publicAiSettings(input = {}) {
 
 function secretPatch(input = {}, existing = {}, legacy = {}) {
   const patch = {};
+  const clearSecrets = input.clearSecrets && typeof input.clearSecrets === 'object' ? input.clearSecrets : {};
   for (const provider of PROVIDERS) {
     const rawKey = String(input[SECRET_FIELDS[provider]] || '').trim();
     const isMasked = MASKED_PATTERN.test(rawKey);
+    const explicitlyCleared = clearSecrets[provider] === true;
     const existingKey = existing[provider]?.apiKey || legacy[SECRET_FIELDS[provider]] || '';
-    
+
     if (rawKey && !isMasked) {
       if (rawKey.length < 12 || rawKey.length > 512) {
         throw errorWith('AI_SETTINGS_VALIDATION_ERROR', `Invalid ${provider} API key format.`, 400);
       }
     }
-    
-    const finalKey = (!isMasked && rawKey) ? rawKey : existingKey;
+
+    // Blank or masked fields preserve the current credential. Only the explicit
+    // clearSecrets flag removes it; this prevents a reload/save from erasing a
+    // working provider while still giving operators a deliberate revocation path.
+    const finalKey = explicitlyCleared ? '' : ((!isMasked && rawKey) ? rawKey : existingKey);
     const model = String(input[MODEL_FIELDS[provider]] || '').trim();
     patch[provider] = {
       ...(existing[provider] || {}),
       ...(finalKey ? { apiKey: finalKey } : {}),
       ...(model ? { model } : {}),
     };
+    if (explicitlyCleared) delete patch[provider].apiKey;
   }
   return patch;
 }
@@ -98,7 +106,12 @@ async function loadAiAdminSettings(db, environment = process.env) {
     maskedKeys[provider] = maskApiKey(rawKey);
   }
 
-  const settings = Object.fromEntries(Object.entries(publicAi).filter(([key]) => !/(?:apiKey|secret|token|password)$/i.test(key)));
+  const publicFields = new Set([
+    'provider', 'temperature', 'maxTokens', 'enableFallback', 'enableImportModule',
+    ...Object.values(ENABLE_FIELDS), ...Object.values(MODEL_FIELDS),
+  ]);
+  const settings = Object.fromEntries(Object.entries(publicAi).filter(([key, value]) => publicFields.has(key)
+    && (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')));
   settings.provider = PROVIDERS.includes(settings.provider) ? settings.provider : runtime.primary;
   settings.temperature = settings.temperature ?? runtime.temperature;
   settings.maxTokens = settings.maxTokens ?? runtime.maxTokens;
@@ -127,7 +140,26 @@ async function saveAiAdminSettings({ db, admin, input, expectedRevision = 0, act
     const currentRevision = Number(publicSnapshot.data()?.aiRevision || currentSecrets._revision || 0);
     if (Number(expectedRevision) !== currentRevision) throw errorWith('AI_SETTINGS_CONFLICT', 'AI settings changed after this panel loaded. Refresh before saving.', 409);
     nextRevision = currentRevision + 1;
-    transaction.set(secretRef, { ...secretPatch(input, currentSecrets, legacyAi), _revision: nextRevision }, { merge: true });
+    const providerPatch = secretPatch(input, currentSecrets, legacyAi);
+    const clearSecrets = input.clearSecrets && typeof input.clearSecrets === 'object' ? input.clearSecrets : {};
+    const envKeyNames = { gemini: 'GEMINI_API_KEY', nvidia: 'NVIDIA_API_KEY', openai: 'OPENAI_API_KEY', groq: 'GROQ_API_KEY', openrouter: 'OPENROUTER_API_KEY', deepseek: 'DEEPSEEK_API_KEY' };
+    for (const provider of PROVIDERS) {
+      if (clearSecrets[provider] === true && String(process.env[envKeyNames[provider]] || '').trim()) {
+        throw errorWith('INFRASTRUCTURE_SECRET_CANNOT_CLEAR', `${provider} is deployment-managed and cannot be cleared from the Admin UI.`, 409);
+      }
+      if (clearSecrets[provider] === true) {
+        // Firestore field-delete sentinels make the explicit clear durable. A
+        // missing/blank field never reaches this branch and therefore preserves
+        // the existing secret.
+        providerPatch[provider].apiKey = admin.firestore.FieldValue.delete();
+      }
+    }
+    transaction.set(secretRef, { ...providerPatch, _revision: nextRevision }, { merge: true });
+    if (Object.values(clearSecrets).some(value => value === true) && legacySnapshot.exists) {
+      const legacyDelete = {};
+      for (const provider of PROVIDERS) if (clearSecrets[provider] === true) legacyDelete[`ai.${SECRET_FIELDS[provider]}`] = admin.firestore.FieldValue.delete();
+      transaction.set(legacyRef, legacyDelete, { merge: true });
+    }
     transaction.set(publicRef, { ai: safePublic, aiRevision: nextRevision }, { merge: true });
     transaction.set(db.collection('security_audit_logs').doc(), {
       action: 'AI_PROVIDER_SETTINGS_UPDATED',

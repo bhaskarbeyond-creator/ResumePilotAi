@@ -6,7 +6,7 @@ const { normalizeRequestedTenantId, normalizeRequestedWorkspaceId } = require('.
 const { hasTenantPermission, requireAnyTenantPermission, requireTenantPermission } = require('../enterprise/tenantPolicy');
 const { applyTenantAiPolicy, assertNoClientAuthority, buildTenantAiOperation } = require('../enterprise/tenantAi');
 const { buildLegacyPrompt, generateWithProviders, loadProviderConfiguration, parseAiResponse } = require('../services/aiRuntime');
-const { enterpriseFeatureEnabled } = require('../enterprise/featureFlags');
+const { enterpriseFeatureEnabled, enterpriseFeatureEnabledAsync } = require('../enterprise/featureFlags');
 const { M2M_ALLOWED_ENDPOINTS, SUPPORT_ALLOWED_ENDPOINTS, endpointAllowed } = require('../enterprise/enterpriseAuth');
 
 const router = express.Router();
@@ -19,18 +19,24 @@ function runtimeSecret(envName, developmentFallback) {
 
 // This authenticated status endpoint lets an explicitly enabled frontend explain a
 // server-side rollout mismatch without probing tenant data or creating control-plane state.
-router.get('/status', (req, res) => {
-  return res.json({ enabled: enterpriseFeatureEnabled(), apiVersion: 'tenant-foundation-v1' });
+router.get('/status', async (req, res) => {
+  const enabled = await enterpriseFeatureEnabledAsync(req.app.get('db'));
+  return res.json({ enabled, apiVersion: 'tenant-foundation-v1', source: req.app.get('db') ? 'runtime-flag-or-environment' : 'environment-or-default' });
 });
 
 // Keep the foundation dark in existing production environments until the data-plane,
 // IAM, migration, and operational gates have been explicitly enabled. This prevents a
 // newly deployed route from creating control-plane records accidentally.
-router.use((req, res, next) => {
-  if (!enterpriseFeatureEnabled()) {
-    return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'API route not found', requestId: res.locals?.requestId } });
+router.use(async (req, res, next) => {
+  try {
+    const enabled = await enterpriseFeatureEnabledAsync(req.app.get('db'));
+    if (!enabled) {
+      return res.status(404).json({ error: { code: 'ENTERPRISE_DISABLED', message: 'Enterprise tenancy is disabled for this deployment.', configurationState: 'DISABLED', requestId: res.locals?.requestId } });
+    }
+    return next();
+  } catch (error) {
+    return res.status(503).json({ error: { code: 'ENTERPRISE_FLAG_UNAVAILABLE', message: 'Enterprise rollout state could not be determined.', configurationState: 'UNKNOWN', requestId: res.locals?.requestId } });
   }
-  return next();
 });
 
 // The global API boundary already verified the credential (Firebase bearer token or

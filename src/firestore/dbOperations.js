@@ -432,19 +432,17 @@ export async function get7Users() {
     }
 }
 
-// Get All Users
-export async function getAllUsers() {
-    const db = fire.firestore();
-    const snapshot = await db.collection('users').get();
-    if (!snapshot.empty) {
-        const users = [];
-        snapshot.forEach((doc) => {
-            const data = doc.data() || {};
-            users.push({ id: doc.id, ...data, userId: data.userId || doc.id });
-        });
-        return users;
+// Get All Users through the authoritative Admin API. Firebase Auth is joined
+// with the product profile on the server so role, disabled, verification, and
+// MFA state cannot be stale or client-forged.
+export async function getAllUsers(options = {}) {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(options || {})) {
+        if (value !== undefined && value !== null && value !== '') params.set(key, String(value));
     }
-    return [];
+    const { response, data } = await fetchAdminWithReauth(`/api/admin/users${params.toString() ? `?${params}` : ''}`);
+    if (!response.ok || !data.success) throw new Error(data.error?.message || data.error || 'Unable to load the authoritative user directory.');
+    return data.users || [];
 }
 
 // Get all subscriptions
@@ -465,17 +463,36 @@ export async function checkIfAdmin(uid) {
     if (!authUser || authUser.uid !== uid) return false;
     try {
         const token = await authUser.getIdTokenResult();
-        return ['ADMIN', 'SUPER_ADMIN'].includes(String(token.claims.role || '').toUpperCase());
+        return ['ADMIN', 'SUPER_ADMIN'].includes(String(token.claims.role || '').toUpperCase()) || token.claims.permissions?.includes('*');
     } catch (error) {
         console.warn('Unable to verify admin claim:', error.message);
         return false;
     }
 }
-// Get one user by exact UID or email without logging personal data.
+// Get one user by exact UID or email. Admin callers use Firebase Auth-backed
+// server data; ordinary callers retain the owner-scoped profile lookup.
 export async function getUserById(identifier) {
-    const db = fire.firestore();
     const value = String(identifier || '').trim();
     if (!value || value.length > 320) return false;
+    const currentUser = fire.auth().currentUser;
+    let isAdmin = false;
+    try {
+        const claims = currentUser ? await currentUser.getIdTokenResult() : null;
+        isAdmin = ['ADMIN', 'SUPER_ADMIN'].includes(String(claims?.claims?.role || '').toUpperCase()) || claims?.claims?.permissions?.includes('*');
+        if (isAdmin) {
+            const route = /^[A-Za-z0-9:_-]{1,128}$/.test(value)
+                ? `/api/admin/users/${encodeURIComponent(value)}`
+                : `/api/admin/users?q=${encodeURIComponent(value)}&limit=5`;
+            const { response, data } = await fetchAdminWithReauth(route);
+            if (!response.ok) return false;
+            return data.user || data.users?.[0] || false;
+        }
+    } catch (_) {
+        // An Admin caller must never fall back to a stale Firestore-only profile
+        // when the authoritative Auth-backed endpoint is unavailable.
+        if (isAdmin || currentUser) return false;
+    }
+    const db = fire.firestore();
     if (/^[A-Za-z0-9:_-]{1,128}$/.test(value)) {
         const snapshot = await db.collection('users').doc(value).get();
         if (!snapshot.exists) return false;
@@ -534,9 +551,19 @@ async function updateUserByAdminApi(userId, changes) {
     return result;
 }
 
-export async function editUser(userId, _email, membership, _membershipsEnds, _isA = null, suspended = null) {
-    const changes = {};
+export async function editUser(userId, _email, membership, membershipsEnds, _isA = null, suspended = null, expected = {}) {
+    const changes = {
+        ...(expected.expectedMembership ? { expectedMembership: expected.expectedMembership } : {}),
+        ...(typeof expected.expectedSuspended === 'boolean' ? { expectedSuspended: expected.expectedSuspended } : {}),
+    };
     if (membership) changes.membership = membership;
+    if (membership === 'Premium' && membershipsEnds) {
+        const raw = String(membershipsEnds);
+        const parsed = /^\d{2}-\d{2}-\d{4}$/.test(raw)
+            ? `${raw.slice(6, 10)}-${raw.slice(3, 5)}-${raw.slice(0, 2)}`
+            : raw;
+        if (Number.isFinite(new Date(parsed).getTime())) changes.membershipEnds = new Date(parsed).toISOString();
+    }
     // Role changes use setUserAdminStatus and require SUPER_ADMIN; ordinary profile edits
     // cannot smuggle a role mutation alongside billing/suspension fields.
     if (suspended !== null) changes.suspended = Boolean(suspended);
@@ -588,11 +615,13 @@ export async function setUserRole(userId, newRole, expectedRole = undefined) {
 }
 
 export async function makeUserAdminByEmail(email) {
-    const db = fire.firestore();
     try {
-        const query = await db.collection('users').where('email', '==', email.trim().toLowerCase()).limit(1).get();
-        if (query.empty) return { success: false, error: `User with email ${email} not found.` };
-        return setUserAdminStatus(query.docs[0].id, true);
+        const query = String(email || '').trim().toLowerCase();
+        const { response, data } = await fetchAdminWithReauth(`/api/admin/users?q=${encodeURIComponent(query)}&limit=5`);
+        if (!response.ok || !data.success) return { success: false, error: data.error?.message || data.error || 'User directory is unavailable.' };
+        const match = (data.users || []).find(user => String(user.email || '').toLowerCase() === query);
+        if (!match) return { success: false, error: `User with email ${email} not found.` };
+        return setUserAdminStatus(match.id, true, match.role === 'ADMIN');
     } catch (error) {
         return { success: false, error: error.message };
     }
@@ -902,27 +931,13 @@ export async function submitEmployerApplication(userId, applicationData) {
     }
 }
 
-// Get all employer applications (admin function)
-export async function getAllEmployerApplications() {
-    const db = fire.firestore();
-    try {
-        const snapshot = await db.collection('employerApplications').orderBy('submittedAt', 'desc').get();
-        if (!snapshot.empty) {
-            const applications = [];
-            snapshot.forEach((doc) => {
-                applications.push({
-                    id: doc.id,
-                    ...doc.data(),
-                });
-            });
-            return applications;
-        } else {
-            return [];
-        }
-    } catch (error) {
-        console.error('Error getting employer applications:', error);
-        throw error;
-    }
+// Get all employer applications through the authenticated moderation API.
+export async function getAllEmployerApplications(options = {}) {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(options || {})) if (value !== undefined && value !== null && value !== '') params.set(key, String(value));
+    const { response, data } = await fetchAdminWithReauth(`/api/admin/employer-applications${params.toString() ? `?${params}` : ''}`);
+    if (!response.ok || !data.success) throw new Error(data.error?.message || data.error || 'Employer applications are unavailable.');
+    return data.applications || [];
 }
 
 async function reviewEmployerApplication(userId, status, reason = '', expectedStatus = undefined) {
@@ -1067,66 +1082,12 @@ export async function deleteCompany(companyId, expectedRevision = 0) {
 
 // Admin functions for company management
 // Get all companies (admin function)
-export async function getAllCompanies() {
-    const db = fire.firestore();
-    try {
-        const snapshot = await db.collection('companies').orderBy('createdAt', 'desc').get();
-        if (snapshot.empty) return [];
-
-        const companies = [];
-        snapshot.forEach((doc) => {
-            companies.push({ id: doc.id, ...doc.data() });
-        });
-
-        // The admin console shows per-company job and application counts. Those
-        // were previously rendered as `stats?.totalJobs || 0`, but nothing ever
-        // populated `stats`, so every company reported a hard zero regardless of
-        // how many jobs it had. Derive the real figures from the jobs collection
-        // in a single read, and leave `stats` undefined if that read fails so the
-        // UI can say the data is unavailable instead of inventing a zero.
-        try {
-            const jobsSnapshot = await db.collection('jobs').get();
-            const byEmployer = new Map();
-
-            jobsSnapshot.forEach((doc) => {
-                const job = doc.data() || {};
-                const key = job.employerId || job.companyId;
-                if (!key) return;
-
-                const entry = byEmployer.get(key) || { totalJobs: 0, activeJobs: 0, totalApplications: 0, lastJobPosted: null };
-                entry.totalJobs += 1;
-                if (job.status === 'active') entry.activeJobs += 1;
-                entry.totalApplications += Number(job.applicationsCount) || 0;
-
-                const created = job.createdAt?.toDate?.() || job.createdAt || null;
-                if (created && (!entry.lastJobPosted || new Date(created) > new Date(entry.lastJobPosted))) {
-                    entry.lastJobPosted = created;
-                }
-
-                byEmployer.set(key, entry);
-            });
-
-            for (const company of companies) {
-                // A company with no jobs genuinely has zero, which is a real
-                // measurement and must be shown as such.
-                company.stats = byEmployer.get(company.employerId) || byEmployer.get(company.id) || {
-                    totalJobs: 0,
-                    activeJobs: 0,
-                    totalApplications: 0,
-                    lastJobPosted: null,
-                };
-            }
-        } catch (error) {
-            // Deliberately non-fatal: the company list is still useful without
-            // counts. `stats` stays undefined so the UI reports it honestly.
-            console.error('Company statistics could not be derived:', error);
-        }
-
-        return companies;
-    } catch (error) {
-        console.error('Error getting all companies:', error);
-        throw error;
-    }
+export async function getAllCompanies(options = {}) {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(options || {})) if (value !== undefined && value !== null && value !== '') params.set(key, String(value));
+    const { response, data } = await fetchAdminWithReauth(`/api/admin/companies${params.toString() ? `?${params}` : ''}`);
+    if (!response.ok || !data.success) throw new Error(data.error?.message || data.error || 'Company directory is unavailable.');
+    return data.companies || [];
 }
 
 // Company moderation is server-authoritative, stale-target checked, and audited.
@@ -1686,94 +1647,16 @@ export async function updateApplicationStatusWithMessage(applicationId, status, 
 
 // Admin function: Get all jobs with pagination and filtering
 export async function getAllJobs(page = 1, itemsPerPage = 10, filters = {}) {
-    const db = fire.firestore();
     try {
-        // Status equality is applied in Firestore to reduce reads; text search remains
-        // page-consistent in memory because Firestore has no native substring query.
-        let allJobsQuery = db.collection('jobs');
-        if (filters.status && filters.status !== 'all') allJobsQuery = allJobsQuery.where('status', '==', filters.status);
-        const allJobsSnapshot = await allJobsQuery.get();
-
-        // Convert to array and apply server-side filtering
-        let allJobs = [];
-        allJobsSnapshot.forEach((doc) => {
-            const data = doc.data();
-            const createdDate = data.createdAt?.toDate?.() || data.createdAt;
-
-            const job = {
-                id: doc.id,
-                ...data,
-                // Convert Firestore timestamps to readable dates
-                createdAt: createdDate,
-                updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
-                deadline: data.deadline?.toDate?.() || data.deadline,
-                // Add fields expected by JobCard component
-                type: data.jobType, // Map jobType to type for compatibility
-                postedDate: formatTimeAgo(createdDate),
-                applicants: data.applicationsCount || 0,
-                // Format salary display
-                salary: formatSalaryRange(data.minSalary, data.maxSalary),
-            };
-            allJobs.push(job);
-        });
-
-        // Apply server-side filtering
-        let filteredJobs = allJobs;
-
-        // Apply search filter
-        if (filters.searchTerm) {
-            const searchTerm = filters.searchTerm.toLowerCase();
-            filteredJobs = filteredJobs.filter(
-                (job) => job.title?.toLowerCase().includes(searchTerm) || job.company?.toLowerCase().includes(searchTerm) || job.description?.toLowerCase().includes(searchTerm)
-            );
-        }
-
-        // Apply status filter
-        if (filters.status && filters.status !== 'all') {
-            filteredJobs = filteredJobs.filter((job) => job.status === filters.status);
-        }
-
-        // Apply job type filter
-        if (filters.jobType && filters.jobType.length > 0) {
-            filteredJobs = filteredJobs.filter((job) => filters.jobType.includes(job.jobType));
-        }
-
-        // Apply work mode filter
-        if (filters.workMode && filters.workMode.length > 0) {
-            filteredJobs = filteredJobs.filter((job) => filters.workMode.includes(job.workMode));
-        }
-
-        // Sort by creation date (newest first)
-        filteredJobs.sort((a, b) => {
-            const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
-            const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
-            return dateB - dateA;
-        });
-
-        // Calculate pagination metadata
-        const totalItems = filteredJobs.length;
-        const totalPages = Math.ceil(totalItems / itemsPerPage);
-
-        // Apply pagination and clamp stale page numbers after deletes/filter changes.
-        const currentPage = Math.min(Math.max(1, Number(page) || 1), Math.max(1, totalPages));
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
-        const paginatedJobs = filteredJobs.slice(startIndex, endIndex);
-
-        return {
-            success: true,
-            jobs: paginatedJobs,
-            pagination: {
-                totalItems,
-                totalPages,
-                currentPage,
-                hasNextPage: currentPage < totalPages,
-                hasPreviousPage: currentPage > 1,
-            },
-        };
+        const params = new URLSearchParams({ page: String(page), limit: String(itemsPerPage) });
+        if (filters.status && filters.status !== 'all') params.set('status', filters.status);
+        if (filters.searchTerm) params.set('search', filters.searchTerm);
+        const { response, data } = await fetchAdminWithReauth(`/api/admin/jobs?${params}`);
+        if (!response.ok || !data.success) throw new Error(data.error?.message || data.error || 'Job directory is unavailable.');
+        return data;
     } catch (error) {
         console.error('Error fetching all jobs for admin:', error);
-        return { success: false, error: error.message };
+        return { success: false, error: error.message, jobs: [], pagination: { totalItems: null, totalPages: null, currentPage: page, hasNextPage: null, hasPreviousPage: null } };
     }
 }
 
@@ -2043,6 +1926,10 @@ export async function setSubscriptionsData(state, month, quartarly, yearly, only
         phonepeId: options.phonepeId || '',
         phonepeSaltKey: options.phonepeSaltKey || '',
         phonepeSaltIndex: options.phonepeSaltIndex || '1',
+        // Secret fields are write-only. Empty values preserve existing secrets;
+        // clearing is an explicit, separately audited action in the backend.
+        clearSecrets: options.clearSecrets || {},
+        expectedRevision: options.expectedRevision,
         enableTax: options.enableTax !== undefined ? options.enableTax : true,
         taxName: options.taxName || 'GST',
         taxRate: options.taxRate !== undefined ? options.taxRate : 18,
@@ -2074,8 +1961,18 @@ export async function setSubscriptionsData(state, month, quartarly, yearly, only
 
 // Fetch Admin Payment Settings (Secrets Masked)
 export async function getAdminPaymentSettings() {
-    const { response, data } = await fetchAdminWithReauth('/api/admin/payment-settings', { method: 'GET' });
+    const { response, data } = await fetchAdminWithReauth('/api/platform/payment-settings', { method: 'GET' });
     if (!response.ok) throw new Error(data.error?.message || data.error || 'Unable to fetch payment settings.');
+    return data;
+}
+
+export async function testAdminPaymentProvider(type, credentials = {}) {
+    const { response, data } = await fetchAdminWithReauth('/api/admin/payment/test-provider', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, ...credentials }),
+    });
+    if (!response.ok || !data.success) throw new Error(data.error?.message || data.error || `The ${type} provider test failed.`);
     return data;
 }
 
@@ -2451,6 +2348,16 @@ export async function setStats(stats) {
 
 // Get frontend stats for landing pages
 export async function getFrontendStats() {
+    const currentUser = fire.auth().currentUser;
+    try {
+        const tokenResult = currentUser ? await currentUser.getIdTokenResult() : null;
+        const role = String(tokenResult?.claims?.role || '').toUpperCase();
+        if (['ADMIN', 'SUPER_ADMIN'].includes(role)) {
+            const { response, data } = await fetchAdminWithReauth('/api/admin/landing-content');
+            if (!response.ok) throw new Error(data.error?.message || data.error || 'Landing content is unavailable.');
+            return data.content;
+        }
+    } catch (_) { /* public readers use the curated Firestore fallback below */ }
     const db = fire.firestore();
     const statsRef = db.collection('data').doc('frontendstats');
     const snapshot = await statsRef.get();
@@ -2480,8 +2387,18 @@ export async function setFrontendStats(stats, expectedRevision = 0) {
         return response.ok && result.success ? result : { success: false, message: result.error || 'Unable to save landing content.', code: result.code };
     } catch (error) { return { success: false, message: error.message }; }
 }
-// Get ads
+// Admin reads use the server API; public readers use the public read-only
+// collection. A failed admin request is surfaced rather than silently returning
+// an empty list.
 export async function getAds() {
+    const currentUser = fire.auth().currentUser;
+    const tokenResult = currentUser ? await currentUser.getIdTokenResult().catch(() => null) : null;
+    const role = String(tokenResult?.claims?.role || '').toUpperCase();
+    if (['ADMIN', 'SUPER_ADMIN'].includes(role)) {
+        const { response, data } = await fetchAdminWithReauth('/api/admin/ads');
+        if (!response.ok || !data.success) throw new Error(data.error?.message || data.error || 'Advertisements are unavailable.');
+        return data.ads || [];
+    }
     const snapshot = await fire.firestore().collection('ads').get();
     return snapshot.docs.map(document => ({ id: document.id, ...document.data(), revision: Number(document.data()?.revision || 0) }));
 }
@@ -2714,6 +2631,24 @@ export async function getUserBlogPosts(authorUid, options = {}) {
 
 // List blog posts with filtering and pagination
 export async function listBlogPosts(options = {}) {
+    const currentUser = fire.auth().currentUser;
+    try {
+        const tokenResult = currentUser ? await currentUser.getIdTokenResult() : null;
+        const role = String(tokenResult?.claims?.role || '').toUpperCase();
+        if (['ADMIN', 'SUPER_ADMIN'].includes(role)) {
+            const params = new URLSearchParams();
+            if (options.status && options.status !== 'all') params.set('status', options.status);
+            if (options.categoryId) params.set('categoryId', options.categoryId);
+            if (options.search) params.set('search', options.search);
+            params.set('page', String(options.page || 1));
+            params.set('limit', String(options.limit || 10));
+            const { response, data } = await fetchAdminWithReauth(`/api/admin/blog/posts?${params}`);
+            if (!response.ok || !data.success) throw new Error(data.error?.message || data.error || 'Blog posts are unavailable.');
+            return data;
+        }
+    } catch (error) {
+        if (currentUser) console.warn('Admin blog API unavailable:', error.message);
+    }
     const db = fire.firestore();
     try {
         const {
@@ -2873,27 +2808,21 @@ export async function createBlogCategory(categoryData) {
     } catch (error) { return { success: false, error: error.message }; }
 }
 
-// List all blog categories
+// List blog categories. Admin editors use the authenticated API; public readers
+// retain the public Firestore read path.
 export async function listBlogCategories() {
+    const currentUser = fire.auth().currentUser;
+    const tokenResult = currentUser ? await currentUser.getIdTokenResult().catch(() => null) : null;
+    const role = String(tokenResult?.claims?.role || '').toUpperCase();
+    if (['ADMIN', 'SUPER_ADMIN'].includes(role)) {
+        const { response, data } = await fetchAdminWithReauth('/api/admin/blog/categories');
+        if (!response.ok || !data.success) throw new Error(data.error?.message || data.error || 'Blog categories are unavailable.');
+        return data.categories || [];
+    }
     const db = fire.firestore();
     try {
-        
-        const snapshot = await db.collection('blog_categories')
-            .orderBy('name', 'asc')
-            .get();
-        
-        const categories = [];
-        snapshot.forEach((doc) => {
-            const data = doc.data();
-            categories.push({
-                id: doc.id,
-                ...data,
-                createdAt: data.createdAt?.toDate?.() || data.createdAt,
-                updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
-            });
-        });
-        
-        return categories;
+        const snapshot = await db.collection('blog_categories').orderBy('name', 'asc').get();
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), createdAt: doc.data().createdAt?.toDate?.() || doc.data().createdAt, updatedAt: doc.data().updatedAt?.toDate?.() || doc.data().updatedAt }));
     } catch (error) {
         console.error('❌ Error listing blog categories:', error);
         return [];
@@ -4201,12 +4130,16 @@ export async function addGlobalRating(rating) {
 // get all reviews make sure every id is with there response
 
 export async function getAllReviews() {
-    const db = fire.firestore();
-    const reviewsRef = await db.collection('reviews').get();
-    const reviews = reviewsRef.docs.map((doc) => {
-        return { id: doc.id, ...doc.data() };
-    });
-    return reviews;
+    const currentUser = fire.auth().currentUser;
+    const tokenResult = currentUser ? await currentUser.getIdTokenResult().catch(() => null) : null;
+    const role = String(tokenResult?.claims?.role || '').toUpperCase();
+    if (['ADMIN', 'SUPER_ADMIN'].includes(role)) {
+        const { response, data } = await fetchAdminWithReauth('/api/admin/reviews');
+        if (!response.ok || !data.success) throw new Error(data.error?.message || data.error || 'Reviews are unavailable.');
+        return data.reviews || [];
+    }
+    const reviewsRef = await fire.firestore().collection('reviews').where('status', '==', 'approved').get();
+    return reviewsRef.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
 // get only 3 reviews
@@ -5130,20 +5063,25 @@ let systemSettingsRevisions = {};
 let inMemorySettingsCache = {};
 function redactClientSecrets(settings = {}) {
     const copy = typeof structuredClone === 'function' ? structuredClone(settings) : JSON.parse(JSON.stringify(settings || {}));
-    const secretFields = [
-        ['ai', ['geminiApiKey','nvidiaApiKey','openaiApiKey','groqApiKey','openrouterApiKey','deepseekApiKey']],
-        ['payments', ['stripeSecretKey','razorpayKeySecret','razorpayWebhookSecret','paytmMerchantKey','phonepeSaltKey']],
-        ['smtp', ['password']], ['fallbackSmtp', ['password']], ['imap', ['password']],
-        ['socialAuth', ['linkedinClientSecret','githubClientSecret']],
-        ['facebook', ['facebookAppSecret','facebookClientToken']],
-        ['storage', ['cloudinaryApiSecret','s3AccessKeyId','s3SecretAccessKey']],
-        ['twilio', ['authToken']], ['firebase', ['privateKey']]
-    ];
-    for (const [section, fields] of secretFields) {
-        if (!copy[section]) continue;
-        for (const field of fields) delete copy[section][field];
-    }
-    return copy;
+    const publicKeyFields = new Set([
+        'googleMapsApiKey', 'cloudinaryApiKey', 'stripePublishableKey',
+        'razorpayKeyId', 'paypalClientId', 'paytmMid', 'phonepeId',
+        'googleClientId', 'facebookAppId', 'linkedinClientId', 'githubClientId',
+        'gaMeasurementId', 'recaptchaSiteKey',
+    ]);
+    const secretField = (key, path) => {
+        if (key === 'apiKey') return path[0] !== 'firebase';
+        return /(?:secret|password|privateKey|authToken|clientToken|accessToken|refreshToken|serviceAccount|merchantKey|saltKey|keySecret|webhookSecret|s3AccessKey|apiKey)$/i.test(key)
+            && !publicKeyFields.has(key);
+    };
+    const redact = (value, path = []) => {
+        if (Array.isArray(value)) return value.map((item, index) => redact(item, [...path, String(index)]));
+        if (!value || typeof value !== 'object') return value;
+        return Object.fromEntries(Object.entries(value)
+            .filter(([key]) => !secretField(key, path))
+            .map(([key, item]) => [key, redact(item, [...path, key])]));
+    };
+    return redact(copy);
 }
 
 export async function getSystemSettings() {
@@ -5427,11 +5365,11 @@ export async function getSystemSettings() {
     }
 }
 
-export async function saveSystemSettings(category, data, { force = false } = {}) {
+export async function saveSystemSettings(category, data, { force = false, clearSecrets = {} } = {}) {
     let expectedRevision = force ? -1 : (systemSettingsRevisions[category] !== undefined ? Number(systemSettingsRevisions[category]) : -1);
     let { response, data: result } = await fetchAdminWithReauth(`/api/admin/settings/${encodeURIComponent(category)}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data, expectedRevision }),
+        body: JSON.stringify({ data, expectedRevision, clearSecrets }),
     });
 
     if (!force && (response?.status === 409 || result?.code === 'ADMIN_SETTINGS_CONFLICT')) {
@@ -5445,7 +5383,7 @@ export async function saveSystemSettings(category, data, { force = false } = {})
         expectedRevision = Number(systemSettingsRevisions[category]);
         const retry = await fetchAdminWithReauth(`/api/admin/settings/${encodeURIComponent(category)}`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ data, expectedRevision }),
+            body: JSON.stringify({ data, expectedRevision, clearSecrets }),
         });
         response = retry.response;
         result = retry.data;
@@ -5470,33 +5408,9 @@ export async function saveSystemSettings(category, data, { force = false } = {})
 }
 
 export async function getAllAdminTransactions() {
-    const db = fire.firestore();
-    const records = [];
-    const seen = new Set();
-    const statusLabel = raw => {
-        const status = String(raw || 'UNKNOWN').toUpperCase();
-        return status === 'ACTIVE' ? 'Completed' : status === 'REFUNDED' ? 'Refunded' : ['FAILED','CANCELLED','DECLINED'].includes(status) ? 'Failed' : ['PENDING','PENDING_PAYMENT','PAYMENT_CREATED','INITIATED'].includes(status) ? 'Pending' : ['PAID','SUCCESS','COMPLETED'].includes(status) ? 'Completed' : 'Unknown';
-    };
-    const dateValue = value => { const candidate = value?.toDate?.() || (value ? new Date(value) : null); return candidate && Number.isFinite(candidate.getTime?.()) ? candidate.toISOString() : null; };
-    const [ordersResult, invoicesResult, legacyResult] = await Promise.allSettled([
-        db.collection('payment_orders').orderBy('createdAt', 'desc').limit(200).get(),
-        db.collection('invoices').orderBy('createdAt', 'desc').limit(200).get(),
-        db.collection('transactions').orderBy('created_at', 'desc').limit(200).get(),
-    ]);
-    if (ordersResult.status === 'fulfilled') for (const document of ordersResult.value.docs) {
-        const data = document.data() || {}; seen.add(document.id);
-        records.push({ docId: document.id, source: 'payment_orders', transactionId: data.providerPaymentId || data.providerOrderId || document.id, providerReference: data.providerPaymentId || data.providerOrderId || '', userId: data.uid || '', customerEmail: data.customerEmail || '', customerName: data.customerName || '', customerGstin: data.customerGstin || '', planType: data.planId || 'Unknown', paimentType: data.provider || 'Unknown', price: Number(data.amount || 0) / 100, originalAmount: Number(data.originalAmount || data.amount || 0) / 100, discountAmount: Number(data.couponDiscount || 0) / 100, currency: String(data.currency || 'UNKNOWN').toUpperCase(), subtotal: Number(data.subtotal ?? data.amount ?? 0) / 100, taxAmount: Number(data.taxAmount || 0) / 100, taxRate: Number(data.taxRate || 0), sacCode: data.sacCode || '', invoiceNumber: data.invoiceNumber || '', status: statusLabel(data.status), rawStatus: String(data.status || 'UNKNOWN'), created_at: dateValue(data.createdAt), refundedAt: dateValue(data.refundedAt), refundReason: data.refundReason || '' });
-    }
-    if (invoicesResult.status === 'fulfilled') for (const document of invoicesResult.value.docs) {
-        const data = document.data() || {}; const id = data.paymentOrderId || data.transactionId || document.id; if (seen.has(id)) continue; seen.add(id);
-        records.push({ docId: data.paymentOrderId || document.id, source: 'invoices', transactionId: data.transactionId || id, providerReference: data.providerReference || '', userId: data.userId || '', customerEmail: data.customerEmail || '', customerName: data.customerName || '', customerGstin: data.customerGstin || '', planType: data.planId || data.planType || 'Unknown', paimentType: data.provider || data.paymentProvider || 'Unknown', price: Number(data.total ?? data.amount ?? 0), originalAmount: Number(data.originalAmount ?? data.total ?? data.amount ?? 0), discountAmount: Number(data.discountAmount || 0), currency: String(data.currency || 'UNKNOWN').toUpperCase(), subtotal: Number(data.subtotal || 0), taxAmount: Number(data.taxAmount || 0), taxRate: Number(data.taxRate || 0), sacCode: data.sacCode || '', invoiceNumber: data.invoiceNumber || document.id, status: statusLabel(data.status || data.paymentStatus), rawStatus: String(data.status || data.paymentStatus || 'UNKNOWN'), created_at: dateValue(data.createdAt || data.created_at), refundedAt: dateValue(data.refundedAt), refundReason: data.refundReason || '' });
-    }
-    if (legacyResult.status === 'fulfilled') for (const document of legacyResult.value.docs) {
-        const data = document.data() || {}; const id = data.transactionId || document.id; if (seen.has(id)) continue; seen.add(id);
-        records.push({ docId: document.id, source: 'legacy_transactions', transactionId: id, providerReference: data.providerReference || '', userId: data.userId || '', customerEmail: data.customerEmail || '', customerName: data.customerName || '', customerGstin: data.customerGstin || '', planType: data.planType || data.type || 'Unknown', paimentType: data.provider || data.paimentType || 'Unknown', price: Number(data.total ?? data.price ?? data.amount ?? 0), originalAmount: Number(data.originalAmount ?? data.total ?? data.price ?? data.amount ?? 0), discountAmount: Number(data.discountAmount || 0), currency: String(data.currency || 'UNKNOWN').toUpperCase(), subtotal: Number(data.subtotal ?? data.price ?? 0), taxAmount: Number(data.taxAmount || 0), taxRate: Number(data.taxRate || 0), sacCode: data.sacCode || '', invoiceNumber: data.invoiceNumber || '', status: statusLabel(data.status || data.paymentStatus), rawStatus: String(data.status || data.paymentStatus || 'UNKNOWN'), created_at: dateValue(data.created_at || data.createdAt), refundedAt: dateValue(data.refundedAt), refundReason: data.refundReason || '' });
-    }
-    if ([ordersResult, invoicesResult, legacyResult].every(result => result.status === 'rejected')) throw new Error('Billing ledgers are unavailable.');
-    return records.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+    const { response, data } = await fetchAdminWithReauth('/api/admin/payment-orders?limit=200');
+    if (!response.ok || !data.success) throw new Error(data.error?.message || data.error || 'Billing ledgers are unavailable.');
+    return data.records || [];
 }
 
 export async function refundOrderTransaction(docId, _transactionId, _userId, reason = 'Customer requested refund') {

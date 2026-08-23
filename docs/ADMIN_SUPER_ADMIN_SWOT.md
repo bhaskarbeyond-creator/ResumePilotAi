@@ -1,22 +1,33 @@
-# Admin & Super Admin SWOT Analysis
+# Admin + Super Admin SWOT
 
 ## Strengths
-- **Isolated Control Plane**: The `/adm` boundary is explicitly separated from the multi-tenant `/enterprise` boundary, ensuring tenant impersonation vulnerabilities are structurally impossible.
-- **Strict Role Boundaries**: Firebase Custom Claims correctly partition `Admin` vs `Super Admin` privileges at the network layer.
-- **Surgical Re-Auth**: Destructive API endpoints effectively utilize `auth_time` age constraints, forcing TOTP/password challenges strictly when necessary, reducing fatigue while maintaining security.
-- **E2E Playwright Coverage**: E2E tests structurally prove viewport responsive constraints and routing access logic.
+
+- Server-side Firebase token verification with revocation checking and claim-derived RBAC.
+- Explicit Super Admin boundary for platform flags, secrets, maintenance, provider tests, tenant decommission, operator changes, and permanent user deletion.
+- Firestore transactions/revisions for important settings, tenant lifecycle, CMS moderation, coupons, and payment orders.
+- Payment provider verification binds owner, internal order, plan, amount, currency, signature, and provider capture state.
+- Secret-free health/config/audit projections; public availability is boolean-only.
+- Enterprise tenancy uses structural Firestore partitions and server-resolved membership/workspace context.
+- Live tooling produces machine-readable PASS/FAIL/BLOCKED/INCOMPLETE evidence instead of manufacturing green status.
 
 ## Weaknesses
-- **Monolithic Firebase Dependency**: Global health relies entirely on Firebase/Firestore uptime.
-- **Local Sandbox Limitations**: Execution and deployment procedures are heavily reliant on manual infrastructure (Hostinger/PM2). The lack of automated GitHub Actions (CI/CD) makes "Production Verification" dependent on manual operator checklists.
-- **Data Deletion Cascades**: "Decommissioning" a tenant physically drops records via Cloud Functions, making granular rollback of a specific tenant extremely difficult without full snapshots.
+
+- Production/Cloudflare/Firebase credentials and provider accounts are unavailable to this sandbox, so live behavior remains unverified.
+- Some legacy product Admin modules retain older component patterns and direct public reads for public content; they now have server Admin list contracts for moderation data, but a full browser pass is still needed.
+- Firestore query/index availability can affect large list performance; bounded fallback reads are used but should be monitored.
+- The platform health collector uses bounded samples for outbox/tenant diagnostics and labels them as sampled.
 
 ## Opportunities
-- **Serverless Migration**: Transitioning PM2 backend services into Google Cloud Run or Firebase Functions for true elastic scaling and zero-downtime automated deployments.
-- **Infrastructure-as-Code (IaC)**: Terraform or Pulumi could codify the deployment pipeline, removing the "live production deployment gap".
-- **Advanced Telemetry**: Implementing Datadog or Sentry into the Admin Dashboard for proactive alerts rather than reactive `healthz` checks.
+
+- Add CI that runs `npm run inventory:api`, checks the generated manifest, and stamps backend/frontend SHA on every deployment.
+- Move all server-only credentials to a managed Secret Manager/KMS envelope rather than local JSON/`.env` paths.
+- Add a dedicated external worker heartbeat/lease record so worker health is measured, not declared.
+- Add Firestore aggregate counters for user/tenant/payment dashboards where count queries are too expensive.
+- Complete a single shared design-token layer for legacy Admin settings.
 
 ## Threats
-- **Deployment Human Error**: Without an automated rollback/deployment script, deploying a broken commit to PM2 requires manual SSH intervention, elongating MTTR (Mean Time To Recovery).
-- **Rate Limit Exhaustion**: A compromised Admin JWT could perform heavy read-queries against `/api/admin/users`, triggering Firestore billing alerts or quota limits.
-- **Firebase Emulator Drift**: Local tests pass beautifully on the Firebase Emulator, but edge-case rate limits or CDN (Cloudflare) caching rules on the live domain could yield unexpected 403s.
+
+- A stale frontend/backend pair can expose controls against an older API; SHA certification and no-cache identity endpoints reduce this risk.
+- Misconfigured environment secrets override runtime settings by design; the UI labels them infrastructure-owned and refuses clear operations.
+- A compromised Super Admin remains high impact; production MFA, recent auth, audit mirroring, token revocation, and destructive confirmations are defense in depth, not elimination of risk.
+- Provider outages, DNS changes, SMTP certificate failures, or missing Firestore indexes can degrade valid features; health status distinguishes those from disabled/not-configured capabilities.

@@ -15,6 +15,8 @@
 
 const os = require('os');
 const fs = require('fs');
+const { enterpriseFeatureEnabledAsync } = require('../enterprise/featureFlags');
+const { selectPaymentPair } = require('./paymentAdmin');
 
 /** Operational states surfaced to the Admin console. */
 const STATE = Object.freeze({
@@ -147,51 +149,76 @@ function resolvePaymentProviders(providerDoc, legacySubscriptions, publicConfig)
     if (legacy[key] !== undefined) return legacy[key] === true;
     return fallback;
   };
+  const select = ({ envId = '', envSecret = '', storedId = '', storedSecret = '', requiresId = true }) => {
+    const environmentId = String(envId || '').trim();
+    const environmentSecret = String(envSecret || '').trim();
+    const persistedId = String(storedId || '').trim();
+    const persistedSecret = String(storedSecret || '').trim();
+    if ((!requiresId || environmentId) && environmentSecret) return { id: environmentId, secret: environmentSecret, source: 'environment' };
+    if ((!requiresId || persistedId) && persistedSecret) return { id: persistedId, secret: persistedSecret, source: 'firestore' };
+    if (environmentId || environmentSecret) return { id: environmentId, secret: environmentSecret, source: 'environment-partial' };
+    if (persistedId || persistedSecret) return { id: persistedId, secret: persistedSecret, source: 'firestore-partial' };
+    return { id: '', secret: '', source: 'none' };
+  };
+  const stripe = select({ envSecret: process.env.STRIPE_SECRET, storedSecret: stored.stripe?.secretKey, requiresId: false });
+  const paypal = select({
+    envId: process.env.PAYPAL_CLIENT_ID,
+    envSecret: process.env.PAYPAL_CLIENT_SECRET,
+    storedId: stored.paypal?.clientId || publicSubs.paypalClientId || legacy.paypalClientId,
+    storedSecret: stored.paypal?.clientSecret || legacy.paypalClientSecret,
+  });
+  const razorpay = select({
+    envId: process.env.RAZORPAY_KEY_ID,
+    envSecret: process.env.RAZORPAY_KEY_SECRET,
+    storedId: stored.razorpay?.keyId || publicSubs.razorpayKeyId || legacy.razorpayKeyId,
+    storedSecret: stored.razorpay?.keySecret || legacy.razorpayKeySecret,
+  });
+  const paytm = select({
+    envId: process.env.PAYTM_MID,
+    envSecret: process.env.PAYTM_MERCHANT_KEY,
+    storedId: stored.paytm?.mid || publicSubs.paytmMid || legacy.paytmMid,
+    storedSecret: stored.paytm?.merchantKey || legacy.paytmMerchantKey,
+  });
+  const phonepe = select({
+    envId: process.env.PHONEPE_MERCHANT_ID,
+    envSecret: process.env.PHONEPE_SALT_KEY,
+    storedId: stored.phonepe?.merchantId || publicSubs.phonepeId || legacy.phonepeId,
+    storedSecret: stored.phonepe?.saltKey || legacy.phonepeSaltKey,
+  });
+  const pairState = (pair, requiresId = true) => ({
+    credentialed: Boolean(pair.secret && (!requiresId || pair.id)),
+    partial: pair.source.endsWith('partial'),
+    source: pair.source,
+  });
 
   return {
     stripe: {
-      name: 'Stripe',
-      credentialed: truthy(stored.stripe?.secretKey) || truthy(process.env.STRIPE_SECRET),
+      name: 'Stripe', ...pairState(stripe, false),
       webhook: truthy(process.env.STRIPE_WEBHOOK_SECRET),
       adminEnabled: toggle('stripeEnabled', true),
       environment: String(process.env.STRIPE_SECRET || '').startsWith('sk_live') ? 'live' : 'test',
       apis: ['/api/pay', '/api/stripe-webhook'],
     },
     paypal: {
-      name: 'PayPal',
-      credentialed: (truthy(stored.paypal?.clientId) && truthy(stored.paypal?.clientSecret))
-        || (truthy(process.env.PAYPAL_CLIENT_ID) && truthy(process.env.PAYPAL_CLIENT_SECRET))
-        || (truthy(legacy.paypalClientId) && truthy(legacy.paypalClientSecret)),
-      partial: truthy(stored.paypal?.clientId) || truthy(process.env.PAYPAL_CLIENT_ID) || truthy(legacy.paypalClientId),
+      name: 'PayPal', ...pairState(paypal),
       adminEnabled: toggle('paypalEnabled', true),
       environment: String(process.env.PAYPAL_ENV || stored.paypal?.environment || 'sandbox').toLowerCase(),
       apis: ['/api/paypal/create-order', '/api/paypal/verify'],
     },
     razorpay: {
-      name: 'Razorpay',
-      credentialed: (truthy(stored.razorpay?.keyId) && truthy(stored.razorpay?.keySecret))
-        || (truthy(process.env.RAZORPAY_KEY_ID) && truthy(process.env.RAZORPAY_KEY_SECRET)),
-      partial: truthy(stored.razorpay?.keyId) || truthy(process.env.RAZORPAY_KEY_ID),
+      name: 'Razorpay', ...pairState(razorpay),
       adminEnabled: toggle('razorpayEnabled', true),
-      environment: String(process.env.RAZORPAY_KEY_ID || '').startsWith('rzp_live') ? 'live' : 'test',
+      environment: String(razorpay.id || '').startsWith('rzp_live') ? 'live' : 'test',
       apis: ['/api/razorpay/create-order', '/api/razorpay/verify'],
     },
     paytm: {
-      name: 'PayTM',
-      credentialed: (truthy(stored.paytm?.mid) && truthy(stored.paytm?.merchantKey))
-        || (truthy(process.env.PAYTM_MID) && truthy(process.env.PAYTM_MERCHANT_KEY))
-        || (truthy(legacy.paytmMid) && truthy(legacy.paytmMerchantKey)),
-      partial: truthy(stored.paytm?.mid) || truthy(process.env.PAYTM_MID) || truthy(legacy.paytmMid),
+      name: 'PayTM', ...pairState(paytm),
       adminEnabled: toggle('paytmEnabled', false),
       environment: String(process.env.PAYTM_ENV || 'staging').toLowerCase(),
       apis: ['/api/paytm/initiate-transaction', '/api/paytm/verify'],
     },
     phonepe: {
-      name: 'PhonePe',
-      credentialed: (truthy(stored.phonepe?.merchantId) && truthy(stored.phonepe?.saltKey))
-        || (truthy(process.env.PHONEPE_MERCHANT_ID) && truthy(process.env.PHONEPE_SALT_KEY))
-        || (truthy(legacy.phonepeId) && truthy(legacy.phonepeSaltKey)),
-      partial: truthy(stored.phonepe?.merchantId) || truthy(process.env.PHONEPE_MERCHANT_ID) || truthy(legacy.phonepeId),
+      name: 'PhonePe', ...pairState(phonepe),
       adminEnabled: toggle('phonepeEnabled', false),
       environment: String(process.env.PHONEPE_ENV || 'sandbox').toLowerCase(),
       apis: ['/api/phonepe/initiate-payment', '/api/phonepe/status'],
@@ -206,8 +233,15 @@ function resolveOAuthProviders(oauthDoc, adminConfiguration, legacySystemSetting
   const modules = publicConfig?.modules || {};
 
   const build = (provider, envPrefix, legacyPrefix, moduleKeys) => {
-    const clientId = secrets[provider]?.clientId || canonical[`${legacyPrefix}ClientId`] || legacy[`${legacyPrefix}ClientId`] || process.env[`${envPrefix}_CLIENT_ID`] || '';
-    const clientSecret = secrets[provider]?.clientSecret || canonical[`${legacyPrefix}ClientSecret`] || legacy[`${legacyPrefix}ClientSecret`] || process.env[`${envPrefix}_CLIENT_SECRET`] || '';
+    const envClientId = String(process.env[`${envPrefix}_CLIENT_ID`] || '').trim();
+    const envClientSecret = String(process.env[`${envPrefix}_CLIENT_SECRET`] || '').trim();
+    const storedClientId = String(secrets[provider]?.clientId || canonical[`${legacyPrefix}ClientId`] || legacy[`${legacyPrefix}ClientId`] || '').trim();
+    const storedClientSecret = String(secrets[provider]?.clientSecret || canonical[`${legacyPrefix}ClientSecret`] || legacy[`${legacyPrefix}ClientSecret`] || '').trim();
+    const completeEnvironment = Boolean(envClientId && envClientSecret);
+    const completeStored = Boolean(storedClientId && storedClientSecret);
+    const source = completeEnvironment ? 'environment' : completeStored ? 'firestore' : envClientId || envClientSecret ? 'environment-partial' : storedClientId || storedClientSecret ? 'firestore-partial' : 'none';
+    const clientId = source.startsWith('environment') ? envClientId : storedClientId;
+    const clientSecret = source.startsWith('environment') ? envClientSecret : storedClientSecret;
     let adminEnabled = true;
     for (const key of moduleKeys) {
       if (modules[key] !== undefined) { adminEnabled = modules[key] === true; break; }
@@ -215,7 +249,8 @@ function resolveOAuthProviders(oauthDoc, adminConfiguration, legacySystemSetting
     }
     return {
       credentialed: truthy(clientId) && truthy(clientSecret),
-      partial: truthy(clientId) || truthy(clientSecret),
+      partial: source.endsWith('partial'),
+      source,
       adminEnabled,
     };
   };
@@ -310,12 +345,15 @@ async function buildServices(app) {
   const tenantService = app?.get?.('tenantService') || null;
   const checkedAt = nowIso();
 
-  const enterpriseEnabled = String(process.env.ENTERPRISE_TENANCY_ENABLED || '').toLowerCase() === 'true';
+  // Read the same effective flag the Enterprise router uses. This keeps the
+  // command center honest after a Super Admin changes the runtime override.
+  const enterpriseEnabled = await enterpriseFeatureEnabledAsync(db);
 
   const [
     firestorePing,
     authProbe,
     paymentDoc,
+    aiProvidersDoc,
     oauthDoc,
     adminConfigDoc,
     publicConfigDoc,
@@ -340,6 +378,7 @@ async function buildServices(app) {
       return { reachable: true, sampled: Array.isArray(result?.users) ? result.users.length : 0 };
     }),
     observe('settings.payment_providers', () => (db ? db.collection('settings').doc('payment_providers').get() : Promise.reject(new Error('Firestore unavailable')))),
+    observe('settings.ai_providers', () => (db ? db.collection('settings').doc('ai_providers').get() : Promise.reject(new Error('Firestore unavailable')))),
     observe('settings.oauth_providers', () => (db ? db.collection('settings').doc('oauth_providers').get() : Promise.reject(new Error('Firestore unavailable')))),
     observe('settings.admin_configuration', () => (db ? db.collection('settings').doc('admin_configuration').get() : Promise.reject(new Error('Firestore unavailable')))),
     observe('data.public_config', () => (db ? db.collection('data').doc('public_config').get() : Promise.reject(new Error('Firestore unavailable')))),
@@ -359,7 +398,8 @@ async function buildServices(app) {
   const oauth = resolveOAuthProviders(docData(oauthDoc), docData(adminConfigDoc), docData(legacySystemDoc), publicConfig);
   const smtp = emailConfig.ok ? resolveSmtp(emailConfig.value) : null;
   const maintenance = docData(maintenanceDoc) || {};
-  const maintenanceEnabled = maintenance.enabled === true || publicConfig?.systemHealth?.maintenanceMode === true;
+  const maintenanceKnown = Boolean(maintenanceDoc.ok || publicConfigDoc.ok);
+  const maintenanceEnabled = !maintenanceKnown ? null : (maintenance.enabled === true || publicConfig?.systemHealth?.maintenanceMode === true);
   const enterpriseRuntime = tenantService?.describeRuntime ? tenantService.describeRuntime() : null;
   const outboxStats = outbox.ok ? outbox.value : { available: false };
   const services = [];
@@ -398,11 +438,13 @@ async function buildServices(app) {
     name: 'Firebase',
     group: GROUP.CORE,
     critical: true,
-    state: firebaseConfigured ? STATE.OPERATIONAL : STATE.UNAVAILABLE,
+    state: !firebaseConfigured ? STATE.UNAVAILABLE : (firestorePing.ok && authProbe.ok ? STATE.OPERATIONAL : STATE.UNAVAILABLE),
     configuration: firebaseConfigured ? CONFIG.CONFIGURED : CONFIG.NOT_CONFIGURED,
-    reason: firebaseConfigured
-      ? 'The Firebase Admin SDK is initialised with project credentials in this process.'
-      : 'The Firebase Admin SDK is not initialised, so no server-side Firebase call can succeed.',
+    reason: !firebaseConfigured
+      ? 'The Firebase Admin SDK is not initialised, so no server-side Firebase call can succeed.'
+      : (firestorePing.ok && authProbe.ok
+        ? 'The Firebase Admin SDK is initialised and both Firestore and Identity probes succeeded.'
+        : 'The Firebase Admin SDK is initialised, but at least one Firestore or Identity probe failed.'),
     dependency: 'Firebase Admin credentials (Workload Identity or service account)',
     retryable: false,
     errorCategory: firebaseConfigured ? null : 'CONFIGURATION_MISSING',
@@ -489,6 +531,7 @@ async function buildServices(app) {
   }));
 
   const tenancyConfigured = enterpriseRuntime?.dataPlaneConfigured === true;
+  const enterpriseSecurityReady = encryptionConfigured === true;
   services.push(service({
     id: 'enterprise-tenancy',
     name: 'Enterprise Tenancy',
@@ -496,22 +539,30 @@ async function buildServices(app) {
     critical: false,
     state: !enterpriseEnabled
       ? STATE.DISABLED
-      : (tenancyConfigured ? STATE.OPERATIONAL : STATE.UNAVAILABLE),
+      : (!firestorePing.ok || !tenancyConfigured || !enterpriseSecurityReady ? STATE.UNAVAILABLE : STATE.OPERATIONAL),
     enabled: enterpriseEnabled,
     configuration: !enterpriseEnabled
       ? CONFIG.DISABLED_BY_CONFIGURATION
       : (tenancyConfigured ? CONFIG.CONFIGURED : CONFIG.PARTIALLY_CONFIGURED),
     reason: !enterpriseEnabled
       ? 'ENTERPRISE_TENANCY_ENABLED is false, so every /api/enterprise route intentionally answers 404. This is a deliberate rollout gate, not an outage.'
-      : (tenancyConfigured
-        ? `The tenant control plane is live on the ${enterpriseRuntime.dataProvider} data provider.`
-        : `Enterprise tenancy is enabled but the data plane is not constructed: ${enterpriseRuntime?.error || 'repository unavailable'}`),
+      : (!firestorePing.ok
+        ? `Enterprise tenancy is enabled but the Firestore probe failed: ${firestorePing.error}`
+        : (!tenancyConfigured
+          ? `Enterprise tenancy is enabled but the data plane is not constructed: ${enterpriseRuntime?.error || 'repository unavailable'}`
+          : (!enterpriseSecurityReady
+            ? 'Enterprise tenancy is constructed but encryption is unavailable; encrypted resource operations fail closed.'
+            : `The tenant control plane is constructed on the ${enterpriseRuntime.dataProvider} data provider.`))),
     dependency: 'ENTERPRISE_TENANCY_ENABLED + Firestore tenant repository',
     retryable: false,
-    errorCategory: !enterpriseEnabled ? null : (tenancyConfigured ? null : 'CONFIGURATION_MISSING'),
+    errorCategory: !enterpriseEnabled ? null : (!firestorePing.ok ? categorizeError(firestorePing.error) : (!tenancyConfigured || !enterpriseSecurityReady ? 'CONFIGURATION_MISSING' : null)),
     remediation: !enterpriseEnabled
       ? 'Set ENTERPRISE_TENANCY_ENABLED=true (backend) and VITE_ENTERPRISE_TENANCY_ENABLED=true (frontend) once the rollout gates are approved.'
-      : (tenancyConfigured ? '' : 'Provide the Firestore tenant repository configuration and the enterprise encryption key, then restart the backend.'),
+      : (!firestorePing.ok
+        ? 'Restore Firestore connectivity before accepting Enterprise tenant traffic.'
+        : (!tenancyConfigured
+          ? 'Provide the Firestore tenant repository configuration and restart the backend.'
+          : (!enterpriseSecurityReady ? 'Configure the enterprise encryption key and restart the backend.' : ''))),
     affectedFeatures: ['Tenant provisioning', 'Workspaces', 'Tenant memberships', 'Tenant audit'],
     affectedApis: ['/api/enterprise/platform/tenants', '/api/enterprise/tenants', '/api/enterprise/memberships'],
     affectedUiModules: ['/adm/tenants', '/enterprise'],
@@ -529,16 +580,26 @@ async function buildServices(app) {
     name: 'Consumer Platform',
     group: GROUP.CORE,
     critical: true,
-    state: !firebaseConfigured ? STATE.UNAVAILABLE : (consumerBlocked ? STATE.DEGRADED : STATE.OPERATIONAL),
+    state: !firebaseConfigured || !firestorePing.ok || !authProbe.ok
+      ? STATE.UNAVAILABLE
+      : maintenanceEnabled === null ? STATE.UNKNOWN : consumerBlocked ? STATE.DEGRADED : STATE.OPERATIONAL,
     configuration: CONFIG.CONFIGURED,
     reason: !firebaseConfigured
       ? 'The consumer product depends on Firebase, which is not initialised.'
-      : (consumerBlocked
-        ? 'Maintenance mode is enabled, so non-admin visitors are shown the maintenance banner instead of the product.'
-        : 'Maintenance mode is off and the consumer data plane is reachable.'),
+      : (!firestorePing.ok || !authProbe.ok)
+        ? 'The consumer data plane depends on Firestore and Firebase Authentication, and at least one probe failed.'
+        : maintenanceEnabled === null
+          ? 'Maintenance state could not be read, so consumer availability is unknown.'
+          : (consumerBlocked
+            ? 'Maintenance mode is enabled, so non-admin visitors are shown the maintenance banner instead of the product.'
+            : 'Maintenance mode is off and the consumer dependency probes succeeded.'),
     dependency: 'Firebase + maintenance flag',
     retryable: false,
-    remediation: consumerBlocked ? 'Disable maintenance mode in Platform Operations when the window closes.' : '',
+    remediation: !firebaseConfigured || !firestorePing.ok || !authProbe.ok
+      ? 'Restore the failed Firebase, Firestore, or Authentication dependency before relying on consumer traffic.'
+      : maintenanceEnabled === null
+        ? 'Re-run the health collector after the maintenance configuration source is available.'
+        : consumerBlocked ? 'Disable maintenance mode in Platform Operations when the window closes.' : '',
     affectedFeatures: ['Resume builder', 'Portfolio', 'Job tracker', 'Checkout'],
     affectedApis: ['/api/export', '/api/generate-resume'],
     affectedUiModules: ['/dashboard', '/build-resume'],
@@ -626,7 +687,7 @@ async function buildServices(app) {
   } else {
     const deadLetters = outboxStats.available ? outboxStats.deadLetter : null;
     let emailState = STATE.OPERATIONAL;
-    let emailReason = `SMTP credentials are configured for ${smtp.host}:${smtp.port} over ${smtp.encryption}. No dead-letter deliveries were found in the inspected outbox sample.`;
+    let emailReason = `SMTP credentials are configured for ${smtp.host}:${smtp.port} over ${smtp.encryption}. No dead-letter deliveries were found in the inspected outbox sample; an SMTP handshake is not claimed until the explicit test runs.`;
     let emailCategory = null;
     if (!smtp.credentialed) {
       emailState = smtp.partial ? STATE.DEGRADED : STATE.NOT_CONFIGURED;
@@ -740,7 +801,7 @@ async function buildServices(app) {
   for (const descriptor of oauthDescriptors) {
     const provider = oauth[descriptor.key];
     let state = STATE.OPERATIONAL;
-    let reason = 'Client credentials are configured and the provider is enabled, so the redirect flow is available.';
+    let reason = 'Complete client credentials are configured and the provider is enabled. The read-only collector does not perform an external OAuth handshake.';
     let configuration = CONFIG.CONFIGURED;
     let category = null;
     if (!provider.adminEnabled) {
@@ -775,7 +836,7 @@ async function buildServices(app) {
       affectedFeatures: descriptor.features,
       affectedApis: descriptor.apis,
       affectedUiModules: descriptor.ui,
-      metrics: { credentialsConfigured: provider.credentialed, providerEnabled: provider.adminEnabled },
+      metrics: { credentialsConfigured: provider.credentialed, credentialSource: provider.source, providerEnabled: provider.adminEnabled },
       lastCheckedAt: checkedAt,
     }));
   }
@@ -783,7 +844,7 @@ async function buildServices(app) {
   for (const [key, provider] of Object.entries(payments)) {
     let state = STATE.OPERATIONAL;
     let configuration = CONFIG.CONFIGURED;
-    let reason = `Credentials are configured (${provider.environment} environment) and the gateway is enabled for checkout.`;
+    let reason = `Complete credentials are configured for the ${provider.environment} environment and the gateway is enabled for checkout. Provider connectivity is not claimed until an explicit test or transaction succeeds.`;
     let category = null;
     if (!provider.adminEnabled) {
       state = STATE.DISABLED;
@@ -821,6 +882,7 @@ async function buildServices(app) {
       affectedUiModules: ['/plans', '/adm/settings?tab=subscriptionsSettings'],
       metrics: {
         credentialsConfigured: provider.credentialed,
+        credentialSource: provider.source,
         gatewayEnabled: provider.adminEnabled,
         environment: provider.environment,
         webhookSecretConfigured: provider.webhook === undefined ? null : provider.webhook,
@@ -831,8 +893,14 @@ async function buildServices(app) {
 
   const twilio = docData(adminConfigDoc)?.twilio || {};
   const twilioLegacy = docData(legacySystemDoc)?.twilio || {};
-  const twilioCredentialed = truthy(twilio.accountSid || process.env.TWILIO_ACCOUNT_SID || twilioLegacy.accountSid)
-    && truthy(twilio.authToken || process.env.TWILIO_AUTH_TOKEN || twilioLegacy.authToken);
+  const twilioPair = selectPaymentPair({
+    envId: process.env.TWILIO_ACCOUNT_SID,
+    envSecret: process.env.TWILIO_AUTH_TOKEN,
+    storedId: twilio.accountSid || twilioLegacy.accountSid,
+    storedSecret: twilio.authToken || twilioLegacy.authToken,
+  });
+  const twilioSender = truthy(twilio.fromPhoneNumber || process.env.TWILIO_FROM_PHONE || twilioLegacy.fromPhoneNumber);
+  const twilioCredentialed = Boolean(twilioPair.id && twilioPair.secret && twilioSender);
   const twilioEnabled = twilio.enableSmsAlerts !== undefined ? twilio.enableSmsAlerts === true : twilioLegacy.enableSmsAlerts === true;
   services.push(service({
     id: 'twilio-sms',
@@ -847,7 +915,7 @@ async function buildServices(app) {
     reason: !twilioEnabled
       ? 'SMS alerts are switched off in Admin → Settings → Twilio SMS, so no message is dispatched.'
       : (twilioCredentialed
-        ? 'Twilio credentials and a sender number are configured and SMS alerts are enabled.'
+        ? 'Twilio credentials and a sender number are configured and SMS alerts are enabled. This read-only collector does not send a message.'
         : 'SMS alerts are enabled but the Twilio Account SID, Auth Token, or sender number is missing.'),
     dependency: 'Twilio Programmable Messaging',
     retryable: false,
@@ -858,7 +926,7 @@ async function buildServices(app) {
     affectedFeatures: ['SMS security alerts'],
     affectedApis: ['/api/send-sms'],
     affectedUiModules: ['/adm/settings?tab=twilioSmsSettings'],
-    metrics: { credentialsConfigured: twilioCredentialed, smsAlertsEnabled: twilioEnabled },
+    metrics: { credentialsConfigured: twilioCredentialed, credentialSource: twilioPair.source, senderConfigured: twilioSender, smsAlertsEnabled: twilioEnabled },
     lastCheckedAt: checkedAt,
   }));
 
@@ -882,26 +950,32 @@ async function buildServices(app) {
     lastCheckedAt: checkedAt,
   }));
 
-  const cloudflareConfigured = truthy(process.env.CLOUDFLARE_API_TOKEN) || truthy(process.env.CLOUDFLARE_ZONE_ID);
+  const cloudflareToken = truthy(process.env.CLOUDFLARE_API_TOKEN);
+  const cloudflareZone = truthy(process.env.CLOUDFLARE_ZONE_ID);
+  const cloudflareConfigured = cloudflareToken && cloudflareZone;
+  const cloudflarePartial = cloudflareToken || cloudflareZone;
   services.push(service({
     id: 'cloudflare',
     name: 'Cloudflare',
     group: GROUP.INTEGRATIONS,
     critical: false,
-    state: cloudflareConfigured ? STATE.OPERATIONAL : STATE.NOT_SUPPORTED,
-    support: cloudflareConfigured ? 'SUPPORTED' : 'NOT_SUPPORTED',
+    state: cloudflareConfigured ? STATE.OPERATIONAL : cloudflarePartial ? STATE.NOT_CONFIGURED : STATE.NOT_SUPPORTED,
+    support: cloudflarePartial ? 'SUPPORTED' : 'NOT_SUPPORTED',
     enabled: cloudflareConfigured,
-    configuration: cloudflareConfigured ? CONFIG.CONFIGURED : CONFIG.NOT_APPLICABLE,
+    configuration: cloudflareConfigured ? CONFIG.CONFIGURED : cloudflarePartial ? CONFIG.PARTIALLY_CONFIGURED : CONFIG.NOT_APPLICABLE,
     reason: cloudflareConfigured
-      ? 'Cloudflare API credentials are present in the backend environment.'
-      : 'This deployment does not integrate with the Cloudflare API. Edge caching and DNS, if used, are managed outside the application.',
+      ? 'Cloudflare API token and zone identifier are present in the backend environment.'
+      : cloudflarePartial
+        ? 'Cloudflare integration is partially configured; both CLOUDFLARE_API_TOKEN and CLOUDFLARE_ZONE_ID are required before an API operation can run.'
+        : 'This deployment does not integrate with the Cloudflare API. Edge caching and DNS, if used, are managed outside the application.',
     dependency: 'Cloudflare API',
     retryable: false,
-    remediation: '',
+    errorCategory: cloudflarePartial && !cloudflareConfigured ? 'CONFIGURATION_MISSING' : null,
+    remediation: cloudflarePartial && !cloudflareConfigured ? 'Provide the missing Cloudflare API token or zone identifier through the deployment secret manager.' : '',
     affectedFeatures: [],
     affectedApis: [],
     affectedUiModules: [],
-    metrics: { integrationPresent: cloudflareConfigured },
+    metrics: { integrationPresent: cloudflareConfigured, tokenConfigured: cloudflareToken, zoneConfigured: cloudflareZone },
     lastCheckedAt: checkedAt,
   }));
 
@@ -913,7 +987,7 @@ async function buildServices(app) {
     ['openrouter', 'OpenRouter', 'OPENROUTER_API_KEY'],
     ['deepseek', 'DeepSeek', 'DEEPSEEK_API_KEY'],
   ];
-  const configuredAi = aiProviders.filter(([key, , envKey]) => truthy(process.env[envKey]) || truthy(docData(adminConfigDoc)?.ai?.[key]?.apiKey));
+  const configuredAi = aiProviders.filter(([key, , envKey]) => truthy(process.env[envKey]) || truthy(docData(aiProvidersDoc)?.[key]?.apiKey));
   services.push(service({
     id: 'ai-providers',
     name: 'AI Providers',
@@ -923,7 +997,7 @@ async function buildServices(app) {
     enabled: configuredAi.length > 0,
     configuration: configuredAi.length > 0 ? CONFIG.CONFIGURED : CONFIG.NOT_CONFIGURED,
     reason: configuredAi.length > 0
-      ? `${configuredAi.length} of ${aiProviders.length} supported AI providers hold a server-side API key.`
+      ? `${configuredAi.length} of ${aiProviders.length} supported AI providers hold a server-side API key. Provider reachability is not claimed until an explicit test or generation succeeds.`
       : 'No AI provider API key is configured, so generation endpoints fall back to deterministic non-AI behaviour or return 503.',
     dependency: 'Third-party AI inference APIs',
     retryable: true,
@@ -1221,7 +1295,7 @@ async function buildServices(app) {
     lastCheckedAt: checkedAt,
   }));
 
-  return { services, checkedAt, sources: buildSources({ firestorePing, authProbe, outbox, emailConfig, enterpriseOutbox, publicConfigDoc, paymentDoc, oauthDoc }) };
+  return { services, checkedAt, sources: buildSources({ firestorePing, authProbe, outbox, emailConfig, enterpriseOutbox, publicConfigDoc, paymentDoc, aiProvidersDoc, oauthDoc }) };
 }
 
 function buildSources(results) {
@@ -1247,7 +1321,7 @@ const MOUNTED_ROUTERS = Object.freeze([
 ]);
 
 const PUBLIC_API_PATHS = new Set([
-  '/api/healthz', '/api/health', '/api/readyz', '/healthz', '/readyz', '/health',
+  '/api/healthz', '/api/health', '/api/readyz', '/healthz', '/readyz', '/health', '/api/platform/version',
   '/api/stripe-webhook', '/api/public-export', '/api/export-render-data', '/api/contact',
   '/api/auth/custom-password-reset', '/api/auth/verify-email-token', '/api/auth/set-user-password',
   '/api/auth/linkedin', '/api/auth/linkedin/callback', '/api/auth/github', '/api/auth/github/callback',
@@ -1586,15 +1660,18 @@ async function runServiceTest(app, serviceId) {
   }
 
   // ai-providers: configuration reachability only; no paid inference call is made.
-  const configured = ['GEMINI_API_KEY', 'OPENAI_API_KEY', 'NVIDIA_API_KEY', 'GROQ_API_KEY', 'OPENROUTER_API_KEY', 'DEEPSEEK_API_KEY']
-    .filter(name => truthy(process.env[name]));
+  const { loadProviderConfiguration } = require('./aiRuntime');
+  const configuration = await loadProviderConfiguration(db, process.env);
+  const configured = Object.entries(configuration.providers || {})
+    .filter(([, provider]) => truthy(provider?.key))
+    .map(([provider]) => provider);
   return {
     serviceId,
     passed: configured.length > 0,
     latencyMs: 0,
     detail: configured.length > 0
-      ? `${configured.length} provider key(s) are present in the backend environment. No billable inference call was made by this test.`
-      : 'No AI provider key is present in the backend environment.',
+      ? `${configured.length} provider credential(s) are available to the server runtime (${configured.join(', ')}). No billable inference call was made by this test.`
+      : 'No AI provider credential is available to the server runtime.',
     errorCategory: configured.length > 0 ? null : 'CONFIGURATION_MISSING',
   };
 }

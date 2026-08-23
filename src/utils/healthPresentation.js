@@ -22,7 +22,7 @@ const DESCRIPTOR = Object.freeze({
     tone: 'ok',
     dot: 'bg-emerald-500',
     badge: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-    meaning: 'Supported, enabled and verified by a live check.',
+    meaning: 'The backend dependency and configuration checks passed. External provider handshakes still require an explicit provider test when applicable.',
   },
   DEGRADED: {
     label: 'Degraded',
@@ -113,7 +113,7 @@ export function describePosture(service) {
   if (service.support === 'NOT_SUPPORTED') return 'Not supported by this deployment';
   if (service.state === HEALTH_STATES.DISABLED) return 'Supported · Disabled by configuration';
   if (service.state === HEALTH_STATES.NOT_CONFIGURED) return 'Supported · Enabled · Not configured';
-  if (service.state === HEALTH_STATES.OPERATIONAL) return 'Supported · Enabled · Healthy';
+  if (service.state === HEALTH_STATES.OPERATIONAL) return 'Supported · Enabled · Checks passed';
   if (service.state === HEALTH_STATES.DEGRADED) return 'Supported · Enabled · Degraded';
   if (service.state === HEALTH_STATES.UNAVAILABLE) return 'Supported · Enabled · Unavailable';
   return 'Supported · State unknown';

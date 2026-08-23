@@ -100,6 +100,18 @@ function RequireAuthenticated({ user, children }) {
     return <Navigate to={loginPathWithNext(next)} replace />;
 }
 
+function AdminAliasRedirect() {
+    const location = useLocation();
+    const suffix = location.pathname.replace(/^\/admin/, '') || '/';
+    return <Navigate to={`/adm${suffix}${location.search}${location.hash}`} replace />;
+}
+
+function PlatformAliasRedirect() {
+    const location = useLocation();
+    const suffix = location.pathname.replace(/^\/platform/, '') || '/';
+    return <Navigate to={`/adm${suffix}${location.search}${location.hash}`} replace />;
+}
+
 function PostLoginRedirect({ user }) {
     const location = useLocation();
     const navigate = useNavigate();
@@ -385,6 +397,11 @@ const AuthWrapper = () => {
                             <Route path="/portfolio/builder" element={<RequireAuthenticated user={user}><PortfolioBuilder key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
                             <Route path="/portfolio/:slug" element={<PublicPortfolio />} />
                             <Route path="/portfolios" element={<PortfolioGallery key={user?.uid || 'guest'} />} />
+                            {/* Compatibility alias used by the Enterprise app switcher. The
+                                canonical console namespace is /adm; both paths land in the
+                                same authenticated Admin shell rather than a blank route. */}
+                            <Route path="/admin/*" element={<AdminAliasRedirect />} />
+                            <Route path="/platform/*" element={<PlatformAliasRedirect />} />
                             <Route path="/adm/*" element={<RequireAuthenticated user={user}><Admin key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
                             <Route path="/front" element={<Front />} />
                             <Route path="/features" element={<Features user={user} />} />

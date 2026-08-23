@@ -1,10 +1,35 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+import { execFileSync } from 'node:child_process';
+
+function sourceBuildSha() {
+    const configured = String(process.env.VITE_BUILD_SHA || process.env.COMMIT_SHA || '').trim();
+    if (/^[0-9a-f]{40}$/i.test(configured)) return configured;
+    try {
+        const sha = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+        return /^[0-9a-f]{40}$/i.test(sha) ? sha : 'unknown';
+    } catch (_) {
+        return 'unknown';
+    }
+}
+
+// Put the tested source SHA in HTML metadata, not executable inline JavaScript.
+// The live identity runner can therefore detect a stale CDN bundle without
+// weakening the application's CSP.
+function buildIdentityPlugin() {
+    return {
+        name: 'resumepilot-build-identity',
+        transformIndexHtml(html) {
+            const sha = sourceBuildSha();
+            return html.replace('</head>', `    <meta name="build-sha" data-build-sha="${sha}" content="${sha}" />\n  </head>`);
+        },
+    };
+}
 
 // https://vite.dev/config/
 export default defineConfig({
-    plugins: [tailwindcss(), react()],
+    plugins: [tailwindcss(), react(), buildIdentityPlugin()],
     build: {
         rollupOptions: {
             input: {

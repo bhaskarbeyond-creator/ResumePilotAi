@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import fire from '../../../conf/fire';
+import { useAdminSession } from '../AdminContext';
 import { FaFlag, FaSpinner, FaCheck, FaTimes, FaExclamationTriangle, FaRedo, FaServer, FaShieldAlt, FaCubes, FaCog } from 'react-icons/fa';
 
 const CATEGORY_LABELS = {
@@ -10,6 +11,7 @@ const CATEGORY_LABELS = {
 };
 
 export default function FeatureFlagsSettings() {
+  const { isSuperAdmin } = useAdminSession();
   const [flags, setFlags] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -26,8 +28,12 @@ export default function FeatureFlagsSettings() {
       const token = await user.getIdToken();
       const res = await fetch('/api/platform/feature-flags', {
         headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store',
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        const failure = await res.json().catch(() => ({}));
+        throw new Error(failure.error?.message || (res.status === 403 ? 'Super Admin access is required to manage feature flags.' : `Feature flags unavailable (HTTP ${res.status}).`));
+      }
       const data = await res.json();
       setFlags(data.flags || {});
     } catch (err) {
@@ -45,6 +51,10 @@ export default function FeatureFlagsSettings() {
   };
 
   const handleToggle = (flagKey, currentValue, flag) => {
+    if (!isSuperAdmin) {
+      showNotification('error', 'Only Super Admin can change platform feature flags.');
+      return;
+    }
     const nextValue = !currentValue;
     const verb = nextValue ? 'Enable' : 'Disable';
 
@@ -80,8 +90,8 @@ export default function FeatureFlagsSettings() {
         throw new Error(errData.error?.message || `HTTP ${res.status}`);
       }
       const result = await res.json();
-      showNotification('success', `${flagKey} ${nextValue ? 'enabled' : 'disabled'}${result.requiresRestart ? ' — requires restart to take effect' : ''}`);
-      loadFlags();
+      await loadFlags();
+      showNotification('success', `${flagKey} ${nextValue ? 'enabled' : 'disabled'}${result.requiresRestart ? ' — requires restart to take effect' : ''}. Audit event: ${result.auditEvent || 'FEATURE_FLAG_CHANGED'}.`);
     } catch (err) {
       showNotification('error', err.message);
     } finally {
@@ -119,7 +129,7 @@ export default function FeatureFlagsSettings() {
             <FaFlag className="text-indigo-600" /> Feature Flags
           </h2>
           <p className="text-xs text-slate-500 mt-1">
-            Platform-wide feature gates. Changes are audited. Flags marked "Requires Restart" need a server restart to take effect.
+            Platform-wide feature gates. Changes are audited. Flags marked "Requires Restart" need a server restart to take effect. {isSuperAdmin ? 'Changes are available to this Super Admin session.' : 'Feature flag values are restricted to Super Admin.'}
           </p>
         </div>
         <button onClick={loadFlags} className="text-slate-400 hover:text-slate-600 p-2" title="Refresh">
@@ -195,7 +205,10 @@ export default function FeatureFlagsSettings() {
                   <td className="px-4 py-3 text-center">
                     <button
                       onClick={() => handleToggle(key, flag.value, flag)}
-                      disabled={isPending}
+                      disabled={isPending || !isSuperAdmin}
+                      aria-label={`${flag.value ? 'Disable' : 'Enable'} ${key}`}
+                      aria-pressed={flag.value}
+                      data-testid={`feature-flag-${key}`}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 ${
                         isPending ? 'opacity-50 cursor-wait' : 'cursor-pointer'
                       } ${flag.value ? 'bg-emerald-500' : 'bg-slate-300'}`}

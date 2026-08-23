@@ -16,7 +16,7 @@ test('account deletion removes deleted-user messaging without deleting participa
   assert.match(selfDelete, /Applications belong to their applicants/);
   assert.doesNotMatch(selfDelete, /where\('jobId'.*recursiveDelete\(application\.ref\)/s);
   const adminDelete = backend.slice(backend.indexOf("app.post(['/api/admin/delete-user'"), backend.indexOf("app.post('/api/auth/set-user-password'"));
-  assert.match(adminDelete, /removeDeletedUserFromRealtimeMessaging\(targetUid\)/);
+  assert.match(adminDelete, /removeDeletedUserFromRealtimeMessaging\(targetUid, identityAdmin\)/);
   assert.match(adminDelete, /employer jobs/);
   assert.match(adminDelete, /companies/);
 });

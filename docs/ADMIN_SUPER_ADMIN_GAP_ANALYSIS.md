@@ -1,30 +1,30 @@
-# Admin & Super Admin Gap Analysis
+# Admin + Super Admin forensic gap analysis
 
-## 1. Identified Infrastructure Gaps
+## Baseline findings and fixes
 
-### 1.1 Deployment Automation
-- **Current State**: Code is pushed to `main`, but physical deployment to Hostinger requires manual PM2 restart and Git pull commands via SSH. No CI/CD pipeline executes deployment autonomously.
-- **Target State**: Fully automated CI/CD pipeline (e.g., GitHub Actions) that builds, tests, and deploys the Node.js backend and Vite frontend to the live server on tag releases.
-- **Gap**: Missing `.github/workflows/deploy.yml` or a similar webhook-based deploy script on the live server.
+| Finding in candidate baseline | Evidence | Fix implemented |
+| --- | --- | --- |
+| `backend/COMMIT_SHA` was UTF-16 with BOM and did not represent the checkout | `od` showed `ff fe` and NUL bytes | committed ASCII SHA; runtime validates/decode-tolerates legacy UTF-16; `/api/platform/version` and frontend build marker added |
+| Razorpay settings page called `GET /api/admin/payment-settings`, but only a POST Admin route existed; the GET implementation lived at `/api/platform/payment-settings` | frontend `getAdminPaymentSettings` vs Express route inventory | frontend now calls the real `/api/platform/payment-settings`; response is masked, revisioned, and secret-safe |
+| Payment blank fields had no deliberate clear contract | `setSubscriptionsData` always sent blank secret fields | empty/masked preserves; `clearSecrets` explicitly deletes Firestore-only credentials; env-managed clear returns 409; UI Clear controls added |
+| Platform feature flag writer fetched `req.app.get('admin')`, which was never set | `backend/routes/platform.js` | uses `firebaseAdmin`, validates storage, transactionally audits |
+| Enterprise flag was effectively environment-only in router/client while Firestore feature flag existed | sync `enterpriseFeatureEnabled()` in route/client | async effective flag is used by Enterprise/M2M routers, health, availability, and browser context |
+| Several `fetchAdminWithReauth` callers treated `{response,data}` as a raw Response | `dbOperations.js` call sites | shared client now has canonical envelope plus compatibility facade; important Admin reads migrated to API contracts |
+| Admin directory read profile fields only and could show stale roles/disabled/MFA | `getAllUsers` direct Firestore read | `/api/admin/users` joins Firebase Auth identity with Firestore profile; User Manager uses it |
+| Tenant detail was only a list row and rename was handed off to a possibly unavailable Enterprise context | `/api/platform/tenants/:tenantId` and drawer | detail API and platform rename mutation added; drawer shows enterprise detail sections |
+| Admin user UI exposed role/delete actions to plain Admin users | Users Manager row actions | controls are Super Admin-only and server routes enforce the same boundary |
+| Queue/command-center health used zeros/healthy defaults when source unavailable | `inspectOutbox`, queue UI, command signals | null/unavailable values and source metadata; no fake healthy signal |
+| API inventory and live scripts used stale fixed count/broad expected statuses | existing scripts/docs | source-generated 270-entry manifest; verifier requires response evidence and no broad 5xx whitelist; optional count only |
+| Existing static tests contained commented payment assertions | `tests/admin-ai-settings.test.mjs`, `admin-settings-regression.test.mjs` | meaningful payment route/loader assertions restored; payment lifecycle unit tests added |
+| Tracked certification scripts contained credentials | security-static failure | all credential values now required from environment and never printed |
+| Admin alias `/admin` was a dead route | Enterprise app switcher links | route redirect preserves nested paths/query/hash |
 
-### 1.2 Automated Production Rollback
-- **Current State**: Rollback requires manually checking out a previous Git commit via SSH and restarting PM2. No physical database backups are automatically created prior to deployment.
-- **Target State**: Atomic zero-downtime deployments (Blue/Green) with automated Firestore snapshot backups pre-deployment.
-- **Gap**: Missing deployment orchestrator and Firestore export scripts (`gcloud firestore export`).
+## Remaining PARTIAL/UNVERIFIED items
 
-### 1.3 Live E2E Testing Pipeline
-- **Current State**: E2E tests (`superadmin-adm.spec.js`) utilize local Firebase emulators and mock JWTs. Live E2E validation requires manual credentials and cannot execute automatically against the `https://airesume.projectdemo.guru` domain without exposing static super-admin credentials to the repository.
-- **Target State**: CI pipeline executes a Playwright suite against a live staging slot using injected, temporary Service Account tokens before shifting traffic to production.
-- **Gap**: Lack of a dedicated staging environment and ephemeral test identity provisioning.
+- **LIVE:** production authentication, real Firebase claims, MFA, provider credentials, Firestore indexes, live mutations, CDN SHA, and responsive browser execution are not available here.
+- **Infrastructure secrets:** Firebase Admin private key, KMS/Secret Manager, Cloudflare, SMTP, payment, OAuth, and Twilio secrets remain deployment-owned; the UI exposes status/remediation only.
+- **Worker liveness:** worker flags and outbox samples are observable; a separate external worker heartbeat is not implemented by this Firebase-only architecture.
+- **Provider tests:** Razorpay/Stripe/PayPal/Paytm/PhonePe live provider test calls require real accounts and are intentionally not run in CI.
+- **Legacy public reads:** public review/ad/category readers retain public Firestore reads because the rules allow read-only public content; moderation reads use new Admin APIs.
 
-## 2. Identified Application Gaps
-
-### 2.1 Complete DLQ Inspection UI
-- **Current State**: The backend handles DLQ item replay logic, and the dashboard reports dead letters. However, deep-inspection of the exact payload of a failed message inside the DLQ is limited in the UI.
-- **Target State**: Admin UI allows full JSON inspection and manual edit of DLQ payloads before forced re-enqueuing.
-- **Gap**: `PlatformQueues.jsx` lacks a JSON editor modal for dead letter items.
-
-### 2.2 Global Rate Limiting
-- **Current State**: The backend depends on Firebase Auth and standard Node.js request handling.
-- **Target State**: Strict IP-based or UID-based rate limiting on global `Admin` endpoints to prevent heavy read-scraping of user directories.
-- **Gap**: Missing `express-rate-limit` configuration or Redis-backed API gateway for the Admin control plane.
+No item above is presented as PASS without the Local Developer runbook.

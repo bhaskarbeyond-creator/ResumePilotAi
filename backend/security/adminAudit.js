@@ -2,7 +2,12 @@
 
 const crypto = require('crypto');
 
-const SENSITIVE_KEY_PATTERN = /(password|secret|apikey|token|privatekey|credential|keysecret|card|cvv|authorization|cookie|session)/i;
+const SENSITIVE_KEY_PATTERN = /(password|secret|apikey|accesskey|token|privatekey|credential|keysecret|card|cvv|authorization|cookie|session)/i;
+const SECRET_VALUE_PATTERNS = [
+  /-----BEGIN [A-Z ]*PRIVATE KEY-----/i,
+  /\b(?:sk_(?:live|test)_|nvapi-|rzp_(?:live|test)_|AIza[A-Za-z0-9_-]{20,}|gh[pousr]_|xox[baprs]-|cfut_|AKIA)[A-Za-z0-9_.-]{8,}/i,
+  /\bey[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/,
+];
 
 function sanitizeAuditValue(key, value, depth = 0) {
   if (depth > 5) return '[TRUNCATED]';
@@ -11,6 +16,7 @@ function sanitizeAuditValue(key, value, depth = 0) {
     return '[REDACTED]';
   }
   if (typeof value === 'string') {
+    if (SECRET_VALUE_PATTERNS.some(pattern => pattern.test(value))) return '[REDACTED]';
     if (value.length > 1000) return value.slice(0, 1000) + '…[TRUNCATED]';
     return value;
   }
@@ -235,25 +241,23 @@ async function queryAdminAuditLogs(db, options = {}) {
   }
 
   const limitCount = Math.min(Math.max(Number(options.limit) || 50, 1), 200);
-  let query = db.collection('admin_audit_logs');
-
-  if (options.actorUid) {
-    query = query.where('actorUid', '==', String(options.actorUid));
-  }
-  if (options.action) {
-    query = query.where('action', '==', String(options.action).toUpperCase());
-  }
-  if (options.category) {
-    query = query.where('category', '==', String(options.category).toLowerCase());
-  }
-  if (options.severity) {
-    query = query.where('severity', '==', String(options.severity).toUpperCase());
-  }
-  if (options.outcome) {
-    query = query.where('outcome', '==', String(options.outcome).toUpperCase());
-  }
-
-  query = query.orderBy('createdAt', 'desc').limit(limitCount);
+  const search = String(options.search || '').trim().toLowerCase().slice(0, 200);
+  // Firestore does not provide a portable case-insensitive substring query,
+  // and combining several optional filters with createdAt can require a
+  // deployment-specific composite index. Read a bounded newest-first window
+  // and apply all filters to the sanitized projection below instead. This keeps
+  // the endpoint deterministic and turns a missing index into an explicit
+  // truncated/unknown window rather than a misleading 500 or empty result.
+  const filterValues = {
+    actorUid: options.actorUid ? String(options.actorUid) : '',
+    action: options.action ? String(options.action).toUpperCase() : '',
+    category: options.category ? String(options.category).toLowerCase() : '',
+    severity: options.severity ? String(options.severity).toUpperCase() : '',
+    outcome: options.outcome ? String(options.outcome).toUpperCase() : '',
+  };
+  const hasFilter = Boolean(search || Object.values(filterValues).some(Boolean));
+  const searchScanLimit = hasFilter ? Math.min(Math.max(limitCount * 20, 500), 2000) : limitCount;
+  let query = db.collection('admin_audit_logs').orderBy('createdAt', 'desc').limit(searchScanLimit);
 
   if (options.startAfterDocId) {
     const startDoc = await db.collection('admin_audit_logs').doc(String(options.startAfterDocId)).get();
@@ -266,17 +270,49 @@ async function queryAdminAuditLogs(db, options = {}) {
   const logs = [];
   snapshot.forEach(doc => {
     const data = doc.data() || {};
-    logs.push({
+    const safe = sanitizeAuditValue('record', data) || {};
+    const log = {
       id: doc.id,
-      ...data,
+      ...safe,
       createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : data.occurredAt || null,
-    });
+    };
+    if (filterValues.actorUid && log.actorUid !== filterValues.actorUid) return;
+    if (filterValues.action && String(log.action || '').toUpperCase() !== filterValues.action) return;
+    if (filterValues.category && String(log.category || '').toLowerCase() !== filterValues.category) return;
+    if (filterValues.severity && String(log.severity || '').toUpperCase() !== filterValues.severity) return;
+    if (filterValues.outcome && String(log.outcome || '').toUpperCase() !== filterValues.outcome) return;
+    if (search) {
+      const searchable = [
+        log.id,
+        log.actorUid,
+        log.actorEmail,
+        log.actorRole,
+        log.action,
+        log.category,
+        log.severity,
+        log.outcome,
+        log.method,
+        log.pathname,
+        log.resourceType,
+        log.resourceId,
+        log.requestId,
+        log.ipAddress,
+        log.metadata,
+      ].map(value => typeof value === 'string' ? value : JSON.stringify(value || '')).join(' ').toLowerCase();
+      if (!searchable.includes(search)) return;
+    }
+    logs.push(log);
   });
 
+  const scannedCount = snapshot.docs?.length || 0;
   return {
-    logs,
-    count: logs.length,
-    hasMore: logs.length === limitCount,
+    logs: logs.slice(0, limitCount),
+    count: Math.min(logs.length, limitCount),
+    // For a filtered search, a full scan window means there may be an older
+    // matching record. Report that explicitly instead of claiming the filtered
+    // result is complete. Non-filtered pagination retains the normal contract.
+    hasMore: hasFilter ? logs.length > limitCount || scannedCount === searchScanLimit : logs.length === limitCount,
+    ...(hasFilter ? { searchWindow: scannedCount, searchTruncated: scannedCount === searchScanLimit } : {}),
   };
 }
 

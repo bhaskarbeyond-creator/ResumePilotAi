@@ -26,7 +26,7 @@ export default function PlatformSecurity() {
 
   useEffect(() => { load(); }, [load]);
 
-  const highCount = events.filter(event => ['HIGH', 'CRITICAL'].includes(String(event.severity || '').toUpperCase())).length;
+  const highCount = error ? null : events.filter(event => ['HIGH', 'CRITICAL'].includes(String(event.severity || '').toUpperCase())).length;
   const visible = events.filter(event => {
     const hay = `${event.action || ''} ${event.actorEmail || ''} ${event.actorUid || ''} ${event.tenantId || ''}`.toLowerCase();
     if (query && !hay.includes(query.trim().toLowerCase())) return false;
@@ -53,11 +53,11 @@ export default function PlatformSecurity() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white p-4 rounded-2xl border border-slate-200">
           <p className="text-xs font-bold uppercase text-slate-500">Inspected events</p>
-          <p className="text-2xl font-extrabold mt-1">{events.length}</p>
+          <p className="text-2xl font-extrabold mt-1">{error ? 'Unavailable' : events.length}</p>
         </div>
         <div className="bg-white p-4 rounded-2xl border border-slate-200">
           <p className="text-xs font-bold uppercase text-slate-500">High / critical</p>
-          <p className={`text-2xl font-extrabold mt-1 ${highCount ? 'text-red-600' : 'text-emerald-600'}`}>{highCount}</p>
+          <p className={`text-2xl font-extrabold mt-1 ${highCount === null ? 'text-slate-500' : highCount ? 'text-red-600' : 'text-emerald-600'}`}>{highCount === null ? 'Unavailable' : highCount}</p>
         </div>
         <Link to="/adm/audit-logs" className="bg-white p-4 rounded-2xl border border-slate-200 hover:border-indigo-300">
           <p className="text-xs font-bold uppercase text-slate-500">Related</p>
@@ -85,6 +85,8 @@ export default function PlatformSecurity() {
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
         {loading ? (
           <div className="p-12 text-center text-sm text-slate-500">Loading security events…</div>
+        ) : error ? (
+          <div className="p-12 text-center text-sm text-amber-800">Security events are unavailable. No empty result is inferred from the failed source request.</div>
         ) : visible.length === 0 ? (
           <div className="p-12 text-center text-sm text-slate-500">No security audit records match this inspected sample.</div>
         ) : (

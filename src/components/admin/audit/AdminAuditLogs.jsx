@@ -11,6 +11,7 @@ export default function AdminAuditLogs() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedLog, setSelectedLog] = useState(null);
+  const [searchWindow, setSearchWindow] = useState(null);
 
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -31,6 +32,7 @@ export default function AdminAuditLogs() {
       if (categoryFilter) params.set('category', categoryFilter);
       if (severityFilter) params.set('severity', severityFilter);
       if (outcomeFilter) params.set('outcome', outcomeFilter);
+      if (searchQuery.trim()) params.set('search', searchQuery.trim());
 
       const [logsRes, statsRes] = await Promise.all([
         fetch(`/api/admin/audit-logs?${params.toString()}`, {
@@ -50,6 +52,7 @@ export default function AdminAuditLogs() {
       const statsData = statsRes.ok ? await statsRes.json() : null;
 
       setLogs(logsData.logs || []);
+      setSearchWindow(logsData.searchTruncated ? { size: logsData.searchWindow } : null);
       setStats(statsData);
     } catch (err) {
       console.error('[AdminAuditLogs] Error fetching logs:', err);
@@ -57,11 +60,12 @@ export default function AdminAuditLogs() {
     } finally {
       setLoading(false);
     }
-  }, [categoryFilter, severityFilter, outcomeFilter]);
+  }, [categoryFilter, severityFilter, outcomeFilter, searchQuery]);
 
   useEffect(() => {
-    fetchLogs();
-  }, [fetchLogs]);
+    const timer = window.setTimeout(() => fetchLogs(), searchQuery.trim() ? 350 : 0);
+    return () => window.clearTimeout(timer);
+  }, [fetchLogs, searchQuery]);
 
   const filteredLogs = logs.filter(log => {
     if (!searchQuery) return true;
@@ -77,18 +81,23 @@ export default function AdminAuditLogs() {
   const exportCsv = () => {
     if (!filteredLogs.length) return;
     const headers = ['Timestamp', 'Actor', 'Action', 'Category', 'Severity', 'Outcome', 'HTTP Method', 'Path', 'Status', 'IP'];
+    const csvCell = value => {
+      let text = String(value ?? '').replaceAll('"', '""');
+      if (/^[=+\-@]/.test(text)) text = `'${text}`;
+      return `"${text}"`;
+    };
     const rows = filteredLogs.map(l => [
-      `"${l.createdAt || l.occurredAt || ''}"`,
-      `"${l.actorEmail || l.actorUid || ''}"`,
-      `"${l.action || ''}"`,
-      `"${l.category || ''}"`,
-      `"${l.severity || ''}"`,
-      `"${l.outcome || ''}"`,
-      `"${l.method || ''}"`,
-      `"${l.pathname || ''}"`,
-      `"${l.statusCode || ''}"`,
-      `"${l.ipAddress || ''}"`,
-    ]);
+      l.createdAt || l.occurredAt || '',
+      l.actorEmail || l.actorUid || '',
+      l.action || '',
+      l.category || '',
+      l.severity || '',
+      l.outcome || '',
+      l.method || '',
+      l.pathname || '',
+      l.statusCode || '',
+      l.ipAddress || '',
+    ].map(csvCell));
 
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     const encodedUri = encodeURI(csvContent);
@@ -169,7 +178,7 @@ export default function AdminAuditLogs() {
           <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
             <div>
               <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Success Rate</p>
-              <p className="text-2xl font-extrabold text-emerald-600 mt-1">{stats.successRate}%</p>
+              <p className="text-2xl font-extrabold text-emerald-600 mt-1">{stats.successRate == null ? 'Data unavailable' : `${stats.successRate}%`}</p>
             </div>
             <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
               <FiCheckCircle className="h-5 w-5" />
@@ -238,6 +247,8 @@ export default function AdminAuditLogs() {
         </select>
       </div>
 
+      {searchWindow && <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">Search examined the newest {searchWindow.size} records. Older matching records may require a narrower server filter or an audited export.</div>}
+
       {/* Error State */}
       {error && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-800 flex items-center justify-between">
@@ -256,6 +267,8 @@ export default function AdminAuditLogs() {
             <FiRefreshCw className="animate-spin h-6 w-6 text-indigo-600 mx-auto mb-2" />
             Loading admin audit logs…
           </div>
+        ) : error ? (
+          <div className="p-12 text-center text-sm text-amber-800 font-medium">Audit log data is unavailable. No empty result is inferred from the failed request.</div>
         ) : filteredLogs.length === 0 ? (
           <div className="p-12 text-center text-sm text-slate-500 font-medium">
             No audit log records match the selected filters.

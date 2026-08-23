@@ -85,6 +85,12 @@ export default function PlatformAttention() {
           {Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-20 animate-pulse rounded-2xl bg-slate-200" />)}
           <p className="sr-only" role="status">Loading attention items…</p>
         </div>
+      ) : error ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-10 text-center">
+          <FiInfo className="mx-auto h-6 w-6 text-amber-500" aria-hidden="true" />
+          <p className="mt-2 text-sm font-bold text-amber-900">Attention data unavailable</p>
+          <p className="mt-1 text-xs text-amber-800">No empty or healthy conclusion is inferred while the source request is failing.</p>
+        </div>
       ) : unique.length === 0 ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center">
           <FiCheckCircle className="mx-auto h-6 w-6 text-emerald-500" aria-hidden="true" />

@@ -33,18 +33,25 @@ function writeStorage(key, value) {
 
 export function EnterpriseTenantProvider({ children }) {
   const user = useContext(AuthContext);
-  const enabled = enterpriseFeatureEnabled();
-  const [state, setState] = useState({ loading: enabled, error: null, serverDisabled: false, tenants: [], workspaces: [], context: null, tenant: null, workspace: null, platformAdmin: false });
+  // The build flag is UX metadata only. A server response is required before
+  // the Enterprise shell is enabled; an unknown server state must never open a
+  // client surface that is guaranteed to produce an avoidable 404/503.
+  const [serverEnabled, setServerEnabled] = useState(null);
+  const enabled = serverEnabled === true;
+  const [state, setState] = useState({ loading: Boolean(user?.uid), error: null, serverDisabled: false, tenants: [], workspaces: [], context: null, tenant: null, workspace: null, platformAdmin: false });
 
   const load = useCallback(async ({ tenantId = '', workspaceId = '', forceRefresh = false } = {}) => {
-    if (!enabled || !user?.uid) {
+    if (!user?.uid) {
+      setServerEnabled(null);
       setState({ loading: false, error: null, serverDisabled: false, tenants: [], workspaces: [], context: null, tenant: null, workspace: null, platformAdmin: false });
       return null;
     }
     setState(previous => ({ ...previous, loading: true, error: null, serverDisabled: false }));
     try {
       const status = await enterpriseFetch('/api/enterprise/status');
-      if (status.enabled !== true) {
+      const serverGate = status.enabled === true;
+      setServerEnabled(serverGate);
+      if (!serverGate) {
         const next = { loading: false, error: null, serverDisabled: true, tenants: [], workspaces: [], context: null, tenant: null, workspace: null, platformAdmin: false };
         setState(next);
         return next;
@@ -86,7 +93,7 @@ export function EnterpriseTenantProvider({ children }) {
       }));
       throw error;
     }
-  }, [enabled, user?.uid]);
+  }, [user?.uid]);
 
   useEffect(() => {
     load().catch(() => {});
