@@ -25,7 +25,7 @@ function getCommitSha() {
     const shaPath = path.join(__dirname, '..', 'COMMIT_SHA');
     if (fs.existsSync(shaPath)) {
       const raw = fs.readFileSync(shaPath, 'utf8').replace(/^\uFEFF/, '').trim();
-      if (/^[0-9a-f]{40}$/i.test(raw)) {
+      if (/^[0-9a-f]{7,40}$/i.test(raw)) {
         cachedCommitSha = raw;
         return cachedCommitSha;
       }
