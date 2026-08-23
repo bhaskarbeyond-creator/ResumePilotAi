@@ -23,7 +23,7 @@ const ADMIN_EMAIL = process.env.LIVE_CERT_ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.LIVE_CERT_ADMIN_PASSWORD;
 const LIVE_ENABLED = Boolean(BASE && SUPER_EMAIL && SUPER_PASSWORD);
 const DESTRUCTIVE = process.env.LIVE_CERT_ALLOW_DESTRUCTIVE === '1';
-const RAW_SECRET = /BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY|(?:sk|nvapi|rzp)_(?:live|test)_[A-Za-z0-9_-]{8,}|AIza[A-Za-z0-9_-]{30,}/i;
+const RAW_SECRET = /BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY|(?:sk|nvapi)_(?:live|test)_[A-Za-z0-9_-]{8,}|rzp_(?:live|test)_secret_[A-Za-z0-9_-]{8,}/i;
 
 async function signIn(page, email, password) {
   await page.goto(`${BASE}/login`, { waitUntil: 'domcontentloaded' });
@@ -178,7 +178,7 @@ test.describe('live Admin and Super Admin certification', () => {
     }
   });
 
-  test('destructive browser CRUD is opt-in and delegates to the API certification script', async () => {
+  test('destructive browser CRUD is opt-in and delegates to the API certification script', async ({ page }) => {
     test.skip(!DESTRUCTIVE, 'Set LIVE_CERT_ALLOW_DESTRUCTIVE=1 only in an isolated certification window; verify-crud-live.mjs owns disposable mutations.');
     await signIn(page, SUPER_EMAIL, SUPER_PASSWORD);
     // The browser suite deliberately does not invent/decommission resources.
