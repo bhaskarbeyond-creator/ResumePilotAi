@@ -629,22 +629,61 @@ async function buildServices(app) {
   const mfaEnforced = process.env.SUPER_ADMIN_MFA_REQUIRED === 'false'
     ? false
     : (process.env.SUPER_ADMIN_MFA_REQUIRED === 'true' || process.env.NODE_ENV === 'production');
+  const { providerCapability, PROVIDER_CAPABILITY } = require('../security/mfaState');
+  const totpCapability = providerCapability(process.env);
+  const dependenciesResponded = firestorePing.ok && authProbe.ok;
+
+  /**
+   * Honesty fix: this service used to report OPERATIONAL purely because
+   * Firestore and Auth answered their probes. When MFA is enforced but the
+   * Firebase TOTP provider is disabled, *every* destructive Super Admin
+   * operation is denied and no operator action inside the product can unblock
+   * it — that is not a healthy control plane. An undeclared provider is
+   * likewise reported as UNKNOWN rather than being rounded up to healthy.
+   */
+  let superAdminState;
+  let superAdminReason;
+  let superAdminConfiguration = CONFIG.CONFIGURED;
+  const reasons = [];
+
+  // Two independent conditions can degrade this service. Report BOTH rather
+  // than letting whichever is evaluated first hide the other.
+  if (!dependenciesResponded) {
+    superAdminState = firebaseConfigured ? STATE.DEGRADED : STATE.UNAVAILABLE;
+    reasons.push('Super Admin control-plane dependencies did not all respond to their probes.');
+  }
+
+  if (mfaEnforced && totpCapability === PROVIDER_CAPABILITY.DISABLED) {
+    superAdminState = STATE.UNAVAILABLE;
+    superAdminConfiguration = CONFIG.NOT_CONFIGURED;
+    reasons.push('A second factor is required for destructive operations, but FIREBASE_TOTP_MFA_ENABLED declares the Firebase TOTP provider as disabled. Enrollment fails with auth/operation-not-allowed, so no operator can obtain the required factor and every destructive operation is blocked. A Firebase project owner must enable TOTP multi-factor authentication.');
+  } else if (mfaEnforced && totpCapability === PROVIDER_CAPABILITY.UNKNOWN) {
+    // UNKNOWN never improves a worse state, and never rounds up to healthy.
+    if (superAdminState !== STATE.UNAVAILABLE) superAdminState = STATE.UNKNOWN;
+    if (superAdminConfiguration === CONFIG.CONFIGURED) superAdminConfiguration = CONFIG.UNKNOWN;
+    reasons.push('A second factor is required for destructive operations, but the Firebase TOTP provider state is undeclared (FIREBASE_TOTP_MFA_ENABLED is unset). Whether an operator can enrol a factor cannot be determined from the backend and must be verified in the Firebase console.');
+  }
+
+  if (!superAdminState) {
+    superAdminState = STATE.OPERATIONAL;
+    reasons.push(`Super Admin control-plane dependencies responded. Destructive operations ${mfaEnforced ? 'require' : 'do not currently require'} a second factor.`);
+  }
+  superAdminReason = reasons.join(' ');
+
   services.push(service({
     id: 'super-admin-platform',
     name: 'Super Admin Platform',
     group: GROUP.CORE,
     critical: true,
-    state: firestorePing.ok && authProbe.ok ? STATE.OPERATIONAL : (firebaseConfigured ? STATE.DEGRADED : STATE.UNAVAILABLE),
-    configuration: CONFIG.CONFIGURED,
-    reason: firestorePing.ok && authProbe.ok
-      ? `Super Admin control-plane dependencies responded. Destructive operations ${mfaEnforced ? 'require' : 'do not currently require'} a second factor.`
-      : 'Super Admin control-plane dependencies did not all respond to their probes.',
+    state: superAdminState,
+    configuration: superAdminConfiguration,
+    reason: superAdminReason,
     dependency: 'Firebase Authentication second factor + Firestore',
     retryable: true,
     affectedFeatures: ['Tenant decommission', 'Operator role changes', 'Maintenance mode', 'DLQ replay'],
     affectedApis: ['/api/platform/operators', '/api/platform/maintenance', '/api/platform/tenants/:id/decommission'],
     affectedUiModules: ['/adm/operators', '/adm/operations', '/adm/tenants'],
-    metrics: { mfaEnforced },
+    metrics: { mfaEnforced, totpProviderCapability: totpCapability },
     lastCheckedAt: checkedAt,
   }));
 

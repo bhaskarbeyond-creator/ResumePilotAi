@@ -133,7 +133,10 @@
     } /// cv4-content
 }
 
-p {
+/* Scoped to the template board. As a bare `p` selector this rule leaked into
+   every other route as soon as the Cv4 chunk loaded, and only a hard reload
+   removed it again. */
+.cv4-board p {
     white-space: pre-wrap;
 }
 

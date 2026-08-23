@@ -1,6 +1,6 @@
 /* Lexical Editor Styles */
 
-.editor-container {
+.rpa-editor-form .editor-container {
     border-radius: 3px;
     color: #000;
     position: relative;
@@ -11,7 +11,7 @@
     border-top-right-radius: 10px;
 }
 
-.editor-input {
+.rpa-editor-form .editor-input {
     min-height: 100px;
     resize: none;
     font-size: 14px;
@@ -23,7 +23,7 @@
     caret-color: #444;
 }
 
-.editor-placeholder {
+.rpa-editor-form .editor-placeholder {
     color: #999;
     overflow: hidden;
     position: absolute;
@@ -37,17 +37,17 @@
     pointer-events: none;
 }
 
-.editor-paragraph {
+.rpa-editor-form .editor-paragraph {
     margin: 0;
     margin-bottom: 8px;
     position: relative;
 }
 
-.editor-paragraph:last-child {
+.rpa-editor-form .editor-paragraph:last-child {
     margin-bottom: 0;
 }
 
-.editor-quote {
+.rpa-editor-form .editor-quote {
     margin: 0;
     margin-left: 20px;
     margin-bottom: 10px;
@@ -56,42 +56,42 @@
     font-style: italic;
 }
 
-.editor-heading-h1 {
+.rpa-editor-form .editor-heading-h1 {
     font-size: 24px;
     font-weight: 600;
     margin: 0;
     margin-bottom: 12px;
 }
 
-.editor-heading-h2 {
+.rpa-editor-form .editor-heading-h2 {
     font-size: 20px;
     font-weight: 600;
     margin: 0;
     margin-bottom: 10px;
 }
 
-.editor-heading-h3 {
+.rpa-editor-form .editor-heading-h3 {
     font-size: 18px;
     font-weight: 600;
     margin: 0;
     margin-bottom: 8px;
 }
 
-.editor-heading-h4 {
+.rpa-editor-form .editor-heading-h4 {
     font-size: 16px;
     font-weight: 600;
     margin: 0;
     margin-bottom: 8px;
 }
 
-.editor-heading-h5 {
+.rpa-editor-form .editor-heading-h5 {
     font-size: 14px;
     font-weight: 600;
     margin: 0;
     margin-bottom: 8px;
 }
 
-.editor-list-ol {
+.rpa-editor-form .editor-list-ol {
     padding: 0;
     margin: 6px 0;
     margin-left: 0;
@@ -99,7 +99,7 @@
     list-style-position: inside;
 }
 
-.editor-list-ul {
+.rpa-editor-form .editor-list-ul {
     padding: 0;
     margin: 6px 0;
     margin-left: 0;
@@ -107,63 +107,63 @@
     list-style-position: inside;
 }
 
-.editor-listitem {
+.rpa-editor-form .editor-listitem {
     margin: 1px 0;
     padding-left: 16px;
     list-style-position: outside;
     display: list-item;
 }
 
-.editor-list-ol .editor-listitem {
+.rpa-editor-form .editor-list-ol .editor-listitem {
     list-style-type: decimal;
 }
 
-.editor-list-ul .editor-listitem {
+.rpa-editor-form .editor-list-ul .editor-listitem {
     list-style-type: disc;
 }
 
-.editor-nested-listitem {
+.rpa-editor-form .editor-nested-listitem {
     list-style-type: circle;
     margin-left: 13px;
 }
 
-.editor-text-bold {
+.rpa-editor-form .editor-text-bold {
     font-weight: bold;
 }
 
-.editor-text-italic {
+.rpa-editor-form .editor-text-italic {
     font-style: italic;
 }
 
-.editor-text-underline {
+.rpa-editor-form .editor-text-underline {
     text-decoration: underline;
 }
 
-.editor-text-strikethrough {
+.rpa-editor-form .editor-text-strikethrough {
     text-decoration: line-through;
 }
 
-.editor-text-underlineStrikethrough {
+.rpa-editor-form .editor-text-underlineStrikethrough {
     text-decoration: underline line-through;
 }
 
-.editor-text-code {
+.rpa-editor-form .editor-text-code {
     background-color: rgb(240, 242, 245);
     padding: 1px 0.25rem;
     font-family: Menlo, Consolas, Monaco, monospace;
     font-size: 94%;
 }
 
-.editor-link {
+.rpa-editor-form .editor-link {
     color: rgb(33, 111, 219);
     text-decoration: none;
 }
 
-.editor-link:hover {
+.rpa-editor-form .editor-link:hover {
     text-decoration: underline;
 }
 
-.editor-code {
+.rpa-editor-form .editor-code {
     background-color: rgb(240, 242, 245);
     font-family: Menlo, Consolas, Monaco, monospace;
     display: block;
@@ -179,7 +179,7 @@
 }
 
 /* Toolbar Styles */
-.toolbar {
+.rpa-editor-form .toolbar {
     display: flex;
     margin-bottom: 1px;
     background: #fff;
@@ -189,7 +189,7 @@
     vertical-align: middle;
 }
 
-.toolbar button.toolbar-item {
+.rpa-editor-form .toolbar button.toolbar-item {
     border: 0;
     display: flex;
     background: none;
@@ -199,15 +199,15 @@
     vertical-align: middle;
 }
 
-.toolbar button.toolbar-item:disabled {
+.rpa-editor-form .toolbar button.toolbar-item:disabled {
     cursor: not-allowed;
 }
 
-.toolbar button.toolbar-item.spaced {
+.rpa-editor-form .toolbar button.toolbar-item.spaced {
     margin-right: 2px;
 }
 
-.toolbar button.toolbar-item i.format {
+.rpa-editor-form .toolbar button.toolbar-item i.format {
     background-size: contain;
     display: inline-block;
     height: 18px;
@@ -218,112 +218,112 @@
     opacity: 0.6;
 }
 
-.toolbar button.toolbar-item:disabled i.format {
+.rpa-editor-form .toolbar button.toolbar-item:disabled i.format {
     opacity: 0.2;
 }
 
-.toolbar button.toolbar-item.active {
+.rpa-editor-form .toolbar button.toolbar-item.active {
     background-color: rgba(223, 232, 250, 0.3);
 }
 
-.toolbar button.toolbar-item.active i {
+.rpa-editor-form .toolbar button.toolbar-item.active i {
     opacity: 1;
 }
 
-.toolbar .toolbar-item:hover:not([disabled]) {
+.rpa-editor-form .toolbar .toolbar-item:hover:not([disabled]) {
     background-color: #eee;
 }
 
-.toolbar .divider {
+.rpa-editor-form .toolbar .divider {
     width: 1px;
     background-color: #eee;
     margin: 0 4px;
 }
 
 /* Code highlighting */
-.editor-tokenComment {
+.rpa-editor-form .editor-tokenComment {
     color: slategray;
 }
 
-.editor-tokenPunctuation {
+.rpa-editor-form .editor-tokenPunctuation {
     color: #999;
 }
 
-.editor-tokenProperty {
+.rpa-editor-form .editor-tokenProperty {
     color: #905;
 }
 
-.editor-tokenSelector {
+.rpa-editor-form .editor-tokenSelector {
     color: #690;
 }
 
-.editor-tokenOperator {
+.rpa-editor-form .editor-tokenOperator {
     color: #9a6e3a;
 }
 
-.editor-tokenAttr {
+.rpa-editor-form .editor-tokenAttr {
     color: #07a;
 }
 
-.editor-tokenVariable {
+.rpa-editor-form .editor-tokenVariable {
     color: #e90;
 }
 
-.editor-tokenFunction {
+.rpa-editor-form .editor-tokenFunction {
     color: #dd4a68;
 }
 
 /* Additional List Styling for Better Display */
-div[contenteditable='true'] ul {
+.rpa-editor-form div[contenteditable='true'] ul {
     list-style-type: disc;
     margin: 6px 0;
     padding-left: 16px;
 }
 
-div[contenteditable='true'] ol {
+.rpa-editor-form div[contenteditable='true'] ol {
     list-style-type: decimal;
     margin: 6px 0;
     padding-left: 16px;
 }
 
-div[contenteditable='true'] li {
+.rpa-editor-form div[contenteditable='true'] li {
     display: list-item;
     margin: 1px 0;
     padding-left: 3px;
 }
 
-div[contenteditable='true'] ul ul {
+.rpa-editor-form div[contenteditable='true'] ul ul {
     list-style-type: circle;
     margin: 1px 0;
     padding-left: 13px;
 }
 
-div[contenteditable='true'] ul ul ul {
+.rpa-editor-form div[contenteditable='true'] ul ul ul {
     list-style-type: square;
     margin: 1px 0;
     padding-left: 13px;
 }
 
 /* Ensure proper spacing for paragraphs in editor */
-div[contenteditable='true'] p {
+.rpa-editor-form div[contenteditable='true'] p {
     margin: 0;
     padding: 0;
     min-height: 1em;
 }
 
 /* Bold text in editor */
-div[contenteditable='true'] strong,
-div[contenteditable='true'] b {
+.rpa-editor-form div[contenteditable='true'] strong,
+.rpa-editor-form div[contenteditable='true'] b {
     font-weight: bold;
 }
 
 /* Italic text in editor */
-div[contenteditable='true'] em,
-div[contenteditable='true'] i {
+.rpa-editor-form div[contenteditable='true'] em,
+.rpa-editor-form div[contenteditable='true'] i {
     font-style: italic;
 }
 
 /* Underlined text in editor */
-div[contenteditable='true'] u {
+.rpa-editor-form div[contenteditable='true'] u {
     text-decoration: underline;
 }

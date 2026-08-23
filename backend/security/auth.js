@@ -1,4 +1,11 @@
 const admin = require('../services/firebaseAdmin');
+const {
+  MFA_STATE,
+  PROVIDER_CAPABILITY,
+  providerCapability,
+  resolveMfaState,
+  describeMfaState,
+} = require('./mfaState');
 
 const PERMISSIONS = Object.freeze({
   SUPER_ADMIN: ['*'],
@@ -99,16 +106,37 @@ function requireSuperAdmin(req, res, next) {
   if (!isSuperAdmin(req.user)) {
     return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Super admin permission required', requestId: res.locals?.requestId } });
   }
-  if (superAdminMfaEnforced() && !hasSecondFactor(req.user)) {
+  const enforced = superAdminMfaEnforced();
+  if (enforced && !hasSecondFactor(req.user)) {
+    // Fail closed either way. The distinction below only changes the honesty of
+    // the reported reason so an operator is not told to perform an action that
+    // the identity provider makes impossible.
+    const posture = describeMfaState(resolveMfaState(req.user, { enforced: true }));
+    const configurationRequired = posture.state === MFA_STATE.MFA_CONFIGURATION_REQUIRED;
     return res.status(403).json({
       error: {
-        code: 'SUPER_ADMIN_MFA_REQUIRED',
-        message: 'Super Admin destructive operations require a second authentication factor. Enroll TOTP MFA and sign in again.',
+        code: configurationRequired ? 'MFA_CONFIGURATION_REQUIRED' : 'SUPER_ADMIN_MFA_REQUIRED',
+        message: posture.remediation?.what
+          ? `${posture.remediation.what} ${posture.remediation.action}`
+          : 'Super Admin destructive operations require a second authentication factor. Enroll TOTP MFA and sign in again.',
+        mfaState: posture.state,
+        mfaEnforced: true,
+        providerCapability: posture.providerCapability,
+        remediation: posture.remediation,
         requestId: res.locals?.requestId,
       },
     });
   }
   return next();
+}
+
+/**
+ * Read-only posture for the signed-in principal. Deliberately carries no
+ * secret material and is safe to expose to any authenticated administrator so
+ * the console can explain an MFA denial instead of looping a reauth prompt.
+ */
+function mfaPostureFor(user) {
+  return describeMfaState(resolveMfaState(user, { enforced: superAdminMfaEnforced() && isSuperAdmin(user) }));
 }
 
 /**
@@ -134,6 +162,11 @@ function requireRecentAdminAuthentication(req, res, next) {
       error: {
         code: 'RECENT_AUTH_REQUIRED',
         message: 'Reauthenticate before changing platform credentials or executing this destructive operation.',
+        // Recent authentication is explicitly NOT a second factor. Reporting the
+        // distinction stops the console from presenting a reauth prompt as if it
+        // satisfied an MFA requirement.
+        mfaState: 'RECENT_AUTHENTICATION',
+        satisfiesMfa: false,
         requestId: res.locals?.requestId,
       },
     });
@@ -153,6 +186,12 @@ module.exports = {
   isSuperAdmin,
   hasSecondFactor,
   superAdminMfaEnforced,
+  mfaPostureFor,
+  MFA_STATE,
+  PROVIDER_CAPABILITY,
+  providerCapability,
+  resolveMfaState,
+  describeMfaState,
   permissionsFor,
   setTokenVerifierForTests,
   setUserLookupForTests,

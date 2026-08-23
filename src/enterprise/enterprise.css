@@ -2591,7 +2591,11 @@ details.enterprise-disclosure[open] > summary::before { content: '▾ '; }
 
 /* ── Screen Reader Only ──────────────────────────────────────────────────── */
 
-.sr-only {
+/* Scoped deliberately: an unscoped `.sr-only` here redefined Tailwind's utility
+   for the whole application the moment the Enterprise chunk loaded, and the
+   winner depended on which route was visited first in the session. */
+.ep-root .sr-only,
+.enterprise .sr-only {
   position: absolute;
   width: 1px;
   height: 1px;

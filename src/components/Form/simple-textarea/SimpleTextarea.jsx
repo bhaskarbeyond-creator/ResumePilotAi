@@ -1804,7 +1804,10 @@ class SimpleTextarea extends Component {
 
   render() {
     return (
-      <div className="flex flex-col w-full">
+      // `rpa-editor-form` scopes LexicalStyles.css. See RichTextEditor.jsx: the two
+      // editors shared global `.editor-*`/`.toolbar` selectors with divergent
+      // values, making the rendered result depend on SPA navigation order.
+      <div className="rpa-editor-form flex flex-col w-full">
         <div className="flex flex-col">
           <div className="flex justify-between items-center mb-[5px]">
             <span className="my-[5px] text-[#98a1b3] text-[0.9em]">

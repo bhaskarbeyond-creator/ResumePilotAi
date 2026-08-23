@@ -609,7 +609,12 @@ const RichTextEditor = ({ value = '', onChange, placeholder = 'Enter your text..
     };
 
     return (
-        <div className={`relative ${className}`}>
+        // `rpa-editor-builder` is this component's style-ownership scope. Both rich
+        // text editors previously declared the same global `.editor-*`/`.toolbar`
+        // selectors with different values, so whichever lazy chunk loaded last won
+        // for the entire app until a hard reload. Scoping removes the order
+        // dependency at its source rather than masking it with overrides.
+        <div className={`rpa-editor-builder relative ${className}`}>
             <LexicalComposer initialConfig={getInitialConfig()}>
                 <div className="bg-white border border-slate-300 hover:border-slate-400 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 rounded-md transition-all duration-200 ease-in-out">
                     <ToolbarPlugin />

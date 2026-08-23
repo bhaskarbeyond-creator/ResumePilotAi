@@ -17,6 +17,7 @@ import { inferCountryFromCity } from '../../../utils/locationHelper';
 import { normalizeProfileData, normalizeProfileImage } from '../../../utils/profileData';
 import { calculateYearsOfExperience } from '../../../utils/resumeData';
 import { openPrivacyChoicesModal } from '../../PrivacyConsentBanner';
+import { classifyMfaError, MFA_STATE } from '../../../services/mfaService';
 
 const normalizeProfileForSave = value => normalizeProfileData({ ...value, postalcode: value.postalCode || '', website: value.websiteUrl || '' });
 
@@ -106,6 +107,8 @@ function DashboardSettings(props) {
     const [totpVerificationCode, setTotpVerificationCode] = useState('');
     const [totpDisableModalOpen, setTotpDisableModalOpen] = useState(false);
     const [totpDisablePassword, setTotpDisablePassword] = useState('');
+    // Structured, truthful explanation of the last MFA failure (never a raw Firebase string).
+    const [mfaGuidance, setMfaGuidance] = useState(null);
     const [loginHistory, setLoginHistory] = useState([]);
     const usesPasswordProvider = fire.auth().currentUser?.providerData?.some(provider => provider.providerId === 'password') !== false;
 
@@ -750,10 +753,13 @@ function DashboardSettings(props) {
     };
 
     // TOTP 2FA Setup & Disable Handlers
+    const mfaProviderUnavailable = mfaGuidance?.state === MFA_STATE.MFA_CONFIGURATION_REQUIRED;
+
     const handleStartTotpSetup = async () => {
         setIsSubmitting(true);
         try {
             const enrollment = await beginUserTotp2FA();
+            setMfaGuidance(null);
             setTotpEnrollmentSecret(enrollment.secret);
             setTotpSetupSecret(enrollment.secretKey);
             setTotpQrCodeDataUrl(enrollment.qrCodeDataUrl);
@@ -761,7 +767,12 @@ function DashboardSettings(props) {
             setTotpSetupStep(1);
             setTotpSetupModalOpen(true);
         } catch (error) {
-            triggerNotification(error.message || 'Unable to start MFA enrollment. Reauthenticate and try again.', 'error');
+            // The Firebase TOTP provider can be disabled at the project level
+            // (auth/operation-not-allowed). Say so instead of instructing the
+            // user to reauthenticate, which cannot possibly help.
+            const guidance = error?.guidance || classifyMfaError(error);
+            setMfaGuidance(guidance);
+            triggerNotification(`${guidance.what} ${guidance.action}`, 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -776,10 +787,13 @@ function DashboardSettings(props) {
         try {
             const status = await saveUserTotp2FA(totpEnrollmentSecret, totpVerificationCode);
             setTotpStatus(status);
+            setMfaGuidance(null);
             setTotpSetupStep(3); // Advance to backup codes screen
             triggerNotification('TOTP Two-Factor Authentication enabled successfully! 🛡️');
         } catch (err) {
-            triggerNotification(err.message || 'Failed to enable 2FA', 'error');
+            const guidance = err?.guidance || classifyMfaError(err);
+            setMfaGuidance(guidance);
+            triggerNotification(`${guidance.what} ${guidance.action}`, 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -2590,13 +2604,32 @@ function DashboardSettings(props) {
                                         <button
                                             type="button"
                                             onClick={handleStartTotpSetup}
-                                            className="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer">
+                                            disabled={mfaProviderUnavailable || isSubmitting}
+                                            aria-describedby={mfaGuidance ? 'mfa-guidance' : undefined}
+                                            className="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer">
                                             <FaQrcode className="w-3.5 h-3.5" />
-                                            <span>Enable 2FA (Authenticator App)</span>
+                                            <span>{mfaProviderUnavailable ? 'Unavailable — provider not enabled' : 'Enable 2FA (Authenticator App)'}</span>
                                         </button>
                                     )}
                                 </div>
                             </div>
+
+                            {/* Honest failure reporting. The platform never claims 2FA is
+                                available when the identity provider cannot issue a factor. */}
+                            {mfaGuidance && (
+                                <div
+                                    id="mfa-guidance"
+                                    role="alert"
+                                    data-testid="mfa-guidance"
+                                    data-mfa-state={mfaGuidance.state}
+                                    className={`p-4 rounded-xl border text-xs space-y-1 ${mfaProviderUnavailable ? 'bg-red-50 border-red-200 text-red-900' : 'bg-amber-50 border-amber-200 text-amber-900'}`}>
+                                    <p className="font-bold">{mfaProviderUnavailable ? 'Two-factor authentication is not available on this deployment' : 'Two-factor enrollment did not complete'}</p>
+                                    <p>{mfaGuidance.what}</p>
+                                    <p><span className="font-semibold">Why:</span> {mfaGuidance.why}</p>
+                                    <p><span className="font-semibold">Impact:</span> {mfaGuidance.impact}</p>
+                                    <p><span className="font-semibold">{mfaGuidance.actor === 'PLATFORM_OWNER' ? 'Platform owner action required' : 'What to do'}:</span> {mfaGuidance.action}</p>
+                                </div>
+                            )}
                         </div>
 
                         {/* Card 5: Email Verification & Authentication Status */}

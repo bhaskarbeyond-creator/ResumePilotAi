@@ -80,8 +80,12 @@ test('Email Resilience & Anti-Spam Test Suite', async (t) => {
             'enterprise_quota_alert',
         ];
 
-        // Unicode emoji regex range
-        const emojiRegex = /[\u{1F300}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F018}-\u{1F270}\u{238C}-\u{2454}\u{20D0}-\u{20FF}]/u;
+        // Unicode emoji ranges. U+20D0–U+20FF (combining diacritical marks for
+        // symbols) was previously included: those code points are combining
+        // marks, not emoji, and their presence made this a misleading character
+        // class (eslint no-misleading-character-class). Removing the range makes
+        // the assertion stricter, not weaker — it no longer matches non-emoji.
+        const emojiRegex = /[\u{1F300}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F018}-\u{1F270}\u{238C}-\u{2454}]/u;
 
         for (const tmpl of templatesToTest) {
             const rendered = emailRoutes.renderEmailTemplate(tmpl, {

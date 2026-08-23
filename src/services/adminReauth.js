@@ -20,6 +20,30 @@ export function apiErrorCode(response, result = {}) {
 }
 
 /**
+ * Second-factor denials are NOT recoverable by reauthentication.
+ *
+ * Previously nothing in the console recognised SUPER_ADMIN_MFA_REQUIRED, so a
+ * blocked Super Admin saw a raw error and — where reauth retry logic ran — was
+ * re-prompted for a password that could never satisfy the requirement. These
+ * codes must terminate the retry path and surface the backend's remediation.
+ */
+export const MFA_BLOCKING_CODES = Object.freeze(['SUPER_ADMIN_MFA_REQUIRED', 'MFA_CONFIGURATION_REQUIRED']);
+
+export function mfaDenial(result = {}) {
+  const nested = result.error && typeof result.error === 'object' ? result.error : result;
+  const code = nested?.code;
+  if (!MFA_BLOCKING_CODES.includes(code)) return null;
+  return {
+    code,
+    mfaState: nested.mfaState || (code === 'MFA_CONFIGURATION_REQUIRED' ? 'MFA_CONFIGURATION_REQUIRED' : 'MFA_REQUIRED'),
+    message: nested.message || 'A verified second authentication factor is required for this operation.',
+    remediation: nested.remediation || null,
+    providerCapability: nested.providerCapability || 'UNKNOWN',
+    recoverableByReauthentication: false,
+  };
+}
+
+/**
  * Return a fresh token for an administrative retry. The initial request may
  * already have a token supplied by main.jsx's same-origin interceptor, but a
  * recent-auth retry must replace it after Firebase reauthentication. Keeping
@@ -69,6 +93,13 @@ export async function fetchAdminWithReauth(url, options = {}, { retry = true } =
 
   let result = await execute();
   const code = apiErrorCode(result.response, result.data);
+  const denial = mfaDenial(result.data);
+  if (denial) {
+    // Terminate immediately. Retrying or prompting for a password here would
+    // present an unsatisfiable loop and imply the boundary is soft. It is not.
+    result.mfaDenial = denial;
+    return result;
+  }
   if (retry && code === 'RECENT_AUTH_REQUIRED') {
     await requestAdminReauthentication();
     requestOptions = await refreshAuthorizationHeader(requestOptions);

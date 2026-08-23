@@ -139,6 +139,11 @@ const SAFE_ENVIRONMENT = Object.freeze([
   ['GLOBAL_RATE_LIMIT_MAX', 'Global API rate-limit maximum', 'security', false, true],
   ['SENSITIVE_AUTH_MAX_AGE_MS', 'Sensitive-operation authentication age', 'security', false, true],
   ['SUPER_ADMIN_MFA_REQUIRED', 'Super Admin MFA policy override', 'security', false, true],
+  // Declares whether the Firebase project has the TOTP second-factor provider
+  // enabled. Firebase Admin cannot probe this, so the platform reports the
+  // declared value and marks it as requiring production verification rather
+  // than assuming MFA works.
+  ['FIREBASE_TOTP_MFA_ENABLED', 'Firebase TOTP multi-factor provider availability (declared)', 'security', false, true],
   ['AI_BASIC_DAILY_LIMIT', 'Basic account daily AI limit', 'ai', false, true],
   ['AI_PREMIUM_DAILY_LIMIT', 'Premium account daily AI limit', 'ai', false, true],
   ['AI_ADMIN_DAILY_LIMIT', 'Admin account daily AI limit', 'ai', false, true],

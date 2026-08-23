@@ -4,7 +4,7 @@ const express = require('express');
 const os = require('os');
 const fs = require('fs');
 const path = require('path');
-const { requirePermission, requireSuperAdmin, requireRecentAdminAuthentication, isSuperAdmin } = require('../security/auth');
+const { requirePermission, requireSuperAdmin, requireRecentAdminAuthentication, isSuperAdmin, mfaPostureFor } = require('../security/auth');
 const { recordAdminAuditLog } = require('../security/adminAudit');
 const { getPlatformConfiguration } = require('../services/platformConfiguration');
 const { getPaymentSettingsProjection } = require('../services/paymentAdmin');
@@ -894,6 +894,44 @@ router.get('/command-center', async (req, res) => {
     announcements: announcements.filter(item => item.enabled).slice(0, 5),
     sources,
     updatedAt: new Date().toISOString(),
+  });
+});
+
+/**
+ * Honest MFA posture for the signed-in administrator.
+ *
+ * Mounted behind `system.config.read` only. It must NOT be behind
+ * `requireSuperAdmin`, because that guard is exactly what fails when MFA is
+ * unsatisfiable — the console needs to be able to read *why* it is blocked.
+ * The payload contains no secret and no provider credential.
+ */
+router.get('/security/mfa-posture', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  const posture = mfaPostureFor(req.user);
+  return res.json({
+    mfa: {
+      state: posture.state,
+      enforced: posture.enforced,
+      satisfied: posture.satisfied,
+      enrolled: posture.enrolled,
+      recentAuthentication: posture.recentAuthentication,
+      providerCapability: posture.providerCapability,
+      secondFactorMethod: posture.secondFactor,
+      authTime: posture.authTime,
+      remediation: posture.remediation,
+    },
+    principal: {
+      uid: req.user?.uid || null,
+      isSuperAdmin: isSuperAdmin(req.user),
+      emailVerified: req.user?.emailVerified === true,
+    },
+    // The backend cannot probe Firebase for provider enablement; it reports the
+    // declared capability and says so rather than implying a live check.
+    verification: {
+      source: 'DECLARED_CONFIGURATION',
+      declaredBy: 'FIREBASE_TOTP_MFA_ENABLED',
+      productionVerificationRequired: posture.providerCapability !== 'ENABLED',
+    },
   });
 });
 
