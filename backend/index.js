@@ -4862,8 +4862,8 @@ app.get('/api/admin/users/:uid', async (req, res) => {
     if (!requestDb || !identityAdmin?.auth) return res.status(503).json({ success: false, code: 'USER_DIRECTORY_UNAVAILABLE', error: 'User directory unavailable.', requestId: res.locals.requestId });
     try {
         const [identity, profileSnapshot] = await Promise.all([identityAdmin.auth().getUser(uid), requestDb.collection('users').doc(uid).get()]);
-        if (!profileSnapshot.exists) return res.status(404).json({ success: false, code: 'USER_NOT_FOUND', error: 'User profile not found.', requestId: res.locals.requestId });
-        return res.json({ success: true, user: adminUserProjection(identity, profileSnapshot.data() || {}) });
+        const profile = profileSnapshot.exists ? (profileSnapshot.data() || {}) : {};
+        return res.json({ success: true, user: adminUserProjection(identity, profile) });
     } catch (error) {
         return res.status(error.code === 'auth/user-not-found' ? 404 : 503).json({ success: false, code: error.code === 'auth/user-not-found' ? 'USER_NOT_FOUND' : 'USER_DIRECTORY_UNAVAILABLE', error: error.code === 'auth/user-not-found' ? 'User not found.' : 'Unable to load user.', requestId: res.locals.requestId });
     }
@@ -4913,9 +4913,7 @@ app.patch('/api/admin/users/:uid', async (req, res) => {
             identityAdmin.auth().getUser(uid),
             requestDb.collection('users').doc(uid).get(),
         ]);
-        if (!userSnapshot.exists) return res.status(404).json({ success: false, code: 'USER_NOT_FOUND', error: 'User profile not found.', requestId: res.locals.requestId });
-
-        const userData = userSnapshot.data() || {};
+        const userData = userSnapshot.exists ? (userSnapshot.data() || {}) : {};
         const currentRole = String(target.customClaims?.role || userData.role || 'USER').toUpperCase();
         const currentMembership = String(userData.membership || 'Basic');
         if (currentRole === 'SUPER_ADMIN' && !isSuperAdmin(req.user)) {
