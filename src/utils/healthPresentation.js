@@ -160,3 +160,26 @@ export function humanizeMetricKey(key) {
     .replace(/\bMs\b/g, 'ms')
     .trim();
 }
+
+/**
+ * Renders an uptime in seconds as a human duration.
+ *
+ * Returns "Data unavailable" when the value is missing rather than falling back
+ * to zero: "0h 0m" reads as a real measurement meaning "just restarted", which
+ * is a materially different and alarming claim from "we could not read it".
+ */
+export function formatUptime(seconds) {
+  if (seconds === null || seconds === undefined || seconds === '') return 'Data unavailable';
+
+  const total = Number(seconds);
+  if (!Number.isFinite(total) || total < 0) return 'Data unavailable';
+
+  const days = Math.floor(total / 86400);
+  const hours = Math.floor((total % 86400) / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  if (minutes > 0) return `${minutes}m`;
+  return `${Math.floor(total)}s`;
+}

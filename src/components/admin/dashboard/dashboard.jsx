@@ -7,7 +7,7 @@ import {
 import { FiActivity, FiCpu, FiLock } from 'react-icons/fi';
 import { formatAdminMoney } from '../../../utils/adminData';
 import { getCommandCenter } from '../../../services/platformApi';
-import { describeOverall, formatCheckedAt } from '../../../utils/healthPresentation';
+import { describeOverall, formatCheckedAt, formatMetric, formatUptime } from '../../../utils/healthPresentation';
 
 const Dashboard = () => {
   const [center, setCenter] = useState(null);
@@ -73,7 +73,7 @@ const Dashboard = () => {
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${center.status === 'HEALTHY' ? 'bg-emerald-100 text-emerald-800' : center.status === 'DEGRADED' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'}`}>{center.status}</span>
                 </div>
                 <p className="text-xs text-slate-500 mt-1">
-                  Uptime: {Math.floor((center.uptimeSeconds || 0) / 3600)}h {Math.floor(((center.uptimeSeconds || 0) % 3600) / 60)}m • DB Latency: {center.subsystems?.database?.latencyMs ?? '—'}ms • Memory: {center.subsystems?.runtime?.heapUsedMb ?? '—'}MB
+                  Uptime: {formatUptime(center.uptimeSeconds)} • DB Latency: {formatMetric(center.subsystems?.database?.latencyMs)}{center.subsystems?.database?.latencyMs == null ? '' : 'ms'} • Memory: {formatMetric(center.subsystems?.runtime?.heapUsedMb)}{center.subsystems?.runtime?.heapUsedMb == null ? '' : 'MB'}
                 </p>
               </div>
             </div>

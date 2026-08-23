@@ -286,3 +286,42 @@ test('the health console degrades honestly when data cannot be collected', async
   assert.match(matrix, /No endpoints match these filters/, 'matrix needs an empty state');
   assert.match(panel, /aria-busy="true"/);
 });
+
+/**
+ * Uptime must distinguish "zero" from "unknown".
+ *
+ * The admin dashboard rendered `Math.floor((center.uptimeSeconds || 0) / 3600)`,
+ * so a missing reading displayed as "0h 0m". That is not a neutral fallback: it
+ * is a concrete claim that the platform restarted moments ago, which would send
+ * an operator hunting a crash that never happened.
+ */
+test('formatUptime reports missing data instead of inventing a zero', async () => {
+  const { formatUptime } = await import('../src/utils/healthPresentation.js');
+
+  for (const missing of [null, undefined, '', 'abc', NaN, -5]) {
+    assert.equal(
+      formatUptime(missing),
+      'Data unavailable',
+      `${String(missing)} must not render as a duration`,
+    );
+  }
+
+  // A genuine zero is a real measurement and must survive.
+  assert.equal(formatUptime(0), '0s');
+  assert.equal(formatUptime(59), '59s');
+  assert.equal(formatUptime(60), '1m');
+  assert.equal(formatUptime(7320), '2h 2m');
+  assert.equal(formatUptime(90000), '1d 1h');
+});
+
+test('the dashboard no longer coerces missing platform metrics to zero', async () => {
+  const fs = await import('node:fs');
+  const source = fs.readFileSync('src/components/admin/dashboard/dashboard.jsx', 'utf8');
+
+  // The specific coercion that produced the fake "0h 0m".
+  assert.ok(
+    !/uptimeSeconds\s*\|\|\s*0/.test(source),
+    'dashboard still falls back to 0 for a missing uptime',
+  );
+  assert.ok(source.includes('formatUptime(center.uptimeSeconds)'));
+});
