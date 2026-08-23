@@ -52,7 +52,7 @@ export function buildAiRequest(endpointName, payload = {}) {
     return { url: `/api/${endpointName}`, body: payload };
 }
 
-async function getAuthHeaders() {
+async function getAuthHeaders(forceRefresh = false) {
     const headers = { 'Content-Type': 'application/json' };
     try {
         const fireModule = await import('../conf/fire.js').catch(() => null);
@@ -70,7 +70,7 @@ async function getAuthHeaders() {
                 });
             }
             if (user) {
-                const token = await user.getIdToken();
+                const token = await user.getIdToken(forceRefresh);
                 if (token) headers['Authorization'] = `Bearer ${token}`;
             }
         }
@@ -103,16 +103,45 @@ export async function generateUserAiContent(endpointName, payload = {}, options 
     const request = buildAiRequest(endpointName, payload);
     const { controller, dispose } = createAbortController(options.signal, options.timeoutMs || 45_000);
     try {
-        const headers = await getAuthHeaders();
+        let headers = await getAuthHeaders(false);
         if (controller.signal.aborted) throw (controller.signal.reason || new DOMException('This operation was aborted', 'AbortError'));
-        const response = await fetch(request.url, {
+        let response = await fetch(request.url, {
             method: 'POST',
             headers,
             credentials: 'same-origin',
             signal: controller.signal,
             body: JSON.stringify(request.body),
         });
-        const data = await response.json().catch(() => ({}));
+        let data = await response.json().catch(() => ({}));
+
+        // Self-healing retry: If token was unrefreshed when user verified their email,
+        // force-reload Firebase auth state and refresh ID token to retry once.
+        if (!response.ok && (data?.error?.code === 'EMAIL_VERIFICATION_REQUIRED' || data?.error?.code === 'AUTH_REQUIRED' || response.status === 401 || response.status === 403)) {
+            try {
+                const fireModule = await import('../conf/fire.js').catch(() => null);
+                const fire = fireModule?.default;
+                if (fire?.auth?.()?.currentUser) {
+                    await fire.auth().currentUser.reload().catch(() => {});
+                    headers = await getAuthHeaders(true);
+                    if (!controller.signal.aborted) {
+                        const retryResponse = await fetch(request.url, {
+                            method: 'POST',
+                            headers,
+                            credentials: 'same-origin',
+                            signal: controller.signal,
+                            body: JSON.stringify(request.body),
+                        });
+                        const retryData = await retryResponse.json().catch(() => ({}));
+                        if (retryResponse.ok) {
+                            return retryData;
+                        }
+                        response = retryResponse;
+                        data = retryData;
+                    }
+                }
+            } catch (_) {}
+        }
+
         if (!response.ok) {
             const error = new Error(data?.error?.message || data?.error || 'AI request failed');
             error.code = data?.error?.code || 'AI_REQUEST_FAILED';
@@ -136,15 +165,41 @@ export async function parseResumeTextToStructuredData(rawText, options = {}) {
     const heuristic = normalizeRawDataToTempJson(extractHeuristicResumeData(text), text);
     const { controller, dispose } = createAbortController(options.signal, options.timeoutMs || 55_000);
     try {
-        const headers = await getAuthHeaders();
-        const response = await fetch('/api/parse-resume', {
+        let headers = await getAuthHeaders(false);
+        let response = await fetch('/api/parse-resume', {
             method: 'POST',
             headers,
             credentials: 'same-origin',
             signal: controller.signal,
             body: JSON.stringify({ rawText: text.slice(0, 40_000) })
         });
-        const result = await response.json().catch(() => ({}));
+        let result = await response.json().catch(() => ({}));
+
+        if (!response.ok && (result?.error?.code === 'EMAIL_VERIFICATION_REQUIRED' || response.status === 401 || response.status === 403)) {
+            try {
+                const fireModule = await import('../conf/fire.js').catch(() => null);
+                const fire = fireModule?.default;
+                if (fire?.auth?.()?.currentUser) {
+                    await fire.auth().currentUser.reload().catch(() => {});
+                    headers = await getAuthHeaders(true);
+                    if (!controller.signal.aborted) {
+                        const retryResponse = await fetch('/api/parse-resume', {
+                            method: 'POST',
+                            headers,
+                            credentials: 'same-origin',
+                            signal: controller.signal,
+                            body: JSON.stringify({ rawText: text.slice(0, 40_000) })
+                        });
+                        const retryResult = await retryResponse.json().catch(() => ({}));
+                        if (retryResponse.ok && retryResult.data) {
+                            response = retryResponse;
+                            result = retryResult;
+                        }
+                    }
+                }
+            } catch (_) {}
+        }
+
         if (!response.ok || !result.data) return heuristic;
         const ai = normalizeRawDataToTempJson(result.data, text);
         return {

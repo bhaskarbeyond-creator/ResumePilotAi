@@ -311,6 +311,9 @@ class DashboardMain extends Component {
                             await currentUser.reload();
                             if (fire.auth().currentUser?.emailVerified) {
                                 clearInterval(poll);
+                                if (typeof fire.auth().currentUser.getIdToken === 'function') {
+                                    await fire.auth().currentUser.getIdToken(true).catch(() => {});
+                                }
                                 if (this._isMounted) this.setState({ showVerifyBanner: false });
                             }
                         }

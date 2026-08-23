@@ -22,7 +22,22 @@ async function requireAuth(req, res, next) {
   if (!match) return unauthorized(res);
   try {
     const decoded = await verifyToken(match[1]);
-    req.user = Object.freeze({ uid: decoded.uid, email: decoded.email || null, emailVerified: decoded.email_verified === true, claims: decoded });
+    let emailVerified = decoded.email_verified === true;
+
+    // Real-time verification fallback: If client JWT was minted prior to verification,
+    // check live Firebase Auth record so verified users are not blocked by token cache lag.
+    if (!emailVerified && decoded.uid && process.env.NODE_ENV !== 'test' && admin?.auth && typeof admin.auth().getUser === 'function') {
+      try {
+        const userRecord = await admin.auth().getUser(decoded.uid);
+        if (userRecord?.emailVerified === true) {
+          emailVerified = true;
+        }
+      } catch (_) {
+        // Non-fatal: preserve token-derived state
+      }
+    }
+
+    req.user = Object.freeze({ uid: decoded.uid, email: decoded.email || null, emailVerified, claims: decoded });
     return next();
   } catch (_) {
     return unauthorized(res, 'INVALID_AUTH_TOKEN');

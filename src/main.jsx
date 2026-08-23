@@ -166,8 +166,15 @@ const AuthWrapper = () => {
             }).then(res => res.json()).then(data => {
                 if (data.success) {
                     setVerificationBanner({ type: 'success', title: 'Account Verified! 🔑', text: data.message || 'Email verified successfully! You now have full access.' });
-                    if (fire.auth().currentUser && typeof fire.auth().currentUser.reload === 'function') {
-                        fire.auth().currentUser.reload().catch(() => {});
+                    const curr = fire.auth().currentUser;
+                    if (curr) {
+                        if (typeof curr.reload === 'function') {
+                            curr.reload().then(() => {
+                                if (typeof curr.getIdToken === 'function') curr.getIdToken(true).catch(() => {});
+                            }).catch(() => {});
+                        } else if (typeof curr.getIdToken === 'function') {
+                            curr.getIdToken(true).catch(() => {});
+                        }
                     }
                     window.history.replaceState({}, document.title, window.location.pathname);
                 } else {
