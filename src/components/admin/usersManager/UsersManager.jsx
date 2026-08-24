@@ -6,7 +6,7 @@ import {
   FiChevronLeft, FiChevronRight, FiSliders, FiDollarSign
 } from 'react-icons/fi';
 import fire from '../../../conf/fire';
-import { getAdminUsers, getUser360 } from '../../../services/platformApi';
+import { getAdminUsers, getUser360, getPlatformTenants } from '../../../services/platformApi';
 import {
   setUserAdminStatus, updateUserSubscription, toggleUserSuspension,
   deleteUserByAdmin, checkIfAdmin
@@ -69,14 +69,19 @@ export default function UsersManager() {
     return () => unsub();
   }, []);
 
-  // Fetch available tenants for filter & modal
+  // Fetch available tenants for filter & modal from authoritative platform API
   const fetchTenants = useCallback(async () => {
     try {
-      const db = fire.firestore();
-      const snap = await db.collection('enterprise_tenants').limit(100).get();
-      const list = snap.docs.map(d => ({ id: d.id, displayName: d.data()?.displayName || d.id, slug: d.data()?.slug || d.id }));
+      const res = await getPlatformTenants();
+      const list = (res?.tenants || []).map(d => ({
+        id: d.id,
+        displayName: d.displayName || d.name || d.id,
+        slug: d.slug || d.id
+      }));
       setAvailableTenants(list);
-    } catch (_) {}
+    } catch (_) {
+      setAvailableTenants([]);
+    }
   }, []);
 
   useEffect(() => {

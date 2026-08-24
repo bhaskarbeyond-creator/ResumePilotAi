@@ -161,7 +161,9 @@ export default function CreateUserModal({
                   onChange={(e) => setTenantId(e.target.value)}
                   className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg font-semibold text-xs"
                 >
-                  <option value="">-- None (Individual Consumer) --</option>
+                  <option value="">
+                    {availableTenants.length === 0 ? '-- No Organizations Created --' : '-- None (Individual Consumer) --'}
+                  </option>
                   {availableTenants.map(t => (
                     <option key={t.id} value={t.id}>{t.displayName} ({t.slug})</option>
                   ))}

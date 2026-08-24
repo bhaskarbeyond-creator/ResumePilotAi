@@ -82,7 +82,8 @@ export const getAdminSubscriptions = (params = {}) => {
 };
 export const getAdminAiEntitlements = () => platformFetch('/api/admin/ai/entitlements');
 
-// Super Admin Tenant 360 Governance
+export const getPlatformTenants = () => platformFetch('/api/enterprise/platform/tenants');
+
 export const addTenantMember = (tenantId, body) => platformFetch(`/api/admin/platform/tenants/${encodeURIComponent(tenantId)}/members`, { method: 'POST', body: JSON.stringify(body || {}) });
 export const removeTenantMember = (tenantId, principalId) => platformFetch(`/api/admin/platform/tenants/${encodeURIComponent(tenantId)}/members/${encodeURIComponent(principalId)}`, { method: 'DELETE' });
 export const updateTenantMember = (tenantId, principalId, body) => platformFetch(`/api/admin/platform/tenants/${encodeURIComponent(tenantId)}/members/${encodeURIComponent(principalId)}`, { method: 'PATCH', body: JSON.stringify(body || {}) });
