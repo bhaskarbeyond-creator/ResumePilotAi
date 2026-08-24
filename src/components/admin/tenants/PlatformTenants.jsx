@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import fire from '../../../conf/fire';
 import { useAdminSession } from '../AdminContext';
-import { decommissionTenant, getTenantDetail, renameTenant } from '../../../services/platformApi';
+import { decommissionTenant, getTenantDetail, renameTenant, addTenantMember, removeTenantMember } from '../../../services/platformApi';
 import {
   FiServer, FiRefreshCw, FiPlus, FiSearch, FiShieldOff,
-  FiPlay, FiCheck, FiAlertTriangle, FiX, FiEye
+  FiPlay, FiCheck, FiAlertTriangle, FiX, FiEye, FiUserPlus, FiTrash2, FiUser
 } from 'react-icons/fi';
+
 
 export default function PlatformTenants() {
   const { isSuperAdmin } = useAdminSession();
@@ -35,6 +36,13 @@ export default function PlatformTenants() {
   const [renaming, setRenaming] = useState(false);
   const [isolationTier, setIsolationTier] = useState('STANDARD');
   const [provisioning, setProvisioning] = useState(false);
+
+  // Member Management State
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [memberEmail, setMemberEmail] = useState('');
+  const [memberRole, setMemberRole] = useState('MEMBER');
+  const [memberBusy, setMemberBusy] = useState(false);
+
 
   const fetchTenants = useCallback(async () => {
     setLoading(true);
@@ -203,6 +211,56 @@ export default function PlatformTenants() {
       setProvisioning(false);
     }
   };
+
+  const handleAddMember = async (e) => {
+    e.preventDefault();
+    if (!memberEmail.trim() || !selectedTenant) return;
+    setMemberBusy(true);
+    setActionError(null);
+    try {
+      await addTenantMember(selectedTenant.id, { email: memberEmail.trim(), role: memberRole });
+      setNotification(`Member "${memberEmail.trim()}" added to ${selectedTenant.displayName}.`);
+      setMemberEmail('');
+      setShowAddMember(false);
+      setDetailRefresh(v => v + 1);
+    } catch (err) {
+      setActionError(err.message || 'Failed to add member to organization.');
+    } finally {
+      setMemberBusy(false);
+    }
+  };
+
+  const handleRemoveMember = async (principalId, userLabel) => {
+    if (!selectedTenant) return;
+    if (confirmAction?.id !== `remove-member-${principalId}`) {
+      setConfirmAction({
+        id: `remove-member-${principalId}`,
+        title: 'Remove Member',
+        message: `Are you sure you want to remove member "${userLabel}" from organization "${selectedTenant.displayName}"?`,
+        confirmText: 'Remove Member',
+        danger: true,
+        action: () => executeRemoveMember(principalId, userLabel)
+      });
+      return;
+    }
+  };
+
+  const executeRemoveMember = async (principalId, userLabel) => {
+    setConfirmAction(null);
+    setMemberBusy(true);
+    setActionError(null);
+    try {
+      await removeTenantMember(selectedTenant.id, principalId);
+      setNotification(`Member "${userLabel}" removed from organization.`);
+      setDetailRefresh(v => v + 1);
+    } catch (err) {
+      setActionError(err.message || 'Failed to remove member.');
+    } finally {
+      setMemberBusy(false);
+    }
+  };
+
+
 
   const handleDecommission = async (tenant) => {
     if (!isSuperAdmin) return;
@@ -572,7 +630,85 @@ export default function PlatformTenants() {
               <div className="grid grid-cols-2 gap-2">
                 {Object.entries(selectedDetail.overview || {}).map(([key, item]) => <div key={key} className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-[10px] font-extrabold uppercase text-slate-400">{key.replaceAll('_', ' ')}</p><p className="mt-1 text-sm font-bold text-slate-900">{item?.value === null || item?.value === undefined ? 'Unavailable' : item.value}</p><p className="text-[10px] text-slate-500">{item?.source || 'unknown'}</p></div>)}
               </div>
-              <div className="rounded-xl border border-slate-200 p-3"><h4 className="text-xs font-extrabold text-slate-800">Users &amp; memberships</h4><p className="mt-1 text-[11px] text-slate-500">{selectedDetail.users?.source || 'unknown'} · {selectedDetail.memberships?.items?.length ?? 'Unavailable'} membership records</p><div className="mt-2 max-h-32 space-y-1 overflow-y-auto">{(selectedDetail.users?.items || []).slice(0, 20).map(user => <div key={user.id} className="flex items-center justify-between gap-2 text-[11px]"><span className="truncate font-semibold">{user.email || user.id}</span><span className="shrink-0 text-slate-500">{user.roles?.join(', ') || user.status || 'UNKNOWN'}</span></div>)}</div></div>
+              <div className="rounded-xl border border-slate-200 p-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                      <FiUser className="text-indigo-600" /> Users &amp; Memberships
+                    </h4>
+                    <p className="mt-0.5 text-[11px] text-slate-500">{selectedDetail.users?.source || 'unknown'} · {selectedDetail.memberships?.items?.length ?? (selectedDetail.users?.items?.length || 0)} members</p>
+                  </div>
+                  {isSuperAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAddMember(prev => !prev)}
+                      className="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[11px] font-bold flex items-center gap-1 transition"
+                    >
+                      <FiUserPlus /> Add Member
+                    </button>
+                  )}
+                </div>
+
+                {/* Add Member Form */}
+                {showAddMember && (
+                  <form onSubmit={handleAddMember} className="mt-3 p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                    <p className="text-[11px] font-bold text-slate-800">Add User to Organization</p>
+                    <div className="flex gap-2">
+                      <input
+                        type="email"
+                        required
+                        placeholder="User email address"
+                        value={memberEmail}
+                        onChange={e => setMemberEmail(e.target.value)}
+                        className="flex-1 px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"
+                      />
+                      <select
+                        value={memberRole}
+                        onChange={e => setMemberRole(e.target.value)}
+                        className="px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold"
+                      >
+                        <option value="MEMBER">Member</option>
+                        <option value="ADMIN">Admin</option>
+                        <option value="OWNER">Owner</option>
+                      </select>
+                      <button
+                        type="submit"
+                        disabled={memberBusy}
+                        className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 disabled:opacity-50"
+                      >
+                        {memberBusy ? 'Adding…' : 'Add'}
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                <div className="mt-3 max-h-40 space-y-1.5 overflow-y-auto">
+                  {(selectedDetail.users?.items || []).length === 0 ? (
+                    <p className="text-[11px] text-slate-400 italic py-2 text-center">No assigned members in this organization.</p>
+                  ) : (
+                    (selectedDetail.users?.items || []).map(user => (
+                      <div key={user.id} className="flex items-center justify-between gap-2 p-2 bg-slate-50 border border-slate-100 rounded-lg text-[11px]">
+                        <div className="truncate">
+                          <span className="font-semibold text-slate-900">{user.email || user.id}</span>
+                          <span className="ml-1.5 px-1.5 py-0.5 rounded bg-slate-200 text-[10px] font-bold text-slate-700">{user.roles?.join(', ') || user.role || 'MEMBER'}</span>
+                        </div>
+                        {isSuperAdmin && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveMember(user.id, user.email || user.id)}
+                            disabled={memberBusy}
+                            className="p-1 text-slate-400 hover:text-red-600 rounded transition"
+                            title="Remove member from tenant"
+                          >
+                            <FiTrash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><div className="rounded-xl border border-slate-200 p-3"><h4 className="text-xs font-extrabold text-slate-800">Usage</h4><p className="mt-1 text-[11px] text-slate-500">Source: {selectedDetail.usage?.source || 'unknown'}</p><p className="mt-2 text-xs">Requests: {selectedDetail.usage?.requests ?? 'Unavailable'}</p><p className="text-xs">Tokens: {selectedDetail.usage?.inputTokens === null ? 'Unavailable' : `${(selectedDetail.usage?.inputTokens || 0) + (selectedDetail.usage?.outputTokens || 0)}`}</p></div><div className="rounded-xl border border-slate-200 p-3"><h4 className="text-xs font-extrabold text-slate-800">Security &amp; M2M</h4><p className="mt-1 text-[11px] text-slate-500">Security: {selectedDetail.security?.source || 'unknown'} · M2M: {selectedDetail.m2m?.source || 'unknown'}</p><p className="mt-2 text-xs">Service accounts: {selectedDetail.m2m?.accounts?.length ?? 'Unavailable'}</p></div></div>
               <div className="rounded-xl border border-slate-200 p-3"><h4 className="text-xs font-extrabold text-slate-800">Audit &amp; activity</h4><p className="mt-1 text-[11px] text-slate-500">Source: {selectedDetail.audit?.source || 'unknown'}</p><div className="mt-2 space-y-1">{(selectedDetail.activity?.events || []).slice(0, 5).map(event => <div key={event.id} className="flex justify-between gap-2 text-[10px]"><span className="font-semibold">{event.action}</span><span className="text-slate-400">{event.occurredAt ? new Date(event.occurredAt).toLocaleString() : 'time unavailable'}</span></div>)}</div></div>
               <div className="rounded-xl border border-slate-200 p-3"><h4 className="text-xs font-extrabold text-slate-800">Configuration</h4><p className="mt-1 text-[11px] text-slate-500">Source: {selectedDetail.configuration?.source || 'unknown'} · Plan: {selectedDetail.plan?.value || 'not recorded'}</p></div>

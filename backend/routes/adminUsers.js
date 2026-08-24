@@ -870,8 +870,249 @@ router.post('/:uid/send-password-reset', async (req, res) => {
   }
 });
 
+// 10. ADMIN FORCE-VERIFY / UNVERIFY EMAIL
+router.post('/:uid/verify-email', async (req, res) => {
+  const uid = String(req.params.uid || '');
+  const requestDb = req.app.get('db');
+  const identityAdmin = req.app.get('firebaseAdmin') || admin;
+
+  if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid)) {
+    return res.status(400).json({ success: false, code: 'INVALID_USER_ID', error: 'Invalid user identifier.', requestId: res.locals.requestId });
+  }
+
+  const callerPermissions = permissionsFor(req.user);
+  if (!callerPermissions.has('*') && !callerPermissions.has('users.update') && !callerPermissions.has('users.security.manage')) {
+    return res.status(403).json({ success: false, code: 'FORBIDDEN', error: 'Insufficient permission to modify email verification status.', requestId: res.locals.requestId });
+  }
+
+  if (!requestDb || !identityAdmin?.auth) {
+    return res.status(503).json({ success: false, code: 'SERVICE_UNAVAILABLE', error: 'Service unavailable.', requestId: res.locals.requestId });
+  }
+
+  const emailVerified = req.body.emailVerified !== false;
+
+  try {
+    const updatedUser = await identityAdmin.auth().updateUser(uid, { emailVerified });
+    await requestDb.collection('users').doc(uid).set({
+      emailVerified,
+      updatedAt: identityAdmin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
+
+    recordAdminAuditLog(req, {
+      action: emailVerified ? 'USER_EMAIL_VERIFIED_BY_ADMIN' : 'USER_EMAIL_UNVERIFIED_BY_ADMIN',
+      method: 'POST',
+      pathname: req.originalUrl,
+      statusCode: 200,
+      resourceType: 'user',
+      resourceId: uid,
+      metadata: { emailVerified, email: updatedUser.email },
+      requestId: res.locals.requestId,
+    });
+
+    return res.json({
+      success: true,
+      message: `Email verification status updated to ${emailVerified ? 'Verified' : 'Unverified'}.`,
+      emailVerified,
+    });
+  } catch (error) {
+    console.error('[Admin verify-email error]', error.message);
+    const status = error.code === 'auth/user-not-found' ? 404 : 500;
+    return res.status(status).json({
+      success: false,
+      code: error.code || 'EMAIL_VERIFY_FAILED',
+      error: error.message || 'Failed to update email verification.',
+      requestId: res.locals.requestId,
+    });
+  }
+});
+
+// 11. ADMIN REVOKE ACTIVE SESSIONS & REFRESH TOKENS
+router.post('/:uid/revoke-sessions', async (req, res) => {
+  const uid = String(req.params.uid || '');
+  const requestDb = req.app.get('db');
+  const identityAdmin = req.app.get('firebaseAdmin') || admin;
+
+  if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid)) {
+    return res.status(400).json({ success: false, code: 'INVALID_USER_ID', error: 'Invalid user identifier.', requestId: res.locals.requestId });
+  }
+
+  const callerPermissions = permissionsFor(req.user);
+  if (!callerPermissions.has('*') && !callerPermissions.has('users.update') && !callerPermissions.has('users.security.manage')) {
+    return res.status(403).json({ success: false, code: 'FORBIDDEN', error: 'Insufficient permission to revoke user sessions.', requestId: res.locals.requestId });
+  }
+
+  if (!requestDb || !identityAdmin?.auth) {
+    return res.status(503).json({ success: false, code: 'SERVICE_UNAVAILABLE', error: 'Service unavailable.', requestId: res.locals.requestId });
+  }
+
+  try {
+    await identityAdmin.auth().revokeRefreshTokens(uid);
+    const userRecord = await identityAdmin.auth().getUser(uid);
+
+    recordAdminAuditLog(req, {
+      action: 'USER_SESSIONS_REVOKED_BY_ADMIN',
+      method: 'POST',
+      pathname: req.originalUrl,
+      statusCode: 200,
+      resourceType: 'user',
+      resourceId: uid,
+      metadata: { tokensValidAfterTime: userRecord.tokensValidAfterTime },
+      requestId: res.locals.requestId,
+    });
+
+    return res.json({
+      success: true,
+      message: 'All active sessions and refresh tokens have been revoked. The user must sign in again.',
+      tokensValidAfterTime: userRecord.tokensValidAfterTime,
+    });
+  } catch (error) {
+    console.error('[Admin revoke-sessions error]', error.message);
+    const status = error.code === 'auth/user-not-found' ? 404 : 500;
+    return res.status(status).json({
+      success: false,
+      code: error.code || 'SESSION_REVOKE_FAILED',
+      error: error.message || 'Failed to revoke sessions.',
+      requestId: res.locals.requestId,
+    });
+  }
+});
+
+// 12. ADMIN RESET / UNENROLL 2FA (MFA RECOVERY)
+router.post('/:uid/unenroll-mfa', async (req, res) => {
+  const uid = String(req.params.uid || '');
+  const requestDb = req.app.get('db');
+  const identityAdmin = req.app.get('firebaseAdmin') || admin;
+
+  if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid)) {
+    return res.status(400).json({ success: false, code: 'INVALID_USER_ID', error: 'Invalid user identifier.', requestId: res.locals.requestId });
+  }
+
+  const callerPermissions = permissionsFor(req.user);
+  if (!callerPermissions.has('*') && !callerPermissions.has('users.update') && !callerPermissions.has('users.security.manage')) {
+    return res.status(403).json({ success: false, code: 'FORBIDDEN', error: 'Insufficient permission to reset MFA.', requestId: res.locals.requestId });
+  }
+
+  if (!requestDb || !identityAdmin?.auth) {
+    return res.status(503).json({ success: false, code: 'SERVICE_UNAVAILABLE', error: 'Service unavailable.', requestId: res.locals.requestId });
+  }
+
+  try {
+    const userRecord = await identityAdmin.auth().getUser(uid);
+    const currentClaims = userRecord.customClaims || {};
+    const updatedClaims = { ...currentClaims };
+    delete updatedClaims.sign_in_second_factor;
+
+    await identityAdmin.auth().setCustomUserClaims(uid, updatedClaims);
+    await requestDb.collection('users').doc(uid).set({
+      mfaEnabled: false,
+      mfaEnrolledAt: null,
+      updatedAt: identityAdmin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
+
+    // Also revoke tokens to force fresh re-authentication
+    await identityAdmin.auth().revokeRefreshTokens(uid).catch(() => {});
+
+    recordAdminAuditLog(req, {
+      action: 'USER_MFA_UNENROLLED_BY_ADMIN',
+      method: 'POST',
+      pathname: req.originalUrl,
+      statusCode: 200,
+      resourceType: 'user',
+      resourceId: uid,
+      metadata: { targetEmail: userRecord.email },
+      requestId: res.locals.requestId,
+    });
+
+    return res.json({
+      success: true,
+      message: 'Two-Factor Authentication (2FA) enrolled factors have been reset for this account.',
+      mfaEnabled: false,
+    });
+  } catch (error) {
+    console.error('[Admin unenroll-mfa error]', error.message);
+    const status = error.code === 'auth/user-not-found' ? 404 : 500;
+    return res.status(status).json({
+      success: false,
+      code: error.code || 'MFA_RESET_FAILED',
+      error: error.message || 'Failed to unenroll MFA.',
+      requestId: res.locals.requestId,
+    });
+  }
+});
+
+// 13. ADMIN SINGLE USER COMPLETE DATA EXPORT (GDPR / AUDIT)
+router.get('/:uid/export', async (req, res) => {
+  const uid = String(req.params.uid || '');
+  const requestDb = req.app.get('db');
+  const identityAdmin = req.app.get('firebaseAdmin') || admin;
+
+  if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid)) {
+    return res.status(400).json({ success: false, code: 'INVALID_USER_ID', error: 'Invalid user identifier.', requestId: res.locals.requestId });
+  }
+
+  const callerPermissions = permissionsFor(req.user);
+  if (!callerPermissions.has('*') && !callerPermissions.has('users.export') && !callerPermissions.has('users.read')) {
+    return res.status(403).json({ success: false, code: 'FORBIDDEN', error: 'Insufficient permission to export user data.', requestId: res.locals.requestId });
+  }
+
+  if (!requestDb || !identityAdmin?.auth) {
+    return res.status(503).json({ success: false, code: 'SERVICE_UNAVAILABLE', error: 'Service unavailable.', requestId: res.locals.requestId });
+  }
+
+  try {
+    const [identity, profileSnap, resumesSnap, ordersSnap] = await Promise.all([
+      identityAdmin.auth().getUser(uid),
+      requestDb.collection('users').doc(uid).get(),
+      requestDb.collection('resumes').where('userId', '==', uid).get().catch(() => ({ docs: [] })),
+      requestDb.collection('orders').where('uid', '==', uid).get().catch(() => ({ docs: [] })),
+    ]);
+
+    const profile = profileSnap.exists ? (profileSnap.data() || {}) : {};
+    const resumes = resumesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const orders = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    const exportBundle = {
+      exportedAt: new Date().toISOString(),
+      requestedBy: req.user.uid,
+      user: adminUserProjection(identity, profile),
+      resumes,
+      orders,
+      contentSummary: {
+        totalResumes: resumes.length,
+        totalOrders: orders.length,
+      }
+    };
+
+    recordAdminAuditLog(req, {
+      action: 'USER_DATA_EXPORTED_BY_ADMIN',
+      method: 'GET',
+      pathname: req.originalUrl,
+      statusCode: 200,
+      resourceType: 'user',
+      resourceId: uid,
+      metadata: { targetEmail: identity.email, resumeCount: resumes.length },
+      requestId: res.locals.requestId,
+    });
+
+    return res.json({
+      success: true,
+      export: exportBundle,
+    });
+  } catch (error) {
+    console.error('[Admin user export error]', error.message);
+    const status = error.code === 'auth/user-not-found' ? 404 : 500;
+    return res.status(status).json({
+      success: false,
+      code: error.code || 'USER_EXPORT_FAILED',
+      error: error.message || 'Failed to export user data.',
+      requestId: res.locals.requestId,
+    });
+  }
+});
+
 module.exports = {
   adminUsersRouter: router,
   adminUserProjection,
 };
+
 

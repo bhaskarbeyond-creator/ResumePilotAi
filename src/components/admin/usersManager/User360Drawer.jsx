@@ -3,13 +3,15 @@ import {
   FiX, FiUser, FiMail, FiShield, FiBriefcase, FiCreditCard,
   FiCpu, FiActivity, FiCheck, FiAlertTriangle, FiRefreshCw,
   FiLock, FiUnlock, FiPlus, FiTrash2, FiClock, FiDollarSign,
-  FiCalendar, FiExternalLink, FiKey, FiCopy
+  FiCalendar, FiExternalLink, FiKey, FiCopy, FiDownload, FiShieldOff
 } from 'react-icons/fi';
 import {
   getUser360, assignUserTenant, removeUserTenant,
   updateUserAiEntitlement, removeUserAiEntitlement, resetUserAiQuota,
-  sendUserPasswordReset
+  sendUserPasswordReset, verifyUserEmail, revokeUserSessions,
+  unenrollUserMfa, exportUserData
 } from '../../../services/platformApi';
+
 import { setUserRole, updateUserSubscription, toggleUserSuspension } from '../../../firestore/dbOperations';
 import useConfirmDialog from '../../../hooks/useConfirmDialog';
 
@@ -266,7 +268,119 @@ export default function User360Drawer({
     }
   };
 
+  const handleToggleEmailVerify = async (verified) => {
+    const verb = verified ? 'Verify' : 'Unverify';
+    const confirmed = await confirm({
+      title: `${verb} Email Address`,
+      message: `Are you sure you want to mark the email address for ${u?.displayName || u?.email} as ${verified ? 'Verified' : 'Unverified'}?`,
+      confirmText: verb,
+      danger: !verified,
+    });
+    if (!confirmed) return;
+
+    setBusyAction('verify-email');
+    setError('');
+    setSuccess('');
+    try {
+      const res = await verifyUserEmail(u.id, verified);
+      if (res.success) {
+        setSuccess(res.message || `Email verification updated to ${verified ? 'Verified' : 'Unverified'}.`);
+        await loadData();
+        if (onUserMutated) onUserMutated();
+      } else {
+        setError(res.error || 'Failed to update email verification.');
+      }
+    } catch (err) {
+      setError(err.message || 'Error communicating with server.');
+    } finally {
+      setBusyAction('');
+    }
+  };
+
+  const handleRevokeSessions = async () => {
+    const confirmed = await confirm({
+      title: 'Revoke All Active Sessions',
+      message: `Immediately terminate all active login sessions and revoke refresh tokens for ${u?.displayName || u?.email}? The user will be required to authenticate again on all devices.`,
+      confirmText: 'Revoke Sessions',
+      danger: true,
+    });
+    if (!confirmed) return;
+
+    setBusyAction('revoke-sessions');
+    setError('');
+    setSuccess('');
+    try {
+      const res = await revokeUserSessions(u.id);
+      if (res.success) {
+        setSuccess('All active sessions and refresh tokens have been revoked.');
+        await loadData();
+      } else {
+        setError(res.error || 'Failed to revoke sessions.');
+      }
+    } catch (err) {
+      setError(err.message || 'Error communicating with server.');
+    } finally {
+      setBusyAction('');
+    }
+  };
+
+  const handleResetMfa = async () => {
+    const confirmed = await confirm({
+      title: 'Reset Two-Factor Authentication (2FA)',
+      message: `Are you sure you want to unenroll and reset 2FA / TOTP for ${u?.displayName || u?.email}? Use this when a user has lost access to their authenticator app.`,
+      confirmText: 'Reset 2FA',
+      danger: true,
+    });
+    if (!confirmed) return;
+
+    setBusyAction('reset-mfa');
+    setError('');
+    setSuccess('');
+    try {
+      const res = await unenrollUserMfa(u.id);
+      if (res.success) {
+        setSuccess('Two-Factor Authentication enrolled factors have been reset.');
+        await loadData();
+        if (onUserMutated) onUserMutated();
+      } else {
+        setError(res.error || 'Failed to reset MFA.');
+      }
+    } catch (err) {
+      setError(err.message || 'Error communicating with server.');
+    } finally {
+      setBusyAction('');
+    }
+  };
+
+  const handleExportUserData = async () => {
+    setBusyAction('export');
+    setError('');
+    try {
+      const res = await exportUserData(u.id);
+      if (res.success && res.export) {
+        const jsonStr = JSON.stringify(res.export, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `user-export-${u.id}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        setSuccess('User data export downloaded successfully.');
+      } else {
+        setError(res.error || 'Failed to export user data.');
+      }
+    } catch (err) {
+      setError(err.message || 'Error downloading export.');
+    } finally {
+      setBusyAction('');
+    }
+  };
+
   const u = userData?.identity;
+
 
 
   return (
@@ -384,23 +498,41 @@ export default function User360Drawer({
                     </div>
                     <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
                       <p className="text-[10px] font-extrabold uppercase text-slate-400">Email Verification</p>
-                      <p className="mt-1 font-bold">
+                      <div className="mt-1 flex items-center justify-between gap-1">
                         {userData.security?.emailVerified ? (
                           <span className="text-emerald-600 font-bold flex items-center gap-1"><FiCheck /> Verified</span>
                         ) : (
-                          <span className="text-amber-600 font-bold flex items-center gap-1"><FiAlertTriangle /> Pending Verification</span>
+                          <span className="text-amber-600 font-bold flex items-center gap-1"><FiAlertTriangle /> Pending</span>
                         )}
-                      </p>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleEmailVerify(!userData.security?.emailVerified)}
+                          disabled={busyAction === 'verify-email'}
+                          className="px-2 py-0.5 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-bold transition"
+                        >
+                          {userData.security?.emailVerified ? 'Unverify' : 'Force Verify ✓'}
+                        </button>
+                      </div>
                     </div>
                     <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
                       <p className="text-[10px] font-extrabold uppercase text-slate-400">Two-Factor Auth (MFA)</p>
-                      <p className="mt-1 font-bold">
+                      <div className="mt-1 flex items-center justify-between gap-1">
                         {userData.security?.mfaEnabled ? (
-                          <span className="text-emerald-600 font-bold flex items-center gap-1"><FiLock /> TOTP Enrolled &amp; Active</span>
+                          <span className="text-emerald-600 font-bold flex items-center gap-1"><FiLock /> Active</span>
                         ) : (
                           <span className="text-slate-400">Not Enrolled</span>
                         )}
-                      </p>
+                        {userData.security?.mfaEnabled && (
+                          <button
+                            type="button"
+                            onClick={handleResetMfa}
+                            disabled={busyAction === 'reset-mfa'}
+                            className="px-2 py-0.5 rounded bg-red-100 hover:bg-red-200 text-red-700 text-[10px] font-bold transition"
+                          >
+                            Reset 2FA
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
                       <p className="text-[10px] font-extrabold uppercase text-slate-400">Preferred Currency</p>
@@ -461,8 +593,50 @@ export default function User360Drawer({
                       <FiKey /> {busyAction === 'reset-password' ? 'Generating…' : 'Send Reset Link'}
                     </button>
                   </div>
+
+                  {/* Session Security & Data Export Actions */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="p-4 rounded-xl border bg-slate-50 border-slate-200 space-y-2 flex flex-col justify-between">
+                      <div>
+                        <h4 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                          <FiShieldOff className="text-red-600" /> Session Security
+                        </h4>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          Revoke refresh tokens to force sign-out on all active devices.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleRevokeSessions}
+                        disabled={busyAction === 'revoke-sessions'}
+                        className="w-full px-3 py-1.5 rounded-lg font-bold text-xs bg-red-100 hover:bg-red-200 text-red-800 flex items-center justify-center gap-1.5 transition"
+                      >
+                        <FiShieldOff /> {busyAction === 'revoke-sessions' ? 'Revoking…' : 'Revoke All Sessions'}
+                      </button>
+                    </div>
+
+                    <div className="p-4 rounded-xl border bg-slate-50 border-slate-200 space-y-2 flex flex-col justify-between">
+                      <div>
+                        <h4 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                          <FiDownload className="text-indigo-600" /> Compliance Export (GDPR)
+                        </h4>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          Export complete user profile, resumes, and orders JSON bundle.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleExportUserData}
+                        disabled={busyAction === 'export'}
+                        className="w-full px-3 py-1.5 rounded-lg font-bold text-xs bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center gap-1.5 transition"
+                      >
+                        <FiDownload /> {busyAction === 'export' ? 'Exporting…' : 'Download JSON Bundle'}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
+
 
 
               {/* TAB 2: TENANT MEMBERSHIPS */}

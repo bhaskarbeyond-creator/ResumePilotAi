@@ -3,10 +3,15 @@ import {
   FiUsers, FiUser, FiUserCheck, FiShield, FiCreditCard, FiAlertTriangle,
   FiSearch, FiFilter, FiPlus, FiDownload, FiRefreshCw, FiMoreVertical,
   FiEdit2, FiTrash2, FiLock, FiUnlock, FiBriefcase, FiCpu, FiCheck,
-  FiChevronLeft, FiChevronRight, FiSliders, FiDollarSign, FiKey, FiCopy
+  FiChevronLeft, FiChevronRight, FiSliders, FiDollarSign, FiKey, FiCopy,
+  FiShieldOff
 } from 'react-icons/fi';
 import fire from '../../../conf/fire';
-import { getAdminUsers, getUser360, getPlatformTenants, sendUserPasswordReset } from '../../../services/platformApi';
+import {
+  getAdminUsers, getUser360, getPlatformTenants, sendUserPasswordReset,
+  verifyUserEmail, revokeUserSessions, exportUserData
+} from '../../../services/platformApi';
+
 import {
   setUserAdminStatus, updateUserSubscription, toggleUserSuspension,
   deleteUserByAdmin, checkIfAdmin
@@ -246,6 +251,88 @@ export default function UsersManager() {
       setBusyUser('');
     }
   };
+
+  const handleQuickVerifyEmail = async (user) => {
+    setActionMenuUid(null);
+    const confirmed = await confirm({
+      title: 'Verify Email Address',
+      message: `Mark email as verified for ${user.displayName || user.email}?`,
+      confirmText: 'Verify Email',
+      danger: false,
+    });
+    if (!confirmed) return;
+
+    setBusyUser(`${user.id}:verify-email`);
+    setError('');
+    try {
+      const res = await verifyUserEmail(user.id, true);
+      if (res.success) {
+        setSuccess(`Email verified for ${user.email}.`);
+        await loadUsers();
+      } else {
+        setError(res.error || 'Failed to verify email.');
+      }
+    } catch (err) {
+      setError(err.message || 'Error communicating with server.');
+    } finally {
+      setBusyUser('');
+    }
+  };
+
+  const handleQuickRevokeSessions = async (user) => {
+    setActionMenuUid(null);
+    const confirmed = await confirm({
+      title: 'Revoke Active Sessions',
+      message: `Revoke all active sessions and refresh tokens for ${user.displayName || user.email}?`,
+      confirmText: 'Revoke Sessions',
+      danger: true,
+    });
+    if (!confirmed) return;
+
+    setBusyUser(`${user.id}:revoke`);
+    setError('');
+    try {
+      const res = await revokeUserSessions(user.id);
+      if (res.success) {
+        setSuccess(`All sessions revoked for ${user.email}.`);
+      } else {
+        setError(res.error || 'Failed to revoke sessions.');
+      }
+    } catch (err) {
+      setError(err.message || 'Error communicating with server.');
+    } finally {
+      setBusyUser('');
+    }
+  };
+
+  const handleQuickExport = async (user) => {
+    setActionMenuUid(null);
+    setBusyUser(`${user.id}:export`);
+    setError('');
+    try {
+      const res = await exportUserData(user.id);
+      if (res.success && res.export) {
+        const jsonStr = JSON.stringify(res.export, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `user-export-${user.id}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        setSuccess(`Export downloaded for ${user.email}.`);
+      } else {
+        setError(res.error || 'Failed to export user data.');
+      }
+    } catch (err) {
+      setError(err.message || 'Error exporting user data.');
+    } finally {
+      setBusyUser('');
+    }
+  };
+
 
 
   // Bulk Actions
@@ -735,6 +822,34 @@ export default function UsersManager() {
                                 <FiKey className="text-amber-600" /> Send Password Reset
                               </button>
 
+                              {!user.emailVerified && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleQuickVerifyEmail(user)}
+                                  className="w-full px-3 py-2 text-slate-700 hover:bg-slate-50 flex items-center gap-2 text-left"
+                                  role="menuitem"
+                                >
+                                  <FiCheck className="text-emerald-600" /> Force Verify Email
+                                </button>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={() => handleQuickRevokeSessions(user)}
+                                className="w-full px-3 py-2 text-slate-700 hover:bg-slate-50 flex items-center gap-2 text-left"
+                                role="menuitem"
+                              >
+                                <FiShieldOff className="text-amber-600" /> Revoke Sessions
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleQuickExport(user)}
+                                className="w-full px-3 py-2 text-slate-700 hover:bg-slate-50 flex items-center gap-2 text-left"
+                                role="menuitem"
+                              >
+                                <FiDownload className="text-indigo-600" /> Export User JSON
+                              </button>
 
                               {isSuperAdmin && !isSelf && (
                                 <button

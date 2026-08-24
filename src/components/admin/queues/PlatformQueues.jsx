@@ -95,6 +95,53 @@ export default function PlatformQueues() {
     }
   };
 
+  const handlePurge = async () => {
+    if (confirmAction?.id !== 'purge-dlq') {
+      setConfirmAction({
+        id: 'purge-dlq',
+        title: 'Purge Dead Letter Queue',
+        message: 'Are you sure you want to permanently purge all dead-letter jobs from the outbox? This cannot be undone.',
+        confirmText: 'Purge DLQ',
+        danger: true,
+        action: () => executePurge()
+      });
+      return;
+    }
+    await executePurge();
+  };
+
+  const executePurge = async () => {
+    setConfirmAction(null);
+    setRetrying(true);
+    setNotification(null);
+    try {
+      const user = fire.auth().currentUser;
+      if (!user) throw new Error('Authentication required');
+      const token = await user.getIdToken();
+
+      const res = await fetch('/api/platform/queues/purge', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+      });
+
+      const result = await res.json();
+      if (!res.ok) {
+        throw new Error(result.error?.message || 'Purge operation failed');
+      }
+
+      setError(null);
+      setNotification(`Purged ${result.purgedCount || 0} dead-letter job(s) successfully.`);
+      fetchQueues();
+    } catch (err) {
+      setError(err.message || 'Failed to purge DLQ.');
+    } finally {
+      setRetrying(false);
+    }
+  };
+
   const summary = data?.summary || { totalInspected: null, deadLetterCount: null, pendingCount: null, successCount: null };
   const jobs = data?.jobs || [];
   const queueAvailable = data !== null;
@@ -121,18 +168,31 @@ export default function PlatformQueues() {
             <FiRefreshCw className={loading ? 'animate-spin' : ''} /> Refresh
           </button>
           {summary.deadLetterCount > 0 && (
-            <button
-              type="button"
-              onClick={() => handleRetry(null, true)}
-              disabled={retrying || !isSuperAdmin}
-              title={isSuperAdmin ? 'Replay dead-letter jobs' : 'Super Admin only'}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-600 text-white text-xs font-bold hover:bg-amber-700 transition shadow-xs disabled:opacity-50"
-            >
-              <FiRotateCw className={retrying ? 'animate-spin' : ''} /> {isSuperAdmin ? `Replay All Dead Letters (${summary.deadLetterCount})` : 'Replay Super Admin only'}
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => handleRetry(null, true)}
+                disabled={retrying || !isSuperAdmin}
+                title={isSuperAdmin ? 'Replay dead-letter jobs' : 'Super Admin only'}
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-600 text-white text-xs font-bold hover:bg-amber-700 transition shadow-xs disabled:opacity-50"
+              >
+                <FiRotateCw className={retrying ? 'animate-spin' : ''} /> {isSuperAdmin ? `Replay All Dead Letters (${summary.deadLetterCount})` : 'Replay Super Admin only'}
+              </button>
+              {isSuperAdmin && (
+                <button
+                  type="button"
+                  onClick={handlePurge}
+                  disabled={retrying}
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-red-100 text-red-800 text-xs font-bold hover:bg-red-200 transition shadow-2xs disabled:opacity-50"
+                >
+                  Purge DLQ
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>
+
 
       {notification && (
         <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs text-emerald-800 flex items-center gap-2">

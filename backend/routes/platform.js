@@ -546,7 +546,39 @@ router.post('/queues/retry', requireRecentAdminAuthentication, async (req, res) 
   }
 });
 
+router.post('/queues/purge', requireRecentAdminAuthentication, async (req, res) => {
+  const db = req.app?.get('db');
+  const admin = req.app?.get('firebaseAdmin');
+  if (!db || !admin?.firestore?.FieldValue) {
+    return res.status(503).json({ error: { code: 'DATABASE_UNAVAILABLE', message: 'Database unavailable' } });
+  }
+
+  try {
+    const deadLetters = await db.collection('notification_outbox').where('attemptCount', '>=', 5).limit(50).get();
+    let purgedCount = 0;
+    if (!deadLetters.empty) {
+      const batch = db.batch();
+      deadLetters.forEach(doc => {
+        batch.delete(doc.ref);
+        purgedCount += 1;
+      });
+      await batch.commit();
+    }
+
+    await db.collection('security_audit_logs').doc().set({
+      action: 'PLATFORM_QUEUE_PURGE', actorUid: req.user?.uid,
+      purgedCount, requestId: res.locals?.requestId,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    return res.json({ success: true, purgedCount });
+  } catch (err) {
+    return res.status(500).json({ error: { code: 'PURGE_FAILED', message: 'Queue purge could not be completed', requestId: res.locals?.requestId } });
+  }
+});
+
 router.get('/maintenance', async (req, res) => {
+
   const db = req.app?.get('db');
   if (!db) return res.json({ enabled: false, available: false, configurationState: 'UNKNOWN', message: 'Maintenance state is unavailable because Firestore is not initialized.' });
   try {

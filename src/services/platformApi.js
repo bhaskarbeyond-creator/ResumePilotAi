@@ -70,6 +70,11 @@ export const updateUserAiEntitlement = (uid, body) => platformFetch(`/api/admin/
 export const removeUserAiEntitlement = (uid) => platformFetch(`/api/admin/users/${encodeURIComponent(uid)}/ai-entitlement`, { method: 'DELETE' });
 export const resetUserAiQuota = (uid) => platformFetch(`/api/admin/users/${encodeURIComponent(uid)}/ai-quota-reset`, { method: 'POST', body: JSON.stringify({}) });
 export const sendUserPasswordReset = (uid) => platformFetch(`/api/admin/users/${encodeURIComponent(uid)}/send-password-reset`, { method: 'POST', body: JSON.stringify({}) });
+export const verifyUserEmail = (uid, emailVerified = true) => platformFetch(`/api/admin/users/${encodeURIComponent(uid)}/verify-email`, { method: 'POST', body: JSON.stringify({ emailVerified }) });
+export const revokeUserSessions = (uid) => platformFetch(`/api/admin/users/${encodeURIComponent(uid)}/revoke-sessions`, { method: 'POST', body: JSON.stringify({}) });
+export const unenrollUserMfa = (uid) => platformFetch(`/api/admin/users/${encodeURIComponent(uid)}/unenroll-mfa`, { method: 'POST', body: JSON.stringify({}) });
+export const exportUserData = (uid) => platformFetch(`/api/admin/users/${encodeURIComponent(uid)}/export`);
+
 
 // Super Admin Platform Currency & Subscriptions
 export const getPlatformCurrency = () => platformFetch('/api/admin/platform/currency');
