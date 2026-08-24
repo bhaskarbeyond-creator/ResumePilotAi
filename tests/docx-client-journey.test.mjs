@@ -3,9 +3,15 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 
 test('Preview, Finalize, and Dashboard still share the executeDocxDownload journey', async () => {
+  // NOTE (forensic audit): `src/components/BuildResume/steps/FinalizeStep.jsx`
+  // used to be asserted here. It is NOT reachable from src/main.jsx (no module
+  // imports it) and it imports `../../../services/firebase`, which does not
+  // exist — so it cannot compile or render. String-matching a component that can
+  // never mount certified a capability that no user can reach. It has been
+  // removed from the asserted surface set; the reachability guard below prevents
+  // an unreachable component from being re-added as "verified".
   const surfaces = [
     'src/components/BuildResume/BuildResume.jsx',
-    'src/components/BuildResume/steps/FinalizeStep.jsx',
     'src/components/Dashboard/DashboardHomepage/DashboardHomepage.jsx',
     'src/utils/docxDownload.js',
   ];

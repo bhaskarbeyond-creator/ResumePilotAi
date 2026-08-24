@@ -112,7 +112,7 @@ const AdminHeader = ({ userEmail, isSuperAdminUser, onLogout, onOpenCommandPalet
 };
 
 const Admin = () => {
-    const [authState, setAuthState] = useState({ checking: true, allowed: false, isSuperAdmin: false, hasMfa: false, user: null });
+    const [authState, setAuthState] = useState({ checking: true, allowed: false, isSuperAdmin: false, mfaVerified: false, mfaEnrolled: false, hasMfa: false, user: null });
     const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -132,18 +132,34 @@ const Admin = () => {
 
     useEffect(() => fire.auth().onAuthStateChanged(async user => {
         if (!user) {
-            setAuthState({ checking: false, allowed: false, isSuperAdmin: false, hasMfa: false, user: null });
+            setAuthState({ checking: false, allowed: false, isSuperAdmin: false, mfaVerified: false, mfaEnrolled: false, hasMfa: false, user: null });
             return;
         }
         const allowed = await checkIfAdmin(user.uid);
         let isSuperAdminUser = false;
-        let hasMfa = false;
+        // MFA_ENROLLED and MFA_VERIFIED are different states and must never be
+        // collapsed into one flag:
+        //   mfaVerified  — this SESSION completed a second factor. Server truth is
+        //                  the verified `firebase.sign_in_second_factor` claim, and
+        //                  it is the only state the backend accepts
+        //                  (backend/security/auth.js hasSecondFactor).
+        //   mfaEnrolled  — a factor exists on the account, but this session may not
+        //                  have used it. Granting nothing.
+        // Collapsing them hid the enrollment/re-auth banner from Super Admins who
+        // had enrolled TOTP but signed in without a second factor, so every
+        // protected action failed with SUPER_ADMIN_MFA_REQUIRED and no guidance.
+        let mfaVerified = false;
+        let mfaEnrolled = false;
         try {
             const token = await user.getIdTokenResult();
             isSuperAdminUser = String(token.claims?.role || '').toUpperCase() === 'SUPER_ADMIN' || token.claims?.permissions?.includes('*');
-            hasMfa = Boolean(token.claims?.firebase?.sign_in_second_factor || token.claims?.sign_in_second_factor || user.multiFactor?.enrolledFactors?.length);
-        } catch { /* ignore */ }
-        setAuthState({ checking: false, allowed, isSuperAdmin: isSuperAdminUser, hasMfa, user });
+            mfaVerified = Boolean(token.claims?.firebase?.sign_in_second_factor || token.claims?.sign_in_second_factor);
+            mfaEnrolled = Array.isArray(user.multiFactor?.enrolledFactors) && user.multiFactor.enrolledFactors.length > 0;
+        } catch {
+            // Fail closed: an unreadable token means "not verified", never "verified".
+            mfaVerified = false;
+        }
+        setAuthState({ checking: false, allowed, isSuperAdmin: isSuperAdminUser, mfaVerified, mfaEnrolled, hasMfa: mfaVerified, user });
     }), []);
 
     const handleLogout = async () => {
@@ -154,7 +170,7 @@ const Admin = () => {
     if (!authState.allowed) return <Navigate to="/" replace />;
 
     return (
-        <AdminProvider value={{ isSuperAdmin: authState.isSuperAdmin, userEmail: authState.user?.email || '', uid: authState.user?.uid || '', hasMfa: authState.hasMfa === true }}>
+        <AdminProvider value={{ isSuperAdmin: authState.isSuperAdmin, userEmail: authState.user?.email || '', uid: authState.user?.uid || '', hasMfa: authState.mfaVerified === true, mfaVerified: authState.mfaVerified === true, mfaEnrolled: authState.mfaEnrolled === true }}>
         <div className="admin min-h-screen bg-slate-50 font-sans text-slate-900">
             <div className="admin__left">
                 <Sidebar
@@ -175,11 +191,13 @@ const Admin = () => {
                 />
                 <AdminReauthPrompt />
                 <AdminCommandPalette isOpen={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
-                {authState.isSuperAdmin && !authState.hasMfa && (
-                    <div role="status" className="mx-auto w-full max-w-7xl px-3 pt-3 sm:px-6">
+                {authState.isSuperAdmin && !authState.mfaVerified && (
+                    <div role="status" data-testid="superadmin-mfa-banner" className="mx-auto w-full max-w-7xl px-3 pt-3 sm:px-6">
                         <div className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs text-amber-950">
-                            Super Admin destructive operations require TOTP MFA in production. Enroll a second factor in{' '}
-                            <a className="font-extrabold underline" href="/dashboard/settings">account settings</a>, then sign in again.
+                            {authState.mfaEnrolled
+                                ? <>This session is not MFA-verified, so Super Admin destructive operations are blocked. Sign out and sign in again, completing the authenticator challenge at the second-factor prompt.</>
+                                : <>Super Admin destructive operations require TOTP MFA in production. Enroll a second factor in{' '}
+                                    <a className="font-extrabold underline" href="/dashboard/settings">account settings</a>, then sign in again.</>}
                         </div>
                     </div>
                 )}

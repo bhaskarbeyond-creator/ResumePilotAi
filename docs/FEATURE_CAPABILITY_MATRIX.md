@@ -1,5 +1,22 @@
 # ResumePilot AI — Feature & Capability Matrix
 
+> **⚠ FORENSIC AUDIT CORRECTION (2026-08-24).** The "54/54 capabilities, 0 broken
+> controls" claim counted at least one surface that cannot render:
+> `src/components/BuildResume/steps/FinalizeStep.jsx` is **not imported by any
+> module** and imports `../../../services/firebase`, which does not exist. A
+> string-matching test (`tests/docx-client-journey.test.mjs`) asserted the
+> presence of `executeDocxDownload` in that file and passed.
+>
+> A **reachability guard** now walks the real import graph from `src/main.jsx`
+> and fails if any asserted capability surface is unreachable.
+>
+> Also corrected: "1,303 interactive actions" is a raw string count, not a
+> verified control inventory. Measured instead: **562 files reachable** from the
+> entry point and **165 distinct backend API paths** consumed by the frontend,
+> reconciling with **0 orphan calls**.
+> See `FINAL_FORENSIC_CODEBASE_AUDIT.md`.
+
+
 > **Authoritative Feature & Capability Matrix**  
 > **Source Commit:** `8c7905f`  
 > **Classification:** AUTHORITATIVE SOURCE OF TRUTH

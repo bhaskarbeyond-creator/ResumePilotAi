@@ -18,25 +18,65 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Ensure all inner content wrappers span 100% full width without right-side whitespace gaps */
-.cv-content,
-[class*="-content"],
-.sectionTitle,
-.rightSection,
-.cv__body,
-.bodyRight {
+/* Ensure all inner content wrappers span 100% full width without right-side whitespace gaps
+ *
+ * RCA: `[class*="-content"]`, `.sectionTitle` and `.rightSection` were bare
+ * global selectors with `width/max-width: 100% !important`. The substring
+ * matcher matched every class in the application containing "-content"
+ * (blog-content, modal-content, dashboard-content, provider-content, …) and
+ * forced full width, overriding component layouts far outside the resume
+ * document. Scoped to the board containers the rule was written for.
+ */
+[class*="-board"] .cv-content,
+[class*="-board"] [class*="-content"],
+[class*="-board"] .sectionTitle,
+[class*="-board"] .rightSection,
+[class*="-board"] .cv__body,
+[class*="-board"] .bodyRight,
+[data-cv-board] .cv-content,
+[data-cv-board] [class*="-content"],
+[data-cv-board] .sectionTitle,
+[data-cv-board] .rightSection,
+[data-cv-board] .cv__body,
+[data-cv-board] .bodyRight {
   width: 100% !important;
   max-width: 100% !important;
   box-sizing: border-box !important;
 }
 
-/* MANDATORY JUSTIFIED PARAGRAPHS FOR PROFESSIONAL RESUME STANDARDS */
-p,
-.summaryContent,
-.employment__body,
-[class*="-description"],
-[class*="-summary"],
-[class*="-bodySection"] p {
+/* MANDATORY JUSTIFIED PARAGRAPHS FOR PROFESSIONAL RESUME STANDARDS
+ *
+ * Scoped strictly to resume / cover-letter document surfaces.
+ *
+ * RCA (forensic CSS audit): this rule previously began with a bare, unscoped `p`
+ * and also used the bare substring matchers `[class*="-description"]` and
+ * `[class*="-summary"]`, all carrying `!important`. This stylesheet is linked
+ * from index.html, so it applied to EVERY <p> in the whole application — Admin
+ * console, Enterprise console, Dashboard, Auth, Blog chrome, modals and toasts —
+ * and because it was `!important` it silently defeated Tailwind's `text-left` /
+ * `text-center` / `text-right` utilities on any paragraph, app-wide.
+ *
+ * Every CV and cover template renders inside `#resumen` with a `*-board` class
+ * (see src/cv-templates/*), and ResumePageComposer marks boards with
+ * `[data-cv-board]`. Scoping to those containers keeps the professional
+ * justification inside the document it was written for while leaving application
+ * UI typography under Tailwind's control. No template relies on a
+ * `text-align: left|center !important` override, so template output is unchanged.
+ */
+[class*="-board"] p,
+.cv-board p,
+[data-cv-board] p,
+[class*="-board"] .summaryContent,
+[class*="-board"] .employment__body,
+[class*="-board"] [class*="-description"],
+[class*="-board"] [class*="-summary"],
+[data-cv-board] p,
+[data-cv-board] .summaryContent,
+[data-cv-board] .employment__body,
+[data-cv-board] [class*="-description"],
+[data-cv-board] [class*="-summary"],
+[class*="-board"] [class*="-bodySection"] p,
+[data-cv-board] [class*="-bodySection"] p {
   text-align: justify !important;
   text-justify: inter-word !important;
 }
@@ -99,48 +139,100 @@ p,
   }
 }
 
-.cv-bodySection,
-.cv-section,
-.cv-sectionRightExperience,
-.skills-grid,
-.languages-grid,
-.skill-card-item,
-.language-card-item,
-.timeline-item,
-.cv-jobItem,
-.experience-item,
-.education-item,
-section,
-.section,
-[class*="bodySection"],
-[class*="body-section"],
-[class*="-bodySection"],
-[class*="-section"],
-[class*="Section"],
-[class*="-jobItem"],
-[class*="-employment"],
-[class*="-education"],
-[class*="-skill"],
-[class*="-language"],
-[class*="grid"],
-[class*="Grid"],
-[class*="item"],
-[class*="Item"],
-[class*="-card"] {
+/* RCA: this pagination hint previously used bare `section` and the very broad
+ * `[class*="item"]` / `[class*="grid"]` / `[class*="-card"]` substring matchers
+ * with `!important`, applying to every list item, grid and card in the whole
+ * application (Admin tables, Enterprise grids, Dashboard cards) whenever any
+ * page was printed. Scoped to resume board containers. */
+[class*="-board"] .cv-bodySection,
+[class*="-board"] .cv-section,
+[class*="-board"] .cv-sectionRightExperience,
+[class*="-board"] .skills-grid,
+[class*="-board"] .languages-grid,
+[class*="-board"] .skill-card-item,
+[class*="-board"] .language-card-item,
+[class*="-board"] .timeline-item,
+[class*="-board"] .cv-jobItem,
+[class*="-board"] .experience-item,
+[class*="-board"] .education-item,
+[class*="-board"] section,
+[class*="-board"] .section,
+[class*="-board"] [class*="bodySection"],
+[class*="-board"] [class*="body-section"],
+[class*="-board"] [class*="-bodySection"],
+[class*="-board"] [class*="-section"],
+[class*="-board"] [class*="Section"],
+[class*="-board"] [class*="-jobItem"],
+[class*="-board"] [class*="-employment"],
+[class*="-board"] [class*="-education"],
+[class*="-board"] [class*="-skill"],
+[class*="-board"] [class*="-language"],
+[class*="-board"] [class*="grid"],
+[class*="-board"] [class*="Grid"],
+[class*="-board"] [class*="item"],
+[class*="-board"] [class*="Item"],
+[class*="-board"] [class*="-card"],
+[data-cv-board] .cv-bodySection,
+[data-cv-board] .cv-section,
+[data-cv-board] .cv-sectionRightExperience,
+[data-cv-board] .skills-grid,
+[data-cv-board] .languages-grid,
+[data-cv-board] .skill-card-item,
+[data-cv-board] .language-card-item,
+[data-cv-board] .timeline-item,
+[data-cv-board] .cv-jobItem,
+[data-cv-board] .experience-item,
+[data-cv-board] .education-item,
+[data-cv-board] section,
+[data-cv-board] .section,
+[data-cv-board] [class*="bodySection"],
+[data-cv-board] [class*="body-section"],
+[data-cv-board] [class*="-bodySection"],
+[data-cv-board] [class*="-section"],
+[data-cv-board] [class*="Section"],
+[data-cv-board] [class*="-jobItem"],
+[data-cv-board] [class*="-employment"],
+[data-cv-board] [class*="-education"],
+[data-cv-board] [class*="-skill"],
+[data-cv-board] [class*="-language"],
+[data-cv-board] [class*="grid"],
+[data-cv-board] [class*="Grid"],
+[data-cv-board] [class*="item"],
+[data-cv-board] [class*="Item"],
+[data-cv-board] [class*="-card"] {
   break-inside: avoid !important;
   page-break-inside: avoid !important;
   -webkit-column-break-inside: avoid !important;
   break-inside: avoid-page !important;
 }
 
-/* Prevent orphan headers from appearing alone at the bottom of pages */
-h1, h2, h3, h4, h5, h6,
-.cv-sectionLeft,
-.sectionTitle,
-.section-title-accent,
-[class*="-sectionLeft"],
-[class*="-title"],
-[class*="-head"] {
+/* Prevent orphan headers from appearing alone at the bottom of pages.
+ * RCA: bare `h1`-`h6` plus `[class*="-title"]` / `[class*="-head"]` were global;
+ * scoped to resume board containers so app headings keep their own pagination. */
+[class*="-board"] h1,
+[class*="-board"] h2,
+[class*="-board"] h3,
+[class*="-board"] h4,
+[class*="-board"] h5,
+[class*="-board"] h6,
+[class*="-board"] .cv-sectionLeft,
+[class*="-board"] .sectionTitle,
+[class*="-board"] .section-title-accent,
+[class*="-board"] [class*="-sectionLeft"],
+[class*="-board"] [class*="-title"],
+[class*="-board"] [class*="-head"],
+[data-cv-board] h1,
+[data-cv-board] h2,
+[data-cv-board] h3,
+[data-cv-board] h4,
+[data-cv-board] h5,
+[data-cv-board] h6,
+[data-cv-board] .cv-sectionLeft,
+[data-cv-board] .sectionTitle,
+[data-cv-board] .section-title-accent,
+[data-cv-board] [class*="-sectionLeft"],
+[data-cv-board] [class*="-title"],
+[data-cv-board] [class*="-head"] {
   break-after: avoid !important;
   page-break-after: avoid !important;
   -webkit-column-break-after: avoid !important;

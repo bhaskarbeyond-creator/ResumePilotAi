@@ -1689,12 +1689,26 @@ router.get('/configuration', requireSuperAdmin, async (req, res) => {
 });
 
 /* ------------------------------------------------------------------
- * Payment Settings GET — SUPER_ADMIN only
+ * Payment Settings GET — system.config.read (ADMIN and above)
  * Returns public settings + configured/masked state for secrets.
  * Never returns raw secrets.
+ *
+ * RCA (forensic audit): this projection is secret-free by construction —
+ * `publicPaymentSettings()` strips every credential-shaped key and only
+ * `maskedKeys` (••••last4) plus PUBLIC client-side identifiers (Razorpay
+ * key_id, Stripe publishable key, PayPal client id, Paytm MID, PhonePe id)
+ * leave the server. The identical payload was already served to any ADMIN
+ * holding `system.config.read` by the /api/admin/payment-settings alias in
+ * index.js, so the SUPER_ADMIN gate here never actually restricted access —
+ * it only made the canonical route unreachable for the Admin console that
+ * renders it, producing a silently empty payment panel.
+ *
+ * Read stays at `system.config.read`; the WRITE
+ * (POST /api/admin/payment-settings) is unchanged and still requires
+ * SUPER_ADMIN + verified second factor + recent authentication.
  * ------------------------------------------------------------------ */
 
-router.get('/payment-settings', requireSuperAdmin, async (req, res) => {
+router.get('/payment-settings', requirePermission('system.config.read'), async (req, res) => {
   try {
     const projection = await getPaymentSettingsProjection(req.app.get('db'), process.env);
     res.setHeader('Cache-Control', 'no-store');
