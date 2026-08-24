@@ -107,23 +107,50 @@ async function runBrowserShellAudit() {
         assert.equal(passCount, 20, 'Expected 20/20 cycles to pass');
         assert.equal(failCount, 0, 'Expected 0 failures');
 
-        console.log('\n--- Auditing Responsive Viewports (Desktop vs Mobile) ---');
+        console.log('\n--- Auditing 7 Responsive Viewports & Cross-Surface Transitions ---');
         const viewports = [
-            { name: 'Desktop (1440x900)', width: 1440, height: 900 },
-            { name: 'Tablet (768x1024)', width: 768, height: 1024 },
-            { name: 'Mobile (375x667)', width: 375, height: 667 },
+            { name: 'Desktop Large (1440x900)', width: 1440, height: 900 },
+            { name: 'Desktop Standard (1280x800)', width: 1280, height: 800 },
+            { name: 'Desktop Compact (1024x768)', width: 1024, height: 768 },
+            { name: 'Tablet Portrait (768x1024)', width: 768, height: 1024 },
+            { name: 'Large Mobile (430x932)', width: 430, height: 932 },
+            { name: 'Standard Mobile (390x844)', width: 390, height: 844 },
+            { name: 'Compact Mobile (375x667)', width: 375, height: 667 },
+        ];
+
+        const surfaces = [
+            '/build-resume/heading',
+            '/dashboard',
+            '/pricing',
+            '/features',
+            '/enterprise',
+            '/adm',
+            '/adm/tenants',
         ];
 
         for (const vp of viewports) {
             await page.setViewportSize({ width: vp.width, height: vp.height });
-            await page.goto(`${base}/build-resume/heading`, { waitUntil: 'domcontentloaded' });
-            await page.waitForTimeout(300);
+            console.log(`\nTesting Viewport: ${vp.name}`);
 
-            const overflow = await page.evaluate(() => {
-                return document.documentElement.scrollWidth > document.documentElement.clientWidth + 2;
-            });
-            console.log(`Viewport ${vp.name}: Horizontal overflow = ${overflow}`);
-            assert.equal(overflow, false, `Viewport ${vp.name} has horizontal overflow`);
+            for (const surface of surfaces) {
+                // Direct URL navigation
+                await page.goto(`${base}${surface}`, { waitUntil: 'domcontentloaded' });
+                await page.waitForTimeout(200);
+
+                let overflow = await page.evaluate(() => {
+                    return document.documentElement.scrollWidth > document.documentElement.clientWidth + 2;
+                });
+                assert.equal(overflow, false, `Viewport ${vp.name} on ${surface} has horizontal overflow`);
+
+                // Normal reload test
+                await page.reload({ waitUntil: 'domcontentloaded' });
+                await page.waitForTimeout(200);
+                overflow = await page.evaluate(() => {
+                    return document.documentElement.scrollWidth > document.documentElement.clientWidth + 2;
+                });
+                assert.equal(overflow, false, `Viewport ${vp.name} on ${surface} has horizontal overflow after reload`);
+            }
+            console.log(`  ✓ Viewport ${vp.name} passed all surface transitions without overflow or style collapse`);
         }
 
         await page.close();
