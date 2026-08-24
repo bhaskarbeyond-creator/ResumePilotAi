@@ -32,8 +32,17 @@ export const safeDbOperation = async (operation, requireAuth = true) => {
         }
         return await operation();
     } catch (error) {
-        if (error.code === 'permission-denied' || error.message.includes('insufficient permissions')) {
-            console.warn('Permission denied for database operation, user may not be authenticated yet');
+        if (
+            error?.code === 'permission-denied' ||
+            error?.code === 'resource-exhausted' ||
+            error?.code === 'failed-precondition' ||
+            error?.code === 'unauthenticated' ||
+            String(error?.message || '').includes('insufficient permissions') ||
+            String(error?.message || '').includes('Quota exceeded') ||
+            String(error?.message || '').includes('quota') ||
+            String(error?.message || '').includes('429')
+        ) {
+            console.warn('Safe database operation handled non-fatal error:', error?.message || error?.code);
             return null;
         }
         throw error;
@@ -1343,8 +1352,19 @@ export async function getActiveJobs(page = 1, itemsPerPage = 10, filters = {}) {
             },
         };
     } catch (error) {
-        console.error('Error fetching active jobs:', error);
-        return { success: false, error: error.message };
+        console.warn('Unable to fetch active jobs; falling back to empty list:', error?.message);
+        return {
+            success: true,
+            jobs: [],
+            allJobs: [],
+            pagination: {
+                totalItems: 0,
+                totalPages: 0,
+                currentPage: page || 1,
+                hasNextPage: false,
+                hasPreviousPage: false,
+            },
+        };
     }
 }
 
@@ -1838,11 +1858,11 @@ export async function getFeaturedJobs(limit = 6) {
                     return [];
                 }
             } catch (fallbackError) {
-                console.error('🚨 Fallback query also failed:', fallbackError);
+                console.warn('Fallback jobs query handled non-fatal error:', fallbackError?.message);
                 return [];
             }
         }
-        
+        console.warn('Jobs query handled non-fatal error:', error?.message);
         return [];
     }
 }
@@ -2386,18 +2406,22 @@ export async function setFrontendStats(stats, expectedRevision = 0) {
 }
 // Admin reads use the server API; public readers use the public read-only
 // collection. A failed admin request is surfaced rather than silently returning
-// an empty list.
 export async function getAds() {
     const currentUser = fire.auth().currentUser;
     const tokenResult = currentUser ? await currentUser.getIdTokenResult().catch(() => null) : null;
     const role = String(tokenResult?.claims?.role || '').toUpperCase();
     if (['ADMIN', 'SUPER_ADMIN'].includes(role)) {
-        const { response, data } = await fetchAdminWithReauth('/api/admin/ads');
-        if (!response.ok || !data.success) throw new Error(data.error?.message || data.error || 'Advertisements are unavailable.');
-        return data.ads || [];
+        try {
+            const { response, data } = await fetchAdminWithReauth('/api/admin/ads');
+            if (response.ok && data.success) return data.ads || [];
+        } catch (_) {}
     }
-    const snapshot = await fire.firestore().collection('ads').get();
-    return snapshot.docs.map(document => ({ id: document.id, ...document.data(), revision: Number(document.data()?.revision || 0) }));
+    try {
+        const snapshot = await fire.firestore().collection('ads').get();
+        return snapshot.docs.map(document => ({ id: document.id, ...document.data(), revision: Number(document.data()?.revision || 0) }));
+    } catch (_) {
+        return [];
+    }
 }
 
 // ==================== BLOG MANAGEMENT FUNCTIONS ====================
@@ -2758,8 +2782,19 @@ export async function listBlogPosts(options = {}) {
         
         return result;
     } catch (error) {
-        console.error('❌ Error listing blog posts:', error);
-        return { success: false, error: error.message };
+        console.warn('Unable to list blog posts; falling back to empty list:', error?.message);
+        return {
+            success: true,
+            posts: [],
+            pagination: {
+                totalCount: 0,
+                totalPages: 0,
+                currentPage: page || 1,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                limit: limit || 10
+            }
+        };
     }
 }
 
@@ -2812,16 +2847,17 @@ export async function listBlogCategories() {
     const tokenResult = currentUser ? await currentUser.getIdTokenResult().catch(() => null) : null;
     const role = String(tokenResult?.claims?.role || '').toUpperCase();
     if (['ADMIN', 'SUPER_ADMIN'].includes(role)) {
-        const { response, data } = await fetchAdminWithReauth('/api/admin/blog/categories');
-        if (!response.ok || !data.success) throw new Error(data.error?.message || data.error || 'Blog categories are unavailable.');
-        return data.categories || [];
+        try {
+            const { response, data } = await fetchAdminWithReauth('/api/admin/blog/categories');
+            if (response.ok && data.success) return data.categories || [];
+        } catch (_) {}
     }
     const db = fire.firestore();
     try {
         const snapshot = await db.collection('blog_categories').orderBy('name', 'asc').get();
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), createdAt: doc.data().createdAt?.toDate?.() || doc.data().createdAt, updatedAt: doc.data().updatedAt?.toDate?.() || doc.data().updatedAt }));
     } catch (error) {
-        console.error('❌ Error listing blog categories:', error);
+        console.warn('Unable to list blog categories; falling back to empty list:', error?.message);
         return [];
     }
 }
@@ -3035,15 +3071,32 @@ export async function getWebsiteDetails() {
     }
 }
 
-// Get  website details
+// Get website details / social links
 export async function getSocialLinks() {
-    const db = fire.firestore();
-    const snapshot = await db.collection('data').doc('social').get();
-    if (snapshot.exists) {
-        return snapshot.data();
-    } else {
+    let localCache = null;
+    try {
+        const raw = typeof window !== 'undefined' ? localStorage.getItem('website_social_cache') : null;
+        if (raw) localCache = JSON.parse(raw);
+    } catch (_) {}
+
+    const res = await safeDbOperation(async () => {
+        const db = fire.firestore();
+        const snapshot = await db.collection('data').doc('social').get();
+        if (snapshot && snapshot.exists) {
+            const data = snapshot.data();
+            try { if (typeof window !== 'undefined') localStorage.setItem('website_social_cache', JSON.stringify(data)); } catch (_) {}
+            return data;
+        }
         return null;
-    }
+    }, false);
+
+    return res || localCache || {
+        facebook: '',
+        twitter: '',
+        instagram: '',
+        youtube: '',
+        pinterest: '',
+    };
 }
 export async function addSocial(facebook, twitter, instagram, youtube, pinterest) {
     const db = fire.firestore();

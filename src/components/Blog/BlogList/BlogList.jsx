@@ -63,16 +63,16 @@ const BlogList = () => {
     const initializeBlog = async () => {
         setLoading(true);
         try {
-            // Fetch categories and settings in parallel
+            // Fetch categories and settings in parallel with fallbacks
             const [categoriesResult, settingsResult] = await Promise.all([
-                listBlogCategories(),
-                getBlogSettings()
+                listBlogCategories().catch(() => []),
+                getBlogSettings().catch(() => null)
             ]);
             
-            setCategories(categoriesResult);
+            setCategories(categoriesResult || []);
             setBlogSettings(settingsResult);
         } catch (error) {
-            console.error('Error initializing blog:', error);
+            console.warn('Blog initialization handled non-fatal error:', error?.message);
         }
     };
 

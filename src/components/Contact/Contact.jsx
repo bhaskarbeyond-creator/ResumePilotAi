@@ -53,9 +53,9 @@ const Contact = ({ user, t }) => {
     const fetchData = async () => {
       try {
         const [pages, websiteData, socialLinks] = await Promise.all([
-          getPages(),
-          getWebsiteData(),
-          getSocialLinks()
+          getPages().catch(() => []),
+          getWebsiteData().catch(() => null),
+          getSocialLinks().catch(() => null)
         ]);
 
         setState(prev => ({
@@ -67,7 +67,7 @@ const Contact = ({ user, t }) => {
           loaded: true,
         }));
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.warn('Contact metadata fetch handled non-fatal error:', error?.message);
         setState(prev => ({ ...prev, loaded: true }));
       }
     };

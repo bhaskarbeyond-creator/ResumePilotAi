@@ -78,9 +78,9 @@ const Features = ({ t, goToResumeSelectionStep, goToCoverSelection }) => {
     const fetchData = async () => {
       try {
         const [pages, websiteData, socialLinks] = await Promise.all([
-          getPages(),
-          getWebsiteData(),
-          getSocialLinks()
+          getPages().catch(() => []),
+          getWebsiteData().catch(() => null),
+          getSocialLinks().catch(() => null)
         ]);
 
         setState(prev => ({
@@ -92,7 +92,7 @@ const Features = ({ t, goToResumeSelectionStep, goToCoverSelection }) => {
           loaded: true,
         }));
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.warn('Features metadata fetch handled non-fatal error:', error?.message);
         setState(prev => ({ ...prev, loaded: true }));
       }
     };
