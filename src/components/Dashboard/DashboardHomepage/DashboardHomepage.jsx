@@ -98,7 +98,7 @@ class DashboardHomepage extends Component {
           ),
           description: props.t(
             "DashboardHomepage.onboarding.steps.createResume.description",
-            "Create or edit resumes with our easy-to-use builder, 20+ templates and advanced AI capabilities for customization and job-specific tailoring."
+            "Craft a standout resume with our intuitive builder, 50+ professional templates, and AI-powered tailoring for your target role."
           ),
           completed: false,
           route: "/build-resume/heading",
@@ -746,7 +746,7 @@ class DashboardHomepage extends Component {
         userId,
       });
 
-      this.props.showToast?.('DOCX download successful!', 'success');
+      this.props.showToast?.('DOCX downloaded.', 'success');
     } catch (error) {
       console.error('DOCX download failed:', error);
       trackEvent('download_failed_docx', 'Documents', document?.template || 'Unknown', 0);
@@ -871,7 +871,7 @@ class DashboardHomepage extends Component {
                   <p className="text-slate-600 text-sm mt-1">
                     {t(
                       "JobsUpdate.DashboardHomepageFix1.subtitle",
-                      "Manage and create your professional resumes"
+                      "Build, manage, and customize your job-ready resumes"
                     )}
                   </p>
                 </div>
@@ -1044,7 +1044,7 @@ class DashboardHomepage extends Component {
                 {(!this.state.savedCoverLetters || this.state.savedCoverLetters.length === 0) ? (
                   <div className="col-span-full p-8 text-center bg-slate-50 border border-dashed border-slate-300 rounded-xl">
                     <p className="text-sm font-semibold text-slate-700">No cover letters created yet</p>
-                    <p className="text-xs text-slate-500 mb-4">Generate your first AI-optimized cover letter in seconds.</p>
+                    <p className="text-xs text-slate-500 mb-4">Create a tailored cover letter to match your target job.</p>
                     <button onClick={() => this.props.navigate('/dashboard/cover-letters')} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-colors">
                       + Create Cover Letter
                     </button>
@@ -1315,7 +1315,7 @@ class DashboardHomepage extends Component {
                   <p className="text-sm text-slate-600 text-center leading-relaxed">
                     {t(
                       "DashboardHomepage.card.newResumeDescription",
-                      "Start building your professional resume"
+                      "Start with a blank canvas or choose from 50+ templates"
                     )}
                   </p>
                 </div>

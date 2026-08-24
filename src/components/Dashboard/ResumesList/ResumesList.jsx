@@ -58,7 +58,7 @@ class ResumesList extends Component {
             clonedData.title = `${clonedData.title || 'Resume'} (Copy)`;
             const created = await createResumeDraft(user.uid, clonedData);
             this.setState(current => ({ resumes: [...current.resumes, { id: created.id, item: created.data, ...created.data }] }));
-            this.props.showToast?.('Resume duplicated successfully!', 'success');
+            this.props.showToast?.('Resume duplicated.', 'success');
         } catch (error) {
             console.error('Duplicate error:', error);
             this.props.showToast?.('Resume could not be duplicated.', 'error');
@@ -80,7 +80,7 @@ class ResumesList extends Component {
                         </div>
                         <div className="flex items-center gap-2">
                             <Link onClick={() => this.setAsCurrentResume(currentItem.id)} className="btn-default btn-goResume" to={'/build-resume/heading'}>
-                                Go To Resume
+                                Edit Resume
                             </Link>
                             <button onClick={() => this.duplicateResume(currentItem)} className="btn-default px-2.5 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-md border border-slate-300 transition-colors">
                                 Duplicate
