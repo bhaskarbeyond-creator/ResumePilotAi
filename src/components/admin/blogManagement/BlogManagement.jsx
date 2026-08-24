@@ -92,12 +92,13 @@ const BlogManagement = () => {
 
             const result = await listBlogPosts(options);
             
-            if (result.success) {
+            if (result && result.success) {
+                const posts = Array.isArray(result.posts) ? result.posts : [];
                 // Fetch each unique author once rather than once per row.
-                const authorIds = [...new Set(result.posts.map(post => post.authorUid).filter(Boolean))];
+                const authorIds = [...new Set(posts.map(post => post.authorUid).filter(Boolean))];
                 const authorEntries = await Promise.all(authorIds.map(async uid => [uid, await getUserData(uid)]));
                 const authors = new Map(authorEntries);
-                const enrichedPosts = result.posts.map(post => {
+                const enrichedPosts = posts.map(post => {
                     const authorData = authors.get(post.authorUid);
                     return {
                         ...post,
@@ -109,7 +110,9 @@ const BlogManagement = () => {
                 
                 if (requestId !== loadRequestRef.current) return;
                 setPosts(enrichedPosts);
-                setPagination(result.pagination);
+                if (result.pagination) {
+                    setPagination(result.pagination);
+                }
                 if (result.stats) {
                     setStats(result.stats);
                 }

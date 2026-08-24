@@ -71,12 +71,12 @@ class JobsManager extends Component {
             const result = await getAllJobs(page, this.state.jobsPerPage, filters);
             if (requestId !== this.loadRequest) return;
 
-            if (result.success) {
+            if (result && result.success) {
                 this.setState({
-                    jobs: result.jobs,
+                    jobs: Array.isArray(result.jobs) ? result.jobs : [],
                     loading: false,
-                    currentPage: result.pagination.currentPage,
-                    pagination: result.pagination,
+                    currentPage: result.pagination?.currentPage || page,
+                    pagination: result.pagination || { totalItems: 0, totalPages: 0, hasNextPage: false, hasPreviousPage: false },
                 });
             } else {
                 this.setState({
