@@ -490,7 +490,7 @@ class UsersManager extends Component {
             <div className="min-h-screen bg-slate-50 p-4 sm:p-6">
                 {this.state.isRedirectToUser && (
                     <Navigate
-                        to="/adm/user/ss"
+                        to={`/adm/user/ss?id=${encodeURIComponent(this.state.selectedId || '')}&email=${encodeURIComponent(this.state.selectedEmail || '')}`}
                         state={{
                             userId: this.state.selectedId,
                             email: this.state.selectedEmail,

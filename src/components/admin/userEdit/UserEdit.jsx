@@ -438,12 +438,19 @@ const UserEditWrapper = () => {
     const location = useLocation();
     const { isSuperAdmin } = useAdminSession();
     const locationState = location.state || {};
+    const searchParams = new URLSearchParams(location.search);
+    const queryId = searchParams.get('id') || searchParams.get('userId') || '';
+    const queryEmail = searchParams.get('email') || '';
+
+    const userId = locationState.userId || queryId;
+    const email = locationState.email || queryEmail;
 
     return (
         <UserEdit
+            key={userId || email || 'user-edit'}
             isSuperAdmin={isSuperAdmin === true}
-            userId={locationState.userId}
-            email={locationState.email}
+            userId={userId}
+            email={email}
             membership={locationState.membership}
             membershipEnd={locationState.membershipEnd}
             isA={locationState.isA}
@@ -454,3 +461,4 @@ const UserEditWrapper = () => {
 };
 
 export default UserEditWrapper;
+

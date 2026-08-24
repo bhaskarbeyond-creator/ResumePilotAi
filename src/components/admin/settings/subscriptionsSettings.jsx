@@ -258,6 +258,12 @@ class SubscriptionSetting extends Component {
         }
     }
 
+    componentDidUpdate(prevProps) {
+        if (this.props.defaultTab && this.props.defaultTab !== prevProps.defaultTab) {
+            this.setState({ adminTab: this.props.defaultTab });
+        }
+    }
+
     async fetchAdminInvoices() {
         this.setState({ loadingInvoices: true });
         try {
