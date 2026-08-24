@@ -1,6 +1,6 @@
 [
   {
-    "capability": "Super Admin Command Center",
+    "capability": "Super Admin Command Center & Metrics",
     "anonymous": "DENY",
     "user": "DENY",
     "admin": "DENY",
