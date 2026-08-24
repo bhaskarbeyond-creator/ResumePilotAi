@@ -184,7 +184,10 @@ export default function PlatformTenants() {
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error?.message || 'Failed to provision tenant');
+        const msg = errData.error?.message;
+        const rem = errData.error?.remediation;
+        const fullMsg = rem ? `${msg} (${rem})` : msg;
+        throw new Error(fullMsg || `Failed to provision tenant (${res.status})`);
       }
 
       const created = await res.json();

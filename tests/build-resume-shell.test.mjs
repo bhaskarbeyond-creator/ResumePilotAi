@@ -45,7 +45,13 @@ test('router wraps authenticated builder routes in MaybeApplicationShell and doe
   assert.match(shell, /data-testid="application-shell"/);
   assert.match(shell, /ProfileDisplay/);
   assert.match(shell, /dashboardContentWrapper/);
+  assert.match(shell, /import '\.\/AuthenticatedAppShell\.scss'/);
   assert.doesNotMatch(shell, /getSystemSettings|moduleFlags|enableAts/);
+  const shellScss = fs.readFileSync('src/components/AppShell/AuthenticatedAppShell.scss', 'utf8');
+  assert.match(shellScss, /\.dashboardWrapper/);
+  assert.match(shellScss, /\.dashboardContentWrapper/);
+  assert.match(shellScss, /sidebar-collapsed/);
+  assert.match(shellScss, /@media \(min-width: 1024px\)/);
   const dashboard = fs.readFileSync('src/components/Dashboard/DashboardMain/DashboardMain.jsx', 'utf8');
   assert.doesNotMatch(dashboard, /return this\.state\.user !== null \?/);
   assert.match(dashboard, /resolvedUser/);

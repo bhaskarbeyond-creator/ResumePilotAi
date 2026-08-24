@@ -4,6 +4,7 @@ import { AuthContext } from '../../main';
 import ProfileDisplay from '../Dashboard/ProfileDisplay/ProfileDisplay';
 import { getFullName } from '../../firestore/dbOperations';
 import { resolveApplicationShell } from './applicationShell';
+import './AuthenticatedAppShell.scss';
 
 const readCollapsed = () => {
     try { return localStorage.getItem('sidebarCollapsed') === 'true'; } catch { return false; }

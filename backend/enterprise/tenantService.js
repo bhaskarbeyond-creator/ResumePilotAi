@@ -1171,6 +1171,9 @@ class TenantService {
     if (!isPlatformTenantProvisioner(user)) {
       throw Object.assign(new Error('Platform tenant provisioning permission is required'), { code: 'FORBIDDEN', status: 403 });
     }
+    if (!this.registry) {
+      throw Object.assign(new Error('Tenant control plane registry is unavailable'), { code: 'TENANT_CONTROL_PLANE_UNAVAILABLE', status: 503 });
+    }
     const result = await this.registry.provisionTenant({
       ownerPrincipalId: user.uid,
       displayName: input?.displayName,

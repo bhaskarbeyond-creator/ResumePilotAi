@@ -1426,9 +1426,19 @@ class InMemoryTenantRegistry {
 
   async provisionTenant({ ownerPrincipalId, displayName, slug, isolationTier = 'STANDARD', dataPlane = DEFAULT_DATA_PLANE, region = null }) {
     ownerPrincipalId = assertPrincipalId(ownerPrincipalId);
+    const cleanName = compact(displayName, 120);
+    const cleanSlug = compact(slug, 80).toLowerCase();
+    if (cleanName.length < 2 || !/^[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$/.test(cleanSlug)) {
+      throw Object.assign(new Error('Tenant name or slug is invalid'), { code: 'INVALID_TENANT', status: 400 });
+    }
+    for (const existing of this.tenants.values()) {
+      if (existing.slug === cleanSlug) {
+        throw Object.assign(new Error('Tenant slug is already in use'), { code: 'TENANT_SLUG_CONFLICT', status: 409 });
+      }
+    }
     const tenantId = crypto.randomUUID();
     const workspaceId = crypto.randomUUID();
-    const tenant = { id: tenantId, slug: compact(slug, 80).toLowerCase(), displayName: compact(displayName, 120), lifecycleState: 'ACTIVE', isolationTier: normalizeTier(isolationTier), dataPlane: normalizeDataPlane({ ...dataPlane, ...(region ? { region } : {}) }), policyVersion: 1 };
+    const tenant = { id: tenantId, slug: cleanSlug, displayName: cleanName, lifecycleState: 'ACTIVE', isolationTier: normalizeTier(isolationTier), dataPlane: normalizeDataPlane({ ...dataPlane, ...(region ? { region } : {}) }), policyVersion: 1 };
     const workspace = { id: workspaceId, tenantId, name: 'Default Workspace', lifecycleState: 'ACTIVE', isDefault: true };
     const membership = { id: membershipDocumentId(tenantId, ownerPrincipalId), tenantId, principalId: ownerPrincipalId, canonicalPrincipalId: canonicalPrincipalId(ownerPrincipalId), workspaceId, status: 'ACTIVE', roles: ['TENANT_OWNER'], revision: 1, personalTenant: false };
     this.tenants.set(tenantId, tenant);

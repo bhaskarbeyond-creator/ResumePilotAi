@@ -985,7 +985,15 @@ router.post('/tenants', async (req, res) => {
       workspace: { id: result.workspace.id, name: result.workspace.name },
     });
   } catch (error) {
-    return res.status(error.status || 503).json({ error: { code: error.code || 'TENANT_PROVISIONING_FAILED', message: error.status === 403 ? 'Tenant provisioning is not permitted' : 'Tenant provisioning is unavailable', requestId: res.locals?.requestId } });
+    const status = error.status || (error.code === 'INVALID_TENANT' ? 400 : error.code === 'FORBIDDEN' ? 403 : error.code === 'TENANT_SLUG_CONFLICT' ? 409 : error.code === 'ENTERPRISE_DISABLED' ? 404 : 503);
+    return res.status(status).json({
+      error: {
+        code: error.code || 'TENANT_PROVISIONING_FAILED',
+        message: error.message || (status === 403 ? 'Tenant provisioning is not permitted' : 'Tenant provisioning failed'),
+        remediation: error.remediation || (status === 409 ? 'Please choose a different organization slug' : status === 403 ? 'Platform tenant provisioning permission (system.config.write) is required' : null),
+        requestId: res.locals?.requestId,
+      },
+    });
   }
 });
 
