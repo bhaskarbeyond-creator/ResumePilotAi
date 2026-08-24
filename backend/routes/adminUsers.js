@@ -3,9 +3,10 @@
 const express = require('express');
 const crypto = require('crypto');
 const admin = require('../services/firebaseAdmin');
-const { requireAuth, requirePermission, requireSuperAdmin, isSuperAdmin, permissionsFor } = require('../security/auth');
+const { isSuperAdmin, permissionsFor } = require('../security/auth');
 const { getUserAiEntitlement, setUserAiQuotaOverride, removeUserAiQuotaOverride, resetUserAiQuota } = require('../services/adminAiEntitlement');
-const { getPlatformCurrencyConfig, normalizeCurrencyCode } = require('../services/platformCurrency');
+const { normalizeCurrencyCode } = require('../services/platformCurrency');
+const { recordAdminAuditLog } = require('../security/adminAudit');
 
 const router = express.Router();
 
@@ -130,10 +131,6 @@ router.post('/', async (req, res) => {
   const requestDb = req.app.get('db');
   const identityAdmin = req.app.get('firebaseAdmin') || admin;
   const tenantService = req.app.get('tenantService');
-  
-  if (!requestDb || !identityAdmin?.auth) {
-    return res.status(503).json({ success: false, code: 'USER_DIRECTORY_UNAVAILABLE', error: 'User directory unavailable.', requestId: res.locals.requestId });
-  }
 
   const callerPermissions = permissionsFor(req.user);
   if (!callerPermissions.has('*') && !callerPermissions.has('users.create') && !callerPermissions.has('users.update')) {
@@ -151,12 +148,17 @@ router.post('/', async (req, res) => {
   const tenantRole = body.tenantRole ? String(body.tenantRole).toUpperCase() : 'MEMBER';
   const preferredCurrency = normalizeCurrencyCode(body.preferredCurrency || 'INR');
 
+  // Validate input deterministically before any dependency availability check.
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return res.status(400).json({ success: false, code: 'INVALID_EMAIL', error: 'A valid email address is required.' });
+    return res.status(400).json({ success: false, code: 'INVALID_EMAIL', error: 'A valid email address is required.', requestId: res.locals.requestId });
   }
 
   if (requestedRole === 'SUPER_ADMIN') {
-    return res.status(400).json({ success: false, code: 'SUPER_ADMIN_PROVISION_FORBIDDEN', error: 'SUPER_ADMIN accounts cannot be created via the Admin UI.' });
+    return res.status(400).json({ success: false, code: 'SUPER_ADMIN_PROVISION_FORBIDDEN', error: 'SUPER_ADMIN accounts cannot be created via the Admin UI.', requestId: res.locals.requestId });
+  }
+
+  if (!requestDb || !identityAdmin?.auth) {
+    return res.status(503).json({ success: false, code: 'USER_DIRECTORY_UNAVAILABLE', error: 'User directory unavailable.', requestId: res.locals.requestId });
   }
 
   try {
@@ -412,6 +414,209 @@ router.get('/:uid', async (req, res) => {
     return res.json({ success: true, user: adminUserProjection(identity, profile) });
   } catch (error) {
     return res.status(error.code === 'auth/user-not-found' ? 404 : 503).json({ success: false, code: error.code === 'auth/user-not-found' ? 'USER_NOT_FOUND' : 'USER_DIRECTORY_UNAVAILABLE', error: error.code === 'auth/user-not-found' ? 'User not found.' : 'Unable to load user.', requestId: res.locals.requestId });
+  }
+});
+
+// 4b. PATCH USER — server-authoritative admin mutation surface used by the
+// Users Manager & User 360 (suspension, role, membership, duration, currency,
+// display name). Fails closed on role escalation, stale-target drift, and
+// SUPER_ADMIN targets.
+router.patch('/:uid', async (req, res) => {
+  const uid = String(req.params.uid || '');
+  const requestDb = req.app.get('db');
+  const identityAdmin = req.app.get('firebaseAdmin') || admin;
+
+  if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid)) {
+    return res.status(400).json({ success: false, code: 'INVALID_USER_ID', error: 'Invalid user identifier.', requestId: res.locals.requestId });
+  }
+
+  const callerPermissions = permissionsFor(req.user);
+  const body = req.body || {};
+  const changes = {};
+  const expected = {};
+
+  // Role — only admins with role-management authority may mutate roles.
+  if (body.role !== undefined) {
+    const rawRole = String(body.role || 'USER').toUpperCase();
+    if (!VALID_ROLES.includes(rawRole)) {
+      return res.status(400).json({ success: false, code: 'INVALID_ROLE', error: `Invalid role. Allowed roles: ${VALID_ROLES.join(', ')}.`, requestId: res.locals.requestId });
+    }
+    if (rawRole === 'SUPER_ADMIN') {
+      return res.status(400).json({ success: false, code: 'SUPER_ADMIN_ROLE_FORBIDDEN', error: 'SUPER_ADMIN claims cannot be granted through the Admin API.', requestId: res.locals.requestId });
+    }
+    if (!callerPermissions.has('*') && !callerPermissions.has('users.roles.manage') && !callerPermissions.has('users.update')) {
+      return res.status(403).json({ success: false, code: 'FORBIDDEN', error: 'Insufficient permission to change user roles.', requestId: res.locals.requestId });
+    }
+    changes.role = rawRole;
+    if (body.expectedRole !== undefined) expected.role = String(body.expectedRole).toUpperCase();
+  }
+
+  // Suspension — reflects into Firebase Auth `disabled` so enforcement is server-side.
+  if (body.suspended !== undefined) {
+    if (!callerPermissions.has('*') && !callerPermissions.has('users.update')) {
+      return res.status(403).json({ success: false, code: 'FORBIDDEN', error: 'Insufficient permission to change account status.', requestId: res.locals.requestId });
+    }
+    changes.suspended = Boolean(body.suspended);
+    if (body.expectedSuspended !== undefined) expected.suspended = Boolean(body.expectedSuspended);
+  }
+
+  // Membership / subscription — entitlement propagation happens here.
+  if (body.membership !== undefined) {
+    if (!['Basic', 'Premium'].includes(body.membership)) {
+      return res.status(400).json({ success: false, code: 'INVALID_MEMBERSHIP', error: 'Membership must be Basic or Premium.', requestId: res.locals.requestId });
+    }
+    if (!callerPermissions.has('*') && !callerPermissions.has('payments.manage') && !callerPermissions.has('users.update')) {
+      return res.status(403).json({ success: false, code: 'FORBIDDEN', error: 'Insufficient permission to change subscriptions.', requestId: res.locals.requestId });
+    }
+    changes.membership = body.membership;
+    if (body.expectedMembership !== undefined) expected.membership = body.expectedMembership;
+  }
+
+  if (body.durationMonths !== undefined) {
+    changes.durationMonths = Math.max(1, Math.min(600, Number(body.durationMonths) || 12));
+  }
+
+  if (body.displayName !== undefined) {
+    changes.displayName = String(body.displayName).trim().slice(0, 120);
+  }
+
+  if (body.preferredCurrency !== undefined) {
+    changes.preferredCurrency = normalizeCurrencyCode(body.preferredCurrency);
+  }
+
+  if (Object.keys(changes).length === 0) {
+    return res.status(400).json({ success: false, code: 'NO_CHANGES', error: 'No supported fields were provided for update.', requestId: res.locals.requestId });
+  }
+
+  if (!requestDb || !identityAdmin?.auth) {
+    return res.status(503).json({ success: false, code: 'USER_DIRECTORY_UNAVAILABLE', error: 'User directory unavailable.', requestId: res.locals.requestId });
+  }
+
+  try {
+    const [identity, profileSnap] = await Promise.all([
+      identityAdmin.auth().getUser(uid),
+      requestDb.collection('users').doc(uid).get(),
+    ]);
+    const profile = profileSnap.exists ? (profileSnap.data() || {}) : {};
+    const claims = identity.customClaims || {};
+    const currentRole = String(claims.role || profile.role || (profile.isA ? 'ADMIN' : 'USER')).toUpperCase();
+    const currentSuspended = identity.disabled === true || profile.suspended === true;
+    const currentMembership = profile.membership || 'Basic';
+
+    // Stale-target detection: the caller must confirm the last-known state.
+    if (expected.role !== undefined && expected.role !== currentRole) {
+      return res.status(409).json({ success: false, code: 'ADMIN_TARGET_CHANGED', error: 'This user role changed after the page loaded. Refresh before retrying.', requestId: res.locals.requestId });
+    }
+    if (expected.suspended !== undefined && expected.suspended !== currentSuspended) {
+      return res.status(409).json({ success: false, code: 'ADMIN_TARGET_CHANGED', error: 'This account status changed after the page loaded. Refresh before retrying.', requestId: res.locals.requestId });
+    }
+    if (expected.membership !== undefined && expected.membership !== currentMembership) {
+      return res.status(409).json({ success: false, code: 'ADMIN_TARGET_CHANGED', error: 'This membership changed after the page loaded. Refresh before retrying.', requestId: res.locals.requestId });
+    }
+
+    // SUPER_ADMIN_PROTECTED — SUPER_ADMIN claims cannot be changed from this API.
+    if (currentRole === 'SUPER_ADMIN') {
+      return res.status(403).json({ success: false, code: 'SUPER_ADMIN_PROTECTED', error: 'SUPER_ADMIN claims cannot be changed from this API.', requestId: res.locals.requestId });
+    }
+
+    // Self-demotion is prohibited; a platform operator cannot remove their own authority.
+    if (uid === req.user?.uid && changes.role !== undefined && changes.role !== 'ADMIN' && changes.role !== 'SUPER_ADMIN') {
+      return res.status(400).json({ success: false, code: 'SELF_DEMOTION_PROHIBITED', error: 'Self-demotion is prohibited.', requestId: res.locals.requestId });
+    }
+
+    const authUpdates = {};
+    if (changes.role !== undefined) {
+      // Role is the single source of truth for permissions. Per-user permission
+      // overrides are intentionally reset so stale grants cannot survive a demotion.
+      const nextClaims = { ...claims, role: changes.role };
+      delete nextClaims.permissions;
+      await identityAdmin.auth().setCustomUserClaims(uid, nextClaims);
+      await identityAdmin.auth().revokeRefreshTokens(uid).catch(() => {});
+    }
+    if (changes.suspended !== undefined) authUpdates.disabled = changes.suspended;
+    if (changes.displayName !== undefined) authUpdates.displayName = changes.displayName;
+    if (Object.keys(authUpdates).length) {
+      await identityAdmin.auth().updateUser(uid, authUpdates);
+    }
+
+    const now = identityAdmin.firestore.FieldValue.serverTimestamp();
+    const profileUpdates = { updatedAt: now };
+    if (changes.role !== undefined) profileUpdates.role = changes.role;
+    if (changes.suspended !== undefined) profileUpdates.suspended = changes.suspended;
+    if (changes.displayName !== undefined) profileUpdates.displayName = changes.displayName;
+    if (changes.preferredCurrency !== undefined) profileUpdates.preferredCurrency = changes.preferredCurrency;
+    if (changes.membership !== undefined) {
+      profileUpdates.membership = changes.membership;
+      if (changes.membership === 'Premium') {
+        const duration = changes.durationMonths !== undefined ? changes.durationMonths : 12;
+        const ends = new Date();
+        ends.setMonth(ends.getMonth() + duration);
+        profileUpdates.membershipEnds = ends;
+        profileUpdates.paymentStatus = profile.paymentStatus === 'ACTIVE' ? 'ACTIVE' : 'ADMIN_GRANTED';
+      } else {
+        profileUpdates.paymentStatus = 'INACTIVE';
+      }
+    }
+
+    const before = {
+      role: currentRole,
+      suspended: currentSuspended,
+      membership: currentMembership,
+      preferredCurrency: normalizeCurrencyCode(profile.preferredCurrency || 'INR'),
+      displayName: identity.displayName || profile.displayName || null,
+    };
+    const after = {
+      role: changes.role !== undefined ? changes.role : before.role,
+      suspended: changes.suspended !== undefined ? changes.suspended : before.suspended,
+      membership: changes.membership !== undefined ? changes.membership : before.membership,
+      preferredCurrency: changes.preferredCurrency !== undefined ? changes.preferredCurrency : before.preferredCurrency,
+      displayName: changes.displayName !== undefined ? changes.displayName : before.displayName,
+    };
+
+    const batch = requestDb.batch();
+    batch.set(requestDb.collection('users').doc(uid), profileUpdates, { merge: true });
+    batch.set(requestDb.collection('security_audit_logs').doc(), {
+      action: 'USER_ADMIN_UPDATED',
+      actorUid: req.user.uid,
+      targetUid: uid,
+      category: 'iam.users',
+      severity: 'HIGH',
+      targetType: 'USER',
+      targetId: uid,
+      changes: { before, after },
+      requestId: res.locals.requestId,
+      createdAt: now,
+    });
+    await batch.commit();
+
+    await recordAdminAuditLog(requestDb, identityAdmin, {
+      actorUid: req.user.uid,
+      actorEmail: req.user.email || null,
+      actorRole: isSuperAdmin(req.user) ? 'SUPER_ADMIN' : 'ADMIN',
+      action: 'USER_ADMIN_UPDATED',
+      category: 'iam.users',
+      severity: 'HIGH',
+      outcome: 'SUCCESS',
+      method: 'PATCH',
+      pathname: req.originalUrl,
+      statusCode: 200,
+      resourceType: 'user',
+      resourceId: uid,
+      metadata: { before, after },
+      requestId: res.locals.requestId,
+    });
+
+    const updatedIdentity = await identityAdmin.auth().getUser(uid);
+    const updatedProfileSnap = await requestDb.collection('users').doc(uid).get();
+    return res.json({
+      success: true,
+      message: 'User updated successfully.',
+      user: adminUserProjection(updatedIdentity, updatedProfileSnap.data() || {}),
+    });
+  } catch (error) {
+    console.error('[Admin user PATCH error]', error.message);
+    const status = error.code === 'auth/user-not-found' ? 404 : 500;
+    return res.status(status).json({ success: false, code: status === 404 ? 'USER_NOT_FOUND' : 'USER_UPDATE_FAILED', error: status === 404 ? 'User not found.' : 'Unable to update user.', requestId: res.locals.requestId });
   }
 });
 

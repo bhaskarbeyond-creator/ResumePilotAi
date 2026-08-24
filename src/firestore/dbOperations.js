@@ -601,7 +601,15 @@ export async function checkIfSuspended(uid) {
 // Function to suspend or activate a user account by Admin
 export async function toggleUserSuspension(userId, suspend, expectedSuspended = undefined) {
     try {
-        await updateUserByAdminApi(userId, { suspended: Boolean(suspend), ...(expectedSuspended === undefined ? {} : { expectedSuspended: Boolean(expectedSuspended) }) });
+        // Callers may pass the previous state directly (boolean) or as an
+        // { expectedSuspended } options object. Normalize before sending so the
+        // stale-target check reflects the true last-known status.
+        const expected = expectedSuspended && typeof expectedSuspended === 'object'
+            ? expectedSuspended.expectedSuspended
+            : expectedSuspended;
+        const changes = { suspended: Boolean(suspend) };
+        if (typeof expected === 'boolean') changes.expectedSuspended = expected;
+        await updateUserByAdminApi(userId, changes);
         return { success: true, message: `User account ${suspend ? 'suspended' : 'reactivated'} successfully.` };
     } catch (error) {
         return { success: false, error: error.message };

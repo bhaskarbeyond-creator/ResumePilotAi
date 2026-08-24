@@ -37,8 +37,20 @@ function formatCurrencyAmount(amount, currencyCode = 'INR') {
   return `${meta.symbol}${formatted}`;
 }
 
+// The fallback must carry the same authoritative shape as a healthy read —
+// `supportedCurrencies` is a static registry fact, so a momentarily unavailable
+// store can never degrade into a currency-agnostic response.
+function fallbackCurrencyConfig() {
+  return {
+    ...CURRENCY_REGISTRY.INR,
+    supportedCurrencies: Object.keys(CURRENCY_REGISTRY),
+    allowMultiCurrency: false,
+    source: 'fallback-default',
+  };
+}
+
 async function getPlatformCurrencyConfig(db) {
-  if (!db) return { ...CURRENCY_REGISTRY.INR, source: 'fallback-default' };
+  if (!db) return fallbackCurrencyConfig();
   try {
     const doc = await db.collection('data').doc('system_settings').get();
     const data = doc.data() || {};
@@ -51,7 +63,7 @@ async function getPlatformCurrencyConfig(db) {
       updatedAt: data.currencyUpdatedAt || null,
     };
   } catch (error) {
-    return { ...CURRENCY_REGISTRY.INR, source: 'error-fallback' };
+    return { ...fallbackCurrencyConfig(), source: 'error-fallback' };
   }
 }
 

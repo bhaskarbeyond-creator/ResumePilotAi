@@ -9,7 +9,7 @@ import {
   getUser360, assignUserTenant, removeUserTenant,
   updateUserAiEntitlement, removeUserAiEntitlement, resetUserAiQuota
 } from '../../../services/platformApi';
-import { setUserAdminStatus, updateUserSubscription, toggleUserSuspension } from '../../../firestore/dbOperations';
+import { setUserRole, updateUserSubscription, toggleUserSuspension } from '../../../firestore/dbOperations';
 import useConfirmDialog from '../../../hooks/useConfirmDialog';
 
 export default function User360Drawer({
@@ -85,7 +85,7 @@ export default function User360Drawer({
     setError('');
     setSuccess('');
     try {
-      await setUserAdminStatus(uid, selectedRole, { expectedRole: userData?.identity?.role });
+      await setUserRole(uid, selectedRole, userData?.identity?.role);
       setSuccess(`User role updated to ${selectedRole}.`);
       await loadData();
       if (onUserMutated) onUserMutated();

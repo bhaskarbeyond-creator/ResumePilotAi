@@ -69,6 +69,25 @@ test('users PATCH cannot change SUPER_ADMIN claims', async () => {
   assert.match(source, /SUPER_ADMIN claims cannot be changed from this API/);
 });
 
+test('admin user mutation surface is wired to the authoritative PATCH endpoint', async () => {
+  const [route, drawer, ops] = await Promise.all([
+    fs.readFile('backend/routes/adminUsers.js', 'utf8'),
+    fs.readFile('src/components/admin/usersManager/User360Drawer.jsx', 'utf8'),
+    fs.readFile('src/firestore/dbOperations.js', 'utf8'),
+  ]);
+  // The server owns suspend / role / membership mutations.
+  assert.match(route, /router\.patch\('\/:uid'/);
+  assert.match(route, /SUPER_ADMIN_PROTECTED/);
+  assert.match(route, /SELF_DEMOTION_PROHIBITED/);
+  assert.match(route, /revokeRefreshTokens/);
+  assert.match(route, /recordAdminAuditLog/);
+  // Role assignment must not collapse non-admin roles into ADMIN.
+  assert.match(drawer, /setUserRole\(uid, selectedRole/);
+  assert.doesNotMatch(drawer, /setUserAdminStatus\(uid, selectedRole/);
+  // Suspension stale-target check must honor the caller-provided prior state.
+  assert.match(ops, /expectedSuspended \&\& typeof expectedSuspended === 'object'/);
+});
+
 test('Super Admin destructive routes require MFA in production', async () => {
   const auth = await fs.readFile('backend/security/auth.js', 'utf8');
   const admin = await fs.readFile('src/components/admin/Admin.jsx', 'utf8');

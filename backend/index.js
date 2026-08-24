@@ -5472,13 +5472,15 @@ app.get('/api/auth/github/test-credentials', async (req, res) => {
 /**
  * Enterprise & Super Admin Control Plane Router Integration
  * Security Invariant: SUPER_ADMIN_PROTECTED — SUPER_ADMIN claims cannot be changed from this API.
+ *
+ * NOTE: All control-plane routers are mounted exactly once, earlier in this file:
+ *   /api/enterprise*        -> enterpriseRouter / enterpriseM2mRouter
+ *   /api/platform*          -> platformRouter
+ *   /api/admin*             -> adminAuditRouter + adminPlatformOperationsRouter
+ *   /api/admin/users*       -> adminUsersRouter (authoritative user directory & User 360)
+ * Do not re-mount them here; duplicate mounts are dead code and can mask
+ * middleware-ordering regressions.
  */
-app.use('/api/enterprise', enterpriseRouter);
-app.use('/api/enterprise/m2m', enterpriseM2mRouter);
-app.use('/api/platform', platformRouter);
-app.use('/api/admin', adminAuditRouter);
-app.use('/api/admin/users', adminUsersRouter);
-app.use('/api/admin', adminPlatformOperationsRouter);
 
 app.use('/api', (req, res) => {
     return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'API route not found', requestId: res.locals.requestId } });

@@ -193,7 +193,9 @@ async function resetUserAiQuota({ db, admin, uid, actorUid, requestId }) {
 }
 
 async function getGlobalAiDashboardData(db) {
-  if (!db) return { todayUsage: [], totalTodayRequests: 0, activeUsersToday: 0 };
+  // `globalPresets` are static platform defaults and must be present even when
+  // the usage store is momentarily unavailable.
+  if (!db) return { todayUsage: [], totalTodayRequests: 0, activeUsersToday: 0, globalPresets: DEFAULT_GLOBAL_QUOTAS };
   const today = dayKey();
   try {
     const snapshot = await db.collection('ai_usage').limit(500).get();
@@ -220,7 +222,7 @@ async function getGlobalAiDashboardData(db) {
       globalPresets: DEFAULT_GLOBAL_QUOTAS,
     };
   } catch (error) {
-    return { todayDate: today, totalTodayRequests: 0, activeUsersToday: 0, error: error.message };
+    return { todayDate: today, totalTodayRequests: 0, activeUsersToday: 0, globalPresets: DEFAULT_GLOBAL_QUOTAS, error: error.message };
   }
 }
 
