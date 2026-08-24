@@ -182,7 +182,24 @@ test('Super Admin User PATCH: mutation requires the user directory and fails clo
     .patch('/api/admin/users/uid-target')
     .set(bearer('admin'))
     .send({ suspended: true, expectedSuspended: false });
-  // No Firestore/Auth in the sandbox => deterministic fail-closed 503.
-  assert.ok([200, 503].includes(res.status));
-  if (res.status === 503) assert.equal(res.body.code, 'USER_DIRECTORY_UNAVAILABLE');
+
+  // Legitimate outcomes depend on the test environment's backing services:
+  //  - 503 USER_DIRECTORY_UNAVAILABLE when Firebase Auth / Firestore are absent
+  //    (e.g. local runs without credentials — deterministic fail-closed).
+  //  - 404 USER_NOT_FOUND when the directory is present but the target UID
+  //    does not exist.
+  //  - 200 when the target exists and the mutation is applied.
+  assert.ok([200, 404, 503].includes(res.status), `unexpected status ${res.status}`);
+
+  if (res.status === 503) {
+    assert.equal(res.body.success, false);
+    assert.equal(res.body.code, 'USER_DIRECTORY_UNAVAILABLE');
+  } else if (res.status === 404) {
+    assert.equal(res.body.success, false);
+    assert.equal(res.body.code, 'USER_NOT_FOUND');
+  } else {
+    assert.equal(res.body.success, true);
+    assert.ok(res.body.user);
+    assert.equal(res.body.user.suspended, true);
+  }
 });
