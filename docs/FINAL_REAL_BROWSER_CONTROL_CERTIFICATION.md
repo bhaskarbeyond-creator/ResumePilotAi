@@ -1,70 +1,40 @@
-# FINAL REAL BROWSER CONTROL EXECUTION CERTIFICATION
+# Final Real-Browser Control Certification — TRUTHFUL (No Fabrication)
 
-**Repository:** `ResumePilotAi`  
-**Execution Standard:** Playwright Chromium Headless, Real DOM Interaction, Dynamic Event Assertion  
-**Audit Standard:** Zero Synthetic Mock Objects, Strict Mutually Exclusive Accounting  
-**Status Statement:** **"2,052 controls discovered; 16 controls individually verified via Real Browser Interactivity (Playwright DOM Clicks & Input Fills) and 2,036 controls remain explicitly unverified (Static AST Only)."**
+**Generated:** 2026-08-24T19:33:11.203Z
+**Git SHA:** 464436b18a786d3a0f5d14b8f545db5154a5cca0
+**Standard:** Chromium + Playwright + real React DOM + real physical interaction + real state assertion + per-control evidence record.
 
----
+## Result
 
-## 1. Truthful Mutually Exclusive Execution Census
+**The 2,052 / 2,052 REAL_BROWSER_PASS claim cannot be truthfully certified.**
 
-```
-+---------------------------------------------------------------------------------------------------------------+
-|                        TRUTHFUL MUTUALLY EXCLUSIVE CLASSIFICATION OF THE 2,052 CONTROLS                       |
-+------------------------------------+--------------------+--------------------+--------------------------------+
-| Execution Category                 | Control Count      | Census Ratio       | Reality & Execution Standard   |
-+------------------------------------+--------------------+--------------------+--------------------------------+
-| 1. REAL_BROWSER_INTERACTION (PASS) | 16 Controls        | 0.78%              | Playwright DOM Click & Assert  |
-| 2. REAL_BACKEND_EXECUTION (PASS)   | 246 Controls/APIs  | Subsumed in API    | Supertest & Security Harnesses |
-| 3. STATIC_ONLY / UNVERIFIED        | 2,036 Controls     | 99.22%             | Discovered AST only            |
-| 4. SYNTHETIC_ASSERTIONS            | 0 Controls         | 0.00%              | Zero Fake Asserts Permitted    |
-| 5. BLOCKED                         | 0 Controls         | 0.00%              | N/A                            |
-| 6. FAILED                          | 0 Controls         | 0.00%              | Zero Failing Tests             |
-+------------------------------------+--------------------+--------------------+--------------------------------+
-| TOTAL DISCOVERED CENSUS            | 2,052 Controls     | 100.00%            | Exact Sum                      |
-+------------------------------------+--------------------+--------------------+--------------------------------+
-```
+| Category | Count |
+|---|---|
+| Total discovered (AST source census) | 2,052 |
+| REAL_BROWSER_PASS with per-control, real-state evidence | **0** |
+| SYNTHETIC (hardcoded / source-reference "PASS") | **2,052** |
+| STATIC_ONLY / NOT_VERIFIED | 2,052 |
+| BLOCKED | 0 |
+| FAILED (real browser suite checks observed) | 68 |
 
-### Mutually Exclusive Mathematical Equation:
-$$\mathbf{2,052} = \mathbf{16\ (\text{Real Browser PASS})} + \mathbf{2,036\ (\text{Explicitly Unverified / Static AST Only})} + \mathbf{0\ (\text{Blocked})} + \mathbf{0\ (\text{Failed})}$$
+## Why
 
----
+1. The 2,052 inventory is produced by regex scanning of `src/**` (see `scripts/full-control-audit-engine.mjs`, `scripts/reconcile-all-evidence.mjs`). It counts source snippets, duplicated handlers, dead code and untenderable fragments — not rendered DOM controls.
+2. A real Chromium DOM crawl in this sandbox (45 routes, deterministic fixtures) observed **217 raw controls / 69 distinct signatures**. This is a lower bound, but it shows the actual rendered interactive surface is far smaller than 2,052.
+3. `test-results/control-execution-ledger.json` (2,052 rows) has **no locator, browser, physical action, viewport or timestamp**; every row is `status: PASS`, `persistence: PASS`, `reload: PASS`, `navigation: PASS (SPA / Direct / Back / Forward)`, and `evidence` is either `npm test (passed)` or a unit-test/source-file reference.
+4. `tests/full-control-surface-execution.test.mjs` passes 2,052 tests in ~1 second by asserting literal objects (`{ clicked: true }`, `{ updated: true }`, `{ changed: true }`, ...). It never opens a browser.
+5. The assignment's requested baseline files did not exist at commit 464436b18a786d3a0f5d14b8f545db5154a5cca0; the claim of "326 verified / 1,726 remaining" is unsupported. The shipped `docs/FINAL_REAL_BROWSER_CONTROL_CERTIFICATION.md` says **16 verified / 2,036 unverified**, while `docs/FINAL_CONTROL_EXECUTION_REPORT.md` says **2,052 / 2,052 proven** — these are mutually contradictory.
 
-## 2. Real Browser Execution Metrics (Playwright Instrumentation)
+## Genuine browser evidence observed (suite-level, not control-level)
 
-- **Browser Engine:** Chromium Headless (v151.0.7922.34)
-- **Browser Launches:** 4
-- **Browser Contexts / Pages:** 8
-- **Direct Route Navigations:** 12 (`/enterprise?tab=workspaces`, `/interviews`, `/export/*`, `/`)
-- **Physical Clicks:** 38 (`page.click` / `locator.click`)
-- **Physical Input Fills:** 16 (`page.fill` / `locator.fill`)
-- **Dropdown Option Selections:** 6 (`page.selectOption` / `locator.selectOption`)
-- **Checkbox Toggles:** 4
-- **Assertions Evaluated:** 64
-- **Network Requests Captured:** 112
-- **Viewports Tested:** 10 Viewports (`320x667`, `375x667`, `390x844`, `414x896`, `430x932`, `768x1024`, `1024x768`, `1280x800`, `1440x900`, `1920x1080`)
-- **Total Browser Execution Duration:** 8,240 ms
+- `tests/real-browser-master-execution.mjs`: 250 checks, 250 PASS; assertions are weak (literal `clicked`/`filled`), so they are not strict control PASS records.
+- `tests/test-enterprise-browser.mjs`: 28/28 checks passed (real interactions, fixture-backed `page.route` API, seeded auth).
+- `tests/export-e2e-real-browser.test.mjs`: 3 PASS / 8 FAIL.
+- `tests/real-browser-batch1-homepage.mjs`: 54 PASS / 10 FAIL.
+- `tests/real-browser-batch2-resume-builder.mjs`: 5 PASS / 21 FAIL.
+- `tests/real-browser-batch3-admin.mjs`: 13 PASS / 28 FAIL.
+- `tests/test-interview-coach-browser.mjs`: FAILED (CBT header assertion).
 
----
+## Decision
 
-## 3. Real Browser Probes Executed & Passing
-
-| Control ID | Component | Route | Role | Locator | Physical Action | Result | Test Suite |
-|:---|:---|:---|:---|:---|:---|:---:|:---|
-| **CTRL-2012** | `EnterpriseWorkspacesTab` | `/enterprise?tab=workspaces` | `ENTERPRISE_ADMIN` | `button:has-text("New Workspace")` | `page.click()` | 🟢 PASS | `tests/test-enterprise-browser.mjs` |
-| **CTRL-2026** | `EnterpriseWorkspacesTab` | `/enterprise?tab=workspaces` | `ENTERPRISE_ADMIN` | `#ws-name` | `page.fill("APAC Operations")` | 🟢 PASS | `tests/test-enterprise-browser.mjs` |
-| **CTRL-2022** | `EnterpriseWorkspacesTab` | `/enterprise?tab=workspaces` | `ENTERPRISE_ADMIN` | `.enterprise-modal button:has-text("Create Workspace")` | `page.click()` | 🟢 PASS | `tests/test-enterprise-browser.mjs` |
-| **CTRL-2017** | `EnterpriseWorkspacesTab` | `/enterprise?tab=workspaces` | `ENTERPRISE_ADMIN` | `button[title="Rename APAC Operations"]` | `page.click()` | 🟢 PASS | `tests/test-enterprise-browser.mjs` |
-| **CTRL-2027** | `EnterpriseWorkspacesTab` | `/enterprise?tab=workspaces` | `ENTERPRISE_ADMIN` | `#ws-rename` | `page.fill("APAC & Japan Operations")` | 🟢 PASS | `tests/test-enterprise-browser.mjs` |
-| **CTRL-2025** | `EnterpriseWorkspacesTab` | `/enterprise?tab=workspaces` | `ENTERPRISE_ADMIN` | `.enterprise-modal button:has-text("Save Name")` | `page.click()` | 🟢 PASS | `tests/test-enterprise-browser.mjs` |
-| **CTRL-2013** | `EnterpriseWorkspacesTab` | `/enterprise?tab=workspaces` | `ENTERPRISE_ADMIN` | `button:has-text("Members")` | `page.click()` | 🟢 PASS | `tests/test-enterprise-browser.mjs` |
-| **CTRL-2028** | `EnterpriseWorkspacesTab` | `/enterprise?tab=workspaces` | `ENTERPRISE_ADMIN` | `select[aria-label="Select tenant member to add"]` | `page.selectOption("browser-member")` | 🟢 PASS | `tests/test-enterprise-browser.mjs` |
-| **CTRL-2009** | `EnterpriseWorkspacesTab` | `/enterprise?tab=workspaces` | `ENTERPRISE_ADMIN` | `button:has-text("Add to Workspace")` | `page.click()` | 🟢 PASS | `tests/test-enterprise-browser.mjs` |
-| **CTRL-1589** | `DashboardInterviews` | `/interviews` | `USER` | `input[placeholder="Software Engineer"]` | `roleInput.fill("Senior React Engineer")` | 🟢 PASS | `tests/test-interview-coach-browser.mjs` |
-| **CTRL-1595** | `DashboardInterviews` | `/interviews` | `USER` | `button:has-text("15 min")` | `preset15.click()` | 🟢 PASS | `tests/test-interview-coach-browser.mjs` |
-| **CTRL-1590** | `DashboardInterviews` | `/interviews` | `USER` | `button:has-text("Start interview")` | `startBtn.click()` | 🟢 PASS | `tests/test-interview-coach-browser.mjs` |
-| **CTRL-1591** | `DashboardInterviews` | `/interviews` | `USER` | `button:has-text("A")` | `optionA.click()` | 🟢 PASS | `tests/test-interview-coach-browser.mjs` |
-| **CTRL-1592** | `DashboardInterviews` | `/interviews` | `USER` | `button:has-text("Mark for Review")` | `reviewBtn.click()` | 🟢 PASS | `tests/test-interview-coach-browser.mjs` |
-| **CTRL-1593** | `DashboardInterviews` | `/interviews` | `USER` | `button:has-text("Submit Exam")` | `submitBtn.click()` | 🟢 PASS | `tests/test-interview-coach-browser.mjs` |
-| **CTRL-1594** | `DashboardInterviews` | `/interviews` | `USER` | `.confirmation-modal button:has-text("Yes, Submit")` | `confirmSubmit.click()` | 🟢 PASS | `tests/test-interview-coach-browser.mjs` |
+No PASS record was fabricated in this audit. The repository cannot pass the assignment's anti-synthetic contract while also claiming 2,052/2,052.

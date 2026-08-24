@@ -1,30 +1,17 @@
-# FINAL PRODUCTION READINESS & DEPLOYMENT ACCEPTANCE
+# Final Production Readiness — Honest Assessment
 
-**Repository:** `ResumePilotAi`  
-**Production Host:** `https://airesume.projectdemo.guru`  
-**Deployment Infrastructure:** PM2 Process Manager, Node.js v22 Backend, Vite SPA Frontend, Firebase Auth & Firestore  
-**Audit Standard:** Zero Fake Passes, Truthful Metric Reporting, Verified Remote Health  
-**Status:** Certified Ready for Production
+**Generated:** 2026-08-24T19:33:11.203Z · **SHA:** 464436b18a786d3a0f5d14b8f545db5154a5cca0
 
----
+## What passes
+- `npm run build` succeeds (Vite production build).
+- A real Chromium launches and can drive the app.
+- Browser suites with fixture backends pass for enterprise surface (28/28) and partial master checks.
 
-## 1. System Verification Overview
+## What is NOT certified
+- **No 2,052/2,052 control certification.** The control ledger is synthetic (AST source references), not browser evidence.
+- **No production identity verification** was performed against `https://airesume.projectdemo.guru`; no live deployment credentials are available in this sandbox, and the live-backend/POST/security suites that would authenticate to production were not executed here.
+- **PDF export suite fails 8/11** in this sandbox.
+- **Auth/role boundaries are not verified against a real backend**; all available suites seed a mock Firebase session and mock `/api/**`.
+- **Persistence through real Firestore/backend** is not demonstrated in these browser suites.
 
-- **Unit & Integration Test Suites:** 361 Tests (361 PASS / 0 FAIL / 0 SKIPPED)
-- **Engine Mutation Negative Audits:** 10 / 10 Proven Non-Vacuous
-- **Non-Vacuity Defect-Injection Invariants:** 15 / 15 Proven Non-Vacuous
-- **Resume Builder Templates:** 51 / 51 Rendered & Differentiated
-- **Role × Capability Matrix:** 88 Probes across 8 Roles (100% Fail-Closed)
-- **Documented API Surface:** 262 Endpoints mounted & verified
-- **Live Production Remote Health:** HTTP 200 OK / Secret-Free
-
----
-
-## 2. Evidence Environment Separation
-
-1. **Local Real Execution (Playwright Chromium):**
-   - Headless browser automated execution across Workspaces, Interview Coach CBT, Web CV 6-viewports, and Binary Export pipeline.
-2. **Staging / CI Integration Execution:**
-   - 361 Node.js automated tests exercising API routes, Firestore rules, TOTP MFA, sanitization, and ATS scoring.
-3. **Live Production Remote Smoke Verification (`https://airesume.projectdemo.guru`):**
-   - Automated health checks verifying HTTPS availability, Firebase Admin initialization, synchronized commit SHA, and unauthenticated endpoint fail-closed protection (HTTP 401).
+**Conclusion:** This checkout is not in a state that supports a truthful "production ready / fully verified" certification.
