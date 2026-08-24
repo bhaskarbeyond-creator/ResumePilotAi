@@ -1,10 +1,10 @@
 {
   "script": "verify-production-identity",
-  "startedAt": "2026-08-24T12:30:42.037Z",
-  "finishedAt": "2026-08-24T12:30:44.128Z",
+  "startedAt": "2026-08-24T12:40:48.007Z",
+  "finishedAt": "2026-08-24T12:40:50.160Z",
   "meta": {
     "base": "https://airesume.projectdemo.guru",
-    "expectedSha": "924800856b130671e047f7e00ee4cd44198df3cb"
+    "expectedSha": "4850d22a0f20ad44834fb92f5b1106fb0cb5dcbe"
   },
   "counts": {
     "200": 4,
@@ -20,68 +20,68 @@
     {
       "check": "backend is reachable over HTTPS",
       "status": 200,
-      "at": "2026-08-24T12:30:42.576Z",
-      "durationMs": 538
+      "at": "2026-08-24T12:40:48.518Z",
+      "durationMs": 510
     },
     {
       "check": "production health confirms Firebase Admin is configured",
       "status": "PASS",
-      "at": "2026-08-24T12:30:42.576Z"
+      "at": "2026-08-24T12:40:48.518Z"
     },
     {
       "check": "backend COMMIT_SHA matches the tested SHA",
       "status": "PASS",
-      "at": "2026-08-24T12:30:42.733Z",
-      "backendSha": "924800856b13",
+      "at": "2026-08-24T12:40:48.660Z",
+      "backendSha": "4850d22a0f20",
       "source": "/api/platform/version"
     },
     {
       "check": "API health endpoint is successful",
       "status": 200,
-      "at": "2026-08-24T12:30:42.884Z"
+      "at": "2026-08-24T12:40:48.967Z"
     },
     {
       "check": "health endpoint commit identities agree",
       "status": "PASS",
-      "at": "2026-08-24T12:30:42.884Z",
-      "commitSha": "924800856b13"
+      "at": "2026-08-24T12:40:48.967Z",
+      "commitSha": "4850d22a0f20"
     },
     {
       "check": "frontend is served",
       "status": 200,
-      "at": "2026-08-24T12:30:43.031Z"
+      "at": "2026-08-24T12:40:49.106Z"
     },
     {
       "check": "frontend build SHA matches the tested SHA",
       "status": "PASS",
-      "at": "2026-08-24T12:30:43.031Z",
-      "frontendSha": "924800856b13"
+      "at": "2026-08-24T12:40:49.106Z",
+      "frontendSha": "4850d22a0f20"
     },
     {
       "check": "Cloudflare cache status observed",
       "status": "INFO",
-      "at": "2026-08-24T12:30:43.031Z",
+      "at": "2026-08-24T12:40:49.106Z",
       "cacheStatus": "DYNAMIC"
     },
     {
       "check": "public service-availability endpoint answers",
       "status": 200,
-      "at": "2026-08-24T12:30:43.965Z"
+      "at": "2026-08-24T12:40:50.002Z"
     },
     {
       "check": "public availability payload is secret-free",
       "status": "PASS",
-      "at": "2026-08-24T12:30:43.965Z"
+      "at": "2026-08-24T12:40:50.003Z"
     },
     {
       "check": "API matrix requires authentication",
       "status": 401,
-      "at": "2026-08-24T12:30:44.127Z"
+      "at": "2026-08-24T12:40:50.160Z"
     },
     {
       "check": "API surface size matches the census",
       "status": "INFO",
-      "at": "2026-08-24T12:30:44.127Z",
+      "at": "2026-08-24T12:40:50.160Z",
       "reason": "endpoint is correctly protected; run verify-api-inventory-live.mjs with credentials to compare counts"
     }
   ]
