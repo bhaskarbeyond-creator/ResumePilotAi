@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
-  FiUsers, FiUserCheck, FiShield, FiCreditCard, FiAlertTriangle,
+  FiUsers, FiUser, FiUserCheck, FiShield, FiCreditCard, FiAlertTriangle,
   FiSearch, FiFilter, FiPlus, FiDownload, FiRefreshCw, FiMoreVertical,
   FiEdit2, FiTrash2, FiLock, FiUnlock, FiBriefcase, FiCpu, FiCheck,
   FiChevronLeft, FiChevronRight, FiSliders, FiDollarSign
