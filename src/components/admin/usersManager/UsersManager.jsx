@@ -3,10 +3,10 @@ import {
   FiUsers, FiUser, FiUserCheck, FiShield, FiCreditCard, FiAlertTriangle,
   FiSearch, FiFilter, FiPlus, FiDownload, FiRefreshCw, FiMoreVertical,
   FiEdit2, FiTrash2, FiLock, FiUnlock, FiBriefcase, FiCpu, FiCheck,
-  FiChevronLeft, FiChevronRight, FiSliders, FiDollarSign
+  FiChevronLeft, FiChevronRight, FiSliders, FiDollarSign, FiKey, FiCopy
 } from 'react-icons/fi';
 import fire from '../../../conf/fire';
-import { getAdminUsers, getUser360, getPlatformTenants } from '../../../services/platformApi';
+import { getAdminUsers, getUser360, getPlatformTenants, sendUserPasswordReset } from '../../../services/platformApi';
 import {
   setUserAdminStatus, updateUserSubscription, toggleUserSuspension,
   deleteUserByAdmin, checkIfAdmin
@@ -45,6 +45,8 @@ export default function UsersManager() {
   const [inspectUid, setInspectUid] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [actionMenuUid, setActionMenuUid] = useState(null);
+  const [resetLinkData, setResetLinkData] = useState(null);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   // Current admin session
   const [currentUser, setCurrentUser] = useState(null);
@@ -215,6 +217,36 @@ export default function UsersManager() {
       setBusyUser('');
     }
   };
+
+  // Administrative Password Reset
+  const handleSendPasswordReset = async (user) => {
+    setActionMenuUid(null);
+    const confirmed = await confirm({
+      title: 'Send Password Reset Link',
+      message: `Generate and dispatch a secure password reset link for ${user.displayName || user.email}?`,
+      confirmText: 'Send Reset Link',
+      danger: false,
+    });
+    if (!confirmed) return;
+
+    setBusyUser(`${user.id}:reset`);
+    setError('');
+    try {
+      const res = await sendUserPasswordReset(user.id);
+      if (res.success) {
+        setSuccess(`Password reset link generated for ${res.email}.`);
+        setResetLinkData({ email: res.email, resetLink: res.resetLink });
+        setCopiedLink(false);
+      } else {
+        setError(res.error || 'Failed to generate password reset link.');
+      }
+    } catch (err) {
+      setError(err.message || 'Error communicating with server.');
+    } finally {
+      setBusyUser('');
+    }
+  };
+
 
   // Bulk Actions
   const handleBulkSuspend = async (willSuspend) => {
@@ -693,6 +725,17 @@ export default function UsersManager() {
                                 </button>
                               )}
 
+                              <button
+                                type="button"
+                                onClick={() => handleSendPasswordReset(user)}
+                                disabled={busyUser === `${user.id}:reset`}
+                                className="w-full px-3 py-2 text-slate-700 hover:bg-slate-50 flex items-center gap-2 text-left"
+                                role="menuitem"
+                              >
+                                <FiKey className="text-amber-600" /> Send Password Reset
+                              </button>
+
+
                               {isSuperAdmin && !isSelf && (
                                 <button
                                   type="button"
@@ -786,8 +829,59 @@ export default function UsersManager() {
         />
       )}
 
+      {/* Password Reset Link Modal */}
+      {resetLinkData && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in" role="dialog" aria-modal="true">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 text-left">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-lg shrink-0">
+                <FiKey />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">Password Reset Link Generated</h3>
+                <p className="text-xs text-slate-500 font-mono">{resetLinkData.email}</p>
+              </div>
+            </div>
+            <p className="text-xs text-slate-600">
+              The user can use this secure, one-time link to set a new password. You can copy and share it directly:
+            </p>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                readOnly
+                value={resetLinkData.resetLink}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono select-all text-slate-800"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(resetLinkData.resetLink);
+                  setCopiedLink(true);
+                  setTimeout(() => setCopiedLink(false), 3000);
+                }}
+                className={`px-3 py-2 rounded-lg font-bold text-xs shrink-0 flex items-center gap-1 transition ${
+                  copiedLink ? 'bg-emerald-600 text-white' : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                }`}
+              >
+                {copiedLink ? <><FiCheck /> Copied</> : <><FiCopy /> Copy</>}
+              </button>
+            </div>
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => setResetLinkData(null)}
+                className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Confirmation Modal (role="alertdialog") */}
       {confirmationDialog}
     </div>
   );
 }
+

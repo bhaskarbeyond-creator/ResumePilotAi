@@ -69,6 +69,7 @@ export const getUserAiEntitlement = (uid) => platformFetch(`/api/admin/users/${e
 export const updateUserAiEntitlement = (uid, body) => platformFetch(`/api/admin/users/${encodeURIComponent(uid)}/ai-entitlement`, { method: 'PUT', body: JSON.stringify(body || {}) });
 export const removeUserAiEntitlement = (uid) => platformFetch(`/api/admin/users/${encodeURIComponent(uid)}/ai-entitlement`, { method: 'DELETE' });
 export const resetUserAiQuota = (uid) => platformFetch(`/api/admin/users/${encodeURIComponent(uid)}/ai-quota-reset`, { method: 'POST', body: JSON.stringify({}) });
+export const sendUserPasswordReset = (uid) => platformFetch(`/api/admin/users/${encodeURIComponent(uid)}/send-password-reset`, { method: 'POST', body: JSON.stringify({}) });
 
 // Super Admin Platform Currency & Subscriptions
 export const getPlatformCurrency = () => platformFetch('/api/admin/platform/currency');

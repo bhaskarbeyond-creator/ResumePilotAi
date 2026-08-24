@@ -3,11 +3,12 @@ import {
   FiX, FiUser, FiMail, FiShield, FiBriefcase, FiCreditCard,
   FiCpu, FiActivity, FiCheck, FiAlertTriangle, FiRefreshCw,
   FiLock, FiUnlock, FiPlus, FiTrash2, FiClock, FiDollarSign,
-  FiCalendar, FiExternalLink, FiKey
+  FiCalendar, FiExternalLink, FiKey, FiCopy
 } from 'react-icons/fi';
 import {
   getUser360, assignUserTenant, removeUserTenant,
-  updateUserAiEntitlement, removeUserAiEntitlement, resetUserAiQuota
+  updateUserAiEntitlement, removeUserAiEntitlement, resetUserAiQuota,
+  sendUserPasswordReset
 } from '../../../services/platformApi';
 import { setUserRole, updateUserSubscription, toggleUserSuspension } from '../../../firestore/dbOperations';
 import useConfirmDialog from '../../../hooks/useConfirmDialog';
@@ -27,6 +28,9 @@ export default function User360Drawer({
   const [userData, setUserData] = useState(null);
   const [activeTab, setActiveTab] = useState('identity');
   const [busyAction, setBusyAction] = useState('');
+  const [resetLinkData, setResetLinkData] = useState(null);
+  const [copiedLink, setCopiedLink] = useState(false);
+
 
   // Edit sub-states
   const [selectedRole, setSelectedRole] = useState('USER');
@@ -233,7 +237,37 @@ export default function User360Drawer({
     }
   };
 
+  const handleSendPasswordReset = async () => {
+    if (!u?.email) return;
+    const confirmed = await confirm({
+      title: 'Send Password Reset Link',
+      message: `Generate and dispatch a secure password reset link for ${u.displayName || u.email}?`,
+      confirmText: 'Send Reset Link',
+      danger: false,
+    });
+    if (!confirmed) return;
+
+    setBusyAction('reset-password');
+    setError('');
+    setSuccess('');
+    try {
+      const res = await sendUserPasswordReset(u.id);
+      if (res.success) {
+        setSuccess(`Password reset link generated for ${res.email}.`);
+        setResetLinkData({ email: res.email, resetLink: res.resetLink });
+        setCopiedLink(false);
+      } else {
+        setError(res.error || 'Failed to generate password reset link.');
+      }
+    } catch (err) {
+      setError(err.message || 'Error communicating with server.');
+    } finally {
+      setBusyAction('');
+    }
+  };
+
   const u = userData?.identity;
+
 
   return (
     <div
@@ -407,8 +441,29 @@ export default function User360Drawer({
                       {u?.suspended ? <><FiUnlock /> Restore Access</> : <><FiLock /> Suspend Account</>}
                     </button>
                   </div>
+
+                  {/* Administrative Password Reset Action */}
+                  <div className="p-4 rounded-xl border bg-slate-50 border-slate-200 flex items-center justify-between">
+                    <div>
+                      <h4 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                        <FiKey className="text-amber-600" /> Administrative Password Reset
+                      </h4>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Generate and dispatch a secure password reset link directly for {u?.email || 'this user'}.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleSendPasswordReset}
+                      disabled={busyAction === 'reset-password' || !u?.email}
+                      className="px-3 py-1.5 rounded-lg font-bold text-xs bg-amber-500 hover:bg-amber-600 text-white flex items-center gap-1.5 transition disabled:opacity-50"
+                    >
+                      <FiKey /> {busyAction === 'reset-password' ? 'Generating…' : 'Send Reset Link'}
+                    </button>
+                  </div>
                 </div>
               )}
+
 
               {/* TAB 2: TENANT MEMBERSHIPS */}
               {activeTab === 'tenancy' && (
@@ -816,7 +871,59 @@ export default function User360Drawer({
           )}
         </div>
       </div>
+
+      {/* Password Reset Link Modal */}
+      {resetLinkData && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in" role="dialog" aria-modal="true">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 text-left">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-lg shrink-0">
+                <FiKey />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">Password Reset Link Generated</h3>
+                <p className="text-xs text-slate-500 font-mono">{resetLinkData.email}</p>
+              </div>
+            </div>
+            <p className="text-xs text-slate-600">
+              The user can use this secure, one-time link to set a new password. You can copy and share it directly:
+            </p>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                readOnly
+                value={resetLinkData.resetLink}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono select-all text-slate-800"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(resetLinkData.resetLink);
+                  setCopiedLink(true);
+                  setTimeout(() => setCopiedLink(false), 3000);
+                }}
+                className={`px-3 py-2 rounded-lg font-bold text-xs shrink-0 flex items-center gap-1 transition ${
+                  copiedLink ? 'bg-emerald-600 text-white' : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                }`}
+              >
+                {copiedLink ? <><FiCheck /> Copied</> : <><FiCopy /> Copy</>}
+              </button>
+            </div>
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => setResetLinkData(null)}
+                className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {confirmationDialog}
     </div>
   );
 }
+

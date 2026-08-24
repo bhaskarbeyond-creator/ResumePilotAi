@@ -800,7 +800,78 @@ router.post('/:uid/ai-quota-reset', async (req, res) => {
   }
 });
 
+router.post('/:uid/send-password-reset', async (req, res) => {
+  const uid = String(req.params.uid || '');
+  const requestDb = req.app.get('db');
+  const identityAdmin = req.app.get('firebaseAdmin') || admin;
+
+  if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid)) {
+    return res.status(400).json({ success: false, code: 'INVALID_USER_ID', error: 'Invalid user identifier.', requestId: res.locals.requestId });
+  }
+
+  const callerPermissions = permissionsFor(req.user);
+  if (!callerPermissions.has('*') && !callerPermissions.has('users.update') && !callerPermissions.has('users.security.manage')) {
+    return res.status(403).json({ success: false, code: 'FORBIDDEN', error: 'Insufficient permission to trigger password reset.', requestId: res.locals.requestId });
+  }
+
+  if (!requestDb || !identityAdmin?.auth) {
+    return res.status(503).json({ success: false, code: 'SERVICE_UNAVAILABLE', error: 'Service unavailable.', requestId: res.locals.requestId });
+  }
+
+  try {
+    const identity = await identityAdmin.auth().getUser(uid);
+    if (!identity.email) {
+      return res.status(400).json({ success: false, code: 'NO_EMAIL', error: 'User does not have an associated email address.', requestId: res.locals.requestId });
+    }
+
+    const resetLink = await identityAdmin.auth().generatePasswordResetLink(identity.email);
+
+    // Record in security audit logs
+    const now = identityAdmin.firestore.FieldValue.serverTimestamp();
+    await requestDb.collection('security_audit_logs').doc().set({
+      action: 'USER_PASSWORD_RESET_TRIGGERED',
+      actorUid: req.user.uid,
+      targetUid: uid,
+      targetEmail: identity.email,
+      category: 'iam.users.security',
+      severity: 'HIGH',
+      targetType: 'USER',
+      targetId: uid,
+      requestId: res.locals.requestId,
+      createdAt: now,
+    });
+
+    recordAdminAuditLog(req, {
+      action: 'USER_PASSWORD_RESET_TRIGGERED',
+      method: 'POST',
+      pathname: req.originalUrl,
+      statusCode: 200,
+      resourceType: 'user',
+      resourceId: uid,
+      metadata: { targetEmail: identity.email },
+      requestId: res.locals.requestId,
+    });
+
+    return res.json({
+      success: true,
+      message: `Password reset link generated for ${identity.email}.`,
+      email: identity.email,
+      resetLink,
+    });
+  } catch (error) {
+    console.error('[Admin send-password-reset error]', error.message);
+    const status = error.code === 'auth/user-not-found' ? 404 : 500;
+    return res.status(status).json({
+      success: false,
+      code: error.code || 'PASSWORD_RESET_FAILED',
+      error: error.message || 'Failed to generate password reset link.',
+      requestId: res.locals.requestId,
+    });
+  }
+});
+
 module.exports = {
   adminUsersRouter: router,
   adminUserProjection,
 };
+
