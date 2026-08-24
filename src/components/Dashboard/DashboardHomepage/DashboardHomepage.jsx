@@ -189,7 +189,7 @@ class DashboardHomepage extends Component {
         allDocuments = [...response.resumes];
       }
     } catch (error) {
-      this.setState({ documentsError: error.message || 'Resumes could not be loaded.', isfetcing: false, isPaginating: false });
+      this.setState({ documentsError: error.message || "We couldn't load your resumes.", isfetcing: false, isPaginating: false });
       return;
     }
 
@@ -431,14 +431,14 @@ class DashboardHomepage extends Component {
     } catch (error) {
       previewWindow?.close();
       console.error('Unable to share resume:', error);
-      this.props.showToast?.('Resume could not be shared.', 'error');
+      this.props.showToast?.("We couldn't share your resume.", 'error');
     }
   }
 
   async renameResume(document) {
     const userId = fire.auth().currentUser?.uid;
     const currentTitle = document.item?.title || 'Untitled Resume';
-    const title = window.prompt('Rename resume', currentTitle);
+    const title = window.prompt('Rename your resume', currentTitle);
     if (!userId || !title?.trim() || title.trim() === currentTitle) return;
     try {
       const data = normalizeResumeData({ ...document.item, title: title.trim().slice(0, 160) });
@@ -446,7 +446,7 @@ class DashboardHomepage extends Component {
       document.item = { ...saved.data, revision: saved.revision };
       this.setState(current => ({ displayDocuments: [...current.displayDocuments] }));
     } catch (error) {
-      this.props.showToast?.(error.code === 'RESUME_CONFLICT' ? 'Resume changed elsewhere. Refresh before renaming.' : 'Resume could not be renamed.', 'error');
+      this.props.showToast?.(error.code === 'RESUME_CONFLICT' ? 'This resume was updated elsewhere. Refresh the page and try again.' : "We couldn't rename your resume.", 'error');
     }
   }
 
@@ -459,7 +459,7 @@ class DashboardHomepage extends Component {
       const copy = { id: created.id, template: created.data.template, item: { ...created.data, revision: created.revision }, employments: created.data.employments, educations: created.data.educations, skills: created.data.skills, languages: created.data.languages, isNewStyle: true };
       this.setState(current => ({ fetchedDocuments: [copy, ...current.fetchedDocuments], displayDocuments: [copy, ...current.displayDocuments] }));
     } catch (error) {
-      this.props.showToast?.('Resume could not be duplicated.', 'error');
+      this.props.showToast?.("We couldn't duplicate your resume.", 'error');
     }
   }
 
@@ -654,7 +654,7 @@ class DashboardHomepage extends Component {
       this.props.showToast?.(
         error?.message?.startsWith('Download failed')
           ? error.message
-          : 'The PDF could not be generated. Please try again.',
+          : "We couldn't create the PDF. Please try again.",
         'error'
       );
     } finally {
@@ -746,12 +746,12 @@ class DashboardHomepage extends Component {
         userId,
       });
 
-      this.props.showToast?.('DOCX download successful!', 'success');
+      this.props.showToast?.('Word file downloaded.', 'success');
     } catch (error) {
       console.error('DOCX download failed:', error);
       trackEvent('download_failed_docx', 'Documents', document?.template || 'Unknown', 0);
       this.props.showToast?.(
-        error?.message?.startsWith('Download failed') ? error.message : 'The DOCX could not be generated. Please try again.',
+        error?.message?.startsWith('Download failed') ? error.message : "We couldn't create the Word file. Please try again.",
         'error'
       );
     } finally {
@@ -818,7 +818,7 @@ class DashboardHomepage extends Component {
     } catch (error) {
       return (
         <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-          <div className="text-gray-400 text-xs">Preview Error</div>
+          <div className="text-gray-400 text-xs">Preview unavailable</div>
         </div>
       );
     }
@@ -933,7 +933,7 @@ class DashboardHomepage extends Component {
             </div>
             <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-500 font-medium">
               <FaClock className="w-3 h-3 text-slate-400" />
-              <span>Last activity: Today at {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              <span>Last updated today at {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
             </div>
           </div>
 
@@ -1043,8 +1043,8 @@ class DashboardHomepage extends Component {
               <div className="col-span-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {(!this.state.savedCoverLetters || this.state.savedCoverLetters.length === 0) ? (
                   <div className="col-span-full p-8 text-center bg-slate-50 border border-dashed border-slate-300 rounded-xl">
-                    <p className="text-sm font-semibold text-slate-700">No cover letters created yet</p>
-                    <p className="text-xs text-slate-500 mb-4">Generate your first AI-optimized cover letter in seconds.</p>
+                    <p className="text-sm font-semibold text-slate-700">No cover letters yet.</p>
+                    <p className="text-xs text-slate-500 mb-4">Write a cover letter for your next application.</p>
                     <button onClick={() => this.props.navigate('/dashboard/cover-letters')} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-colors">
                       + Create Cover Letter
                     </button>
@@ -1191,7 +1191,7 @@ class DashboardHomepage extends Component {
                         <div className="absolute inset-0 bg-black/0 group-hover/preview:bg-black/25 transition-all duration-300 flex items-center justify-center">
                           <div className="transform scale-0 group-hover/preview:scale-100 transition-transform duration-200 bg-white/95 backdrop-blur px-4 py-2 rounded-full shadow-lg flex items-center space-x-2 text-slate-800 font-semibold text-xs border border-slate-200">
                             <FaEye className="w-3.5 h-3.5 text-blue-600" />
-                            <span>{t("DashboardHomepage.actions.viewFullPreview", "Full Size Preview")}</span>
+                            <span>{t("DashboardHomepage.actions.viewFullPreview", "Preview")}</span>
                           </div>
                         </div>
                       </div>
@@ -1342,7 +1342,7 @@ class DashboardHomepage extends Component {
                     Import Existing Resume
                   </h3>
                   <p className="text-sm text-slate-600 text-center leading-relaxed">
-                    Upload your PDF or DOCX file to pre-fill all details automatically
+                    Upload a PDF or DOCX and we'll fill in the details.
                   </p>
                 </div>
               </div>
@@ -1417,7 +1417,7 @@ class DashboardHomepage extends Component {
                     <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
                       {t(
                         "DashboardHomepage.deleteModal.title",
-                        "Delete Document"
+                        "Delete Resume"
                       )}
                     </h3>
                     <p className="text-sm text-gray-500 mb-4 sm:mb-6 leading-relaxed">

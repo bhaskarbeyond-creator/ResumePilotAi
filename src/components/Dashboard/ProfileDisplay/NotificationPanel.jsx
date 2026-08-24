@@ -21,7 +21,7 @@ const NotificationPanel = ({ isOpen, onClose, sidebarCollapsed = false }) => {
             });
             setErrorMessage('');
             setNotifications(sorted);
-        }, error => setErrorMessage(error.message || 'Notifications are unavailable.'));
+        }, error => setErrorMessage(error.message || "We couldn't load your notifications."));
     }, [isOpen, authUser?.uid]);
 
     const markAllAsRead = async () => {
@@ -29,7 +29,7 @@ const NotificationPanel = ({ isOpen, onClose, sidebarCollapsed = false }) => {
         if (!userId || markingRead) return;
         setMarkingRead(true);
         const results = await Promise.all(notifications.map(notification => markNotificationAsRead(userId, notification.id)));
-        if (results.some(result => !result.success)) setErrorMessage('Some notifications could not be marked as read. Retry.');
+        if (results.some(result => !result.success)) setErrorMessage("We couldn't mark some notifications as read. Try again.");
         setMarkingRead(false);
     };
 

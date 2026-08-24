@@ -735,7 +735,7 @@
       "aiJobMatching": "AI Job Matching",
       "new": "NEW",
       "newResumeTitle": "New Resume",
-      "newResumeDescription": "Create a tailored resume for each job application. Double your chances of getting hired!"
+      "newResumeDescription": "Create a resume tailored to each job you apply for."
     },
     "emptyState": {
       "noDocumentsFound": "No Documents Available",
